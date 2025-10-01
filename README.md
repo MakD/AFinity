@@ -137,7 +137,7 @@ For remote access, ensure your Jellyfin server is configured for external connec
 
 - [ ] Tablet-optimized layouts
 - [X] Advanced search filters
-- [ ] Custom library views
+- [X] Custom library views
 - [ ] Gesture customization
 
 ### Technical
