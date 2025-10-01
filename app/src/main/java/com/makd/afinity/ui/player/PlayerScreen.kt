@@ -1,0 +1,249 @@
+package com.makd.afinity.ui.player
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.player.PlayerEvent
+import com.makd.afinity.ui.player.components.*
+import com.makd.afinity.ui.player.utils.KeepScreenOn
+import com.makd.afinity.ui.player.utils.ScreenBrightnessController
+import com.makd.afinity.ui.player.components.TrickplayPreview
+import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import timber.log.Timber
+
+@Composable
+fun PlayerScreen(
+    item: AfinityItem,
+    mediaSourceId: String,
+    audioStreamIndex: Int? = null,
+    subtitleStreamIndex: Int? = null,
+    startPositionMs: Long = 0L,
+    onBackPressed: () -> Unit,
+    navController: androidx.navigation.NavController? = null,
+    modifier: Modifier = Modifier,
+    viewModel: PlayerViewModel = hiltViewModel()
+) {
+    val playerState by viewModel.playerState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    Timber.d("Player screen resumed")
+                    viewModel.onResume()
+                }
+                Lifecycle.Event.ON_PAUSE -> {
+                    Timber.d("Player screen paused")
+                    viewModel.onPause()
+                }
+                else -> {}
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val playerRepository = viewModel.playerRepository
+        if (playerRepository is com.makd.afinity.data.repository.player.LibMpvPlayerRepository) {
+            playerRepository.initializeIfNeeded()
+        }
+
+        onDispose {
+            Timber.d("PlayerScreen disposed, but keeping MPV resources for potential navigation")
+        }
+    }
+
+    LaunchedEffect(item.id, mediaSourceId) {
+        Timber.d("Loading media: ${item.name}")
+        viewModel.handlePlayerEvent(
+            PlayerEvent.LoadMedia(
+                item = item,
+                mediaSourceId = mediaSourceId,
+                audioStreamIndex = audioStreamIndex,
+                subtitleStreamIndex = subtitleStreamIndex,
+                startPositionMs = startPositionMs
+            )
+        )
+    }
+
+    LaunchedEffect(item) {
+        Timber.d("Initializing playlist for item: ${item.name} (${item.id})")
+        viewModel.initializePlaylist(item)
+    }
+
+    LaunchedEffect(navController, item) {
+        viewModel.setAutoplayCallback { nextItem ->
+            try {
+                Timber.d("=== AUTOPLAY CALLBACK TRIGGERED ===")
+                Timber.d("Next item: ${nextItem.name} (${nextItem.id})")
+                Timber.d("Next item type: ${nextItem::class.simpleName}")
+                Timber.d("Available sources: ${nextItem.sources.size}")
+                nextItem.sources.forEachIndexed { index, source ->
+                    Timber.d("Source $index: ${source.id} (${source.type})")
+                }
+
+                val mediaSourceId = nextItem.sources.firstOrNull()?.id
+                if (mediaSourceId == null) {
+                    Timber.e("No media source available for next item: ${nextItem.name}")
+                    return@setAutoplayCallback
+                }
+
+                Timber.d("Loading next episode directly in current player")
+
+                viewModel.handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = nextItem,
+                        mediaSourceId = mediaSourceId,
+                        audioStreamIndex = null,
+                        subtitleStreamIndex = null,
+                        startPositionMs = 0L
+                    )
+                )
+
+                viewModel.initializePlaylist(nextItem)
+
+                Timber.d("Started loading next episode: ${nextItem.name}")
+                Timber.d("=== AUTOPLAY CALLBACK COMPLETED ===")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load next item: ${nextItem.name}")
+            }
+        }
+    }
+
+    var hasNavigatedBack by remember { mutableStateOf(false) }
+
+    BackHandler {
+        if (!hasNavigatedBack) {
+            hasNavigatedBack = true
+            Timber.d("Back button pressed - calling onBackPressed")
+            onBackPressed()
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
+        GestureHandler(
+            onSingleTap = {
+                viewModel.onSingleTap()
+            },
+            onDoubleTap = { isForward ->
+                if (!playerState.isControlsLocked) {
+                    viewModel.onDoubleTapSeek(isForward)
+                }
+            },
+            onBrightnessGesture = { delta ->
+                if (!playerState.isControlsLocked) {
+                    viewModel.onScreenBrightnessGesture(delta)
+                }
+            },
+            onVolumeGesture = { delta ->
+                if (!playerState.isControlsLocked) {
+                    viewModel.onVolumeGesture(delta)
+                }
+            },
+            onSeekGesture = { delta ->
+                if (!playerState.isControlsLocked) {
+                    viewModel.onSeekGesture(delta)
+                }
+            },
+            onSeekPreview = { isActive ->
+                if (!playerState.isControlsLocked) {
+                    if (isActive) {
+                        viewModel.onSeekBarPreview(playerState.currentPosition, true)
+                    } else {
+                        viewModel.onSeekBarPreview(0, false)
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        ) {
+            MpvSurface(
+                modifier = Modifier.fillMaxSize(),
+                onSurfaceCreated = {
+                    Timber.d("MPV surface created in player screen")
+                },
+                onSurfaceDestroyed = {
+                    Timber.d("MPV surface destroyed in player screen")
+                }
+            )
+        }
+
+        PlayerControls(
+            playerState = playerState,
+            uiState = uiState,
+            onPlayPauseClick = viewModel::onPlayPauseClick,
+            onSeekBarChange = viewModel::onSeekBarDrag,
+            onTrickplayPreview = viewModel::onSeekBarPreview,
+            onBackClick = {
+                onBackPressed()
+            },
+            onFullscreenToggle = viewModel::onFullscreenToggle,
+            onAudioTrackSelect = viewModel::onAudioTrackSelect,
+            onSubtitleTrackSelect = viewModel::onSubtitleTrackSelect,
+            onPlaybackSpeedChange = viewModel::onPlaybackSpeedChange,
+            onLockToggle = viewModel::onLockToggle,
+            onSkipSegment = viewModel::onSkipSegment,
+            onSeekBackward = viewModel::onSeekBackward,
+            onSeekForward = viewModel::onSeekForward,
+            onNextEpisode = viewModel::onNextEpisode,
+            onPreviousEpisode = viewModel::onPreviousEpisode,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        TrickplayPreview(
+            isVisible = uiState.showTrickplayPreview,
+            previewImage = uiState.trickplayPreviewImage,
+            position = uiState.trickplayPreviewPosition,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        PlayerIndicators(
+            uiState = uiState,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        ErrorIndicator(
+            isVisible = uiState.showError,
+            errorMessage = uiState.errorMessage,
+            onRetryClick = {
+                viewModel.handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = item,
+                        mediaSourceId = mediaSourceId,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = subtitleStreamIndex,
+                        startPositionMs = startPositionMs
+                    )
+                )
+            },
+            modifier = Modifier.align(Alignment.Center)
+        )
+    }
+
+    ScreenBrightnessController(brightness = uiState.brightnessLevel)
+    KeepScreenOn(keepOn = playerState.isPlaying)
+    PlayerSystemBarsController(isControlsVisible = uiState.showControls)
+}

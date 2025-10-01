@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AFinity" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.AFinity.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">?android:attr/colorBackground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_monochrome_tinted</item>
+        <item name="splashScreenIconSize">240dp</item>
+        <item name="postSplashScreenTheme">@style/Theme.AFinity</item>
+    </style>
+</resources>

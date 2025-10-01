@@ -1,0 +1,136 @@
+import com.android.build.api.dsl.Packaging
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.ksp)
+}
+
+val appName = project.property("app.name") as String
+val appVersionName = project.property("app.versionName") as String
+val appVersionCode = project.property("app.versionCode") as String
+
+android {
+    namespace = "com.makd.afinity"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "com.makd.afinity"
+        minSdk = 35
+        targetSdk = 36
+        versionCode = appVersionCode.toInt()
+        versionName = appVersionName
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "APP_NAME", "\"${appName}\"")
+        buildConfigField("String", "VERSION_NAME", "\"${appVersionName}\"")
+        buildConfigField("int", "VERSION_CODE", appVersionCode)
+    }
+
+    buildTypes {
+        debug {
+            isDebuggable = true
+            buildConfigField("boolean", "DEBUG", "true")
+            applicationIdSuffix = ".debug"
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            buildConfigField("boolean", "DEBUG", "false")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = false
+    }
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+            freeCompilerArgs.addAll(
+                "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+                "-opt-in=androidx.compose.material3.pulltorefresh.ExperimentalMaterial3PullToRefreshApi",
+                "-Xjvm-default=all",
+                "-Xcontext-receivers"
+            )
+        }
+    }
+
+    fun Packaging.() {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/versions/**"
+            excludes += "/META-INF/INDEX.LIST"
+        }
+    }
+
+    buildFeatures {
+        buildConfig = true
+        compose = true
+    }
+}
+
+dependencies {
+
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.aboutlibraries.core)
+    implementation(libs.aboutlibraries.compose.m3)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.common)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.preference.ktx)
+    implementation(libs.androidx.security.crypto)
+    implementation(libs.blurhash)
+    implementation(libs.okhttp)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.okhttp.logging.interceptor)
+    ksp(libs.androidx.room.compiler)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.coil.network.cache.control)
+    implementation(libs.coil.svg)
+    implementation(libs.jellyfin.core)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.libmpv)
+    implementation(libs.media3.ffmpeg.decoder)
+    implementation(libs.timber)
+    implementation(libs.compose.pager.indicator)
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
