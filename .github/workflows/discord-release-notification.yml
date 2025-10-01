@@ -1,0 +1,85 @@
+name: Discord Release Notification
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          # Extract release information
+          RELEASE_NAME="${{ github.event.release.name }}"
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          RELEASE_BODY="${{ github.event.release.body }}"
+          RELEASE_URL="${{ github.event.release.html_url }}"
+          RELEASE_AUTHOR="${{ github.event.release.author.login }}"
+          RELEASE_AUTHOR_AVATAR="${{ github.event.release.author.avatar_url }}"
+          REPO_NAME="${{ github.repository }}"
+          REPO_URL="${{ github.event.repository.html_url }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          # Get download assets
+          ASSETS=$(echo '${{ toJson(github.event.release.assets) }}' | jq -r 'map("[\(.name)](\(.browser_download_url))") | join("\n")')
+          
+          # If no assets, set a message
+          if [ -z "$ASSETS" ]; then
+            ASSETS="No downloadable assets"
+          fi
+          
+          # Escape special characters for JSON
+          RELEASE_BODY_ESCAPED=$(echo "$RELEASE_BODY" | jq -Rs .)
+          ASSETS_ESCAPED=$(echo "$ASSETS" | jq -Rs .)
+          
+          # Create Discord embed JSON
+          DISCORD_PAYLOAD=$(cat <<EOF
+          {
+            "embeds": [{
+              "title": "🚀 New Release: $RELEASE_NAME",
+              "description": $RELEASE_BODY_ESCAPED,
+              "url": "$RELEASE_URL",
+              "color": 3066993,
+              "fields": [
+                {
+                  "name": "📦 Version",
+                  "value": "\`$RELEASE_TAG\`",
+                  "inline": true
+                },
+                {
+                  "name": "👤 Author",
+                  "value": "[$RELEASE_AUTHOR](https://github.com/$RELEASE_AUTHOR)",
+                  "inline": true
+                },
+                {
+                  "name": "📂 Repository",
+                  "value": "[$REPO_NAME]($REPO_URL)",
+                  "inline": false
+                },
+                {
+                  "name": "⬇️ Downloads",
+                  "value": $ASSETS_ESCAPED,
+                  "inline": false
+                }
+              ],
+              "author": {
+                "name": "$RELEASE_AUTHOR",
+                "icon_url": "$RELEASE_AUTHOR_AVATAR",
+                "url": "https://github.com/$RELEASE_AUTHOR"
+              },
+              "timestamp": "$TIMESTAMP",
+              "footer": {
+                "text": "Released from $REPO_NAME"
+              }
+            }]
+          }
+          EOF
+          )
+          
+          # Send to Discord
+          curl -H "Content-Type: application/json" \
+               -d "$DISCORD_PAYLOAD" \
+               "$DISCORD_WEBHOOK_URL"
