@@ -125,49 +125,65 @@ fun FavoritesScreen(
                         ) {
                             if (uiState.movies.isNotEmpty()) {
                                 item {
-                                    FavoriteSectionHeader(title = "Movies")
+                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                        FavoriteSectionHeader(title = "Movies")
+                                    }
                                 }
                                 item {
-                                    FavoriteMoviesRow(
-                                        movies = uiState.movies,
-                                        onItemClick = onItemClick
-                                    )
+                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                        FavoriteMoviesRow(
+                                            movies = uiState.movies,
+                                            onItemClick = onItemClick
+                                        )
+                                    }
                                 }
                             }
 
                             if (uiState.shows.isNotEmpty()) {
                                 item {
-                                    FavoriteSectionHeader(title = "TV Shows")
+                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                        FavoriteSectionHeader(title = "TV Shows")
+                                    }
                                 }
                                 item {
-                                    FavoriteShowsRow(
-                                        shows = uiState.shows,
-                                        onItemClick = onItemClick
-                                    )
+                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                        FavoriteShowsRow(
+                                            shows = uiState.shows,
+                                            onItemClick = onItemClick
+                                        )
+                                    }
                                 }
                             }
 
                             if (uiState.episodes.isNotEmpty()) {
                                 item {
-                                    FavoriteSectionHeader(title = "Episodes")
+                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                        FavoriteSectionHeader(title = "Episodes")
+                                    }
                                 }
                                 item {
-                                    FavoriteEpisodesRow(
-                                        episodes = uiState.episodes,
-                                        onItemClick = onItemClick
-                                    )
+                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                        FavoriteEpisodesRow(
+                                            episodes = uiState.episodes,
+                                            onItemClick = onItemClick
+                                        )
+                                    }
                                 }
                             }
 
                             if (uiState.people.isNotEmpty()) {
                                 item {
-                                    FavoriteSectionHeader(title = "People")
+                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                        FavoriteSectionHeader(title = "People")
+                                    }
                                 }
                                 item {
-                                    FavoritePeopleRow(
-                                        people = uiState.people,
-                                        onPersonClick = onPersonClick
-                                    )
+                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                        FavoritePeopleRow(
+                                            people = uiState.people,
+                                            onPersonClick = onPersonClick
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -185,8 +201,7 @@ private fun FavoriteSectionHeader(title: String) {
         style = MaterialTheme.typography.headlineSmall.copy(
             fontWeight = FontWeight.Bold
         ),
-        color = MaterialTheme.colorScheme.onBackground,
-        modifier = Modifier.padding(horizontal = 16.dp)
+        color = MaterialTheme.colorScheme.onBackground
     )
 }
 
@@ -195,17 +210,13 @@ private fun FavoriteMoviesRow(
     movies: List<AfinityMovie>,
     onItemClick: (AfinityItem) -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val cardWidth = (configuration.screenWidthDp.dp - 56.dp) / 3.5f
-
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp)
     ) {
         items(movies) { movie ->
-            FavoriteItemCard(
+            MediaItemCard(
                 item = movie,
-                cardWidth = cardWidth,
                 onClick = { onItemClick(movie) }
             )
         }
@@ -217,17 +228,13 @@ private fun FavoriteShowsRow(
     shows: List<AfinityShow>,
     onItemClick: (AfinityItem) -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val cardWidth = (configuration.screenWidthDp.dp - 56.dp) / 3.5f
-
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp)
     ) {
         items(shows) { show ->
-            FavoriteItemCard(
+            MediaItemCard(
                 item = show,
-                cardWidth = cardWidth,
                 onClick = { onItemClick(show) }
             )
         }
@@ -244,7 +251,7 @@ private fun FavoriteEpisodesRow(
 
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp)
     ) {
         items(episodes) { episode ->
             FavoriteEpisodeCard(
@@ -263,7 +270,7 @@ private fun FavoritePeopleRow(
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp)
     ) {
         items(people) { person ->
             FavoritePersonCard(
@@ -272,19 +279,6 @@ private fun FavoritePeopleRow(
             )
         }
     }
-}
-
-@Composable
-private fun FavoriteItemCard(
-    item: AfinityItem,
-    cardWidth: androidx.compose.ui.unit.Dp,
-    onClick: () -> Unit
-) {
-    MediaItemCard(
-        item = item,
-        onClick = onClick,
-        modifier = Modifier.width(cardWidth),
-    )
 }
 
 @Composable

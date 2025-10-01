@@ -327,7 +327,9 @@ fun MainNavigation(
                         val route = Destination.createPersonRoute(personId)
                         navController.navigate(route)
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = innerPadding.calculateBottomPadding())
                 )
             }
             composable(Destination.SEARCH_ROUTE) {
