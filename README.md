@@ -72,8 +72,8 @@ Download the latest APK from our [Releases page](https://github.com/MakD/AFinity
 #### From Source
 
 ```bash
-git clone https://github.com/MakD/AFinity-YAJC.git
-cd AFinity-YAJC
+git clone https://github.com/MakD/AFinity.git
+cd AFinity
 ./gradlew assembleRelease
 ```
 
