@@ -3,55 +3,81 @@ name: Discord Release Notification
 on:
   release:
     types: [published]
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Get Release Information
+        id: get_release
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            # Use event data for automatic triggers
+            echo "RELEASE_NAME=${{ github.event.release.name }}" >> $GITHUB_ENV
+            echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+            echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
+            echo "${{ github.event.release.body }}" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            echo "RELEASE_URL=${{ github.event.release.html_url }}" >> $GITHUB_ENV
+            echo "RELEASE_AUTHOR=${{ github.event.release.author.login }}" >> $GITHUB_ENV
+            echo "RELEASE_AUTHOR_AVATAR=${{ github.event.release.author.avatar_url }}" >> $GITHUB_ENV
+            echo "ASSETS<<EOF" >> $GITHUB_ENV
+            echo '${{ toJson(github.event.release.assets) }}' | jq -r 'map("[\(.name)](\(.browser_download_url))") | join("\n")' >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          else
+            # Fetch latest release data for manual triggers
+            RELEASE_DATA=$(curl -s -H "Authorization: token ${{ github.token }}" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+            
+            echo "RELEASE_NAME=$(echo "$RELEASE_DATA" | jq -r '.name')" >> $GITHUB_ENV
+            echo "RELEASE_TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')" >> $GITHUB_ENV
+            echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
+            echo "$RELEASE_DATA" | jq -r '.body' >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            echo "RELEASE_URL=$(echo "$RELEASE_DATA" | jq -r '.html_url')" >> $GITHUB_ENV
+            echo "RELEASE_AUTHOR=$(echo "$RELEASE_DATA" | jq -r '.author.login')" >> $GITHUB_ENV
+            echo "RELEASE_AUTHOR_AVATAR=$(echo "$RELEASE_DATA" | jq -r '.author.avatar_url')" >> $GITHUB_ENV
+            echo "ASSETS<<EOF" >> $GITHUB_ENV
+            echo "$RELEASE_DATA" | jq -r '.assets | map("[\(.name)](\(.browser_download_url))") | join("\n")' >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+          
       - name: Send Discord Notification
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          # Extract release information
-          RELEASE_NAME="${{ github.event.release.name }}"
-          RELEASE_TAG="${{ github.event.release.tag_name }}"
-          RELEASE_BODY="${{ github.event.release.body }}"
-          RELEASE_URL="${{ github.event.release.html_url }}"
-          RELEASE_AUTHOR="${{ github.event.release.author.login }}"
-          RELEASE_AUTHOR_AVATAR="${{ github.event.release.author.avatar_url }}"
           REPO_NAME="${{ github.repository }}"
-          REPO_URL="${{ github.event.repository.html_url }}"
+          REPO_URL="https://github.com/${{ github.repository }}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           
-          # Get download assets
-          ASSETS=$(echo '${{ toJson(github.event.release.assets) }}' | jq -r 'map("[\(.name)](\(.browser_download_url))") | join("\n")')
-          
-          # If no assets, set a message
+          # Get assets or set default message
+          ASSETS="${{ env.ASSETS }}"
           if [ -z "$ASSETS" ]; then
             ASSETS="No downloadable assets"
           fi
           
           # Escape special characters for JSON
-          RELEASE_BODY_ESCAPED=$(echo "$RELEASE_BODY" | jq -Rs .)
+          RELEASE_BODY_ESCAPED=$(echo "${{ env.RELEASE_BODY }}" | jq -Rs .)
           ASSETS_ESCAPED=$(echo "$ASSETS" | jq -Rs .)
           
           # Create Discord embed JSON
           DISCORD_PAYLOAD=$(cat <<EOF
           {
             "embeds": [{
-              "title": "🚀 New Release: $RELEASE_NAME",
+              "title": "🚀 New Release: ${{ env.RELEASE_NAME }}",
               "description": $RELEASE_BODY_ESCAPED,
-              "url": "$RELEASE_URL",
+              "url": "${{ env.RELEASE_URL }}",
               "color": 3066993,
               "fields": [
                 {
                   "name": "📦 Version",
-                  "value": "\`$RELEASE_TAG\`",
+                  "value": "\`${{ env.RELEASE_TAG }}\`",
                   "inline": true
                 },
                 {
                   "name": "👤 Author",
-                  "value": "[$RELEASE_AUTHOR](https://github.com/$RELEASE_AUTHOR)",
+                  "value": "[${{ env.RELEASE_AUTHOR }}](https://github.com/${{ env.RELEASE_AUTHOR }})",
                   "inline": true
                 },
                 {
@@ -66,9 +92,9 @@ jobs:
                 }
               ],
               "author": {
-                "name": "$RELEASE_AUTHOR",
-                "icon_url": "$RELEASE_AUTHOR_AVATAR",
-                "url": "https://github.com/$RELEASE_AUTHOR"
+                "name": "${{ env.RELEASE_AUTHOR }}",
+                "icon_url": "${{ env.RELEASE_AUTHOR_AVATAR }}",
+                "url": "https://github.com/${{ env.RELEASE_AUTHOR }}"
               },
               "timestamp": "$TIMESTAMP",
               "footer": {
