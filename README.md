@@ -131,13 +131,13 @@ For remote access, ensure your Jellyfin server is configured for external connec
 - [ ] Picture-in-picture mode
 - [ ] Advanced subtitle styling options
 - [ ] Audio delay adjustment
-- [ ] Playback speed controls
+- [X] Playback speed controls
 
 ### UI/UX Improvements
 
 - [ ] Tablet-optimized layouts
-- [ ] Advanced search filters
-- [ ] Custom library views
+- [X] Advanced search filters
+- [X] Custom library views
 - [ ] Gesture customization
 
 ### Technical
