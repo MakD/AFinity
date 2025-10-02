@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.ContinueWatchingCard
 
@@ -18,6 +19,9 @@ fun NextUpSection(
     onEpisodeClick: (AfinityEpisode) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val configuration = LocalConfiguration.current
+    val cardWidth = (configuration.screenWidthDp.dp - 28.dp - 12.dp) / 2f
+    val fixedRowHeight = (cardWidth / (16f / 9f)) + 8.dp + 20.dp + 22.dp
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
@@ -31,6 +35,7 @@ fun NextUpSection(
         )
 
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {

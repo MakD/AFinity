@@ -281,4 +281,12 @@ object FieldSets {
         ItemFields.CHILD_COUNT,
         ItemFields.RECURSIVE_ITEM_COUNT
     )
+    /**
+     * CACHE_NEXT_UP - Full refresh of next up cache
+     * Includes extra metadata for comprehensive caching
+     */
+    val CACHE_NEXT_UP = listOf(
+        ItemFields.OVERVIEW,
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
+    )
 }

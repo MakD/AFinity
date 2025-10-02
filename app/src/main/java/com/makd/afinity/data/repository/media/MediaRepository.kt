@@ -21,6 +21,7 @@ interface MediaRepository {
 
     suspend fun invalidateContinueWatchingCache()
     suspend fun invalidateLatestMediaCache()
+    suspend fun invalidateNextUpCache()
     suspend fun invalidateAllCaches()
     suspend fun invalidateItemCache(itemId: UUID)
 

@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityRecommendationCategory
@@ -20,6 +21,9 @@ fun OptimizedContinueWatchingSection(
     onItemClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val configuration = LocalConfiguration.current
+    val cardWidth = (configuration.screenWidthDp.dp - 28.dp - 12.dp) / 2f
+    val fixedRowHeight = (cardWidth / (16f / 9f)) + 8.dp + 20.dp + 22.dp
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
@@ -33,6 +37,7 @@ fun OptimizedContinueWatchingSection(
         )
 
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {

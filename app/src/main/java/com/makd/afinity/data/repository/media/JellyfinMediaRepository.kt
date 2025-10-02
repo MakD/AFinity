@@ -53,6 +53,9 @@ class JellyfinMediaRepository @Inject constructor(
                 if (freshItem != null) {
                     updateItemInCache(_continueWatching, freshItem)
                     updateItemInCache(_latestMedia, freshItem)
+                    if (freshItem is AfinityEpisode) {
+                        updateEpisodeInNextUpCache(freshItem)
+                    }
                     Timber.d("Successfully refreshed UserData for item: ${freshItem.name} (${freshItem.id})")
                     Timber.d("- Played: ${freshItem.played}")
                     Timber.d("- Progress: ${(freshItem.playbackPositionTicks.toFloat() / freshItem.runtimeTicks * 100f)}%")
@@ -101,6 +104,31 @@ class JellyfinMediaRepository @Inject constructor(
         }
 
         cache.value = currentList
+    }
+
+    private fun updateEpisodeInNextUpCache(updatedEpisode: AfinityEpisode) {
+        val currentList = _nextUp.value.toMutableList()
+        val existingIndex = currentList.indexOfFirst { it.id == updatedEpisode.id }
+
+        when {
+            updatedEpisode.played -> {
+                if (existingIndex != -1) {
+                    currentList.removeAt(existingIndex)
+                    Timber.d("Removed completed episode from next up: ${updatedEpisode.name}")
+                }
+            }
+
+            existingIndex != -1 -> {
+                currentList[existingIndex] = updatedEpisode
+                Timber.d("Updated episode in next up: ${updatedEpisode.name}")
+            }
+
+            else -> {
+                // Episode not in next up, don't add it here
+            }
+        }
+
+        _nextUp.value = currentList
     }
 
     override suspend fun invalidateContinueWatchingCache() {
@@ -159,10 +187,38 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
+    override suspend fun invalidateNextUpCache() {
+        withContext(Dispatchers.IO) {
+            try {
+                val userId = getCurrentUserId() ?: return@withContext
+                val tvShowsApi = TvShowsApi(apiClient)
+                val response = tvShowsApi.getNextUp(
+                    userId = userId,
+                    limit = 16,
+                    fields = FieldSets.CACHE_NEXT_UP,
+                    enableImages = true,
+                    enableUserData = true,
+                    enableResumable = false,
+                    enableRewatching = false
+                )
+
+                val nextUpEpisodes = response.content?.items?.mapNotNull { baseItemDto ->
+                    baseItemDto.toAfinityEpisode(getBaseUrl())
+                } ?: emptyList()
+
+                _nextUp.value = nextUpEpisodes
+                Timber.d("Full refresh of next up cache completed")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh next up cache")
+            }
+        }
+    }
+
     override suspend fun invalidateAllCaches() {
         Timber.d("Full cache invalidation requested - refreshing all caches")
         invalidateContinueWatchingCache()
         invalidateLatestMediaCache()
+        invalidateNextUpCache()
     }
 
     override suspend fun invalidateItemCache(itemId: UUID) {

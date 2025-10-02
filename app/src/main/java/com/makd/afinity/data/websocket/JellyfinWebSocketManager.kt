@@ -152,6 +152,7 @@ class JellyfinWebSocketManager @Inject constructor(
             if (itemId != null) {
                 Timber.d("User data changed for item: $itemId")
                 mediaRepository.invalidateItemCache(itemId)
+                mediaRepository.invalidateNextUpCache()
             }
         }
     }
