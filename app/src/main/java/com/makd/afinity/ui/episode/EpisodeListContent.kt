@@ -57,6 +57,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -104,7 +106,7 @@ import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 @Composable
 fun EpisodeListContent(
     season: AfinitySeason,
-    episodes: List<AfinityEpisode>,
+    lazyEpisodeItems: LazyPagingItems<AfinityEpisode>,
     specialFeatures: List<AfinityItem>,
     isLoading: Boolean,
     onBackClick: () -> Unit,
@@ -150,18 +152,46 @@ fun EpisodeListContent(
             )
         }
 
+        if (lazyEpisodeItems.loadState.refresh is LoadState.Loading) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+
         items(
-            items = episodes,
-            key = { episode -> episode.id }
-        ) { episode ->
-            EpisodeCard(
-                episode = episode,
-                onClick = { onEpisodeClick(episode) },
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .offset(y = (-110).dp)
-                    .padding(bottom = 16.dp)
-            )
+            count = lazyEpisodeItems.itemCount,
+            key = { index -> lazyEpisodeItems[index]?.id ?: index }
+        ) { index ->
+            lazyEpisodeItems[index]?.let { episode ->
+                EpisodeCard(
+                    episode = episode,
+                    onClick = { onEpisodeClick(episode) },
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .offset(y = (-110).dp)
+                        .padding(bottom = 16.dp)
+                )
+            }
+        }
+
+        if (lazyEpisodeItems.loadState.append is LoadState.Loading) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                }
+            }
         }
 
         item {

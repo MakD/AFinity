@@ -49,7 +49,9 @@ object FieldSets {
      * All metadata shown (year, ratings) are base properties
      */
     val MEDIA_ITEM_CARDS = listOf(
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+        ItemFields.CHILD_COUNT,
+        ItemFields.RECURSIVE_ITEM_COUNT
     )
 
     /**

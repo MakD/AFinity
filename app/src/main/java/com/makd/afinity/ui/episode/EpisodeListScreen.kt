@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -25,11 +26,13 @@ fun EpisodeListScreen(
     viewModel: EpisodeListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val episodesPagingDataFlow by viewModel.episodesPagingData.collectAsStateWithLifecycle()
+    val lazyEpisodeItems = episodesPagingDataFlow.collectAsLazyPagingItems()
 
     uiState.season?.let { season ->
         EpisodeListContent(
             season = season,
-            episodes = uiState.episodes,
+            lazyEpisodeItems = lazyEpisodeItems,
             specialFeatures = uiState.specialFeatures,
             isLoading = uiState.isLoading,
             onBackClick = onBackClick,

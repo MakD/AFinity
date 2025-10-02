@@ -53,6 +53,7 @@ import com.makd.afinity.ui.player.PlayerScreenWrapper
 import com.makd.afinity.ui.search.SearchScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.settings.SettingsScreen
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.UUID
 import timber.log.Timber
 
@@ -66,6 +67,7 @@ fun MainNavigation(
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val coroutineScope = rememberCoroutineScope()
 
     if (appLoadingState.isLoading) {
         AppSplashScreen(
@@ -161,14 +163,27 @@ fun MainNavigation(
                         navController.navigate(route)
                     },
                     onPlayClick = { item ->
-                        val route = Destination.createPlayerRoute(
-                            itemId = item.id.toString(),
-                            mediaSourceId = item.sources.firstOrNull()?.id ?: "",
-                            startPositionMs = if (item.playbackPositionTicks > 0) {
-                                item.playbackPositionTicks / 10000
-                            } else 0L
-                        )
-                        navController.navigate(route)
+                        coroutineScope.launch {
+                            try {
+                                val playableItem = viewModel.resolvePlayableItem(item)
+
+                                if (playableItem == null) {
+                                    Timber.w("Could not resolve playable item for: ${item.name}")
+                                    return@launch
+                                }
+
+                                val route = Destination.createPlayerRoute(
+                                    itemId = playableItem.id.toString(),
+                                    mediaSourceId = playableItem.sources.firstOrNull()?.id ?: "",
+                                    startPositionMs = if (playableItem.playbackPositionTicks > 0) {
+                                        playableItem.playbackPositionTicks / 10000
+                                    } else 0L
+                                )
+                                navController.navigate(route)
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to handle play click for: ${item.name}")
+                            }
+                        }
                     },
                     onProfileClick = {
                         val route = Destination.createSettingsRoute()

@@ -2,7 +2,10 @@ package com.makd.afinity.navigation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -15,7 +18,8 @@ import kotlinx.coroutines.flow.stateIn
 @HiltViewModel
 class MainNavigationViewModel @Inject constructor(
     private val appDataRepository: AppDataRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val jellyfinRepository: JellyfinRepository
 ) : ViewModel() {
 
     val appLoadingState = combine(
@@ -68,6 +72,23 @@ class MainNavigationViewModel @Inject constructor(
 
     fun retry() {
         loadAppData()
+    }
+
+    suspend fun resolvePlayableItem(item: AfinityItem): AfinityItem? {
+        return try {
+            if (item is AfinityShow) {
+                val episode = jellyfinRepository.getEpisodeToPlay(item.id)
+                if (episode == null) {
+                    Timber.w("No episode found to play for series: ${item.name}")
+                }
+                episode
+            } else {
+                item
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to resolve playable item for: ${item.name}")
+            null
+        }
     }
 }
 

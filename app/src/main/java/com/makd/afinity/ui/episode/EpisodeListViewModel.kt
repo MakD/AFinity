@@ -3,6 +3,13 @@ package com.makd.afinity.ui.episode
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.makd.afinity.data.paging.EpisodesPagingSource
+import com.makd.afinity.data.repository.media.MediaRepository
+import kotlinx.coroutines.flow.Flow
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinitySeason
@@ -21,6 +28,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EpisodeListViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
+    private val mediaRepository: MediaRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -33,11 +41,28 @@ class EpisodeListViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(EpisodeListUiState())
     val uiState: StateFlow<EpisodeListUiState> = _uiState.asStateFlow()
 
+    private val _episodesPagingData = MutableStateFlow<Flow<PagingData<AfinityEpisode>>>(
+        Pager(
+            config = PagingConfig(
+                pageSize = 50,
+                enablePlaceholders = false,
+                initialLoadSize = 50
+            )
+        ) {
+            EpisodesPagingSource(
+                mediaRepository = mediaRepository,
+                seasonId = seasonId,
+                seriesId = UUID.randomUUID()
+            )
+        }.flow.cachedIn(viewModelScope)
+    )
+    val episodesPagingData: StateFlow<Flow<PagingData<AfinityEpisode>>> = _episodesPagingData.asStateFlow()
+
     init {
-        loadEpisodes()
+        loadSeasonData()
     }
 
-    private fun loadEpisodes() {
+    private fun loadSeasonData() {
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
@@ -53,61 +78,58 @@ class EpisodeListViewModel @Inject constructor(
                     return@launch
                 }
 
-                val rawEpisodes = jellyfinRepository.getEpisodes(seasonId, seriesId)
+                val firstEpisode = jellyfinRepository.getEpisodes(seasonId, seriesId, null).firstOrNull()
 
-                val episodes = rawEpisodes.mapNotNull { episode ->
-                    try {
-                        val fullEpisode = jellyfinRepository.getItemById(episode.id) as? AfinityEpisode
-                        if (fullEpisode != null) {
-                            Timber.d("Loaded episode with ${fullEpisode.sources.size} sources: ${fullEpisode.name}")
-                            fullEpisode
-                        } else {
-                            Timber.w("Could not load full episode details for: ${episode.name}")
-                            episode
-                        }
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to load full details for episode ${episode.name}")
-                        episode
-                    }
-                }
-
-                val season = seasonData.copy(
+                val season = AfinitySeason(
                     id = seasonId,
                     name = seasonName.replace("%2F", "/"),
-                    seriesId = episodes.firstOrNull()?.seriesId ?: UUID.randomUUID(),
-                    seriesName = episodes.firstOrNull()?.seriesName ?: "",
-                    originalTitle = null,
-                    overview = "",
+                    seriesId = seriesId,
+                    seriesName = firstEpisode?.seriesName ?: "",
+                    originalTitle = seasonData?.originalTitle,
+                    overview = seasonData?.overview ?: "",
                     sources = emptyList(),
-                    indexNumber = episodes.firstOrNull()?.parentIndexNumber ?: 1,
-                    episodes = episodes,
-                    episodeCount = episodes.size,
-                    productionYear = null,
-                    premiereDate = episodes.minByOrNull { it.indexNumber }?.premiereDate,
-                    played = episodes.all { it.played },
-                    favorite = false,
+                    indexNumber = firstEpisode?.parentIndexNumber ?: 1,
+                    episodes = emptyList(),
+                    episodeCount = seasonData?.episodeCount ?: 0,
+                    productionYear = seasonData?.productionYear,
+                    premiereDate = seasonData?.premiereDate,
+                    played = seasonData?.played ?: false,
+                    favorite = seasonData?.favorite ?: false,
                     canPlay = true,
                     canDownload = false,
-                    unplayedItemCount = episodes.count { !it.played },
-                    images = episodes.firstOrNull()?.images ?: AfinityImages(),
+                    unplayedItemCount = seasonData?.unplayedItemCount,
+                    images = seasonData?.images ?: AfinityImages(),
                     chapters = emptyList(),
-                    providerIds = null,
-                    externalUrls = null
+                    providerIds = seasonData?.providerIds,
+                    externalUrls = seasonData?.externalUrls
                 )
 
                 _uiState.value = _uiState.value.copy(
                     season = season,
-                    episodes = episodes,
                     isLoading = false
                 )
+
+                _episodesPagingData.value = Pager(
+                    config = PagingConfig(
+                        pageSize = 50,
+                        enablePlaceholders = false,
+                        initialLoadSize = 50
+                    )
+                ) {
+                    EpisodesPagingSource(
+                        mediaRepository = mediaRepository,
+                        seasonId = seasonId,
+                        seriesId = seriesId
+                    )
+                }.flow.cachedIn(viewModelScope)
 
                 loadSpecialFeatures(seasonId)
 
             } catch (e: Exception) {
-                Timber.e(e, "Failed to load episodes for season: $seasonId")
+                Timber.e(e, "Failed to load season data: $seasonId")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Failed to load episodes: ${e.message}"
+                    error = "Failed to load season: ${e.message}"
                 )
             }
         }
@@ -140,7 +162,7 @@ class EpisodeListViewModel @Inject constructor(
 
 data class EpisodeListUiState(
     val season: AfinitySeason? = null,
-    val episodes: List<AfinityEpisode> = emptyList(),
+    //val episodes: List<AfinityEpisode> = emptyList(),
     val specialFeatures: List<AfinityItem> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
