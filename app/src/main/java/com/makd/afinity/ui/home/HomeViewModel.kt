@@ -2,6 +2,7 @@ package com.makd.afinity.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
@@ -43,6 +44,12 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             appDataRepository.continueWatching.collect { continueWatching ->
                 _uiState.value = _uiState.value.copy(continueWatching = continueWatching)
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.nextUp.collect { nextUp ->
+                _uiState.value = _uiState.value.copy(nextUp = nextUp)
             }
         }
 
@@ -117,6 +124,7 @@ class HomeViewModel @Inject constructor(
 data class HomeUiState(
     val latestMedia: List<AfinityItem> = emptyList(),
     val continueWatching: List<AfinityItem> = emptyList(),
+    val nextUp: List<AfinityEpisode> = emptyList(),
     val latestMovies: List<AfinityMovie> = emptyList(),
     val latestTvSeries: List<AfinityShow> = emptyList(),
     val highestRated: List<AfinityItem> = emptyList(),

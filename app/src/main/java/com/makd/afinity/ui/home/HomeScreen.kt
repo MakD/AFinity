@@ -55,6 +55,7 @@ import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.ui.home.components.NextUpSection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.R
 import java.time.LocalTime
@@ -177,6 +178,16 @@ fun HomeScreen(
                     item(key = "continue_watching_skeleton") {
                         Spacer(modifier = Modifier.height(24.dp))
                         ContinueWatchingSkeleton()
+                    }
+                }
+
+                if (uiState.nextUp.isNotEmpty()) {
+                    item(key = "next_up") {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        NextUpSection(
+                            episodes = uiState.nextUp,
+                            onEpisodeClick = onItemClick
+                        )
                     }
                 }
 

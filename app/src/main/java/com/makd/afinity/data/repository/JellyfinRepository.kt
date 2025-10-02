@@ -42,6 +42,8 @@ interface JellyfinRepository {
     suspend fun getPublicUsers(): List<User>
     suspend fun getUserProfileImageUrl(): String?
 
+    suspend fun getNextUp(limit: Int = 16): List<AfinityEpisode>
+    fun getNextUpFlow(): Flow<List<AfinityEpisode>>
     suspend fun getLibraries(): List<AfinityCollection>
     suspend fun getLatestMedia(
         parentId: UUID? = null,

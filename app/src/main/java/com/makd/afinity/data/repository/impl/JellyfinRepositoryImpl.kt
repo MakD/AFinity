@@ -30,6 +30,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.paging.JellyfinItemsPagingSource
+import com.makd.afinity.data.repository.FieldSets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
@@ -188,6 +189,15 @@ class JellyfinRepositoryImpl @Inject constructor(
             mediaRepository.getLatestMedia(parentId, limit)
         } catch (e: Exception) {
             Timber.e(e, "Failed to get latest media")
+            emptyList()
+        }
+    }
+
+    override suspend fun getNextUp(limit: Int): List<AfinityEpisode> {
+        return try {
+            mediaRepository.getNextUp(seriesId = null, limit = limit, fields = FieldSets.NEXT_UP, enableResumable = false)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get next up episodes")
             emptyList()
         }
     }
@@ -525,6 +535,10 @@ class JellyfinRepositoryImpl @Inject constructor(
 
     override fun getContinueWatchingFlow(): Flow<List<AfinityItem>> {
         return mediaRepository.getContinueWatchingFlow()
+    }
+
+    override fun getNextUpFlow(): Flow<List<AfinityEpisode>> {
+        return mediaRepository.getNextUpFlow()
     }
 
     override suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode? {

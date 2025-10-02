@@ -178,6 +178,9 @@ class JellyfinMediaRepository @Inject constructor(
     private val _continueWatching = MutableStateFlow<List<AfinityItem>>(emptyList())
     override val continueWatching: Flow<List<AfinityItem>> = _continueWatching.asStateFlow()
 
+    private val _nextUp = MutableStateFlow<List<AfinityEpisode>>(emptyList())
+    override val nextUp: Flow<List<AfinityEpisode>> = _nextUp.asStateFlow()
+
     private suspend fun getCurrentUserId(): UUID? = withContext(Dispatchers.IO) {
         return@withContext try {
             val userApi = UserApi(apiClient)
@@ -774,7 +777,8 @@ class JellyfinMediaRepository @Inject constructor(
     override suspend fun getNextUp(
         seriesId: UUID?,
         limit: Int,
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
+        enableResumable: Boolean
     ): List<AfinityEpisode> = withContext(Dispatchers.IO) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
@@ -785,12 +789,16 @@ class JellyfinMediaRepository @Inject constructor(
                 seriesId = seriesId,
                 limit = limit,
                 fields = fields ?: FieldSets.EPISODE_LIST,
+                enableResumable = enableResumable,
                 enableImages = true,
                 enableUserData = true
             )
-            response.content?.items?.mapNotNull { baseItem ->
+            val nextUpItems = response.content?.items?.mapNotNull { baseItem ->
                 baseItem.toAfinityEpisode(getBaseUrl())
             } ?: emptyList()
+
+            _nextUp.value = nextUpItems
+            nextUpItems
         } catch (e: Exception) {
             Timber.e(e, "Failed to get next up")
             emptyList()
@@ -961,6 +969,7 @@ class JellyfinMediaRepository @Inject constructor(
     override fun getLibrariesFlow(): Flow<List<AfinityCollection>> = libraries
     override fun getLatestMediaFlow(parentId: UUID?): Flow<List<AfinityItem>> = latestMedia
     override fun getContinueWatchingFlow(): Flow<List<AfinityItem>> = continueWatching
+    override fun getNextUpFlow(): Flow<List<AfinityEpisode>> = nextUp
 
     private fun SortBy.toJellyfinSortBy(): ItemSortBy {
         return when (this) {

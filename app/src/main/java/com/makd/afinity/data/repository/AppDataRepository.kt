@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.media.AfinityEpisode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +28,9 @@ class AppDataRepository @Inject constructor(
 
     private val _continueWatching = MutableStateFlow<List<AfinityItem>>(emptyList())
     val continueWatching: StateFlow<List<AfinityItem>> = _continueWatching.asStateFlow()
+
+    private val _nextUp = MutableStateFlow<List<AfinityEpisode>>(emptyList())
+    val nextUp: StateFlow<List<AfinityEpisode>> = _nextUp.asStateFlow()
 
     private val _libraries = MutableStateFlow<List<AfinityCollection>>(emptyList())
     val libraries: StateFlow<List<AfinityCollection>> = _libraries.asStateFlow()
@@ -72,6 +76,9 @@ class AppDataRepository @Inject constructor(
                 updateProgress(0.25f, "Loading your watchlist...")
                 val continueWatchingTask = async { loadContinueWatching() }
 
+                updateProgress(0.35f, "Finding next episodes...")
+                val nextUpTask = async { loadNextUp() }
+
                 updateProgress(0.4f, "Organizing libraries...")
                 val librariesTask = async { loadLibraries() }
 
@@ -85,6 +92,10 @@ class AppDataRepository @Inject constructor(
                 val continueWatching = continueWatchingTask.await()
                 _continueWatching.value = continueWatching
                 updateProgress(0.75f, "Watchlist loaded...")
+
+                val nextUp = nextUpTask.await()
+                _nextUp.value = nextUp
+                updateProgress(0.8f, "Next episodes loaded...")
 
                 val libraries = librariesTask.await()
                 _libraries.value = libraries
@@ -127,6 +138,12 @@ class AppDataRepository @Inject constructor(
                             item is AfinityMovie || item is AfinityShow
                         }
                         _latestMedia.value = filteredData
+                    }
+                }
+
+                launch {
+                    jellyfinRepository.getNextUpFlow().collect { liveData ->
+                        _nextUp.value = liveData
                     }
                 }
 
@@ -176,6 +193,15 @@ class AppDataRepository @Inject constructor(
             jellyfinRepository.getContinueWatching(limit = 12)
         } catch (e: Exception) {
             Timber.e(e, "Failed to load continue watching")
+            emptyList()
+        }
+    }
+
+    private suspend fun loadNextUp(): List<AfinityEpisode> {
+        return try {
+            jellyfinRepository.getNextUp(limit = 16)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load next up")
             emptyList()
         }
     }
@@ -298,6 +324,7 @@ class AppDataRepository @Inject constructor(
         Timber.d("Clearing all cached app data")
         _latestMedia.value = emptyList()
         _continueWatching.value = emptyList()
+        _nextUp.value = emptyList()
         _libraries.value = emptyList()
         _userProfileImageUrl.value = null
         _latestMovies.value = emptyList()

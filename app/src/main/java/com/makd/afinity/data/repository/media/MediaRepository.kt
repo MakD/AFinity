@@ -15,6 +15,9 @@ interface MediaRepository {
     val libraries: Flow<List<AfinityCollection>>
     val latestMedia: Flow<List<AfinityItem>>
     val continueWatching: Flow<List<AfinityItem>>
+    val nextUp: Flow<List<AfinityEpisode>>
+
+    fun getNextUpFlow(): Flow<List<AfinityEpisode>>
 
     suspend fun invalidateContinueWatchingCache()
     suspend fun invalidateLatestMediaCache()
@@ -128,7 +131,8 @@ interface MediaRepository {
     suspend fun getNextUp(
         seriesId: UUID? = null,
         limit: Int = 16,
-        fields: List<ItemFields>? = null
+        fields: List<ItemFields>? = null,
+        enableResumable: Boolean = true
     ): List<AfinityEpisode>
 
     suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem>

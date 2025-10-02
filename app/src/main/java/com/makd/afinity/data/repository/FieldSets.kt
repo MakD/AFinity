@@ -72,6 +72,25 @@ object FieldSets {
     )
 
     /**
+     * NEXT_UP - Next up episodes section (HomeScreen.kt, NextUpSection.kt)
+     *
+     * Displays:
+     * - Episode backdrop/thumbnail
+     * - Episode title (BASE PROPERTY)
+     * - Episode overview
+     * - Series name (BASE PROPERTY)
+     * - "Season X, Episode Y" (BASE PROPERTIES)
+     * - Air date (BASE PROPERTY)
+     *
+     * Fields needed: OVERVIEW, MEDIA_SOURCES (for playback)
+     * Note: Includes MEDIA_SOURCES since these are likely to be played immediately
+     */
+    val NEXT_UP = listOf(
+        ItemFields.OVERVIEW,
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
+    )
+
+    /**
      * LIBRARY_GRID - Full library browsing (LibraryContentScreen.kt)
      *
      * Displays:
@@ -179,8 +198,7 @@ object FieldSets {
      */
     val EPISODE_LIST = listOf(
         ItemFields.OVERVIEW,
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        ItemFields.MEDIA_SOURCES
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
     )
 
     /**

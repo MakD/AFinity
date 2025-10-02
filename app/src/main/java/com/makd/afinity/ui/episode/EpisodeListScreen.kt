@@ -15,6 +15,8 @@ import androidx.navigation.NavController
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.episode.EpisodeListContent
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @Composable
@@ -28,6 +30,7 @@ fun EpisodeListScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val episodesPagingDataFlow by viewModel.episodesPagingData.collectAsStateWithLifecycle()
     val lazyEpisodeItems = episodesPagingDataFlow.collectAsLazyPagingItems()
+    val coroutineScope = rememberCoroutineScope()
 
     uiState.season?.let { season ->
         EpisodeListContent(
@@ -37,24 +40,41 @@ fun EpisodeListScreen(
             isLoading = uiState.isLoading,
             onBackClick = onBackClick,
             onEpisodeClick = { episode ->
-                if (episode.sources.isEmpty()) {
-                    Timber.w("Episode ${episode.name} has no media sources")
-                    return@EpisodeListContent
+                coroutineScope.launch {
+                    try {
+                        Timber.d("Episode clicked: ${episode.name}, loading full details...")
+
+                        val fullEpisode = viewModel.getFullEpisodeDetails(episode.id)
+
+                        if (fullEpisode == null) {
+                            Timber.e("Failed to load full episode details for: ${episode.name}")
+                            return@launch
+                        }
+
+                        if (fullEpisode.sources.isEmpty()) {
+                            Timber.w("Episode ${fullEpisode.name} has no media sources")
+                            return@launch
+                        }
+
+                        val mediaSourceId = fullEpisode.sources.firstOrNull()?.id ?: ""
+                        val startPositionMs = if (fullEpisode.playbackPositionTicks > 0) {
+                            fullEpisode.playbackPositionTicks / 10000
+                        } else {
+                            0L
+                        }
+
+                        val route = Destination.createPlayerRoute(
+                            itemId = fullEpisode.id.toString(),
+                            mediaSourceId = mediaSourceId,
+                            audioStreamIndex = null,
+                            subtitleStreamIndex = null,
+                            startPositionMs = startPositionMs
+                        )
+                        navController.navigate(route)
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to load episode for playback: ${episode.name}")
+                    }
                 }
-                val mediaSourceId = episode.sources.firstOrNull()?.id ?: ""
-                val startPositionMs = if (episode.playbackPositionTicks > 0) {
-                    episode.playbackPositionTicks / 10000
-                } else {
-                    0L
-                }
-                val route = Destination.createPlayerRoute(
-                    itemId = episode.id.toString(),
-                    mediaSourceId = mediaSourceId,
-                    audioStreamIndex = null,
-                    subtitleStreamIndex = null,
-                    startPositionMs = startPositionMs
-                )
-                navController.navigate(route)
             },
             onSpecialFeatureClick = { specialFeature ->
                 val route = Destination.createItemDetailRoute(specialFeature.id.toString())

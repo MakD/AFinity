@@ -15,6 +15,8 @@ import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -155,6 +157,17 @@ class EpisodeListViewModel @Inject constructor(
             jellyfinRepository.getCurrentUser()?.id
         } catch (e: Exception) {
             Timber.e(e, "Failed to get current user ID")
+            null
+        }
+    }
+
+    suspend fun getFullEpisodeDetails(episodeId: UUID): AfinityEpisode? {
+        return try {
+            Timber.d("Fetching full episode details with media sources for: $episodeId")
+            val baseItemDto = jellyfinRepository.getItem(episodeId, fields = FieldSets.PLAYER)
+            baseItemDto?.toAfinityEpisode(jellyfinRepository.getBaseUrl())
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get full episode details for: $episodeId")
             null
         }
     }
