@@ -179,7 +179,8 @@ object FieldSets {
      */
     val EPISODE_LIST = listOf(
         ItemFields.OVERVIEW,
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+        ItemFields.MEDIA_SOURCES
     )
 
     /**
