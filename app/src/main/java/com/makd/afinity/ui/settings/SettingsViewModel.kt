@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -57,12 +58,14 @@ class SettingsViewModel @Inject constructor(
                 val autoPlay = preferencesRepository.getAutoPlay()
                 val skipIntro = preferencesRepository.getSkipIntroEnabled()
                 val skipOutro = preferencesRepository.getSkipOutroEnabled()
+                val useExoPlayer = preferencesRepository.useExoPlayer.first()
 
                 _uiState.value = _uiState.value.copy(
                     dynamicColors = dynamicColors,
                     autoPlay = autoPlay,
                     skipIntroEnabled = skipIntro,
-                    skipOutroEnabled = skipOutro
+                    skipOutroEnabled = skipOutro,
+                    useExoPlayer = useExoPlayer
                 )
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load settings")
@@ -102,6 +105,18 @@ class SettingsViewModel @Inject constructor(
                 Timber.d("Auto-play set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle auto-play")
+            }
+        }
+    }
+
+    fun toggleUseExoPlayer(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setUseExoPlayer(enabled)
+                _uiState.value = _uiState.value.copy(useExoPlayer = enabled)
+                Timber.d("Use ExoPlayer set to: $enabled")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle use exoplayer")
             }
         }
     }
@@ -163,6 +178,7 @@ data class SettingsUiState(
     val autoPlay: Boolean = true,
     val skipIntroEnabled: Boolean = true,
     val skipOutroEnabled: Boolean = true,
+    val useExoPlayer: Boolean = true,
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,
     val error: String? = null

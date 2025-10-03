@@ -172,14 +172,23 @@ fun MainNavigation(
                                     return@launch
                                 }
 
-                                val route = Destination.createPlayerRoute(
+                                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                    context = navController.context,
+                                    itemId = playableItem.id,
+                                    mediaSourceId = playableItem.sources.firstOrNull()?.id ?: "",
+                                    audioStreamIndex = null,
+                                    subtitleStreamIndex = null,
+                                    startPositionMs = 0L
+                                )
+
+                                /*val route = Destination.createPlayerRoute(
                                     itemId = playableItem.id.toString(),
                                     mediaSourceId = playableItem.sources.firstOrNull()?.id ?: "",
                                     startPositionMs = if (playableItem.playbackPositionTicks > 0) {
                                         playableItem.playbackPositionTicks / 10000
                                     } else 0L
                                 )
-                                navController.navigate(route)
+                                navController.navigate(route)*/
                             } catch (e: Exception) {
                                 Timber.e(e, "Failed to handle play click for: ${item.name}")
                             }
@@ -249,14 +258,14 @@ fun MainNavigation(
                 ItemDetailScreen(
                     navController = navController,
                     onPlayClick = { item, selection ->
-                        val route = Destination.createPlayerRoute(
-                            itemId = item.id.toString(),
+                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                            context = navController.context,
+                            itemId = item.id,
                             mediaSourceId = selection?.mediaSourceId ?: item.sources.firstOrNull()?.id ?: "",
                             audioStreamIndex = selection?.audioStreamIndex,
                             subtitleStreamIndex = selection?.subtitleStreamIndex,
                             startPositionMs = selection?.startPositionMs ?: 0L
                         )
-                        navController.navigate(route)
                     },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -293,7 +302,7 @@ fun MainNavigation(
                 )
             }
 
-            composable(
+            /*composable(
                 route = Destination.PLAYER_ROUTE,
                 arguments = listOf(
                     navArgument("itemId") { type = NavType.StringType },
@@ -331,7 +340,7 @@ fun MainNavigation(
                         navController.popBackStack()
                     }
                 )
-            }
+            }*/
             composable(Destination.FAVORITES.route) {
                 FavoritesScreen(
                     onItemClick = { item ->

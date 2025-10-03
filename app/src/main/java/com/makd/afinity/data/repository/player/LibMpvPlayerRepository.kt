@@ -23,8 +23,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@Singleton
-class LibMpvPlayerRepository @Inject constructor(
+class LibMpvPlayerRepository constructor(
     @ApplicationContext private val context: Context,
     private val playbackRepository: PlaybackRepository,
     private val apiClient: org.jellyfin.sdk.api.client.ApiClient

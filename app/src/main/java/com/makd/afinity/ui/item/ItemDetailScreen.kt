@@ -307,14 +307,14 @@ private fun ItemDetailContent(
                                                     0L
                                                 }
                                             )
-                                            val route = Destination.createPlayerRoute(
-                                                itemId = episode.id.toString(),
+                                            com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                context = navController.context,
+                                                itemId = episode.id,
                                                 mediaSourceId = finalSelection.mediaSourceId,
                                                 audioStreamIndex = finalSelection.audioStreamIndex,
                                                 subtitleStreamIndex = finalSelection.subtitleStreamIndex,
                                                 startPositionMs = finalSelection.startPositionMs
                                             )
-                                            navController.navigate(route)
                                         }
                                     )
                                 }
@@ -353,14 +353,14 @@ private fun ItemDetailContent(
                                     val finalSelection = selection.copy(
                                         mediaSourceId = selectedMediaSource?.id ?: selection.mediaSourceId
                                     )
-                                    val route = Destination.createPlayerRoute(
-                                        itemId = item.id.toString(),
+                                    com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                        context = navController.context,
+                                        itemId = item.id,
                                         mediaSourceId = finalSelection.mediaSourceId,
                                         audioStreamIndex = finalSelection.audioStreamIndex,
                                         subtitleStreamIndex = finalSelection.subtitleStreamIndex,
                                         startPositionMs = finalSelection.startPositionMs
                                     )
-                                    navController.navigate(route)
                                 }
                             )
                         }
@@ -475,14 +475,14 @@ private fun ItemDetailContent(
                             } else {
                                 0L
                             }
-                            val route = Destination.createPlayerRoute(
-                                itemId = clickedEpisode.id.toString(),
+                            com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                context = navController.context,
+                                itemId = clickedEpisode.id,
                                 mediaSourceId = mediaSourceId,
                                 audioStreamIndex = null,
                                 subtitleStreamIndex = null,
                                 startPositionMs = startPositionMs
                             )
-                            navController.navigate(route)
                         },
                         onSpecialFeatureClick = { specialFeature ->
                             val route = Destination.createItemDetailRoute(specialFeature.id.toString())

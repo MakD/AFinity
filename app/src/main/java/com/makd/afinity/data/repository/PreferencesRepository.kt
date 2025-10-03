@@ -37,6 +37,9 @@ interface PreferencesRepository {
     suspend fun setSkipOutroEnabled(enabled: Boolean)
     suspend fun getSkipOutroEnabled(): Boolean
 
+    val useExoPlayer: Flow<Boolean>
+    suspend fun setUseExoPlayer(value: Boolean)
+
     suspend fun setDarkTheme(enabled: Boolean)
     suspend fun getDarkTheme(): Boolean
     fun getDarkThemeFlow(): Flow<Boolean>

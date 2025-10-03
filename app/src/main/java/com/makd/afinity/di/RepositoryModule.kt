@@ -88,28 +88,11 @@ abstract class RepositoryModule {
         preferencesRepositoryImpl: PreferencesRepositoryImpl
     ): PreferencesRepository
 
-    @Binds
-    @Singleton
-    abstract fun bindPlayerRepository(
-        libMpvPlayerRepository: LibMpvPlayerRepository
-    ): PlayerRepository
-
     companion object {
         @Provides
         @Singleton
         fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
             return context.dataStore
-        }
-
-        @Provides
-        @Singleton
-        fun providePlaybackStateManager(
-            playerRepository: PlayerRepository,
-            mediaRepository: MediaRepository
-        ): PlaybackStateManager {
-            val manager = PlaybackStateManager(playerRepository, mediaRepository)
-            manager.initialize()
-            return manager
         }
 
         @Provides

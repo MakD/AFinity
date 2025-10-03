@@ -25,7 +25,7 @@ fun PlayerScreenWrapper(
     val item by viewModel.item.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    PlayerOrientationController()
+    //PlayerOrientationController()
 
     LaunchedEffect(itemId) {
         viewModel.loadItem(itemId)

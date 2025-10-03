@@ -63,14 +63,14 @@ fun EpisodeListScreen(
                             0L
                         }
 
-                        val route = Destination.createPlayerRoute(
-                            itemId = fullEpisode.id.toString(),
+                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                            context = navController.context,
+                            itemId = fullEpisode.id,
                             mediaSourceId = mediaSourceId,
                             audioStreamIndex = null,
                             subtitleStreamIndex = null,
                             startPositionMs = startPositionMs
                         )
-                        navController.navigate(route)
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to load episode for playback: ${episode.name}")
                     }
