@@ -98,11 +98,11 @@ class ExoPlayerRepository constructor(
         startPositionMs: Long
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            if (player == null) {
+            /*if (player == null) {
                 withContext(Dispatchers.Main) {
                     initializePlayer()
                 }
-            }
+            }*/
             currentItem = item
 
             updateState {
@@ -187,6 +187,8 @@ class ExoPlayerRepository constructor(
 
             withContext(Dispatchers.Main) {
                 player?.apply {
+                    stop()
+                    clearMediaItems()
                     setMediaItems(
                         listOf(mediaItem),
                         0,
@@ -432,13 +434,14 @@ class ExoPlayerRepository constructor(
             reportPlaybackStopWithPosition(currentPosition)
             withContext(Dispatchers.Main) {
                 positionUpdateJob?.cancel()
-                player?.removeListener(this@ExoPlayerRepository)
-                player?.release()
-                player = null
+                player?.pause()
+                //player?.removeListener(this@ExoPlayerRepository)
+                //player?.release()
+                //player = null
             }
         }
 
-        scope.cancel()
+        //scope.cancel()
     }
 
     private suspend fun reportPlaybackStopWithPosition(position: Long) {
