@@ -34,6 +34,8 @@ import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 
+
+@androidx.media3.common.util.UnstableApi
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -83,9 +85,17 @@ class PlayerViewModel @Inject constructor(
                 }
             }
         }
-        if (playerRepository is com.makd.afinity.data.repository.player.LibMpvPlayerRepository) {
-            playerRepository.setOnPlaybackCompleted { completedItem ->
-                handlePlaybackCompleted(completedItem)
+
+        when (val repo = playerRepository) {
+            is com.makd.afinity.data.repository.player.LibMpvPlayerRepository -> {
+                repo.setOnPlaybackCompleted { completedItem ->
+                    handlePlaybackCompleted(completedItem)
+                }
+            }
+            is com.makd.afinity.data.repository.player.ExoPlayerRepository -> {
+                repo.setOnPlaybackCompleted { completedItem ->
+                    handlePlaybackCompleted(completedItem)
+                }
             }
         }
     }

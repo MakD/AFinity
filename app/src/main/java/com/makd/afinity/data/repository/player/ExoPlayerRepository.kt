@@ -73,6 +73,7 @@ class ExoPlayerRepository constructor(
                 .apply {
                     addListener(this@ExoPlayerRepository)
                 }
+            startPositionUpdates()
 
             Timber.d("ExoPlayer initialized successfully")
         } catch (e: Exception) {
@@ -97,6 +98,11 @@ class ExoPlayerRepository constructor(
         startPositionMs: Long
     ): Boolean = withContext(Dispatchers.IO) {
         try {
+            if (player == null) {
+                withContext(Dispatchers.Main) {
+                    initializePlayer()
+                }
+            }
             currentItem = item
 
             updateState {
@@ -106,7 +112,9 @@ class ExoPlayerRepository constructor(
                     currentItem = item,
                     mediaSourceId = mediaSourceId,
                     audioStreamIndex = audioStreamIndex,
-                    subtitleStreamIndex = subtitleStreamIndex
+                    subtitleStreamIndex = subtitleStreamIndex,
+                    currentPosition = 0L,
+                    duration = 0L
                 )
             }
 
@@ -179,8 +187,11 @@ class ExoPlayerRepository constructor(
 
             withContext(Dispatchers.Main) {
                 player?.apply {
-                    setMediaItem(mediaItem)
-                    seekTo(startPositionMs)
+                    setMediaItems(
+                        listOf(mediaItem),
+                        0,
+                        startPositionMs
+                    )
                     prepare()
                     playWhenReady = true
                 }
@@ -222,8 +233,26 @@ class ExoPlayerRepository constructor(
     }
 
     override suspend fun stop() = withContext(Dispatchers.Main) {
-        player?.stop()
         stopPlaybackReporting()
+    }
+
+    private var positionUpdateJob: Job? = null
+
+    private fun startPositionUpdates() {
+        positionUpdateJob?.cancel()
+        positionUpdateJob = scope.launch {
+            while (isActive) {
+                val position = player?.currentPosition ?: 0
+                val duration = player?.duration ?: 0
+                updateState {
+                    it.copy(
+                        currentPosition = position,
+                        duration = duration
+                    )
+                }
+                delay(100)
+            }
+        }
     }
 
     override suspend fun seekTo(positionMs: Long): Unit = withContext(Dispatchers.Main) {
@@ -359,19 +388,27 @@ class ExoPlayerRepository constructor(
         val position = player?.currentPosition ?: 0
 
         try {
+            Timber.d("=== ExoPlayer: REPORTING PLAYBACK STOP ===")
+            Timber.d("Item: ${item.name}, Position: ${position}ms")
             playbackRepository.reportPlaybackStop(
                 itemId = item.id,
                 sessionId = sessionId,
                 positionTicks = position * 10000,
                 mediaSourceId = mediaSourceId
             )
+            Timber.d("ExoPlayer: Playback stop reported successfully")
+            Timber.d("ExoPlayer: Invoking onPlaybackStoppedCallback: ${onPlaybackStoppedCallback != null}")
+            onPlaybackStoppedCallback?.invoke()
+            Timber.d("=== ExoPlayer: CALLBACK INVOKED ===")
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback stop")
         }
     }
 
+    private var onPlaybackStoppedCallback: (() -> Unit)? = null
+
     override fun setOnPlaybackStoppedCallback(callback: () -> Unit) {
-        // Not needed for ExoPlayer
+        onPlaybackStoppedCallback = callback
     }
 
     fun setOnPlaybackCompleted(callback: (AfinityItem) -> Unit) {
@@ -386,12 +423,47 @@ class ExoPlayerRepository constructor(
         player?.pause()
     }
 
+    private val cleanupScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     override fun onDestroy() {
-        stopPlaybackReporting()
-        player?.removeListener(this)
-        player?.release()
-        player = null
+        Timber.d("=== ExoPlayer: onDestroy() CALLED ===")
+        val currentPosition = player?.currentPosition ?: 0
+        cleanupScope.launch {
+            reportPlaybackStopWithPosition(currentPosition)
+            withContext(Dispatchers.Main) {
+                positionUpdateJob?.cancel()
+                player?.removeListener(this@ExoPlayerRepository)
+                player?.release()
+                player = null
+            }
+        }
+
         scope.cancel()
+    }
+
+    private suspend fun reportPlaybackStopWithPosition(position: Long) {
+        val state = _playerState.value
+        val item = state.currentItem ?: return
+        val sessionId = state.sessionId ?: return
+        val mediaSourceId = state.mediaSourceId ?: return
+
+        try {
+            Timber.d("=== ExoPlayer: REPORTING PLAYBACK STOP ===")
+            Timber.d("Item: ${item.name}, Position: ${position}ms")
+
+            playbackRepository.reportPlaybackStop(
+                itemId = item.id,
+                sessionId = sessionId,
+                positionTicks = position * 10000,
+                mediaSourceId = mediaSourceId
+            )
+
+            Timber.d("ExoPlayer: Playback stop reported successfully")
+            onPlaybackStoppedCallback?.invoke()
+            Timber.d("=== ExoPlayer: CALLBACK INVOKED ===")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to report playback stop")
+        }
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
@@ -451,14 +523,14 @@ class ExoPlayerRepository constructor(
                     delay(10000)
                     reportPlaybackProgress()
 
-                    val position = player?.currentPosition ?: 0
+                    /*val position = player?.currentPosition ?: 0
                     val duration = player?.duration ?: 0
                     updateState {
                         it.copy(
                             currentPosition = position,
                             duration = duration
                         )
-                    }
+                    }*/
                 }
             }
         }
@@ -467,10 +539,6 @@ class ExoPlayerRepository constructor(
     private fun stopPlaybackReporting() {
         playbackReportingJob?.cancel()
         playbackReportingJob = null
-
-        scope.launch {
-            reportPlaybackStop()
-        }
     }
 
     fun getPlayer(): Player? = player

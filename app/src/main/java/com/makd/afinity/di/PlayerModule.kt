@@ -19,10 +19,15 @@ import org.jellyfin.sdk.api.client.ApiClient
 import timber.log.Timber
 import javax.inject.Singleton
 
+
 @androidx.media3.common.util.UnstableApi
 @Module
 @InstallIn(SingletonComponent::class)
 object PlayerModule {
+
+    init {
+        println("========== PlayerModule LOADED ==========")
+    }
 
     @Provides
     @Singleton
@@ -32,14 +37,20 @@ object PlayerModule {
         apiClient: ApiClient,
         preferencesRepository: PreferencesRepository
     ): PlayerRepository {
+        println("========== providePlayerRepository CALLED ==========")
         val useExoPlayer = runBlocking {
             try {
-                preferencesRepository.useExoPlayer.first()
+                val value = preferencesRepository.useExoPlayer.first()
+                println("========== useExoPlayer preference: $value ==========")
+                value
             } catch (e: Exception) {
+                println("========== Failed to read preference: ${e.message} ==========")
                 Timber.w("Failed to read player preference, defaulting to ExoPlayer")
                 true
             }
         }
+
+        println("========== Will provide: ${if (useExoPlayer) "ExoPlayer" else "LibMPV"} ==========")
 
         return if (useExoPlayer) {
             Timber.d("Providing ExoPlayerRepository")

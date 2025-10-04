@@ -24,6 +24,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+
+@androidx.media3.common.util.UnstableApi
 @Composable
 fun PlayerScreen(
     item: AfinityItem,
@@ -63,6 +65,7 @@ fun PlayerScreen(
     }
 
     DisposableEffect(Unit) {
+
         val playerRepository = viewModel.playerRepository
         if (playerRepository is com.makd.afinity.data.repository.player.LibMpvPlayerRepository) {
             playerRepository.initializeIfNeeded()
@@ -146,9 +149,7 @@ fun PlayerScreen(
             .background(Color.Black)
     ) {
         GestureHandler(
-            onSingleTap = {
-                viewModel.onSingleTap()
-            },
+            onSingleTap = { viewModel.onSingleTap() },
             onDoubleTap = { isForward ->
                 if (!playerState.isControlsLocked) {
                     viewModel.onDoubleTapSeek(isForward)
@@ -180,15 +181,33 @@ fun PlayerScreen(
             },
             modifier = Modifier.fillMaxSize()
         ) {
-            MpvSurface(
-                modifier = Modifier.fillMaxSize(),
-                onSurfaceCreated = {
-                    Timber.d("MPV surface created in player screen")
-                },
-                onSurfaceDestroyed = {
-                    Timber.d("MPV surface destroyed in player screen")
+            when (val repo = viewModel.playerRepository) {
+                is com.makd.afinity.data.repository.player.ExoPlayerRepository -> {
+                    androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { context ->
+                            androidx.media3.ui.PlayerView(context).apply {
+                                useController = false
+                            }
+                        },
+                        update = { playerView ->
+                            playerView.player = repo.getPlayer()
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
-            )
+                is com.makd.afinity.data.repository.player.LibMpvPlayerRepository -> {
+                    // MPV surface
+                    MpvSurface(
+                        modifier = Modifier.fillMaxSize(),
+                        onSurfaceCreated = {
+                            Timber.d("MPV surface created in player screen")
+                        },
+                        onSurfaceDestroyed = {
+                            Timber.d("MPV surface destroyed in player screen")
+                        }
+                    )
+                }
+            }
         }
 
         PlayerControls(
