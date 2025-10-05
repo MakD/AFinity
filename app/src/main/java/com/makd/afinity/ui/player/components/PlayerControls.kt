@@ -59,6 +59,7 @@ data class SubtitleStreamOption(
 @Composable
 fun PlayerControls(
     uiState: PlayerViewModel.PlayerUiState,
+    player: androidx.media3.common.Player,
     onPlayPauseClick: () -> Unit,
     onSeekBarChange: (Long) -> Unit,
     onTrickplayPreview: (Long, Boolean) -> Unit = { _, _ -> },
@@ -121,38 +122,33 @@ fun PlayerControls(
         streams
     }
 
-    val subtitleStreamOptions = remember(currentItem) {
+    val subtitleStreamOptions = remember(currentItem, player?.currentTracks) {
         val options = mutableListOf<SubtitleStreamOption>()
 
+        // Add "None" option
         options.add(
             SubtitleStreamOption(
                 stream = null,
                 displayName = "None",
-                isDefault = uiState.subtitleStreamIndex == null,
+                isDefault = false,
                 index = -1,
                 isNone = true
             )
         )
 
-        currentItem?.sources?.firstOrNull()?.mediaStreams
-            ?.filter { it.type == MediaStreamType.SUBTITLE }
-            ?.forEach { stream ->
-                val displayName = buildString {
-                    append(stream.language.ifEmpty { "Unknown" })
-                    append(" • ${stream.codec.uppercase()}")
-                    if (stream.title.contains("forced", ignoreCase = true)) {
-                        append(" (Forced)")
-                    } else if (stream.isExternal) {
-                        append(" (External)")
-                    }
-                }
+        // Get subtitle tracks from Media3 player (not Jellyfin streams)
+        player?.currentTracks?.groups
+            ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
+            ?.forEachIndexed { index, trackGroup ->
+                val format = trackGroup.mediaTrackGroup.getFormat(0)
+                val displayName = format.label ?: format.language ?: "Track ${index + 1}"
 
                 options.add(
                     SubtitleStreamOption(
-                        stream = stream,
+                        stream = null, // Not using Jellyfin stream anymore
                         displayName = displayName,
-                        isDefault = uiState.subtitleStreamIndex == stream.index,
-                        index = stream.index,
+                        isDefault = trackGroup.isSelected,
+                        index = index, // Use Media3 track index, not Jellyfin stream index
                         isNone = false
                     )
                 )
@@ -336,7 +332,7 @@ fun PlayerControls(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onSubtitleTrackSelect(option.index)
+                                        onSubtitleTrackSelect(option.index) // -1 for None, 0,1,2... for tracks
                                         showSubtitleSelector = false
                                     }
                                     .padding(vertical = 6.dp),
@@ -344,11 +340,21 @@ fun PlayerControls(
                             ) {
                                 RadioButton(
                                     selected = when {
-                                        option.index == -1 -> uiState.subtitleStreamIndex == null
-                                        else -> uiState.subtitleStreamIndex == option.index
+                                        option.index == -1 -> {
+                                            // Check if no subtitle track is selected
+                                            player?.currentTracks?.groups
+                                                ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
+                                                ?.none { it.isSelected } ?: true
+                                        }
+                                        else -> {
+                                            // Check if this specific track is selected
+                                            player?.currentTracks?.groups
+                                                ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
+                                                ?.getOrNull(option.index)?.isSelected ?: false
+                                        }
                                     },
                                     onClick = {
-                                        onSubtitleTrackSelect(option.index) // Always Int, -1 for None
+                                        onSubtitleTrackSelect(option.index)
                                         showSubtitleSelector = false
                                     },
                                     colors = RadioButtonDefaults.colors(

@@ -507,7 +507,24 @@ class MPVPlayer(
     }
 
     private fun prepareMediaItem(index: Int) {
-        MPVLib.command(arrayOf("playlist-play-index", "$index"))
+        internalMediaItems.getOrNull(index)?.let { mediaItem ->
+            resetInternalState()
+            mediaItem.localConfiguration?.subtitleConfigurations?.forEach { subtitle ->
+                initialCommands.add(
+                    arrayOf(
+                        "sub-add",
+                        "${subtitle.uri}",
+                        "auto",
+                        "${subtitle.label}",
+                        "${subtitle.language}",
+                    ),
+                )
+            }
+            if (currentMediaItemIndex != index) {
+                MPVLib.command(arrayOf("playlist-play-index", "$index"))
+            }
+            setPlayerStateAndNotifyIfChanged(playbackState = STATE_BUFFERING)
+        }
     }
 
     override fun getPlaybackState(): Int = playbackState

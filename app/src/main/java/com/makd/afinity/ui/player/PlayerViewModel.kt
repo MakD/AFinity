@@ -238,7 +238,7 @@ class PlayerViewModel @Inject constructor(
                 itemId = item.id,
                 mediaSourceId = mediaSourceId,
                 audioStreamIndex = audioStreamIndex,
-                subtitleStreamIndex = subtitleStreamIndex,
+                subtitleStreamIndex = null,
                 videoStreamIndex = null,
                 maxStreamingBitrate = null,
                 startTimeTicks = null
@@ -250,17 +250,42 @@ class PlayerViewModel @Inject constructor(
             }
 
             val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
-            val externalSubtitles = mediaSource?.mediaStreams?.filter {
-                it.isExternal && it.type == MediaStreamType.SUBTITLE
-            }?.mapNotNull { stream ->
-                val subtitleUrl = stream.path ?: "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.${stream.codec}"
+            val externalSubtitles = mediaSource?.mediaStreams
+                ?.filter { stream ->
+                    stream.isExternal &&
+                            stream.type == MediaStreamType.SUBTITLE &&
+                            !stream.path.isNullOrBlank()
+                }
+                ?.map { stream ->
+                    val subtitleUrl = if (stream.path?.startsWith("http") == true) {
+                        stream.path!!
+                    } else {
+                        val format = when (stream.codec?.lowercase()) {
+                            "subrip" -> "srt"
+                            "ass" -> "ass"
+                            "ssa" -> "ass"
+                            "webvtt" -> "vtt"
+                            "vobsub" -> "sub"
+                            else -> "srt"
+                        }
+                        "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.${format}?api_key=${apiClient.accessToken}"
+                    }
 
-                MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
-                    .setLabel(stream.displayTitle ?: stream.language ?: "Unknown")
-                    .setMimeType(getMimeType(stream.codec ?: ""))
-                    .setLanguage(stream.language)
-                    .build()
-            } ?: emptyList()
+                    val mimeType = when (stream.codec?.lowercase()) {
+                        "subrip" -> MimeTypes.APPLICATION_SUBRIP
+                        "webvtt" -> MimeTypes.APPLICATION_SUBRIP
+                        "ass", "ssa" -> MimeTypes.TEXT_SSA
+                        else -> MimeTypes.TEXT_UNKNOWN
+                    }
+
+                    MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
+                        .setLabel(stream.title?.ifBlank { stream.language } ?: "Unknown")
+                        .setMimeType(mimeType)
+                        .setLanguage(stream.language)
+                        .build()
+                } ?: emptyList()
+
+            Timber.d("Built ${externalSubtitles.size} external subtitle configurations")
 
             val mediaItem = MediaItem.Builder()
                 .setMediaId(item.id.toString())
@@ -297,7 +322,6 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun switchToTrack(trackType: @C.TrackType Int, index: Int) {
-        // Index -1 equals disable track
         if (index == -1) {
             player.trackSelectionParameters = player.trackSelectionParameters
                 .buildUpon()
@@ -305,18 +329,19 @@ class PlayerViewModel @Inject constructor(
                 .setTrackTypeDisabled(trackType, true)
                 .build()
         } else {
-            player.trackSelectionParameters = player.trackSelectionParameters
-                .buildUpon()
-                .setOverrideForType(
-                    TrackSelectionOverride(
-                        player.currentTracks.groups
-                            .filter { it.type == trackType && it.isSupported }[index]
-                            .mediaTrackGroup,
-                        0
-                    ),
-                )
-                .setTrackTypeDisabled(trackType, false)
-                .build()
+            val tracksGroups = player.currentTracks.groups.filter {
+                it.type == trackType && it.isSupported
+            }
+
+            if (index < tracksGroups.size) {
+                player.trackSelectionParameters = player.trackSelectionParameters
+                    .buildUpon()
+                    .setOverrideForType(
+                        TrackSelectionOverride(tracksGroups[index].mediaTrackGroup, 0)
+                    )
+                    .setTrackTypeDisabled(trackType, false)
+                    .build()
+            }
         }
     }
 
@@ -535,79 +560,15 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun onAudioTrackSelect(index: Int) {
-        viewModelScope.launch {
-            try {
-                val mediaSource = currentItem?.sources?.firstOrNull()
-                val audioStreams = mediaSource?.mediaStreams?.filter {
-                    it.type == MediaStreamType.AUDIO
-                } ?: emptyList()
-
-                val streamPosition = audioStreams.indexOfFirst { it.index == index }
-
-                if (streamPosition >= 0) {
-                    val tracks = player.currentTracks
-                    val audioGroups = tracks.groups.filter {
-                        it.type == C.TRACK_TYPE_AUDIO && it.isSupported
-                    }
-
-                    if (streamPosition < audioGroups.size) {
-                        val trackGroup = audioGroups[streamPosition].mediaTrackGroup
-                        player.trackSelectionParameters = player.trackSelectionParameters
-                            .buildUpon()
-                            .setOverrideForType(TrackSelectionOverride(trackGroup, 0))
-                            .build()
-
-                        updateUiState { it.copy(audioStreamIndex = index) }
-                        Timber.d("Selected audio track at position: $streamPosition for stream index: $index")
-                    }
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to select audio track")
-            }
-        }
+        switchToTrack(C.TRACK_TYPE_AUDIO, index)
+        updateUiState { it.copy(audioStreamIndex = if (index == -1) null else index) }
+        Timber.d("Selected audio track: $index")
     }
 
     fun onSubtitleTrackSelect(index: Int) {
-        viewModelScope.launch {
-            try {
-                if (index == -1) {
-                    player.trackSelectionParameters = player.trackSelectionParameters
-                        .buildUpon()
-                        .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
-                        .build()
-                    updateUiState { it.copy(subtitleStreamIndex = null) }
-                    return@launch
-                }
-
-                val mediaSource = currentItem?.sources?.firstOrNull()
-                val subtitleStreams = mediaSource?.mediaStreams?.filter {
-                    it.type == MediaStreamType.SUBTITLE
-                } ?: emptyList()
-
-                val streamPosition = subtitleStreams.indexOfFirst { it.index == index }
-
-                if (streamPosition >= 0) {
-                    val tracks = player.currentTracks
-                    val subtitleGroups = tracks.groups.filter {
-                        it.type == C.TRACK_TYPE_TEXT && it.isSupported
-                    }
-
-                    if (streamPosition < subtitleGroups.size) {
-                        val trackGroup = subtitleGroups[streamPosition].mediaTrackGroup
-                        player.trackSelectionParameters = player.trackSelectionParameters
-                            .buildUpon()
-                            .setOverrideForType(TrackSelectionOverride(trackGroup, 0))
-                            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-                            .build()
-
-                        updateUiState { it.copy(subtitleStreamIndex = index) }
-                        Timber.d("Selected subtitle track at position: $streamPosition for stream index: $index")
-                    }
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to select subtitle track")
-            }
-        }
+        switchToTrack(C.TRACK_TYPE_TEXT, index)
+        updateUiState { it.copy(subtitleStreamIndex = if (index == -1) null else index) }
+        Timber.d("Selected subtitle track: $index")
     }
 
     fun onPlaybackSpeedChange(speed: Float) {

@@ -203,6 +203,7 @@ fun PlayerScreen(
 
         PlayerControls(
             uiState = uiState,
+            player = viewModel.player,
             onPlayPauseClick = viewModel::onPlayPauseClick,
             onSeekBarChange = viewModel::onSeekBarDrag,
             onTrickplayPreview = viewModel::onSeekBarPreview,
