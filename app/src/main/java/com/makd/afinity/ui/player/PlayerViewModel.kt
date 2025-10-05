@@ -86,6 +86,18 @@ class PlayerViewModel @Inject constructor(
 
     init {
         initializePlayer()
+        startPositionUpdateLoop()
+    }
+
+    private fun startPositionUpdateLoop() {
+        viewModelScope.launch {
+            while (true) {
+                delay(100)
+                if (player.isPlaying) {
+                    updatePlayerState()
+                }
+            }
+        }
     }
 
     private fun initializePlayer() {
@@ -164,12 +176,14 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun updatePlayerState() {
+        val position = player.currentPosition.coerceAtLeast(0)
+        val duration = player.duration.coerceAtLeast(0)
         _playerState.value = _playerState.value.copy(
             isPlaying = player.isPlaying,
             isPaused = !player.isPlaying && player.playbackState == Player.STATE_READY,
             isBuffering = player.playbackState == Player.STATE_BUFFERING,
-            currentPosition = player.currentPosition,
-            duration = player.duration
+            currentPosition = position,
+            duration = duration
         )
     }
 

@@ -160,7 +160,7 @@ fun PlayerControls(
                 if (!playerState.isControlsLocked) {
                     CenterPlayButton(
                         isPlaying = playerState.isPlaying,
-                        showPlayButton = uiState.showPlayButton,
+                        showPlayButton = uiState.showControls,
                         isBuffering = uiState.showBuffering,
                         onPlayPauseClick = onPlayPauseClick,
                         onSeekBackward = onSeekBackward,

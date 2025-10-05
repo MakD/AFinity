@@ -314,13 +314,13 @@ class MPVPlayer(
         handler.post {
             when (property) {
                 "time-pos" -> {
-                    currentPositionMs = value
+                    currentPositionMs = value * 1000
                 }
                 "duration" -> {
-                    currentDurationMs = value
+                    currentDurationMs = value * 1000
                 }
                 "demuxer-cache-time" -> {
-                    currentCacheDurationMs = value
+                    currentCacheDurationMs = value * 1000
                 }
                 "playlist-count" -> {
                     if (!isPlayerReady && value > 0) {
@@ -375,7 +375,10 @@ class MPVPlayer(
                 MPVLib.MPV_EVENT_PLAYBACK_RESTART -> {
                     if (!isPlayerReady) {
                         isPlayerReady = true
-                        seekTo(currentMediaItemIndex, initialSeekTo, Player.COMMAND_SEEK_TO_MEDIA_ITEM, false)
+                        if (initialSeekTo > 0) {
+                            MPVLib.command(arrayOf("seek", "$initialSeekTo", "absolute"))
+                            initialSeekTo = 0
+                        }
                         if (getPlayWhenReady()) {
                             Timber.d("Starting playback...")
                             MPVLib.setPropertyBoolean("pause", false)
