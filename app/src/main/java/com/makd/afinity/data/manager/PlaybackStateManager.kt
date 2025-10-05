@@ -2,7 +2,6 @@ package com.makd.afinity.data.manager
 
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.data.repository.player.PlayerRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -14,29 +13,30 @@ import javax.inject.Singleton
 
 @Singleton
 class PlaybackStateManager @Inject constructor(
-    private val playerRepository: PlayerRepository,
     private val mediaRepository: MediaRepository
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private var currentItemId: UUID? = null
-
-    fun initialize() {
-        playerRepository.setOnPlaybackStoppedCallback {
-            handlePlaybackStopped()
-        }
-        Timber.d("PlaybackStateManager initialized")
-    }
+    private var onItemUpdatedCallback: ((UUID) -> Unit)? = null
+    private var onPlaybackStoppedCallback: (() -> Unit)? = null
 
     fun trackCurrentItem(itemId: UUID) {
         currentItemId = itemId
         Timber.d("Now tracking playback for item: $itemId")
     }
 
-    private var onItemUpdatedCallback: ((UUID) -> Unit)? = null
-
     fun setOnItemUpdatedCallback(callback: (UUID) -> Unit) {
         onItemUpdatedCallback = callback
+    }
+
+    fun setOnPlaybackStoppedCallback(callback: () -> Unit) {
+        onPlaybackStoppedCallback = callback
+    }
+
+    fun notifyPlaybackStopped() {
+        onPlaybackStoppedCallback?.invoke()
+        handlePlaybackStopped()
     }
 
     private fun handlePlaybackStopped() {
