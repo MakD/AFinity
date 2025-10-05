@@ -180,15 +180,6 @@ fun MainNavigation(
                                     subtitleStreamIndex = null,
                                     startPositionMs = 0L
                                 )
-
-                                /*val route = Destination.createPlayerRoute(
-                                    itemId = playableItem.id.toString(),
-                                    mediaSourceId = playableItem.sources.firstOrNull()?.id ?: "",
-                                    startPositionMs = if (playableItem.playbackPositionTicks > 0) {
-                                        playableItem.playbackPositionTicks / 10000
-                                    } else 0L
-                                )
-                                navController.navigate(route)*/
                             } catch (e: Exception) {
                                 Timber.e(e, "Failed to handle play click for: ${item.name}")
                             }
@@ -301,46 +292,6 @@ fun MainNavigation(
                     modifier = Modifier.fillMaxSize()
                 )
             }
-
-            /*composable(
-                route = Destination.PLAYER_ROUTE,
-                arguments = listOf(
-                    navArgument("itemId") { type = NavType.StringType },
-                    navArgument("mediaSourceId") { type = NavType.StringType },
-                    navArgument("audioStreamIndex") {
-                        type = NavType.IntType
-                        defaultValue = -1
-                    },
-                    navArgument("subtitleStreamIndex") {
-                        type = NavType.IntType
-                        defaultValue = -1
-                    },
-                    navArgument("startPositionMs") {
-                        type = NavType.LongType
-                        defaultValue = 0L
-                    }
-                )
-            )
-
-            { backStackEntry ->
-                val itemId = backStackEntry.arguments?.getString("itemId") ?: return@composable
-                val mediaSourceId = backStackEntry.arguments?.getString("mediaSourceId") ?: return@composable
-                val audioStreamIndex = backStackEntry.arguments?.getInt("audioStreamIndex")?.takeIf { it != -1 }
-                val subtitleStreamIndex = backStackEntry.arguments?.getInt("subtitleStreamIndex")?.takeIf { it != -1 }
-                val startPositionMs = backStackEntry.arguments?.getLong("startPositionMs") ?: 0L
-
-                PlayerScreenWrapper(
-                    itemId = UUID.fromString(itemId),
-                    mediaSourceId = mediaSourceId,
-                    audioStreamIndex = audioStreamIndex,
-                    subtitleStreamIndex = subtitleStreamIndex,
-                    startPositionMs = startPositionMs,
-                    navController = navController,
-                    onBackPressed = {
-                        navController.popBackStack()
-                    }
-                )
-            }*/
             composable(Destination.FAVORITES.route) {
                 FavoritesScreen(
                     onItemClick = { item ->

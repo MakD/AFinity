@@ -125,7 +125,6 @@ fun PlayerControls(
     val subtitleStreamOptions = remember(currentItem, player?.currentTracks) {
         val options = mutableListOf<SubtitleStreamOption>()
 
-        // Add "None" option
         options.add(
             SubtitleStreamOption(
                 stream = null,
@@ -136,7 +135,6 @@ fun PlayerControls(
             )
         )
 
-        // Get subtitle tracks from Media3 player (not Jellyfin streams)
         player?.currentTracks?.groups
             ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
             ?.forEachIndexed { index, trackGroup ->
@@ -145,10 +143,10 @@ fun PlayerControls(
 
                 options.add(
                     SubtitleStreamOption(
-                        stream = null, // Not using Jellyfin stream anymore
+                        stream = null,
                         displayName = displayName,
                         isDefault = trackGroup.isSelected,
-                        index = index, // Use Media3 track index, not Jellyfin stream index
+                        index = index,
                         isNone = false
                     )
                 )
@@ -341,13 +339,11 @@ fun PlayerControls(
                                 RadioButton(
                                     selected = when {
                                         option.index == -1 -> {
-                                            // Check if no subtitle track is selected
                                             player?.currentTracks?.groups
                                                 ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
                                                 ?.none { it.isSelected } ?: true
                                         }
                                         else -> {
-                                            // Check if this specific track is selected
                                             player?.currentTracks?.groups
                                                 ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
                                                 ?.getOrNull(option.index)?.isSelected ?: false

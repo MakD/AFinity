@@ -175,7 +175,6 @@ class EpisodeListViewModel @Inject constructor(
 
 data class EpisodeListUiState(
     val season: AfinitySeason? = null,
-    //val episodes: List<AfinityEpisode> = emptyList(),
     val specialFeatures: List<AfinityItem> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
