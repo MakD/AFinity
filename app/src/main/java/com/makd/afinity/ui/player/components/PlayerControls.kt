@@ -24,7 +24,7 @@ import com.makd.afinity.ui.components.OptimizedAsyncImage
 import androidx.compose.runtime.*
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.player.PlayerState
-import com.makd.afinity.ui.player.PlayerUiState
+import com.makd.afinity.ui.player.PlayerViewModel
 import org.jellyfin.sdk.model.api.MediaStreamType
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -53,16 +53,17 @@ data class SubtitleStreamOption(
     val isNone: Boolean = false
 )
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 fun PlayerControls(
-    playerState: PlayerState,
-    uiState: PlayerUiState,
+    playerState: PlayerViewModel.PlayerUiState,
+    uiState: PlayerViewModel.PlayerUiState,
     onPlayPauseClick: () -> Unit,
     onSeekBarChange: (Long) -> Unit,
     onTrickplayPreview: (Long, Boolean) -> Unit = { _, _ -> },
     onBackClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
-    onAudioTrackSelect: (Int?) -> Unit,
+    onAudioTrackSelect: (Int) -> Unit,
     onSubtitleTrackSelect: (Int?) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
     onLockToggle: () -> Unit,
@@ -362,9 +363,10 @@ fun PlayerControls(
     }
 }
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 private fun TopControls(
-    playerState: PlayerState,
+    playerState: PlayerViewModel.PlayerUiState,
     onBackClick: () -> Unit,
     onLockToggle: () -> Unit,
     onPipToggle: () -> Unit = { /* TODO */ },
@@ -667,9 +669,10 @@ private fun CenterPlayButton(
     }
 }
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 private fun BottomControls(
-    playerState: PlayerState,
+    playerState: PlayerViewModel.PlayerUiState,
     onSeekBarChange: (Long) -> Unit,
     onTrickplayPreview: (Long, Boolean) -> Unit,
     modifier: Modifier = Modifier

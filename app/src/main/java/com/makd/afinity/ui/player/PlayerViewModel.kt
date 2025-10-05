@@ -60,7 +60,6 @@ class PlayerViewModel @Inject constructor(
     private val apiClient: ApiClient
 ) : ViewModel(), Player.Listener {
 
-    // Player instance - ExoPlayer or MPVPlayer based on preference
     lateinit var player: Player
         private set
 
@@ -68,7 +67,6 @@ class PlayerViewModel @Inject constructor(
     private var currentSessionId: String? = null
     private val volumeManager: VolumeManager by lazy { VolumeManager(context) }
 
-    // Player state from Media3 Player
     private val _playerState = MutableStateFlow(PlayerUiState())
     val playerState: StateFlow<PlayerUiState> = _playerState.asStateFlow()
 
@@ -91,18 +89,18 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun initializePlayer() {
-        viewModelScope.launch {
-            val useExoPlayer = preferencesRepository.useExoPlayer.first()
-
-            player = if (useExoPlayer) {
-                createExoPlayer()
-            } else {
-                createMPVPlayer()
-            }
-
-            player.addListener(this@PlayerViewModel)
-            Timber.d("Player initialized: ${player.javaClass.simpleName}")
+        val useExoPlayer = kotlinx.coroutines.runBlocking {
+            preferencesRepository.useExoPlayer.first()
         }
+
+        player = if (useExoPlayer) {
+            createExoPlayer()
+        } else {
+            createMPVPlayer()
+        }
+
+        player.addListener(this@PlayerViewModel)
+        Timber.d("Player initialized: ${player.javaClass.simpleName}")
     }
 
     private fun createExoPlayer(): ExoPlayer {
@@ -146,7 +144,6 @@ class PlayerViewModel @Inject constructor(
             .build()
     }
 
-    // Player.Listener callbacks
     override fun onPlaybackStateChanged(playbackState: Int) {
         updatePlayerState()
     }
@@ -215,6 +212,7 @@ class PlayerViewModel @Inject constructor(
     ) = withContext(Dispatchers.IO) {
         try {
             currentItem = item
+            updateUiState { it.copy(currentItem = item) }
             currentSessionId = UUID.randomUUID().toString()
 
             playbackStateManager.trackCurrentItem(item.id)
@@ -238,11 +236,7 @@ class PlayerViewModel @Inject constructor(
             val externalSubtitles = mediaSource?.mediaStreams?.filter {
                 it.isExternal && it.type == MediaStreamType.SUBTITLE
             }?.mapNotNull { stream ->
-                val subtitleUrl = if (stream.deliveryUrl?.startsWith("http") == true) {
-                    stream.deliveryUrl
-                } else {
-                    "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.${stream.codec}"
-                }
+                val subtitleUrl = stream.path ?: "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.${stream.codec}"
 
                 MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
                     .setLabel(stream.displayTitle ?: stream.language ?: "Unknown")
@@ -408,12 +402,98 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    fun onSingleTap() {
+        handlePlayerEvent(PlayerEvent.ToggleControls)
+    }
+
+    fun onDoubleTapSeek(isForward: Boolean) {
+        val delta = if (isForward) 10000L else -10000L
+        handlePlayerEvent(PlayerEvent.SeekRelative(delta))
+    }
+
+    fun onPlayPauseClick() {
+        if (player.isPlaying) {
+            handlePlayerEvent(PlayerEvent.Pause)
+        } else {
+            handlePlayerEvent(PlayerEvent.Play)
+        }
+    }
+
+    fun onSeekBarDrag(position: Long) {
+        handlePlayerEvent(PlayerEvent.Seek(position))
+    }
+
+    fun onFullscreenToggle() {
+        handlePlayerEvent(PlayerEvent.ToggleFullscreen)
+    }
+
+    fun onAudioTrackSelect(index: Int) {
+        handlePlayerEvent(PlayerEvent.SelectAudioTrack(index))
+    }
+
+    fun onSubtitleTrackSelect(index: Int?) {
+        handlePlayerEvent(PlayerEvent.SelectSubtitleTrack(index))
+    }
+
+    fun onPlaybackSpeedChange(speed: Float) {
+        handlePlayerEvent(PlayerEvent.SetPlaybackSpeed(speed))
+    }
+
+    fun onLockToggle() {
+        updateUiState { it.copy(isControlsLocked = !it.isControlsLocked) }
+    }
+
+    fun onSkipSegment() {
+        skipSegment()
+    }
+
+    fun onSeekBackward() {
+        handlePlayerEvent(PlayerEvent.SeekRelative(-10000L))
+    }
+
+    fun onSeekForward() {
+        handlePlayerEvent(PlayerEvent.SeekRelative(10000L))
+    }
+
+    fun onNextEpisode() {
+        viewModelScope.launch {
+            playlistManager.getNextItem()?.let { nextItem ->
+                handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = nextItem,
+                        mediaSourceId = nextItem.sources.firstOrNull()?.id ?: "",
+                        audioStreamIndex = null,
+                        subtitleStreamIndex = null,
+                        startPositionMs = 0L
+                    )
+                )
+                initializePlaylist(nextItem)
+            }
+        }
+    }
+
+    fun onPreviousEpisode() {
+        viewModelScope.launch {
+            playlistManager.getPreviousItem()?.let { prevItem ->
+                handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = prevItem,
+                        mediaSourceId = prevItem.sources.firstOrNull()?.id ?: "",
+                        audioStreamIndex = null,
+                        subtitleStreamIndex = null,
+                        startPositionMs = 0L
+                    )
+                )
+                initializePlaylist(prevItem)
+            }
+        }
+    }
+
     fun onVolumeGesture(delta: Float) {
-        volumeManager.adjustVolume(delta)
+        volumeManager.adjustVolume(delta.toInt())
     }
 
     fun onScreenBrightnessGesture(delta: Float) {
-        // Handled at UI level
     }
 
     fun onSeekGesture(delta: Long) {
@@ -486,6 +566,18 @@ class PlayerViewModel @Inject constructor(
         val showPlayButton: Boolean = false,
         val showBuffering: Boolean = false,
         val showError: Boolean = false,
-        val errorMessage: String? = null
+        val errorMessage: String? = null,
+        val brightnessLevel: Float = 0.5f,
+        val showTrickplayPreview: Boolean = false,
+        val trickplayPreviewImage: androidx.compose.ui.graphics.ImageBitmap? = null,
+        val trickplayPreviewPosition: Long = 0L,
+        val currentItem: AfinityItem? = null,
+        val showSkipButton: Boolean = false,
+        val skipButtonText: String = "Skip",
+        val showSeekIndicator: Boolean = false,
+        val seekDirection: Int = 0,
+        val showBrightnessIndicator: Boolean = false,
+        val showVolumeIndicator: Boolean = false,
+        val volumeLevel: Int = 50
     )
 }

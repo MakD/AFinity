@@ -27,8 +27,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.makd.afinity.data.manager.PlaybackStateManager
-import com.makd.afinity.data.repository.player.LibMpvPlayerRepository
-import com.makd.afinity.data.repository.player.PlayerRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient

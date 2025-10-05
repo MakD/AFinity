@@ -65,14 +65,8 @@ fun PlayerScreen(
     }
 
     DisposableEffect(Unit) {
-
-        val playerRepository = viewModel.playerRepository
-        if (playerRepository is com.makd.afinity.data.repository.player.LibMpvPlayerRepository) {
-            playerRepository.initializeIfNeeded()
-        }
-
         onDispose {
-            Timber.d("PlayerScreen disposed, but keeping MPV resources for potential navigation")
+            Timber.d("PlayerScreen disposed")
         }
     }
 
@@ -167,7 +161,7 @@ fun PlayerScreen(
             },
             onSeekGesture = { delta ->
                 if (!playerState.isControlsLocked) {
-                    viewModel.onSeekGesture(delta)
+                    viewModel.onSeekGesture(delta.toLong())
                 }
             },
             onSeekPreview = { isActive ->
@@ -181,22 +175,19 @@ fun PlayerScreen(
             },
             modifier = Modifier.fillMaxSize()
         ) {
-            when (val repo = viewModel.playerRepository) {
-                is com.makd.afinity.data.repository.player.ExoPlayerRepository -> {
+            when (val player = viewModel.player) {
+                is androidx.media3.exoplayer.ExoPlayer -> {
                     androidx.compose.ui.viewinterop.AndroidView(
                         factory = { context ->
                             androidx.media3.ui.PlayerView(context).apply {
                                 useController = false
+                                this.player = player
                             }
-                        },
-                        update = { playerView ->
-                            playerView.player = repo.getPlayer()
                         },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                is com.makd.afinity.data.repository.player.LibMpvPlayerRepository -> {
-                    // MPV surface
+                is com.makd.afinity.player.mpv.MPVPlayer -> {
                     MpvSurface(
                         modifier = Modifier.fillMaxSize(),
                         onSurfaceCreated = {
@@ -224,7 +215,7 @@ fun PlayerScreen(
             onSubtitleTrackSelect = viewModel::onSubtitleTrackSelect,
             onPlaybackSpeedChange = viewModel::onPlaybackSpeedChange,
             onLockToggle = viewModel::onLockToggle,
-            onSkipSegment = viewModel::onSkipSegment,
+            onSkipSegment = { viewModel.onSkipSegment() },
             onSeekBackward = viewModel::onSeekBackward,
             onSeekForward = viewModel::onSeekForward,
             onNextEpisode = viewModel::onNextEpisode,
@@ -235,7 +226,7 @@ fun PlayerScreen(
         TrickplayPreview(
             isVisible = uiState.showTrickplayPreview,
             previewImage = uiState.trickplayPreviewImage,
-            position = uiState.trickplayPreviewPosition,
+            position = uiState.trickplayPreviewPosition.toFloat(),
             modifier = Modifier.fillMaxSize()
         )
 

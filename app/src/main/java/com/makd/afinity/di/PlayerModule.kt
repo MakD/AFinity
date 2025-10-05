@@ -13,13 +13,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object PlayerModule {
-
-    @Provides
-    @Singleton
-    fun provideApplication(application: Application): Application {
-        return application
-    }
-
     @Provides
     @Singleton
     fun providePlaybackStateManager(
