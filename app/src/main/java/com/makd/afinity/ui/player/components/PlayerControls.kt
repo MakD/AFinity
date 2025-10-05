@@ -51,13 +51,13 @@ data class SubtitleStreamOption(
     val stream: AfinityMediaStream?,
     val displayName: String,
     val isDefault: Boolean,
-    val index: Int
+    val index: Int,
+    val isNone: Boolean = false
 )
 
 @androidx.media3.common.util.UnstableApi
 @Composable
 fun PlayerControls(
-    playerState: PlayerViewModel.PlayerUiState,
     uiState: PlayerViewModel.PlayerUiState,
     onPlayPauseClick: () -> Unit,
     onSeekBarChange: (Long) -> Unit,
@@ -79,7 +79,7 @@ fun PlayerControls(
     var showSubtitleSelector by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
 
-    val currentItem = playerState.currentItem
+    val currentItem = uiState.currentItem
 
     LaunchedEffect(currentItem) {
         Timber.d("=== PlayerControls Debug ===")
@@ -128,14 +128,15 @@ fun PlayerControls(
             SubtitleStreamOption(
                 stream = null,
                 displayName = "None",
-                isDefault = playerState.subtitleStreamIndex == null,
-                index = -1
+                isDefault = uiState.subtitleStreamIndex == null,
+                index = -1,
+                isNone = true
             )
         )
 
         currentItem?.sources?.firstOrNull()?.mediaStreams
             ?.filter { it.type == MediaStreamType.SUBTITLE }
-            ?.forEachIndexed { idx, stream ->
+            ?.forEach { stream ->
                 val displayName = buildString {
                     append(stream.language.ifEmpty { "Unknown" })
                     append(" • ${stream.codec.uppercase()}")
@@ -150,8 +151,9 @@ fun PlayerControls(
                     SubtitleStreamOption(
                         stream = stream,
                         displayName = displayName,
-                        isDefault = playerState.subtitleStreamIndex == idx,
-                        index = idx // NEW field
+                        isDefault = uiState.subtitleStreamIndex == stream.index,
+                        index = stream.index,
+                        isNone = false
                     )
                 )
             }
@@ -168,7 +170,7 @@ fun PlayerControls(
                 modifier = Modifier.fillMaxSize()
             ) {
                 TopControls(
-                    playerState = playerState,
+                    uiState = uiState,
                     onBackClick = onBackClick,
                     onAudioToggle = { showAudioSelector = !showAudioSelector },
                     onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
@@ -177,9 +179,9 @@ fun PlayerControls(
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
 
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     CenterPlayButton(
-                        isPlaying = playerState.isPlaying,
+                        isPlaying = uiState.isPlaying,
                         showPlayButton = uiState.showControls,
                         isBuffering = uiState.showBuffering,
                         onPlayPauseClick = onPlayPauseClick,
@@ -191,9 +193,9 @@ fun PlayerControls(
                     )
                 }
 
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     BottomControls(
-                        playerState = playerState,
+                        uiState = uiState,
                         onSeekBarChange = onSeekBarChange,
                         onTrickplayPreview = onTrickplayPreview,
                         modifier = Modifier.align(Alignment.BottomCenter)
@@ -264,7 +266,7 @@ fun PlayerControls(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = playerState.audioStreamIndex == option.stream.index,
+                                    selected = uiState.audioStreamIndex == option.stream.index,
                                     onClick = {
                                         onAudioTrackSelect(option.stream.index)
                                         showAudioSelector = false
@@ -342,8 +344,8 @@ fun PlayerControls(
                             ) {
                                 RadioButton(
                                     selected = when {
-                                        option.index == -1 -> playerState.subtitleStreamIndex == null
-                                        else -> playerState.subtitleStreamIndex == option.index
+                                        option.index == -1 -> uiState.subtitleStreamIndex == null
+                                        else -> uiState.subtitleStreamIndex == option.index
                                     },
                                     onClick = {
                                         onSubtitleTrackSelect(option.index) // Always Int, -1 for None
@@ -371,7 +373,7 @@ fun PlayerControls(
     }
     if (showSpeedDialog) {
         PlaybackSpeedDialog(
-            currentSpeed = playerState.playbackSpeed,
+            currentSpeed = uiState.playbackSpeed,
             onSpeedChange = { speed ->
                 onPlaybackSpeedChange(speed)
             },
@@ -383,7 +385,7 @@ fun PlayerControls(
 @androidx.media3.common.util.UnstableApi
 @Composable
 private fun TopControls(
-    playerState: PlayerViewModel.PlayerUiState,
+    uiState: PlayerViewModel.PlayerUiState,
     onBackClick: () -> Unit,
     onLockToggle: () -> Unit,
     onPipToggle: () -> Unit = { /* TODO */ },
@@ -429,7 +431,7 @@ private fun TopControls(
                     modifier = Modifier.padding(start = 16.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    val currentItem = playerState.currentItem
+                    val currentItem = uiState.currentItem
 
                     if (currentItem is com.makd.afinity.data.models.media.AfinityMovie) {
                         if (currentItem?.images?.logo != null) {
@@ -498,7 +500,7 @@ private fun TopControls(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (playerState.isControlsLocked) {
+                if (uiState.isControlsLocked) {
                     IconButton(
                         onClick = onLockToggle,
                         modifier = Modifier.size(40.dp)
@@ -524,7 +526,7 @@ private fun TopControls(
                     }
                 }
 
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     IconButton(
                         onClick = onPipToggle,
                         modifier = Modifier
@@ -559,7 +561,7 @@ private fun TopControls(
                         Icon(
                             imageVector = Icons.Default.Speaker,
                             contentDescription = "Audio",
-                            tint = if (playerState.audioStreamIndex != null)
+                            tint = if (uiState.audioStreamIndex != null)
                                 MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -573,7 +575,7 @@ private fun TopControls(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_cc),
                             contentDescription = "Subtitles",
-                            tint = if (playerState.subtitleStreamIndex != null)
+                            tint = if (uiState.subtitleStreamIndex != null)
                                 MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -689,7 +691,7 @@ private fun CenterPlayButton(
 @androidx.media3.common.util.UnstableApi
 @Composable
 private fun BottomControls(
-    playerState: PlayerViewModel.PlayerUiState,
+    uiState: PlayerViewModel.PlayerUiState,
     onSeekBarChange: (Long) -> Unit,
     onTrickplayPreview: (Long, Boolean) -> Unit,
     modifier: Modifier = Modifier
@@ -713,8 +715,8 @@ private fun BottomControls(
             )
     ) {
         SeekBar(
-            currentPosition = playerState.currentPosition,
-            duration = playerState.duration,
+            currentPosition = uiState.currentPosition,
+            duration = uiState.duration,
             onSeekBarChange = onSeekBarChange,
             onPreviewChange = onTrickplayPreview
         )

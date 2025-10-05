@@ -38,7 +38,7 @@ fun PlayerScreen(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
-    val playerState by viewModel.playerState.collectAsStateWithLifecycle()
+    //val playerState by viewModel.playerState.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
@@ -145,29 +145,29 @@ fun PlayerScreen(
         GestureHandler(
             onSingleTap = { viewModel.onSingleTap() },
             onDoubleTap = { isForward ->
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     viewModel.onDoubleTapSeek(isForward)
                 }
             },
             onBrightnessGesture = { delta ->
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     viewModel.onScreenBrightnessGesture(delta)
                 }
             },
             onVolumeGesture = { delta ->
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     viewModel.onVolumeGesture(delta)
                 }
             },
             onSeekGesture = { delta ->
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     viewModel.onSeekGesture(delta.toLong())
                 }
             },
             onSeekPreview = { isActive ->
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     if (isActive) {
-                        viewModel.onSeekBarPreview(playerState.currentPosition, true)
+                        viewModel.onSeekBarPreview(uiState.currentPosition, true)
                     } else {
                         viewModel.onSeekBarPreview(0, false)
                     }
@@ -202,7 +202,6 @@ fun PlayerScreen(
         }
 
         PlayerControls(
-            playerState = playerState,
             uiState = uiState,
             onPlayPauseClick = viewModel::onPlayPauseClick,
             onSeekBarChange = viewModel::onSeekBarDrag,
@@ -254,6 +253,6 @@ fun PlayerScreen(
     }
 
     ScreenBrightnessController(brightness = uiState.brightnessLevel)
-    KeepScreenOn(keepOn = playerState.isPlaying)
+    KeepScreenOn(keepOn = uiState.isPlaying)
     PlayerSystemBarsController(isControlsVisible = uiState.showControls)
 }
