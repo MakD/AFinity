@@ -39,8 +39,7 @@ sealed class PlayerEvent {
     data class SetVolume(val volume: Int) : PlayerEvent()
     data class SetBrightness(val brightness: Float) : PlayerEvent()
     data class SetPlaybackSpeed(val speed: Float) : PlayerEvent()
-    data class SelectAudioTrack(val index: Int) : PlayerEvent()
-    data class SelectSubtitleTrack(val index: Int?) : PlayerEvent()
+    data class SwitchToTrack(val trackType: Int, val index: Int) : PlayerEvent()
     object ToggleControls : PlayerEvent()
     object ToggleFullscreen : PlayerEvent()
     data class LoadMedia(

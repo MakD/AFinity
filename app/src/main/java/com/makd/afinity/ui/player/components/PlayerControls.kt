@@ -38,6 +38,7 @@ import androidx.compose.ui.res.painterResource
 import com.makd.afinity.data.models.extensions.logoBlurHash
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.R
+import timber.log.Timber
 import kotlin.math.roundToInt
 
 data class AudioStreamOption(
@@ -50,7 +51,7 @@ data class SubtitleStreamOption(
     val stream: AfinityMediaStream?,
     val displayName: String,
     val isDefault: Boolean,
-    val isNone: Boolean = false
+    val index: Int
 )
 
 @androidx.media3.common.util.UnstableApi
@@ -64,7 +65,7 @@ fun PlayerControls(
     onBackClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
     onAudioTrackSelect: (Int) -> Unit,
-    onSubtitleTrackSelect: (Int?) -> Unit,
+    onSubtitleTrackSelect: (Int) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
     onLockToggle: () -> Unit,
     onSkipSegment: (AfinitySegment) -> Unit,
@@ -80,8 +81,21 @@ fun PlayerControls(
 
     val currentItem = playerState.currentItem
 
+    LaunchedEffect(currentItem) {
+        Timber.d("=== PlayerControls Debug ===")
+        Timber.d("Current item: ${currentItem?.name}")
+        Timber.d("Item type: ${currentItem?.javaClass?.simpleName}")
+        Timber.d("Sources count: ${currentItem?.sources?.size}")
+        currentItem?.sources?.forEach { source ->
+            Timber.d("Source ID: ${source.id}, Streams: ${source.mediaStreams.size}")
+            source.mediaStreams.forEach { stream ->
+                Timber.d("  Stream - Type: ${stream.type}, Index: ${stream.index}, Language: ${stream.language}")
+            }
+        }
+    }
+
     val audioStreamOptions = remember(currentItem) {
-        currentItem?.sources?.firstOrNull()?.mediaStreams
+        val streams = currentItem?.sources?.firstOrNull()?.mediaStreams
             ?.filter { it.type == MediaStreamType.AUDIO }
             ?.map { stream ->
                 val displayName = buildString {
@@ -98,6 +112,13 @@ fun PlayerControls(
                     isDefault = stream.isDefault
                 )
             } ?: emptyList()
+
+        Timber.d("Audio options count: ${streams.size}")
+        streams.forEach {
+            Timber.d("Audio option: ${it.displayName}, index: ${it.stream.index}")
+        }
+
+        streams
     }
 
     val subtitleStreamOptions = remember(currentItem) {
@@ -108,17 +129,16 @@ fun PlayerControls(
                 stream = null,
                 displayName = "None",
                 isDefault = playerState.subtitleStreamIndex == null,
-                isNone = true
+                index = -1
             )
         )
 
         currentItem?.sources?.firstOrNull()?.mediaStreams
             ?.filter { it.type == MediaStreamType.SUBTITLE }
-            ?.forEach { stream ->
+            ?.forEachIndexed { idx, stream ->
                 val displayName = buildString {
                     append(stream.language.ifEmpty { "Unknown" })
                     append(" • ${stream.codec.uppercase()}")
-
                     if (stream.title.contains("forced", ignoreCase = true)) {
                         append(" (Forced)")
                     } else if (stream.isExternal) {
@@ -130,8 +150,8 @@ fun PlayerControls(
                     SubtitleStreamOption(
                         stream = stream,
                         displayName = displayName,
-                        isDefault = stream.isDefault,
-                        isNone = false
+                        isDefault = playerState.subtitleStreamIndex == idx,
+                        index = idx // NEW field
                     )
                 )
             }
@@ -314,22 +334,19 @@ fun PlayerControls(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        val selectedIndex = if (option.isNone) null else option.stream?.index
-                                        onSubtitleTrackSelect(selectedIndex)
+                                        onSubtitleTrackSelect(option.index)
                                         showSubtitleSelector = false
                                     }
                                     .padding(vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = if (option.isNone) {
-                                        playerState.subtitleStreamIndex == null
-                                    } else {
-                                        playerState.subtitleStreamIndex == option.stream?.index
+                                    selected = when {
+                                        option.index == -1 -> playerState.subtitleStreamIndex == null
+                                        else -> playerState.subtitleStreamIndex == option.index
                                     },
                                     onClick = {
-                                        val selectedIndex = if (option.isNone) null else option.stream?.index
-                                        onSubtitleTrackSelect(selectedIndex)
+                                        onSubtitleTrackSelect(option.index) // Always Int, -1 for None
                                         showSubtitleSelector = false
                                     },
                                     colors = RadioButtonDefaults.colors(

@@ -12,6 +12,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.exoplayer.DefaultRenderersFactory
@@ -200,8 +201,7 @@ class PlayerViewModel @Inject constructor(
                 is PlayerEvent.SetVolume -> volumeManager.setVolume(event.volume)
                 is PlayerEvent.SetBrightness -> { /* Handle at UI level */ }
                 is PlayerEvent.SetPlaybackSpeed -> player.setPlaybackSpeed(event.speed)
-                is PlayerEvent.SelectAudioTrack -> selectAudioTrack(event.index)
-                is PlayerEvent.SelectSubtitleTrack -> selectSubtitleTrack(event.index)
+                is PlayerEvent.SwitchToTrack -> switchToTrack(event.trackType, event.index)
                 is PlayerEvent.ToggleControls -> toggleControls()
                 is PlayerEvent.ToggleFullscreen -> { /* Handled at UI level */ }
                 is PlayerEvent.LoadMedia -> loadMedia(
@@ -226,7 +226,13 @@ class PlayerViewModel @Inject constructor(
     ) = withContext(Dispatchers.IO) {
         try {
             currentItem = item
-            updateUiState { it.copy(currentItem = item) }
+            updateUiState {
+                it.copy(
+                    currentItem = item,
+                    audioStreamIndex = audioStreamIndex,
+                    subtitleStreamIndex = subtitleStreamIndex
+                )
+            }
             currentSessionId = UUID.randomUUID().toString()
 
             playbackStateManager.trackCurrentItem(item.id)
@@ -235,7 +241,7 @@ class PlayerViewModel @Inject constructor(
                 itemId = item.id,
                 mediaSourceId = mediaSourceId,
                 audioStreamIndex = audioStreamIndex,
-                subtitleStreamIndex = null,
+                subtitleStreamIndex = subtitleStreamIndex,
                 videoStreamIndex = null,
                 maxStreamingBitrate = null,
                 startTimeTicks = null
@@ -286,37 +292,78 @@ class PlayerViewModel @Inject constructor(
 
     private fun getMimeType(codec: String): String {
         return when (codec.lowercase()) {
-            "srt" -> "application/x-subrip"
-            "ass", "ssa" -> "text/x-ssa"
-            "vtt" -> "text/vtt"
-            else -> "application/x-subrip"
+            "subrip", "srt" -> MimeTypes.APPLICATION_SUBRIP
+            "webvtt", "vtt" -> MimeTypes.APPLICATION_SUBRIP
+            "ass", "ssa" -> MimeTypes.TEXT_SSA
+            else -> MimeTypes.TEXT_UNKNOWN
         }
     }
 
-    private suspend fun selectAudioTrack(index: Int) = withContext(Dispatchers.Main) {
+    fun switchToTrack(trackType: @C.TrackType Int, index: Int) {
+        // Index -1 equals disable track
+        if (index == -1) {
+            player.trackSelectionParameters = player.trackSelectionParameters
+                .buildUpon()
+                .clearOverridesOfType(trackType)
+                .setTrackTypeDisabled(trackType, true)
+                .build()
+        } else {
+            player.trackSelectionParameters = player.trackSelectionParameters
+                .buildUpon()
+                .setOverrideForType(
+                    TrackSelectionOverride(
+                        player.currentTracks.groups
+                            .filter { it.type == trackType && it.isSupported }[index]
+                            .mediaTrackGroup,
+                        0
+                    ),
+                )
+                .setTrackTypeDisabled(trackType, false)
+                .build()
+        }
+    }
+
+    /*private suspend fun selectAudioTrack(index: Int) = withContext(Dispatchers.Main) {
         try {
-            val mediaSource = currentItem?.sources?.firstOrNull()
-            val audioStream = mediaSource?.mediaStreams?.find {
-                it.type == MediaStreamType.AUDIO && it.index == index
-            } ?: return@withContext
+            when (player) {
+                is ExoPlayer -> {
+                    val tracks = player.currentTracks
+                    val audioGroups = tracks.groups.filter {
+                        it.type == C.TRACK_TYPE_AUDIO && it.isSupported
+                    }
 
-            val tracks = player.currentTracks
-            val audioGroups = tracks.groups.filter {
-                it.type == C.TRACK_TYPE_AUDIO && it.isSupported
-            }
+                    val mediaSource = currentItem?.sources?.firstOrNull()
+                    val audioStreams = mediaSource?.mediaStreams?.filter {
+                        it.type == MediaStreamType.AUDIO
+                    } ?: emptyList()
 
-            val groupIndex = audioGroups.indexOfFirst { group ->
-                group.mediaTrackGroup.getFormat(0).language == audioStream.language
-            }
+                    val streamPosition = audioStreams.indexOfFirst { it.index == index }
 
-            if (groupIndex >= 0) {
-                val trackGroup = audioGroups[groupIndex].mediaTrackGroup
-                player.trackSelectionParameters = player.trackSelectionParameters
-                    .buildUpon()
-                    .setOverrideForType(TrackSelectionOverride(trackGroup, 0))
-                    .build()
+                    if (streamPosition >= 0 && streamPosition < audioGroups.size) {
+                        val trackGroup = audioGroups[streamPosition].mediaTrackGroup
+                        (player as ExoPlayer).trackSelectionParameters = player.trackSelectionParameters
+                            .buildUpon()
+                            .setOverrideForType(TrackSelectionOverride(trackGroup, 0))
+                            .build()
 
-                Timber.d("Selected audio track at group index: $groupIndex for stream index: $index")
+                        updateUiState { it.copy(audioStreamIndex = index) }
+                        Timber.d("Selected audio track at position: $streamPosition for stream index: $index")
+                    }
+                }
+                is MPVPlayer -> {
+                    val mediaSource = currentItem?.sources?.firstOrNull()
+                    val audioStreams = mediaSource?.mediaStreams?.filter {
+                        it.type == MediaStreamType.AUDIO
+                    } ?: emptyList()
+
+                    val mpvTrackNumber = audioStreams.indexOfFirst { it.index == index } + 1
+
+                    if (mpvTrackNumber > 0) {
+                        dev.jdtech.mpv.MPVLib.setPropertyInt("aid", mpvTrackNumber)
+                        updateUiState { it.copy(audioStreamIndex = index) }
+                        Timber.d("Selected MPV audio track: $mpvTrackNumber for stream index: $index")
+                    }
+                }
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to select audio track")
@@ -326,39 +373,67 @@ class PlayerViewModel @Inject constructor(
     private suspend fun selectSubtitleTrack(index: Int?) = withContext(Dispatchers.Main) {
         try {
             if (index == null) {
-                player.trackSelectionParameters = player.trackSelectionParameters
-                    .buildUpon()
-                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
-                    .build()
+                when (player) {
+                    is ExoPlayer -> {
+                        (player as ExoPlayer).trackSelectionParameters = player.trackSelectionParameters
+                            .buildUpon()
+                            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                            .build()
+                    }
+                    is MPVPlayer -> {
+                        dev.jdtech.mpv.MPVLib.setPropertyString("sid", "no")
+                    }
+                }
+                updateUiState { it.copy(subtitleStreamIndex = null) }
                 return@withContext
             }
 
-            val mediaSource = currentItem?.sources?.firstOrNull()
-            val subtitleStream = mediaSource?.mediaStreams?.find {
-                it.type == MediaStreamType.SUBTITLE && it.index == index
-            } ?: return@withContext
+            when (player) {
+                is ExoPlayer -> {
+                    val tracks = player.currentTracks
+                    val subtitleGroups = tracks.groups.filter {
+                        it.type == C.TRACK_TYPE_TEXT && it.isSupported
+                    }
 
-            val tracks = player.currentTracks
-            val subtitleGroups = tracks.groups.filter {
-                it.type == C.TRACK_TYPE_TEXT && it.isSupported
-            }
+                    val mediaSource = currentItem?.sources?.firstOrNull()
+                    val subtitleStreams = mediaSource?.mediaStreams?.filter {
+                        it.type == MediaStreamType.SUBTITLE
+                    } ?: emptyList()
 
-            val groupIndex = subtitleGroups.indexOfFirst { group ->
-                group.mediaTrackGroup.getFormat(0).language == subtitleStream.language
-            }
+                    val streamPosition = subtitleStreams.indexOfFirst { it.index == index }
 
-            if (groupIndex >= 0) {
-                val trackGroup = subtitleGroups[groupIndex].mediaTrackGroup
-                player.trackSelectionParameters = player.trackSelectionParameters
-                    .buildUpon()
-                    .setOverrideForType(TrackSelectionOverride(trackGroup, 0))
-                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-                    .build()
+                    if (streamPosition >= 0 && streamPosition < subtitleGroups.size) {
+                        val trackGroup = subtitleGroups[streamPosition].mediaTrackGroup
+                        (player as ExoPlayer).trackSelectionParameters = player.trackSelectionParameters
+                            .buildUpon()
+                            .setOverrideForType(TrackSelectionOverride(trackGroup, 0))
+                            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                            .build()
+
+                        updateUiState { it.copy(subtitleStreamIndex = index) }
+                        Timber.d("Selected subtitle track at position: $streamPosition for stream index: $index")
+                    }
+                }
+                is MPVPlayer -> {
+                    val mediaSource = currentItem?.sources?.firstOrNull()
+                    val subtitleStreams = mediaSource?.mediaStreams?.filter {
+                        it.type == MediaStreamType.SUBTITLE
+                    } ?: emptyList()
+
+                    val mpvTrackNumber = subtitleStreams.indexOfFirst { it.index == index } + 1
+
+                    if (mpvTrackNumber > 0) {
+                        dev.jdtech.mpv.MPVLib.setPropertyInt("sid", mpvTrackNumber)
+                        dev.jdtech.mpv.MPVLib.setPropertyString("sub-visibility", "yes")
+                        updateUiState { it.copy(subtitleStreamIndex = index) }
+                        Timber.d("Selected MPV subtitle track: $mpvTrackNumber for stream index: $index")
+                    }
+                }
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to select subtitle track")
         }
-    }
+    }*/
 
     private suspend fun reportPlaybackStart(item: AfinityItem) {
         try {
@@ -463,11 +538,11 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun onAudioTrackSelect(index: Int) {
-        handlePlayerEvent(PlayerEvent.SelectAudioTrack(index))
+        switchToTrack(C.TRACK_TYPE_AUDIO, index)
     }
 
-    fun onSubtitleTrackSelect(index: Int?) {
-        handlePlayerEvent(PlayerEvent.SelectSubtitleTrack(index))
+    fun onSubtitleTrackSelect(index: Int) { // Note: Int not Int?
+        switchToTrack(C.TRACK_TYPE_TEXT, index)
     }
 
     fun onPlaybackSpeedChange(speed: Float) {

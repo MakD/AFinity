@@ -570,11 +570,36 @@ class MPVPlayer(
     override fun getTrackSelectionParameters(): TrackSelectionParameters = trackSelectionParameters
 
     override fun setTrackSelectionParameters(parameters: TrackSelectionParameters) {
-        if (trackSelectionParameters == parameters) return
         trackSelectionParameters = parameters
+
+        val disabledTrackTypes = parameters.disabledTrackTypes.map { MPVTrackType.fromMedia3TrackType(it) }
+
+        val notOverriddenTypes = mutableSetOf(MPVTrackType.VIDEO, MPVTrackType.AUDIO, MPVTrackType.SUBTITLE)
+        for (override in parameters.overrides) {
+            val trackType = MPVTrackType.fromMedia3TrackType(override.key.type)
+            notOverriddenTypes.remove(trackType)
+            val id = override.key.getFormat(0).id ?: continue
+
+            selectTrack(trackType, id)
+        }
+        for (notOverriddenType in notOverriddenTypes) {
+            if (notOverriddenType in disabledTrackTypes) {
+                selectTrack(notOverriddenType, "no")
+            } else {
+                selectTrack(notOverriddenType, "auto")
+            }
+        }
+
         listeners.sendEvent(EVENT_TRACK_SELECTION_PARAMETERS_CHANGED) { listener ->
             listener.onTrackSelectionParametersChanged(parameters)
         }
+    }
+
+    private fun selectTrack(
+        trackType: MPVTrackType,
+        id: String,
+    ) {
+        MPVLib.setPropertyString(trackType.type, id)
     }
 
     override fun getMediaMetadata(): MediaMetadata = currentMediaItem?.mediaMetadata ?: MediaMetadata.EMPTY
