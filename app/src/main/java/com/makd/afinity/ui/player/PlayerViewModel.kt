@@ -295,17 +295,28 @@ class PlayerViewModel @Inject constructor(
 
     private suspend fun selectAudioTrack(index: Int) = withContext(Dispatchers.Main) {
         try {
+            val mediaSource = currentItem?.sources?.firstOrNull()
+            val audioStream = mediaSource?.mediaStreams?.find {
+                it.type == MediaStreamType.AUDIO && it.index == index
+            } ?: return@withContext
+
             val tracks = player.currentTracks
             val audioGroups = tracks.groups.filter {
                 it.type == C.TRACK_TYPE_AUDIO && it.isSupported
             }
 
-            if (index >= 0 && index < audioGroups.size) {
-                val trackGroup = audioGroups[index].mediaTrackGroup
+            val groupIndex = audioGroups.indexOfFirst { group ->
+                group.mediaTrackGroup.getFormat(0).language == audioStream.language
+            }
+
+            if (groupIndex >= 0) {
+                val trackGroup = audioGroups[groupIndex].mediaTrackGroup
                 player.trackSelectionParameters = player.trackSelectionParameters
                     .buildUpon()
                     .setOverrideForType(TrackSelectionOverride(trackGroup, 0))
                     .build()
+
+                Timber.d("Selected audio track at group index: $groupIndex for stream index: $index")
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to select audio track")
@@ -319,20 +330,30 @@ class PlayerViewModel @Inject constructor(
                     .buildUpon()
                     .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
                     .build()
-            } else {
-                val tracks = player.currentTracks
-                val subtitleGroups = tracks.groups.filter {
-                    it.type == C.TRACK_TYPE_TEXT && it.isSupported
-                }
+                return@withContext
+            }
 
-                if (index >= 0 && index < subtitleGroups.size) {
-                    val trackGroup = subtitleGroups[index].mediaTrackGroup
-                    player.trackSelectionParameters = player.trackSelectionParameters
-                        .buildUpon()
-                        .setOverrideForType(TrackSelectionOverride(trackGroup, 0))
-                        .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-                        .build()
-                }
+            val mediaSource = currentItem?.sources?.firstOrNull()
+            val subtitleStream = mediaSource?.mediaStreams?.find {
+                it.type == MediaStreamType.SUBTITLE && it.index == index
+            } ?: return@withContext
+
+            val tracks = player.currentTracks
+            val subtitleGroups = tracks.groups.filter {
+                it.type == C.TRACK_TYPE_TEXT && it.isSupported
+            }
+
+            val groupIndex = subtitleGroups.indexOfFirst { group ->
+                group.mediaTrackGroup.getFormat(0).language == subtitleStream.language
+            }
+
+            if (groupIndex >= 0) {
+                val trackGroup = subtitleGroups[groupIndex].mediaTrackGroup
+                player.trackSelectionParameters = player.trackSelectionParameters
+                    .buildUpon()
+                    .setOverrideForType(TrackSelectionOverride(trackGroup, 0))
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                    .build()
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to select subtitle track")
