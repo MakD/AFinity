@@ -332,7 +332,7 @@ fun PlayerControls(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onSubtitleTrackSelect(option.index) // -1 for None, 0,1,2... for tracks
+                                        onSubtitleTrackSelect(option.index)
                                         showSubtitleSelector = false
                                     }
                                     .padding(vertical = 6.dp),
