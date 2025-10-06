@@ -1,10 +1,6 @@
 package com.makd.afinity.data.repository.playback
 
 import org.jellyfin.sdk.model.api.PlaybackInfoDto
-import org.jellyfin.sdk.model.api.MediaSourceInfo
-import org.jellyfin.sdk.model.api.PlaybackProgressInfo
-import org.jellyfin.sdk.model.api.PlaybackStartInfo
-import org.jellyfin.sdk.model.api.PlaybackStopInfo
 import java.util.UUID
 
 interface PlaybackRepository {
