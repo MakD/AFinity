@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -36,48 +35,51 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 authRepository.currentUser,
-                preferencesRepository.getDarkThemeFlow(),
                 appDataRepository.userProfileImageUrl,
                 serverRepository.currentServer
-            ) { user, darkTheme, profileImageUrl, server ->
-                SettingsUiState(
+            ) { user, profileImageUrl, server ->
+                Triple(user, profileImageUrl, server)
+            }.collect { (user, profileImageUrl, server) ->
+                _uiState.value = _uiState.value.copy(
                     currentUser = user,
-                    darkTheme = darkTheme,
-                    serverInfo = server?.name,
                     userProfileImageUrl = profileImageUrl,
+                    serverInfo = server?.name,
                     isLoading = false
                 )
-            }.collect { state ->
-                _uiState.value = state
             }
         }
 
         viewModelScope.launch {
-            try {
-                val dynamicColors = preferencesRepository.getDynamicColors()
-                val autoPlay = preferencesRepository.getAutoPlay()
-                val skipIntro = preferencesRepository.getSkipIntroEnabled()
-                val skipOutro = preferencesRepository.getSkipOutroEnabled()
-                val useExoPlayer = preferencesRepository.useExoPlayer.first()
+            preferencesRepository.getDarkThemeFlow().collect { _uiState.value = _uiState.value.copy(darkTheme = it) }
+        }
 
-                _uiState.value = _uiState.value.copy(
-                    dynamicColors = dynamicColors,
-                    autoPlay = autoPlay,
-                    skipIntroEnabled = skipIntro,
-                    skipOutroEnabled = skipOutro,
-                    useExoPlayer = useExoPlayer
-                )
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load settings")
-            }
+        viewModelScope.launch {
+            preferencesRepository.getDynamicColorsFlow().collect { _uiState.value = _uiState.value.copy(dynamicColors = it) }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getAutoPlayFlow().collect { _uiState.value = _uiState.value.copy(autoPlay = it) }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getSkipIntroEnabledFlow().collect { _uiState.value = _uiState.value.copy(skipIntroEnabled = it) }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getSkipOutroEnabledFlow().collect { _uiState.value = _uiState.value.copy(skipOutroEnabled = it) }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.useExoPlayer.collect { _uiState.value = _uiState.value.copy(useExoPlayer = it) }
         }
     }
+
+
 
     fun toggleDarkTheme(enabled: Boolean) {
         viewModelScope.launch {
             try {
                 preferencesRepository.setDarkTheme(enabled)
-                _uiState.value = _uiState.value.copy(darkTheme = enabled)
                 Timber.d("Dark theme set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle dark theme")
@@ -89,7 +91,6 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setDynamicColors(enabled)
-                _uiState.value = _uiState.value.copy(dynamicColors = enabled)
                 Timber.d("Dynamic colors set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle dynamic colors")
@@ -101,7 +102,6 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setAutoPlay(enabled)
-                _uiState.value = _uiState.value.copy(autoPlay = enabled)
                 Timber.d("Auto-play set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle auto-play")
@@ -113,7 +113,6 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setUseExoPlayer(enabled)
-                _uiState.value = _uiState.value.copy(useExoPlayer = enabled)
                 Timber.d("Use ExoPlayer set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle use exoplayer")
@@ -125,7 +124,6 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setSkipIntroEnabled(enabled)
-                _uiState.value = _uiState.value.copy(skipIntroEnabled = enabled)
                 Timber.d("Skip intro set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle skip intro")
@@ -137,7 +135,6 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 preferencesRepository.setSkipOutroEnabled(enabled)
-                _uiState.value = _uiState.value.copy(skipOutroEnabled = enabled)
                 Timber.d("Skip outro set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle skip outro")

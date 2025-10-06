@@ -44,7 +44,8 @@ import kotlin.math.roundToInt
 data class AudioStreamOption(
     val stream: AfinityMediaStream,
     val displayName: String,
-    val isDefault: Boolean
+    val isDefault: Boolean,
+    val position: Int = 0
 )
 
 data class SubtitleStreamOption(
@@ -98,7 +99,7 @@ fun PlayerControls(
     val audioStreamOptions = remember(currentItem) {
         val streams = currentItem?.sources?.firstOrNull()?.mediaStreams
             ?.filter { it.type == MediaStreamType.AUDIO }
-            ?.map { stream ->
+            ?.mapIndexed { index, stream ->
                 val displayName = buildString {
                     append(stream.language.ifEmpty { "Unknown" })
                     append(" • ${stream.codec.uppercase()}")
@@ -110,7 +111,8 @@ fun PlayerControls(
                 AudioStreamOption(
                     stream = stream,
                     displayName = displayName,
-                    isDefault = stream.isDefault
+                    isDefault = stream.isDefault,
+                    position = index
                 )
             } ?: emptyList()
 
@@ -253,16 +255,16 @@ fun PlayerControls(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onAudioTrackSelect(option.stream.index)
+                                        onAudioTrackSelect(option.position)
                                         showAudioSelector = false
                                     }
                                     .padding(vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = uiState.audioStreamIndex == option.stream.index,
+                                    selected = uiState.audioStreamIndex == (option.position),
                                     onClick = {
-                                        onAudioTrackSelect(option.stream.index)
+                                        onAudioTrackSelect((option.position))
                                         showAudioSelector = false
                                     },
                                     colors = RadioButtonDefaults.colors(

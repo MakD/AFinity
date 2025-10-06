@@ -367,7 +367,7 @@ private fun PlaybackSection(
         SettingsSwitchItem(
             icon = Icons.Outlined.Videocam,
             title = "Use ExoPlayer",
-            subtitle = "Restart required. Uses LibMPV when disabled",
+            subtitle = "Uses LibMPV when disabled",
             checked = useExoPlayer,
             onCheckedChange = onUseExoPlayerToggle
         )

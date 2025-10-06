@@ -200,6 +200,18 @@ class PreferencesRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getDynamicColorsFlow(): Flow<Boolean> =
+        dataStore.data.map { it[Keys.DYNAMIC_COLORS] ?: true }
+
+    override fun getAutoPlayFlow(): Flow<Boolean> =
+        dataStore.data.map { it[Keys.AUTO_PLAY] ?: true }
+
+    override fun getSkipIntroEnabledFlow(): Flow<Boolean> =
+        dataStore.data.map { it[Keys.SKIP_INTRO_ENABLED] ?: true }
+
+    override fun getSkipOutroEnabledFlow(): Flow<Boolean> =
+        dataStore.data.map { it[Keys.SKIP_OUTRO_ENABLED] ?: true }
+
     override suspend fun setDynamicColors(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.DYNAMIC_COLORS] = enabled

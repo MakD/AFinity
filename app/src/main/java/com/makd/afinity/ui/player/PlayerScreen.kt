@@ -214,7 +214,7 @@ fun PlayerScreen(
             onSubtitleTrackSelect = viewModel::onSubtitleTrackSelect,
             onPlaybackSpeedChange = viewModel::onPlaybackSpeedChange,
             onLockToggle = viewModel::onLockToggle,
-            onSkipSegment = { viewModel.onSkipSegment() },
+            onSkipSegment = viewModel::onSkipSegment,
             onSeekBackward = viewModel::onSeekBackward,
             onSeekForward = viewModel::onSeekForward,
             onNextEpisode = viewModel::onNextEpisode,

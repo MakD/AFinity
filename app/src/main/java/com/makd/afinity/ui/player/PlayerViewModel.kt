@@ -26,6 +26,8 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
+import com.makd.afinity.data.models.media.AfinityTrickplayInfo
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.player.GestureConfig
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -46,6 +48,7 @@ import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.math.ceil
 
 @androidx.media3.common.util.UnstableApi
 @HiltViewModel
@@ -208,7 +211,10 @@ class PlayerViewModel @Inject constructor(
                     event.subtitleStreamIndex,
                     event.startPositionMs
                 )
-                is PlayerEvent.SkipSegment -> skipSegment()
+                is PlayerEvent.SkipSegment -> {
+                    handlePlayerEvent(PlayerEvent.Seek(event.segment.endTicks))
+                    updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+                }
                 is PlayerEvent.Stop -> player.stop()
             }
         }
@@ -223,10 +229,21 @@ class PlayerViewModel @Inject constructor(
     ) = withContext(Dispatchers.IO) {
         try {
             currentItem = item
+
+            val audioStreams = item.sources.firstOrNull()?.mediaStreams?.filter {
+                it.type == MediaStreamType.AUDIO
+            }
+            val audioPosition = if (audioStreamIndex != null && audioStreams != null) {
+                audioStreams.indexOfFirst { it.index == audioStreamIndex }
+                    .takeIf { it >= 0 }
+            } else {
+                null
+            }
+
             updateUiState {
                 it.copy(
                     currentItem = item,
-                    audioStreamIndex = audioStreamIndex,
+                    audioStreamIndex = audioPosition,
                     subtitleStreamIndex = subtitleStreamIndex
                 )
             }
@@ -250,42 +267,36 @@ class PlayerViewModel @Inject constructor(
             }
 
             val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
+            Timber.d("=== SUBTITLE STREAM DEBUG ===")
+            mediaSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }?.forEach { stream ->
+                Timber.d("Subtitle ${stream.index}: isExternal=${stream.isExternal}, path=${stream.path}, codec=${stream.codec}, title=${stream.displayTitle}")
+            }
+            Timber.d("=== END SUBTITLE DEBUG ===")
             val externalSubtitles = mediaSource?.mediaStreams
                 ?.filter { stream ->
-                    stream.isExternal &&
-                            stream.type == MediaStreamType.SUBTITLE &&
-                            !stream.path.isNullOrBlank()
+                    stream.type == MediaStreamType.SUBTITLE && stream.isExternal
                 }
-                ?.map { stream ->
-                    val subtitleUrl = if (stream.path?.startsWith("http") == true) {
-                        stream.path!!
-                    } else {
-                        val format = when (stream.codec?.lowercase()) {
-                            "subrip" -> "srt"
-                            "ass" -> "ass"
-                            "ssa" -> "ass"
-                            "webvtt" -> "vtt"
-                            "vobsub" -> "sub"
-                            else -> "srt"
-                        }
-                        "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.${format}?api_key=${apiClient.accessToken}"
-                    }
+                ?.mapNotNull { stream ->
+                    try {
+                        val subtitleUrl = "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
 
-                    val mimeType = when (stream.codec?.lowercase()) {
-                        "subrip" -> MimeTypes.APPLICATION_SUBRIP
-                        "webvtt" -> MimeTypes.APPLICATION_SUBRIP
-                        "ass", "ssa" -> MimeTypes.TEXT_SSA
-                        else -> MimeTypes.TEXT_UNKNOWN
-                    }
+                        Timber.d("Building external subtitle: ${stream.displayTitle} -> $subtitleUrl")
 
-                    MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
-                        .setLabel(stream.title?.ifBlank { stream.language } ?: "Unknown")
-                        .setMimeType(mimeType)
-                        .setLanguage(stream.language)
-                        .build()
+                        MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
+                            .setLabel(stream.displayTitle ?: stream.language ?: "Track ${stream.index}")
+                            .setMimeType(MimeTypes.APPLICATION_SUBRIP)
+                            .setLanguage(stream.language ?: "eng")
+                            .build()
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to build subtitle config for stream ${stream.index}")
+                        null
+                    }
                 } ?: emptyList()
 
             Timber.d("Built ${externalSubtitles.size} external subtitle configurations")
+            externalSubtitles.forEach { sub ->
+                Timber.d("  - ${sub.label}: ${sub.uri}")
+            }
 
             val mediaItem = MediaItem.Builder()
                 .setMediaId(item.id.toString())
@@ -306,6 +317,7 @@ class PlayerViewModel @Inject constructor(
 
             reportPlaybackStart(item)
             loadSegments(item.id)
+            loadTrickplayData()
 
         } catch (e: Exception) {
             Timber.e(e, "Failed to load media")
@@ -318,6 +330,84 @@ class PlayerViewModel @Inject constructor(
             "webvtt", "vtt" -> MimeTypes.APPLICATION_SUBRIP
             "ass", "ssa" -> MimeTypes.TEXT_SSA
             else -> MimeTypes.TEXT_UNKNOWN
+        }
+    }
+
+    private fun loadTrickplayData() {
+        val currentItem = uiState.value.currentItem ?: return
+
+        val trickplayInfo = when (currentItem) {
+            is com.makd.afinity.data.models.media.AfinityEpisode -> {
+                currentItem.trickplayInfo?.values?.firstOrNull()
+            }
+            is com.makd.afinity.data.models.media.AfinityMovie -> {
+                currentItem.trickplayInfo?.values?.firstOrNull()
+            }
+            else -> {
+                if (currentItem is com.makd.afinity.data.models.media.AfinitySources) {
+                    currentItem.trickplayInfo?.values?.firstOrNull()
+                } else {
+                    null
+                }
+            }
+        }
+
+        trickplayInfo?.let { info ->
+            viewModelScope.launch {
+                try {
+                    withContext(Dispatchers.Default) {
+                        val thumbnailsPerTile = info.tileWidth * info.tileHeight
+                        val maxTileIndex = kotlin.math.ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile).toInt()
+
+                        val individualThumbnails = mutableListOf<ImageBitmap>()
+
+                        Timber.d("Loading trickplay: ${info.thumbnailCount} thumbnails from $maxTileIndex tiles (${info.tileWidth}x${info.tileHeight} per tile)")
+
+                        for (tileIndex in 0..maxTileIndex) {
+                            val imageData = mediaRepository.getTrickplayData(
+                                currentItem.id,
+                                info.width,
+                                tileIndex
+                            )
+
+                            if (imageData != null) {
+                                val tileBitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
+
+                                for (offsetY in 0 until (info.height * info.tileHeight) step info.height) {
+                                    for (offsetX in 0 until (info.width * info.tileWidth) step info.width) {
+                                        try {
+                                            val thumbnail = Bitmap.createBitmap(tileBitmap, offsetX, offsetY, info.width, info.height)
+                                            individualThumbnails.add(thumbnail.asImageBitmap())
+
+                                            if (individualThumbnails.size >= info.thumbnailCount) break
+                                        } catch (e: Exception) {
+                                            Timber.w("Failed to crop thumbnail at offset ($offsetX, $offsetY)")
+                                        }
+                                    }
+                                    if (individualThumbnails.size >= info.thumbnailCount) break
+                                }
+                            } else {
+                                Timber.d("Failed to load tile $tileIndex")
+                                break
+                            }
+
+                            if (individualThumbnails.size >= info.thumbnailCount) break
+                        }
+
+                        if (individualThumbnails.isNotEmpty()) {
+                            currentTrickplay = Trickplay(
+                                interval = info.interval,
+                                images = individualThumbnails
+                            )
+                            Timber.d("Extracted ${individualThumbnails.size} individual thumbnails for ${currentItem.name}")
+                        } else {
+                            Timber.d("No trickplay thumbnails could be extracted for ${currentItem.name}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load trickplay data")
+                }
+            }
         }
     }
 
@@ -364,35 +454,91 @@ class PlayerViewModel @Inject constructor(
     }
 
     private suspend fun loadSegments(itemId: UUID) {
-        try {
-            currentMediaSegments = segmentsRepository.getSegments(itemId)
-            startSegmentChecking()
+        currentMediaSegments = try {
+            segmentsRepository.getSegments(itemId)
         } catch (e: Exception) {
-            Timber.e(e, "Failed to load segments")
-            currentMediaSegments = emptyList()
+            Timber.e(e, "Failed to load segments for item $itemId")
+            emptyList()
+        }
+
+        if (currentMediaSegments.isNotEmpty()) {
+            Timber.d("Loaded ${currentMediaSegments.size} segments for item $itemId")
+            startSegmentMonitoring()
+        } else {
+            Timber.d("No segments found for item $itemId")
         }
     }
 
-    private fun startSegmentChecking() {
+    private fun startSegmentMonitoring() {
         segmentCheckingJob?.cancel()
         segmentCheckingJob = viewModelScope.launch {
+            delay(2000L)
             while (true) {
-                delay(500)
-                val currentPos = player.currentPosition
-                currentMediaSegments.find { segment ->
-                    currentPos >= segment.startTicks / 10000 &&
-                            currentPos <= segment.endTicks / 10000
-                }?.let { segment ->
-                    updateUiState { it.copy(currentSegment = segment) }
-                } ?: updateUiState { it.copy(currentSegment = null) }
+                updateCurrentSegment()
+                delay(1000L)
             }
         }
     }
 
-    fun skipSegment() {
-        _uiState.value.currentSegment?.let { segment ->
-            player.seekTo(segment.endTicks / 10000)
+    private suspend fun updateCurrentSegment() {
+        if (currentMediaSegments.isEmpty()) return
+
+        val currentPositionMs = uiState.value.currentPosition
+
+        val currentSegment = currentMediaSegments.find { segment ->
+            currentPositionMs in segment.startTicks..<(segment.endTicks - 100L)
         }
+
+        currentSegment?.let { segment ->
+            val skipIntroEnabled = preferencesRepository.getSkipIntroEnabled()
+            val skipOutroEnabled = preferencesRepository.getSkipOutroEnabled()
+
+            val shouldShowSkipButton = when (segment.type) {
+                AfinitySegmentType.INTRO -> skipIntroEnabled
+                AfinitySegmentType.OUTRO -> skipOutroEnabled
+                else -> false
+            }
+
+            if (shouldShowSkipButton) {
+                val skipButtonText = getSkipButtonText(segment)
+                updateUiState {
+                    it.copy(
+                        currentSegment = segment,
+                        skipButtonText = skipButtonText,
+                        showSkipButton = true
+                    )
+                }
+            } else {
+                updateUiState {
+                    it.copy(
+                        currentSegment = null,
+                        showSkipButton = false
+                    )
+                }
+            }
+        } ?: run {
+            updateUiState {
+                it.copy(
+                    currentSegment = null,
+                    showSkipButton = false
+                )
+            }
+        }
+    }
+
+    private fun getSkipButtonText(segment: AfinitySegment): String {
+        return when (segment.type) {
+            AfinitySegmentType.INTRO -> "Skip Intro"
+            AfinitySegmentType.OUTRO -> "Skip Outro"
+            AfinitySegmentType.RECAP -> "Skip Recap"
+            AfinitySegmentType.PREVIEW -> "Skip Preview"
+            AfinitySegmentType.COMMERCIAL -> "Skip Commercial"
+            else -> "Skip"
+        }
+    }
+
+    fun onSkipSegment(segment: AfinitySegment) {
+        handlePlayerEvent(PlayerEvent.SkipSegment(segment))
     }
 
     fun initializePlaylist(item: AfinityItem) {
@@ -467,10 +613,6 @@ class PlayerViewModel @Inject constructor(
         updateUiState { it.copy(isControlsLocked = !it.isControlsLocked) }
     }
 
-    fun onSkipSegment() {
-        skipSegment()
-    }
-
     fun onSeekBackward() {
         handlePlayerEvent(PlayerEvent.SeekRelative(-10000L))
     }
@@ -526,11 +668,28 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun onSeekBarPreview(position: Long, isActive: Boolean) {
-        updateUiState {
-            it.copy(
-                isSeekPreviewActive = isActive,
-                seekPreviewPosition = position
-            )
+        if (!isActive) {
+            updateUiState {
+                it.copy(
+                    showTrickplayPreview = false,
+                    trickplayPreviewImage = null,
+                    trickplayPreviewPosition = 0L
+                )
+            }
+            return
+        }
+
+        currentTrickplay?.let { trickplay ->
+            val index = (position / trickplay.interval).toInt()
+                .coerceIn(0, trickplay.images.size - 1)
+
+            updateUiState {
+                it.copy(
+                    showTrickplayPreview = true,
+                    trickplayPreviewImage = trickplay.images[index],
+                    trickplayPreviewPosition = position
+                )
+            }
         }
     }
 

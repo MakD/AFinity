@@ -27,15 +27,18 @@ interface PreferencesRepository {
 
     suspend fun setAutoPlay(autoPlay: Boolean)
     suspend fun getAutoPlay(): Boolean
+    fun getAutoPlayFlow(): Flow<Boolean>
 
     suspend fun setMaxBitrate(bitrate: Int?)
     suspend fun getMaxBitrate(): Int?
 
     suspend fun setSkipIntroEnabled(enabled: Boolean)
     suspend fun getSkipIntroEnabled(): Boolean
+    fun getSkipIntroEnabledFlow(): Flow<Boolean>
 
     suspend fun setSkipOutroEnabled(enabled: Boolean)
     suspend fun getSkipOutroEnabled(): Boolean
+    fun getSkipOutroEnabledFlow(): Flow<Boolean>
 
     val useExoPlayer: Flow<Boolean>
     suspend fun setUseExoPlayer(value: Boolean)
@@ -46,6 +49,7 @@ interface PreferencesRepository {
 
     suspend fun setDynamicColors(enabled: Boolean)
     suspend fun getDynamicColors(): Boolean
+    fun getDynamicColorsFlow(): Flow<Boolean>
 
     suspend fun setGridLayout(enabled: Boolean)
     suspend fun getGridLayout(): Boolean
