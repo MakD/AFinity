@@ -4,10 +4,10 @@ import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -19,18 +19,14 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.makd.afinity.data.manager.PlaybackStateManager
-import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.data.models.player.Trickplay
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityEpisode
-import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
-import com.makd.afinity.data.models.media.AfinityTrickplayInfo
-import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.player.GestureConfig
 import com.makd.afinity.data.models.player.PlayerEvent
+import com.makd.afinity.data.models.player.Trickplay
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.player.mpv.MPVPlayer
@@ -40,7 +36,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
@@ -48,7 +47,6 @@ import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.math.ceil
 
 @androidx.media3.common.util.UnstableApi
 @HiltViewModel
@@ -79,6 +77,8 @@ class PlayerViewModel @Inject constructor(
     private var controlsHideJob: Job? = null
     private var currentMediaSegments: List<AfinitySegment> = emptyList()
     private var segmentCheckingJob: Job? = null
+
+    private var progressReportingJob: Job? = null
     private var currentItem: AfinityItem? = null
     private var currentTrickplay: Trickplay? = null
 
@@ -88,6 +88,7 @@ class PlayerViewModel @Inject constructor(
     init {
         initializePlayer()
         startPositionUpdateLoop()
+        startProgressReporting()
     }
 
     private fun startPositionUpdateLoop() {
@@ -96,6 +97,34 @@ class PlayerViewModel @Inject constructor(
                 delay(100)
                 if (player.isPlaying) {
                     updatePlayerState()
+                }
+            }
+        }
+    }
+
+    private fun startProgressReporting() {
+        progressReportingJob?.cancel()
+        progressReportingJob = viewModelScope.launch {
+            while (true) {
+                delay(5000L)
+                currentItem?.let { item ->
+                    currentSessionId?.let { sessionId ->
+                        try {
+                            val positionTicks = player.currentPosition * 10000
+                            val isPaused = !player.isPlaying
+
+                            playbackRepository.reportPlaybackProgress(
+                                itemId = item.id,
+                                sessionId = sessionId,
+                                positionTicks = positionTicks,
+                                isPaused = isPaused,
+                                playMethod = "DirectPlay"
+                            )
+                            Timber.d("Reported progress: ${player.currentPosition}ms, paused: $isPaused")
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to report periodic progress")
+                        }
+                    }
                 }
             }
         }
@@ -701,13 +730,15 @@ class PlayerViewModel @Inject constructor(
         player.pause()
     }
 
-    private fun updateUiState(update: (PlayerUiState) -> PlayerUiState) {
-        _uiState.value = update(_uiState.value)
-    }
+    fun stopPlayback() {
+        if (hasStoppedPlayback) return
+        hasStoppedPlayback = true
 
-    override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch {
+        progressReportingJob?.cancel()
+
+        Timber.d("Stopping playback and reporting to server")
+
+        kotlinx.coroutines.runBlocking {
             try {
                 currentItem?.let { item ->
                     currentSessionId?.let { sessionId ->
@@ -717,6 +748,7 @@ class PlayerViewModel @Inject constructor(
                             positionTicks = player.currentPosition * 10000,
                             mediaSourceId = item.sources.firstOrNull()?.id ?: ""
                         )
+                        Timber.d("Successfully reported playback stop")
                     }
                 }
                 playbackStateManager.notifyPlaybackStopped()
@@ -724,12 +756,24 @@ class PlayerViewModel @Inject constructor(
                 Timber.e(e, "Failed to report playback stop")
             }
         }
+    }
 
+    private fun updateUiState(update: (PlayerUiState) -> PlayerUiState) {
+        _uiState.value = update(_uiState.value)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+
+        stopPlayback()
+
+        progressReportingJob?.cancel()
         segmentCheckingJob?.cancel()
         controlsHideJob?.cancel()
         player.removeListener(this)
         player.release()
     }
+
     data class PlayerUiState(
         val isPlaying: Boolean = false,
         val isPaused: Boolean = false,

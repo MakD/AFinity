@@ -2,26 +2,33 @@ package com.makd.afinity.ui.player
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
-import com.makd.afinity.ui.player.components.*
-import com.makd.afinity.ui.player.utils.KeepScreenOn
-import com.makd.afinity.ui.player.utils.ScreenBrightnessController
+import com.makd.afinity.ui.player.components.ErrorIndicator
+import com.makd.afinity.ui.player.components.GestureHandler
+import com.makd.afinity.ui.player.components.MpvSurface
+import com.makd.afinity.ui.player.components.PlayerControls
+import com.makd.afinity.ui.player.components.PlayerIndicators
 import com.makd.afinity.ui.player.components.TrickplayPreview
+import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.makd.afinity.ui.player.utils.ScreenBrightnessController
 import timber.log.Timber
 
 
@@ -132,6 +139,7 @@ fun PlayerScreen(
         if (!hasNavigatedBack) {
             hasNavigatedBack = true
             Timber.d("Back button pressed - calling onBackPressed")
+            viewModel.stopPlayback()
             onBackPressed()
         }
     }
