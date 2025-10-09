@@ -342,7 +342,7 @@ class PreferencesRepositoryImpl @Inject constructor(
             }
         }
         .map { preferences ->
-            preferences[Keys.USE_EXO_PLAYER] ?: true
+            preferences[Keys.USE_EXO_PLAYER] ?: false
         }
 
     override suspend fun setUseExoPlayer(value: Boolean) {

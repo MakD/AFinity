@@ -392,7 +392,7 @@ private fun PlaybackSection(
         SettingsSwitchItem(
             icon = Icons.Outlined.SkipNext,
             title = "Skip Intro",
-            subtitle = "Automatically skip intros",
+            subtitle = "Show the Skip Intro Button",
             checked = skipIntroEnabled,
             onCheckedChange = onSkipIntroToggle
         )
@@ -405,7 +405,7 @@ private fun PlaybackSection(
         SettingsSwitchItem(
             icon = Icons.Outlined.FastForward,
             title = "Skip Outro",
-            subtitle = "Automatically skip outros",
+            subtitle = "Show the Skip Outro Button",
             checked = skipOutroEnabled,
             onCheckedChange = onSkipOutroToggle
         )
