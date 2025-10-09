@@ -4,6 +4,8 @@ import android.content.Context
 import coil3.ImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.CachePolicy
 import coil3.svg.SvgDecoder
 import dagger.Module
 import dagger.Provides
@@ -11,10 +13,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
-import javax.inject.Singleton
-import coil3.network.okhttp.OkHttpNetworkFetcherFactory
-import coil3.request.CachePolicy
 import okio.Path.Companion.toOkioPath
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)

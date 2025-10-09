@@ -10,6 +10,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.makd.afinity.ui.player.utils.PlayerOrientationController
 import java.util.UUID
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 fun PlayerScreenWrapper(
     itemId: UUID,
@@ -24,8 +25,6 @@ fun PlayerScreenWrapper(
 ) {
     val item by viewModel.item.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-
-    PlayerOrientationController()
 
     LaunchedEffect(itemId) {
         viewModel.loadItem(itemId)

@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -11,8 +12,10 @@ import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.di.AppPreferences
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,6 +37,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         val MAX_BITRATE = intPreferencesKey("max_bitrate")
         val SKIP_INTRO_ENABLED = booleanPreferencesKey("skip_intro_enabled")
         val SKIP_OUTRO_ENABLED = booleanPreferencesKey("skip_outro_enabled")
+        val USE_EXO_PLAYER = booleanPreferencesKey("use_exo_player")
 
         val DARK_THEME = booleanPreferencesKey("dark_theme")
         val DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
@@ -196,6 +200,18 @@ class PreferencesRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getDynamicColorsFlow(): Flow<Boolean> =
+        dataStore.data.map { it[Keys.DYNAMIC_COLORS] ?: true }
+
+    override fun getAutoPlayFlow(): Flow<Boolean> =
+        dataStore.data.map { it[Keys.AUTO_PLAY] ?: true }
+
+    override fun getSkipIntroEnabledFlow(): Flow<Boolean> =
+        dataStore.data.map { it[Keys.SKIP_INTRO_ENABLED] ?: true }
+
+    override fun getSkipOutroEnabledFlow(): Flow<Boolean> =
+        dataStore.data.map { it[Keys.SKIP_OUTRO_ENABLED] ?: true }
+
     override suspend fun setDynamicColors(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.DYNAMIC_COLORS] = enabled
@@ -314,6 +330,24 @@ class PreferencesRepositoryImpl @Inject constructor(
         dataStore.edit { preferences ->
             preferences.remove(Keys.CURRENT_USER_ID)
             preferences.remove(Keys.LAST_SYNC_TIME)
+        }
+    }
+
+    override val useExoPlayer: Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[Keys.USE_EXO_PLAYER] ?: true
+        }
+
+    override suspend fun setUseExoPlayer(value: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.USE_EXO_PLAYER] = value
         }
     }
 }

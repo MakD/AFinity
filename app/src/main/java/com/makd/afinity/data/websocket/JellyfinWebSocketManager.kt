@@ -1,5 +1,7 @@
 package com.makd.afinity.data.websocket
 
+import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.userdata.UserDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -8,12 +10,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.model.api.*
 import org.jellyfin.sdk.api.sockets.SocketApiState
-import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.data.repository.userdata.UserDataRepository
+import org.jellyfin.sdk.model.api.LibraryChangedMessage
+import org.jellyfin.sdk.model.api.PlayMessage
+import org.jellyfin.sdk.model.api.PlaystateMessage
+import org.jellyfin.sdk.model.api.ServerRestartingMessage
+import org.jellyfin.sdk.model.api.ServerShuttingDownMessage
+import org.jellyfin.sdk.model.api.SessionsMessage
+import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import timber.log.Timber
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 

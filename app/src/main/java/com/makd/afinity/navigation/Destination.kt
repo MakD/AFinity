@@ -38,7 +38,6 @@ enum class Destination(
         const val LIBRARY_CONTENT_ROUTE = "library_content/{libraryId}/{libraryName}"
         const val ITEM_DETAIL_ROUTE = "item_detail/{itemId}"
         const val EPISODE_LIST_ROUTE = "episodes/{seasonId}/{seasonName}"
-        const val PLAYER_ROUTE = "player/{itemId}/{mediaSourceId}?audioStreamIndex={audioStreamIndex}&subtitleStreamIndex={subtitleStreamIndex}&startPositionMs={startPositionMs}"
         const val PERSON_ROUTE = "person/{personId}"
         const val SEARCH_ROUTE = "search"
         const val GENRE_RESULTS_ROUTE = "genre_results/{genre}"

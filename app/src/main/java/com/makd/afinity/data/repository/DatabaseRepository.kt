@@ -1,13 +1,22 @@
 package com.makd.afinity.data.repository
 
-import com.makd.afinity.data.models.media.*
+import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMediaStream
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.AfinitySegment
+import com.makd.afinity.data.models.media.AfinitySegmentType
+import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinitySource
+import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
-import com.makd.afinity.data.models.server.ServerWithAddresses
 import com.makd.afinity.data.models.server.ServerWithAddressAndUser
+import com.makd.afinity.data.models.server.ServerWithAddresses
 import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
-import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.models.user.AfinityUserDataDto
+import com.makd.afinity.data.models.user.User
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 

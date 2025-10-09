@@ -1,69 +1,100 @@
 package com.makd.afinity.ui.player.components
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Forward30
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Speaker
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.gestures.detectDragGestures
-import com.makd.afinity.ui.components.OptimizedAsyncImage
-import androidx.compose.runtime.*
-import com.makd.afinity.data.models.media.AfinityMediaStream
-import com.makd.afinity.data.models.player.PlayerState
-import com.makd.afinity.ui.player.PlayerUiState
-import org.jellyfin.sdk.model.api.MediaStreamType
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import com.makd.afinity.data.models.extensions.logoBlurHash
-import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.R
-import kotlin.math.roundToInt
+import com.makd.afinity.data.models.extensions.logoBlurHash
+import com.makd.afinity.data.models.media.AfinityMediaStream
+import com.makd.afinity.data.models.media.AfinitySegment
+import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.player.PlayerViewModel
+import org.jellyfin.sdk.model.api.MediaStreamType
+import timber.log.Timber
 
 data class AudioStreamOption(
     val stream: AfinityMediaStream,
     val displayName: String,
-    val isDefault: Boolean
+    val isDefault: Boolean,
+    val position: Int = 0
 )
 
 data class SubtitleStreamOption(
     val stream: AfinityMediaStream?,
     val displayName: String,
     val isDefault: Boolean,
+    val index: Int,
     val isNone: Boolean = false
 )
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 fun PlayerControls(
-    playerState: PlayerState,
-    uiState: PlayerUiState,
+    uiState: PlayerViewModel.PlayerUiState,
+    player: androidx.media3.common.Player,
     onPlayPauseClick: () -> Unit,
     onSeekBarChange: (Long) -> Unit,
     onTrickplayPreview: (Long, Boolean) -> Unit = { _, _ -> },
     onBackClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
-    onAudioTrackSelect: (Int?) -> Unit,
-    onSubtitleTrackSelect: (Int?) -> Unit,
+    onAudioTrackSelect: (Int) -> Unit,
+    onSubtitleTrackSelect: (Int) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
     onLockToggle: () -> Unit,
     onSkipSegment: (AfinitySegment) -> Unit,
@@ -77,12 +108,25 @@ fun PlayerControls(
     var showSubtitleSelector by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
 
-    val currentItem = playerState.currentItem
+    val currentItem = uiState.currentItem
+
+    LaunchedEffect(currentItem) {
+        Timber.d("=== PlayerControls Debug ===")
+        Timber.d("Current item: ${currentItem?.name}")
+        Timber.d("Item type: ${currentItem?.javaClass?.simpleName}")
+        Timber.d("Sources count: ${currentItem?.sources?.size}")
+        currentItem?.sources?.forEach { source ->
+            Timber.d("Source ID: ${source.id}, Streams: ${source.mediaStreams.size}")
+            source.mediaStreams.forEach { stream ->
+                Timber.d("  Stream - Type: ${stream.type}, Index: ${stream.index}, Language: ${stream.language}")
+            }
+        }
+    }
 
     val audioStreamOptions = remember(currentItem) {
-        currentItem?.sources?.firstOrNull()?.mediaStreams
+        val streams = currentItem?.sources?.firstOrNull()?.mediaStreams
             ?.filter { it.type == MediaStreamType.AUDIO }
-            ?.map { stream ->
+            ?.mapIndexed { index, stream ->
                 val displayName = buildString {
                     append(stream.language.ifEmpty { "Unknown" })
                     append(" • ${stream.codec.uppercase()}")
@@ -94,42 +138,44 @@ fun PlayerControls(
                 AudioStreamOption(
                     stream = stream,
                     displayName = displayName,
-                    isDefault = stream.isDefault
+                    isDefault = stream.isDefault,
+                    position = index
                 )
             } ?: emptyList()
+
+        Timber.d("Audio options count: ${streams.size}")
+        streams.forEach {
+            Timber.d("Audio option: ${it.displayName}, index: ${it.stream.index}")
+        }
+
+        streams
     }
 
-    val subtitleStreamOptions = remember(currentItem) {
+    val subtitleStreamOptions = remember(currentItem, player?.currentTracks) {
         val options = mutableListOf<SubtitleStreamOption>()
 
         options.add(
             SubtitleStreamOption(
                 stream = null,
                 displayName = "None",
-                isDefault = playerState.subtitleStreamIndex == null,
+                isDefault = false,
+                index = -1,
                 isNone = true
             )
         )
 
-        currentItem?.sources?.firstOrNull()?.mediaStreams
-            ?.filter { it.type == MediaStreamType.SUBTITLE }
-            ?.forEach { stream ->
-                val displayName = buildString {
-                    append(stream.language.ifEmpty { "Unknown" })
-                    append(" • ${stream.codec.uppercase()}")
-
-                    if (stream.title.contains("forced", ignoreCase = true)) {
-                        append(" (Forced)")
-                    } else if (stream.isExternal) {
-                        append(" (External)")
-                    }
-                }
+        player?.currentTracks?.groups
+            ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
+            ?.forEachIndexed { index, trackGroup ->
+                val format = trackGroup.mediaTrackGroup.getFormat(0)
+                val displayName = format.label ?: format.language ?: "Track ${index + 1}"
 
                 options.add(
                     SubtitleStreamOption(
-                        stream = stream,
+                        stream = null,
                         displayName = displayName,
-                        isDefault = stream.isDefault,
+                        isDefault = trackGroup.isSelected,
+                        index = index,
                         isNone = false
                     )
                 )
@@ -147,7 +193,7 @@ fun PlayerControls(
                 modifier = Modifier.fillMaxSize()
             ) {
                 TopControls(
-                    playerState = playerState,
+                    uiState = uiState,
                     onBackClick = onBackClick,
                     onAudioToggle = { showAudioSelector = !showAudioSelector },
                     onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
@@ -156,10 +202,10 @@ fun PlayerControls(
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
 
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     CenterPlayButton(
-                        isPlaying = playerState.isPlaying,
-                        showPlayButton = uiState.showPlayButton,
+                        isPlaying = uiState.isPlaying,
+                        showPlayButton = uiState.showControls,
                         isBuffering = uiState.showBuffering,
                         onPlayPauseClick = onPlayPauseClick,
                         onSeekBackward = onSeekBackward,
@@ -170,9 +216,9 @@ fun PlayerControls(
                     )
                 }
 
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     BottomControls(
-                        playerState = playerState,
+                        uiState = uiState,
                         onSeekBarChange = onSeekBarChange,
                         onTrickplayPreview = onTrickplayPreview,
                         modifier = Modifier.align(Alignment.BottomCenter)
@@ -180,14 +226,17 @@ fun PlayerControls(
                 }
             }
         }
-        if (uiState.showSkipButton && uiState.currentSegment != null && !uiState.showControls) {
+        if (uiState.showSkipButton && uiState.currentSegment != null) {
             SkipButton(
                 segment = uiState.currentSegment!!,
                 skipButtonText = uiState.skipButtonText,
                 onClick = onSkipSegment,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(16.dp)
+                    .padding(
+                        end = 16.dp,
+                        bottom = if (uiState.showControls) 70.dp else 16.dp
+                    )
             )
         }
     }
@@ -236,16 +285,16 @@ fun PlayerControls(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onAudioTrackSelect(option.stream.index)
+                                        onAudioTrackSelect(option.position)
                                         showAudioSelector = false
                                     }
                                     .padding(vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = playerState.audioStreamIndex == option.stream.index,
+                                    selected = uiState.audioStreamIndex == (option.position),
                                     onClick = {
-                                        onAudioTrackSelect(option.stream.index)
+                                        onAudioTrackSelect((option.position))
                                         showAudioSelector = false
                                     },
                                     colors = RadioButtonDefaults.colors(
@@ -313,22 +362,27 @@ fun PlayerControls(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        val selectedIndex = if (option.isNone) null else option.stream?.index
-                                        onSubtitleTrackSelect(selectedIndex)
+                                        onSubtitleTrackSelect(option.index)
                                         showSubtitleSelector = false
                                     }
                                     .padding(vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = if (option.isNone) {
-                                        playerState.subtitleStreamIndex == null
-                                    } else {
-                                        playerState.subtitleStreamIndex == option.stream?.index
+                                    selected = when {
+                                        option.index == -1 -> {
+                                            player?.currentTracks?.groups
+                                                ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
+                                                ?.none { it.isSelected } ?: true
+                                        }
+                                        else -> {
+                                            player?.currentTracks?.groups
+                                                ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
+                                                ?.getOrNull(option.index)?.isSelected ?: false
+                                        }
                                     },
                                     onClick = {
-                                        val selectedIndex = if (option.isNone) null else option.stream?.index
-                                        onSubtitleTrackSelect(selectedIndex)
+                                        onSubtitleTrackSelect(option.index)
                                         showSubtitleSelector = false
                                     },
                                     colors = RadioButtonDefaults.colors(
@@ -353,7 +407,7 @@ fun PlayerControls(
     }
     if (showSpeedDialog) {
         PlaybackSpeedDialog(
-            currentSpeed = playerState.playbackSpeed,
+            currentSpeed = uiState.playbackSpeed,
             onSpeedChange = { speed ->
                 onPlaybackSpeedChange(speed)
             },
@@ -362,9 +416,10 @@ fun PlayerControls(
     }
 }
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 private fun TopControls(
-    playerState: PlayerState,
+    uiState: PlayerViewModel.PlayerUiState,
     onBackClick: () -> Unit,
     onLockToggle: () -> Unit,
     onPipToggle: () -> Unit = { /* TODO */ },
@@ -410,7 +465,7 @@ private fun TopControls(
                     modifier = Modifier.padding(start = 16.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    val currentItem = playerState.currentItem
+                    val currentItem = uiState.currentItem
 
                     if (currentItem is com.makd.afinity.data.models.media.AfinityMovie) {
                         if (currentItem?.images?.logo != null) {
@@ -479,7 +534,7 @@ private fun TopControls(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (playerState.isControlsLocked) {
+                if (uiState.isControlsLocked) {
                     IconButton(
                         onClick = onLockToggle,
                         modifier = Modifier.size(40.dp)
@@ -505,7 +560,7 @@ private fun TopControls(
                     }
                 }
 
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     IconButton(
                         onClick = onPipToggle,
                         modifier = Modifier
@@ -540,7 +595,7 @@ private fun TopControls(
                         Icon(
                             imageVector = Icons.Default.Speaker,
                             contentDescription = "Audio",
-                            tint = if (playerState.audioStreamIndex != null)
+                            tint = if (uiState.audioStreamIndex != null)
                                 MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -554,7 +609,7 @@ private fun TopControls(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_cc),
                             contentDescription = "Subtitles",
-                            tint = if (playerState.subtitleStreamIndex != null)
+                            tint = if (uiState.subtitleStreamIndex != null)
                                 MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -667,9 +722,10 @@ private fun CenterPlayButton(
     }
 }
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 private fun BottomControls(
-    playerState: PlayerState,
+    uiState: PlayerViewModel.PlayerUiState,
     onSeekBarChange: (Long) -> Unit,
     onTrickplayPreview: (Long, Boolean) -> Unit,
     modifier: Modifier = Modifier
@@ -693,8 +749,8 @@ private fun BottomControls(
             )
     ) {
         SeekBar(
-            currentPosition = playerState.currentPosition,
-            duration = playerState.duration,
+            currentPosition = uiState.currentPosition,
+            duration = uiState.duration,
             onSeekBarChange = onSeekBarChange,
             onPreviewChange = onTrickplayPreview
         )

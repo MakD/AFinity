@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">AFinity</string>
+    <string name="none">None</string>
+    <string name="select_audio_track">Select Audio Track</string>
+    <string name="select_subtitle_track">Select Subtitle Track</string>
 </resources>

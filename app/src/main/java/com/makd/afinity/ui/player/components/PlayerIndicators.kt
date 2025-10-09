@@ -17,12 +17,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.makd.afinity.ui.player.PlayerUiState
+import com.makd.afinity.ui.player.PlayerViewModel
 import kotlin.math.roundToInt
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 fun PlayerIndicators(
-    uiState: PlayerUiState,
+    uiState: PlayerViewModel.PlayerUiState,
     modifier: Modifier = Modifier
 ) {
     Box(

@@ -2,8 +2,14 @@ package com.makd.afinity.data.repository.media
 
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
-import com.makd.afinity.data.models.media.*
+import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityRecommendationCategory
+import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.AfinityShow
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult

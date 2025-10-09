@@ -146,9 +146,11 @@ fun SettingsScreen(
                         autoPlay = uiState.autoPlay,
                         skipIntroEnabled = uiState.skipIntroEnabled,
                         skipOutroEnabled = uiState.skipOutroEnabled,
+                        useExoPlayer = uiState.useExoPlayer,
                         onAutoPlayToggle = viewModel::toggleAutoPlay,
                         onSkipIntroToggle = viewModel::toggleSkipIntro,
-                        onSkipOutroToggle = viewModel::toggleSkipOutro
+                        onSkipOutroToggle = viewModel::toggleSkipOutro,
+                        onUseExoPlayerToggle = viewModel::toggleUseExoPlayer
                     )
                 }
 
@@ -350,9 +352,11 @@ private fun PlaybackSection(
     autoPlay: Boolean,
     skipIntroEnabled: Boolean,
     skipOutroEnabled: Boolean,
+    useExoPlayer: Boolean,
     onAutoPlayToggle: (Boolean) -> Unit,
     onSkipIntroToggle: (Boolean) -> Unit,
     onSkipOutroToggle: (Boolean) -> Unit,
+    onUseExoPlayerToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     SettingsSection(
@@ -360,6 +364,18 @@ private fun PlaybackSection(
         icon = Icons.Outlined.PlayCircle,
         modifier = modifier
     ) {
+        SettingsSwitchItem(
+            icon = Icons.Outlined.Videocam,
+            title = "Use ExoPlayer",
+            subtitle = "Uses LibMPV when disabled",
+            checked = useExoPlayer,
+            onCheckedChange = onUseExoPlayerToggle
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
         SettingsSwitchItem(
             icon = Icons.Outlined.PlayArrow,
             title = "Auto-play",

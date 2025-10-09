@@ -1,43 +1,45 @@
 package com.makd.afinity.data.repository.impl
 
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
-import com.makd.afinity.data.models.media.*
+import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPersonDetail
+import com.makd.afinity.data.models.media.AfinityRecommendationCategory
+import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.toAfinityEpisode
+import com.makd.afinity.data.models.media.toAfinityItem
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.data.paging.JellyfinItemsPagingSource
+import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
+import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
-import com.makd.afinity.data.repository.server.JellyfinServerRepository
-import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.ui.library.FilterType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
+import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import com.makd.afinity.data.models.extensions.toAfinityEpisode
-import com.makd.afinity.data.paging.JellyfinItemsPagingSource
-import com.makd.afinity.data.repository.FieldSets
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.operations.ItemsApi
-import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.ItemFields
-import org.jellyfin.sdk.model.api.ItemSortBy
 
 
 @Singleton

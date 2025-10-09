@@ -1,59 +1,83 @@
 package com.makd.afinity.ui.item
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MovieCreation
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinitySeason
-import com.makd.afinity.data.models.media.AfinityEpisode
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.foundation.layout.offset
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.sp
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import androidx.navigation.NavController
 import com.makd.afinity.data.models.extensions.logoImageUrl
-import com.makd.afinity.data.models.extensions.logoBlurHash
-import androidx.compose.runtime.getValue
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityBoxSet
+import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.Destination
+import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.item.components.BoxSetDetailContent
+import com.makd.afinity.ui.item.components.DirectorSection
+import com.makd.afinity.ui.item.components.MovieDetailContent
+import com.makd.afinity.ui.item.components.OverviewSection
+import com.makd.afinity.ui.item.components.SeasonsSection
+import com.makd.afinity.ui.item.components.TaglineSection
+import com.makd.afinity.ui.item.components.WriterSection
+import com.makd.afinity.ui.item.components.shared.CastSection
+import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.HeroSection
+import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.MetadataRow
 import com.makd.afinity.ui.item.components.shared.NextUpSection
-import com.makd.afinity.ui.item.components.shared.CastSection
-import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
-import com.makd.afinity.ui.item.components.*
-import com.makd.afinity.ui.item.components.MovieDetailContent
-import com.makd.afinity.ui.item.components.BoxSetDetailContent
-import androidx.navigation.NavController
-import com.makd.afinity.navigation.Destination
-import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
-import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
+import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
+import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
-import com.makd.afinity.ui.item.components.shared.MediaSourceOption
-import org.jellyfin.sdk.model.api.MediaStreamType
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.makd.afinity.ui.player.utils.DetailScreenOrientationController
+import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
-import kotlinx.coroutines.delay
 
 @Composable
 fun ItemDetailScreen(
@@ -307,14 +331,14 @@ private fun ItemDetailContent(
                                                     0L
                                                 }
                                             )
-                                            val route = Destination.createPlayerRoute(
-                                                itemId = episode.id.toString(),
+                                            com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                context = navController.context,
+                                                itemId = episode.id,
                                                 mediaSourceId = finalSelection.mediaSourceId,
                                                 audioStreamIndex = finalSelection.audioStreamIndex,
                                                 subtitleStreamIndex = finalSelection.subtitleStreamIndex,
                                                 startPositionMs = finalSelection.startPositionMs
                                             )
-                                            navController.navigate(route)
                                         }
                                     )
                                 }
@@ -353,14 +377,14 @@ private fun ItemDetailContent(
                                     val finalSelection = selection.copy(
                                         mediaSourceId = selectedMediaSource?.id ?: selection.mediaSourceId
                                     )
-                                    val route = Destination.createPlayerRoute(
-                                        itemId = item.id.toString(),
+                                    com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                        context = navController.context,
+                                        itemId = item.id,
                                         mediaSourceId = finalSelection.mediaSourceId,
                                         audioStreamIndex = finalSelection.audioStreamIndex,
                                         subtitleStreamIndex = finalSelection.subtitleStreamIndex,
                                         startPositionMs = finalSelection.startPositionMs
                                     )
-                                    navController.navigate(route)
                                 }
                             )
                         }
@@ -475,14 +499,14 @@ private fun ItemDetailContent(
                             } else {
                                 0L
                             }
-                            val route = Destination.createPlayerRoute(
-                                itemId = clickedEpisode.id.toString(),
+                            com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                context = navController.context,
+                                itemId = clickedEpisode.id,
                                 mediaSourceId = mediaSourceId,
                                 audioStreamIndex = null,
                                 subtitleStreamIndex = null,
                                 startPositionMs = startPositionMs
                             )
-                            navController.navigate(route)
                         },
                         onSpecialFeatureClick = { specialFeature ->
                             val route = Destination.createItemDetailRoute(specialFeature.id.toString())

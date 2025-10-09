@@ -28,8 +28,6 @@ class MainViewModel @Inject constructor(
         checkAuthenticationState()
 
         observeAuthenticationChanges()
-
-        playbackStateManager.initialize()
     }
 
     private fun checkAuthenticationState() {

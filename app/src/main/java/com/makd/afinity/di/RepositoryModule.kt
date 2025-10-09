@@ -27,8 +27,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.makd.afinity.data.manager.PlaybackStateManager
-import com.makd.afinity.data.repository.player.LibMpvPlayerRepository
-import com.makd.afinity.data.repository.player.PlayerRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
@@ -88,28 +86,11 @@ abstract class RepositoryModule {
         preferencesRepositoryImpl: PreferencesRepositoryImpl
     ): PreferencesRepository
 
-    @Binds
-    @Singleton
-    abstract fun bindPlayerRepository(
-        libMpvPlayerRepository: LibMpvPlayerRepository
-    ): PlayerRepository
-
     companion object {
         @Provides
         @Singleton
         fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
             return context.dataStore
-        }
-
-        @Provides
-        @Singleton
-        fun providePlaybackStateManager(
-            playerRepository: PlayerRepository,
-            mediaRepository: MediaRepository
-        ): PlaybackStateManager {
-            val manager = PlaybackStateManager(playerRepository, mediaRepository)
-            manager.initialize()
-            return manager
         }
 
         @Provides

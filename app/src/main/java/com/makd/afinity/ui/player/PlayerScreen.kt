@@ -2,28 +2,37 @@ package com.makd.afinity.ui.player
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
-import com.makd.afinity.ui.player.components.*
-import com.makd.afinity.ui.player.utils.KeepScreenOn
-import com.makd.afinity.ui.player.utils.ScreenBrightnessController
+import com.makd.afinity.ui.player.components.ErrorIndicator
+import com.makd.afinity.ui.player.components.GestureHandler
+import com.makd.afinity.ui.player.components.MpvSurface
+import com.makd.afinity.ui.player.components.PlayerControls
+import com.makd.afinity.ui.player.components.PlayerIndicators
 import com.makd.afinity.ui.player.components.TrickplayPreview
+import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.makd.afinity.ui.player.utils.ScreenBrightnessController
 import timber.log.Timber
 
+
+@androidx.media3.common.util.UnstableApi
 @Composable
 fun PlayerScreen(
     item: AfinityItem,
@@ -36,7 +45,6 @@ fun PlayerScreen(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
-    val playerState by viewModel.playerState.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
@@ -63,13 +71,8 @@ fun PlayerScreen(
     }
 
     DisposableEffect(Unit) {
-        val playerRepository = viewModel.playerRepository
-        if (playerRepository is com.makd.afinity.data.repository.player.LibMpvPlayerRepository) {
-            playerRepository.initializeIfNeeded()
-        }
-
         onDispose {
-            Timber.d("PlayerScreen disposed, but keeping MPV resources for potential navigation")
+            Timber.d("PlayerScreen disposed")
         }
     }
 
@@ -136,6 +139,7 @@ fun PlayerScreen(
         if (!hasNavigatedBack) {
             hasNavigatedBack = true
             Timber.d("Back button pressed - calling onBackPressed")
+            viewModel.stopPlayback()
             onBackPressed()
         }
     }
@@ -146,33 +150,31 @@ fun PlayerScreen(
             .background(Color.Black)
     ) {
         GestureHandler(
-            onSingleTap = {
-                viewModel.onSingleTap()
-            },
+            onSingleTap = { viewModel.onSingleTap() },
             onDoubleTap = { isForward ->
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     viewModel.onDoubleTapSeek(isForward)
                 }
             },
             onBrightnessGesture = { delta ->
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     viewModel.onScreenBrightnessGesture(delta)
                 }
             },
             onVolumeGesture = { delta ->
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     viewModel.onVolumeGesture(delta)
                 }
             },
             onSeekGesture = { delta ->
-                if (!playerState.isControlsLocked) {
-                    viewModel.onSeekGesture(delta)
+                if (!uiState.isControlsLocked) {
+                    viewModel.onSeekGesture(delta.toLong())
                 }
             },
             onSeekPreview = { isActive ->
-                if (!playerState.isControlsLocked) {
+                if (!uiState.isControlsLocked) {
                     if (isActive) {
-                        viewModel.onSeekBarPreview(playerState.currentPosition, true)
+                        viewModel.onSeekBarPreview(uiState.currentPosition, true)
                     } else {
                         viewModel.onSeekBarPreview(0, false)
                     }
@@ -180,20 +182,35 @@ fun PlayerScreen(
             },
             modifier = Modifier.fillMaxSize()
         ) {
-            MpvSurface(
-                modifier = Modifier.fillMaxSize(),
-                onSurfaceCreated = {
-                    Timber.d("MPV surface created in player screen")
-                },
-                onSurfaceDestroyed = {
-                    Timber.d("MPV surface destroyed in player screen")
+            when (val player = viewModel.player) {
+                is androidx.media3.exoplayer.ExoPlayer -> {
+                    androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { context ->
+                            androidx.media3.ui.PlayerView(context).apply {
+                                useController = false
+                                this.player = player
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
-            )
+                is com.makd.afinity.player.mpv.MPVPlayer -> {
+                    MpvSurface(
+                        modifier = Modifier.fillMaxSize(),
+                        onSurfaceCreated = {
+                            Timber.d("MPV surface created in player screen")
+                        },
+                        onSurfaceDestroyed = {
+                            Timber.d("MPV surface destroyed in player screen")
+                        }
+                    )
+                }
+            }
         }
 
         PlayerControls(
-            playerState = playerState,
             uiState = uiState,
+            player = viewModel.player,
             onPlayPauseClick = viewModel::onPlayPauseClick,
             onSeekBarChange = viewModel::onSeekBarDrag,
             onTrickplayPreview = viewModel::onSeekBarPreview,
@@ -216,7 +233,8 @@ fun PlayerScreen(
         TrickplayPreview(
             isVisible = uiState.showTrickplayPreview,
             previewImage = uiState.trickplayPreviewImage,
-            position = uiState.trickplayPreviewPosition,
+            positionMs = uiState.trickplayPreviewPosition,
+            durationMs = uiState.duration,
             modifier = Modifier.fillMaxSize()
         )
 
@@ -244,6 +262,6 @@ fun PlayerScreen(
     }
 
     ScreenBrightnessController(brightness = uiState.brightnessLevel)
-    KeepScreenOn(keepOn = playerState.isPlaying)
+    KeepScreenOn(keepOn = uiState.isPlaying)
     PlayerSystemBarsController(isControlsVisible = uiState.showControls)
 }

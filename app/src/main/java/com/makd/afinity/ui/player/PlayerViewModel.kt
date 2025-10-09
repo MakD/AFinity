@@ -1,60 +1,74 @@
 package com.makd.afinity.ui.player
 
+import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import android.graphics.BitmapFactory
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MimeTypes
+import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.makd.afinity.data.manager.PlaybackStateManager
-import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.data.models.player.Trickplay
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityEpisode
-import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.player.GestureConfig
 import com.makd.afinity.data.models.player.PlayerEvent
-import com.makd.afinity.data.models.player.PlayerState
+import com.makd.afinity.data.models.player.Trickplay
 import com.makd.afinity.data.repository.PreferencesRepository
-import com.makd.afinity.data.repository.player.PlayerRepository
+import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
+import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 
+@androidx.media3.common.util.UnstableApi
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    val playerRepository: PlayerRepository,
+    private val application: Application,
+    private val playbackRepository: PlaybackRepository,
     private val playbackStateManager: PlaybackStateManager,
     private val mediaRepository: MediaRepository,
     private val segmentsRepository: SegmentsRepository,
     private val preferencesRepository: PreferencesRepository,
-    private val playlistManager: PlaylistManager
-) : ViewModel() {
+    private val playlistManager: PlaylistManager,
+    private val apiClient: ApiClient
+) : ViewModel(), Player.Listener {
+
+    lateinit var player: Player
+        private set
 
     private var hasStoppedPlayback = false
     private var currentSessionId: String? = null
     private val volumeManager: VolumeManager by lazy { VolumeManager(context) }
-
-    val playerState: StateFlow<PlayerState> = playerRepository.playerState
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = PlayerState()
-        )
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -62,413 +76,301 @@ class PlayerViewModel @Inject constructor(
     val gestureConfig = GestureConfig()
 
     private var controlsHideJob: Job? = null
-
     private var currentMediaSegments: List<AfinitySegment> = emptyList()
     private var segmentCheckingJob: Job? = null
 
-    var onAutoplayNextEpisode: ((AfinityItem) -> Unit)? = null
+    private var progressReportingJob: Job? = null
+    private var currentItem: AfinityItem? = null
+    private var currentTrickplay: Trickplay? = null
 
+    var onAutoplayNextEpisode: ((AfinityItem) -> Unit)? = null
     val playlistState = playlistManager.playlistState
 
     init {
+        initializePlayer()
+        startPositionUpdateLoop()
+        startProgressReporting()
+    }
+
+    private fun startPositionUpdateLoop() {
         viewModelScope.launch {
-            playerState.collect { state ->
-                updateUiState { uiState ->
-                    uiState.copy(
-                        showPlayButton = uiState.showControls,
-                        showBuffering = state.isBuffering,
-                        showError = state.error != null,
-                        errorMessage = state.error?.message
-                    )
+            while (true) {
+                delay(100)
+                if (player.isPlaying) {
+                    updatePlayerState()
                 }
-            }
-        }
-        if (playerRepository is com.makd.afinity.data.repository.player.LibMpvPlayerRepository) {
-            playerRepository.setOnPlaybackCompleted { completedItem ->
-                handlePlaybackCompleted(completedItem)
             }
         }
     }
 
-    private var currentTrickplay: Trickplay? = null
+    private fun startProgressReporting() {
+        progressReportingJob?.cancel()
+        progressReportingJob = viewModelScope.launch {
+            while (true) {
+                delay(5000L)
+                currentItem?.let { item ->
+                    currentSessionId?.let { sessionId ->
+                        try {
+                            val positionTicks = player.currentPosition * 10000
+                            val isPaused = !player.isPlaying
+
+                            playbackRepository.reportPlaybackProgress(
+                                itemId = item.id,
+                                sessionId = sessionId,
+                                positionTicks = positionTicks,
+                                isPaused = isPaused,
+                                playMethod = "DirectPlay"
+                            )
+                            Timber.d("Reported progress: ${player.currentPosition}ms, paused: $isPaused")
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to report periodic progress")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun initializePlayer() {
+        val useExoPlayer = kotlinx.coroutines.runBlocking {
+            preferencesRepository.useExoPlayer.first()
+        }
+
+        player = if (useExoPlayer) {
+            createExoPlayer()
+        } else {
+            createMPVPlayer()
+        }
+
+        player.addListener(this@PlayerViewModel)
+        Timber.d("Player initialized: ${player.javaClass.simpleName}")
+    }
+
+    private fun createExoPlayer(): ExoPlayer {
+        val audioAttributes = AudioAttributes.Builder()
+            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+            .setUsage(C.USAGE_MEDIA)
+            .build()
+
+        val trackSelector = DefaultTrackSelector(context)
+        trackSelector.setParameters(
+            trackSelector.buildUponParameters()
+                .setTunnelingEnabled(true)
+        )
+
+        val renderersFactory = DefaultRenderersFactory(context)
+            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+
+        return ExoPlayer.Builder(context, renderersFactory)
+            .setAudioAttributes(audioAttributes, true)
+            .setTrackSelector(trackSelector)
+            .setSeekBackIncrementMs(10000)
+            .setSeekForwardIncrementMs(10000)
+            .setPauseAtEndOfMediaItems(true)
+            .build()
+    }
+
+    private fun createMPVPlayer(): MPVPlayer {
+        val audioAttributes = AudioAttributes.Builder()
+            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+            .setUsage(C.USAGE_MEDIA)
+            .build()
+
+        return MPVPlayer.Builder(application)
+            .setAudioAttributes(audioAttributes, true)
+            .setSeekBackIncrementMs(10000)
+            .setSeekForwardIncrementMs(10000)
+            .setPauseAtEndOfMediaItems(true)
+            .setVideoOutput("gpu")
+            .setAudioOutput("audiotrack")
+            .setHwDec("mediacodec")
+            .build()
+    }
+
+    override fun onPlaybackStateChanged(playbackState: Int) {
+        updatePlayerState()
+    }
+
+    override fun onIsPlayingChanged(isPlaying: Boolean) {
+        updatePlayerState()
+    }
+
+    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+        if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
+            viewModelScope.launch {
+                val nextItem = playlistManager.next()
+                if (nextItem != null) {
+                    Timber.d("Episode ended, auto-advancing to: ${nextItem.name}")
+                    onAutoplayNextEpisode?.invoke(nextItem)
+                } else {
+                    Timber.d("Episode ended, no next item in queue")
+                }
+            }
+        }
+        updatePlayerState()
+    }
+
+    private fun updatePlayerState() {
+        val position = player.currentPosition.coerceAtLeast(0)
+        val duration = player.duration.coerceAtLeast(0)
+        _uiState.value = _uiState.value.copy(
+            isPlaying = player.isPlaying,
+            isPaused = !player.isPlaying && player.playbackState == Player.STATE_READY,
+            isBuffering = player.playbackState == Player.STATE_BUFFERING,
+            currentPosition = position,
+            duration = duration
+        )
+    }
 
     fun handlePlayerEvent(event: PlayerEvent) {
         viewModelScope.launch {
             when (event) {
-                is PlayerEvent.Play -> playerRepository.play()
-                is PlayerEvent.Pause -> playerRepository.pause()
-                is PlayerEvent.Seek -> playerRepository.seekTo(event.positionMs)
-                is PlayerEvent.SeekRelative -> playerRepository.seekRelative(event.deltaMs)
-                is PlayerEvent.SetVolume -> playerRepository.setVolume(event.volume)
-                is PlayerEvent.SetBrightness -> playerRepository.setBrightness(event.brightness)
-                is PlayerEvent.SetPlaybackSpeed -> playerRepository.setPlaybackSpeed(event.speed)
-                is PlayerEvent.SelectAudioTrack -> playerRepository.selectAudioTrack(event.index)
-                is PlayerEvent.SelectSubtitleTrack -> playerRepository.selectSubtitleTrack(event.index)
-                is PlayerEvent.ToggleControls -> toggleControls()
-                is PlayerEvent.ToggleFullscreen -> playerRepository.toggleFullscreen()
-                is PlayerEvent.LoadMedia -> {
-                    hasStoppedPlayback = false
-                    currentSessionId = UUID.randomUUID().toString()
-                    Timber.d("🎬 Starting new playback session: $currentSessionId")
-                    playbackStateManager.trackCurrentItem(event.item.id)
-                    val success = playerRepository.loadMedia(
-                        item = event.item,
-                        mediaSourceId = event.mediaSourceId,
-                        audioStreamIndex = event.audioStreamIndex,
-                        subtitleStreamIndex = event.subtitleStreamIndex,
-                        startPositionMs = event.startPositionMs
-                    )
-                    if (success) {
-                        loadTrickplayData()
-                        loadSegments(event.item.id)
-                        showControls()
-                    } else {
-                        Timber.e("Failed to load media: ${event.item.name}")
-                    }
+                is PlayerEvent.Play -> player.play()
+                is PlayerEvent.Pause -> player.pause()
+                is PlayerEvent.Seek -> player.seekTo(event.positionMs)
+                is PlayerEvent.SeekRelative -> {
+                    val newPos = (player.currentPosition + event.deltaMs).coerceIn(0, player.duration)
+                    player.seekTo(newPos)
                 }
+                is PlayerEvent.SetVolume -> volumeManager.setVolume(event.volume)
+                is PlayerEvent.SetBrightness -> { /* Handle at UI level */ }
+                is PlayerEvent.SetPlaybackSpeed -> player.setPlaybackSpeed(event.speed)
+                is PlayerEvent.SwitchToTrack -> switchToTrack(event.trackType, event.index)
+                is PlayerEvent.ToggleControls -> toggleControls()
+                is PlayerEvent.ToggleFullscreen -> { /* Handled at UI level */ }
+                is PlayerEvent.LoadMedia -> loadMedia(
+                    event.item,
+                    event.mediaSourceId,
+                    event.audioStreamIndex,
+                    event.subtitleStreamIndex,
+                    event.startPositionMs
+                )
                 is PlayerEvent.SkipSegment -> {
                     handlePlayerEvent(PlayerEvent.Seek(event.segment.endTicks))
                     updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
                 }
-                is PlayerEvent.Stop -> {
-                    if (hasStoppedPlayback) {
-                        Timber.d("Stop already processed for session: $currentSessionId - IGNORING")
-                        return@launch
-                    }
-
-                    hasStoppedPlayback = true
-                    Timber.d("Processing STOP for session: $currentSessionId")
-                    handleStopEvent()
-                }
+                is PlayerEvent.Stop -> player.stop()
             }
         }
     }
 
-    private suspend fun handleStopEvent() {
+    private suspend fun loadMedia(
+        item: AfinityItem,
+        mediaSourceId: String,
+        audioStreamIndex: Int?,
+        subtitleStreamIndex: Int?,
+        startPositionMs: Long
+    ) = withContext(Dispatchers.IO) {
         try {
-            controlsHideJob?.cancel()
-            segmentCheckingJob?.cancel()
+            currentItem = item
 
-            playerRepository.stop()
-            playerRepository.reportPlaybackStop()
-
-            _uiState.value = PlayerUiState()
-
-            Timber.d("Playback stopped and reported to Jellyfin")
-        } catch (e: Exception) {
-            Timber.e(e, "Error during playback stop")
-        }
-    }
-
-    private suspend fun loadSegments(itemId: UUID) {
-        currentMediaSegments = try {
-            segmentsRepository.getSegments(itemId)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load segments for item $itemId")
-            emptyList()
-        }
-
-        if (currentMediaSegments.isNotEmpty()) {
-            Timber.d("Loaded ${currentMediaSegments.size} segments for item $itemId")
-            startSegmentMonitoring()
-        } else {
-            Timber.d("No segments found for item $itemId")
-        }
-    }
-
-    private fun startSegmentMonitoring() {
-        segmentCheckingJob?.cancel()
-        segmentCheckingJob = viewModelScope.launch {
-            delay(2000L)
-            while (true) {
-                updateCurrentSegment()
-                delay(1000L)
+            val audioStreams = item.sources.firstOrNull()?.mediaStreams?.filter {
+                it.type == MediaStreamType.AUDIO
             }
-        }
-    }
-
-    private suspend fun updateCurrentSegment() {
-        if (currentMediaSegments.isEmpty()) return
-
-        val currentPositionMs = playerState.value.currentPosition
-
-        val currentSegment = currentMediaSegments.find { segment ->
-            currentPositionMs in segment.startTicks..<(segment.endTicks - 100L)
-        }
-
-        currentSegment?.let { segment ->
-            val skipIntroEnabled = preferencesRepository.getSkipIntroEnabled()
-            val skipOutroEnabled = preferencesRepository.getSkipOutroEnabled()
-
-            val shouldShowSkipButton = when (segment.type) {
-                AfinitySegmentType.INTRO -> skipIntroEnabled
-                AfinitySegmentType.OUTRO -> skipOutroEnabled
-                else -> false
-            }
-
-            if (shouldShowSkipButton) {
-                val skipButtonText = getSkipButtonText(segment)
-                updateUiState {
-                    it.copy(
-                        currentSegment = segment,
-                        skipButtonText = skipButtonText,
-                        showSkipButton = true
-                    )
-                }
+            val audioPosition = if (audioStreamIndex != null && audioStreams != null) {
+                audioStreams.indexOfFirst { it.index == audioStreamIndex }
+                    .takeIf { it >= 0 }
             } else {
-                updateUiState {
-                    it.copy(
-                        currentSegment = null,
-                        showSkipButton = false
-                    )
-                }
+                null
             }
-        } ?: run {
+
             updateUiState {
                 it.copy(
-                    currentSegment = null,
-                    showSkipButton = false
+                    currentItem = item,
+                    audioStreamIndex = audioPosition,
+                    subtitleStreamIndex = subtitleStreamIndex
                 )
             }
-        }
-    }
+            currentSessionId = UUID.randomUUID().toString()
 
-    private fun getSkipButtonText(segment: AfinitySegment): String {
-        return when (segment.type) {
-            AfinitySegmentType.INTRO -> "Skip Intro"
-            AfinitySegmentType.OUTRO -> "Skip Outro"
-            AfinitySegmentType.RECAP -> "Skip Recap"
-            AfinitySegmentType.COMMERCIAL -> "Skip Commercial"
-            AfinitySegmentType.PREVIEW -> "Skip Preview"
-            else -> "Skip"
-        }
-    }
+            playbackStateManager.trackCurrentItem(item.id)
 
-    fun onSkipSegment(segment: AfinitySegment) {
-        handlePlayerEvent(PlayerEvent.SkipSegment(segment))
-    }
-
-    fun onDoubleTapSeek(isForward: Boolean) {
-        val seekMs = if (isForward) gestureConfig.doubleTapSeekMs else -gestureConfig.doubleTapSeekMs
-        handlePlayerEvent(PlayerEvent.SeekRelative(seekMs))
-
-        updateUiState { it.copy(showSeekIndicator = true, seekDirection = if (isForward) 1 else -1) }
-
-        viewModelScope.launch {
-            delay(1000)
-            updateUiState { it.copy(showSeekIndicator = false) }
-        }
-    }
-
-    private var brightnessHideJob: Job? = null
-
-    private var seekHideJob: Job? = null
-
-    fun onSeekGesture(delta: Float) {
-        val currentPosition = playerState.value.currentPosition
-        val duration = playerState.value.duration
-
-        val maxSeekMs = 120000L
-        val seekDelta = (delta * maxSeekMs).toLong()
-        val newPosition = (currentPosition + seekDelta).coerceIn(0L, duration)
-
-        handlePlayerEvent(PlayerEvent.Seek(newPosition))
-
-        updateUiState {
-            it.copy(
-                showSeekIndicator = true,
-                seekDirection = if (seekDelta > 0) 1 else -1
+            val streamUrl = playbackRepository.getStreamUrl(
+                itemId = item.id,
+                mediaSourceId = mediaSourceId,
+                audioStreamIndex = audioStreamIndex,
+                subtitleStreamIndex = null,
+                videoStreamIndex = null,
+                maxStreamingBitrate = null,
+                startTimeTicks = null
             )
-        }
 
-        seekHideJob?.cancel()
-        seekHideJob = viewModelScope.launch {
-            delay(1000)
-            updateUiState { it.copy(showSeekIndicator = false) }
-        }
-    }
-
-    fun onScreenBrightnessGesture(delta: Float) {
-        val currentBrightness = _uiState.value.brightnessLevel
-        val newBrightness = (currentBrightness + delta * gestureConfig.brightnessStepSize)
-            .coerceIn(0.0f, 1.0f)
-
-        updateUiState {
-            it.copy(
-                showBrightnessIndicator = true,
-                brightnessLevel = newBrightness
-            )
-        }
-
-        brightnessHideJob?.cancel()
-        brightnessHideJob = viewModelScope.launch {
-            delay(2000)
-            updateUiState { it.copy(showBrightnessIndicator = false) }
-        }
-    }
-
-    private var volumeHideJob: Job? = null
-
-    fun onVolumeGesture(delta: Float) {
-        val currentVolume = volumeManager.getCurrentVolume()
-
-        val volumeChange = (delta * gestureConfig.volumeStepSize).toInt()
-        val newVolume = (currentVolume + volumeChange).coerceIn(0, 100)
-
-        volumeManager.setVolume(newVolume)
-
-        Timber.d("Volume gesture: delta=$delta, current=$currentVolume, new=$newVolume")
-
-        updateUiState {
-            it.copy(
-                showVolumeIndicator = true,
-                volumeLevel = newVolume
-            )
-        }
-
-        volumeHideJob?.cancel()
-        volumeHideJob = viewModelScope.launch {
-            delay(2000)
-            updateUiState { it.copy(showVolumeIndicator = false) }
-        }
-    }
-
-    fun onSingleTap() {
-        if (playerState.value.isControlsLocked) {
-            showControls()
-        } else {
-            if (!_uiState.value.showControls) {
-                showControls()
-            } else {
-                hideControls()
+            if (streamUrl.isNullOrBlank()) {
+                Timber.e("Stream URL is null or empty")
+                return@withContext
             }
-        }
-    }
 
-    fun onPlayPauseClick() {
-        val isPlaying = playerState.value.isPlaying
-        if (isPlaying) {
-            handlePlayerEvent(PlayerEvent.Pause)
-            showControls()
-        } else {
-            handlePlayerEvent(PlayerEvent.Play)
-            showControls()
-        }
-    }
-
-    fun onSeekBarDrag(positionMs: Long) {
-        handlePlayerEvent(PlayerEvent.Seek(positionMs))
-    }
-
-    fun onBackPressed() {
-        Timber.d("🔙 Back pressed - delegating to stop event")
-        handlePlayerEvent(PlayerEvent.Stop)
-    }
-
-    fun onFullscreenToggle() {
-        handlePlayerEvent(PlayerEvent.ToggleFullscreen)
-    }
-
-    fun showControls() {
-        Timber.d("showControls() called")
-        updateUiState { it.copy(showControls = true, showPlayButton = !playerState.value.isControlsLocked) }
-        startControlsAutoHide()
-    }
-
-    fun hideControls() {
-        Timber.d("hideControls() called")
-        updateUiState { it.copy(showControls = false, showPlayButton = false) }
-        controlsHideJob?.cancel()
-    }
-
-    private fun toggleControls() {
-        val shouldShow = !_uiState.value.showControls
-        if (shouldShow) {
-            showControls()
-        } else {
-            hideControls()
-        }
-    }
-
-    private fun startControlsAutoHide() {
-        controlsHideJob?.cancel()
-        Timber.d("Starting auto-hide timer, isPlaying: ${playerState.value.isPlaying}")
-        controlsHideJob = viewModelScope.launch {
-            delay(3000)
-            Timber.d("Auto-hide timer expired, isPlaying: ${playerState.value.isPlaying}, showControls: ${_uiState.value.showControls}")
-            if (playerState.value.isPlaying && _uiState.value.showControls) {
-                Timber.d("Hiding controls now")
-                hideControls()
-            } else {
-                Timber.d("NOT hiding controls - isPlaying: ${playerState.value.isPlaying}, showControls: ${_uiState.value.showControls}")
+            val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
+            Timber.d("=== SUBTITLE STREAM DEBUG ===")
+            mediaSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }?.forEach { stream ->
+                Timber.d("Subtitle ${stream.index}: isExternal=${stream.isExternal}, path=${stream.path}, codec=${stream.codec}, title=${stream.displayTitle}")
             }
-        }
-    }
+            Timber.d("=== END SUBTITLE DEBUG ===")
+            val externalSubtitles = mediaSource?.mediaStreams
+                ?.filter { stream ->
+                    stream.type == MediaStreamType.SUBTITLE && stream.isExternal
+                }
+                ?.mapNotNull { stream ->
+                    try {
+                        val subtitleUrl = "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
 
-    private fun updateUiState(update: (PlayerUiState) -> PlayerUiState) {
-        _uiState.value = update(_uiState.value)
-    }
+                        Timber.d("Building external subtitle: ${stream.displayTitle} -> $subtitleUrl")
 
-    fun onResume() {
-        playerRepository.onResume()
-    }
+                        MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
+                            .setLabel(stream.displayTitle ?: stream.language ?: "Track ${stream.index}")
+                            .setMimeType(MimeTypes.APPLICATION_SUBRIP)
+                            .setLanguage(stream.language ?: "eng")
+                            .build()
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to build subtitle config for stream ${stream.index}")
+                        null
+                    }
+                } ?: emptyList()
 
-    fun onPause() {
-        playerRepository.onPause()
-    }
-
-    fun onAudioTrackSelect(streamIndex: Int?) {
-        viewModelScope.launch {
-            try {
-                playerRepository.selectAudioTrack(streamIndex ?: 0)
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to select audio track: $streamIndex")
+            Timber.d("Built ${externalSubtitles.size} external subtitle configurations")
+            externalSubtitles.forEach { sub ->
+                Timber.d("  - ${sub.label}: ${sub.uri}")
             }
-        }
-    }
 
-    fun onSubtitleTrackSelect(streamIndex: Int?) {
-        viewModelScope.launch {
-            try {
-                playerRepository.selectSubtitleTrack(streamIndex)
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to select subtitle track: $streamIndex")
+            val mediaItem = MediaItem.Builder()
+                .setMediaId(item.id.toString())
+                .setUri(streamUrl)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(item.name)
+                        .build()
+                )
+                .setSubtitleConfigurations(externalSubtitles)
+                .build()
+
+            withContext(Dispatchers.Main) {
+                player.setMediaItems(listOf(mediaItem), 0, startPositionMs)
+                player.prepare()
+                player.play()
             }
-        }
-    }
 
-    fun onPlaybackSpeedChange(speed: Float) {
-        viewModelScope.launch {
-            try {
-                handlePlayerEvent(PlayerEvent.SetPlaybackSpeed(speed))
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to set playback speed: $speed")
+            coroutineScope {
+                launch { reportPlaybackStart(item) }
+                launch { loadSegments(item.id) }
+                launch { loadTrickplayData() }
             }
+
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load media")
         }
     }
 
-    fun onLockToggle() {
-        viewModelScope.launch {
-            try {
-                playerRepository.toggleControlsLock()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle controls lock")
-            }
+    private fun getMimeType(codec: String): String {
+        return when (codec.lowercase()) {
+            "subrip", "srt" -> MimeTypes.APPLICATION_SUBRIP
+            "webvtt", "vtt" -> MimeTypes.APPLICATION_SUBRIP
+            "ass", "ssa" -> MimeTypes.TEXT_SSA
+            else -> MimeTypes.TEXT_UNKNOWN
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        controlsHideJob?.cancel()
-        brightnessHideJob?.cancel()
-        volumeHideJob?.cancel()
-        seekHideJob?.cancel()
-        playerRepository.onDestroy()
-        segmentCheckingJob?.cancel()
     }
 
     private fun loadTrickplayData() {
-        val currentItem = playerState.value.currentItem ?: return
+        val currentItem = uiState.value.currentItem ?: return
 
         val trickplayInfo = when (currentItem) {
             is com.makd.afinity.data.models.media.AfinityEpisode -> {
@@ -545,83 +447,139 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun onGestureSeekPreview(positionMs: Long) {
-        onSeekBarPreview(positionMs, true)
+    fun switchToTrack(trackType: @C.TrackType Int, index: Int) {
+        if (index == -1) {
+            player.trackSelectionParameters = player.trackSelectionParameters
+                .buildUpon()
+                .clearOverridesOfType(trackType)
+                .setTrackTypeDisabled(trackType, true)
+                .build()
+        } else {
+            val tracksGroups = player.currentTracks.groups.filter {
+                it.type == trackType && it.isSupported
+            }
+
+            if (index < tracksGroups.size) {
+                player.trackSelectionParameters = player.trackSelectionParameters
+                    .buildUpon()
+                    .setOverrideForType(
+                        TrackSelectionOverride(tracksGroups[index].mediaTrackGroup, 0)
+                    )
+                    .setTrackTypeDisabled(trackType, false)
+                    .build()
+            }
+        }
     }
 
-    fun onSeekBarPreview(position: Long, isActive: Boolean) {
-        Timber.d("onSeekBarPreview called: position=$position, isActive=$isActive")
-
-        if (!isActive) {
-            Timber.d("Preview inactive - hiding")
-            updateUiState { it.copy(showTrickplayPreview = false) }
-            return
-        }
-
-        val trickplay = currentTrickplay
-        if (trickplay == null || trickplay.images.isEmpty()) {
-            Timber.d("No trickplay data available - trickplay=${trickplay}, images=${trickplay?.images?.size}")
-            updateUiState { it.copy(showTrickplayPreview = false) }
-            return
-        }
-
-        val duration = playerState.value.duration
-        if (duration <= 0) {
-            Timber.d("Duration is 0 - cannot show preview")
-            return
-        }
-
+    private suspend fun reportPlaybackStart(item: AfinityItem) {
         try {
-            val thumbnailIndex = (position / trickplay.interval).toInt()
-                .coerceIn(0, trickplay.images.size - 1)
-
-            val positionFloat = position.toFloat() / duration
-
-            Timber.d("Showing trickplay preview: thumbnailIndex=$thumbnailIndex, position=$positionFloat, interval=${trickplay.interval}")
-
-            updateUiState {
-                it.copy(
-                    showTrickplayPreview = true,
-                    trickplayPreviewImage = trickplay.images[thumbnailIndex],
-                    trickplayPreviewPosition = positionFloat
+            currentSessionId?.let { sessionId ->
+                playbackRepository.reportPlaybackStart(
+                    itemId = item.id,
+                    sessionId = sessionId,
+                    mediaSourceId = item.sources.firstOrNull()?.id ?: "",
+                    audioStreamIndex = 0,
+                    subtitleStreamIndex = null,
+                    playMethod = "DirectPlay",
+                    canSeek = true
                 )
             }
         } catch (e: Exception) {
-            Timber.e(e, "Error showing trickplay preview")
-            updateUiState { it.copy(showTrickplayPreview = false) }
+            Timber.e(e, "Failed to report playback start")
         }
     }
 
-    fun onSeekBackward() {
-        handlePlayerEvent(PlayerEvent.SeekRelative(-10000L))
-        Timber.d("Seeking backward 10 seconds")
+    private suspend fun loadSegments(itemId: UUID) {
+        currentMediaSegments = try {
+            segmentsRepository.getSegments(itemId)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load segments for item $itemId")
+            emptyList()
+        }
+
+        if (currentMediaSegments.isNotEmpty()) {
+            Timber.d("Loaded ${currentMediaSegments.size} segments for item $itemId")
+            startSegmentMonitoring()
+        } else {
+            Timber.d("No segments found for item $itemId")
+        }
     }
 
-    fun onSeekForward() {
-        handlePlayerEvent(PlayerEvent.SeekRelative(30000L))
-        Timber.d("Seeking forward 30 seconds")
-    }
-
-    private fun handlePlaybackCompleted(completedItem: AfinityItem) {
-        viewModelScope.launch {
-            try {
-                val autoPlayEnabled = preferencesRepository.getAutoPlay()
-                if (!autoPlayEnabled) {
-                    Timber.d("Autoplay is disabled")
-                    return@launch
-                }
-
-                val nextItem = playlistManager.next()
-                if (nextItem != null) {
-                    Timber.d("Found next item for autoplay: ${nextItem.name}")
-                    onAutoplayNextEpisode?.invoke(nextItem)
-                } else {
-                    Timber.d("No next item found, autoplay complete")
-                }
-
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to handle autoplay after playback completion")
+    private fun startSegmentMonitoring() {
+        segmentCheckingJob?.cancel()
+        segmentCheckingJob = viewModelScope.launch {
+            delay(2000L)
+            while (true) {
+                updateCurrentSegment()
+                delay(1000L)
             }
+        }
+    }
+
+    private suspend fun updateCurrentSegment() {
+        if (currentMediaSegments.isEmpty()) return
+
+        val currentPositionMs = uiState.value.currentPosition
+
+        val currentSegment = currentMediaSegments.find { segment ->
+            currentPositionMs in segment.startTicks..<(segment.endTicks - 100L)
+        }
+
+        currentSegment?.let { segment ->
+            val skipIntroEnabled = preferencesRepository.getSkipIntroEnabled()
+            val skipOutroEnabled = preferencesRepository.getSkipOutroEnabled()
+
+            val shouldShowSkipButton = when (segment.type) {
+                AfinitySegmentType.INTRO -> skipIntroEnabled
+                AfinitySegmentType.OUTRO -> skipOutroEnabled
+                else -> false
+            }
+
+            if (shouldShowSkipButton) {
+                val skipButtonText = getSkipButtonText(segment)
+                updateUiState {
+                    it.copy(
+                        currentSegment = segment,
+                        skipButtonText = skipButtonText,
+                        showSkipButton = true
+                    )
+                }
+            } else {
+                updateUiState {
+                    it.copy(
+                        currentSegment = null,
+                        showSkipButton = false
+                    )
+                }
+            }
+        } ?: run {
+            updateUiState {
+                it.copy(
+                    currentSegment = null,
+                    showSkipButton = false
+                )
+            }
+        }
+    }
+
+    private fun getSkipButtonText(segment: AfinitySegment): String {
+        return when (segment.type) {
+            AfinitySegmentType.INTRO -> "Skip Intro"
+            AfinitySegmentType.OUTRO -> "Skip Outro"
+            AfinitySegmentType.RECAP -> "Skip Recap"
+            AfinitySegmentType.PREVIEW -> "Skip Preview"
+            AfinitySegmentType.COMMERCIAL -> "Skip Commercial"
+            else -> "Skip"
+        }
+    }
+
+    fun onSkipSegment(segment: AfinitySegment) {
+        handlePlayerEvent(PlayerEvent.SkipSegment(segment))
+    }
+
+    fun initializePlaylist(item: AfinityItem) {
+        viewModelScope.launch {
+            playlistManager.initializePlaylist(item)
         }
     }
 
@@ -629,68 +587,231 @@ class PlayerViewModel @Inject constructor(
         onAutoplayNextEpisode = callback
     }
 
-    fun initializePlaylist(startingItem: AfinityItem) {
-        viewModelScope.launch {
-            try {
-                Timber.d("PlayerViewModel: Initializing playlist for ${startingItem.name}")
-                val success = playlistManager.initializePlaylist(startingItem)
-                Timber.d("PlayerViewModel: Playlist initialization ${if (success) "succeeded" else "failed"}")
-            } catch (e: Exception) {
-                Timber.e(e, "PlayerViewModel: Failed to initialize playlist")
-            }
+    private fun toggleControls() {
+        updateUiState {
+            it.copy(showControls = !it.showControls)
         }
+        if (_uiState.value.showControls) {
+            scheduleControlsHide()
+        }
+    }
+
+    private fun scheduleControlsHide() {
+        controlsHideJob?.cancel()
+        controlsHideJob = viewModelScope.launch {
+            delay(5000)
+            updateUiState { it.copy(showControls = false) }
+        }
+    }
+
+    fun onSingleTap() {
+        handlePlayerEvent(PlayerEvent.ToggleControls)
+    }
+
+    fun onDoubleTapSeek(isForward: Boolean) {
+        val delta = if (isForward) 10000L else -10000L
+        handlePlayerEvent(PlayerEvent.SeekRelative(delta))
+    }
+
+    fun onPlayPauseClick() {
+        if (player.isPlaying) {
+            handlePlayerEvent(PlayerEvent.Pause)
+        } else {
+            handlePlayerEvent(PlayerEvent.Play)
+        }
+    }
+
+    fun onSeekBarDrag(position: Long) {
+        handlePlayerEvent(PlayerEvent.Seek(position))
+    }
+
+    fun onFullscreenToggle() {
+        handlePlayerEvent(PlayerEvent.ToggleFullscreen)
+    }
+
+    fun onAudioTrackSelect(index: Int) {
+        switchToTrack(C.TRACK_TYPE_AUDIO, index)
+        updateUiState { it.copy(audioStreamIndex = if (index == -1) null else index) }
+        Timber.d("Selected audio track: $index")
+    }
+
+    fun onSubtitleTrackSelect(index: Int) {
+        switchToTrack(C.TRACK_TYPE_TEXT, index)
+        updateUiState { it.copy(subtitleStreamIndex = if (index == -1) null else index) }
+        Timber.d("Selected subtitle track: $index")
+    }
+
+    fun onPlaybackSpeedChange(speed: Float) {
+        handlePlayerEvent(PlayerEvent.SetPlaybackSpeed(speed))
+    }
+
+    fun onLockToggle() {
+        updateUiState { it.copy(isControlsLocked = !it.isControlsLocked) }
+    }
+
+    fun onSeekBackward() {
+        handlePlayerEvent(PlayerEvent.SeekRelative(-10000L))
+    }
+
+    fun onSeekForward() {
+        handlePlayerEvent(PlayerEvent.SeekRelative(10000L))
     }
 
     fun onNextEpisode() {
         viewModelScope.launch {
-            try {
-                val nextItem = playlistManager.next()
-                if (nextItem != null) {
-                    Timber.d("Manual next episode: ${nextItem.name}")
-                    onAutoplayNextEpisode?.invoke(nextItem)
-                } else {
-                    Timber.d("No next episode available")
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to go to next episode")
+            playlistManager.getNextItem()?.let { nextItem ->
+                handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = nextItem,
+                        mediaSourceId = nextItem.sources.firstOrNull()?.id ?: "",
+                        audioStreamIndex = null,
+                        subtitleStreamIndex = null,
+                        startPositionMs = 0L
+                    )
+                )
+                initializePlaylist(nextItem)
             }
         }
     }
 
     fun onPreviousEpisode() {
         viewModelScope.launch {
-            try {
-                val previousItem = playlistManager.previous()
-                if (previousItem != null) {
-                    Timber.d("Manual previous episode: ${previousItem.name}")
-                    onAutoplayNextEpisode?.invoke(previousItem)
-                } else {
-                    Timber.d("No previous episode available")
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to go to previous episode")
+            playlistManager.getPreviousItem()?.let { prevItem ->
+                handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = prevItem,
+                        mediaSourceId = prevItem.sources.firstOrNull()?.id ?: "",
+                        audioStreamIndex = null,
+                        subtitleStreamIndex = null,
+                        startPositionMs = 0L
+                    )
+                )
+                initializePlaylist(prevItem)
             }
         }
     }
-}
 
-data class PlayerUiState(
-    val showControls: Boolean = false,
-    val showPlayButton: Boolean = true,
-    val showBuffering: Boolean = false,
-    val showError: Boolean = false,
-    val errorMessage: String? = null,
-    val showSeekIndicator: Boolean = false,
-    val seekDirection: Int = 0,
-    val showBrightnessIndicator: Boolean = false,
-    val brightnessLevel: Float = 0.5f,
-    val showVolumeIndicator: Boolean = false,
-    val volumeLevel: Int = 100,
-    val screenBrightness: Float = -1f,
-    val showTrickplayPreview: Boolean = false,
-    val trickplayPreviewImage: androidx.compose.ui.graphics.ImageBitmap? = null,
-    val trickplayPreviewPosition: Float = 0f,
-    val currentSegment: AfinitySegment? = null,
-    val skipButtonText: String = "",
-    val showSkipButton: Boolean = false
-)
+    fun onVolumeGesture(delta: Float) {
+        volumeManager.adjustVolume(delta.toInt())
+    }
+
+    fun onScreenBrightnessGesture(delta: Float) {
+    }
+
+    fun onSeekGesture(delta: Long) {
+        val newPos = (player.currentPosition + delta).coerceIn(0, player.duration)
+        player.seekTo(newPos)
+    }
+
+    fun onSeekBarPreview(position: Long, isActive: Boolean) {
+        if (!isActive) {
+            updateUiState {
+                it.copy(
+                    showTrickplayPreview = false,
+                    trickplayPreviewImage = null,
+                    trickplayPreviewPosition = 0L
+                )
+            }
+            return
+        }
+
+        currentTrickplay?.let { trickplay ->
+            val index = (position / trickplay.interval).toInt()
+                .coerceIn(0, trickplay.images.size - 1)
+
+            updateUiState {
+                it.copy(
+                    showTrickplayPreview = true,
+                    trickplayPreviewImage = trickplay.images[index],
+                    trickplayPreviewPosition = position
+                )
+            }
+        }
+    }
+
+    fun onResume() {
+        player.play()
+    }
+
+    fun onPause() {
+        player.pause()
+    }
+
+    fun stopPlayback() {
+        if (hasStoppedPlayback) return
+        hasStoppedPlayback = true
+
+        progressReportingJob?.cancel()
+
+        Timber.d("Stopping playback and reporting to server")
+
+        kotlinx.coroutines.runBlocking {
+            try {
+                currentItem?.let { item ->
+                    currentSessionId?.let { sessionId ->
+                        playbackRepository.reportPlaybackStop(
+                            itemId = item.id,
+                            sessionId = sessionId,
+                            positionTicks = player.currentPosition * 10000,
+                            mediaSourceId = item.sources.firstOrNull()?.id ?: ""
+                        )
+                        Timber.d("Successfully reported playback stop")
+                    }
+                }
+                playbackStateManager.notifyPlaybackStopped()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to report playback stop")
+            }
+        }
+    }
+
+    private fun updateUiState(update: (PlayerUiState) -> PlayerUiState) {
+        _uiState.value = update(_uiState.value)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+
+        stopPlayback()
+
+        progressReportingJob?.cancel()
+        segmentCheckingJob?.cancel()
+        controlsHideJob?.cancel()
+        player.removeListener(this)
+        player.release()
+    }
+
+    data class PlayerUiState(
+        val isPlaying: Boolean = false,
+        val isPaused: Boolean = false,
+        val isBuffering: Boolean = false,
+        val isLoading: Boolean = false,
+        val currentPosition: Long = 0L,
+        val duration: Long = 0L,
+        val showControls: Boolean = true,
+        val isFullscreen: Boolean = false,
+        val isControlsLocked: Boolean = false,
+        val currentSegment: AfinitySegment? = null,
+        val isSeekPreviewActive: Boolean = false,
+        val seekPreviewPosition: Long = 0L,
+        val playbackSpeed: Float = 1f,
+        val audioStreamIndex: Int? = null,
+        val subtitleStreamIndex: Int? = null,
+        val showPlayButton: Boolean = false,
+        val showBuffering: Boolean = false,
+        val showError: Boolean = false,
+        val errorMessage: String? = null,
+        val brightnessLevel: Float = 0.5f,
+        val showTrickplayPreview: Boolean = false,
+        val trickplayPreviewImage: androidx.compose.ui.graphics.ImageBitmap? = null,
+        val trickplayPreviewPosition: Long = 0L,
+        val currentItem: AfinityItem? = null,
+        val showSkipButton: Boolean = false,
+        val skipButtonText: String = "Skip",
+        val showSeekIndicator: Boolean = false,
+        val seekDirection: Int = 0,
+        val showBrightnessIndicator: Boolean = false,
+        val showVolumeIndicator: Boolean = false,
+        val volumeLevel: Int = 50
+    )
+}
