@@ -197,6 +197,7 @@ class MPVPlayer(
 
         arrayOf(
             Property("track-list", MPVLib.MPV_FORMAT_STRING),
+            Property("paused", MPVLib.MPV_FORMAT_FLAG),
             Property("paused-for-cache", MPVLib.MPV_FORMAT_FLAG),
             Property("eof-reached", MPVLib.MPV_FORMAT_FLAG),
             Property("seekable", MPVLib.MPV_FORMAT_FLAG),
@@ -271,6 +272,14 @@ class MPVPlayer(
     override fun eventProperty(property: String, value: Boolean) {
         handler.post {
             when (property) {
+                "paused" -> {
+                    if (isPlayerReady) {
+                        setPlayerStateAndNotifyIfChanged(
+                            playWhenReady = !value,
+                            playWhenReadyChangeReason = PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST
+                        )
+                    }
+                }
                 "eof-reached" -> {
                     if (value && isPlayerReady) {
                         if (currentMediaItemIndex < (internalMediaItems.size - 1)) {
@@ -375,11 +384,8 @@ class MPVPlayer(
                 MPVLib.MPV_EVENT_PLAYBACK_RESTART -> {
                     if (!isPlayerReady) {
                         isPlayerReady = true
-                        if (initialSeekTo > 0) {
-                            MPVLib.command(arrayOf("seek", "$initialSeekTo", "absolute"))
-                            initialSeekTo = 0
-                        }
-                        if (getPlayWhenReady()) {
+                        seekTo(C.TIME_UNSET)
+                        if (playWhenReady) {
                             Timber.d("Starting playback...")
                             MPVLib.setPropertyBoolean("pause", false)
                         }
@@ -532,12 +538,23 @@ class MPVPlayer(
     override fun getPlayerError(): PlaybackException? = null
 
     override fun setPlayWhenReady(playWhenReady: Boolean) {
-        if (playWhenReady) {
-            setPlayerStateAndNotifyIfChanged(playWhenReady = true)
-            MPVLib.setPropertyBoolean("pause", false)
-        } else {
-            setPlayerStateAndNotifyIfChanged(playWhenReady = false)
-            MPVLib.setPropertyBoolean("pause", true)
+        if (currentPlayWhenReady != playWhenReady) {
+            setPlayerStateAndNotifyIfChanged(
+                playWhenReady = playWhenReady,
+                playWhenReadyChangeReason = PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST,
+            )
+            if (isPlayerReady) {
+                if (handleAudioFocus && playWhenReady) {
+                    val res = AudioManagerCompat.requestAudioFocus(audioManager, audioFocusRequest)
+                    if (res != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                        MPVLib.setPropertyBoolean("pause", true)
+                    } else {
+                        MPVLib.setPropertyBoolean("pause", false)
+                    }
+                } else {
+                    MPVLib.setPropertyBoolean("pause", !playWhenReady)
+                }
+            }
         }
     }
 
@@ -551,13 +568,26 @@ class MPVPlayer(
 
     override fun isLoading(): Boolean = playbackState == STATE_BUFFERING
 
-    override fun seekTo(mediaItemIndex: Int, positionMs: Long, @Player.Command seekCommand: Int, isRepeatingCurrentItem: Boolean) {
-        if (mediaItemIndex != currentMediaItemIndex) {
-            currentMediaItemIndex = mediaItemIndex
+    override fun seekTo(
+        mediaItemIndex: Int,
+        positionMs: Long,
+        @Player.Command seekCommand: Int,
+        isRepeatingCurrentItem: Boolean,
+    ) {
+        if (mediaItemIndex == currentMediaItemIndex) {
+            val seekTo =
+                if (positionMs != C.TIME_UNSET) positionMs / C.MILLIS_PER_SECOND else initialSeekTo
+            initialSeekTo = if (isPlayerReady) {
+                MPVLib.command(arrayOf("seek", "$seekTo", "absolute"))
+                Timber.d("MPV seeking to $seekTo seconds")
+                0L
+            } else {
+                Timber.d("MPV not ready, storing initial seek: $seekTo seconds")
+                seekTo
+            }
+        } else {
             prepareMediaItem(mediaItemIndex)
-        }
-        if (positionMs != C.TIME_UNSET) {
-            MPVLib.command(arrayOf("seek", "${positionMs / 1000}", "absolute"))
+            play()
         }
     }
 

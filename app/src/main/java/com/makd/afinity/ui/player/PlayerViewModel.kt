@@ -33,6 +33,7 @@ import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -344,9 +345,11 @@ class PlayerViewModel @Inject constructor(
                 player.play()
             }
 
-            reportPlaybackStart(item)
-            loadSegments(item.id)
-            loadTrickplayData()
+            coroutineScope {
+                launch { reportPlaybackStart(item) }
+                launch { loadSegments(item.id) }
+                launch { loadTrickplayData() }
+            }
 
         } catch (e: Exception) {
             Timber.e(e, "Failed to load media")

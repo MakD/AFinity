@@ -233,7 +233,8 @@ fun PlayerScreen(
         TrickplayPreview(
             isVisible = uiState.showTrickplayPreview,
             previewImage = uiState.trickplayPreviewImage,
-            position = uiState.trickplayPreviewPosition.toFloat(),
+            positionMs = uiState.trickplayPreviewPosition,
+            durationMs = uiState.duration,
             modifier = Modifier.fillMaxSize()
         )
 
