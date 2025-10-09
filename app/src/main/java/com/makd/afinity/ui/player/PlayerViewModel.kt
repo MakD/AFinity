@@ -198,8 +198,12 @@ class PlayerViewModel @Inject constructor(
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
         if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
             viewModelScope.launch {
-                currentItem?.let { item ->
-                    onAutoplayNextEpisode?.invoke(item)
+                val nextItem = playlistManager.next()
+                if (nextItem != null) {
+                    Timber.d("Episode ended, auto-advancing to: ${nextItem.name}")
+                    onAutoplayNextEpisode?.invoke(nextItem)
+                } else {
+                    Timber.d("Episode ended, no next item in queue")
                 }
             }
         }
