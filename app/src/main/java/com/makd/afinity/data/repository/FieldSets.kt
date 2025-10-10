@@ -33,7 +33,10 @@ object FieldSets {
     val HERO_CAROUSEL = listOf(
         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
         ItemFields.GENRES,
-        ItemFields.REMOTE_TRAILERS
+        ItemFields.REMOTE_TRAILERS,
+        ItemFields.CHILD_COUNT,
+        ItemFields.RECURSIVE_ITEM_COUNT,
+        ItemFields.OVERVIEW,
     )
 
     /**

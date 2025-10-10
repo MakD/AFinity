@@ -182,22 +182,18 @@ class JellyfinMediaRepository @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext
-                val itemsApi = ItemsApi(apiClient)
-                val response = itemsApi.getItems(
+                val userLibraryApi = UserLibraryApi(apiClient)
+                val response = userLibraryApi.getLatestMedia(
                     userId = userId,
                     includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
-                    recursive = true,
                     limit = 15,
-                    sortBy = listOf(ItemSortBy.DATE_CREATED),
-                    sortOrder = listOf(SortOrder.DESCENDING),
-                    hasOverview = true,
                     isPlayed = false,
                     fields = FieldSets.CACHE_LATEST_MEDIA,
                     enableImages = true,
                     enableUserData = true
                 )
 
-                val latestItems = response.content?.items?.mapNotNull { baseItemDto ->
+                val latestItems = response.content?.mapNotNull { baseItemDto ->
                     baseItemDto.toAfinityItem(getBaseUrl())
                 } ?: emptyList()
 
@@ -1055,6 +1051,7 @@ class JellyfinMediaRepository @Inject constructor(
             SortBy.RELEASE_DATE -> ItemSortBy.PREMIERE_DATE
             SortBy.SERIES_DATE_PLAYED -> ItemSortBy.SERIES_SORT_NAME
             SortBy.DATE_LAST_CONTENT_ADDED -> ItemSortBy.DATE_LAST_CONTENT_ADDED
+            SortBy.RANDOM -> ItemSortBy.RANDOM
         }
     }
 }

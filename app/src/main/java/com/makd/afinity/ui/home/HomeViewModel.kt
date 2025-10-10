@@ -46,6 +46,12 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            appDataRepository.heroCarouselItems.collect { heroItems ->
+                _uiState.value = _uiState.value.copy(heroCarouselItems = heroItems)
+            }
+        }
+
+        viewModelScope.launch {
             appDataRepository.continueWatching.collect { continueWatching ->
                 _uiState.value = _uiState.value.copy(continueWatching = continueWatching)
             }
@@ -157,6 +163,7 @@ class HomeViewModel @Inject constructor(
 }
 
 data class HomeUiState(
+    val heroCarouselItems: List<AfinityItem> = emptyList(),
     val latestMedia: List<AfinityItem> = emptyList(),
     val continueWatching: List<AfinityItem> = emptyList(),
     val nextUp: List<AfinityEpisode> = emptyList(),

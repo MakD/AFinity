@@ -154,10 +154,10 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                if (uiState.latestMedia.isNotEmpty()) {
+                if (uiState.heroCarouselItems.isNotEmpty()) {
                     item(key = "hero_carousel") {
                         OptimizedHeroCarousel(
-                            items = uiState.latestMedia,
+                            items = uiState.heroCarouselItems,
                             height = screenHeight * 0.65f,
                             isScrolling = isScrolling,
                             onWatchNowClick = onPlayClick,

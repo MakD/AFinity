@@ -9,6 +9,7 @@ enum class SortBy(val sortString: String) {
     RELEASE_DATE("PremiereDate"),
     SERIES_DATE_PLAYED("SeriesDatePlayed"),
     DATE_LAST_CONTENT_ADDED("DateLastContentAdded"),
+    RANDOM("Random"),
     ;
 
     companion object {

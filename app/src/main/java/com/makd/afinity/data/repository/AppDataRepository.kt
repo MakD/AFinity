@@ -8,6 +8,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.extensions.toAfinityItem
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -30,6 +31,9 @@ class AppDataRepository @Inject constructor(
 ) {
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     val latestMedia: StateFlow<List<AfinityItem>> = _latestMedia.asStateFlow()
+
+    private val _heroCarouselItems = MutableStateFlow<List<AfinityItem>>(emptyList())
+    val heroCarouselItems: StateFlow<List<AfinityItem>> = _heroCarouselItems.asStateFlow()
 
     private val _continueWatching = MutableStateFlow<List<AfinityItem>>(emptyList())
     val continueWatching: StateFlow<List<AfinityItem>> = _continueWatching.asStateFlow()
@@ -92,6 +96,7 @@ class AppDataRepository @Inject constructor(
                 updateProgress(0.1f, "Getting latest content...")
                 val latestMediaTask = async { loadLatestMedia() }
 
+                val heroCarouselTask = async { loadHeroCarousel() }
                 updateProgress(0.25f, "Loading your watchlist...")
                 val continueWatchingTask = async { loadContinueWatching() }
 
@@ -106,6 +111,8 @@ class AppDataRepository @Inject constructor(
 
                 val latestMedia = latestMediaTask.await()
                 _latestMedia.value = latestMedia
+                val heroItems = heroCarouselTask.await()
+                _heroCarouselItems.value = heroItems
                 updateProgress(0.65f, "Latest content loaded...")
 
                 val continueWatching = continueWatchingTask.await()
@@ -228,6 +235,63 @@ class AppDataRepository @Inject constructor(
         }
     }
 
+    private suspend fun loadHeroCarousel(): List<AfinityItem> {
+        return try {
+            Timber.d("🎬 loadHeroCarousel: Starting...")
+
+            val baseUrl = jellyfinRepository.getBaseUrl()
+            Timber.d("🎬 loadHeroCarousel: Base URL = $baseUrl")
+
+            val randomHeroItems = jellyfinRepository.getItems(
+                includeItemTypes = listOf("MOVIE", "SERIES"),
+                sortBy = SortBy.RANDOM,
+                sortDescending = false,
+                limit = 15,
+                isPlayed = false,
+                fields = FieldSets.HERO_CAROUSEL
+            )
+
+            Timber.d("🎬 loadHeroCarousel: Got ${randomHeroItems.items?.size ?: 0} raw items from API")
+            Timber.d("🎬 loadHeroCarousel: Total record count = ${randomHeroItems.totalRecordCount}")
+
+            val convertedItems = randomHeroItems.items
+                ?.mapNotNull { baseItem ->
+                    val converted = baseItem.toAfinityItem(baseUrl)
+                    if (converted == null) {
+                        Timber.w("🎬 loadHeroCarousel: Failed to convert item: ${baseItem.name} (type=${baseItem.type})")
+                    }
+                    converted
+                } ?: emptyList()
+
+            Timber.d("🎬 loadHeroCarousel: Converted ${convertedItems.size} items successfully")
+
+            val filteredItems = convertedItems.filter { item ->
+                val hasOverview = item.overview.isNotBlank()
+                val hasBackdrop = item.images.backdrop != null
+                val hasLogo = item.images.logo != null
+
+                if (!hasOverview) {
+                    Timber.d("🎬 loadHeroCarousel: Filtered out '${item.name}' - no overview")
+                }
+                if (!hasBackdrop && !hasLogo) {
+                    Timber.d("🎬 loadHeroCarousel: Filtered out '${item.name}' - no backdrop or logo")
+                }
+
+                hasOverview && (hasBackdrop || hasLogo)
+            }
+
+            Timber.d("🎬 loadHeroCarousel: Final filtered items = ${filteredItems.size}")
+            filteredItems.forEach { item ->
+                Timber.d("🎬 loadHeroCarousel:   ✓ ${item.name} (backdrop=${item.images.backdrop != null}, logo=${item.images.logo != null})")
+            }
+
+            filteredItems
+        } catch (e: Exception) {
+            Timber.e(e, "🎬 loadHeroCarousel: FAILED with exception")
+            emptyList()
+        }
+    }
+
     private suspend fun loadContinueWatching(): List<AfinityItem> {
         return try {
             jellyfinRepository.getContinueWatching(limit = 12)
@@ -271,51 +335,87 @@ class AppDataRepository @Inject constructor(
             val movieLibraries = libraries.filter { it.type == CollectionType.Movies }
             val tvLibraries = libraries.filter { it.type == CollectionType.TvShows }
 
-            val sortByDateAdded = preferencesRepository.getHomeSortByDateAdded()
+            val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
 
-            val movieSortBy = if (sortByDateAdded) SortBy.DATE_ADDED else SortBy.RELEASE_DATE
-            val tvSortBy = if (sortByDateAdded) SortBy.DATE_LAST_CONTENT_ADDED else SortBy.RELEASE_DATE
+            Timber.d("Loading home data with useJellyfinDefault=$useJellyfinDefault")
 
-            Timber.d("Loading home data with movieSortBy=$movieSortBy, tvSortBy=$tvSortBy (sortByDateAdded=$sortByDateAdded)")
-
-            val (movieResults, showResults) = coroutineScope {
-                val movieTasks = movieLibraries.map { library ->
-                    async {
-                        try {
-                            library to jellyfinRepository.getMovies(
-                                parentId = library.id,
-                                sortBy = movieSortBy,
-                                sortDescending = true,
-                                limit = 30,
-                                isPlayed = false
-                            )
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to load movies from library ${library.name}")
-                            library to emptyList<AfinityMovie>()
+            val (movieResults, showResults) = if (useJellyfinDefault) {
+                // Use Jellyfin's native latest media endpoint
+                coroutineScope {
+                    val movieTasks = movieLibraries.map { library ->
+                        async {
+                            try {
+                                val items = jellyfinRepository.getLatestMedia(
+                                    parentId = library.id,
+                                    limit = 30
+                                ).filterIsInstance<AfinityMovie>()
+                                library to items
+                            } catch (e: Exception) {
+                                Timber.w(e, "Failed to load latest from ${library.name}")
+                                library to emptyList<AfinityMovie>()
+                            }
                         }
                     }
-                }
 
-                val showTasks = tvLibraries.map { library ->
-                    async {
-                        try {
-                            library to jellyfinRepository.getShows(
-                                parentId = library.id,
-                                sortBy = tvSortBy,
-                                sortDescending = true,
-                                limit = 30,
-                                isPlayed = false
-                            )
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to load shows from library ${library.name}")
-                            library to emptyList<AfinityShow>()
+                    val showTasks = tvLibraries.map { library ->
+                        async {
+                            try {
+                                val items = jellyfinRepository.getLatestMedia(
+                                    parentId = library.id,
+                                    limit = 30
+                                ).filterIsInstance<AfinityShow>()
+                                library to items
+                            } catch (e: Exception) {
+                                Timber.w(e, "Failed to load latest from ${library.name}")
+                                library to emptyList<AfinityShow>()
+                            }
                         }
                     }
-                }
 
-                Pair(movieTasks.awaitAll(), showTasks.awaitAll())
+                    Pair(movieTasks.awaitAll(), showTasks.awaitAll())
+                }
+            } else {
+                // Sort by premiere date
+                coroutineScope {
+                    val movieTasks = movieLibraries.map { library ->
+                        async {
+                            try {
+                                library to jellyfinRepository.getMovies(
+                                    parentId = library.id,
+                                    sortBy = SortBy.RELEASE_DATE,
+                                    sortDescending = true,
+                                    limit = 30,
+                                    isPlayed = false
+                                )
+                            } catch (e: Exception) {
+                                Timber.w(e, "Failed to load movies from ${library.name}")
+                                library to emptyList<AfinityMovie>()
+                            }
+                        }
+                    }
+
+                    val showTasks = tvLibraries.map { library ->
+                        async {
+                            try {
+                                library to jellyfinRepository.getShows(
+                                    parentId = library.id,
+                                    sortBy = SortBy.RELEASE_DATE,
+                                    sortDescending = true,
+                                    limit = 30,
+                                    isPlayed = false
+                                )
+                            } catch (e: Exception) {
+                                Timber.w(e, "Failed to load shows from ${library.name}")
+                                library to emptyList<AfinityShow>()
+                            }
+                        }
+                    }
+
+                    Pair(movieTasks.awaitAll(), showTasks.awaitAll())
+                }
             }
 
+            // ✅ Separate library sections - takes 15 from each library
             _separateMovieLibrarySections.value = movieResults
                 .filter { it.second.isNotEmpty() }
                 .map { (library, movies) -> library to movies.take(15) }
@@ -324,28 +424,26 @@ class AppDataRepository @Inject constructor(
                 .filter { it.second.isNotEmpty() }
                 .map { (library, shows) -> library to shows.take(15) }
 
+            // ✅ Combined view - flatten all and sort by date
             val allLatestMovies = movieResults.flatMap { it.second }
             val allLatestSeries = showResults.flatMap { it.second }
 
-            val sortedMovies = if (sortByDateAdded) {
-                allLatestMovies.sortedByDescending { it.dateCreated }
+            val latestMovies = if (useJellyfinDefault) {
+                allLatestMovies.sortedByDescending { it.dateCreated }.take(15)
             } else {
-                allLatestMovies.sortedByDescending { it.premiereDate }
+                allLatestMovies.sortedByDescending { it.premiereDate }.take(15)
             }
 
-            val sortedShows = if (sortByDateAdded) {
-                allLatestSeries.sortedByDescending { it.dateLastContentAdded }
+            val latestTvSeries = if (useJellyfinDefault) {
+                allLatestSeries.sortedByDescending { it.dateCreated }.take(15)
             } else {
-                allLatestSeries.sortedByDescending { it.premiereDate }
+                allLatestSeries.sortedByDescending { it.premiereDate }.take(15)
             }
 
-            val latestMovies = sortedMovies.take(15)
-            val latestTvSeries = sortedShows.take(15)
-
-            val highRatedMovies = sortedMovies.filter {
+            val highRatedMovies = allLatestMovies.filter {
                 (it.communityRating ?: 0f) > 6.5f
             }
-            val highRatedShows = sortedShows.filter {
+            val highRatedShows = allLatestSeries.filter {
                 (it.communityRating ?: 0f) > 6.5f
             }
 
@@ -387,6 +485,7 @@ class AppDataRepository @Inject constructor(
     fun clearAllData() {
         Timber.d("Clearing all cached app data")
         _latestMedia.value = emptyList()
+        _heroCarouselItems.value = emptyList()
         _continueWatching.value = emptyList()
         _nextUp.value = emptyList()
         _libraries.value = emptyList()
