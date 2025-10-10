@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.item
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +13,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
 import com.makd.afinity.data.models.media.toAfinityShow
@@ -21,6 +23,7 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
+import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -420,6 +423,17 @@ class ItemDetailViewModel @Inject constructor(
         if (selection != null) {
             Timber.d("Selected - MediaSource: ${selection.mediaSourceId}, Audio: ${selection.audioStreamIndex}, Subtitle: ${selection.subtitleStreamIndex}")
         }
+    }
+
+    fun onPlayTrailerClick(context: Context, item: AfinityItem) {
+        Timber.d("Play trailer clicked: ${item.name}")
+        val trailerUrl = when (item) {
+            is AfinityMovie -> item.trailer
+            is AfinityShow -> item.trailer
+            is AfinityVideo -> item.trailer
+            else -> null
+        }
+        IntentUtils.openYouTubeUrl(context, trailerUrl)
     }
 
     fun getBaseUrl(): String {

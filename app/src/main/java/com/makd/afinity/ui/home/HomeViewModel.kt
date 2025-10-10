@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.media.AfinityCollection
@@ -9,6 +10,8 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.models.media.AfinityRecommendationCategory
+import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -121,8 +124,15 @@ class HomeViewModel @Inject constructor(
         Timber.d("Watch now clicked: ${item.name}")
     }
 
-    fun onPlayTrailerClick(item: AfinityItem) {
+    fun onPlayTrailerClick(context: Context, item: AfinityItem) {
         Timber.d("Play trailer clicked: ${item.name}")
+        val trailerUrl = when (item) {
+            is AfinityMovie -> item.trailer
+            is AfinityShow -> item.trailer
+            is AfinityVideo -> item.trailer
+            else -> null
+        }
+        IntentUtils.openYouTubeUrl(context, trailerUrl)
     }
 
     fun onContinueWatchingItemClick(item: AfinityItem) {

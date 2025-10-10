@@ -95,6 +95,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -160,7 +161,9 @@ fun HomeScreen(
                             height = screenHeight * 0.65f,
                             isScrolling = isScrolling,
                             onWatchNowClick = onPlayClick,
-                            onPlayTrailerClick = viewModel::onPlayTrailerClick,
+                            onPlayTrailerClick = { item ->
+                                viewModel.onPlayTrailerClick(context, item)
+                            },
                             onMoreInformationClick = onItemClick
                         )
                     }
