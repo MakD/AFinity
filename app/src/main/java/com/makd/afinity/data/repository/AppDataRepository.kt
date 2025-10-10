@@ -46,8 +46,6 @@ class AppDataRepository @Inject constructor(
     private val _separateTvLibrarySections = MutableStateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>>(emptyList())
     val separateTvLibrarySections: StateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>> = _separateTvLibrarySections.asStateFlow()
 
-    private val _homeSortByDateAdded = MutableStateFlow(true)
-
     private val _userProfileImageUrl = MutableStateFlow<String?>(null)
     val userProfileImageUrl: StateFlow<String?> = _userProfileImageUrl.asStateFlow()
 
@@ -272,10 +270,13 @@ class AppDataRepository @Inject constructor(
         return try {
             val movieLibraries = libraries.filter { it.type == CollectionType.Movies }
             val tvLibraries = libraries.filter { it.type == CollectionType.TvShows }
-            val sortByDateAdded = _homeSortByDateAdded.value
-            val sortBy = if (sortByDateAdded) SortBy.DATE_ADDED else SortBy.RELEASE_DATE
 
-            Timber.d("Loading home data with sortBy=$sortBy (sortByDateAdded=$sortByDateAdded)")
+            val sortByDateAdded = preferencesRepository.getHomeSortByDateAdded()
+
+            val movieSortBy = if (sortByDateAdded) SortBy.DATE_ADDED else SortBy.RELEASE_DATE
+            val tvSortBy = if (sortByDateAdded) SortBy.DATE_LAST_CONTENT_ADDED else SortBy.RELEASE_DATE
+
+            Timber.d("Loading home data with movieSortBy=$movieSortBy, tvSortBy=$tvSortBy (sortByDateAdded=$sortByDateAdded)")
 
             val (movieResults, showResults) = coroutineScope {
                 val movieTasks = movieLibraries.map { library ->
@@ -283,9 +284,9 @@ class AppDataRepository @Inject constructor(
                         try {
                             library to jellyfinRepository.getMovies(
                                 parentId = library.id,
-                                sortBy = sortBy,
+                                sortBy = movieSortBy,
                                 sortDescending = true,
-                                limit = 15,
+                                limit = 30,
                                 isPlayed = false
                             )
                         } catch (e: Exception) {
@@ -300,9 +301,9 @@ class AppDataRepository @Inject constructor(
                         try {
                             library to jellyfinRepository.getShows(
                                 parentId = library.id,
-                                sortBy = sortBy,
+                                sortBy = tvSortBy,
                                 sortDescending = true,
-                                limit = 15,
+                                limit = 30,
                                 isPlayed = false
                             )
                         } catch (e: Exception) {
@@ -315,19 +316,36 @@ class AppDataRepository @Inject constructor(
                 Pair(movieTasks.awaitAll(), showTasks.awaitAll())
             }
 
-            _separateMovieLibrarySections.value = movieResults.filter { it.second.isNotEmpty() }
-            _separateTvLibrarySections.value = showResults.filter { it.second.isNotEmpty() }
+            _separateMovieLibrarySections.value = movieResults
+                .filter { it.second.isNotEmpty() }
+                .map { (library, movies) -> library to movies.take(15) }
+
+            _separateTvLibrarySections.value = showResults
+                .filter { it.second.isNotEmpty() }
+                .map { (library, shows) -> library to shows.take(15) }
 
             val allLatestMovies = movieResults.flatMap { it.second }
             val allLatestSeries = showResults.flatMap { it.second }
 
-            val latestMovies = allLatestMovies.take(15)
-            val latestTvSeries = allLatestSeries.take(15)
+            val sortedMovies = if (sortByDateAdded) {
+                allLatestMovies.sortedByDescending { it.dateCreated }
+            } else {
+                allLatestMovies.sortedByDescending { it.premiereDate }
+            }
 
-            val highRatedMovies = allLatestMovies.filter {
+            val sortedShows = if (sortByDateAdded) {
+                allLatestSeries.sortedByDescending { it.dateLastContentAdded }
+            } else {
+                allLatestSeries.sortedByDescending { it.premiereDate }
+            }
+
+            val latestMovies = sortedMovies.take(15)
+            val latestTvSeries = sortedShows.take(15)
+
+            val highRatedMovies = sortedMovies.filter {
                 (it.communityRating ?: 0f) > 6.5f
             }
-            val highRatedShows = allLatestSeries.filter {
+            val highRatedShows = sortedShows.filter {
                 (it.communityRating ?: 0f) > 6.5f
             }
 

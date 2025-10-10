@@ -20,6 +20,8 @@ data class AfinityShowDto(
     val status: String,
     val productionYear: Int?,
     val premiereDate: LocalDateTime?,
+    val dateCreated: LocalDateTime?,
+    val dateLastContentAdded: LocalDateTime?,
     val endDate: LocalDateTime?,
 )
 
@@ -36,6 +38,8 @@ fun AfinityShow.toAfinityShowDto(serverId: String? = null): AfinityShowDto {
         status = status,
         productionYear = productionYear,
         premiereDate = premiereDate,
+        dateCreated = dateCreated,
+        dateLastContentAdded = dateLastContentAdded,
         endDate = endDate,
     )
 }

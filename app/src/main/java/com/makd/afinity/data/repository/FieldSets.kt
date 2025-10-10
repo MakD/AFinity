@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository
 
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.ItemSortBy
 
 /**
  * Centralized field sets for Jellyfin API optimization.
@@ -51,7 +52,9 @@ object FieldSets {
     val MEDIA_ITEM_CARDS = listOf(
         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
         ItemFields.CHILD_COUNT,
-        ItemFields.RECURSIVE_ITEM_COUNT
+        ItemFields.RECURSIVE_ITEM_COUNT,
+        ItemFields.DATE_CREATED,
+        ItemFields.DATE_LAST_MEDIA_ADDED
     )
 
     /**

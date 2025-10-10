@@ -8,6 +8,7 @@ enum class SortBy(val sortString: String) {
     DATE_PLAYED("DatePlayed"),
     RELEASE_DATE("PremiereDate"),
     SERIES_DATE_PLAYED("SeriesDatePlayed"),
+    DATE_LAST_CONTENT_ADDED("DateLastContentAdded"),
     ;
 
     companion object {

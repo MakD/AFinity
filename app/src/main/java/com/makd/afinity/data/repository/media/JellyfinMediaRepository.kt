@@ -1058,6 +1058,7 @@ class JellyfinMediaRepository @Inject constructor(
             SortBy.DATE_PLAYED -> ItemSortBy.DATE_PLAYED
             SortBy.RELEASE_DATE -> ItemSortBy.PREMIERE_DATE
             SortBy.SERIES_DATE_PLAYED -> ItemSortBy.SERIES_SORT_NAME
+            SortBy.DATE_LAST_CONTENT_ADDED -> ItemSortBy.DATE_LAST_CONTENT_ADDED
         }
     }
 }
