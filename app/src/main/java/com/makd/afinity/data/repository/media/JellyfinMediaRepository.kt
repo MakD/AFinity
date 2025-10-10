@@ -337,23 +337,19 @@ class JellyfinMediaRepository @Inject constructor(
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
-            val itemsApi = ItemsApi(apiClient)
-            val response = itemsApi.getItems(
+            val userLibraryApi = UserLibraryApi(apiClient)
+            val response = userLibraryApi.getLatestMedia(
                 userId = userId,
                 parentId = parentId,
                 includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
-                recursive = true,
                 limit = limit,
-                sortBy = listOf(ItemSortBy.DATE_CREATED),
-                sortOrder = listOf(SortOrder.DESCENDING),
-                hasOverview = true,
                 isPlayed = false,
-                fields = fields ?: FieldSets.HERO_CAROUSEL,
+                fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                 enableImages = true,
                 enableUserData = true
             )
 
-            val latestItems = response.content?.items?.mapNotNull { baseItemDto ->
+            val latestItems = response.content?.mapNotNull { baseItemDto ->
                 if (baseItemDto.type == BaseItemKind.SERIES) {
                     Timber.d("Series '${baseItemDto.name}': childCount=${baseItemDto.childCount}")
                 }
