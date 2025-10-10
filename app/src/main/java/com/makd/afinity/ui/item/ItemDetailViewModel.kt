@@ -4,11 +4,21 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.PlaybackStateManager
-import com.makd.afinity.data.models.media.*
-import com.makd.afinity.data.models.extensions.*
+import com.makd.afinity.data.models.extensions.toAfinityBoxSet
+import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.media.AfinityBoxSet
+import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.toAfinityEpisode
+import com.makd.afinity.data.models.media.toAfinityMovie
+import com.makd.afinity.data.models.media.toAfinityShow
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +36,7 @@ class ItemDetailViewModel @Inject constructor(
     private val playbackStateManager: PlaybackStateManager,
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
+    private val watchlistRepository: WatchlistRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -190,6 +201,11 @@ class ItemDetailViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     item = item,
                     isLoading = false
+                )
+
+                val isInWatchlist = watchlistRepository.isInWatchlist(item.id)
+                _uiState.value = _uiState.value.copy(
+                    isInWatchlist = isInWatchlist
                 )
 
                 when (item) {
@@ -364,6 +380,40 @@ class ItemDetailViewModel @Inject constructor(
         }
     }
 
+    fun toggleWatchlist() {
+        viewModelScope.launch {
+            try {
+                val currentItem = _uiState.value.item ?: return@launch
+                val isCurrentlyInWatchlist = _uiState.value.isInWatchlist
+
+                _uiState.value = _uiState.value.copy(isInWatchlist = !isCurrentlyInWatchlist)
+
+                launch {
+                    val itemType = when (currentItem) {
+                        is AfinityMovie -> "MOVIE"
+                        is AfinityShow -> "SERIES"
+                        is AfinityEpisode -> "EPISODE"
+                        else -> "UNKNOWN"
+                    }
+
+                    val success = if (isCurrentlyInWatchlist) {
+                        watchlistRepository.removeFromWatchlist(currentItem.id)
+                    } else {
+                        watchlistRepository.addToWatchlist(currentItem.id, itemType)
+                    }
+
+                    if (!success) {
+                        _uiState.value = _uiState.value.copy(isInWatchlist = isCurrentlyInWatchlist)
+                        Timber.w("Failed to toggle watchlist status, reverted UI")
+                    }
+                }
+
+            } catch (e: Exception) {
+                Timber.e(e, "Error toggling watchlist status")
+            }
+        }
+    }
+
     fun onPlayClick(item: AfinityItem, selection: PlaybackSelection? = null) {
         // TODO: Implement playback with selection
         Timber.d("Play clicked for item: ${item.name}")
@@ -390,4 +440,5 @@ data class ItemDetailUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val nextEpisode: AfinityEpisode? = null,
+    val isInWatchlist: Boolean = false,
 )

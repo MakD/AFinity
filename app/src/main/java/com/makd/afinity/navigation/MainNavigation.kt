@@ -5,56 +5,61 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.Color
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.makd.afinity.R
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.navigation.NavType
+import com.makd.afinity.R
+import com.makd.afinity.ui.watchlist.WatchlistScreen
+import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.episode.EpisodeListScreen
-import com.makd.afinity.ui.library.LibraryContentScreen
-import com.makd.afinity.ui.home.HomeScreen
-import com.makd.afinity.ui.libraries.LibrariesScreen
-import com.makd.afinity.ui.item.ItemDetailScreen
-import com.makd.afinity.ui.person.PersonScreen
-import com.makd.afinity.ui.player.PlayerScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
-import com.makd.afinity.ui.player.PlayerScreenWrapper
-import com.makd.afinity.ui.search.SearchScreen
+import com.makd.afinity.ui.home.HomeScreen
+import com.makd.afinity.ui.item.ItemDetailScreen
+import com.makd.afinity.ui.libraries.LibrariesScreen
+import com.makd.afinity.ui.library.LibraryContentScreen
+import com.makd.afinity.ui.person.PersonScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
+import com.makd.afinity.ui.search.SearchScreen
 import com.makd.afinity.ui.settings.SettingsScreen
 import kotlinx.coroutines.launch
-import org.jellyfin.sdk.model.UUID
 import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +68,8 @@ fun MainNavigation(
     modifier: Modifier = Modifier,
     viewModel: MainNavigationViewModel = hiltViewModel()
 ) {
+    val watchlistRepository: WatchlistRepository = hiltViewModel<MainNavigationViewModel>().watchlistRepository
+    val watchlistCount by watchlistRepository.getWatchlistCountFlow().collectAsStateWithLifecycle(initialValue = 0)
     val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -106,6 +113,9 @@ fun MainNavigation(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
                     Destination.entries.forEach { destination ->
+                        if (destination == Destination.WATCHLIST && watchlistCount == 0) {
+                            return@forEach
+                        }
                         val selected = currentDestination?.hierarchy?.any {
                             it.route == destination.route
                         } == true
@@ -300,6 +310,17 @@ fun MainNavigation(
                     },
                     onPersonClick = { personId ->
                         val route = Destination.createPersonRoute(personId)
+                        navController.navigate(route)
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = innerPadding.calculateBottomPadding())
+                )
+            }
+            composable(Destination.WATCHLIST.route) {
+                WatchlistScreen(
+                    onItemClick = { item ->
+                        val route = Destination.createItemDetailRoute(item.id.toString())
                         navController.navigate(route)
                     },
                     modifier = Modifier

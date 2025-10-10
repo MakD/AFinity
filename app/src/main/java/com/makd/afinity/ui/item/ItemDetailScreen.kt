@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
@@ -140,6 +141,7 @@ fun ItemDetailScreen(
                     nextEpisode = nextEpisode,
                     baseUrl = viewModel.getBaseUrl(),
                     specialFeatures = uiState.specialFeatures,
+                    isInWatchlist = uiState.isInWatchlist,
                     onPlayClick = { item, selection -> onPlayClick(item, selection) },
                     onSeasonClick = { season ->
                         val route = Destination.createEpisodeListRoute(
@@ -173,6 +175,7 @@ private fun ItemDetailContent(
     nextEpisode: AfinityEpisode?,
     baseUrl: String,
     specialFeatures: List<AfinityItem>,
+    isInWatchlist: Boolean,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onSeasonClick: (AfinitySeason) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
@@ -399,12 +402,12 @@ private fun ItemDetailContent(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             IconButton(
-                                onClick = { /* TODO: Add to watchlist */ }
+                                onClick = { viewModel.toggleWatchlist() }
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.BookmarkBorder,
-                                    contentDescription = "Add to Watchlist",
-                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    imageVector = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
+                                    tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }

@@ -1,16 +1,37 @@
 package com.makd.afinity.data.database
 
+import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import android.content.Context
-import com.makd.afinity.data.database.dao.*
-import com.makd.afinity.data.database.entities.*
+import com.makd.afinity.data.database.dao.EpisodeDao
+import com.makd.afinity.data.database.dao.LibraryCacheDao
+import com.makd.afinity.data.database.dao.MediaStreamDao
+import com.makd.afinity.data.database.dao.MovieDao
+import com.makd.afinity.data.database.dao.SeasonDao
+import com.makd.afinity.data.database.dao.ServerAddressDao
+import com.makd.afinity.data.database.dao.ServerDao
+import com.makd.afinity.data.database.dao.ServerDatabaseDao
+import com.makd.afinity.data.database.dao.ShowDao
+import com.makd.afinity.data.database.dao.SourceDao
+import com.makd.afinity.data.database.dao.UserDao
+import com.makd.afinity.data.database.dao.UserDataDao
+import com.makd.afinity.data.database.dao.WatchlistDao
+import com.makd.afinity.data.database.entities.AfinityEpisodeDto
+import com.makd.afinity.data.database.entities.AfinityMediaStreamDto
+import com.makd.afinity.data.database.entities.AfinityMovieDto
+import com.makd.afinity.data.database.entities.AfinitySeasonDto
+import com.makd.afinity.data.database.entities.AfinitySegmentDto
+import com.makd.afinity.data.database.entities.AfinityShowDto
+import com.makd.afinity.data.database.entities.AfinitySourceDto
+import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.LibraryCacheEntity
+import com.makd.afinity.data.database.entities.WatchlistItemEntity
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
-import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.models.user.AfinityUserDataDto
+import com.makd.afinity.data.models.user.User
 
 @Database(
     entities = [
@@ -20,6 +41,7 @@ import com.makd.afinity.data.models.user.AfinityUserDataDto
         User::class,
 
         LibraryCacheEntity::class,
+        WatchlistItemEntity::class,
 
         AfinityMovieDto::class,
         AfinityShowDto::class,
@@ -33,7 +55,7 @@ import com.makd.afinity.data.models.user.AfinityUserDataDto
 
         AfinityUserDataDto::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(com.makd.afinity.data.database.TypeConverters::class)
@@ -55,6 +77,7 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun serverDatabaseDao(): ServerDatabaseDao
 
     abstract fun libraryCacheDao(): LibraryCacheDao
+    abstract fun watchlistDao(): WatchlistDao
 
     companion object {
         @Volatile
