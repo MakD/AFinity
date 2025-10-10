@@ -867,7 +867,10 @@ class JellyfinMediaRepository @Inject constructor(
                 baseItem.toAfinityEpisode(getBaseUrl())
             } ?: emptyList()
 
-            _nextUp.value = nextUpItems
+            if (seriesId == null) {
+                _nextUp.value = nextUpItems
+            }
+
             nextUpItems
         } catch (e: Exception) {
             Timber.e(e, "Failed to get next up")

@@ -82,7 +82,12 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            var isFirstEmission = true
             appDataRepository.getHomeSortByDateAddedFlow().collect { sortByDateAdded ->
+                if (isFirstEmission) {
+                    isFirstEmission = false
+                    return@collect
+                }
                 appDataRepository.reloadHomeData()
             }
         }
