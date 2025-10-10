@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +22,8 @@ import javax.inject.Singleton
 
 @Singleton
 class AppDataRepository @Inject constructor(
-    private val jellyfinRepository: JellyfinRepository
+    private val jellyfinRepository: JellyfinRepository,
+    private val preferencesRepository: PreferencesRepository
 ) {
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     val latestMedia: StateFlow<List<AfinityItem>> = _latestMedia.asStateFlow()
@@ -35,6 +37,12 @@ class AppDataRepository @Inject constructor(
     private val _libraries = MutableStateFlow<List<AfinityCollection>>(emptyList())
     val libraries: StateFlow<List<AfinityCollection>> = _libraries.asStateFlow()
 
+    private val _separateMovieLibrarySections = MutableStateFlow<List<Pair<AfinityCollection, List<AfinityMovie>>>>(emptyList())
+    val separateMovieLibrarySections: StateFlow<List<Pair<AfinityCollection, List<AfinityMovie>>>> = _separateMovieLibrarySections.asStateFlow()
+
+    private val _separateTvLibrarySections = MutableStateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>>(emptyList())
+    val separateTvLibrarySections: StateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>> = _separateTvLibrarySections.asStateFlow()
+
     private val _userProfileImageUrl = MutableStateFlow<String?>(null)
     val userProfileImageUrl: StateFlow<String?> = _userProfileImageUrl.asStateFlow()
 
@@ -43,6 +51,10 @@ class AppDataRepository @Inject constructor(
 
     private val _latestTvSeries = MutableStateFlow<List<AfinityShow>>(emptyList())
     val latestTvSeries: StateFlow<List<AfinityShow>> = _latestTvSeries.asStateFlow()
+
+    fun getCombineLibrarySectionsFlow(): Flow<Boolean> {
+        return preferencesRepository.getCombineLibrarySectionsFlow()
+    }
 
     private val _highestRated = MutableStateFlow<List<AfinityItem>>(emptyList())
     val highestRated: StateFlow<List<AfinityItem>> = _highestRated.asStateFlow()
@@ -224,7 +236,9 @@ class AppDataRepository @Inject constructor(
         }
     }
 
-    private suspend fun loadHomeSpecificData(libraries: List<AfinityCollection>): Triple<List<AfinityMovie>, List<AfinityShow>, List<AfinityItem>> {
+    private suspend fun loadHomeSpecificData(
+        libraries: List<AfinityCollection>
+    ): Triple<List<AfinityMovie>, List<AfinityShow>, List<AfinityItem>> {
         return try {
             val movieLibraries = libraries.filter { it.type == CollectionType.Movies }
             val tvLibraries = libraries.filter { it.type == CollectionType.TvShows }
@@ -233,16 +247,16 @@ class AppDataRepository @Inject constructor(
                 val movieTasks = movieLibraries.map { library ->
                     async {
                         try {
-                            jellyfinRepository.getMovies(
+                            library to jellyfinRepository.getMovies(
                                 parentId = library.id,
                                 sortBy = SortBy.RELEASE_DATE,
                                 sortDescending = true,
-                                limit = 8,
+                                limit = 15,
                                 isPlayed = false
                             )
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to load movies from library ${library.name}")
-                            emptyList<AfinityMovie>()
+                            library to emptyList<AfinityMovie>()
                         }
                     }
                 }
@@ -250,16 +264,16 @@ class AppDataRepository @Inject constructor(
                 val showTasks = tvLibraries.map { library ->
                     async {
                         try {
-                            jellyfinRepository.getShows(
+                            library to jellyfinRepository.getShows(
                                 parentId = library.id,
                                 sortBy = SortBy.RELEASE_DATE,
                                 sortDescending = true,
-                                limit = 8,
+                                limit = 15,
                                 isPlayed = false
                             )
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to load shows from library ${library.name}")
-                            emptyList<AfinityShow>()
+                            library to emptyList<AfinityShow>()
                         }
                     }
                 }
@@ -267,8 +281,11 @@ class AppDataRepository @Inject constructor(
                 Pair(movieTasks.awaitAll(), showTasks.awaitAll())
             }
 
-            val allLatestMovies = movieResults.flatten()
-            val allLatestSeries = showResults.flatten()
+            _separateMovieLibrarySections.value = movieResults.filter { it.second.isNotEmpty() }
+            _separateTvLibrarySections.value = showResults.filter { it.second.isNotEmpty() }
+
+            val allLatestMovies = movieResults.flatMap { it.second }
+            val allLatestSeries = showResults.flatMap { it.second }
 
             val latestMovies = allLatestMovies
                 .sortedByDescending { it.premiereDate }
@@ -334,5 +351,7 @@ class AppDataRepository @Inject constructor(
         _isInitialDataLoaded.value = false
         _loadingProgress.value = 0f
         _loadingPhase.value = ""
+        _separateMovieLibrarySections.value = emptyList()
+        _separateTvLibrarySections.value = emptyList()
     }
 }

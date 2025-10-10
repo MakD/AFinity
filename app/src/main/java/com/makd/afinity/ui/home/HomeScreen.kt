@@ -191,33 +191,59 @@ fun HomeScreen(
                     }
                 }
 
-                if (uiState.latestMovies.isNotEmpty()) {
-                    item(key = "latest_movies") {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        OptimizedLatestMoviesSection(
-                            items = uiState.latestMovies,
-                            onItemClick = onItemClick
-                        )
+                if (uiState.combineLibrarySections) {
+                    if (uiState.latestMovies.isNotEmpty()) {
+                        item(key = "latest_movies") {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            OptimizedLatestMoviesSection(
+                                items = uiState.latestMovies,
+                                onItemClick = onItemClick
+                            )
+                        }
+                    } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                        item(key = "latest_movies_skeleton") {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            MoviesSectionSkeleton()
+                        }
                     }
-                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                    item(key = "latest_movies_skeleton") {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        MoviesSectionSkeleton()
+                } else {
+                    uiState.separateMovieLibrarySections.forEachIndexed { index, (library, movies) ->
+                        item(key = "movies_library_${library.id}") {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            OptimizedLatestMoviesSection(
+                                title = library.name,
+                                items = movies,
+                                onItemClick = onItemClick
+                            )
+                        }
                     }
                 }
 
-                if (uiState.latestTvSeries.isNotEmpty()) {
-                    item(key = "latest_tv_series") {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        OptimizedLatestTvSeriesSection(
-                            items = uiState.latestTvSeries,
-                            onItemClick = onItemClick
-                        )
+                if (uiState.combineLibrarySections) {
+                    if (uiState.latestTvSeries.isNotEmpty()) {
+                        item(key = "latest_tv_series") {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            OptimizedLatestTvSeriesSection(
+                                items = uiState.latestTvSeries,
+                                onItemClick = onItemClick
+                            )
+                        }
+                    } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                        item(key = "latest_tv_series_skeleton") {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            TvSeriesSectionSkeleton()
+                        }
                     }
-                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                    item(key = "latest_tv_series_skeleton") {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        TvSeriesSectionSkeleton()
+                } else {
+                    uiState.separateTvLibrarySections.forEachIndexed { index, (library, shows) ->
+                        item(key = "tv_library_${library.id}") {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            OptimizedLatestTvSeriesSection(
+                                title = library.name,
+                                items = shows,
+                                onItemClick = onItemClick
+                            )
+                        }
                     }
                 }
 

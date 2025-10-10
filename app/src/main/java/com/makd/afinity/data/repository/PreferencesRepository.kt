@@ -54,6 +54,10 @@ interface PreferencesRepository {
     suspend fun setGridLayout(enabled: Boolean)
     suspend fun getGridLayout(): Boolean
 
+    suspend fun setCombineLibrarySections(combine: Boolean)
+    suspend fun getCombineLibrarySections(): Boolean
+    fun getCombineLibrarySectionsFlow(): Flow<Boolean>
+
     suspend fun setDownloadOverWifiOnly(wifiOnly: Boolean)
     suspend fun getDownloadOverWifiOnly(): Boolean
 

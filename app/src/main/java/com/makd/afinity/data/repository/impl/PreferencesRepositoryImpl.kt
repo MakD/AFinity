@@ -42,6 +42,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         val DARK_THEME = booleanPreferencesKey("dark_theme")
         val DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
         val GRID_LAYOUT = booleanPreferencesKey("grid_layout")
+        val COMBINE_LIBRARY_SECTIONS = booleanPreferencesKey("combine_library_sections")
 
         val DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("download_wifi_only")
         val DOWNLOAD_QUALITY = stringPreferencesKey("download_quality")
@@ -162,6 +163,22 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun getMaxBitrate(): Int? {
         return dataStore.data.first()[Keys.MAX_BITRATE]
+    }
+
+    override suspend fun setCombineLibrarySections(combine: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.COMBINE_LIBRARY_SECTIONS] = combine
+        }
+    }
+
+    override suspend fun getCombineLibrarySections(): Boolean {
+        return dataStore.data.first()[Keys.COMBINE_LIBRARY_SECTIONS] ?: false
+    }
+
+    override fun getCombineLibrarySectionsFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.COMBINE_LIBRARY_SECTIONS] ?: false
+        }
     }
 
     override suspend fun setSkipIntroEnabled(enabled: Boolean) {

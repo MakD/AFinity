@@ -62,13 +62,14 @@ fun OptimizedContinueWatchingSection(
 fun OptimizedLatestMoviesSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    title: String = "Latest Movies"
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
         Text(
-            text = "Latest Movies",
+            text = title,
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -97,13 +98,14 @@ fun OptimizedLatestMoviesSection(
 fun OptimizedLatestTvSeriesSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    title: String = "Latest TV Series"
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
         Text(
-            text = "Latest TV Series",
+            text = title,
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

@@ -27,6 +27,9 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
+    private val _combineLibrarySections = MutableStateFlow(false)
+    val combineLibrarySections: StateFlow<Boolean> = _combineLibrarySections.asStateFlow()
+
     init {
         loadSettings()
     }
@@ -46,6 +49,12 @@ class SettingsViewModel @Inject constructor(
                     serverInfo = server?.name,
                     isLoading = false
                 )
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getCombineLibrarySectionsFlow().collect { combine ->
+                _combineLibrarySections.value = combine
             }
         }
 
@@ -95,6 +104,12 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle dynamic colors")
             }
+        }
+    }
+
+    fun toggleCombineLibrarySections(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setCombineLibrarySections(enabled)
         }
     }
 

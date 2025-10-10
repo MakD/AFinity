@@ -2,6 +2,7 @@ package com.makd.afinity.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -62,6 +63,24 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             appDataRepository.latestTvSeries.collect { latestTvSeries ->
                 _uiState.value = _uiState.value.copy(latestTvSeries = latestTvSeries)
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.getCombineLibrarySectionsFlow().collect { combine ->
+                _uiState.value = _uiState.value.copy(combineLibrarySections = combine)
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.separateMovieLibrarySections.collect { sections ->
+                _uiState.value = _uiState.value.copy(separateMovieLibrarySections = sections)
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.separateTvLibrarySections.collect { sections ->
+                _uiState.value = _uiState.value.copy(separateTvLibrarySections = sections)
             }
         }
 
@@ -131,5 +150,8 @@ data class HomeUiState(
     val recommendationCategories: List<AfinityRecommendationCategory> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val userProfileImageUrl: String? = null
+    val userProfileImageUrl: String? = null,
+    val combineLibrarySections: Boolean = false,
+    val separateMovieLibrarySections: List<Pair<AfinityCollection, List<AfinityMovie>>> = emptyList(),
+    val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList()
 )
