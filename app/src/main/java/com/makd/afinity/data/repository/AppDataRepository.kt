@@ -237,10 +237,9 @@ class AppDataRepository @Inject constructor(
 
     private suspend fun loadHeroCarousel(): List<AfinityItem> {
         return try {
-            Timber.d("🎬 loadHeroCarousel: Starting...")
+            Timber.d("Loading random hero carousel items")
 
             val baseUrl = jellyfinRepository.getBaseUrl()
-            Timber.d("🎬 loadHeroCarousel: Base URL = $baseUrl")
 
             val randomHeroItems = jellyfinRepository.getItems(
                 includeItemTypes = listOf("MOVIE", "SERIES"),
@@ -251,43 +250,14 @@ class AppDataRepository @Inject constructor(
                 fields = FieldSets.HERO_CAROUSEL
             )
 
-            Timber.d("🎬 loadHeroCarousel: Got ${randomHeroItems.items?.size ?: 0} raw items from API")
-            Timber.d("🎬 loadHeroCarousel: Total record count = ${randomHeroItems.totalRecordCount}")
-
-            val convertedItems = randomHeroItems.items
-                ?.mapNotNull { baseItem ->
-                    val converted = baseItem.toAfinityItem(baseUrl)
-                    if (converted == null) {
-                        Timber.w("🎬 loadHeroCarousel: Failed to convert item: ${baseItem.name} (type=${baseItem.type})")
-                    }
-                    converted
+            randomHeroItems.items
+                ?.mapNotNull { it.toAfinityItem(baseUrl) }
+                ?.filter { item ->
+                    item.overview.isNotBlank() &&
+                            (item.images.backdrop != null || item.images.logo != null)
                 } ?: emptyList()
-
-            Timber.d("🎬 loadHeroCarousel: Converted ${convertedItems.size} items successfully")
-
-            val filteredItems = convertedItems.filter { item ->
-                val hasOverview = item.overview.isNotBlank()
-                val hasBackdrop = item.images.backdrop != null
-                val hasLogo = item.images.logo != null
-
-                if (!hasOverview) {
-                    Timber.d("🎬 loadHeroCarousel: Filtered out '${item.name}' - no overview")
-                }
-                if (!hasBackdrop && !hasLogo) {
-                    Timber.d("🎬 loadHeroCarousel: Filtered out '${item.name}' - no backdrop or logo")
-                }
-
-                hasOverview && (hasBackdrop || hasLogo)
-            }
-
-            Timber.d("🎬 loadHeroCarousel: Final filtered items = ${filteredItems.size}")
-            filteredItems.forEach { item ->
-                Timber.d("🎬 loadHeroCarousel:   ✓ ${item.name} (backdrop=${item.images.backdrop != null}, logo=${item.images.logo != null})")
-            }
-
-            filteredItems
         } catch (e: Exception) {
-            Timber.e(e, "🎬 loadHeroCarousel: FAILED with exception")
+            Timber.e(e, "Failed to load hero carousel items")
             emptyList()
         }
     }
