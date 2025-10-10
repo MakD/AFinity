@@ -30,6 +30,9 @@ class SettingsViewModel @Inject constructor(
     private val _combineLibrarySections = MutableStateFlow(false)
     val combineLibrarySections: StateFlow<Boolean> = _combineLibrarySections.asStateFlow()
 
+    private val _homeSortByDateAdded = MutableStateFlow(true)
+    val homeSortByDateAdded: StateFlow<Boolean> = _homeSortByDateAdded.asStateFlow()
+
     init {
         loadSettings()
     }
@@ -46,7 +49,8 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     currentUser = user,
                     userProfileImageUrl = profileImageUrl,
-                    serverInfo = server?.name,
+                    serverName = server?.name,
+                    serverUrl = serverRepository.getBaseUrl().ifEmpty { null },
                     isLoading = false
                 )
             }
@@ -55,6 +59,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.getCombineLibrarySectionsFlow().collect { combine ->
                 _combineLibrarySections.value = combine
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getHomeSortByDateAddedFlow().collect { sortByDateAdded ->
+                _homeSortByDateAdded.value = sortByDateAdded
             }
         }
 
@@ -110,6 +120,12 @@ class SettingsViewModel @Inject constructor(
     fun toggleCombineLibrarySections(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.setCombineLibrarySections(enabled)
+        }
+    }
+
+    fun toggleHomeSortByDateAdded(sortByDateAdded: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setHomeSortByDateAdded(sortByDateAdded)
         }
     }
 
@@ -183,7 +199,8 @@ class SettingsViewModel @Inject constructor(
 
 data class SettingsUiState(
     val currentUser: User? = null,
-    val serverInfo: String? = null,
+    val serverName: String? = null,
+    val serverUrl: String? = null,
     val userProfileImageUrl: String? = null,
     val darkTheme: Boolean = false,
     val dynamicColors: Boolean = true,

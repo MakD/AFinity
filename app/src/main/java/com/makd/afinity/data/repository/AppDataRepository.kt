@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -43,6 +46,8 @@ class AppDataRepository @Inject constructor(
     private val _separateTvLibrarySections = MutableStateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>>(emptyList())
     val separateTvLibrarySections: StateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>> = _separateTvLibrarySections.asStateFlow()
 
+    private val _homeSortByDateAdded = MutableStateFlow(true)
+
     private val _userProfileImageUrl = MutableStateFlow<String?>(null)
     val userProfileImageUrl: StateFlow<String?> = _userProfileImageUrl.asStateFlow()
 
@@ -54,6 +59,10 @@ class AppDataRepository @Inject constructor(
 
     fun getCombineLibrarySectionsFlow(): Flow<Boolean> {
         return preferencesRepository.getCombineLibrarySectionsFlow()
+    }
+
+    fun getHomeSortByDateAddedFlow(): Flow<Boolean> {
+        return preferencesRepository.getHomeSortByDateAddedFlow()
     }
 
     private val _highestRated = MutableStateFlow<List<AfinityItem>>(emptyList())
@@ -188,6 +197,27 @@ class AppDataRepository @Inject constructor(
         }
     }
 
+    /**
+     * Reloads home-specific data (movies, shows, highest rated)
+     */
+    suspend fun reloadHomeData() {
+        if (!_isInitialDataLoaded.value) return
+
+        try {
+            val libraries = _libraries.value
+            if (libraries.isNotEmpty()) {
+                Timber.d("Reloading home data...")
+                val (latestMovies, latestTvSeries, highestRated) = loadHomeSpecificData(libraries)
+                _latestMovies.value = latestMovies
+                _latestTvSeries.value = latestTvSeries
+                _highestRated.value = highestRated
+                Timber.d("Home data reloaded successfully")
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to reload home data")
+        }
+    }
+
     private suspend fun loadLatestMedia(): List<AfinityItem> {
         return try {
             val allLatestMedia = jellyfinRepository.getLatestMedia(limit = 15)
@@ -242,6 +272,10 @@ class AppDataRepository @Inject constructor(
         return try {
             val movieLibraries = libraries.filter { it.type == CollectionType.Movies }
             val tvLibraries = libraries.filter { it.type == CollectionType.TvShows }
+            val sortByDateAdded = _homeSortByDateAdded.value
+            val sortBy = if (sortByDateAdded) SortBy.DATE_ADDED else SortBy.RELEASE_DATE
+
+            Timber.d("Loading home data with sortBy=$sortBy (sortByDateAdded=$sortByDateAdded)")
 
             val (movieResults, showResults) = coroutineScope {
                 val movieTasks = movieLibraries.map { library ->
@@ -249,7 +283,7 @@ class AppDataRepository @Inject constructor(
                         try {
                             library to jellyfinRepository.getMovies(
                                 parentId = library.id,
-                                sortBy = SortBy.RELEASE_DATE,
+                                sortBy = sortBy,
                                 sortDescending = true,
                                 limit = 15,
                                 isPlayed = false
@@ -266,7 +300,7 @@ class AppDataRepository @Inject constructor(
                         try {
                             library to jellyfinRepository.getShows(
                                 parentId = library.id,
-                                sortBy = SortBy.RELEASE_DATE,
+                                sortBy = sortBy,
                                 sortDescending = true,
                                 limit = 15,
                                 isPlayed = false
@@ -287,13 +321,8 @@ class AppDataRepository @Inject constructor(
             val allLatestMovies = movieResults.flatMap { it.second }
             val allLatestSeries = showResults.flatMap { it.second }
 
-            val latestMovies = allLatestMovies
-                .sortedByDescending { it.premiereDate }
-                .take(15)
-
-            val latestTvSeries = allLatestSeries
-                .sortedByDescending { it.premiereDate }
-                .take(15)
+            val latestMovies = allLatestMovies.take(15)
+            val latestTvSeries = allLatestSeries.take(15)
 
             val highRatedMovies = allLatestMovies.filter {
                 (it.communityRating ?: 0f) > 6.5f

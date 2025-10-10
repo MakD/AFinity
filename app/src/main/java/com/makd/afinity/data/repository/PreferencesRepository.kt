@@ -57,6 +57,9 @@ interface PreferencesRepository {
     suspend fun setCombineLibrarySections(combine: Boolean)
     suspend fun getCombineLibrarySections(): Boolean
     fun getCombineLibrarySectionsFlow(): Flow<Boolean>
+    suspend fun setHomeSortByDateAdded(sortByDateAdded: Boolean)
+    suspend fun getHomeSortByDateAdded(): Boolean
+    fun getHomeSortByDateAddedFlow(): Flow<Boolean>
 
     suspend fun setDownloadOverWifiOnly(wifiOnly: Boolean)
     suspend fun getDownloadOverWifiOnly(): Boolean

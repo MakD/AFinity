@@ -43,6 +43,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         val DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
         val GRID_LAYOUT = booleanPreferencesKey("grid_layout")
         val COMBINE_LIBRARY_SECTIONS = booleanPreferencesKey("combine_library_sections")
+        val HOME_SORT_BY_DATE_ADDED = booleanPreferencesKey("home_sort_by_date_added")
 
         val DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("download_wifi_only")
         val DOWNLOAD_QUALITY = stringPreferencesKey("download_quality")
@@ -178,6 +179,22 @@ class PreferencesRepositoryImpl @Inject constructor(
     override fun getCombineLibrarySectionsFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[Keys.COMBINE_LIBRARY_SECTIONS] ?: false
+        }
+    }
+
+    override suspend fun setHomeSortByDateAdded(sortByDateAdded: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.HOME_SORT_BY_DATE_ADDED] = sortByDateAdded
+        }
+    }
+
+    override suspend fun getHomeSortByDateAdded(): Boolean {
+        return dataStore.data.first()[Keys.HOME_SORT_BY_DATE_ADDED] ?: true
+    }
+
+    override fun getHomeSortByDateAddedFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.HOME_SORT_BY_DATE_ADDED] ?: true
         }
     }
 

@@ -73,6 +73,12 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            appDataRepository.getHomeSortByDateAddedFlow().collect { sortByDateAdded ->
+                appDataRepository.reloadHomeData()
+            }
+        }
+
+        viewModelScope.launch {
             appDataRepository.separateMovieLibrarySections.collect { sections ->
                 _uiState.value = _uiState.value.copy(separateMovieLibrarySections = sections)
             }

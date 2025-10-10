@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.AppSettingsAlt
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.DarkMode
@@ -87,6 +88,7 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val combineLibrarySections by viewModel.combineLibrarySections.collectAsStateWithLifecycle()
+    val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     if (showLogoutDialog) {
@@ -163,7 +165,8 @@ fun SettingsScreen(
                 item {
                     ProfileHeader(
                         userName = uiState.currentUser?.name ?: "Unknown User",
-                        serverInfo = uiState.serverInfo,
+                        serverName = uiState.serverName,
+                        serverUrl = uiState.serverUrl,
                         userProfileImageUrl = uiState.userProfileImageUrl
                     )
                 }
@@ -171,7 +174,7 @@ fun SettingsScreen(
                 item {
                     AccountSection(
                         userName = uiState.currentUser?.name ?: "Unknown User",
-                        serverId = uiState.currentUser?.serverId ?: "Unknown Server",
+                        uiState = uiState,
                         onLogoutClick = { showLogoutDialog = true },
                         isLoggingOut = uiState.isLoggingOut
                     )
@@ -184,7 +187,9 @@ fun SettingsScreen(
                         onDarkThemeToggle = viewModel::toggleDarkTheme,
                         onDynamicColorsToggle = viewModel::toggleDynamicColors,
                         combineLibrarySections = combineLibrarySections,
-                        onCombineLibrarySectionsToggle = viewModel::toggleCombineLibrarySections
+                        onCombineLibrarySectionsToggle = viewModel::toggleCombineLibrarySections,
+                        homeSortByDateAdded = homeSortByDateAdded,
+                        onHomeSortByDateAddedToggle = viewModel::toggleHomeSortByDateAdded
                     )
                 }
 
@@ -218,7 +223,8 @@ fun SettingsScreen(
 @Composable
 private fun ProfileHeader(
     userName: String,
-    serverInfo: String?,
+    serverName: String?,
+    serverUrl: String?,
     userProfileImageUrl: String?,
     modifier: Modifier = Modifier
 ) {
@@ -272,13 +278,26 @@ private fun ProfileHeader(
                     ),
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-                Text(
-                    text = serverInfo ?: "Jellyfin User",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = serverName ?: "Jellyfin Server",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (serverUrl != null) {
+                        Text(
+                            text = serverUrl,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
         }
     }
@@ -287,7 +306,7 @@ private fun ProfileHeader(
 @Composable
 private fun AccountSection(
     userName: String,
-    serverId: String,
+    uiState: SettingsUiState,
     onLogoutClick: () -> Unit,
     isLoggingOut: Boolean,
     modifier: Modifier = Modifier
@@ -311,8 +330,8 @@ private fun AccountSection(
 
         SettingsItem(
             icon = Icons.Outlined.Info,
-            title = "Server ID",
-            subtitle = serverId,
+            title = "Server",
+            subtitle = "${uiState.serverName ?: "Unknown"} • ${uiState.serverUrl ?: "No URL"}",
             onClick = null
         )
 
@@ -366,6 +385,8 @@ private fun AppearanceSection(
     onDynamicColorsToggle: (Boolean) -> Unit,
     combineLibrarySections: Boolean,
     onCombineLibrarySectionsToggle: (Boolean) -> Unit,
+    homeSortByDateAdded: Boolean,
+    onHomeSortByDateAddedToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     SettingsSection(
@@ -405,6 +426,19 @@ private fun AppearanceSection(
             subtitle = "Show one combined section for Movies and TV Shows",
             checked = combineLibrarySections,
             onCheckedChange = onCombineLibrarySectionsToggle
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+
+        SettingsSwitchItem(
+            icon = Icons.Outlined.CalendarToday,
+            title = "Sort by Date Added",
+            subtitle = "Show items by date added instead of release date",
+            checked = homeSortByDateAdded,
+            onCheckedChange = onHomeSortByDateAddedToggle
         )
     }
 }
