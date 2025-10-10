@@ -402,7 +402,7 @@ private fun AppearanceSection(
         SettingsSwitchItem(
             icon = Icons.Outlined.ViewModule,
             title = "Combine Library Sections",
-            subtitle = "Show one combined section for movies and TV shows instead of separate sections per library",
+            subtitle = "Show one combined section for Movies and TV Shows",
             checked = combineLibrarySections,
             onCheckedChange = onCombineLibrarySectionsToggle
         )
