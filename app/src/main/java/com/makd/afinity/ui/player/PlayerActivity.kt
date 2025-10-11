@@ -14,11 +14,19 @@ import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
 import java.util.UUID
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.makd.afinity.data.repository.PreferencesRepository
+import javax.inject.Inject
 
+
+@androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
 class PlayerActivity : ComponentActivity() {
 
     private val viewModel: PlayerViewModel by viewModels()
+    @Inject
+    lateinit var preferencesRepository: PreferencesRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,8 +47,19 @@ class PlayerActivity : ComponentActivity() {
 
         Timber.d("PlayerActivity: Starting playback for item $itemId")
 
-        setContent {
+        /*setContent {
             AFinityTheme {
+                PlayerScreenWrapper(*/
+        setContent {
+            val themeMode by preferencesRepository.getThemeModeFlow()
+                .collectAsState(initial = "SYSTEM")
+            val dynamicColors by preferencesRepository.getDynamicColorsFlow()
+                .collectAsState(initial = true)
+
+            AFinityTheme(
+                themeMode = themeMode,
+                dynamicColor = dynamicColors
+            ) {
                 PlayerScreenWrapper(
                     itemId = itemId,
                     mediaSourceId = mediaSourceId,

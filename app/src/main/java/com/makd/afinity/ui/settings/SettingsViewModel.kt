@@ -68,8 +68,12 @@ class SettingsViewModel @Inject constructor(
             }
         }
 
-        viewModelScope.launch {
+        /*viewModelScope.launch {
             preferencesRepository.getDarkThemeFlow().collect { _uiState.value = _uiState.value.copy(darkTheme = it) }
+        }*/
+
+        viewModelScope.launch {
+            preferencesRepository.getThemeModeFlow().collect { _uiState.value = _uiState.value.copy(themeMode = it) }
         }
 
         viewModelScope.launch {
@@ -95,13 +99,24 @@ class SettingsViewModel @Inject constructor(
 
 
 
-    fun toggleDarkTheme(enabled: Boolean) {
+    /*fun toggleDarkTheme(enabled: Boolean) {
         viewModelScope.launch {
             try {
                 preferencesRepository.setDarkTheme(enabled)
                 Timber.d("Dark theme set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle dark theme")
+            }
+        }
+    }*/
+
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setThemeMode(mode)
+                Timber.d("Theme mode set to: $mode")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set theme mode")
             }
         }
     }
@@ -202,7 +217,8 @@ data class SettingsUiState(
     val serverName: String? = null,
     val serverUrl: String? = null,
     val userProfileImageUrl: String? = null,
-    val darkTheme: Boolean = false,
+    //val darkTheme: Boolean = false,
+    val themeMode: String = "SYSTEM",
     val dynamicColors: Boolean = true,
     val autoPlay: Boolean = true,
     val skipIntroEnabled: Boolean = true,

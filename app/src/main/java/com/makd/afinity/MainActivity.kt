@@ -27,15 +27,21 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.navigation.MainNavigation
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.login.LoginScreen
 import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import timber.log.Timber
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var preferencesRepository: PreferencesRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -44,8 +50,23 @@ class MainActivity : ComponentActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        setContent {
+        /*setContent {
             AFinityTheme {
+                MainContent(
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }*/
+        setContent {
+            val themeMode by preferencesRepository.getThemeModeFlow()
+                .collectAsState(initial = "SYSTEM")
+            val dynamicColors by preferencesRepository.getDynamicColorsFlow()
+                .collectAsState(initial = true)
+
+            AFinityTheme(
+                themeMode = themeMode,
+                dynamicColor = dynamicColors
+            ) {
                 MainContent(
                     modifier = Modifier.fillMaxSize()
                 )

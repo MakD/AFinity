@@ -39,7 +39,10 @@ class PreferencesRepositoryImpl @Inject constructor(
         val SKIP_OUTRO_ENABLED = booleanPreferencesKey("skip_outro_enabled")
         val USE_EXO_PLAYER = booleanPreferencesKey("use_exo_player")
 
-        val DARK_THEME = booleanPreferencesKey("dark_theme")
+        //val DARK_THEME = booleanPreferencesKey("dark_theme")
+
+        val THEME_MODE = stringPreferencesKey("theme_mode")
+
         val DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
         val GRID_LAYOUT = booleanPreferencesKey("grid_layout")
         val COMBINE_LIBRARY_SECTIONS = booleanPreferencesKey("combine_library_sections")
@@ -218,7 +221,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         return dataStore.data.first()[Keys.SKIP_OUTRO_ENABLED] ?: true
     }
 
-    override suspend fun setDarkTheme(enabled: Boolean) {
+    /*override suspend fun setDarkTheme(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.DARK_THEME] = enabled
         }
@@ -231,6 +234,22 @@ class PreferencesRepositoryImpl @Inject constructor(
     override fun getDarkThemeFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[Keys.DARK_THEME] ?: false
+        }
+    }*/
+
+    override suspend fun setThemeMode(mode: String) {
+        dataStore.edit { preferences ->
+            preferences[Keys.THEME_MODE] = mode
+        }
+    }
+
+    override suspend fun getThemeMode(): String {
+        return dataStore.data.first()[Keys.THEME_MODE] ?: "SYSTEM"
+    }
+
+    override fun getThemeModeFlow(): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.THEME_MODE] ?: "SYSTEM"
         }
     }
 

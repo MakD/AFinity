@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -44,11 +46,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -75,6 +81,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.theme.ThemeMode
 import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -182,9 +189,11 @@ fun SettingsScreen(
 
                 item {
                     AppearanceSection(
-                        darkTheme = uiState.darkTheme,
+                        //darkTheme = uiState.darkTheme,
+                        themeMode = uiState.themeMode,
                         dynamicColors = uiState.dynamicColors,
-                        onDarkThemeToggle = viewModel::toggleDarkTheme,
+                        onThemeModeChange = viewModel::setThemeMode,
+                        //onDarkThemeToggle = viewModel::toggleDarkTheme,
                         onDynamicColorsToggle = viewModel::toggleDynamicColors,
                         combineLibrarySections = combineLibrarySections,
                         onCombineLibrarySectionsToggle = viewModel::toggleCombineLibrarySections,
@@ -379,9 +388,9 @@ private fun AccountSection(
 
 @Composable
 private fun AppearanceSection(
-    darkTheme: Boolean,
+    themeMode: String,
     dynamicColors: Boolean,
-    onDarkThemeToggle: (Boolean) -> Unit,
+    onThemeModeChange: (String) -> Unit,
     onDynamicColorsToggle: (Boolean) -> Unit,
     combineLibrarySections: Boolean,
     onCombineLibrarySectionsToggle: (Boolean) -> Unit,
@@ -389,17 +398,57 @@ private fun AppearanceSection(
     onHomeSortByDateAddedToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var themeMenuExpanded by remember { mutableStateOf(false) }
+    val currentTheme = ThemeMode.fromString(themeMode)
+
     SettingsSection(
         title = "Appearance",
         icon = Icons.Outlined.Palette,
         modifier = modifier
     ) {
-        SettingsSwitchItem(
+        SettingsItem(
             icon = Icons.Outlined.DarkMode,
-            title = "Dark Theme",
-            subtitle = "Use dark color scheme",
-            checked = darkTheme,
-            onCheckedChange = onDarkThemeToggle
+            title = "Theme",
+            subtitle = currentTheme.displayName,
+            onClick = { themeMenuExpanded = true },
+            trailing = {
+                Box {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    DropdownMenu(
+                        expanded = themeMenuExpanded,
+                        onDismissRequest = { themeMenuExpanded = false }
+                    ) {
+                        ThemeMode.entries.forEach { mode ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = mode.displayName,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                },
+                                onClick = {
+                                    onThemeModeChange(mode.name)
+                                    themeMenuExpanded = false
+                                },
+                                leadingIcon = if (themeMode == mode.name) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                } else null
+                            )
+                        }
+                    }
+                }
+            }
         )
 
         HorizontalDivider(
@@ -436,7 +485,7 @@ private fun AppearanceSection(
         SettingsSwitchItem(
             icon = Icons.Outlined.CalendarToday,
             title = "Sort by Date Added",
-            subtitle = "Show items by date added instead of release date",
+            subtitle = "Show newest content first on home screen",
             checked = homeSortByDateAdded,
             onCheckedChange = onHomeSortByDateAddedToggle
         )
