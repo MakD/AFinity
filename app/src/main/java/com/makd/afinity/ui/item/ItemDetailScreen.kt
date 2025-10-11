@@ -88,8 +88,6 @@ fun ItemDetailScreen(
     modifier: Modifier = Modifier,
     viewModel: ItemDetailViewModel = hiltViewModel()
 ) {
-    DetailScreenOrientationController()
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val nextEpisode = uiState.nextEpisode
 
