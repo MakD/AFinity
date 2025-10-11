@@ -89,8 +89,8 @@ fun OptimizedHeroCarousel(
     val context = LocalContext.current
 
     LaunchedEffect(items.size, isScrolling) {
-        if (items.size > 1 && !isScrolling) {
-            while (true) {
+        if (items.size > 1) {
+            while (!isScrolling) {
                 delay(5000)
                 if (!isScrolling) {
                     try {
@@ -143,6 +143,7 @@ fun OptimizedHeroCarousel(
                             )
                             onDrawWithContent {
                                 drawContent()
+                                drawRect(Color.Black.copy(alpha = 0.3f))
                                 drawRect(gradient, blendMode = BlendMode.DstIn)
                             }
                         }
@@ -452,7 +453,9 @@ fun OptimizedHeroCarousel(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
-            val currentItem = items[pagerState.currentPage % items.size]
+            val currentItem by remember {
+                derivedStateOf { items[pagerState.currentPage % items.size] }
+            }
             IconButton(
                 onClick = { onMoreInformationClick(currentItem) },
                 modifier = Modifier

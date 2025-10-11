@@ -307,7 +307,6 @@ class AppDataRepository @Inject constructor(
             Timber.d("Loading home data with useJellyfinDefault=$useJellyfinDefault")
 
             val (movieResults, showResults) = if (useJellyfinDefault) {
-                // Use Jellyfin's native latest media endpoint
                 coroutineScope {
                     val movieTasks = movieLibraries.map { library ->
                         async {
@@ -342,7 +341,6 @@ class AppDataRepository @Inject constructor(
                     Pair(movieTasks.awaitAll(), showTasks.awaitAll())
                 }
             } else {
-                // Sort by premiere date
                 coroutineScope {
                     val movieTasks = movieLibraries.map { library ->
                         async {
@@ -382,7 +380,6 @@ class AppDataRepository @Inject constructor(
                 }
             }
 
-            // ✅ Separate library sections - takes 15 from each library
             _separateMovieLibrarySections.value = movieResults
                 .filter { it.second.isNotEmpty() }
                 .map { (library, movies) -> library to movies.take(15) }
@@ -391,7 +388,6 @@ class AppDataRepository @Inject constructor(
                 .filter { it.second.isNotEmpty() }
                 .map { (library, shows) -> library to shows.take(15) }
 
-            // ✅ Combined view - flatten all and sort by date
             val allLatestMovies = movieResults.flatMap { it.second }
             val allLatestSeries = showResults.flatMap { it.second }
 
