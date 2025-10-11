@@ -79,7 +79,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.home.components.NextUpSection
 import com.makd.afinity.ui.home.components.OptimizedContinueWatchingSection
-import com.makd.afinity.ui.home.components.OptimizedHeroCarousel
+import com.makd.afinity.ui.components.OptimizedHeroCarousel
 import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
 import com.makd.afinity.ui.home.components.OptimizedLatestTvSeriesSection
 import com.makd.afinity.ui.home.components.OptimizedRecommendationCategorySection

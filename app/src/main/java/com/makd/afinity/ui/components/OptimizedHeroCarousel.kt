@@ -1,5 +1,6 @@
-package com.makd.afinity.ui.home.components
+package com.makd.afinity.ui.components
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -88,7 +89,7 @@ fun OptimizedHeroCarousel(
 
     val context = LocalContext.current
 
-    LaunchedEffect(items.size, isScrolling) {
+    LaunchedEffect(items.size, isScrolling, pagerState.settledPage) {
         if (items.size > 1) {
             while (!isScrolling) {
                 delay(5000)
@@ -106,6 +107,10 @@ fun OptimizedHeroCarousel(
         }
     }
 
+    val currentItem by remember {
+        derivedStateOf { items[pagerState.currentPage % items.size] }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -119,81 +124,101 @@ fun OptimizedHeroCarousel(
             val actualIndex = page % items.size
             val item = items[actualIndex]
 
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                OptimizedAsyncImage(
-                    imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
-                    contentDescription = item.name,
-                    blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
-                    targetWidth = LocalConfiguration.current.screenWidthDp.dp,
-                    targetHeight = height,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = 0.99f }
-                        .drawWithCache {
-                            val gradient = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black,
-                                    Color.Transparent
-                                ),
-                                startY = size.height * 0.75f,
-                                endY = size.height
-                            )
-                            onDrawWithContent {
-                                drawContent()
-                                drawRect(Color.Black.copy(alpha = 0.3f))
-                                drawRect(gradient, blendMode = BlendMode.DstIn)
-                            }
-                        }
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                ) {
-                    item.images.logo?.let { logoUri ->
-                        OptimizedAsyncImage(
-                            imageUrl = item.images.logoImageUrl,
-                            contentDescription = "${item.name} logo",
-                            blurHash = item.images.logoBlurHash,
-                            targetWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp,
-                            targetHeight = 120.dp,
-                            modifier = Modifier
-                                .fillMaxWidth(0.8f)
-                                .wrapContentHeight()
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 144.dp)
-                                .sizeIn(maxHeight = 120.dp),
-                            contentScale = ContentScale.Fit
-                        )
-                    } ?: run {
-                        Text(
-                            text = item.name,
-                            style = MaterialTheme.typography.displaySmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 36.sp
+            OptimizedAsyncImage(
+                imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
+                contentDescription = item.name,
+                blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
+                targetWidth = LocalConfiguration.current.screenWidthDp.dp,
+                targetHeight = height,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = 0.99f }
+                    .drawWithCache {
+                        val gradient = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black,
+                                Color.Transparent
                             ),
-                            color = Color.White,
-                            textAlign = TextAlign.Center,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 144.dp)
-                                .fillMaxWidth()
+                            startY = size.height * 0.75f,
+                            endY = size.height
                         )
+                        onDrawWithContent {
+                            drawContent()
+                            drawRect(Color.Black.copy(alpha = 0.3f))
+                            drawRect(gradient, blendMode = BlendMode.DstIn)
+                        }
                     }
+            )
+        }
 
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(0.8f)
+                    .padding(bottom = 144.dp)
+                    .sizeIn(maxHeight = 120.dp)
+            ) {
+                Crossfade(
+                    targetState = currentItem,
+                    animationSpec = tween(durationMillis = 700),
+                    label = "logo_crossfade"
+                ) { item ->
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        item.images.logo?.let { logoUri ->
+                            OptimizedAsyncImage(
+                                imageUrl = item.images.logoImageUrl,
+                                contentDescription = "${item.name} logo",
+                                blurHash = item.images.logoBlurHash,
+                                targetWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp,
+                                targetHeight = 120.dp,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .wrapContentHeight(),
+                                contentScale = ContentScale.Fit
+                            )
+                        } ?: run {
+                            Text(
+                                text = item.name,
+                                style = MaterialTheme.typography.displaySmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 36.sp
+                                ),
+                                color = Color.White,
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 112.dp)
+                    .fillMaxWidth()
+                    .height(28.dp)
+            ) {
+                Crossfade(
+                    targetState = currentItem,
+                    animationSpec = tween(durationMillis = 1200),
+                    label = "metadata_crossfade"
+                ) { item ->
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 112.dp)
-                            .fillMaxWidth()
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         Spacer(modifier = Modifier.weight(1f))
 
@@ -299,28 +324,6 @@ fun OptimizedHeroCarousel(
 
                         when (item) {
                             is AfinityMovie -> {
-                                item.productionYear?.let { year ->
-                                    Text(
-                                        text = year.toString(),
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            is AfinityShow -> {
-                                item.productionYear?.let { year ->
-                                    Text(
-                                        text = year.toString(),
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            is AfinityEpisode -> {
                                 item.premiereDate?.let { date ->
                                     Text(
                                         text = date.year.toString(),
@@ -408,39 +411,43 @@ fun OptimizedHeroCarousel(
 
                         Spacer(modifier = Modifier.weight(1f))
                     }
+                }
+            }
 
-                    when (item) {
-                        is AfinityMovie -> {
-                            if (item.genres.isNotEmpty()) {
-                                Text(
-                                    text = item.genres.take(3).joinToString(" • "),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .padding(bottom = 80.dp)
-                                        .fillMaxWidth()
-                                )
-                            }
+            Crossfade(
+                targetState = currentItem,
+                animationSpec = tween(durationMillis = 1200),
+                label = "genres_crossfade",
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 80.dp)
+                    .fillMaxWidth()
+            ) { item ->
+                when (item) {
+                    is AfinityMovie -> {
+                        if (item.genres.isNotEmpty()) {
+                            Text(
+                                text = item.genres.take(3).joinToString(" • "),
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
-                        is AfinityShow -> {
-                            if (item.genres.isNotEmpty()) {
-                                Text(
-                                    text = item.genres.take(3).joinToString(" • "),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .padding(bottom = 80.dp)
-                                        .fillMaxWidth()
-                                )
-                            }
+                    }
+                    is AfinityShow -> {
+                        if (item.genres.isNotEmpty()) {
+                            Text(
+                                text = item.genres.take(3).joinToString(" • "),
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
                 }
@@ -453,9 +460,6 @@ fun OptimizedHeroCarousel(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
-            val currentItem by remember {
-                derivedStateOf { items[pagerState.currentPage % items.size] }
-            }
             IconButton(
                 onClick = { onMoreInformationClick(currentItem) },
                 modifier = Modifier
