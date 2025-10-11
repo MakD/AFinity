@@ -203,23 +203,15 @@ fun OptimizedHeroCarousel(
                 }
             }
 
-            Box(
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 112.dp)
                     .fillMaxWidth()
-                    .height(28.dp)
             ) {
-                Crossfade(
-                    targetState = currentItem,
-                    animationSpec = tween(durationMillis = 1200),
-                    label = "metadata_crossfade"
-                ) { item ->
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
+                val item = currentItem
                         Spacer(modifier = Modifier.weight(1f))
 
                         when (item) {
@@ -375,8 +367,8 @@ fun OptimizedHeroCarousel(
 
                         when (item) {
                             is AfinityMovie -> {
-                                if (item.runtimeTicks > 0) {
-                                    val runtimeMillis = item.runtimeTicks / 10_000L
+                                if (currentItem.runtimeTicks > 0) {
+                                    val runtimeMillis = currentItem.runtimeTicks / 10_000L
                                     val endTime = LocalTime.now().plusNanos(runtimeMillis * 1_000_000L)
                                     val formatter = DateTimeFormatter.ofPattern("HH:mm")
                                     Text(
@@ -411,18 +403,14 @@ fun OptimizedHeroCarousel(
 
                         Spacer(modifier = Modifier.weight(1f))
                     }
-                }
-            }
 
-            Crossfade(
-                targetState = currentItem,
-                animationSpec = tween(durationMillis = 1200),
-                label = "genres_crossfade",
+            Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 80.dp)
                     .fillMaxWidth()
-            ) { item ->
+            ) {
+                val item = currentItem
                 when (item) {
                     is AfinityMovie -> {
                         if (item.genres.isNotEmpty()) {
