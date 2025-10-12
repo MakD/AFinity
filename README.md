@@ -135,7 +135,7 @@ For remote access, ensure your Jellyfin server is configured for external connec
 
 ### UI/UX Improvements
 
-- [ ] Tablet-optimized layouts
+- [X] Tablet-optimized layouts
 - [X] Advanced search filters
 - [X] Custom library views
 - [ ] Gesture customization
