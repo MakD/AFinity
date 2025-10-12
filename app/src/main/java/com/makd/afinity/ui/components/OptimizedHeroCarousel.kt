@@ -599,7 +599,7 @@ private fun HeroCarouselLandscape(
     )
 
     val configuration = LocalConfiguration.current
-    val landscapeHeight = (configuration.screenHeightDp * 0.75f).dp
+    val landscapeHeight = (configuration.screenHeightDp * 0.95f).dp
 
     LaunchedEffect(items.size, isScrolling, pagerState.settledPage) {
         if (items.size > 1) {
@@ -672,7 +672,7 @@ private fun HeroCarouselLandscape(
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .fillMaxWidth(0.5f),
+                    .fillMaxWidth(0.45f),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Box(
@@ -934,91 +934,98 @@ private fun HeroCarouselLandscape(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    IconButton(
-                        onClick = { onMoreInformationClick(currentItem) },
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "More Information",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { onPlayTrailerClick(currentItem) },
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Movie,
-                            contentDescription = "Play Trailer",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { onWatchNowClick(currentItem) },
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Watch Now",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
             }
         }
 
-        if (items.size > 1) {
-            val currentPageFraction by remember {
-                derivedStateOf {
-                    val currentPage = pagerState.currentPage % items.size
-                    val pageOffset = pagerState.currentPageOffsetFraction
-                    when {
-                        pageOffset > 0.5f && currentPage == items.size - 1 -> 0f
-                        pageOffset < -0.5f && currentPage == 0 -> (items.size - 1).toFloat()
-                        else -> (currentPage + pageOffset).coerceIn(0f, (items.size - 1).toFloat())
-                    }
+        // Move buttons and dots OUTSIDE the Column, as direct children of the parent Box
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(bottom = 48.dp, start = 48.dp, end = 24.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                IconButton(
+                    onClick = { onMoreInformationClick(currentItem) },
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "More Information",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = { onPlayTrailerClick(currentItem) },
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Movie,
+                        contentDescription = "Play Trailer",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = { onWatchNowClick(currentItem) },
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Watch Now",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
 
-            PagerWormIndicator(
-                pageCount = items.size,
-                currentPageFraction = remember { derivedStateOf { currentPageFraction } },
-                activeDotColor = MaterialTheme.colorScheme.primary,
-                dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 24.dp, bottom = 24.dp),
-                dotCount = 5,
-                activeDotSize = 8.dp,
-                minDotSize = 4.dp,
-                space = 5.dp,
-                orientation = PagerIndicatorOrientation.Horizontal
-            )
+            if (items.size > 1) {
+                val currentPageFraction by remember {
+                    derivedStateOf {
+                        val currentPage = pagerState.currentPage % items.size
+                        val pageOffset = pagerState.currentPageOffsetFraction
+                        when {
+                            pageOffset > 0.5f && currentPage == items.size - 1 -> 0f
+                            pageOffset < -0.5f && currentPage == 0 -> (items.size - 1).toFloat()
+                            else -> (currentPage + pageOffset).coerceIn(0f, (items.size - 1).toFloat())
+                        }
+                    }
+                }
+
+                PagerWormIndicator(
+                    pageCount = items.size,
+                    currentPageFraction = remember { derivedStateOf { currentPageFraction } },
+                    activeDotColor = MaterialTheme.colorScheme.primary,
+                    dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    dotCount = 5,
+                    activeDotSize = 8.dp,
+                    minDotSize = 4.dp,
+                    space = 5.dp,
+                    orientation = PagerIndicatorOrientation.Horizontal
+                )
+            }
         }
     }
 }

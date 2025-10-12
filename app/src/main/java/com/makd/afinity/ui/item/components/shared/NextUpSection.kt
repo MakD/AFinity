@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -42,6 +43,8 @@ import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -51,6 +54,7 @@ fun NextUpSection(
 ) {
     val isInProgress = episode.playbackPositionTicks > 0 && !episode.played
     val sectionTitle = if (isInProgress) "Continue Watching" else "Next Up"
+    val cardWidth = rememberLandscapeCardWidth()
 
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -65,7 +69,7 @@ fun NextUpSection(
 
         Card(
             modifier = Modifier
-                .fillMaxWidth()
+                .width(cardWidth)
                 .clickable { onEpisodeClick(episode) },
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -75,9 +79,8 @@ fun NextUpSection(
             Column {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                ) {
+                        .width(cardWidth)
+                        .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)) {
                     OptimizedAsyncImage(
                         imageUrl = episode.images.primaryImageUrl ?: episode.images.backdropImageUrl,
                         contentDescription = episode.name,
@@ -104,7 +107,7 @@ fun NextUpSection(
 
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .width(cardWidth)
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {

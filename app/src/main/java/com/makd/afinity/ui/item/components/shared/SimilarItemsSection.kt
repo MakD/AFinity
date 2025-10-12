@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 
 @Composable
 fun SimilarItemsSection(
@@ -52,13 +53,9 @@ private fun SimilarItemCard(
     item: AfinityItem,
     onClick: () -> Unit
 ) {
-    val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val cardWidth = (configuration.screenWidthDp.dp - 32.dp - 24.dp) / 3f
 
     MediaItemCard(
         item = item,
-        onClick = onClick,
-        modifier = Modifier.width(cardWidth),
+        onClick = onClick
     )
 }

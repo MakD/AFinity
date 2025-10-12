@@ -53,6 +53,8 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 import org.jellyfin.sdk.model.api.PersonKind
 
 @Composable
@@ -206,9 +208,7 @@ internal fun SeasonCard(
     season: AfinitySeason,
     onClick: () -> Unit
 ) {
-    val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val cardWidth = (configuration.screenWidthDp.dp - 56.dp) / 3.5f
+    val cardWidth = rememberPortraitCardWidth()
 
     Column(
         modifier = Modifier.width(cardWidth)
@@ -217,7 +217,7 @@ internal fun SeasonCard(
             onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(2f / 3f),
+                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant
             ),

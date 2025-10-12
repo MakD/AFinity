@@ -151,144 +151,134 @@ fun HomeScreen(
                 }
             }
         } ?: run {
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                if (uiState.heroCarouselItems.isNotEmpty()) {
-                    item(key = "hero_carousel") {
-                        OptimizedHeroCarousel(
-                            items = uiState.heroCarouselItems,
-                            height = screenHeight * 0.65f,
-                            isScrolling = isScrolling,
-                            onWatchNowClick = onPlayClick,
-                            onPlayTrailerClick = { item ->
-                                viewModel.onPlayTrailerClick(context, item)
-                            },
-                            onMoreInformationClick = onItemClick
-                        )
-                    }
-                }
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
-                if (uiState.continueWatching.isNotEmpty()) {
-                    item(key = "continue_watching") {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        OptimizedContinueWatchingSection(
-                            items = uiState.continueWatching,
-                            onItemClick = onItemClick
-                        )
-                    }
-                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                    item(key = "continue_watching_skeleton") {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        ContinueWatchingSkeleton()
-                    }
-                }
-
-                if (uiState.nextUp.isNotEmpty()) {
-                    item(key = "next_up") {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        NextUpSection(
-                            episodes = uiState.nextUp,
-                            onEpisodeClick = onItemClick
-                        )
-                    }
-                }
-
-                if (uiState.combineLibrarySections) {
-                    if (uiState.latestMovies.isNotEmpty()) {
-                        item(key = "latest_movies") {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            OptimizedLatestMoviesSection(
-                                items = uiState.latestMovies,
-                                onItemClick = onItemClick
-                            )
-                        }
-                    } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                        item(key = "latest_movies_skeleton") {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            MoviesSectionSkeleton()
-                        }
-                    }
-                } else {
-                    uiState.separateMovieLibrarySections.forEachIndexed { index, (library, movies) ->
-                        item(key = "movies_library_${library.id}") {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            OptimizedLatestMoviesSection(
-                                title = library.name,
-                                items = movies,
-                                onItemClick = onItemClick
-                            )
-                        }
-                    }
-                }
-
-                if (uiState.combineLibrarySections) {
-                    if (uiState.latestTvSeries.isNotEmpty()) {
-                        item(key = "latest_tv_series") {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            OptimizedLatestTvSeriesSection(
-                                items = uiState.latestTvSeries,
-                                onItemClick = onItemClick
-                            )
-                        }
-                    } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                        item(key = "latest_tv_series_skeleton") {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            TvSeriesSectionSkeleton()
-                        }
-                    }
-                } else {
-                    uiState.separateTvLibrarySections.forEachIndexed { index, (library, shows) ->
-                        item(key = "tv_library_${library.id}") {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            OptimizedLatestTvSeriesSection(
-                                title = library.name,
-                                items = shows,
-                                onItemClick = onItemClick
-                            )
-                        }
-                    }
-                }
-
-                    if (uiState.highestRated.isNotEmpty()) {
-                        item(key = "highest_rated") {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            HighestRatedSection(
-                                items = uiState.highestRated,
-                                onItemClick = onItemClick
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    if (uiState.heroCarouselItems.isNotEmpty()) {
+                        item(key = "hero_carousel") {
+                            OptimizedHeroCarousel(
+                                items = uiState.heroCarouselItems,
+                                height = screenHeight * 0.65f,
+                                isScrolling = isScrolling,
+                                onWatchNowClick = onPlayClick,
+                                onPlayTrailerClick = { item ->
+                                    viewModel.onPlayTrailerClick(context, item)
+                                },
+                                onMoreInformationClick = onItemClick
                             )
                         }
                     }
 
-                    items(
-                        items = uiState.recommendationCategories,
-                        key = { category -> "rec_category_${category.title}" }
-                    ) { category ->
-                        Spacer(modifier = Modifier.height(24.dp))
-                        OptimizedRecommendationCategorySection(
-                            category = category,
-                            onItemClick = onItemClick
-                        )
-                    }
+                    item(key = "content_wrapper") {
+                        Column(
+                            modifier = if (isLandscape) {
+                                Modifier
+                                    .fillMaxWidth()
+                                    .offset(y = (-50).dp)
+                            } else {
+                                Modifier.fillMaxWidth()
+                            }
+                        ) {
+                            if (uiState.continueWatching.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                OptimizedContinueWatchingSection(
+                                    items = uiState.continueWatching,
+                                    onItemClick = onItemClick
+                                )
+                            } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                ContinueWatchingSkeleton()
+                            }
 
-                    if (uiState.recommendationCategories.isEmpty() &&
-                        uiState.latestMovies.isNotEmpty() &&
-                        uiState.latestTvSeries.isNotEmpty() &&
-                        uiState.isLoading
-                    ) {
-                        item(key = "recommendations_skeleton") {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            RecommendationsSkeleton()
+                            if (uiState.nextUp.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                NextUpSection(
+                                    episodes = uiState.nextUp,
+                                    onEpisodeClick = onItemClick
+                                )
+                            }
+
+                            if (uiState.combineLibrarySections) {
+                                if (uiState.latestMovies.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    OptimizedLatestMoviesSection(
+                                        items = uiState.latestMovies,
+                                        onItemClick = onItemClick
+                                    )
+                                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    MoviesSectionSkeleton()
+                                }
+                            } else {
+                                uiState.separateMovieLibrarySections.forEachIndexed { index, (library, movies) ->
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    OptimizedLatestMoviesSection(
+                                        title = library.name,
+                                        items = movies,
+                                        onItemClick = onItemClick
+                                    )
+                                }
+                            }
+
+                            if (uiState.combineLibrarySections) {
+                                if (uiState.latestTvSeries.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    OptimizedLatestTvSeriesSection(
+                                        items = uiState.latestTvSeries,
+                                        onItemClick = onItemClick
+                                    )
+                                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    TvSeriesSectionSkeleton()
+                                }
+                            } else {
+                                uiState.separateTvLibrarySections.forEachIndexed { index, (library, shows) ->
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    OptimizedLatestTvSeriesSection(
+                                        title = library.name,
+                                        items = shows,
+                                        onItemClick = onItemClick
+                                    )
+                                }
+                            }
+
+                            if (uiState.highestRated.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                HighestRatedSection(
+                                    items = uiState.highestRated,
+                                    onItemClick = onItemClick
+                                )
+                            }
+
+                            uiState.recommendationCategories.forEach { category ->
+                                Spacer(modifier = Modifier.height(24.dp))
+                                OptimizedRecommendationCategorySection(
+                                    category = category,
+                                    onItemClick = onItemClick
+                                )
+                            }
+
+                            if (uiState.recommendationCategories.isEmpty() &&
+                                uiState.latestMovies.isNotEmpty() &&
+                                uiState.latestTvSeries.isNotEmpty() &&
+                                uiState.isLoading
+                            ) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                RecommendationsSkeleton()
+                            }
+
+                            Spacer(modifier = Modifier.height(32.dp))
                         }
-                    }
-
-                    item(key = "bottom_spacer") {
-                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }
+        }
 
             TransparentTopBar(
                 onSearchClick = {
