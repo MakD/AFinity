@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.item.components.shared
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,18 +34,20 @@ fun HeroSection(
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val heightMultiplier = if (isLandscape) 0.9f else 0.5f
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(screenHeight * 0.5f)
+            .height(screenHeight * heightMultiplier)
     ) {
         OptimizedAsyncImage(
             imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
             contentDescription = null,
             blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
             targetWidth = configuration.screenWidthDp.dp,
-            targetHeight = screenHeight * 0.5f,
+            targetHeight = screenHeight * heightMultiplier,
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer { alpha = 0.99f }

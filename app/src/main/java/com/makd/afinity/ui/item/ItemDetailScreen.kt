@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.item
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -77,7 +80,6 @@ import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
 import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
-import com.makd.afinity.ui.player.utils.DetailScreenOrientationController
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
 
@@ -194,14 +196,21 @@ private fun ItemDetailContent(
         }
 
         item {
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            val overlayOffset = if (isLandscape) (-200).dp else (-110).dp
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset(y = (-110).dp)
+                    .offset(y = overlayOffset)
                     .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (item.images.logo != null) {
+                    val logoAlignment = if (isLandscape) Alignment.Start else Alignment.CenterHorizontally
+                    val logoContentAlignment = if (isLandscape) Alignment.CenterStart else Alignment.Center
+
                     OptimizedAsyncImage(
                         imageUrl = item.images.logoImageUrl,
                         contentDescription = "${item.name} logo",
@@ -210,8 +219,9 @@ private fun ItemDetailContent(
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .height(120.dp)
-                            .align(Alignment.CenterHorizontally),
-                        contentScale = ContentScale.Fit
+                            .align(logoAlignment),
+                        contentScale = ContentScale.Fit,
+                        alignment = logoContentAlignment
                     )
                 } else {
                     Spacer(modifier = Modifier.height(0.dp))
@@ -273,126 +283,328 @@ private fun ItemDetailContent(
                     }
                 }
 
-                if (item !is AfinityBoxSet && item.canPlay) {
-                    when (item) {
-                        is AfinityShow -> {
-                            var episodeToPlay by remember { mutableStateOf<AfinityEpisode?>(null) }
-                            var isLoadingEpisode by remember { mutableStateOf(false) }
+                val configuration = LocalConfiguration.current
+                val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-                            LaunchedEffect(item.id) {
-                                isLoadingEpisode = true
-                                episodeToPlay = viewModel.getEpisodeToPlay(item.id)
-                                isLoadingEpisode = false
-                            }
+                if (isLandscape) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (item !is AfinityBoxSet && item.canPlay) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f, fill = false)
+                                    .widthIn(max = 200.dp)
+                            ) {
+                                when (item) {
+                                    is AfinityShow -> {
+                                        var episodeToPlay by remember { mutableStateOf<AfinityEpisode?>(null) }
+                                        var isLoadingEpisode by remember { mutableStateOf(false) }
 
-                            when {
-                                isLoadingEpisode -> {
-                                    Button(
-                                        onClick = { },
-                                        enabled = false,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(56.dp),
-                                        shape = RoundedCornerShape(28.dp)
-                                    ) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(16.dp),
-                                            strokeWidth = 2.dp
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Loading...")
-                                    }
-                                }
-                                episodeToPlay != null -> {
-                                    val episode = episodeToPlay!!
-                                    val (buttonText, buttonIcon) = when {
-                                        episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                            "Rewatch" to Icons.Default.Replay
+                                        LaunchedEffect(item.id) {
+                                            isLoadingEpisode = true
+                                            episodeToPlay = viewModel.getEpisodeToPlay(item.id)
+                                            isLoadingEpisode = false
                                         }
-                                        episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                            "Resume Playback" to Icons.Default.PlayArrow
-                                        }
-                                        else -> {
-                                            "Play" to Icons.Default.PlayArrow
-                                        }
-                                    }
 
-                                    PlaybackSelectionButton(
-                                        item = episode,
-                                        buttonText = buttonText,
-                                        buttonIcon = buttonIcon,
-                                        onPlayClick = { selection ->
-                                            if (episode.sources.isEmpty()) {
-                                                Timber.w("Episode ${episode.name} has no media sources")
-                                                return@PlaybackSelectionButton
-                                            }
-                                            val finalSelection = selection.copy(
-                                                mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull()?.id ?: "",
-                                                startPositionMs = if (episode.playbackPositionTicks > 0) {
-                                                    episode.playbackPositionTicks / 10000
-                                                } else {
-                                                    0L
+                                        when {
+                                            isLoadingEpisode -> {
+                                                Button(
+                                                    onClick = { },
+                                                    enabled = false,
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(56.dp),
+                                                    shape = RoundedCornerShape(28.dp)
+                                                ) {
+                                                    CircularProgressIndicator(
+                                                        modifier = Modifier.size(16.dp),
+                                                        strokeWidth = 2.dp
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text("Loading...")
                                                 }
-                                            )
-                                            com.makd.afinity.ui.player.PlayerLauncher.launch(
-                                                context = navController.context,
-                                                itemId = episode.id,
-                                                mediaSourceId = finalSelection.mediaSourceId,
-                                                audioStreamIndex = finalSelection.audioStreamIndex,
-                                                subtitleStreamIndex = finalSelection.subtitleStreamIndex,
-                                                startPositionMs = finalSelection.startPositionMs
-                                            )
+                                            }
+                                            episodeToPlay != null -> {
+                                                val episode = episodeToPlay!!
+                                                val (buttonText, buttonIcon) = when {
+                                                    episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
+                                                        "Rewatch" to Icons.Default.Replay
+                                                    }
+                                                    episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
+                                                        "Resume Playback" to Icons.Default.PlayArrow
+                                                    }
+                                                    else -> {
+                                                        "Play" to Icons.Default.PlayArrow
+                                                    }
+                                                }
+
+                                                PlaybackSelectionButton(
+                                                    item = episode,
+                                                    buttonText = buttonText,
+                                                    buttonIcon = buttonIcon,
+                                                    onPlayClick = { selection ->
+                                                        if (episode.sources.isEmpty()) {
+                                                            Timber.w("Episode ${episode.name} has no media sources")
+                                                            return@PlaybackSelectionButton
+                                                        }
+                                                        val finalSelection = selection.copy(
+                                                            mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull()?.id ?: "",
+                                                            startPositionMs = if (episode.playbackPositionTicks > 0) {
+                                                                episode.playbackPositionTicks / 10000
+                                                            } else {
+                                                                0L
+                                                            }
+                                                        )
+                                                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                            context = navController.context,
+                                                            itemId = episode.id,
+                                                            mediaSourceId = finalSelection.mediaSourceId,
+                                                            audioStreamIndex = finalSelection.audioStreamIndex,
+                                                            subtitleStreamIndex = finalSelection.subtitleStreamIndex,
+                                                            startPositionMs = finalSelection.startPositionMs
+                                                        )
+                                                    }
+                                                )
+                                            }
+                                            else -> {
+                                                Button(
+                                                    onClick = { },
+                                                    enabled = false,
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(56.dp),
+                                                    shape = RoundedCornerShape(28.dp)
+                                                ) {
+                                                    Text("No Episodes Available")
+                                                }
+                                            }
                                         }
-                                    )
-                                }
-                                else -> {
-                                    Button(
-                                        onClick = { },
-                                        enabled = false,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(56.dp),
-                                        shape = RoundedCornerShape(28.dp)
-                                    ) {
-                                        Text("No Episodes Available")
+                                    }
+                                    else -> {
+                                        val (buttonText, buttonIcon) = when {
+                                            item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
+                                                "Rewatch" to Icons.Default.Replay
+                                            }
+                                            item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
+                                                "Resume Playback" to Icons.Default.PlayArrow
+                                            }
+                                            else -> {
+                                                "Watch Now" to Icons.Default.PlayArrow
+                                            }
+                                        }
+
+                                        PlaybackSelectionButton(
+                                            item = item,
+                                            buttonText = buttonText,
+                                            buttonIcon = buttonIcon,
+                                            onPlayClick = { selection ->
+                                                val finalSelection = selection.copy(
+                                                    mediaSourceId = selectedMediaSource?.id ?: selection.mediaSourceId
+                                                )
+                                                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                    context = navController.context,
+                                                    itemId = item.id,
+                                                    mediaSourceId = finalSelection.mediaSourceId,
+                                                    audioStreamIndex = finalSelection.audioStreamIndex,
+                                                    subtitleStreamIndex = finalSelection.subtitleStreamIndex,
+                                                    startPositionMs = finalSelection.startPositionMs
+                                                )
+                                            }
+                                        )
                                     }
                                 }
                             }
                         }
-                        else -> {
-                            val (buttonText, buttonIcon) = when {
-                                item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
-                                    "Rewatch" to Icons.Default.Replay
-                                }
-                                item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
-                                    "Resume Playback" to Icons.Default.PlayArrow
-                                }
-                                else -> {
-                                    "Watch Now" to Icons.Default.PlayArrow
-                                }
+
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            IconButton(
+                                onClick = { viewModel.toggleWatchlist() }
+                            ) {
+                                Icon(
+                                    imageVector = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
+                                    tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(28.dp)
+                                )
                             }
 
-                            PlaybackSelectionButton(
-                                item = item,
-                                buttonText = buttonText,
-                                buttonIcon = buttonIcon,
-                                onPlayClick = { selection ->
-                                    val finalSelection = selection.copy(
-                                        mediaSourceId = selectedMediaSource?.id ?: selection.mediaSourceId
-                                    )
-                                    com.makd.afinity.ui.player.PlayerLauncher.launch(
-                                        context = navController.context,
-                                        itemId = item.id,
-                                        mediaSourceId = finalSelection.mediaSourceId,
-                                        audioStreamIndex = finalSelection.audioStreamIndex,
-                                        subtitleStreamIndex = finalSelection.subtitleStreamIndex,
-                                        startPositionMs = finalSelection.startPositionMs
-                                    )
+                            IconButton(
+                                onClick = {
+                                    viewModel.onPlayTrailerClick(context, item)
                                 }
-                            )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MovieCreation,
+                                    contentDescription = "Play Trailer",
+                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { viewModel.toggleFavorite() }
+                            ) {
+                                Icon(
+                                    imageVector = if (item.favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                    contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
+                                    tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { viewModel.toggleWatched() }
+                            ) {
+                                Icon(
+                                    imageVector = if (item.played) Icons.Default.CheckCircle else Icons.Default.CheckCircleOutline,
+                                    contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
+                                    tint = if (item.played) {
+                                        Color.Green
+                                    } else {
+                                        MaterialTheme.colorScheme.onBackground
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { /* TODO: Download */ }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = "Download",
+                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                     }
-                }
+                } else {
+                    if (item !is AfinityBoxSet && item.canPlay) {
+                        when (item) {
+                            is AfinityShow -> {
+                                var episodeToPlay by remember { mutableStateOf<AfinityEpisode?>(null) }
+                                var isLoadingEpisode by remember { mutableStateOf(false) }
+
+                                LaunchedEffect(item.id) {
+                                    isLoadingEpisode = true
+                                    episodeToPlay = viewModel.getEpisodeToPlay(item.id)
+                                    isLoadingEpisode = false
+                                }
+
+                                when {
+                                    isLoadingEpisode -> {
+                                        Button(
+                                            onClick = { },
+                                            enabled = false,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(56.dp),
+                                            shape = RoundedCornerShape(28.dp)
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Loading...")
+                                        }
+                                    }
+                                    episodeToPlay != null -> {
+                                        val episode = episodeToPlay!!
+                                        val (buttonText, buttonIcon) = when {
+                                            episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
+                                                "Rewatch" to Icons.Default.Replay
+                                            }
+                                            episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
+                                                "Resume Playback" to Icons.Default.PlayArrow
+                                            }
+                                            else -> {
+                                                "Play" to Icons.Default.PlayArrow
+                                            }
+                                        }
+
+                                        PlaybackSelectionButton(
+                                            item = episode,
+                                            buttonText = buttonText,
+                                            buttonIcon = buttonIcon,
+                                            onPlayClick = { selection ->
+                                                if (episode.sources.isEmpty()) {
+                                                    Timber.w("Episode ${episode.name} has no media sources")
+                                                    return@PlaybackSelectionButton
+                                                }
+                                                val finalSelection = selection.copy(
+                                                    mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull()?.id ?: "",
+                                                    startPositionMs = if (episode.playbackPositionTicks > 0) {
+                                                        episode.playbackPositionTicks / 10000
+                                                    } else {
+                                                        0L
+                                                    }
+                                                )
+                                                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                    context = navController.context,
+                                                    itemId = episode.id,
+                                                    mediaSourceId = finalSelection.mediaSourceId,
+                                                    audioStreamIndex = finalSelection.audioStreamIndex,
+                                                    subtitleStreamIndex = finalSelection.subtitleStreamIndex,
+                                                    startPositionMs = finalSelection.startPositionMs
+                                                )
+                                            }
+                                        )
+                                    }
+                                    else -> {
+                                        Button(
+                                            onClick = { },
+                                            enabled = false,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(56.dp),
+                                            shape = RoundedCornerShape(28.dp)
+                                        ) {
+                                            Text("No Episodes Available")
+                                        }
+                                    }
+                                }
+                            }
+                            else -> {
+                                val (buttonText, buttonIcon) = when {
+                                    item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
+                                        "Rewatch" to Icons.Default.Replay
+                                    }
+                                    item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
+                                        "Resume Playback" to Icons.Default.PlayArrow
+                                    }
+                                    else -> {
+                                        "Watch Now" to Icons.Default.PlayArrow
+                                    }
+                                }
+
+                                PlaybackSelectionButton(
+                                    item = item,
+                                    buttonText = buttonText,
+                                    buttonIcon = buttonIcon,
+                                    onPlayClick = { selection ->
+                                        val finalSelection = selection.copy(
+                                            mediaSourceId = selectedMediaSource?.id ?: selection.mediaSourceId
+                                        )
+                                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                            context = navController.context,
+                                            itemId = item.id,
+                                            mediaSourceId = finalSelection.mediaSourceId,
+                                            audioStreamIndex = finalSelection.audioStreamIndex,
+                                            subtitleStreamIndex = finalSelection.subtitleStreamIndex,
+                                            startPositionMs = finalSelection.startPositionMs
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -479,6 +691,7 @@ private fun ItemDetailContent(
                             }
                         }
                     }
+                }
 
                 VideoQualitySelection(
                     mediaSourceOptions = mediaSourceOptions,

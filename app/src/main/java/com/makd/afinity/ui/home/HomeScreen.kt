@@ -84,6 +84,7 @@ import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
 import com.makd.afinity.ui.home.components.OptimizedLatestTvSeriesSection
 import com.makd.afinity.ui.home.components.OptimizedRecommendationCategorySection
 import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -180,7 +181,7 @@ fun HomeScreen(
                             modifier = if (isLandscape) {
                                 Modifier
                                     .fillMaxWidth()
-                                    .offset(y = (-50).dp)
+                                    .offset(y = (-70).dp)
                             } else {
                                 Modifier.fillMaxWidth()
                             }
@@ -414,6 +415,9 @@ private fun HighestRatedSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit
 ) {
+    val cardWidth = rememberPortraitCardWidth()
+    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
     ) {
@@ -427,6 +431,7 @@ private fun HighestRatedSection(
         )
 
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(22.dp),
             contentPadding = PaddingValues(horizontal = 4.dp)
         ) {

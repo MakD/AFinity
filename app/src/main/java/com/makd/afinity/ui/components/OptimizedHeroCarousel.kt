@@ -31,7 +31,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -82,6 +84,14 @@ fun OptimizedHeroCarousel(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
+    val infinitePageCount = Int.MAX_VALUE
+    val middleStart = infinitePageCount / 2
+    val adjustedStart = middleStart - (middleStart % items.size)
+
+    val currentPageIndex = rememberSaveable(items.size) {
+        mutableStateOf(adjustedStart)
+    }
+
     if (isLandscape) {
         HeroCarouselLandscape(
             items = items,
@@ -90,7 +100,9 @@ fun OptimizedHeroCarousel(
             onPlayTrailerClick = onPlayTrailerClick,
             onMoreInformationClick = onMoreInformationClick,
             modifier = modifier,
-            isScrolling = isScrolling
+            isScrolling = isScrolling,
+            initialPageIndex = currentPageIndex.value,
+            onPageChanged = { currentPageIndex.value = it }
         )
     } else {
         HeroCarouselPortrait(
@@ -100,14 +112,12 @@ fun OptimizedHeroCarousel(
             onPlayTrailerClick = onPlayTrailerClick,
             onMoreInformationClick = onMoreInformationClick,
             modifier = modifier,
-            isScrolling = isScrolling
+            isScrolling = isScrolling,
+            initialPageIndex = currentPageIndex.value,
+            onPageChanged = { currentPageIndex.value = it }
         )
     }
 }
-
-
-
-
 
 @Composable
 fun HeroCarouselPortrait(
@@ -117,17 +127,21 @@ fun HeroCarouselPortrait(
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier,
-    isScrolling: Boolean = false
+    isScrolling: Boolean = false,
+    initialPageIndex: Int,
+    onPageChanged: (Int) -> Unit
 ) {
     if (items.isEmpty()) return
 
     val infinitePageCount = Int.MAX_VALUE
-    val middleStart = infinitePageCount / 2
-    val adjustedStart = middleStart - (middleStart % items.size)
     val pagerState = rememberPagerState(
-        initialPage = adjustedStart,
+        initialPage = initialPageIndex,
         pageCount = { infinitePageCount }
     )
+
+    LaunchedEffect(pagerState.currentPage) {
+        onPageChanged(pagerState.currentPage)
+    }
 
     val context = LocalContext.current
 
@@ -586,17 +600,21 @@ private fun HeroCarouselLandscape(
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier,
-    isScrolling: Boolean = false
+    isScrolling: Boolean = false,
+    initialPageIndex: Int,
+    onPageChanged: (Int) -> Unit
 ) {
     if (items.isEmpty()) return
 
     val infinitePageCount = Int.MAX_VALUE
-    val middleStart = infinitePageCount / 2
-    val adjustedStart = middleStart - (middleStart % items.size)
     val pagerState = rememberPagerState(
-        initialPage = adjustedStart,
+        initialPage = initialPageIndex,
         pageCount = { infinitePageCount }
     )
+
+    LaunchedEffect(pagerState.currentPage) {
+        onPageChanged(pagerState.currentPage)
+    }
 
     val configuration = LocalConfiguration.current
     val landscapeHeight = (configuration.screenHeightDp * 0.95f).dp
@@ -700,7 +718,8 @@ private fun HeroCarouselLandscape(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .wrapContentHeight(),
-                                    contentScale = ContentScale.Fit
+                                    contentScale = ContentScale.Fit,
+                                    alignment = Alignment.CenterStart
                                 )
                             } ?: run {
                                 Text(
@@ -933,7 +952,7 @@ private fun HeroCarouselLandscape(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(0.dp))
             }
         }
 
@@ -941,7 +960,7 @@ private fun HeroCarouselLandscape(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
-                .padding(bottom = 48.dp, start = 48.dp, end = 24.dp),
+                .padding(bottom = 72.dp, start = 48.dp, end = 24.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

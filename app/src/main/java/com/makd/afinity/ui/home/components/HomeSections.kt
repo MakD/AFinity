@@ -21,6 +21,7 @@ import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
+import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 
 @Composable
 fun OptimizedContinueWatchingSection(
@@ -68,6 +69,9 @@ fun OptimizedLatestMoviesSection(
     modifier: Modifier = Modifier,
     title: String = "Latest Movies"
 ) {
+    val cardWidth = rememberPortraitCardWidth()
+    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
@@ -81,6 +85,7 @@ fun OptimizedLatestMoviesSection(
         )
 
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
@@ -104,6 +109,9 @@ fun OptimizedLatestTvSeriesSection(
     modifier: Modifier = Modifier,
     title: String = "Latest TV Series"
 ) {
+    val cardWidth = rememberPortraitCardWidth()
+    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
@@ -117,6 +125,7 @@ fun OptimizedLatestTvSeriesSection(
         )
 
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
@@ -139,6 +148,9 @@ fun OptimizedRecommendationCategorySection(
     onItemClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val cardWidth = rememberPortraitCardWidth()
+    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
@@ -152,6 +164,7 @@ fun OptimizedRecommendationCategorySection(
         )
 
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
