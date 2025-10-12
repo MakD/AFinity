@@ -217,7 +217,6 @@ data class SettingsUiState(
     val serverName: String? = null,
     val serverUrl: String? = null,
     val userProfileImageUrl: String? = null,
-    //val darkTheme: Boolean = false,
     val themeMode: String = "SYSTEM",
     val dynamicColors: Boolean = true,
     val autoPlay: Boolean = true,

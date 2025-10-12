@@ -38,9 +38,6 @@ class PreferencesRepositoryImpl @Inject constructor(
         val SKIP_INTRO_ENABLED = booleanPreferencesKey("skip_intro_enabled")
         val SKIP_OUTRO_ENABLED = booleanPreferencesKey("skip_outro_enabled")
         val USE_EXO_PLAYER = booleanPreferencesKey("use_exo_player")
-
-        //val DARK_THEME = booleanPreferencesKey("dark_theme")
-
         val THEME_MODE = stringPreferencesKey("theme_mode")
 
         val DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")

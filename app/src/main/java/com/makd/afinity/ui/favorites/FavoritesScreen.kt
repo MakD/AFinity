@@ -44,6 +44,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 
@@ -263,17 +264,13 @@ private fun FavoriteEpisodesRow(
     episodes: List<AfinityEpisode>,
     onItemClick: (AfinityItem) -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val cardWidth = (configuration.screenWidthDp.dp - 40.dp) / 2.2f
-
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(horizontal = 0.dp)
     ) {
         items(episodes) { episode ->
-            FavoriteEpisodeCard(
-                episode = episode,
-                cardWidth = cardWidth,
+            ContinueWatchingCard(
+                item = episode,
                 onClick = { onItemClick(episode) }
             )
         }
@@ -294,51 +291,6 @@ private fun FavoritePeopleRow(
                 person = person,
                 onClick = { onPersonClick(person.id.toString()) }
             )
-        }
-    }
-}
-
-@Composable
-private fun FavoriteEpisodeCard(
-    episode: AfinityEpisode,
-    cardWidth: androidx.compose.ui.unit.Dp,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.width(cardWidth),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column {
-            OptimizedAsyncImage(
-                imageUrl = episode.images.primaryImageUrl,
-                blurHash = episode.images.primaryBlurHash,
-                contentDescription = episode.name,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f),
-                contentScale = ContentScale.Crop
-            )
-
-            Column(
-                modifier = Modifier.padding(12.dp)
-            ) {
-                Text(
-                    text = episode.seriesName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = episode.name,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
         }
     }
 }

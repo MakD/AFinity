@@ -189,11 +189,9 @@ fun SettingsScreen(
 
                 item {
                     AppearanceSection(
-                        //darkTheme = uiState.darkTheme,
                         themeMode = uiState.themeMode,
                         dynamicColors = uiState.dynamicColors,
                         onThemeModeChange = viewModel::setThemeMode,
-                        //onDarkThemeToggle = viewModel::toggleDarkTheme,
                         onDynamicColorsToggle = viewModel::toggleDynamicColors,
                         combineLibrarySections = combineLibrarySections,
                         onCombineLibrarySectionsToggle = viewModel::toggleCombineLibrarySections,

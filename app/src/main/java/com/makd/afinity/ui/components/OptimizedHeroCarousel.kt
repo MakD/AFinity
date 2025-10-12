@@ -937,7 +937,6 @@ private fun HeroCarouselLandscape(
             }
         }
 
-        // Move buttons and dots OUTSIDE the Column, as direct children of the parent Box
         Row(
             modifier = Modifier
                 .align(Alignment.BottomStart)
