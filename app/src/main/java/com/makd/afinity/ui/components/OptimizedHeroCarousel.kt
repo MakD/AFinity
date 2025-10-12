@@ -736,100 +736,185 @@ private fun HeroCarouselLandscape(
                     }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(28.dp),
-                    contentAlignment = Alignment.CenterStart
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(28.dp),
+                        contentAlignment = Alignment.CenterStart
                     ) {
-                        val item = currentItem
-                        when (item) {
-                            is AfinityMovie -> {
-                                item.communityRating?.let { rating ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                            contentDescription = "IMDB",
-                                            tint = Color.Unspecified,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                        Text(
-                                            text = String.format("%.1f", rating),
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                item.criticRating?.let { rtRating ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(
-                                                id = if (rtRating > 60) {
-                                                    R.drawable.ic_rotten_tomato_fresh
-                                                } else {
-                                                    R.drawable.ic_rotten_tomato_rotten
-                                                }
-                                            ),
-                                            contentDescription = if (rtRating > 60) "Fresh" else "Rotten",
-                                            tint = Color.Unspecified,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Text(
-                                            text = "${rtRating.toInt()}%",
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                (currentItem as AfinityMovie).premiereDate?.let { date ->
-                                    Text(
-                                        text = date.year.toString(),
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                item.officialRating?.let { rating ->
-                                    Text(
-                                        text = rating,
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier
-                                            .background(
-                                                Color.White.copy(alpha = 0.2f),
-                                                RoundedCornerShape(4.dp)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val item = currentItem
+                            when (item) {
+                                is AfinityMovie -> {
+                                    item.communityRating?.let { rating ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                                contentDescription = "IMDB",
+                                                tint = Color.Unspecified,
+                                                modifier = Modifier.size(24.dp)
                                             )
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
+                                            Text(
+                                                text = String.format("%.1f", rating),
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontWeight = FontWeight.Medium
+                                                ),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    item.criticRating?.let { rtRating ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(
+                                                    id = if (rtRating > 60) {
+                                                        R.drawable.ic_rotten_tomato_fresh
+                                                    } else {
+                                                        R.drawable.ic_rotten_tomato_rotten
+                                                    }
+                                                ),
+                                                contentDescription = if (rtRating > 60) "Fresh" else "Rotten",
+                                                tint = Color.Unspecified,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Text(
+                                                text = "${rtRating.toInt()}%",
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontWeight = FontWeight.Medium
+                                                ),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    (currentItem as AfinityMovie).premiereDate?.let { date ->
+                                        Text(
+                                            text = date.year.toString(),
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = FontWeight.Medium
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+
+                                    item.officialRating?.let { rating ->
+                                        Text(
+                                            text = rating,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = FontWeight.Medium
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier
+                                                .background(
+                                                    Color.White.copy(alpha = 0.2f),
+                                                    RoundedCornerShape(4.dp)
+                                                )
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+
+                                    if (currentItem.runtimeTicks > 0) {
+                                        val runtimeMillis = currentItem.runtimeTicks / 10_000L
+                                        val endTime =
+                                            LocalTime.now().plusNanos(runtimeMillis * 1_000_000L)
+                                        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+                                        Text(
+                                            text = "Ends at ${endTime.format(formatter)}",
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = FontWeight.Medium
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
 
-                                if (currentItem.runtimeTicks > 0) {
-                                    val runtimeMillis = currentItem.runtimeTicks / 10_000L
-                                    val endTime =
-                                        LocalTime.now().plusNanos(runtimeMillis * 1_000_000L)
-                                    val formatter = DateTimeFormatter.ofPattern("HH:mm")
+                                is AfinityShow -> {
+                                    val show = currentItem as AfinityShow
+
+                                    item.communityRating?.let { rating ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                                contentDescription = "IMDB",
+                                                tint = Color.Unspecified,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                            Text(
+                                                text = String.format("%.1f", rating),
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontWeight = FontWeight.Medium
+                                                ),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    item.officialRating?.let { rating ->
+                                        Text(
+                                            text = rating,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = FontWeight.Medium
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier
+                                                .background(
+                                                    Color.White.copy(alpha = 0.2f),
+                                                    RoundedCornerShape(4.dp)
+                                                )
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+
+                                    show.seasonCount?.let { count ->
+                                        Text(
+                                            text = if (count == 1) "1 Season" else "$count Seasons",
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = FontWeight.Medium
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    } ?: run {
+                                        Text(
+                                            text = "TV Series",
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = FontWeight.Medium
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(20.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        when (currentItem) {
+                            is AfinityMovie -> {
+                                val movie = currentItem as AfinityMovie
+                                if (movie.genres.isNotEmpty()) {
                                     Text(
-                                        text = "Ends at ${endTime.format(formatter)}",
+                                        text = movie.genres.take(3).joinToString(" • "),
                                         style = MaterialTheme.typography.bodyLarge.copy(
                                             fontWeight = FontWeight.Medium
                                         ),
@@ -840,55 +925,9 @@ private fun HeroCarouselLandscape(
 
                             is AfinityShow -> {
                                 val show = currentItem as AfinityShow
-
-                                item.communityRating?.let { rating ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                            contentDescription = "IMDB",
-                                            tint = Color.Unspecified,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                        Text(
-                                            text = String.format("%.1f", rating),
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                item.officialRating?.let { rating ->
+                                if (show.genres.isNotEmpty()) {
                                     Text(
-                                        text = rating,
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier
-                                            .background(
-                                                Color.White.copy(alpha = 0.2f),
-                                                RoundedCornerShape(4.dp)
-                                            )
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-
-                                show.seasonCount?.let { count ->
-                                    Text(
-                                        text = if (count == 1) "1 Season" else "$count Seasons",
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                } ?: run {
-                                    Text(
-                                        text = "TV Series",
+                                        text = show.genres.take(3).joinToString(" • "),
                                         style = MaterialTheme.typography.bodyLarge.copy(
                                             fontWeight = FontWeight.Medium
                                         ),
@@ -898,61 +937,26 @@ private fun HeroCarouselLandscape(
                             }
                         }
                     }
-                }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(24.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    when (currentItem) {
-                        is AfinityMovie -> {
-                            val movie = currentItem as AfinityMovie
-                            if (movie.genres.isNotEmpty()) {
-                                Text(
-                                    text = movie.genres.take(3).joinToString(" • "),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        is AfinityShow -> {
-                            val show = currentItem as AfinityShow
-                            if (show.genres.isNotEmpty()) {
-                                Text(
-                                    text = show.genres.take(3).joinToString(" • "),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp),
+                        contentAlignment = Alignment.TopStart
+                    ) {
+                        currentItem.overview?.let { overview ->
+                            Text(
+                                text = overview,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp),
-                    contentAlignment = Alignment.TopStart
-                ) {
-                    currentItem.overview?.let { overview ->
-                        Text(
-                            text = overview,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(0.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
 
@@ -960,7 +964,7 @@ private fun HeroCarouselLandscape(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
-                .padding(bottom = 72.dp, start = 48.dp, end = 24.dp),
+                .padding(bottom = 64.dp, start = 48.dp, end = 24.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -970,7 +974,7 @@ private fun HeroCarouselLandscape(
                 IconButton(
                     onClick = { onMoreInformationClick(currentItem) },
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(36.dp)
                         .background(
                             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                             shape = CircleShape
@@ -987,7 +991,7 @@ private fun HeroCarouselLandscape(
                 IconButton(
                     onClick = { onPlayTrailerClick(currentItem) },
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(36.dp)
                         .background(
                             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                             shape = CircleShape
@@ -1004,7 +1008,7 @@ private fun HeroCarouselLandscape(
                 IconButton(
                     onClick = { onWatchNowClick(currentItem) },
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(36.dp)
                         .background(
                             color = MaterialTheme.colorScheme.primary,
                             shape = CircleShape

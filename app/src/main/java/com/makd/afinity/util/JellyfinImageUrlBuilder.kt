@@ -16,7 +16,7 @@ class JellyfinImageUrlBuilder @Inject constructor() {
         maxWidth: Int? = null,
         maxHeight: Int? = null,
         quality: Int = 90,
-        format: String = "webp"
+        format: String = "png"
     ): String {
         return buildString {
             append(baseUrl.trimEnd('/'))
