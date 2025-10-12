@@ -18,6 +18,9 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.calculateCardHeight
+import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 
 @Composable
 fun OptimizedContinueWatchingSection(
@@ -25,9 +28,9 @@ fun OptimizedContinueWatchingSection(
     onItemClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val configuration = LocalConfiguration.current
-    val cardWidth = (configuration.screenWidthDp.dp - 28.dp - 12.dp) / 2f
-    val fixedRowHeight = (cardWidth / (16f / 9f)) + 8.dp + 20.dp + 22.dp
+    val cardWidth = rememberLandscapeCardWidth()
+    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {

@@ -1,10 +1,5 @@
 package com.makd.afinity.navigation
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,12 +16,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -85,86 +79,80 @@ fun MainNavigation(
         return
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        bottomBar = {
-            val shouldShowBottomBar = currentDestination?.route?.let { route ->
-                !route.startsWith("library_content/") &&
-                        !route.startsWith("item_detail/") &&
-                        !route.startsWith("episodes/") &&
-                        !route.startsWith("player/") &&
-                        !route.startsWith("person/") &&
-                        route != "search" &&
-                        !route.startsWith("genre_results/") &&
-                        route != "settings"
-            } ?: true
+    val shouldShowNavigation = currentDestination?.route?.let { route ->
+        !route.startsWith("library_content/") &&
+                !route.startsWith("item_detail/") &&
+                !route.startsWith("episodes/") &&
+                !route.startsWith("player/") &&
+                !route.startsWith("person/") &&
+                route != "search" &&
+                !route.startsWith("genre_results/") &&
+                route != "settings"
+    } ?: true
 
-            AnimatedVisibility(
-                visible = shouldShowBottomBar,
-                enter = fadeIn(
-                    animationSpec = tween(250, easing = FastOutSlowInEasing)
-                ),
-                exit = fadeOut(
-                    animationSpec = tween(250, easing = FastOutSlowInEasing)
-                )
-            ) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ) {
-                    Destination.entries.forEach { destination ->
-                        if (destination == Destination.WATCHLIST && watchlistCount == 0) {
-                            return@forEach
+    val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
+
+    LaunchedEffect(shouldShowNavigation) {
+        if (shouldShowNavigation) {
+            navigationSuiteScaffoldState.show()
+        } else {
+            navigationSuiteScaffoldState.hide()
+        }
+    }
+
+    NavigationSuiteScaffold(
+        navigationSuiteItems = {
+            Destination.entries.forEach { destination ->
+                if (destination == Destination.WATCHLIST && watchlistCount == 0) {
+                    return@forEach
+                }
+
+                val selected = currentDestination?.hierarchy?.any {
+                    it.route == destination.route
+                } == true
+
+                item(
+                    selected = selected,
+                    onClick = {
+                        navController.navigate(destination.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        val selected = currentDestination?.hierarchy?.any {
-                            it.route == destination.route
-                        } == true
-
-                        NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    imageVector = if (selected) {
-                                        destination.selectedIcon
-                                    } else {
-                                        destination.unselectedIcon
-                                    },
-                                    contentDescription = destination.title
-                                )
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = if (selected) {
+                                destination.selectedIcon
+                            } else {
+                                destination.unselectedIcon
                             },
-                            label = {
-                                Text(
-                                    text = destination.title,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            },
-                            selected = selected,
-                            onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            contentDescription = destination.title
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = destination.title,
+                            style = MaterialTheme.typography.labelSmall
                         )
                     }
-                }
+                )
             }
-        }
-    ) { innerPadding ->
+        },
+        state = navigationSuiteScaffoldState,
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        navigationSuiteColors = androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults.colors(
+            navigationBarContainerColor = MaterialTheme.colorScheme.surface,
+            navigationRailContainerColor = MaterialTheme.colorScheme.surface
+        )    ) {
         NavHost(
             navController = navController,
             startDestination = Destination.HOME.route,
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(Destination.HOME.route) {
                 HomeScreen(
@@ -200,9 +188,7 @@ fun MainNavigation(
                         navController.navigate(route)
                     },
                     navController = navController,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding())
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
@@ -220,9 +206,7 @@ fun MainNavigation(
                         navController.navigate(route)
                     },
                     navController = navController,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding())
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
@@ -302,6 +286,7 @@ fun MainNavigation(
                     modifier = Modifier.fillMaxSize()
                 )
             }
+
             composable(Destination.FAVORITES.route) {
                 FavoritesScreen(
                     onItemClick = { item ->
@@ -312,22 +297,20 @@ fun MainNavigation(
                         val route = Destination.createPersonRoute(personId)
                         navController.navigate(route)
                     },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding())
+                    modifier = Modifier.fillMaxSize()
                 )
             }
+
             composable(Destination.WATCHLIST.route) {
                 WatchlistScreen(
                     onItemClick = { item ->
                         val route = Destination.createItemDetailRoute(item.id.toString())
                         navController.navigate(route)
                     },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding())
+                    modifier = Modifier.fillMaxSize()
                 )
             }
+
             composable(Destination.SEARCH_ROUTE) {
                 SearchScreen(
                     onBackClick = {
@@ -341,8 +324,7 @@ fun MainNavigation(
                         val route = Destination.createGenreResultsRoute(genre)
                         navController.navigate(route)
                     },
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
@@ -361,8 +343,7 @@ fun MainNavigation(
                         val route = Destination.createItemDetailRoute(item.id.toString())
                         navController.navigate(route)
                     },
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 

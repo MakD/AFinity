@@ -39,6 +39,8 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 
 @Composable
 fun ContinueWatchingCard(
@@ -46,9 +48,7 @@ fun ContinueWatchingCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val cardWidth = (configuration.screenWidthDp.dp - 28.dp - 12.dp) / 2f
+    val cardWidth = rememberLandscapeCardWidth()
 
     Column(
         modifier = modifier.width(cardWidth)
@@ -57,7 +57,7 @@ fun ContinueWatchingCard(
             onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(16f / 9f),
+                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant
             ),

@@ -39,6 +39,8 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 
 @Composable
 fun MediaItemCard(
@@ -46,13 +48,9 @@ fun MediaItemCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     val fontScale = density.fontScale
-    val displayDensity = density.density
-    val screenWidthDp = configuration.screenWidthDp
-    val cardWidth = (configuration.screenWidthDp.dp - 28.dp - 24.dp) / 3f
+    val cardWidth = rememberPortraitCardWidth()
 
     Column(
         modifier = modifier.width(cardWidth)
@@ -61,7 +59,7 @@ fun MediaItemCard(
             onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(2f / 3f),
+                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant
             ),

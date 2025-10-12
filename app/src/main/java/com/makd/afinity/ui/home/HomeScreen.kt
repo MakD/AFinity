@@ -83,6 +83,8 @@ import com.makd.afinity.ui.components.OptimizedHeroCarousel
 import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
 import com.makd.afinity.ui.home.components.OptimizedLatestTvSeriesSection
 import com.makd.afinity.ui.home.components.OptimizedRecommendationCategorySection
+import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -458,13 +460,9 @@ private fun HighestRatedCard(
     ranking: Int,
     onClick: () -> Unit
 ) {
-    val context = LocalContext.current
-    val configuration = LocalConfiguration.current
+    val cardWidth = rememberPortraitCardWidth()
     val density = LocalDensity.current
     val fontScale = density.fontScale
-    val displayDensity = density.density
-    val screenWidthDp = configuration.screenWidthDp
-    val cardWidth = (configuration.screenWidthDp.dp - 56.dp) / 3f
 
     Column(
         modifier = Modifier.width(cardWidth)
@@ -472,7 +470,7 @@ private fun HighestRatedCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(2f / 3f)
+                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT)
         ) {
             Card(
                 onClick = onClick,
@@ -672,28 +670,13 @@ private fun ContinueWatchingSkeleton() {
             contentPadding = PaddingValues(horizontal = 4.dp)
         ) {
             items(5) {
-                val configuration = LocalConfiguration.current
-                val density = LocalDensity.current
-                val fontScale = density.fontScale
-                val displayDensity = density.density
-                val screenWidthDp = configuration.screenWidthDp
-                val cardWidth = when {
-                    fontScale > 1.3f || screenWidthDp < 360 -> {
-                        (screenWidthDp.dp - 80.dp) / 2f
-                    }
-                    fontScale > 1.15f || displayDensity < 2.0f -> {
-                        (screenWidthDp.dp - 80.dp) / 2.5f
-                    }
-                    else -> {
-                        (screenWidthDp.dp - 56.dp) / 3f
-                    }
-                }
+                val cardWidth = rememberPortraitCardWidth()
 
                 Column(modifier = Modifier.width(cardWidth)) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(2f / 3f),
+                            .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
@@ -723,22 +706,7 @@ private fun ContinueWatchingSkeleton() {
 
 @Composable
 private fun MoviesSectionSkeleton() {
-    val configuration = LocalConfiguration.current
-    val density = LocalDensity.current
-    val fontScale = density.fontScale
-    val displayDensity = density.density
-    val screenWidthDp = configuration.screenWidthDp
-    val cardWidth = when {
-        fontScale > 1.3f || screenWidthDp < 360 -> {
-            (screenWidthDp.dp - 80.dp) / 2f
-        }
-        fontScale > 1.15f || displayDensity < 2.0f -> {
-            (screenWidthDp.dp - 80.dp) / 2.5f
-        }
-        else -> {
-            (screenWidthDp.dp - 56.dp) / 3f
-        }
-    }
+    val cardWidth = rememberPortraitCardWidth()
 
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -765,7 +733,7 @@ private fun MoviesSectionSkeleton() {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(2f / 3f),
+                            .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
@@ -810,22 +778,7 @@ private fun MoviesSectionSkeleton() {
 
 @Composable
 private fun TvSeriesSectionSkeleton() {
-    val configuration = LocalConfiguration.current
-    val density = LocalDensity.current
-    val fontScale = density.fontScale
-    val displayDensity = density.density
-    val screenWidthDp = configuration.screenWidthDp
-    val cardWidth = when {
-        fontScale > 1.3f || screenWidthDp < 360 -> {
-            (screenWidthDp.dp - 80.dp) / 2f
-        }
-        fontScale > 1.15f || displayDensity < 2.0f -> {
-            (screenWidthDp.dp - 80.dp) / 2.5f
-        }
-        else -> {
-            (screenWidthDp.dp - 56.dp) / 3f
-        }
-    }
+    val cardWidth = rememberPortraitCardWidth()
 
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -852,7 +805,7 @@ private fun TvSeriesSectionSkeleton() {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(2f / 3f),
+                            .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
@@ -912,22 +865,7 @@ private fun TvSeriesSectionSkeleton() {
 
 @Composable
 private fun RecommendationsSkeleton() {
-    val configuration = LocalConfiguration.current
-    val density = LocalDensity.current
-    val fontScale = density.fontScale
-    val displayDensity = density.density
-    val screenWidthDp = configuration.screenWidthDp
-    val cardWidth = when {
-        fontScale > 1.3f || screenWidthDp < 360 -> {
-            (screenWidthDp.dp - 80.dp) / 2f
-        }
-        fontScale > 1.15f || displayDensity < 2.0f -> {
-            (screenWidthDp.dp - 80.dp) / 2.5f
-        }
-        else -> {
-            (screenWidthDp.dp - 56.dp) / 3f
-        }
-    }
+    val cardWidth = rememberPortraitCardWidth()
 
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -955,7 +893,7 @@ private fun RecommendationsSkeleton() {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .aspectRatio(2f / 3f),
+                                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
                             shape = RoundedCornerShape(8.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
