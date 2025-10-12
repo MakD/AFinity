@@ -46,13 +46,11 @@ fun MetadataRow(
         modifier = Modifier.fillMaxWidth()
     ) {
         if (isLandscape) {
-            // Single FlowRow for landscape
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
                 verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Video/Audio chips
                 if (item !is AfinityBoxSet && item.sources.isNotEmpty()) {
                     val source = item.sources.firstOrNull()
 
@@ -118,7 +116,6 @@ fun MetadataRow(
                     }
                 }
 
-                // Metadata info
                 if (item !is AfinityBoxSet && item.playbackPositionTicks > 0 && item.runtimeTicks > 0) {
                     val progress = item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()
                     val remainingTicks = item.runtimeTicks - item.playbackPositionTicks
@@ -294,7 +291,6 @@ fun MetadataRow(
                 }
             }
         } else {
-            // Two separate FlowRows for portrait (original behavior)
             if (item !is AfinityBoxSet && item.sources.isNotEmpty()) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
