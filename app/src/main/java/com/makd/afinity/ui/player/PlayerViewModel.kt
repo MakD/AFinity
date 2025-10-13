@@ -260,16 +260,18 @@ class PlayerViewModel @Inject constructor(
                     updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
                 }
                 is PlayerEvent.Stop -> player.stop()
-                // New seekbar events
                 is PlayerEvent.OnSeekBarDragStart -> {
                     updateUiState { it.copy(isSeeking = true) }
+                    onSeekBarPreview(uiState.value.currentPosition, true)
                 }
                 is PlayerEvent.OnSeekBarValueChange -> {
                     updateUiState { it.copy(seekPosition = event.positionMs) }
+                    onSeekBarPreview(event.positionMs, true)
                 }
                 is PlayerEvent.OnSeekBarDragFinished -> {
                     player.seekTo(uiState.value.seekPosition)
                     updateUiState { it.copy(isSeeking = false, currentPosition = uiState.value.seekPosition) }
+                    onSeekBarPreview(0, false)
                 }
             }
         }

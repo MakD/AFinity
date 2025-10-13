@@ -97,10 +97,6 @@ fun PlayerScreen(
     LaunchedEffect(navController, item) {
         viewModel.setAutoplayCallback { nextItem ->
             try {
-                Timber.d("=== AUTOPLAY CALLBACK TRIGGERED ===")
-                Timber.d("Next item: ${nextItem.name} (${nextItem.id})")
-                Timber.d("Next item type: ${nextItem::class.simpleName}")
-                Timber.d("Available sources: ${nextItem.sources.size}")
                 nextItem.sources.forEachIndexed { index, source ->
                     Timber.d("Source $index: ${source.id} (${source.type})")
                 }
@@ -111,8 +107,6 @@ fun PlayerScreen(
                     return@setAutoplayCallback
                 }
 
-                Timber.d("Loading next episode directly in current player")
-
                 viewModel.handlePlayerEvent(
                     PlayerEvent.LoadMedia(
                         item = nextItem,
@@ -122,11 +116,7 @@ fun PlayerScreen(
                         startPositionMs = 0L
                     )
                 )
-
                 viewModel.initializePlaylist(nextItem)
-
-                Timber.d("Started loading next episode: ${nextItem.name}")
-                Timber.d("=== AUTOPLAY CALLBACK COMPLETED ===")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load next item: ${nextItem.name}")
             }
