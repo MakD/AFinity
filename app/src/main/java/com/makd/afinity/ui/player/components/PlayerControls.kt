@@ -661,7 +661,7 @@ private fun SeekBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 12.dp)
+            .padding(bottom = 12.dp, start = 8.dp, end = 8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -701,12 +701,12 @@ private fun SeekBar(
             track = { sliderState ->
                 SliderDefaults.Track(
                     sliderState = sliderState,
-                    modifier = Modifier.height(4.dp)
+                    modifier = Modifier.height(6.dp)
                 )
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
+                .height(18.dp)
         )
     }
 }
