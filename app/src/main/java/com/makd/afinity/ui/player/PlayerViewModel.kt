@@ -353,6 +353,7 @@ class PlayerViewModel @Inject constructor(
                 launch { reportPlaybackStart(item) }
                 launch { loadSegments(item.id) }
                 launch { loadTrickplayData() }
+                showControls()
             }
 
         } catch (e: Exception) {
@@ -588,19 +589,11 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun toggleControls() {
-        updateUiState {
-            it.copy(showControls = !it.showControls)
-        }
-        if (_uiState.value.showControls) {
-            scheduleControlsHide()
-        }
-    }
-
-    private fun scheduleControlsHide() {
-        controlsHideJob?.cancel()
-        controlsHideJob = viewModelScope.launch {
-            delay(5000)
-            updateUiState { it.copy(showControls = false) }
+        val shouldShow = !_uiState.value.showControls
+        if (shouldShow) {
+            showControls()
+        } else {
+            hideControls()
         }
     }
 
@@ -875,7 +868,7 @@ class PlayerViewModel @Inject constructor(
         val isLoading: Boolean = false,
         val currentPosition: Long = 0L,
         val duration: Long = 0L,
-        val showControls: Boolean = true,
+        val showControls: Boolean = false,
         val isFullscreen: Boolean = false,
         val isControlsLocked: Boolean = false,
         val currentSegment: AfinitySegment? = null,
@@ -884,7 +877,7 @@ class PlayerViewModel @Inject constructor(
         val playbackSpeed: Float = 1f,
         val audioStreamIndex: Int? = null,
         val subtitleStreamIndex: Int? = null,
-        val showPlayButton: Boolean = false,
+        val showPlayButton: Boolean = true,
         val showBuffering: Boolean = false,
         val showError: Boolean = false,
         val errorMessage: String? = null,
