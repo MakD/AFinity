@@ -399,16 +399,13 @@ class PlayerViewModel @Inject constructor(
                                 info.width,
                                 tileIndex
                             )
-
                             if (imageData != null) {
                                 val tileBitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
-
                                 for (offsetY in 0 until (info.height * info.tileHeight) step info.height) {
                                     for (offsetX in 0 until (info.width * info.tileWidth) step info.width) {
                                         try {
                                             val thumbnail = Bitmap.createBitmap(tileBitmap, offsetX, offsetY, info.width, info.height)
                                             individualThumbnails.add(thumbnail.asImageBitmap())
-
                                             if (individualThumbnails.size >= info.thumbnailCount) break
                                         } catch (e: Exception) {
                                             Timber.w("Failed to crop thumbnail at offset ($offsetX, $offsetY)")
@@ -782,13 +779,11 @@ class PlayerViewModel @Inject constructor(
 
     fun stopPlayback() {
         if (hasStoppedPlayback) return
+
         hasStoppedPlayback = true
 
         progressReportingJob?.cancel()
 
-        Timber.d("Stopping playback and reporting to server")
-
-        //kotlinx.coroutines.runBlocking {
         viewModelScope.launch {
             try {
                 playbackStateManager.notifyPlaybackStopped()
@@ -800,9 +795,8 @@ class PlayerViewModel @Inject constructor(
                             positionTicks = player.currentPosition * 10000,
                             mediaSourceId = item.sources.firstOrNull()?.id ?: ""
                         )
-                        Timber.d("Successfully reported playback stop")
-                        }
                     }
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to report playback stop")
             }
