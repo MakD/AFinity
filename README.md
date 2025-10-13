@@ -13,6 +13,10 @@ A native Android client for Jellyfin servers built with Jetpack Compose and Mate
 
 Afinity provides a clean, responsive interface for accessing your Jellyfin media library on Android devices. The app focuses on delivering smooth playback performance and an intuitive browsing experience.
 
+## Reach out
+
+Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the discussion
+
 ## Features
 
 **Media Playback**
