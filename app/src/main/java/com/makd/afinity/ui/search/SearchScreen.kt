@@ -49,6 +49,7 @@ import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.R
+import com.makd.afinity.ui.theme.rememberGridMinColumnSize
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -269,7 +270,7 @@ private fun SearchHomeContent(
         )
 
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Adaptive(rememberGridMinColumnSize()),
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),

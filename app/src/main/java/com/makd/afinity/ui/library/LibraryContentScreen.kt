@@ -50,6 +50,7 @@ import com.makd.afinity.R
 import com.makd.afinity.navigation.Destination
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.LoadState
+import com.makd.afinity.ui.theme.rememberGridMinColumnSize
 import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,7 +143,8 @@ fun LibraryContentScreen(
                 else -> {
                     Row(modifier = Modifier.fillMaxSize()) {
                         LazyVerticalGrid(
-                            columns = GridCells.Adaptive(160.dp),
+                            //columns = GridCells.Adaptive(160.dp),
+                            columns = GridCells.Adaptive(rememberGridMinColumnSize()),
                             state = gridState,
                             contentPadding = PaddingValues(
                                 start = 16.dp,

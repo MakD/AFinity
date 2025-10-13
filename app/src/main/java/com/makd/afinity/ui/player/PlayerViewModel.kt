@@ -779,11 +779,8 @@ class PlayerViewModel @Inject constructor(
 
     fun stopPlayback() {
         if (hasStoppedPlayback) return
-
         hasStoppedPlayback = true
-
         progressReportingJob?.cancel()
-
         viewModelScope.launch {
             try {
                 playbackStateManager.notifyPlaybackStopped()

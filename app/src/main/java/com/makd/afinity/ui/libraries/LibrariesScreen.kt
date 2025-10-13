@@ -41,6 +41,7 @@ import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.ui.theme.rememberGridMinColumnSize
 
 @Composable
 fun LibrariesScreen(
@@ -91,7 +92,7 @@ fun LibrariesScreen(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(160.dp),
+                    columns = GridCells.Adaptive(rememberGridMinColumnSize()),
                     state = lazyGridState,
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 180.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
