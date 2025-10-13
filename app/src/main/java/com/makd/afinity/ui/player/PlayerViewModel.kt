@@ -114,6 +114,8 @@ class PlayerViewModel @Inject constructor(
                             val positionTicks = player.currentPosition * 10000
                             val isPaused = !player.isPlaying
 
+                            playbackStateManager.updatePlaybackPosition(player.currentPosition)
+
                             playbackRepository.reportPlaybackProgress(
                                 itemId = item.id,
                                 sessionId = sessionId,
@@ -282,6 +284,12 @@ class PlayerViewModel @Inject constructor(
                 )
             }
             currentSessionId = UUID.randomUUID().toString()
+
+            playbackStateManager.trackPlaybackSession(
+                sessionId = currentSessionId!!,
+                itemId = item.id,
+                mediaSourceId = mediaSourceId
+            )
 
             playbackStateManager.trackCurrentItem(item.id)
 
@@ -781,23 +789,10 @@ class PlayerViewModel @Inject constructor(
         if (hasStoppedPlayback) return
         hasStoppedPlayback = true
         progressReportingJob?.cancel()
-        viewModelScope.launch {
-            try {
-                playbackStateManager.notifyPlaybackStopped()
-                currentItem?.let { item ->
-                    currentSessionId?.let { sessionId ->
-                        playbackRepository.reportPlaybackStop(
-                            itemId = item.id,
-                            sessionId = sessionId,
-                            positionTicks = player.currentPosition * 10000,
-                            mediaSourceId = item.sources.firstOrNull()?.id ?: ""
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to report playback stop")
-            }
-        }
+
+        playbackStateManager.updatePlaybackPosition(player.currentPosition)
+
+        playbackStateManager.notifyPlaybackStopped()
     }
 
     private fun updateUiState(update: (PlayerUiState) -> PlayerUiState) {

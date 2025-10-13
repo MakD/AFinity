@@ -1,8 +1,8 @@
 package com.makd.afinity.di
 
-import android.app.Application
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.playback.PlaybackRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,8 +16,9 @@ object PlayerModule {
     @Provides
     @Singleton
     fun providePlaybackStateManager(
-        mediaRepository: MediaRepository
+        mediaRepository: MediaRepository,
+        playbackRepository: PlaybackRepository
     ): PlaybackStateManager {
-        return PlaybackStateManager(mediaRepository)
+        return PlaybackStateManager(mediaRepository, playbackRepository)
     }
 }
