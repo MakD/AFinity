@@ -294,7 +294,6 @@ class JellyfinMediaRepository @Inject constructor(
                 }
             }
 
-            Timber.d("Using Items API to get user views (libraries)")
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
@@ -346,9 +345,6 @@ class JellyfinMediaRepository @Inject constructor(
             )
 
             val latestItems = response.content?.mapNotNull { baseItemDto ->
-                if (baseItemDto.type == BaseItemKind.SERIES) {
-                    Timber.d("Series '${baseItemDto.name}': childCount=${baseItemDto.childCount}")
-                }
                 baseItemDto.toAfinityItem(getBaseUrl())
             } ?: emptyList()
 

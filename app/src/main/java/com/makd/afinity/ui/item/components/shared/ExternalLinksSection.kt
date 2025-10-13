@@ -2,24 +2,26 @@ package com.makd.afinity.ui.item.components.shared
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,34 +47,32 @@ fun ExternalLinksSection(item: AfinityItem) {
             )
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 contentPadding = PaddingValues(horizontal = 0.dp)
             ) {
                 items(externalLinks) { link ->
-                    Card(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link.url))
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.size(48.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(id = link.iconRes),
-                                contentDescription = link.name,
-                                tint = Color.Unspecified,
-                                modifier = Modifier
-                                    .size(32.dp)
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link.url))
+                                    context.startActivity(intent)
+                                }
                             )
-                        }
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = link.iconRes),
+                            contentDescription = link.name,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .height(16.dp)
+                        )
                     }
                 }
             }
@@ -85,7 +85,6 @@ private data class ExternalLink(
     val url: String,
     val iconRes: Int
 )
-
 private fun getExternalLinks(item: AfinityItem): List<ExternalLink> {
     val links = mutableListOf<ExternalLink>()
 
