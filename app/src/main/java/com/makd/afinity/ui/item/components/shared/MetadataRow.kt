@@ -130,7 +130,9 @@ fun MetadataRow(
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(vertical = 2.dp)
+
                     ) {
                         CircularProgressIndicator(
                             progress = { progress },

@@ -691,16 +691,77 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun onVolumeGesture(delta: Float) {
-        volumeManager.adjustVolume(delta.toInt())
-    }
+    private var brightnessHideJob: Job? = null
 
     fun onScreenBrightnessGesture(delta: Float) {
+        val currentBrightness = _uiState.value.brightnessLevel
+        val newBrightness = (currentBrightness + delta * gestureConfig.brightnessStepSize)
+            .coerceIn(0.0f, 1.0f)
+
+        updateUiState {
+            it.copy(
+                showBrightnessIndicator = true,
+                brightnessLevel = newBrightness
+            )
+        }
+
+        brightnessHideJob?.cancel()
+        brightnessHideJob = viewModelScope.launch {
+            delay(2000)
+            updateUiState { it.copy(showBrightnessIndicator = false) }
+        }
     }
 
-    fun onSeekGesture(delta: Long) {
-        val newPos = (player.currentPosition + delta).coerceIn(0, player.duration)
-        player.seekTo(newPos)
+    private var volumeHideJob: Job? = null
+
+    fun onVolumeGesture(delta: Float) {
+        val currentVolume = volumeManager.getCurrentVolume()
+
+        val volumeChange = (delta * gestureConfig.volumeStepSize).toInt()
+        val newVolume = (currentVolume + volumeChange).coerceIn(0, 100)
+
+        volumeManager.setVolume(newVolume)
+
+        Timber.d("Volume gesture: delta=$delta, current=$currentVolume, new=$newVolume")
+
+        updateUiState {
+            it.copy(
+                showVolumeIndicator = true,
+                volumeLevel = newVolume
+            )
+        }
+
+        volumeHideJob?.cancel()
+        volumeHideJob = viewModelScope.launch {
+            delay(2000)
+            updateUiState { it.copy(showVolumeIndicator = false) }
+        }
+    }
+
+    private var seekHideJob: Job? = null
+
+    fun onSeekGesture(delta: Float) {
+        val currentPosition = uiState.value.currentPosition
+        val duration = uiState.value.duration
+
+        val maxSeekMs = 120000L
+        val seekDelta = (delta * maxSeekMs).toLong()
+        val newPosition = (currentPosition + seekDelta).coerceIn(0L, duration)
+
+        handlePlayerEvent(PlayerEvent.Seek(newPosition))
+
+        updateUiState {
+            it.copy(
+                showSeekIndicator = true,
+                seekDirection = if (seekDelta > 0) 1 else -1
+            )
+        }
+
+        seekHideJob?.cancel()
+        seekHideJob = viewModelScope.launch {
+            delay(1000)
+            updateUiState { it.copy(showSeekIndicator = false) }
+        }
     }
 
     fun onSeekBarPreview(position: Long, isActive: Boolean) {
@@ -745,7 +806,8 @@ class PlayerViewModel @Inject constructor(
 
         Timber.d("Stopping playback and reporting to server")
 
-        kotlinx.coroutines.runBlocking {
+        //kotlinx.coroutines.runBlocking {
+        viewModelScope.launch {
             try {
                 currentItem?.let { item ->
                     currentSessionId?.let { sessionId ->
@@ -767,6 +829,31 @@ class PlayerViewModel @Inject constructor(
 
     private fun updateUiState(update: (PlayerUiState) -> PlayerUiState) {
         _uiState.value = update(_uiState.value)
+    }
+
+    fun showControls() {
+        Timber.d("showControls() called")
+        updateUiState { it.copy(showControls = true, showPlayButton = !uiState.value.isControlsLocked) }
+        startControlsAutoHide()
+    }
+
+    fun hideControls() {
+        Timber.d("hideControls() called")
+        updateUiState { it.copy(showControls = false, showPlayButton = false) }
+        controlsHideJob?.cancel()
+    }
+
+
+    private fun startControlsAutoHide() {
+        controlsHideJob?.cancel()
+        controlsHideJob = viewModelScope.launch {
+            delay(3000)
+            if (uiState.value.isPlaying && _uiState.value.showControls) {
+                hideControls()
+            } else {
+                Timber.d("NOT hiding controls - isPlaying: ${uiState.value.isPlaying}, showControls: ${_uiState.value.showControls}")
+            }
+        }
     }
 
     override fun onCleared() {

@@ -55,7 +55,7 @@ sealed class PlayerEvent {
 data class GestureConfig(
     val doubleTapSeekMs: Long = 10000L,
     val brightnessStepSize: Float = 0.8f,
-    val volumeStepSize: Float = 50f,
+    val volumeStepSize: Float = 70f,
     val seekStepMs: Long = 30000L,
     val fullSwipeRangeScreenRatio: Float = 0.66f,
     val gestureExclusionAreaVertical: Float = 48f,

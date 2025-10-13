@@ -143,123 +143,127 @@ fun PlayerScreen(
             onBackPressed()
         }
     }
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            GestureHandler(
+                onSingleTap = {
+                    Timber.d("GESTURE: Single tap detected!")
+                    viewModel.onSingleTap()
+                },
+                onDoubleTap = { isForward ->
+                    Timber.d("GESTURE: Double tap detected! Forward: $isForward")
+                    if (!uiState.isControlsLocked) {
+                        viewModel.onDoubleTapSeek(isForward)
+                    }
+                },
+                onBrightnessGesture = { delta ->
+                    if (!uiState.isControlsLocked) {
+                        viewModel.onScreenBrightnessGesture(delta)
+                    }
+                },
+                onVolumeGesture = { delta ->
+                    if (!uiState.isControlsLocked) {
+                        viewModel.onVolumeGesture(delta)
+                    }
+                },
+                onSeekGesture = { delta ->
+                    if (!uiState.isControlsLocked) {
+                        viewModel.onSeekGesture(delta)
+                    }
+                },
+                onSeekPreview = { isActive ->
+                    if (!uiState.isControlsLocked) {
+                        if (isActive) {
+                            viewModel.onSeekBarPreview(uiState.currentPosition, true)
+                        } else {
+                            viewModel.onSeekBarPreview(0, false)
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when (val player = viewModel.player) {
+                    is androidx.media3.exoplayer.ExoPlayer -> {
+                        androidx.compose.ui.viewinterop.AndroidView(
+                            factory = { context ->
+                                androidx.media3.ui.PlayerView(context).apply {
+                                    useController = false
+                                    this.player = player
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
-        GestureHandler(
-            onSingleTap = { viewModel.onSingleTap() },
-            onDoubleTap = { isForward ->
-                if (!uiState.isControlsLocked) {
-                    viewModel.onDoubleTapSeek(isForward)
-                }
-            },
-            onBrightnessGesture = { delta ->
-                if (!uiState.isControlsLocked) {
-                    viewModel.onScreenBrightnessGesture(delta)
-                }
-            },
-            onVolumeGesture = { delta ->
-                if (!uiState.isControlsLocked) {
-                    viewModel.onVolumeGesture(delta)
-                }
-            },
-            onSeekGesture = { delta ->
-                if (!uiState.isControlsLocked) {
-                    viewModel.onSeekGesture(delta.toLong())
-                }
-            },
-            onSeekPreview = { isActive ->
-                if (!uiState.isControlsLocked) {
-                    if (isActive) {
-                        viewModel.onSeekBarPreview(uiState.currentPosition, true)
-                    } else {
-                        viewModel.onSeekBarPreview(0, false)
+                    is com.makd.afinity.player.mpv.MPVPlayer -> {
+                        MpvSurface(
+                            modifier = Modifier.fillMaxSize(),
+                            onSurfaceCreated = {
+                                Timber.d("MPV surface created in player screen")
+                            },
+                            onSurfaceDestroyed = {
+                                Timber.d("MPV surface destroyed in player screen")
+                            }
+                        )
                     }
                 }
-            },
-            modifier = Modifier.fillMaxSize()
-        ) {
-            when (val player = viewModel.player) {
-                is androidx.media3.exoplayer.ExoPlayer -> {
-                    androidx.compose.ui.viewinterop.AndroidView(
-                        factory = { context ->
-                            androidx.media3.ui.PlayerView(context).apply {
-                                useController = false
-                                this.player = player
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-                is com.makd.afinity.player.mpv.MPVPlayer -> {
-                    MpvSurface(
-                        modifier = Modifier.fillMaxSize(),
-                        onSurfaceCreated = {
-                            Timber.d("MPV surface created in player screen")
-                        },
-                        onSurfaceDestroyed = {
-                            Timber.d("MPV surface destroyed in player screen")
-                        }
-                    )
-                }
             }
-        }
 
-        PlayerControls(
-            uiState = uiState,
-            player = viewModel.player,
-            onPlayPauseClick = viewModel::onPlayPauseClick,
-            onSeekBarChange = viewModel::onSeekBarDrag,
-            onTrickplayPreview = viewModel::onSeekBarPreview,
-            onBackClick = {
-                onBackPressed()
-            },
-            onFullscreenToggle = viewModel::onFullscreenToggle,
-            onAudioTrackSelect = viewModel::onAudioTrackSelect,
-            onSubtitleTrackSelect = viewModel::onSubtitleTrackSelect,
-            onPlaybackSpeedChange = viewModel::onPlaybackSpeedChange,
-            onLockToggle = viewModel::onLockToggle,
-            onSkipSegment = viewModel::onSkipSegment,
-            onSeekBackward = viewModel::onSeekBackward,
-            onSeekForward = viewModel::onSeekForward,
-            onNextEpisode = viewModel::onNextEpisode,
-            onPreviousEpisode = viewModel::onPreviousEpisode,
-            modifier = Modifier.fillMaxSize()
-        )
+            PlayerControls(
+                uiState = uiState,
+                player = viewModel.player,
+                onPlayPauseClick = viewModel::onPlayPauseClick,
+                onSeekBarChange = viewModel::onSeekBarDrag,
+                onTrickplayPreview = viewModel::onSeekBarPreview,
+                onBackClick = {
+                    onBackPressed()
+                },
+                onFullscreenToggle = viewModel::onFullscreenToggle,
+                onAudioTrackSelect = viewModel::onAudioTrackSelect,
+                onSubtitleTrackSelect = viewModel::onSubtitleTrackSelect,
+                onPlaybackSpeedChange = viewModel::onPlaybackSpeedChange,
+                onLockToggle = viewModel::onLockToggle,
+                onSkipSegment = viewModel::onSkipSegment,
+                onSeekBackward = viewModel::onSeekBackward,
+                onSeekForward = viewModel::onSeekForward,
+                onNextEpisode = viewModel::onNextEpisode,
+                onPreviousEpisode = viewModel::onPreviousEpisode,
+                modifier = Modifier.fillMaxSize()
+            )
 
-        TrickplayPreview(
-            isVisible = uiState.showTrickplayPreview,
-            previewImage = uiState.trickplayPreviewImage,
-            positionMs = uiState.trickplayPreviewPosition,
-            durationMs = uiState.duration,
-            modifier = Modifier.fillMaxSize()
-        )
+            TrickplayPreview(
+                isVisible = uiState.showTrickplayPreview,
+                previewImage = uiState.trickplayPreviewImage,
+                positionMs = uiState.trickplayPreviewPosition,
+                durationMs = uiState.duration,
+                modifier = Modifier.fillMaxSize()
+            )
 
-        PlayerIndicators(
-            uiState = uiState,
-            modifier = Modifier.fillMaxSize()
-        )
+            PlayerIndicators(
+                uiState = uiState,
+                modifier = Modifier.fillMaxSize()
+            )
 
-        ErrorIndicator(
-            isVisible = uiState.showError,
-            errorMessage = uiState.errorMessage,
-            onRetryClick = {
-                viewModel.handlePlayerEvent(
-                    PlayerEvent.LoadMedia(
-                        item = item,
-                        mediaSourceId = mediaSourceId,
-                        audioStreamIndex = audioStreamIndex,
-                        subtitleStreamIndex = subtitleStreamIndex,
-                        startPositionMs = startPositionMs
+            ErrorIndicator(
+                isVisible = uiState.showError,
+                errorMessage = uiState.errorMessage,
+                onRetryClick = {
+                    viewModel.handlePlayerEvent(
+                        PlayerEvent.LoadMedia(
+                            item = item,
+                            mediaSourceId = mediaSourceId,
+                            audioStreamIndex = audioStreamIndex,
+                            subtitleStreamIndex = subtitleStreamIndex,
+                            startPositionMs = startPositionMs
+                        )
                     )
-                )
-            },
-            modifier = Modifier.align(Alignment.Center)
-        )
-    }
+                },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
 
     ScreenBrightnessController(brightness = uiState.brightnessLevel)
     KeepScreenOn(keepOn = uiState.isPlaying)

@@ -142,8 +142,8 @@ fun GestureHandler(
                             GestureType.VOLUME -> {
                                 if (abs(verticalDrag) >= minimumDragDistance) {
                                     totalDragDelta += verticalDrag
-                                    if (abs(totalDragDelta) >= 30f) {
-                                        val distanceFull = screenHeight * 0.66f
+                                    if (abs(totalDragDelta) >= 15f) {
+                                        val distanceFull = screenHeight * 0.35f
                                         val gestureStrength = totalDragDelta / distanceFull
                                         onVolumeGesture(gestureStrength)
                                         totalDragDelta = 0f

@@ -183,11 +183,10 @@ fun PlayerControls(
 
         options
     }
-    Box(modifier = modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible = uiState.showControls,
             enter = fadeIn(animationSpec = tween(300)),
-            exit = fadeOut(animationSpec = tween(300))
+            exit = fadeOut(animationSpec = tween(300)),
         ) {
             Box(
                 modifier = Modifier.fillMaxSize()
@@ -227,6 +226,7 @@ fun PlayerControls(
             }
         }
         if (uiState.showSkipButton && uiState.currentSegment != null) {
+            Box(modifier = Modifier.fillMaxSize()) {
             SkipButton(
                 segment = uiState.currentSegment!!,
                 skipButtonText = uiState.skipButtonText,
@@ -239,7 +239,7 @@ fun PlayerControls(
                     )
             )
         }
-    }
+   }
 
     if (showAudioSelector && audioStreamOptions.isNotEmpty()) {
         Box(
