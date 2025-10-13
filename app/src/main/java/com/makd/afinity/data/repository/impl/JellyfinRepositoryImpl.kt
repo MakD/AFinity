@@ -269,7 +269,9 @@ class JellyfinRepositoryImpl @Inject constructor(
         isFavorite: Boolean?,
         isPlayed: Boolean?,
         nameStartsWith: String?,
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
+        imageTypes: List<String>,
+        hasOverview: Boolean?
     ): BaseItemDtoQueryResult {
         return try {
             mediaRepository.getItems(

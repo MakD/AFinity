@@ -74,7 +74,9 @@ interface JellyfinRepository {
         isFavorite: Boolean? = null,
         isPlayed: Boolean? = null,
         nameStartsWith: String? = null,
-        fields: List<ItemFields>? = null
+        fields: List<ItemFields>? = null,
+        imageTypes: List<String> = emptyList(),
+        hasOverview: Boolean? = null
     ): BaseItemDtoQueryResult
 
     suspend fun getItem(

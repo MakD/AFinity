@@ -244,15 +244,14 @@ class AppDataRepository @Inject constructor(
                 sortDescending = false,
                 limit = 15,
                 isPlayed = false,
-                fields = FieldSets.HERO_CAROUSEL
+                fields = FieldSets.HERO_CAROUSEL,
+                imageTypes = listOf("BACKDROP", "LOGO"),
+                hasOverview = true,
             )
 
             randomHeroItems.items
                 ?.mapNotNull { it.toAfinityItem(baseUrl) }
-                ?.filter { item ->
-                    item.overview.isNotBlank() &&
-                            (item.images.backdrop != null || item.images.logo != null)
-                } ?: emptyList()
+                ?: emptyList()
         } catch (e: Exception) {
             Timber.e(e, "Failed to load hero carousel items")
             emptyList()
