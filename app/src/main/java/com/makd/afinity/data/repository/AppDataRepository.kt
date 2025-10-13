@@ -421,7 +421,6 @@ class AppDataRepository @Inject constructor(
                     }
 
                 }
-            Timber.d("⭐ loadHomeSpecificData: Created highestRated list with ${highestRated.size} items")
 
             Triple(latestMovies, latestTvSeries, highestRated)
         } catch (e: Exception) {
