@@ -55,7 +55,6 @@ class PlaybackStateManager @Inject constructor(
                     }
                 }
 
-                Timber.d("=== PLAYBACK STOPPED HANDLING COMPLETE ===")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to handle playback stopped")
             }
