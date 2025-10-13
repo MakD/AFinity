@@ -336,12 +336,13 @@ class JellyfinMediaRepository @Inject constructor(
             val response = userLibraryApi.getLatestMedia(
                 userId = userId,
                 parentId = parentId,
-                includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
+                includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES, BaseItemKind.EPISODE),
                 limit = limit,
                 isPlayed = false,
                 fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                 enableImages = true,
-                enableUserData = true
+                enableUserData = true,
+                //groupItems = true
             )
 
             val latestItems = response.content?.mapNotNull { baseItemDto ->
