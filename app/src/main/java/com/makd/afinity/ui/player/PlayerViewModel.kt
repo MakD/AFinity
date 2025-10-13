@@ -791,6 +791,7 @@ class PlayerViewModel @Inject constructor(
         //kotlinx.coroutines.runBlocking {
         viewModelScope.launch {
             try {
+                playbackStateManager.notifyPlaybackStopped()
                 currentItem?.let { item ->
                     currentSessionId?.let { sessionId ->
                         playbackRepository.reportPlaybackStop(
@@ -800,9 +801,8 @@ class PlayerViewModel @Inject constructor(
                             mediaSourceId = item.sources.firstOrNull()?.id ?: ""
                         )
                         Timber.d("Successfully reported playback stop")
+                        }
                     }
-                }
-                playbackStateManager.notifyPlaybackStopped()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to report playback stop")
             }
