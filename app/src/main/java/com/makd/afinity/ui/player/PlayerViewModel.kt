@@ -301,11 +301,9 @@ class PlayerViewModel @Inject constructor(
             }
 
             val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
-            Timber.d("=== SUBTITLE STREAM DEBUG ===")
             mediaSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }?.forEach { stream ->
                 Timber.d("Subtitle ${stream.index}: isExternal=${stream.isExternal}, path=${stream.path}, codec=${stream.codec}, title=${stream.displayTitle}")
             }
-            Timber.d("=== END SUBTITLE DEBUG ===")
             val externalSubtitles = mediaSource?.mediaStreams
                 ?.filter { stream ->
                     stream.type == MediaStreamType.SUBTITLE && stream.isExternal
@@ -313,8 +311,6 @@ class PlayerViewModel @Inject constructor(
                 ?.mapNotNull { stream ->
                     try {
                         val subtitleUrl = "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
-
-                        Timber.d("Building external subtitle: ${stream.displayTitle} -> $subtitleUrl")
 
                         MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
                             .setLabel(stream.displayTitle ?: stream.language ?: "Track ${stream.index}")
@@ -327,7 +323,6 @@ class PlayerViewModel @Inject constructor(
                     }
                 } ?: emptyList()
 
-            Timber.d("Built ${externalSubtitles.size} external subtitle configurations")
             externalSubtitles.forEach { sub ->
                 Timber.d("  - ${sub.label}: ${sub.uri}")
             }
@@ -398,8 +393,6 @@ class PlayerViewModel @Inject constructor(
 
                         val individualThumbnails = mutableListOf<ImageBitmap>()
 
-                        Timber.d("Loading trickplay: ${info.thumbnailCount} thumbnails from $maxTileIndex tiles (${info.tileWidth}x${info.tileHeight} per tile)")
-
                         for (tileIndex in 0..maxTileIndex) {
                             val imageData = mediaRepository.getTrickplayData(
                                 currentItem.id,
@@ -436,7 +429,6 @@ class PlayerViewModel @Inject constructor(
                                 interval = info.interval,
                                 images = individualThumbnails
                             )
-                            Timber.d("Extracted ${individualThumbnails.size} individual thumbnails for ${currentItem.name}")
                         } else {
                             Timber.d("No trickplay thumbnails could be extracted for ${currentItem.name}")
                         }
@@ -499,7 +491,6 @@ class PlayerViewModel @Inject constructor(
         }
 
         if (currentMediaSegments.isNotEmpty()) {
-            Timber.d("Loaded ${currentMediaSegments.size} segments for item $itemId")
             startSegmentMonitoring()
         } else {
             Timber.d("No segments found for item $itemId")
@@ -715,8 +706,6 @@ class PlayerViewModel @Inject constructor(
 
         volumeManager.setVolume(newVolume)
 
-        Timber.d("Volume gesture: delta=$delta, current=$currentVolume, new=$newVolume")
-
         updateUiState {
             it.copy(
                 showVolumeIndicator = true,
@@ -825,13 +814,11 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun showControls() {
-        Timber.d("showControls() called")
         updateUiState { it.copy(showControls = true, showPlayButton = !uiState.value.isControlsLocked) }
         startControlsAutoHide()
     }
 
     fun hideControls() {
-        Timber.d("hideControls() called")
         updateUiState { it.copy(showControls = false, showPlayButton = false) }
         controlsHideJob?.cancel()
     }
