@@ -52,7 +52,6 @@ sealed class PlayerEvent {
     ) : PlayerEvent()
     data class SkipSegment(val segment: AfinitySegment) : PlayerEvent()
 
-    // Events for smooth seeking
     object OnSeekBarDragStart : PlayerEvent()
     data class OnSeekBarValueChange(val positionMs: Long) : PlayerEvent()
     object OnSeekBarDragFinished : PlayerEvent()

@@ -35,7 +35,6 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.player.PlayerViewModel
 import org.jellyfin.sdk.model.api.MediaStreamType
-import timber.log.Timber
 
 data class AudioStreamOption(
     val stream: AfinityMediaStream,
@@ -148,7 +147,7 @@ fun PlayerControls(
                         else onPlayerEvent(PlayerEvent.Play)
                     },
                     onSeekBackward = { onPlayerEvent(PlayerEvent.SeekRelative(-10000L)) },
-                    onSeekForward = { onPlayerEvent(PlayerEvent.SeekRelative(10000L)) },
+                    onSeekForward = { onPlayerEvent(PlayerEvent.SeekRelative(30000L)) },
                     onNextEpisode = onNextEpisode,
                     onPreviousEpisode = onPreviousEpisode,
                     modifier = Modifier.align(Alignment.Center)
@@ -400,7 +399,7 @@ private fun TopControls(
                                 .height(60.dp)
                                 .widthIn(max = 200.dp),
                             contentScale = ContentScale.Fit,
-                            //blurHash = currentItem.logoBlurHash
+                            blurHash = currentItem.images.logoBlurHash
                         )
                     } else {
                         Text(
@@ -655,18 +654,21 @@ private fun SeekBar(
     onPlayerEvent: (PlayerEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var draggedPosition by remember { mutableStateOf<Float?>(null) }
     val duration = uiState.duration
     val position = if (uiState.isSeeking) uiState.seekPosition else uiState.currentPosition
 
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = formatTime(position),
+                text = formatTime(draggedPosition?.toLong() ?: position),
                 color = Color.White,
                 fontSize = 12.sp
             )
@@ -678,15 +680,33 @@ private fun SeekBar(
         }
 
         Slider(
-            value = position.toFloat(),
+            value = draggedPosition ?: position.toFloat(),
             onValueChange = { newPosition ->
+                if (!uiState.isSeeking) {
+                    onPlayerEvent(PlayerEvent.OnSeekBarDragStart)
+                }
+                draggedPosition = newPosition
                 onPlayerEvent(PlayerEvent.OnSeekBarValueChange(newPosition.toLong()))
             },
             onValueChangeFinished = {
                 onPlayerEvent(PlayerEvent.OnSeekBarDragFinished)
+                draggedPosition = null
             },
             valueRange = 0f..duration.toFloat().coerceAtLeast(0f),
-            modifier = Modifier.fillMaxWidth()
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+            ),
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    modifier = Modifier.height(4.dp)
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
         )
     }
 }

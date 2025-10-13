@@ -165,7 +165,7 @@ fun GestureHandler(
 
                                     val normalizedDelta = totalHorizontalDelta / screenWidth
                                     val dampenedStrength = normalizedDelta.sign * sqrt(abs(normalizedDelta))
-                                    val seekStrength = dampenedStrength * 2f // Adjust this multiplier for sensitivity
+                                    val seekStrength = dampenedStrength * 2f
                                     onSeekGesture(seekStrength)
 
                                     Timber.d("Seek gesture: strength=$seekStrength")

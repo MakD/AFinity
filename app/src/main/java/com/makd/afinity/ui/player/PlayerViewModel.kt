@@ -886,7 +886,6 @@ class PlayerViewModel @Inject constructor(
         val showBrightnessIndicator: Boolean = false,
         val showVolumeIndicator: Boolean = false,
         val volumeLevel: Int = 50,
-        // New state for smooth seeking
         val isSeeking: Boolean = false,
         val seekPosition: Long = 0L
     )
