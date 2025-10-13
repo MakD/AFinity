@@ -215,20 +215,10 @@ fun PlayerScreen(
             PlayerControls(
                 uiState = uiState,
                 player = viewModel.player,
-                onPlayPauseClick = viewModel::onPlayPauseClick,
-                onSeekBarChange = viewModel::onSeekBarDrag,
-                onTrickplayPreview = viewModel::onSeekBarPreview,
+                onPlayerEvent = viewModel::handlePlayerEvent,
                 onBackClick = {
                     onBackPressed()
                 },
-                onFullscreenToggle = viewModel::onFullscreenToggle,
-                onAudioTrackSelect = viewModel::onAudioTrackSelect,
-                onSubtitleTrackSelect = viewModel::onSubtitleTrackSelect,
-                onPlaybackSpeedChange = viewModel::onPlaybackSpeedChange,
-                onLockToggle = viewModel::onLockToggle,
-                onSkipSegment = viewModel::onSkipSegment,
-                onSeekBackward = viewModel::onSeekBackward,
-                onSeekForward = viewModel::onSeekForward,
                 onNextEpisode = viewModel::onNextEpisode,
                 onPreviousEpisode = viewModel::onPreviousEpisode,
                 modifier = Modifier.fillMaxSize()

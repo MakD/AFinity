@@ -8,51 +8,19 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Forward30
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay10
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Speaker
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +31,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.logoBlurHash
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinitySegment
+import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.player.PlayerViewModel
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -88,18 +57,8 @@ data class SubtitleStreamOption(
 fun PlayerControls(
     uiState: PlayerViewModel.PlayerUiState,
     player: androidx.media3.common.Player,
-    onPlayPauseClick: () -> Unit,
-    onSeekBarChange: (Long) -> Unit,
-    onTrickplayPreview: (Long, Boolean) -> Unit = { _, _ -> },
+    onPlayerEvent: (PlayerEvent) -> Unit,
     onBackClick: () -> Unit,
-    onFullscreenToggle: () -> Unit,
-    onAudioTrackSelect: (Int) -> Unit,
-    onSubtitleTrackSelect: (Int) -> Unit,
-    onPlaybackSpeedChange: (Float) -> Unit,
-    onLockToggle: () -> Unit,
-    onSkipSegment: (AfinitySegment) -> Unit,
-    onSeekBackward: () -> Unit,
-    onSeekForward: () -> Unit,
     onNextEpisode: () -> Unit = {},
     onPreviousEpisode: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -110,26 +69,13 @@ fun PlayerControls(
 
     val currentItem = uiState.currentItem
 
-    LaunchedEffect(currentItem) {
-        Timber.d("=== PlayerControls Debug ===")
-        Timber.d("Current item: ${currentItem?.name}")
-        Timber.d("Item type: ${currentItem?.javaClass?.simpleName}")
-        Timber.d("Sources count: ${currentItem?.sources?.size}")
-        currentItem?.sources?.forEach { source ->
-            Timber.d("Source ID: ${source.id}, Streams: ${source.mediaStreams.size}")
-            source.mediaStreams.forEach { stream ->
-                Timber.d("  Stream - Type: ${stream.type}, Index: ${stream.index}, Language: ${stream.language}")
-            }
-        }
-    }
-
     val audioStreamOptions = remember(currentItem) {
         val streams = currentItem?.sources?.firstOrNull()?.mediaStreams
             ?.filter { it.type == MediaStreamType.AUDIO }
             ?.mapIndexed { index, stream ->
                 val displayName = buildString {
-                    append(stream.language.ifEmpty { "Unknown" })
-                    append(" • ${stream.codec.uppercase()}")
+                    append(stream.language?.uppercase() ?: "Unknown")
+                    append(" • ${stream.codec?.uppercase() ?: "N/A"}")
                     if ((stream.channels ?: 0) > 0) {
                         append(" (${stream.channels}ch)")
                     }
@@ -142,18 +88,11 @@ fun PlayerControls(
                     position = index
                 )
             } ?: emptyList()
-
-        Timber.d("Audio options count: ${streams.size}")
-        streams.forEach {
-            Timber.d("Audio option: ${it.displayName}, index: ${it.stream.index}")
-        }
-
         streams
     }
 
-    val subtitleStreamOptions = remember(currentItem, player?.currentTracks) {
+    val subtitleStreamOptions = remember(currentItem, player.currentTracks) {
         val options = mutableListOf<SubtitleStreamOption>()
-
         options.add(
             SubtitleStreamOption(
                 stream = null,
@@ -163,13 +102,11 @@ fun PlayerControls(
                 isNone = true
             )
         )
-
-        player?.currentTracks?.groups
-            ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
-            ?.forEachIndexed { index, trackGroup ->
+        player.currentTracks.groups
+            .filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
+            .forEachIndexed { index, trackGroup ->
                 val format = trackGroup.mediaTrackGroup.getFormat(0)
                 val displayName = format.label ?: format.language ?: "Track ${index + 1}"
-
                 options.add(
                     SubtitleStreamOption(
                         stream = null,
@@ -180,57 +117,59 @@ fun PlayerControls(
                     )
                 )
             }
-
         options
     }
-        AnimatedVisibility(
-            visible = uiState.showControls,
-            enter = fadeIn(animationSpec = tween(300)),
-            exit = fadeOut(animationSpec = tween(300)),
+
+    AnimatedVisibility(
+        visible = uiState.showControls,
+        enter = fadeIn(animationSpec = tween(300)),
+        exit = fadeOut(animationSpec = tween(300)),
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                TopControls(
-                    uiState = uiState,
-                    onBackClick = onBackClick,
-                    onAudioToggle = { showAudioSelector = !showAudioSelector },
-                    onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
-                    onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
-                    onLockToggle = onLockToggle,
-                    modifier = Modifier.align(Alignment.TopCenter)
+            TopControls(
+                uiState = uiState,
+                onBackClick = onBackClick,
+                onAudioToggle = { showAudioSelector = !showAudioSelector },
+                onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
+                onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
+                onLockToggle = { onPlayerEvent(PlayerEvent.ToggleLock) },
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+
+            if (!uiState.isControlsLocked) {
+                CenterPlayButton(
+                    isPlaying = uiState.isPlaying,
+                    showPlayButton = uiState.showControls,
+                    isBuffering = uiState.isBuffering,
+                    onPlayPauseClick = {
+                        if (uiState.isPlaying) onPlayerEvent(PlayerEvent.Pause)
+                        else onPlayerEvent(PlayerEvent.Play)
+                    },
+                    onSeekBackward = { onPlayerEvent(PlayerEvent.SeekRelative(-10000L)) },
+                    onSeekForward = { onPlayerEvent(PlayerEvent.SeekRelative(10000L)) },
+                    onNextEpisode = onNextEpisode,
+                    onPreviousEpisode = onPreviousEpisode,
+                    modifier = Modifier.align(Alignment.Center)
                 )
+            }
 
-                if (!uiState.isControlsLocked) {
-                    CenterPlayButton(
-                        isPlaying = uiState.isPlaying,
-                        showPlayButton = uiState.showControls,
-                        isBuffering = uiState.showBuffering,
-                        onPlayPauseClick = onPlayPauseClick,
-                        onSeekBackward = onSeekBackward,
-                        onSeekForward = onSeekForward,
-                        onNextEpisode = onNextEpisode,
-                        onPreviousEpisode = onPreviousEpisode,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-
-                if (!uiState.isControlsLocked) {
-                    BottomControls(
-                        uiState = uiState,
-                        onSeekBarChange = onSeekBarChange,
-                        onTrickplayPreview = onTrickplayPreview,
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                    )
-                }
+            if (!uiState.isControlsLocked) {
+                BottomControls(
+                    uiState = uiState,
+                    onPlayerEvent = onPlayerEvent,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
         }
-        if (uiState.showSkipButton && uiState.currentSegment != null) {
-            Box(modifier = Modifier.fillMaxSize()) {
+    }
+    if (uiState.showSkipButton && uiState.currentSegment != null) {
+        Box(modifier = Modifier.fillMaxSize()) {
             SkipButton(
-                segment = uiState.currentSegment!!,
+                segment = uiState.currentSegment,
                 skipButtonText = uiState.skipButtonText,
-                onClick = onSkipSegment,
+                onClick = { onPlayerEvent(PlayerEvent.SkipSegment(uiState.currentSegment)) },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(
@@ -239,7 +178,7 @@ fun PlayerControls(
                     )
             )
         }
-   }
+    }
 
     if (showAudioSelector && audioStreamOptions.isNotEmpty()) {
         Box(
@@ -279,22 +218,21 @@ fun PlayerControls(
                             color = Color.White,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
-
                         audioStreamOptions.forEach { option ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onAudioTrackSelect(option.position)
+                                        onPlayerEvent(PlayerEvent.SwitchToTrack(androidx.media3.common.C.TRACK_TYPE_AUDIO, option.position))
                                         showAudioSelector = false
                                     }
                                     .padding(vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = uiState.audioStreamIndex == (option.position),
+                                    selected = uiState.audioStreamIndex == option.position,
                                     onClick = {
-                                        onAudioTrackSelect((option.position))
+                                        onPlayerEvent(PlayerEvent.SwitchToTrack(androidx.media3.common.C.TRACK_TYPE_AUDIO, option.position))
                                         showAudioSelector = false
                                     },
                                     colors = RadioButtonDefaults.colors(
@@ -356,33 +294,21 @@ fun PlayerControls(
                             color = Color.White,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
-
                         subtitleStreamOptions.forEach { option ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onSubtitleTrackSelect(option.index)
+                                        onPlayerEvent(PlayerEvent.SwitchToTrack(androidx.media3.common.C.TRACK_TYPE_TEXT, option.index))
                                         showSubtitleSelector = false
                                     }
                                     .padding(vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = when {
-                                        option.index == -1 -> {
-                                            player?.currentTracks?.groups
-                                                ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
-                                                ?.none { it.isSelected } ?: true
-                                        }
-                                        else -> {
-                                            player?.currentTracks?.groups
-                                                ?.filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
-                                                ?.getOrNull(option.index)?.isSelected ?: false
-                                        }
-                                    },
+                                    selected = uiState.subtitleStreamIndex == option.index,
                                     onClick = {
-                                        onSubtitleTrackSelect(option.index)
+                                        onPlayerEvent(PlayerEvent.SwitchToTrack(androidx.media3.common.C.TRACK_TYPE_TEXT, option.index))
                                         showSubtitleSelector = false
                                     },
                                     colors = RadioButtonDefaults.colors(
@@ -405,17 +331,15 @@ fun PlayerControls(
             }
         }
     }
+
     if (showSpeedDialog) {
         PlaybackSpeedDialog(
             currentSpeed = uiState.playbackSpeed,
-            onSpeedChange = { speed ->
-                onPlaybackSpeedChange(speed)
-            },
+            onSpeedChange = { speed -> onPlayerEvent(PlayerEvent.SetPlaybackSpeed(speed)) },
             onDismiss = { showSpeedDialog = false }
         )
     }
 }
-
 @androidx.media3.common.util.UnstableApi
 @Composable
 private fun TopControls(
@@ -461,72 +385,71 @@ private fun TopControls(
                     modifier = Modifier.size(24.dp)
                 )
             }
-                Column(
-                    modifier = Modifier.padding(start = 16.dp),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    val currentItem = uiState.currentItem
+            Column(
+                modifier = Modifier.padding(start = 16.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                val currentItem = uiState.currentItem
 
-                    if (currentItem is com.makd.afinity.data.models.media.AfinityMovie) {
-                        if (currentItem?.images?.logo != null) {
+                if (currentItem is com.makd.afinity.data.models.media.AfinityMovie) {
+                    if (currentItem.images?.logo != null) {
+                        OptimizedAsyncImage(
+                            imageUrl = currentItem.images.logo.toString(),
+                            contentDescription = "Logo",
+                            modifier = Modifier
+                                .height(60.dp)
+                                .widthIn(max = 200.dp),
+                            contentScale = ContentScale.Fit,
+                            //blurHash = currentItem.logoBlurHash
+                        )
+                    } else {
+                        Text(
+                            text = currentItem.name,
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                if (currentItem is com.makd.afinity.data.models.media.AfinityEpisode) {
+                    val seasonNumber = currentItem.parentIndexNumber
+                    val episodeNumber = currentItem.indexNumber
+                    val episodeTitle = currentItem.name
+                    val seriesName = currentItem.seriesName
+
+                    if (seasonNumber != null && episodeNumber != null) {
+                        if (currentItem.seriesLogo != null) {
                             OptimizedAsyncImage(
-                                imageUrl = currentItem.images.logo.toString(),
-                                contentDescription = "Logo",
+                                imageUrl = currentItem.seriesLogo.toString(),
+                                contentDescription = "Series Logo",
                                 modifier = Modifier
                                     .height(60.dp)
                                     .widthIn(max = 200.dp),
-                                contentScale = ContentScale.Fit,
-                                blurHash = currentItem.images.logoBlurHash
+                                contentScale = ContentScale.Fit
                             )
                         } else {
                             Text(
-                                text = currentItem?.name ?: "",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    if (currentItem is com.makd.afinity.data.models.media.AfinityEpisode) {
-                        val seasonNumber = currentItem.parentIndexNumber
-                        val episodeNumber = currentItem.indexNumber
-                        val episodeTitle = currentItem.name
-                        val seriesName = currentItem.seriesName
-
-                        if (seasonNumber != null && episodeNumber != null) {
-
-                            if (currentItem.seriesLogo != null) {
-                                OptimizedAsyncImage(
-                                    imageUrl = currentItem.seriesLogo.toString(),
-                                    contentDescription = "Series Logo",
-                                    modifier = Modifier
-                                        .height(60.dp)
-                                        .widthIn(max = 200.dp),
-                                    contentScale = ContentScale.Fit
-                                )
-                            } else {
-                                Text(
-                                    text = seriesName,
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    fontSize = 18.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            Text(
-                                text = "S${seasonNumber.toString().padStart(2, '0')}:E${episodeNumber.toString().padStart(2, '0')}: $episodeTitle",
+                                text = seriesName ?: "",
                                 color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 14.sp,
+                                fontSize = 18.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
+                        Text(
+                            text = "S${seasonNumber.toString().padStart(2, '0')}:E${episodeNumber.toString().padStart(2, '0')}: $episodeTitle",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
                 }
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -534,37 +457,22 @@ private fun TopControls(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (uiState.isControlsLocked) {
-                    IconButton(
-                        onClick = onLockToggle,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_unlock),
-                            contentDescription = "Unlock",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                } else {
-                    IconButton(
-                        onClick = onLockToggle,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_lock),
-                            contentDescription = "Lock",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                IconButton(
+                    onClick = onLockToggle,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = if (uiState.isControlsLocked) R.drawable.ic_unlock else R.drawable.ic_lock),
+                        contentDescription = if (uiState.isControlsLocked) "Unlock" else "Lock",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
 
                 if (!uiState.isControlsLocked) {
                     IconButton(
                         onClick = onPipToggle,
-                        modifier = Modifier
-                            .size(40.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_pip),
@@ -576,8 +484,7 @@ private fun TopControls(
 
                     IconButton(
                         onClick = onSpeedToggle,
-                        modifier = Modifier
-                            .size(40.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_speed),
@@ -589,28 +496,24 @@ private fun TopControls(
 
                     IconButton(
                         onClick = onAudioToggle,
-                        modifier = Modifier
-                            .size(40.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Speaker,
                             contentDescription = "Audio",
-                            tint = if (uiState.audioStreamIndex != null)
-                                MaterialTheme.colorScheme.primary else Color.White,
+                            tint = if (uiState.audioStreamIndex != null) MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)
                         )
                     }
 
                     IconButton(
                         onClick = onSubtitleToggle,
-                        modifier = Modifier
-                            .size(40.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_cc),
                             contentDescription = "Subtitles",
-                            tint = if (uiState.subtitleStreamIndex != null)
-                                MaterialTheme.colorScheme.primary else Color.White,
+                            tint = if (uiState.subtitleStreamIndex != null) MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -644,8 +547,7 @@ private fun CenterPlayButton(
         ) {
             IconButton(
                 onClick = onPreviousEpisode,
-                modifier = Modifier
-                    .size(60.dp)
+                modifier = Modifier.size(60.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.SkipPrevious,
@@ -657,8 +559,7 @@ private fun CenterPlayButton(
 
             IconButton(
                 onClick = onSeekBackward,
-                modifier = Modifier
-                    .size(60.dp)
+                modifier = Modifier.size(60.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Replay10,
@@ -672,10 +573,7 @@ private fun CenterPlayButton(
                 onClick = onPlayPauseClick,
                 modifier = Modifier
                     .size(60.dp)
-                    .background(
-                        Color.White,
-                        CircleShape
-                    )
+                    .background(Color.White, CircleShape)
             ) {
                 if (isBuffering) {
                     CircularProgressIndicator(
@@ -695,8 +593,7 @@ private fun CenterPlayButton(
 
             IconButton(
                 onClick = onSeekForward,
-                modifier = Modifier
-                    .size(60.dp)
+                modifier = Modifier.size(60.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Forward30,
@@ -708,8 +605,7 @@ private fun CenterPlayButton(
 
             IconButton(
                 onClick = onNextEpisode,
-                modifier = Modifier
-                    .size(60.dp)
+                modifier = Modifier.size(60.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.SkipNext,
@@ -721,13 +617,11 @@ private fun CenterPlayButton(
         }
     }
 }
-
 @androidx.media3.common.util.UnstableApi
 @Composable
 private fun BottomControls(
     uiState: PlayerViewModel.PlayerUiState,
-    onSeekBarChange: (Long) -> Unit,
-    onTrickplayPreview: (Long, Boolean) -> Unit,
+    onPlayerEvent: (PlayerEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -749,44 +643,30 @@ private fun BottomControls(
             )
     ) {
         SeekBar(
-            currentPosition = uiState.currentPosition,
-            duration = uiState.duration,
-            onSeekBarChange = onSeekBarChange,
-            onPreviewChange = onTrickplayPreview
+            uiState = uiState,
+            onPlayerEvent = onPlayerEvent
         )
     }
 }
-
+@androidx.media3.common.util.UnstableApi
 @Composable
 private fun SeekBar(
-    currentPosition: Long,
-    duration: Long,
-    onSeekBarChange: (Long) -> Unit,
-    onPreviewChange: ((Long, Boolean) -> Unit)? = null,
+    uiState: PlayerViewModel.PlayerUiState,
+    onPlayerEvent: (PlayerEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isDragging by remember { mutableStateOf(false) }
-    var dragProgress by remember { mutableStateOf(0f) }
-    var lastUpdateTime by remember { mutableLongStateOf(0L) }
+    val duration = uiState.duration
+    val position = if (uiState.isSeeking) uiState.seekPosition else uiState.currentPosition
 
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
-        val currentProgress = if (duration > 0) {
-            (currentPosition.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
-        } else {
-            0f
-        }
-
-        val displayProgress = if (isDragging) dragProgress else currentProgress
-        val displayPosition = if (isDragging) (dragProgress * duration).toLong() else currentPosition
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = formatTime(displayPosition),
+                text = formatTime(position),
                 color = Color.White,
                 fontSize = 12.sp
             )
@@ -797,68 +677,17 @@ private fun SeekBar(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragStart = { offset ->
-                            isDragging = true
-                            dragProgress = (offset.x / size.width).coerceIn(0f, 1f)
-                            val newPosition = (dragProgress * duration).toLong()
-                            onSeekBarChange(newPosition)
-                            onPreviewChange?.invoke(newPosition, true)
-                            lastUpdateTime = System.currentTimeMillis()
-                        },
-                        onDrag = { _, dragAmount ->
-                            dragProgress = (dragProgress + dragAmount.x / size.width).coerceIn(0f, 1f)
-                            val newPosition = (dragProgress * duration).toLong()
-                            onSeekBarChange(newPosition)
-                            val currentTime = System.currentTimeMillis()
-                            if (currentTime - lastUpdateTime > 50) {
-                                onPreviewChange?.invoke(newPosition, true)
-                                lastUpdateTime = currentTime
-                            }
-                        },
-                        onDragEnd = {
-                            isDragging = false
-                            onPreviewChange?.invoke(0, false)
-                        }
-                    )
-                }
-                .pointerInput(Unit) {
-                    detectTapGestures { offset ->
-                        val tapProgress = (offset.x / size.width).coerceIn(0f, 1f)
-                        val newPosition = (tapProgress * duration).toLong()
-                        onSeekBarChange(newPosition)
-                    }
-                }
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .background(
-                        Color.White.copy(alpha = 0.3f),
-                        RoundedCornerShape(2.dp)
-                    )
-                    .align(Alignment.Center)
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(displayProgress)
-                    .height(4.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primary,
-                        RoundedCornerShape(2.dp)
-                    )
-                    .align(Alignment.CenterStart)
-            )
-        }
+        Slider(
+            value = position.toFloat(),
+            onValueChange = { newPosition ->
+                onPlayerEvent(PlayerEvent.OnSeekBarValueChange(newPosition.toLong()))
+            },
+            onValueChangeFinished = {
+                onPlayerEvent(PlayerEvent.OnSeekBarDragFinished)
+            },
+            valueRange = 0f..duration.toFloat().coerceAtLeast(0f),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 

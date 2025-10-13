@@ -41,6 +41,7 @@ sealed class PlayerEvent {
     data class SetPlaybackSpeed(val speed: Float) : PlayerEvent()
     data class SwitchToTrack(val trackType: Int, val index: Int) : PlayerEvent()
     object ToggleControls : PlayerEvent()
+    object ToggleLock : PlayerEvent()
     object ToggleFullscreen : PlayerEvent()
     data class LoadMedia(
         val item: AfinityItem,
@@ -50,6 +51,11 @@ sealed class PlayerEvent {
         val startPositionMs: Long = 0L
     ) : PlayerEvent()
     data class SkipSegment(val segment: AfinitySegment) : PlayerEvent()
+
+    // Events for smooth seeking
+    object OnSeekBarDragStart : PlayerEvent()
+    data class OnSeekBarValueChange(val positionMs: Long) : PlayerEvent()
+    object OnSeekBarDragFinished : PlayerEvent()
 }
 
 data class GestureConfig(

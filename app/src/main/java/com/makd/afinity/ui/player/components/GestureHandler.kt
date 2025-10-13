@@ -13,6 +13,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import timber.log.Timber
 import kotlin.math.abs
+import kotlin.math.sign
+import kotlin.math.sqrt
 
 
 private enum class GestureType {
@@ -52,6 +54,7 @@ fun GestureHandler(
 
     var gestureType by remember { mutableStateOf<GestureType?>(null) }
     var totalHorizontalDelta by remember { mutableFloatStateOf(0f) }
+    var isSeeking by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -85,13 +88,14 @@ fun GestureHandler(
                         totalDragDelta = 0f
                         totalHorizontalDelta = 0f
                         gestureType = null
+                        isSeeking = false
                         Timber.d("Drag started at: $offset")
                     },
                     onDragEnd = {
                         isDragging = false
                         totalDragDelta = 0f
                         totalHorizontalDelta = 0f
-                        if (gestureType == GestureType.SEEK) {
+                        if (isSeeking) {
                             onSeekPreview(false)
                         }
                         gestureType = null
@@ -148,16 +152,24 @@ fun GestureHandler(
                                         onVolumeGesture(gestureStrength)
                                         totalDragDelta = 0f
                                     }
-                                }
+                                 }
                             }
                             GestureType.SEEK -> {
                                 totalHorizontalDelta += horizontalDrag
+                                val seekActivationThreshold = 30f
+                                if (abs(totalHorizontalDelta) > seekActivationThreshold) {
+                                    if (!isSeeking) {
+                                        isSeeking = true
+                                        onSeekPreview(true)
+                                    }
 
-                                val seekStrength = totalHorizontalDelta / (screenWidth * 0.3f)
-                                onSeekGesture(seekStrength)
-                                onSeekPreview(true)
+                                    val normalizedDelta = totalHorizontalDelta / screenWidth
+                                    val dampenedStrength = normalizedDelta.sign * sqrt(abs(normalizedDelta))
+                                    val seekStrength = dampenedStrength * 2f // Adjust this multiplier for sensitivity
+                                    onSeekGesture(seekStrength)
 
-                                Timber.d("Seek gesture: strength=$seekStrength")
+                                    Timber.d("Seek gesture: strength=$seekStrength")
+                                }
                             }
                             null -> {
                             }

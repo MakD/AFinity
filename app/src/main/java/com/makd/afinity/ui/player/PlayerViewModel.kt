@@ -33,6 +33,7 @@ import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -96,7 +97,7 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             while (true) {
                 delay(100)
-                if (player.isPlaying) {
+                if (player.isPlaying && !_uiState.value.isSeeking) {
                     updatePlayerState()
                 }
             }
@@ -194,6 +195,9 @@ class PlayerViewModel @Inject constructor(
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
+        if (isPlaying) {
+            updateUiState { it.copy(isLoading = false) }
+        }
         updatePlayerState()
     }
 
@@ -239,19 +243,34 @@ class PlayerViewModel @Inject constructor(
                 is PlayerEvent.SetPlaybackSpeed -> player.setPlaybackSpeed(event.speed)
                 is PlayerEvent.SwitchToTrack -> switchToTrack(event.trackType, event.index)
                 is PlayerEvent.ToggleControls -> toggleControls()
+                is PlayerEvent.ToggleLock -> onLockToggle()
                 is PlayerEvent.ToggleFullscreen -> { /* Handled at UI level */ }
-                is PlayerEvent.LoadMedia -> loadMedia(
-                    event.item,
-                    event.mediaSourceId,
-                    event.audioStreamIndex,
-                    event.subtitleStreamIndex,
-                    event.startPositionMs
-                )
+                is PlayerEvent.LoadMedia -> {
+                    updateUiState { it.copy(isLoading = true) }
+                    loadMedia(
+                        event.item,
+                        event.mediaSourceId,
+                        event.audioStreamIndex,
+                        event.subtitleStreamIndex,
+                        event.startPositionMs
+                    )
+                }
                 is PlayerEvent.SkipSegment -> {
                     handlePlayerEvent(PlayerEvent.Seek(event.segment.endTicks))
                     updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
                 }
                 is PlayerEvent.Stop -> player.stop()
+                // New seekbar events
+                is PlayerEvent.OnSeekBarDragStart -> {
+                    updateUiState { it.copy(isSeeking = true) }
+                }
+                is PlayerEvent.OnSeekBarValueChange -> {
+                    updateUiState { it.copy(seekPosition = event.positionMs) }
+                }
+                is PlayerEvent.OnSeekBarDragFinished -> {
+                    player.seekTo(uiState.value.seekPosition)
+                    updateUiState { it.copy(isSeeking = false, currentPosition = uiState.value.seekPosition) }
+                }
             }
         }
     }
@@ -262,7 +281,7 @@ class PlayerViewModel @Inject constructor(
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         startPositionMs: Long
-    ) = withContext(Dispatchers.IO) {
+    ) {
         try {
             currentItem = item
 
@@ -290,77 +309,76 @@ class PlayerViewModel @Inject constructor(
                 itemId = item.id,
                 mediaSourceId = mediaSourceId
             )
-
             playbackStateManager.trackCurrentItem(item.id)
 
-            val streamUrl = playbackRepository.getStreamUrl(
-                itemId = item.id,
-                mediaSourceId = mediaSourceId,
-                audioStreamIndex = audioStreamIndex,
-                subtitleStreamIndex = null,
-                videoStreamIndex = null,
-                maxStreamingBitrate = null,
-                startTimeTicks = null
-            )
-
-            if (streamUrl.isNullOrBlank()) {
-                Timber.e("Stream URL is null or empty")
-                return@withContext
-            }
-
-            val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
-            mediaSource?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }?.forEach { stream ->
-                Timber.d("Subtitle ${stream.index}: isExternal=${stream.isExternal}, path=${stream.path}, codec=${stream.codec}, title=${stream.displayTitle}")
-            }
-            val externalSubtitles = mediaSource?.mediaStreams
-                ?.filter { stream ->
-                    stream.type == MediaStreamType.SUBTITLE && stream.isExternal
-                }
-                ?.mapNotNull { stream ->
-                    try {
-                        val subtitleUrl = "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
-
-                        MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
-                            .setLabel(stream.displayTitle ?: stream.language ?: "Track ${stream.index}")
-                            .setMimeType(MimeTypes.APPLICATION_SUBRIP)
-                            .setLanguage(stream.language ?: "eng")
-                            .build()
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to build subtitle config for stream ${stream.index}")
-                        null
-                    }
-                } ?: emptyList()
-
-            externalSubtitles.forEach { sub ->
-                Timber.d("  - ${sub.label}: ${sub.uri}")
-            }
-
-            val mediaItem = MediaItem.Builder()
-                .setMediaId(item.id.toString())
-                .setUri(streamUrl)
-                .setMediaMetadata(
-                    MediaMetadata.Builder()
-                        .setTitle(item.name)
-                        .build()
-                )
-                .setSubtitleConfigurations(externalSubtitles)
-                .build()
-
-            withContext(Dispatchers.Main) {
-                player.setMediaItems(listOf(mediaItem), 0, startPositionMs)
-                player.prepare()
-                player.play()
-            }
-
             coroutineScope {
-                launch { reportPlaybackStart(item) }
-                launch { loadSegments(item.id) }
-                launch { loadTrickplayData() }
-                showControls()
-            }
+                val streamUrlDeferred = async(Dispatchers.IO) {
+                    playbackRepository.getStreamUrl(
+                        itemId = item.id,
+                        mediaSourceId = mediaSourceId,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = null,
+                        videoStreamIndex = null,
+                        maxStreamingBitrate = null,
+                        startTimeTicks = null
+                    )
+                }
 
+                val segmentsJob = launch(Dispatchers.IO) { loadSegments(item.id) }
+                val trickplayJob = launch(Dispatchers.IO) { loadTrickplayData() }
+                val reportStartJob = launch(Dispatchers.IO) { reportPlaybackStart(item) }
+
+                val streamUrl = streamUrlDeferred.await()
+                if (streamUrl.isNullOrBlank()) {
+                    Timber.e("Stream URL is null or empty")
+                    updateUiState { it.copy(isLoading = false, showError = true, errorMessage = "Failed to load stream.") }
+                    return@coroutineScope
+                }
+
+                val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
+                val externalSubtitles = mediaSource?.mediaStreams
+                    ?.filter { stream ->
+                        stream.type == MediaStreamType.SUBTITLE && stream.isExternal
+                    }
+                    ?.mapNotNull { stream ->
+                        try {
+                            val subtitleUrl = "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
+                            MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
+                                .setLabel(stream.displayTitle ?: stream.language ?: "Track ${stream.index}")
+                                .setMimeType(MimeTypes.APPLICATION_SUBRIP)
+                                .setLanguage(stream.language ?: "eng")
+                                .build()
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to build subtitle config for stream ${stream.index}")
+                            null
+                        }
+                    } ?: emptyList()
+
+                val mediaItem = MediaItem.Builder()
+                    .setMediaId(item.id.toString())
+                    .setUri(streamUrl)
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle(item.name)
+                            .build()
+                    )
+                    .setSubtitleConfigurations(externalSubtitles)
+                    .build()
+
+                withContext(Dispatchers.Main) {
+                    player.setMediaItems(listOf(mediaItem), 0, startPositionMs)
+                    player.prepare()
+                    player.play()
+                    showControls()
+                }
+
+                segmentsJob.join()
+                trickplayJob.join()
+                reportStartJob.join()
+            }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load media")
+            updateUiState { it.copy(isLoading = false, showError = true, errorMessage = "An unexpected error occurred.") }
         }
     }
 
@@ -634,7 +652,7 @@ class PlayerViewModel @Inject constructor(
         handlePlayerEvent(PlayerEvent.SetPlaybackSpeed(speed))
     }
 
-    fun onLockToggle() {
+    private fun onLockToggle() {
         updateUiState { it.copy(isControlsLocked = !it.isControlsLocked) }
     }
 
@@ -865,6 +883,9 @@ class PlayerViewModel @Inject constructor(
         val seekDirection: Int = 0,
         val showBrightnessIndicator: Boolean = false,
         val showVolumeIndicator: Boolean = false,
-        val volumeLevel: Int = 50
+        val volumeLevel: Int = 50,
+        // New state for smooth seeking
+        val isSeeking: Boolean = false,
+        val seekPosition: Long = 0L
     )
 }
