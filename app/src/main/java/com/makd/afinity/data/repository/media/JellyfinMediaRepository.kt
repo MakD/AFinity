@@ -1007,7 +1007,8 @@ class JellyfinMediaRepository @Inject constructor(
 
     override suspend fun getGenres(
         parentId: UUID?,
-        limit: Int?
+        limit: Int?,
+        includeItemTypes: List<String>
     ): List<String> = withContext(Dispatchers.IO) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
@@ -1020,7 +1021,10 @@ class JellyfinMediaRepository @Inject constructor(
                 sortBy = listOf(ItemSortBy.SORT_NAME),
                 sortOrder = listOf(SortOrder.ASCENDING),
                 enableImages = false,
-                enableTotalRecordCount = false
+                enableTotalRecordCount = false,
+                includeItemTypes = includeItemTypes.mapNotNull {
+                    try { BaseItemKind.valueOf(it.uppercase()) } catch (e: Exception) { null }
+                }
             )
 
             response.content?.items?.mapNotNull { genreDto ->

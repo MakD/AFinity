@@ -47,7 +47,8 @@ class SearchViewModel @Inject constructor(
                 val selectedLibraryId = _uiState.value.selectedLibrary?.id
                 val genres = mediaRepository.getGenres(
                     parentId = selectedLibraryId,
-                    limit = 100
+                    limit = 100,
+                    includeItemTypes = listOf("MOVIE", "SERIES", "BOXSET")
                 )
                 _uiState.value = _uiState.value.copy(genres = genres)
                 Timber.d("Loaded ${genres.size} genres from API")

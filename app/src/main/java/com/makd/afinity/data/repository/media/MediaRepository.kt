@@ -132,7 +132,8 @@ interface MediaRepository {
 
     suspend fun getGenres(
         parentId: UUID? = null,
-        limit: Int? = null
+        limit: Int? = null,
+        includeItemTypes: List<String> = emptyList(),
     ): List<String>
 
     suspend fun getNextUp(
