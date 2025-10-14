@@ -6,6 +6,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WatchlistViewModel @Inject constructor(
+    private val jellyfinRepository: JellyfinRepository,
     private val watchlistRepository: WatchlistRepository
 ) : ViewModel() {
 
@@ -32,6 +34,8 @@ class WatchlistViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
+                val userProfileImageUrl = loadUserProfileImage()
+
                 val movies = watchlistRepository.getWatchlistMovies()
                 val shows = watchlistRepository.getWatchlistShows()
                 val episodes = watchlistRepository.getWatchlistEpisodes()
@@ -41,7 +45,8 @@ class WatchlistViewModel @Inject constructor(
                     movies = movies.sortedBy { it.name },
                     shows = shows.sortedBy { it.name },
                     episodes = episodes.sortedBy { it.name },
-                    error = null
+                    error = null,
+                    userProfileImageUrl = userProfileImageUrl
                 )
 
                 Timber.d("Loaded watchlist: ${movies.size} movies, ${shows.size} shows, ${episodes.size} episodes")
@@ -56,6 +61,16 @@ class WatchlistViewModel @Inject constructor(
         }
     }
 
+    private suspend fun loadUserProfileImage(): String? {
+        return try {
+            jellyfinRepository.getUserProfileImageUrl()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get user profile image URL")
+            null
+        }
+    }
+
+
     fun onItemClick(item: AfinityItem) {
         Timber.d("Watchlist item clicked: ${item.name} (${item.id})")
     }
@@ -66,5 +81,6 @@ data class WatchlistUiState(
     val shows: List<AfinityShow> = emptyList(),
     val episodes: List<AfinityEpisode> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val userProfileImageUrl: String? = null
 )

@@ -29,7 +29,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -41,6 +40,7 @@ import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.theme.rememberGridMinColumnSize
 
 @Composable
@@ -115,12 +115,15 @@ fun LibrariesScreen(
             }
         }
 
-        LibrariesTopBar(
-            onSearchClick = { /* TODO: Implement search */ },
-            onProfileClick = onProfileClick,
-            userProfileImageUrl = uiState.userProfileImageUrl,
+        AfinityTopAppBar(
+            title = "Your Libraries",
             backgroundOpacity = topBarOpacity,
-            navController = navController
+            onSearchClick = {
+                val route = Destination.createSearchRoute()
+                navController.navigate(route)
+            },
+            onProfileClick = onProfileClick,
+            userProfileImageUrl = uiState.userProfileImageUrl
         )
     }
 }
@@ -197,108 +200,6 @@ private fun LibraryCard(
             )
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun LibrariesTopBar(
-    onSearchClick: () -> Unit,
-    onProfileClick: () -> Unit,
-    userProfileImageUrl: String? = null,
-    backgroundOpacity: Float = 0f,
-    navController: NavController
-) {
-    TopAppBar(
-        title = {
-            Text(
-                text = "Your Libraries",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        },
-        actions = {
-            Button(
-                onClick = {
-                    val route = Destination.createSearchRoute()
-                    navController.navigate(route)
-                },
-                modifier = Modifier
-                    .height(48.dp)
-                    .width(120.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                shape = RoundedCornerShape(24.dp),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Search",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            IconButton(
-                onClick = onProfileClick,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            MaterialTheme.colorScheme.surfaceVariant,
-                            CircleShape
-                        )
-                        .clip(CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (userProfileImageUrl != null) {
-                        OptimizedAsyncImage(
-                            imageUrl = userProfileImageUrl,
-                            contentDescription = "Profile",
-                            targetWidth = 48.dp,
-                            targetHeight = 48.dp,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background.copy(alpha = backgroundOpacity)
-        )
-    )
 }
 
 @Composable

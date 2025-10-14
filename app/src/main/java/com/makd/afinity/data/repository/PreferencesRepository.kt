@@ -43,10 +43,6 @@ interface PreferencesRepository {
     val useExoPlayer: Flow<Boolean>
     suspend fun setUseExoPlayer(value: Boolean)
 
-    /*suspend fun setDarkTheme(enabled: Boolean)
-    suspend fun getDarkTheme(): Boolean
-    fun getDarkThemeFlow(): Flow<Boolean>*/
-
     suspend fun setThemeMode(mode: String)
     suspend fun getThemeMode(): String
     fun getThemeModeFlow(): Flow<String>

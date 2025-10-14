@@ -36,6 +36,8 @@ class FavoritesViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
+                val userProfileImageUrl = loadUserProfileImage()
+
                 val movies = jellyfinRepository.getFavoriteMovies()
                 val shows = jellyfinRepository.getFavoriteShows()
                 val episodes = jellyfinRepository.getFavoriteEpisodes()
@@ -46,7 +48,8 @@ class FavoritesViewModel @Inject constructor(
                     shows = shows.sortedBy { it.name },
                     episodes = episodes.sortedBy { it.name },
                     people = emptyList(),
-                    error = null
+                    error = null,
+                    userProfileImageUrl = userProfileImageUrl
                 )
 
                 Timber.d("Loaded favorites: ${movies.size} movies, ${shows.size} shows, ${episodes.size} episodes")
@@ -58,6 +61,15 @@ class FavoritesViewModel @Inject constructor(
                     error = "Failed to load favorites: ${e.message}"
                 )
             }
+        }
+    }
+
+    private suspend fun loadUserProfileImage(): String? {
+        return try {
+            jellyfinRepository.getUserProfileImageUrl()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get user profile image URL")
+            null
         }
     }
 
@@ -76,5 +88,6 @@ data class FavoritesUiState(
     val episodes: List<AfinityEpisode> = emptyList(),
     val people: List<com.makd.afinity.data.models.media.AfinityPersonDetail> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val userProfileImageUrl: String? = null
 )

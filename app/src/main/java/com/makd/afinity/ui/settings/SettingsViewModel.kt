@@ -68,10 +68,6 @@ class SettingsViewModel @Inject constructor(
             }
         }
 
-        /*viewModelScope.launch {
-            preferencesRepository.getDarkThemeFlow().collect { _uiState.value = _uiState.value.copy(darkTheme = it) }
-        }*/
-
         viewModelScope.launch {
             preferencesRepository.getThemeModeFlow().collect { _uiState.value = _uiState.value.copy(themeMode = it) }
         }
@@ -96,19 +92,6 @@ class SettingsViewModel @Inject constructor(
             preferencesRepository.useExoPlayer.collect { _uiState.value = _uiState.value.copy(useExoPlayer = it) }
         }
     }
-
-
-
-    /*fun toggleDarkTheme(enabled: Boolean) {
-        viewModelScope.launch {
-            try {
-                preferencesRepository.setDarkTheme(enabled)
-                Timber.d("Dark theme set to: $enabled")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle dark theme")
-            }
-        }
-    }*/
 
     fun setThemeMode(mode: String) {
         viewModelScope.launch {

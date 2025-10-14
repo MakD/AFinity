@@ -50,13 +50,6 @@ class MainActivity : ComponentActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        /*setContent {
-            AFinityTheme {
-                MainContent(
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        }*/
         setContent {
             val themeMode by preferencesRepository.getThemeModeFlow()
                 .collectAsState(initial = "SYSTEM")

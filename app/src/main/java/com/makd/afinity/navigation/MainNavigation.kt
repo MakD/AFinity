@@ -304,8 +304,9 @@ fun MainNavigation(
                         val route = Destination.createPersonRoute(personId)
                         navController.navigate(route)
                     },
-                    modifier = Modifier.fillMaxSize()
-                )
+                    modifier = Modifier.fillMaxSize(),
+                    navController = navController,
+                    )
             }
 
             composable(Destination.WATCHLIST.route) {
@@ -314,8 +315,9 @@ fun MainNavigation(
                         val route = Destination.createItemDetailRoute(item.id.toString())
                         navController.navigate(route)
                     },
-                    modifier = Modifier.fillMaxSize()
-                )
+                    modifier = Modifier.fillMaxSize(),
+                    navController = navController,
+                    )
             }
 
             composable(Destination.SEARCH_ROUTE) {

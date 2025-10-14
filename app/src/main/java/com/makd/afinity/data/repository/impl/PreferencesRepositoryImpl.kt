@@ -218,22 +218,6 @@ class PreferencesRepositoryImpl @Inject constructor(
         return dataStore.data.first()[Keys.SKIP_OUTRO_ENABLED] ?: true
     }
 
-    /*override suspend fun setDarkTheme(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.DARK_THEME] = enabled
-        }
-    }
-
-    override suspend fun getDarkTheme(): Boolean {
-        return dataStore.data.first()[Keys.DARK_THEME] ?: false
-    }
-
-    override fun getDarkThemeFlow(): Flow<Boolean> {
-        return dataStore.data.map { preferences ->
-            preferences[Keys.DARK_THEME] ?: false
-        }
-    }*/
-
     override suspend fun setThemeMode(mode: String) {
         dataStore.edit { preferences ->
             preferences[Keys.THEME_MODE] = mode

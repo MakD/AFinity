@@ -23,7 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -44,15 +44,18 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AfinityTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
     onItemClick: (AfinityItem) -> Unit = {},
     onPersonClick: (String) -> Unit = {},
+    navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: FavoritesViewModel = hiltViewModel()
 ) {
@@ -64,15 +67,17 @@ fun FavoritesScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Favorites",
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
+            AfinityTopAppBar(
+                title = "Favorites",
+                onSearchClick = {
+                    val route = Destination.createSearchRoute()
+                    navController.navigate(route)
                 },
+                onProfileClick = {
+                    val route = Destination.createSettingsRoute()
+                    navController.navigate(route)
+                },
+                userProfileImageUrl = uiState.userProfileImageUrl
             )
         },
         modifier = modifier
@@ -282,6 +287,8 @@ private fun FavoritePeopleRow(
     people: List<AfinityPersonDetail>,
     onPersonClick: (String) -> Unit
 ) {
+    val configuration = LocalConfiguration.current
+    val itemWidth = (configuration.screenWidthDp.dp / 2) - (14.dp * 2)
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(horizontal = 0.dp)

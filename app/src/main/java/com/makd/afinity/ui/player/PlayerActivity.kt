@@ -47,9 +47,6 @@ class PlayerActivity : ComponentActivity() {
 
         Timber.d("PlayerActivity: Starting playback for item $itemId")
 
-        /*setContent {
-            AFinityTheme {
-                PlayerScreenWrapper(*/
         setContent {
             val themeMode by preferencesRepository.getThemeModeFlow()
                 .collectAsState(initial = "SYSTEM")
