@@ -2,8 +2,8 @@ package com.makd.afinity.data.database
 
 import androidx.room.TypeConverter
 import com.makd.afinity.data.models.media.AfinityChapter
-import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinitySegmentType
+import com.makd.afinity.data.models.media.AfinitySourceType
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.LocalDateTime

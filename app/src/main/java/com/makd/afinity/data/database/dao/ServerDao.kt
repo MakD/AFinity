@@ -1,7 +1,17 @@
 package com.makd.afinity.data.database.dao
 
-import androidx.room.*
-import com.makd.afinity.data.models.server.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Transaction
+import androidx.room.Update
+import com.makd.afinity.data.models.server.Server
+import com.makd.afinity.data.models.server.ServerWithAddressAndUser
+import com.makd.afinity.data.models.server.ServerWithAddresses
+import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
+import com.makd.afinity.data.models.server.ServerWithUsers
 import kotlinx.coroutines.flow.Flow
 
 @Dao

@@ -1,7 +1,18 @@
 package com.makd.afinity.data.database.dao
 
-import androidx.room.*
-import com.makd.afinity.data.database.entities.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Transaction
+import com.makd.afinity.data.database.entities.AfinityEpisodeDto
+import com.makd.afinity.data.database.entities.AfinityMediaStreamDto
+import com.makd.afinity.data.database.entities.AfinityMovieDto
+import com.makd.afinity.data.database.entities.AfinitySeasonDto
+import com.makd.afinity.data.database.entities.AfinitySegmentDto
+import com.makd.afinity.data.database.entities.AfinityShowDto
+import com.makd.afinity.data.database.entities.AfinitySourceDto
+import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import java.util.UUID
 

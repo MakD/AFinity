@@ -1,6 +1,5 @@
 package com.makd.afinity.data.models.media
 
-import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.repository.JellyfinRepository
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemDto

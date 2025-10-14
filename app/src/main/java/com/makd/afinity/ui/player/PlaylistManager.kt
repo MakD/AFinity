@@ -1,8 +1,8 @@
 package com.makd.afinity.ui.player
 
 import com.makd.afinity.data.models.common.SortBy
-import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.repository.JellyfinRepository
 import kotlinx.coroutines.flow.MutableStateFlow

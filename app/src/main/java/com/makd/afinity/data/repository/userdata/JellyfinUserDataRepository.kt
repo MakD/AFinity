@@ -4,8 +4,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
-import org.jellyfin.sdk.api.operations.*
-import org.jellyfin.sdk.model.api.*
+import org.jellyfin.sdk.api.operations.ItemsApi
+import org.jellyfin.sdk.api.operations.PlayStateApi
+import org.jellyfin.sdk.api.operations.UserApi
+import org.jellyfin.sdk.api.operations.UserLibraryApi
+import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
+import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject

@@ -3,8 +3,8 @@ package com.makd.afinity.data.paging
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.makd.afinity.data.models.media.AfinityEpisode
-import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.media.MediaRepository
 import timber.log.Timber
 import java.util.UUID
 

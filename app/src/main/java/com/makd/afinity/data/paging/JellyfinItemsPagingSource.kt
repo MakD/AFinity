@@ -4,8 +4,8 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
-import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.ui.library.FilterType
 import timber.log.Timber

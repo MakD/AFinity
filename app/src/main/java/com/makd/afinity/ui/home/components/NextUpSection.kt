@@ -11,14 +11,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 import com.makd.afinity.ui.theme.calculateCardHeight
+import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 
 @Composable
 fun NextUpSection(

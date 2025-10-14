@@ -3,20 +3,19 @@ package com.makd.afinity.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.common.SortBy
-import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
 import javax.inject.Inject
 

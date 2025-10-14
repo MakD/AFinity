@@ -2,8 +2,9 @@ package com.makd.afinity.ui.player.utils
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
-import android.content.Context
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.delay
 import timber.log.Timber

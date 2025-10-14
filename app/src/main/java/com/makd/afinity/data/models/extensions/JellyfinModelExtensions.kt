@@ -1,10 +1,32 @@
 package com.makd.afinity.data.models.extensions
 
 import android.net.Uri
-import com.makd.afinity.data.models.media.*
 import com.makd.afinity.data.models.common.CollectionType
-import org.jellyfin.sdk.model.api.*
+import com.makd.afinity.data.models.media.AfinityBoxSet
+import com.makd.afinity.data.models.media.AfinityChapter
+import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityExternalUrl
+import com.makd.afinity.data.models.media.AfinityFolder
+import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMediaStream
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPerson
+import com.makd.afinity.data.models.media.AfinityPersonDetail
+import com.makd.afinity.data.models.media.AfinityPersonImage
+import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinitySource
+import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityExternalUrl
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.BaseItemPerson
+import org.jellyfin.sdk.model.api.ImageType
+import org.jellyfin.sdk.model.api.LocationType
+import org.jellyfin.sdk.model.api.PlayAccess
 
 
 fun BaseItemDto.toAfinityExternalUrls(): List<AfinityExternalUrl>? {

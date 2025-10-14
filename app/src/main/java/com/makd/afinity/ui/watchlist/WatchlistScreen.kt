@@ -27,9 +27,9 @@ import androidx.navigation.NavController
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
-import com.makd.afinity.ui.components.AfinityTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
