@@ -143,17 +143,14 @@ fun FavoritesScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 16.dp),
+                            contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(24.dp)
                         ) {
                             if (uiState.movies.isNotEmpty()) {
                                 item {
-                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
-                                        FavoriteSectionHeader(title = "Movies")
-                                    }
-                                }
-                                item {
-                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                    FavoriteSection(
+                                        title = "Movies (${uiState.movies.size})"
+                                    ) {
                                         FavoriteMoviesRow(
                                             movies = uiState.movies,
                                             onItemClick = onItemClick
@@ -164,12 +161,9 @@ fun FavoritesScreen(
 
                             if (uiState.shows.isNotEmpty()) {
                                 item {
-                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
-                                        FavoriteSectionHeader(title = "TV Shows")
-                                    }
-                                }
-                                item {
-                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                    FavoriteSection(
+                                        title = "TV Shows (${uiState.shows.size})"
+                                    ) {
                                         FavoriteShowsRow(
                                             shows = uiState.shows,
                                             onItemClick = onItemClick
@@ -180,12 +174,9 @@ fun FavoritesScreen(
 
                             if (uiState.episodes.isNotEmpty()) {
                                 item {
-                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
-                                        FavoriteSectionHeader(title = "Episodes")
-                                    }
-                                }
-                                item {
-                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                    FavoriteSection(
+                                        title = "Episodes (${uiState.episodes.size})"
+                                    ) {
                                         FavoriteEpisodesRow(
                                             episodes = uiState.episodes,
                                             onItemClick = onItemClick
@@ -196,12 +187,9 @@ fun FavoritesScreen(
 
                             if (uiState.people.isNotEmpty()) {
                                 item {
-                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
-                                        FavoriteSectionHeader(title = "People")
-                                    }
-                                }
-                                item {
-                                    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                                    FavoriteSection(
+                                        title = "People (${uiState.people.size})"
+                                    ) {
                                         FavoritePeopleRow(
                                             people = uiState.people,
                                             onPersonClick = onPersonClick
@@ -218,14 +206,24 @@ fun FavoritesScreen(
 }
 
 @Composable
-private fun FavoriteSectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.headlineSmall.copy(
-            fontWeight = FontWeight.Bold
-        ),
-        color = MaterialTheme.colorScheme.onBackground
-    )
+private fun FavoriteSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        content()
+    }
 }
 
 @Composable

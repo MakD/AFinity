@@ -154,11 +154,11 @@ private fun WatchlistSection(
     onItemClick: (AfinityItem) -> Unit
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
             text = "$title (${items.size})",
-            style = MaterialTheme.typography.titleLarge.copy(
+            style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
             color = MaterialTheme.colorScheme.onBackground
