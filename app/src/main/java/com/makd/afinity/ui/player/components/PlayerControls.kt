@@ -35,6 +35,7 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.player.PlayerViewModel
 import org.jellyfin.sdk.model.api.MediaStreamType
+import kotlin.math.abs
 
 data class AudioStreamOption(
     val stream: AfinityMediaStream,
@@ -673,9 +674,19 @@ private fun SeekBar(
                 fontSize = 12.sp
             )
             Text(
-                text = formatTime(duration),
+                text = if (uiState.showRemainingTime) {
+                    "${formatTime((duration - position).coerceAtLeast(0L))}"
+                } else {
+                    formatTime(duration)
+                },
                 color = Color.White,
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    onPlayerEvent(PlayerEvent.ToggleRemainingTime)
+                }
             )
         }
 
@@ -712,7 +723,7 @@ private fun SeekBar(
 }
 
 private fun formatTime(timeMs: Long): String {
-    val totalSeconds = (timeMs / 1000).toInt()
+    val totalSeconds = abs(timeMs / 1000).toInt()
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60

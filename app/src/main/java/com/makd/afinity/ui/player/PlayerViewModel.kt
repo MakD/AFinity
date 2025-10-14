@@ -261,7 +261,7 @@ class PlayerViewModel @Inject constructor(
                 }
                 is PlayerEvent.Stop -> player.stop()
                 is PlayerEvent.OnSeekBarDragStart -> {
-                    updateUiState { it.copy(isSeeking = true) }
+                    updateUiState { it.copy(isSeeking = true, dragStartPosition = uiState.value.currentPosition) }
                     onSeekBarPreview(uiState.value.currentPosition, true)
                 }
                 is PlayerEvent.OnSeekBarValueChange -> {
@@ -270,8 +270,11 @@ class PlayerViewModel @Inject constructor(
                 }
                 is PlayerEvent.OnSeekBarDragFinished -> {
                     player.seekTo(uiState.value.seekPosition)
-                    updateUiState { it.copy(isSeeking = false, currentPosition = uiState.value.seekPosition) }
+                    updateUiState { it.copy(isSeeking = false, currentPosition = uiState.value.seekPosition, dragStartPosition = 0L) }
                     onSeekBarPreview(0, false)
+                }
+                is PlayerEvent.ToggleRemainingTime -> {
+                    updateUiState { it.copy(showRemainingTime = !it.showRemainingTime) }
                 }
             }
         }
@@ -440,7 +443,7 @@ class PlayerViewModel @Inject constructor(
                                         }
                                     }
                                     if (individualThumbnails.size >= info.thumbnailCount) break
-                                }
+                                 }
                             } else {
                                 Timber.d("Failed to load tile $tileIndex")
                                 break
@@ -745,30 +748,16 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    private var seekHideJob: Job? = null
-
-    fun onSeekGesture(delta: Float) {
-        val currentPosition = uiState.value.currentPosition
+    fun onSeekGestureChange(delta: Float) {
         val duration = uiState.value.duration
+        if (duration <= 0) return
 
+        val startPosition = uiState.value.dragStartPosition
         val maxSeekMs = 120000L
         val seekDelta = (delta * maxSeekMs).toLong()
-        val newPosition = (currentPosition + seekDelta).coerceIn(0L, duration)
+        val newPosition = (startPosition + seekDelta).coerceIn(0L, duration)
 
-        handlePlayerEvent(PlayerEvent.Seek(newPosition))
-
-        updateUiState {
-            it.copy(
-                showSeekIndicator = true,
-                seekDirection = if (seekDelta > 0) 1 else -1
-            )
-        }
-
-        seekHideJob?.cancel()
-        seekHideJob = viewModelScope.launch {
-            delay(1000)
-            updateUiState { it.copy(showSeekIndicator = false) }
-        }
+        handlePlayerEvent(PlayerEvent.OnSeekBarValueChange(newPosition))
     }
 
     fun onSeekBarPreview(position: Long, isActive: Boolean) {
@@ -887,6 +876,8 @@ class PlayerViewModel @Inject constructor(
         val showVolumeIndicator: Boolean = false,
         val volumeLevel: Int = 50,
         val isSeeking: Boolean = false,
-        val seekPosition: Long = 0L
+        val seekPosition: Long = 0L,
+        val dragStartPosition: Long = 0L,
+        val showRemainingTime: Boolean = false
     )
 }

@@ -161,15 +161,15 @@ fun PlayerScreen(
                 },
                 onSeekGesture = { delta ->
                     if (!uiState.isControlsLocked) {
-                        viewModel.onSeekGesture(delta)
+                        viewModel.onSeekGestureChange(delta)
                     }
                 },
                 onSeekPreview = { isActive ->
                     if (!uiState.isControlsLocked) {
                         if (isActive) {
-                            viewModel.onSeekBarPreview(uiState.currentPosition, true)
+                            viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragStart)
                         } else {
-                            viewModel.onSeekBarPreview(0, false)
+                            viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragFinished)
                         }
                     }
                 },

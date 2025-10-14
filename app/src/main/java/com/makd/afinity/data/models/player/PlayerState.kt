@@ -55,6 +55,7 @@ sealed class PlayerEvent {
     object OnSeekBarDragStart : PlayerEvent()
     data class OnSeekBarValueChange(val positionMs: Long) : PlayerEvent()
     object OnSeekBarDragFinished : PlayerEvent()
+    object ToggleRemainingTime : PlayerEvent()
 }
 
 data class GestureConfig(
