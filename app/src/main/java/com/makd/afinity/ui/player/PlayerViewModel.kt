@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.provider.Settings
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.ViewModel
@@ -91,6 +92,43 @@ class PlayerViewModel @Inject constructor(
         initializePlayer()
         startPositionUpdateLoop()
         startProgressReporting()
+        initializeBrightness()
+    }
+
+    private fun initializeBrightness() {
+        val systemBrightness = getSystemBrightness()
+        _uiState.value = _uiState.value.copy(brightnessLevel = systemBrightness)
+    }
+
+    private fun getSystemBrightness(): Float {
+        return try {
+            val brightnessMode = Settings.System.getInt(
+                context.contentResolver,
+                Settings.System.SCREEN_BRIGHTNESS_MODE
+            )
+
+            if (brightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC) {
+                // In automatic mode, we might not be able to get a precise value directly.
+                // A common fallback is to use the current activity's window brightness,
+                // but that's not directly accessible here.
+                // For now, return a default or attempt to read the last manual setting.
+                // Or, if there's a specific brightness that's always applied, use that.
+                Timber.d("System brightness is in automatic mode. Returning default brightness.")
+                0.5f // Default brightness if in automatic mode
+            } else {
+                val brightness = Settings.System.getInt(
+                    context.contentResolver,
+                    Settings.System.SCREEN_BRIGHTNESS
+                )
+                brightness / 255.0f
+            }
+        } catch (e: Settings.SettingNotFoundException) {
+            Timber.e(e, "System brightness setting not found. Returning default brightness.")
+            0.5f // Default brightness if setting not found
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get system brightness. Returning default brightness.")
+            0.5f // Generic fallback
+        }
     }
 
     private fun startPositionUpdateLoop() {
@@ -690,7 +728,6 @@ class PlayerViewModel @Inject constructor(
     fun onSeekForward() {
         handlePlayerEvent(PlayerEvent.SeekRelative(10000L))
     }
-
     fun onNextEpisode() {
         viewModelScope.launch {
             playlistManager.getNextItem()?.let { nextItem ->
