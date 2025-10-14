@@ -108,13 +108,8 @@ class PlayerViewModel @Inject constructor(
             )
 
             if (brightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC) {
-                // In automatic mode, we might not be able to get a precise value directly.
-                // A common fallback is to use the current activity's window brightness,
-                // but that's not directly accessible here.
-                // For now, return a default or attempt to read the last manual setting.
-                // Or, if there's a specific brightness that's always applied, use that.
                 Timber.d("System brightness is in automatic mode. Returning default brightness.")
-                0.5f // Default brightness if in automatic mode
+                0.5f
             } else {
                 val brightness = Settings.System.getInt(
                     context.contentResolver,
@@ -124,10 +119,10 @@ class PlayerViewModel @Inject constructor(
             }
         } catch (e: Settings.SettingNotFoundException) {
             Timber.e(e, "System brightness setting not found. Returning default brightness.")
-            0.5f // Default brightness if setting not found
+            0.5f
         } catch (e: Exception) {
             Timber.e(e, "Failed to get system brightness. Returning default brightness.")
-            0.5f // Generic fallback
+            0.5f
         }
     }
 

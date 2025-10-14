@@ -115,7 +115,7 @@ fun GestureHandler(
 
                         val verticalDrag = -dragAmount.y
                         val horizontalDrag = dragAmount.x
-                        val minimumDragDistance = 5f // Reduced from 15f
+                        val minimumDragDistance = 5f
 
                         if (gestureType == null && (abs(verticalDrag) > minimumDragDistance || abs(horizontalDrag) > minimumDragDistance)) {
                             gestureType = when {
@@ -135,7 +135,7 @@ fun GestureHandler(
                             GestureType.BRIGHTNESS -> {
                                 if (abs(verticalDrag) >= minimumDragDistance) {
                                     totalDragDelta += verticalDrag
-                                    if (abs(totalDragDelta) >= 10f) { // Reduced from 30f
+                                    if (abs(totalDragDelta) >= 10f) {
                                         val distanceFull = screenHeight * 0.66f
                                         val gestureStrength = totalDragDelta / distanceFull
                                         onBrightnessGesture(gestureStrength)
@@ -146,7 +146,7 @@ fun GestureHandler(
                             GestureType.VOLUME -> {
                                 if (abs(verticalDrag) >= minimumDragDistance) {
                                     totalDragDelta += verticalDrag
-                                    if (abs(totalDragDelta) >= 5f) { // Reduced from 15f
+                                    if (abs(totalDragDelta) >= 5f) {
                                         val distanceFull = screenHeight * 0.35f
                                         val gestureStrength = totalDragDelta / distanceFull
                                         onVolumeGesture(gestureStrength)
@@ -156,7 +156,7 @@ fun GestureHandler(
                             }
                             GestureType.SEEK -> {
                                 totalHorizontalDelta += horizontalDrag
-                                val seekActivationThreshold = 10f // Reduced from 30f
+                                val seekActivationThreshold = 10f
                                 if (abs(totalHorizontalDelta) > seekActivationThreshold) {
                                     if (!isSeeking) {
                                         isSeeking = true
