@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.BrightnessHigh
 import androidx.compose.material.icons.filled.BrightnessLow
 import androidx.compose.material.icons.filled.BrightnessMedium
@@ -276,8 +279,8 @@ private fun getBrightnessIcon(level: Float): ImageVector {
 
 private fun getVolumeIcon(level: Int): ImageVector {
     return when {
-        level == 0 -> Icons.Default.VolumeOff
-        level < 30 -> Icons.Default.VolumeDown
-        else -> Icons.Default.VolumeUp
+        level == 0 -> Icons.AutoMirrored.Filled.VolumeOff
+        level < 30 -> Icons.AutoMirrored.Filled.VolumeDown
+        else -> Icons.AutoMirrored.Filled.VolumeUp
     }
 }

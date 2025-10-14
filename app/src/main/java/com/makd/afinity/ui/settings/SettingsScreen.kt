@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
@@ -138,7 +140,7 @@ fun SettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -366,7 +368,7 @@ private fun AccountSection(
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Outlined.Logout,
+                    imageVector = Icons.AutoMirrored.Outlined.Logout,
                     contentDescription = "Logout",
                     modifier = Modifier.size(20.dp)
                 )
@@ -745,7 +747,7 @@ private fun LogoutConfirmationDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                imageVector = Icons.Outlined.Logout,
+                imageVector = Icons.AutoMirrored.Outlined.Logout,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(32.dp)

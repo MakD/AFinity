@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
@@ -263,7 +264,7 @@ fun LibraryContentScreen(
                 .padding(end = 24.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.Sort,
+                imageVector = Icons.AutoMirrored.Filled.Sort,
                 contentDescription = "Sort"
             )
         }

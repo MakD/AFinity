@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Folder
@@ -284,9 +286,9 @@ private fun getLibraryIcon(type: CollectionType): ImageVector {
         CollectionType.Movies -> Icons.Filled.Movie
         CollectionType.TvShows -> Icons.Filled.Tv
         CollectionType.Music -> Icons.Filled.LibraryMusic
-        CollectionType.Books -> Icons.Filled.MenuBook
+        CollectionType.Books -> Icons.AutoMirrored.Filled.MenuBook
         CollectionType.HomeVideos -> Icons.Filled.VideoLibrary
-        CollectionType.Playlists -> Icons.Filled.PlaylistPlay
+        CollectionType.Playlists -> Icons.AutoMirrored.Filled.PlaylistPlay
         CollectionType.LiveTv -> Icons.Filled.LiveTv
         CollectionType.BoxSets -> Icons.Filled.CollectionsBookmark
         CollectionType.Mixed -> Icons.Filled.Apps
