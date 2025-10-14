@@ -44,13 +44,15 @@ fun OptimizedContinueWatchingSection(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
+        val uniqueItems = items.distinctBy { it.id }
+
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
             items(
-                items = items,
+                items = uniqueItems,
                 key = { item -> "continue_${item.id}" }
             ) { item ->
                 ContinueWatchingCard(
@@ -84,13 +86,15 @@ fun OptimizedLatestMoviesSection(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
+        val uniqueItems = items.distinctBy { it.id }
+
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
             items(
-                items = items,
+                items = uniqueItems,
                 key = { item -> "latest_movie_${item.id}" }
             ) { item ->
                 MediaItemCard(

@@ -385,6 +385,7 @@ class PlayerViewModel @Inject constructor(
             Timber.e(e, "Failed to load media")
             updateUiState { it.copy(isLoading = false, showError = true, errorMessage = "An unexpected error occurred.") }
         }
+        updateCurrentTrackSelections()
     }
 
     private fun getMimeType(codec: String): String {
@@ -468,6 +469,11 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+        super.onTracksChanged(tracks)
+        updateCurrentTrackSelections()
+    }
+
     fun switchToTrack(trackType: @C.TrackType Int, index: Int) {
         if (index == -1) {
             player.trackSelectionParameters = player.trackSelectionParameters
@@ -489,6 +495,26 @@ class PlayerViewModel @Inject constructor(
                     .setTrackTypeDisabled(trackType, false)
                     .build()
             }
+        }
+        updateCurrentTrackSelections()
+    }
+
+    private fun updateCurrentTrackSelections() {
+        val currentAudioTrackIndex = player.currentTracks.groups
+            .filter { it.type == C.TRACK_TYPE_AUDIO && it.isSupported }
+            .indexOfFirst { it.isSelected }
+            .takeIf { it != -1 }
+
+        val currentSubtitleTrackIndex = player.currentTracks.groups
+            .filter { it.type == C.TRACK_TYPE_TEXT && it.isSupported }
+            .indexOfFirst { it.isSelected }
+            .takeIf { it != -1 }
+
+        updateUiState {
+            it.copy(
+                audioStreamIndex = currentAudioTrackIndex,
+                subtitleStreamIndex = currentSubtitleTrackIndex
+            )
         }
     }
 
@@ -643,14 +669,10 @@ class PlayerViewModel @Inject constructor(
 
     fun onAudioTrackSelect(index: Int) {
         switchToTrack(C.TRACK_TYPE_AUDIO, index)
-        updateUiState { it.copy(audioStreamIndex = if (index == -1) null else index) }
-        Timber.d("Selected audio track: $index")
     }
 
     fun onSubtitleTrackSelect(index: Int) {
         switchToTrack(C.TRACK_TYPE_TEXT, index)
-        updateUiState { it.copy(subtitleStreamIndex = if (index == -1) null else index) }
-        Timber.d("Selected subtitle track: $index")
     }
 
     fun onPlaybackSpeedChange(speed: Float) {
@@ -753,7 +775,7 @@ class PlayerViewModel @Inject constructor(
         if (duration <= 0) return
 
         val startPosition = uiState.value.dragStartPosition
-        val maxSeekMs = 120000L
+        val maxSeekMs = 1200000L
         val seekDelta = (delta * maxSeekMs).toLong()
         val newPosition = (startPosition + seekDelta).coerceIn(0L, duration)
 
