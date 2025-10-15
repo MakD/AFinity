@@ -76,7 +76,8 @@ fun OptimizedAsyncImage(
             .memoryCachePolicy(CachePolicy.ENABLED)
             .diskCachePolicy(CachePolicy.ENABLED)
             .networkCachePolicy(CachePolicy.ENABLED)
-            .crossfade(150)
+            .crossfade(true)
+            .placeholderMemoryCacheKey(blurHash)
             .listener(
                 onStart = { onLoading?.invoke(true) },
                 onSuccess = { _, _ ->
