@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -450,35 +451,42 @@ private fun TopControls(
                     val seriesName = currentItem.seriesName
 
                     if (seasonNumber != null && episodeNumber != null) {
-                        if (currentItem.seriesLogo != null) {
-                            val logoUrl = currentItem.seriesLogo.toString().let { url ->
-                                if (url.contains("?")) "$url&format=png" else "$url?format=png"
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.wrapContentWidth()
+                        ) {
+                            if (currentItem.seriesLogo != null) {
+                                val logoUrl = currentItem.seriesLogo.toString().let { url ->
+                                    if (url.contains("?")) "$url&format=png" else "$url?format=png"
+                                }
+                                OptimizedAsyncImage(
+                                    imageUrl = logoUrl,
+                                    contentDescription = "Series Logo",
+                                    modifier = Modifier
+                                        .height(60.dp)
+                                        .widthIn(max = 200.dp),
+                                    contentScale = ContentScale.Fit
+                                )
+                            } else {
+                                Text(
+                                    text = seriesName ?: "",
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 18.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                             }
-                            OptimizedAsyncImage(
-                                imageUrl = logoUrl,
-                                contentDescription = "Series Logo",
-                                modifier = Modifier
-                                    .height(60.dp)
-                                    .widthIn(max = 200.dp),
-                                contentScale = ContentScale.Fit
-                            )
-                        } else {
                             Text(
-                                text = seriesName ?: "",
+                                text = "S${
+                                    seasonNumber.toString().padStart(2, '0')
+                                }:E${episodeNumber.toString().padStart(2, '0')}: $episodeTitle",
                                 color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 18.sp,
+                                fontSize = 14.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
-                        Text(
-                            text = "S${seasonNumber.toString().padStart(2, '0')}:E${episodeNumber.toString().padStart(2, '0')}: $episodeTitle",
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 14.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
                     }
                 }
             }
