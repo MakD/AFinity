@@ -1,5 +1,9 @@
 # Afinity - Yet Another Jellyfin Client
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MakD/AFinity/refs/heads/master/screenshots/Logo/GithubBanner.png" alt="AFinity Banner" width="100%">
+</p>
+
 [![Release](https://img.shields.io/github/v/release/MakD/AFinity?style=for-the-badge&color=4a90e2)](https://github.com/MakD/AFinity/releases)
 [![Stars](https://img.shields.io/github/stars/MakD/AFinity?style=for-the-badge&color=7b68ee)](https://github.com/MakD/AFinity/stargazers)
 [![Issues](https://img.shields.io/github/issues/MakD/AFinity?style=for-the-badge&color=e94b3c)](https://github.com/MakD/AFinity/issues)
@@ -50,15 +54,21 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
 
 ## Screenshots
 
-| Feature           | Preview                                          |
-| ----------------- | ------------------------------------------------ |
-| Login             | ![Login](screenshots/login.png)                  |
-| Home Screen       | ![Home Screen](screenshots/home.png)             |
-| Library Browser   | ![Library](screenshots/library.png)              |
-| Movie Details     | ![Movie Details](screenshots/movie_details.png)  |
-| TV Show Details   | ![TV Show Details](screenshots/show_details.png) |
-| Episode Selection | ![Episodes](screenshots/episodes.png)            |
-| Person Details    | ![Person](screenshots/person.png)                |
+<p align="center">
+  <img src="screenshots/home.png" width="30%">
+  &nbsp;
+  <img src="screenshots/movie_details.png" width="30%">
+  &nbsp;
+  <img src="screenshots/show_details.png" width="30%">
+  &nbsp;
+  <img src="screenshots/library.png" width="30%">
+  &nbsp;
+  <img src="screenshots/watchlist.png" width="30%">
+  &nbsp;
+  <img src="screenshots/person.png" width="30%">
+  &nbsp;
+  <img src="screenshots/player.png" width="60%">
+</p>
 
 ## Installation
 
@@ -165,6 +175,9 @@ Afinity respects your privacy:
 - **All data stays local** or with your own Jellyfin server
 - **No third-party services** are used without your explicit consent
 - **Source code is open** for full transparency
+
+## Disclaimer
+AFinity does not support or condone piracy. The app is only for streaming media you personally own. It includes no media content, and any references or support requests related to piracy or related tools are strictly prohibited.
 
 ## License
 
