@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.logoBlurHash
+import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.ui.components.OptimizedAsyncImage
@@ -422,7 +423,7 @@ private fun TopControls(
                 if (currentItem is com.makd.afinity.data.models.media.AfinityMovie) {
                     if (currentItem.images?.logo != null) {
                         OptimizedAsyncImage(
-                            imageUrl = currentItem.images.logo.toString(),
+                            imageUrl = currentItem.images.logoImageUrlWithTransparency.toString(),
                             contentDescription = "Logo",
                             modifier = Modifier
                                 .height(60.dp)
@@ -450,8 +451,11 @@ private fun TopControls(
 
                     if (seasonNumber != null && episodeNumber != null) {
                         if (currentItem.seriesLogo != null) {
+                            val logoUrl = currentItem.seriesLogo.toString().let { url ->
+                                if (url.contains("?")) "$url&format=png" else "$url?format=png"
+                            }
                             OptimizedAsyncImage(
-                                imageUrl = currentItem.seriesLogo.toString(),
+                                imageUrl = logoUrl,
                                 contentDescription = "Series Logo",
                                 modifier = Modifier
                                     .height(60.dp)
