@@ -82,6 +82,7 @@ import com.makd.afinity.ui.home.components.OptimizedContinueWatchingSection
 import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
 import com.makd.afinity.ui.home.components.OptimizedLatestTvSeriesSection
 import com.makd.afinity.ui.home.components.OptimizedRecommendationCategorySection
+import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
@@ -89,6 +90,7 @@ import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    mainUiState: MainUiState,
     onItemClick: (AfinityItem) -> Unit,
     onPlayClick: (AfinityItem) -> Unit,
     onProfileClick: () -> Unit,
@@ -152,7 +154,8 @@ fun HomeScreen(
             }
         } ?: run {
             val configuration = LocalConfiguration.current
-            val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            val isLandscape =
+                configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
             Box(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
@@ -280,17 +283,17 @@ fun HomeScreen(
             }
         }
 
-            TransparentTopBar(
-                onSearchClick = {
-                    val route = Destination.createSearchRoute()
-                    navController.navigate(route)
-                },
-                onProfileClick = onProfileClick,
-                userProfileImageUrl = uiState.userProfileImageUrl,
-                backgroundOpacity = topBarOpacity
-            )
-        }
+        TransparentTopBar(
+            onSearchClick = {
+                val route = Destination.createSearchRoute()
+                navController.navigate(route)
+            },
+            onProfileClick = onProfileClick,
+            userProfileImageUrl = mainUiState.userProfileImageUrl,
+            backgroundOpacity = topBarOpacity
+        )
     }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -676,9 +679,11 @@ private fun ContinueWatchingSkeleton() {
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                         )
                     ) {
-                        Box(modifier = Modifier
-                            .fillMaxSize()
-                            .shimmerEffect())
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .shimmerEffect()
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -734,9 +739,11 @@ private fun MoviesSectionSkeleton() {
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
-                        Box(modifier = Modifier
-                            .fillMaxSize()
-                            .shimmerEffect())
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .shimmerEffect()
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -807,9 +814,11 @@ private fun TvSeriesSectionSkeleton() {
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            Box(modifier = Modifier
-                                .fillMaxSize()
-                                .shimmerEffect())
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .shimmerEffect()
+                            )
 
                             Box(
                                 modifier = Modifier
@@ -894,9 +903,11 @@ private fun RecommendationsSkeleton() {
                             ),
                             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
-                            Box(modifier = Modifier
-                                .fillMaxSize()
-                                .shimmerEffect())
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .shimmerEffect()
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))

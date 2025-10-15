@@ -51,6 +51,7 @@ import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
 import com.makd.afinity.ui.libraries.LibrariesScreen
 import com.makd.afinity.ui.library.LibraryContentScreen
+import com.makd.afinity.ui.main.MainViewModel
 import com.makd.afinity.ui.person.PersonScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
@@ -63,8 +64,10 @@ import timber.log.Timber
 @Composable
 fun MainNavigation(
     modifier: Modifier = Modifier,
+    mainViewModel: MainViewModel = hiltViewModel(),
     viewModel: MainNavigationViewModel = hiltViewModel()
 ) {
+    val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val watchlistRepository: WatchlistRepository = hiltViewModel<MainNavigationViewModel>().watchlistRepository
     val watchlistCount by watchlistRepository.getWatchlistCountFlow().collectAsStateWithLifecycle(initialValue = 0)
     val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
@@ -155,7 +158,8 @@ fun MainNavigation(
         navigationSuiteColors = androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults.colors(
             navigationBarContainerColor = MaterialTheme.colorScheme.surface,
             navigationRailContainerColor = MaterialTheme.colorScheme.surface
-        )    ) {
+        )
+    ) {
         NavHost(
             navController = navController,
             startDestination = Destination.HOME.route,
@@ -195,6 +199,7 @@ fun MainNavigation(
                         navController.navigate(route)
                     },
                     navController = navController,
+                    mainUiState = mainUiState,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -213,6 +218,7 @@ fun MainNavigation(
                         navController.navigate(route)
                     },
                     navController = navController,
+                    mainUiState = mainUiState,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -305,8 +311,9 @@ fun MainNavigation(
                         navController.navigate(route)
                     },
                     modifier = Modifier.fillMaxSize(),
-                    navController = navController,
-                    )
+                    mainUiState = mainUiState,
+                    navController = navController
+                )
             }
 
             composable(Destination.WATCHLIST.route) {
@@ -316,8 +323,9 @@ fun MainNavigation(
                         navController.navigate(route)
                     },
                     modifier = Modifier.fillMaxSize(),
-                    navController = navController,
-                    )
+                    mainUiState = mainUiState,
+                    navController = navController
+                )
             }
 
             composable(Destination.SEARCH_ROUTE) {

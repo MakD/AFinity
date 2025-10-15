@@ -39,14 +39,10 @@ class LibrariesViewModel @Inject constructor(
 
             try {
                 val libraries = jellyfinRepository.getLibraries()
-
-                val userProfileImageUrl = loadUserProfileImage()
-
                 _uiState.value = _uiState.value.copy(
                     libraries = libraries,
                     isLoading = false,
-                    error = null,
-                    userProfileImageUrl = userProfileImageUrl
+                    error = null
                 )
 
                 lastLoadTime = currentTime
@@ -62,15 +58,6 @@ class LibrariesViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadUserProfileImage(): String? {
-        return try {
-            jellyfinRepository.getUserProfileImageUrl()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get user profile image URL")
-            null
-        }
-    }
-
     fun onLibraryClick(library: AfinityCollection) {
         Timber.d("Library clicked: ${library.name} (${library.type})")
     }
@@ -79,6 +66,5 @@ class LibrariesViewModel @Inject constructor(
 data class LibrariesUiState(
     val libraries: List<AfinityCollection> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null,
-    val userProfileImageUrl: String? = null
+    val error: String? = null
 )

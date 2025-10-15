@@ -34,8 +34,6 @@ class WatchlistViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-                val userProfileImageUrl = loadUserProfileImage()
-
                 val movies = watchlistRepository.getWatchlistMovies()
                 val shows = watchlistRepository.getWatchlistShows()
                 val episodes = watchlistRepository.getWatchlistEpisodes()
@@ -46,7 +44,6 @@ class WatchlistViewModel @Inject constructor(
                     shows = shows.sortedBy { it.name },
                     episodes = episodes.sortedBy { it.name },
                     error = null,
-                    userProfileImageUrl = userProfileImageUrl
                 )
 
                 Timber.d("Loaded watchlist: ${movies.size} movies, ${shows.size} shows, ${episodes.size} episodes")
@@ -58,15 +55,6 @@ class WatchlistViewModel @Inject constructor(
                     error = "Failed to load watchlist: ${e.message}"
                 )
             }
-        }
-    }
-
-    private suspend fun loadUserProfileImage(): String? {
-        return try {
-            jellyfinRepository.getUserProfileImageUrl()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get user profile image URL")
-            null
         }
     }
 

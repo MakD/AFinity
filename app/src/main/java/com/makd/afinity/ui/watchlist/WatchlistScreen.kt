@@ -30,10 +30,12 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.main.MainUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchlistScreen(
+    mainUiState: MainUiState,
     onItemClick: (AfinityItem) -> Unit = {},
     navController: NavController,
     modifier: Modifier = Modifier,
@@ -57,7 +59,7 @@ fun WatchlistScreen(
                     val route = Destination.createSettingsRoute()
                     navController.navigate(route)
                 },
-                userProfileImageUrl = uiState.userProfileImageUrl
+                userProfileImageUrl = mainUiState.userProfileImageUrl
             )
         },
         modifier = modifier

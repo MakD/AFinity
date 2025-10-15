@@ -115,12 +115,6 @@ class HomeViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(recommendationCategories = recommendations)
             }
         }
-
-        viewModelScope.launch {
-            appDataRepository.userProfileImageUrl.collect { profileUrl ->
-                _uiState.value = _uiState.value.copy(userProfileImageUrl = profileUrl)
-            }
-        }
     }
 
     fun onHeroItemClick(item: AfinityItem) {
@@ -178,7 +172,6 @@ data class HomeUiState(
     val recommendationCategories: List<AfinityRecommendationCategory> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val userProfileImageUrl: String? = null,
     val combineLibrarySections: Boolean = false,
     val separateMovieLibrarySections: List<Pair<AfinityCollection, List<AfinityMovie>>> = emptyList(),
     val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList()

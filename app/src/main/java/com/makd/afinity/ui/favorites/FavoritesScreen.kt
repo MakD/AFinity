@@ -48,10 +48,12 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.main.MainUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
+    mainUiState: MainUiState,
     onItemClick: (AfinityItem) -> Unit = {},
     onPersonClick: (String) -> Unit = {},
     navController: NavController,
@@ -76,7 +78,7 @@ fun FavoritesScreen(
                     val route = Destination.createSettingsRoute()
                     navController.navigate(route)
                 },
-                userProfileImageUrl = uiState.userProfileImageUrl
+                userProfileImageUrl = mainUiState.userProfileImageUrl
             )
         },
         modifier = modifier

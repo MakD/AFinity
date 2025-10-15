@@ -61,11 +61,13 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.rememberGridMinColumnSize
 import kotlin.math.min
 
 @Composable
 fun LibrariesScreen(
+    mainUiState: MainUiState,
     onLibraryClick: (AfinityCollection) -> Unit,
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -144,7 +146,7 @@ fun LibrariesScreen(
                 navController.navigate(route)
             },
             onProfileClick = onProfileClick,
-            userProfileImageUrl = uiState.userProfileImageUrl
+            userProfileImageUrl = mainUiState.userProfileImageUrl
         )
     }
 }
