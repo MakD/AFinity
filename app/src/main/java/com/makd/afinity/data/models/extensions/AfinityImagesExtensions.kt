@@ -16,3 +16,7 @@ val AfinityImages.thumbBlurHash: String? get() = thumbImageBlurHash
 val AfinityImages.logoBlurHash: String? get() = logoImageBlurHash
 val AfinityImages.showBackdropBlurHash: String? get() = showBackdropImageBlurHash
 val AfinityImages.showLogoBlurHash: String? get() = showLogoImageBlurHash
+val AfinityImages.logoImageUrlWithTransparency: String?
+    get() = logoImageUrl?.let { url ->
+        if (url.contains("?")) "$url&format=png" else "$url?format=png"
+    }

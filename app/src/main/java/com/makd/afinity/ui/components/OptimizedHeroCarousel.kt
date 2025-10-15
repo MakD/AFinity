@@ -56,6 +56,7 @@ import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.logoBlurHash
 import com.makd.afinity.data.models.extensions.logoImageUrl
+import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -230,7 +231,7 @@ fun HeroCarouselPortrait(
                     ) {
                         item.images.logo?.let { logoUri ->
                             OptimizedAsyncImage(
-                                imageUrl = item.images.logoImageUrl,
+                                imageUrl = item.images.logoImageUrlWithTransparency,
                                 contentDescription = "${item.name} logo",
                                 blurHash = item.images.logoBlurHash,
                                 targetWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp,
@@ -709,7 +710,7 @@ private fun HeroCarouselLandscape(
                         ) {
                             item.images.logo?.let { logoUri ->
                                 OptimizedAsyncImage(
-                                    imageUrl = item.images.logoImageUrl,
+                                    imageUrl = item.images.logoImageUrlWithTransparency,
                                     contentDescription = "${item.name} logo",
                                     blurHash = item.images.logoBlurHash,
                                     targetWidth = (LocalConfiguration.current.screenWidthDp * 0.4f).dp,

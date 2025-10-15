@@ -54,6 +54,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.data.models.extensions.logoImageUrl
+import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -212,7 +213,7 @@ private fun ItemDetailContent(
                     val logoContentAlignment = if (isLandscape) Alignment.CenterStart else Alignment.Center
 
                     OptimizedAsyncImage(
-                        imageUrl = item.images.logoImageUrl,
+                        imageUrl = item.images.logoImageUrlWithTransparency,
                         contentDescription = "${item.name} logo",
                         targetWidth = 240.dp,
                         targetHeight = 120.dp,
