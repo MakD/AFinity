@@ -30,6 +30,18 @@ android {
         buildConfigField("int", "VERSION_CODE", appVersionCode)
     }
 
+    applicationVariants.all {
+        val variant = this
+        variant.outputs
+            .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
+            .forEach { output ->
+                if (variant.buildType.name == "release") {
+                    val outputFileName = "afinity-v${variant.versionName}-${output.getFilter("ABI")}.apk"
+                    output.outputFileName = outputFileName
+                }
+            }
+    }
+
     buildTypes {
         debug {
             isDebuggable = true
@@ -47,6 +59,15 @@ android {
             )
         }
     }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
