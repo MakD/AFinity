@@ -553,7 +553,7 @@ private fun VideoMetadataChip(text: String) {
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
         modifier = Modifier
             .background(
-                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
                 RoundedCornerShape(4.dp)
             )
             .padding(horizontal = 6.dp, vertical = 2.dp)
@@ -567,7 +567,7 @@ private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
             .background(
-                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
                 RoundedCornerShape(4.dp)
             )
             .padding(horizontal = 6.dp, vertical = 2.dp)
@@ -576,7 +576,7 @@ private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
             painter = painterResource(id = iconRes),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.size(12.dp)
+            modifier = Modifier.size(11.dp)
         )
         Text(
             text = text,

@@ -432,13 +432,15 @@ private fun HighestRatedSection(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
+        val uniqueItems = items.distinctBy { it.id }
+
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(22.dp),
             contentPadding = PaddingValues(horizontal = 4.dp)
         ) {
             itemsIndexed(
-                items = items,
+                items = uniqueItems,
                 key = { _, item -> item.id }
             ) { index, item ->
                 HighestRatedCard(
