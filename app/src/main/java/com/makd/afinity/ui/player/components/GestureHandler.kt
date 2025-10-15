@@ -41,6 +41,8 @@ fun GestureHandler(
 
     val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
     val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
+    val exclusionHorizontal = with(density) { 32.dp.toPx() }
+    val exclusionVertical = with(density) { 48.dp.toPx() }
 
     val leftZoneWidth = screenWidth * 0.3f
     val rightZoneStart = screenWidth * 0.7f
@@ -108,8 +110,6 @@ fun GestureHandler(
                     onDrag = { _, dragAmount ->
                         if (!isDragging) return@detectDragGestures
 
-                        val exclusionVertical = 48f
-                        val exclusionHorizontal = 24f
                         if (dragStartPosition.y < exclusionVertical ||
                             dragStartPosition.y > screenHeight - exclusionVertical ||
                             dragStartPosition.x < exclusionHorizontal ||
