@@ -68,7 +68,7 @@ fun ContinueWatchingCard(
                     blurHash = item.images.thumbBlurHash ?: item.images.backdropBlurHash ?: item.images.primaryBlurHash,
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 9f / 16f,
-                    contentScale = ContentScale.Fit,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
                         .align(Alignment.Center)
