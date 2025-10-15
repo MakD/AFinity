@@ -56,7 +56,6 @@ fun GestureHandler(
 
     var isDragging by remember { mutableStateOf(false) }
     var dragStartPosition by remember { mutableStateOf(Offset.Zero) }
-    var totalDragDelta by remember { mutableFloatStateOf(0f) }
 
     var gestureType by remember { mutableStateOf<GestureType?>(null) }
     var totalHorizontalDelta by remember { mutableFloatStateOf(0f) }
@@ -91,7 +90,6 @@ fun GestureHandler(
                     onDragStart = { offset ->
                         isDragging = true
                         dragStartPosition = offset
-                        totalDragDelta = 0f
                         totalHorizontalDelta = 0f
                         gestureType = null
                         isSeeking = false
@@ -99,7 +97,6 @@ fun GestureHandler(
                     },
                     onDragEnd = {
                         isDragging = false
-                        totalDragDelta = 0f
                         totalHorizontalDelta = 0f
                         if (isSeeking) {
                             onSeekPreview(false)
@@ -137,26 +134,14 @@ fun GestureHandler(
 
                         when (gestureType) {
                             GestureType.BRIGHTNESS -> {
-                                if (abs(verticalDrag) >= minimumDragDistance) {
-                                    totalDragDelta += verticalDrag
-                                    if (abs(totalDragDelta) >= 10f) {
-                                        val distanceFull = screenHeight * 0.66f
-                                        val gestureStrength = totalDragDelta / distanceFull
-                                        onBrightnessGesture(gestureStrength)
-                                        totalDragDelta = 0f
-                                    }
-                                }
+                                val distanceFull = screenHeight * 0.4f
+                                val gestureStrength = verticalDrag / distanceFull
+                                onBrightnessGesture(gestureStrength)
                             }
                             GestureType.VOLUME -> {
-                                if (abs(verticalDrag) >= minimumDragDistance) {
-                                    totalDragDelta += verticalDrag
-                                    if (abs(totalDragDelta) >= 5f) {
-                                        val distanceFull = screenHeight * 0.35f
-                                        val gestureStrength = totalDragDelta / distanceFull
-                                        onVolumeGesture(gestureStrength)
-                                        totalDragDelta = 0f
-                                    }
-                                 }
+                                val distanceFull = screenHeight * 0.3f
+                                val gestureStrength = verticalDrag / distanceFull
+                                onVolumeGesture(gestureStrength)
                             }
                             GestureType.SEEK -> {
                                 totalHorizontalDelta += horizontalDrag
