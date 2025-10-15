@@ -26,8 +26,6 @@ import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -141,7 +139,7 @@ class ItemDetailViewModel @Inject constructor(
             try {
                 loadItem()
             } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                // Let loadItem handle the loading state
             }
         }
     }
@@ -211,131 +209,8 @@ class ItemDetailViewModel @Inject constructor(
                     return@launch
                 }
 
-                _uiState.value = _uiState.value.copy(item = item)
-
-                coroutineScope {
-                    val isInWatchlistDeferred = async { watchlistRepository.isInWatchlist(item.id) }
-
-                    when (item) {
-                        is AfinityShow -> {
-                            val nextEpisodeDeferred = async {
-                                try { jellyfinRepository.getEpisodeToPlay(item.id) }
-                                catch (e: Exception) {
-                                    Timber.e(e, "Failed to load next episode")
-                                    null
-                                }
-                            }
-                            val similarItemsDeferred = async {
-                                try { jellyfinRepository.getSimilarItems(itemId) }
-                                catch (e: Exception) {
-                                    Timber.e(e, "Failed to load similar items")
-                                    emptyList()
-                                }
-                            }
-                            val seasonsDeferred = async {
-                                try { jellyfinRepository.getSeasons(item.id) }
-                                catch (e: Exception) {
-                                    Timber.e(e, "Failed to load seasons")
-                                    emptyList()
-                                }
-                            }
-                            val specialFeaturesDeferred = async {
-                                try {
-                                    val userId = getCurrentUserId()
-                                    if (userId != null) {
-                                        Timber.d("Loading special features for item: $itemId, user: $userId")
-                                        val features = jellyfinRepository.getSpecialFeatures(itemId, userId)
-                                        Timber.d("Found ${features.size} special features")
-                                        features
-                                    } else emptyList()
-                                } catch (e: Exception) {
-                                    Timber.e(e, "Failed to load special features")
-                                    emptyList()
-                                }
-                            }
-
-                            _uiState.value = _uiState.value.copy(
-                                isInWatchlist = isInWatchlistDeferred.await(),
-                                nextEpisode = nextEpisodeDeferred.await(),
-                                similarItems = similarItemsDeferred.await(),
-                                seasons = seasonsDeferred.await(),
-                                specialFeatures = specialFeaturesDeferred.await(),
-                                isLoading = false
-                            )
-                        }
-                        is AfinityBoxSet -> {
-                            val boxSetItemsDeferred = async {
-                                try {
-                                    Timber.d("Loading items for boxset: ${item.id}")
-                                    val response = jellyfinRepository.getItems(
-                                        parentId = item.id,
-                                        includeItemTypes = listOf("MOVIE", "SERIES"),
-                                        limit = 100
-                                    )
-                                    val items = response.items?.mapNotNull { baseItem ->
-                                        baseItem.toAfinityItem(jellyfinRepository.getBaseUrl())
-                                    } ?: emptyList()
-                                    Timber.d("Loaded ${items.size} items for boxset")
-                                    items
-                                } catch (e: Exception) {
-                                    Timber.e(e, "Failed to load boxset items")
-                                    emptyList()
-                                }
-                            }
-
-                            _uiState.value = _uiState.value.copy(
-                                isInWatchlist = isInWatchlistDeferred.await(),
-                                boxSetItems = boxSetItemsDeferred.await(),
-                                isLoading = false
-                            )
-                        }
-                        is AfinityMovie -> {
-                            val similarItemsDeferred = async {
-                                try { jellyfinRepository.getSimilarItems(item.id) }
-                                catch (e: Exception) {
-                                    Timber.e(e, "Failed to load similar items")
-                                    emptyList()
-                                }
-                            }
-                            val specialFeaturesDeferred = async {
-                                try {
-                                    val userId = getCurrentUserId()
-                                    if (userId != null) {
-                                        Timber.d("Loading special features for item: $itemId, user: $userId")
-                                        val features = jellyfinRepository.getSpecialFeatures(itemId, userId)
-                                        Timber.d("Found ${features.size} special features")
-                                        features
-                                    } else emptyList()
-                                } catch (e: Exception) {
-                                    Timber.e(e, "Failed to load special features")
-                                    emptyList()
-                                }
-                            }
-
-                            _uiState.value = _uiState.value.copy(
-                                isInWatchlist = isInWatchlistDeferred.await(),
-                                similarItems = similarItemsDeferred.await(),
-                                specialFeatures = specialFeaturesDeferred.await(),
-                                isLoading = false
-                            )
-                        }
-                        is AfinityEpisode -> {
-                            val similarItemsDeferred = async {
-                                try { jellyfinRepository.getSimilarItems(item.id) }
-                                catch (e: Exception) {
-                                    Timber.e(e, "Failed to load similar items")
-                                    emptyList()
-                                }
-                            }
-
-                            _uiState.value = _uiState.value.copy(
-                                isInWatchlist = isInWatchlistDeferred.await(),
-                                similarItems = similarItemsDeferred.await(),
-                                isLoading = false
-                            )
-                        }
-                    }
-                }
+                _uiState.value = _uiState.value.copy(item = item, isLoading = false)
+                loadAdditionalDetails(item)
 
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load item: $itemId")
@@ -343,6 +218,107 @@ class ItemDetailViewModel @Inject constructor(
                     isLoading = false,
                     error = "Failed to load item: ${e.message}"
                 )
+            }
+        }
+    }
+
+    private fun loadAdditionalDetails(item: AfinityItem) {
+        viewModelScope.launch {
+            launch {
+                try {
+                    val isInWatchlist = watchlistRepository.isInWatchlist(item.id)
+                    _uiState.value = _uiState.value.copy(isInWatchlist = isInWatchlist)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load watchlist status")
+                }
+            }
+
+            when (item) {
+                is AfinityShow -> {
+                    launch {
+                        try {
+                            val nextEpisode = jellyfinRepository.getEpisodeToPlay(item.id)
+                            _uiState.value = _uiState.value.copy(nextEpisode = nextEpisode)
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load next episode")
+                        }
+                    }
+                    launch {
+                        try {
+                            val similarItems = jellyfinRepository.getSimilarItems(itemId)
+                            _uiState.value = _uiState.value.copy(similarItems = similarItems)
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load similar items")
+                        }
+                    }
+                    launch {
+                        try {
+                            val seasons = jellyfinRepository.getSeasons(item.id)
+                            _uiState.value = _uiState.value.copy(seasons = seasons)
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load seasons")
+                        }
+                    }
+                    launch {
+                        try {
+                            val userId = getCurrentUserId()
+                            if (userId != null) {
+                                val features = jellyfinRepository.getSpecialFeatures(itemId, userId)
+                                _uiState.value = _uiState.value.copy(specialFeatures = features)
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load special features")
+                        }
+                    }
+                }
+                is AfinityBoxSet -> {
+                    launch {
+                        try {
+                            val response = jellyfinRepository.getItems(
+                                parentId = item.id,
+                                includeItemTypes = listOf("MOVIE", "SERIES"),
+                                limit = 100
+                            )
+                            val items = response.items?.mapNotNull { baseItem ->
+                                baseItem.toAfinityItem(jellyfinRepository.getBaseUrl())
+                            } ?: emptyList()
+                            _uiState.value = _uiState.value.copy(boxSetItems = items)
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load boxset items")
+                        }
+                    }
+                }
+                is AfinityMovie -> {
+                    launch {
+                        try {
+                            val similarItems = jellyfinRepository.getSimilarItems(item.id)
+                            _uiState.value = _uiState.value.copy(similarItems = similarItems)
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load similar items")
+                        }
+                    }
+                    launch {
+                        try {
+                            val userId = getCurrentUserId()
+                            if (userId != null) {
+                                val features = jellyfinRepository.getSpecialFeatures(itemId, userId)
+                                _uiState.value = _uiState.value.copy(specialFeatures = features)
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load special features")
+                        }
+                    }
+                }
+                is AfinityEpisode -> {
+                    launch {
+                        try {
+                            val similarItems = jellyfinRepository.getSimilarItems(item.id)
+                            _uiState.value = _uiState.value.copy(similarItems = similarItems)
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load similar items")
+                        }
+                    }
+                }
             }
         }
     }
