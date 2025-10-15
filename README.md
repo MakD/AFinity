@@ -176,6 +176,9 @@ Afinity respects your privacy:
 - **No third-party services** are used without your explicit consent
 - **Source code is open** for full transparency
 
+## Disclaimer
+AFinity does not support or condone piracy. The app is only for streaming media you personally own. It includes no media content, and any references or support requests related to piracy or related tools are strictly prohibited.
+
 ## License
 
 LGPL-3.0 License - see [LICENSE](LICENSE.md) for details.
