@@ -83,7 +83,7 @@ enum class Destination(
             return "item_detail/$itemId"
         }
         fun createEpisodeListRoute(seasonId: String, seasonName: String): String {
-            return "episodes/$seasonId/${seasonName.replace("/", "%2F")}"
+            return createItemDetailRoute(seasonId)
         }
         fun createSearchRoute(): String {
             return SEARCH_ROUTE

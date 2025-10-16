@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.paging.PagingData
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -64,8 +66,10 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.item.components.BoxSetDetailContent
 import com.makd.afinity.ui.item.components.DirectorSection
+import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.MovieDetailContent
 import com.makd.afinity.ui.item.components.OverviewSection
+import com.makd.afinity.ui.item.components.SeasonDetailContent
 import com.makd.afinity.ui.item.components.SeasonsSection
 import com.makd.afinity.ui.item.components.TaglineSection
 import com.makd.afinity.ui.item.components.WriterSection
@@ -80,6 +84,7 @@ import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
 import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
+import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
 
@@ -91,7 +96,10 @@ fun ItemDetailScreen(
     viewModel: ItemDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
+    val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
     val nextEpisode = uiState.nextEpisode
+    val context = LocalContext.current
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -143,6 +151,7 @@ fun ItemDetailScreen(
                     baseUrl = viewModel.getBaseUrl(),
                     specialFeatures = uiState.specialFeatures,
                     isInWatchlist = uiState.isInWatchlist,
+                    episodesPagingData = uiState.episodesPagingData,
                     onPlayClick = { item, selection -> onPlayClick(item, selection) },
                     onSeasonClick = { season ->
                         val route = Destination.createEpisodeListRoute(
@@ -164,6 +173,34 @@ fun ItemDetailScreen(
                 )
             }
         }
+        selectedEpisode?.let { episode ->
+            EpisodeDetailOverlay(
+                episode = episode,
+                isLoading = isLoadingEpisode,
+                onDismiss = { viewModel.clearSelectedEpisode() },
+                onPlayClick = { episodeToPlay, selection ->
+                    viewModel.clearSelectedEpisode()
+
+                    com.makd.afinity.ui.player.PlayerLauncher.launch(
+                        context = context,
+                        itemId = episodeToPlay.id,
+                        mediaSourceId = selection.mediaSourceId,
+                        audioStreamIndex = selection.audioStreamIndex,
+                        subtitleStreamIndex = selection.subtitleStreamIndex,
+                        startPositionMs = selection.startPositionMs
+                    )
+                },
+                onToggleFavorite = {
+                    viewModel.toggleEpisodeFavorite(episode)
+                },
+                onToggleWatchlist = {
+                    viewModel.toggleEpisodeWatchlist(episode)
+                },
+                onToggleWatched = {
+                    viewModel.toggleEpisodeWatched(episode)
+                }
+            )
+        }
     }
 }
 
@@ -177,6 +214,7 @@ private fun ItemDetailContent(
     baseUrl: String,
     specialFeatures: List<AfinityItem>,
     isInWatchlist: Boolean,
+    episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onSeasonClick: (AfinitySeason) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
@@ -732,6 +770,18 @@ private fun ItemDetailContent(
                         },
                         navController = navController
                     )
+
+                    is AfinitySeason -> SeasonDetailContent(
+                        season = item,
+                        episodesPagingData = episodesPagingData,
+                        specialFeatures = specialFeatures,
+                        onEpisodeClick = { episode ->
+                            viewModel.selectEpisode(episode)
+                        },
+                        onSpecialFeatureClick = onSpecialFeatureClick,
+                        navController = navController
+                    )
+
                     is AfinityMovie -> MovieDetailContent(
                         item = item,
                         baseUrl = baseUrl,
@@ -742,11 +792,13 @@ private fun ItemDetailContent(
                         },
                         navController = navController
                     )
+
                     is AfinityBoxSet -> BoxSetDetailContent(
                         item = item,
                         boxSetItems = boxSetItems,
                         onItemClick = onBoxSetItemClick
                     )
+
                     else -> {
                         TaglineSection(item = item)
                         OverviewSection(item = item)
@@ -824,7 +876,8 @@ fun SeriesDetailContent(
         if (seasons.isNotEmpty()) {
             SeasonsSection(
                 seasons = seasons,
-                onSeasonClick = onSeasonClick
+                onSeasonClick = onSeasonClick,
+                navController = navController
             )
         }
     }

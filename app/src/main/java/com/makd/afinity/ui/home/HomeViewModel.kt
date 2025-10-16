@@ -3,6 +3,7 @@ package com.makd.afinity.ui.home
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -10,7 +11,12 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.userdata.UserDataRepository
+import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +28,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val appDataRepository: AppDataRepository
+    private val appDataRepository: AppDataRepository,
+    private val jellyfinRepository: JellyfinRepository,
+    private val userDataRepository: UserDataRepository,
+    private val watchlistRepository: WatchlistRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -113,6 +122,94 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             appDataRepository.recommendationCategories.collect { recommendations ->
                 _uiState.value = _uiState.value.copy(recommendationCategories = recommendations)
+            }
+        }
+    }
+
+    private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
+    val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
+
+    private val _isLoadingEpisode = MutableStateFlow(false)
+    val isLoadingEpisode: StateFlow<Boolean> = _isLoadingEpisode.asStateFlow()
+
+    fun selectEpisode(episode: AfinityEpisode) {
+        viewModelScope.launch {
+            try {
+                _isLoadingEpisode.value = true
+                _selectedEpisode.value = episode
+
+                val fullEpisode = jellyfinRepository.getItem(
+                    episode.id,
+                    fields = FieldSets.ITEM_DETAIL
+                )?.toAfinityEpisode(jellyfinRepository, null)
+
+                if (fullEpisode != null) {
+                    _selectedEpisode.value = fullEpisode
+                }
+
+                _isLoadingEpisode.value = false
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load full episode details")
+                _isLoadingEpisode.value = false
+            }
+        }
+    }
+
+    fun clearSelectedEpisode() {
+        _selectedEpisode.value = null
+    }
+
+    fun toggleEpisodeFavorite(episode: AfinityEpisode) {
+        viewModelScope.launch {
+            try {
+                val success = if (episode.favorite) {
+                    userDataRepository.removeFromFavorites(episode.id)
+                } else {
+                    userDataRepository.addToFavorites(episode.id)
+                }
+
+                if (success) {
+                    _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error toggling episode favorite")
+            }
+        }
+    }
+
+    fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
+        viewModelScope.launch {
+            try {
+                val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
+
+                if (isInWatchlist) {
+                    watchlistRepository.removeFromWatchlist(episode.id)
+                } else {
+                    watchlistRepository.addToWatchlist(episode.id, "EPISODE")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error toggling episode watchlist")
+            }
+        }
+    }
+
+    fun toggleEpisodeWatched(episode: AfinityEpisode) {
+        viewModelScope.launch {
+            try {
+                val success = if (episode.played) {
+                    userDataRepository.markUnwatched(episode.id)
+                } else {
+                    userDataRepository.markWatched(episode.id)
+                }
+
+                if (success) {
+                    _selectedEpisode.value = episode.copy(
+                        played = !episode.played,
+                        playbackPositionTicks = if (!episode.played) episode.runtimeTicks else 0
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error toggling episode watched status")
             }
         }
     }

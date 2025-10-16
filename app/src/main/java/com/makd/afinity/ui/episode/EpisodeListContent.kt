@@ -1,6 +1,6 @@
 package com.makd.afinity.ui.episode
 
-import android.content.res.Configuration
+/*import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.RepeatMode
@@ -697,4 +697,4 @@ private fun shimmerBrush(): Brush {
         start = Offset.Zero,
         end = Offset(x = translateAnimation.value, y = translateAnimation.value)
     )
-}
+}*/
