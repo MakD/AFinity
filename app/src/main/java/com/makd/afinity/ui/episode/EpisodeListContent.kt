@@ -128,7 +128,7 @@ fun EpisodeListContent(
                 onSpecialFeatureClick = onSpecialFeatureClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    //.offset(y = (-110).dp)
+                    .offset(y = (-110).dp)
                     .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp)
             )
         }
@@ -142,7 +142,7 @@ fun EpisodeListContent(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
-                    //.offset(y = (-110).dp)
+                    .offset(y = (-110).dp)
                     .padding(bottom = 16.dp)
             )
         }
@@ -163,8 +163,8 @@ fun EpisodeListContent(
         item {
             LazyRow(
                 modifier = Modifier
-                    .height(fixedRowHeight),
-                    //.offset(y = (-110).dp),
+                    .height(fixedRowHeight)
+                    .offset(y = (-110).dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
