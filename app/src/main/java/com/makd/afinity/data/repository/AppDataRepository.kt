@@ -246,7 +246,7 @@ class AppDataRepository @Inject constructor(
                 limit = 15,
                 isPlayed = false,
                 fields = FieldSets.HERO_CAROUSEL,
-                imageTypes = listOf("${ImageType.LOGO},${ImageType.BACKDROP}"),
+                imageTypes = listOf("Logo", "Backdrop"),
                 hasOverview = true,
             )
 

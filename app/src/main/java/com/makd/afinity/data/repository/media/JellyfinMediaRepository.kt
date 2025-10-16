@@ -43,6 +43,7 @@ import org.jellyfin.sdk.api.operations.UserLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
@@ -514,7 +515,9 @@ class JellyfinMediaRepository @Inject constructor(
         isFavorite: Boolean?,
         isPlayed: Boolean?,
         nameStartsWith: String?,
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
+        imageTypes: List<String>,
+        hasOverview: Boolean?
     ): BaseItemDtoQueryResult = withContext(Dispatchers.IO) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext BaseItemDtoQueryResult(
@@ -543,6 +546,14 @@ class JellyfinMediaRepository @Inject constructor(
                 isPlayed = isPlayed,
                 nameStartsWith = nameStartsWith,
                 fields = fields ?: FieldSets.LIBRARY_GRID,
+                imageTypes = if (imageTypes.isNotEmpty()) {
+                    imageTypes.mapNotNull {
+                        try { ImageType.valueOf(it.uppercase()) } catch (e: Exception) { null }
+                    }
+                } else {
+                    null
+                },
+                hasOverview = hasOverview,
                 enableImages = true,
                 enableUserData = true
             )

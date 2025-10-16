@@ -276,7 +276,8 @@ class JellyfinRepositoryImpl @Inject constructor(
         return try {
             mediaRepository.getItems(
                 parentId, collectionTypes, sortBy, sortDescending, limit, startIndex,
-                searchTerm, includeItemTypes, genres, years, isFavorite, isPlayed, nameStartsWith, fields
+                searchTerm, includeItemTypes, genres, years, isFavorite, isPlayed, nameStartsWith, fields,
+                imageTypes, hasOverview
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get items")
