@@ -89,7 +89,6 @@ import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -342,6 +341,7 @@ fun HomeScreen(
                     viewModel.toggleEpisodeWatched(episode)
                 },
                 onGoToSeries = {
+                    viewModel.clearSelectedEpisode()
                     val route = Destination.createItemDetailRoute(episode.seriesId.toString())
                     navController.navigate(route)
                 }
