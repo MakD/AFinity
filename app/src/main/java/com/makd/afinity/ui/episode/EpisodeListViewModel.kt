@@ -95,6 +95,7 @@ class EpisodeListViewModel @Inject constructor(
                     episodeCount = seasonData?.episodeCount ?: 0,
                     productionYear = seasonData?.productionYear,
                     premiereDate = seasonData?.premiereDate,
+                    people = seasonData?.people ?: emptyList(),
                     played = seasonData?.played ?: false,
                     favorite = seasonData?.favorite ?: false,
                     canPlay = true,

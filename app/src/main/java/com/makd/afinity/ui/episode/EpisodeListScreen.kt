@@ -79,7 +79,8 @@ fun EpisodeListScreen(
             onSpecialFeatureClick = { specialFeature ->
                 val route = Destination.createItemDetailRoute(specialFeature.id.toString())
                 navController.navigate(route)
-            }
+            },
+            navController = navController
         )
     } ?: run {
         Box(

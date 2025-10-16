@@ -19,6 +19,7 @@ data class AfinitySeason(
     val episodeCount: Int?,
     val productionYear: Int?,
     val premiereDate: LocalDateTime?,
+    val people: List<AfinityPerson>,
     override val played: Boolean,
     override val favorite: Boolean,
     override val canPlay: Boolean,
@@ -54,6 +55,7 @@ fun BaseItemDto.toAfinitySeason(
         episodeCount = childCount,
         productionYear = productionYear,
         premiereDate = premiereDate,
+        people = people?.map { it.toAfinityPerson(jellyfinRepository) } ?: emptyList(),
         providerIds = providerIds?.mapNotNull { (key, value) ->
             value?.let { key to it }
         }?.toMap(),

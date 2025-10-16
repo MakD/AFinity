@@ -28,6 +28,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import org.jellyfin.sdk.model.api.PersonKind
@@ -41,6 +42,7 @@ fun CastSection(
     val cast = when (item) {
         is AfinityMovie -> item.people.filter { it.type == PersonKind.ACTOR }
         is AfinityShow -> item.people.filter { it.type == PersonKind.ACTOR }
+        is AfinitySeason -> item.people.filter { it.type == PersonKind.ACTOR }
         else -> emptyList()
     }
 

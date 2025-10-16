@@ -594,6 +594,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             episodeCount = episodeCount,
             productionYear = null,
             premiereDate = null,
+            people = emptyList(),
             providerIds = null,
             externalUrls = null,
         )

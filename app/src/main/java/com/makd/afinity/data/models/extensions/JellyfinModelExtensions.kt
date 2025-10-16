@@ -207,6 +207,7 @@ fun BaseItemDto.toAfinitySeason(
         episodeCount = childCount,
         productionYear = productionYear,
         premiereDate = premiereDate,
+        people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
         providerIds = providerIds?.mapNotNull { (key, value) ->
             value?.let { key to it }
         }?.toMap(),

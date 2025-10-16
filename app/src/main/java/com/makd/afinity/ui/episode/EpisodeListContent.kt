@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.episode
 
+import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.RepeatMode
@@ -12,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -21,7 +23,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -30,7 +34,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -61,6 +64,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import com.makd.afinity.data.models.extensions.backdropBlurHash
@@ -76,10 +80,14 @@ import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.item.components.shared.CastSection
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
+import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.calculateCardHeight
+import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,11 +98,19 @@ fun EpisodeListContent(
     isLoading: Boolean,
     onBackClick: () -> Unit,
     onEpisodeClick: (AfinityEpisode) -> Unit,
-    onSpecialFeatureClick: (AfinityItem) -> Unit
-) {
+    onSpecialFeatureClick: (AfinityItem) -> Unit,
+    navController: NavController,
+    ) {
+    val cardWidth = rememberLandscapeCardWidth()
+    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
     BackHandler {
         onBackClick()
     }
+
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val overlayOffset = if (isLandscape) (-200).dp else (-110).dp
 
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -112,7 +128,7 @@ fun EpisodeListContent(
                 onSpecialFeatureClick = onSpecialFeatureClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset(y = (-110).dp)
+                    //.offset(y = (-110).dp)
                     .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp)
             )
         }
@@ -126,7 +142,7 @@ fun EpisodeListContent(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
-                    .offset(y = (-110).dp)
+                    //.offset(y = (-110).dp)
                     .padding(bottom = 16.dp)
             )
         }
@@ -144,19 +160,26 @@ fun EpisodeListContent(
             }
         }
 
-        items(
-            count = lazyEpisodeItems.itemCount,
-            key = { index -> lazyEpisodeItems[index]?.id ?: index }
-        ) { index ->
-            lazyEpisodeItems[index]?.let { episode ->
-                EpisodeCard(
-                    episode = episode,
-                    onClick = { onEpisodeClick(episode) },
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .offset(y = (-110).dp)
-                        .padding(bottom = 16.dp)
-                )
+        item {
+            LazyRow(
+                modifier = Modifier
+                    .height(fixedRowHeight),
+                    //.offset(y = (-110).dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                items(
+                    count = lazyEpisodeItems.itemCount,
+                    key = { index -> lazyEpisodeItems[index]?.id ?: index }
+                ) { index ->
+                    lazyEpisodeItems[index]?.let { episode ->
+                        ContinueWatchingCard(
+                            item = episode,
+                            onClick = { onEpisodeClick(episode) },
+                            modifier = Modifier.width(cardWidth)
+                        )
+                    }
+                }
             }
         }
 

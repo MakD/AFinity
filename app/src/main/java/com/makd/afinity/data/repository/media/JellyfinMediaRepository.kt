@@ -343,7 +343,7 @@ class JellyfinMediaRepository @Inject constructor(
                 fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                 enableImages = true,
                 enableUserData = true,
-                //groupItems = true
+                groupItems = true
             )
 
             val latestItems = response.content?.mapNotNull { baseItemDto ->
