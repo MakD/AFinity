@@ -63,6 +63,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.item.components.BoxSetDetailContent
@@ -347,6 +348,13 @@ private fun ItemDetailContent(
                 val configuration = LocalConfiguration.current
                 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+                val hasTrailer = when (item) {
+                    is AfinityMovie -> item.trailer != null
+                    is AfinityShow -> item.trailer != null
+                    is AfinityVideo -> item.trailer != null
+                    else -> false
+                }
+
                 if (isLandscape) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -542,15 +550,29 @@ private fun ItemDetailContent(
                                 )
                             }
 
+                            val hasTrailer = when (item) {
+                                is AfinityMovie -> item.trailer != null
+                                is AfinityShow -> item.trailer != null
+                                is AfinityVideo -> item.trailer != null
+                                else -> false
+                            }
+
                             IconButton(
                                 onClick = {
-                                    viewModel.onPlayTrailerClick(context, item)
-                                }
+                                    if (hasTrailer) {
+                                        viewModel.onPlayTrailerClick(context, item)
+                                    }
+                                },
+                                enabled = hasTrailer
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.MovieCreation,
                                     contentDescription = "Play Trailer",
-                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    tint = if (hasTrailer) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    },
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
@@ -787,13 +809,20 @@ private fun ItemDetailContent(
                         ) {
                             IconButton(
                                 onClick = {
-                                    viewModel.onPlayTrailerClick(context, item)
-                                }
+                                    if (hasTrailer) {
+                                        viewModel.onPlayTrailerClick(context, item)
+                                    }
+                                },
+                                enabled = hasTrailer
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.MovieCreation,
                                     contentDescription = "Play Trailer",
-                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    tint = if (hasTrailer) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    },
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
