@@ -30,17 +30,27 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.updater.UpdateManager
+import com.makd.afinity.data.updater.UpdateScheduler
+import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.navigation.MainNavigation
 import com.makd.afinity.ui.login.LoginScreen
 import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject
     lateinit var preferencesRepository: PreferencesRepository
+    @Inject
+    lateinit var updateManager: UpdateManager
+
+    @Inject
+    lateinit var updateScheduler: UpdateScheduler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -62,6 +72,12 @@ class MainActivity : ComponentActivity() {
                 MainContent(
                     modifier = Modifier.fillMaxSize()
                 )
+            }
+        }
+        lifecycleScope.launch {
+            val frequency = preferencesRepository.getUpdateCheckFrequency()
+            if (frequency == UpdateCheckFrequency.ON_APP_OPEN.hours) {
+                updateManager.checkForUpdates()
             }
         }
     }
@@ -159,7 +175,7 @@ sealed class AuthenticationState {
     object NotAuthenticated : AuthenticationState()
 }
 
-@Preview(showBackground = true)
+/*@Preview(showBackground = true)
 @Composable
 fun MainActivityPreview() {
     AFinityTheme {
@@ -167,4 +183,4 @@ fun MainActivityPreview() {
             onLoginSuccess = {}
         )
     }
-}
+}*/

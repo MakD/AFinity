@@ -539,17 +539,6 @@ private fun ItemDetailContent(
                         Row(
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            IconButton(
-                                onClick = { viewModel.toggleWatchlist() }
-                            ) {
-                                Icon(
-                                    imageVector = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                    contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
-                                    tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-
                             val hasTrailer = when (item) {
                                 is AfinityMovie -> item.trailer != null
                                 is AfinityShow -> item.trailer != null
@@ -573,6 +562,16 @@ private fun ItemDetailContent(
                                     } else {
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                     },
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                            IconButton(
+                                onClick = { viewModel.toggleWatchlist() }
+                            ) {
+                                Icon(
+                                    imageVector = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
+                                    tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
@@ -793,21 +792,6 @@ private fun ItemDetailContent(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             IconButton(
-                                onClick = { viewModel.toggleWatchlist() }
-                            ) {
-                                Icon(
-                                    imageVector = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                    contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
-                                    tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                        }
-
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            IconButton(
                                 onClick = {
                                     if (hasTrailer) {
                                         viewModel.onPlayTrailerClick(context, item)
@@ -823,6 +807,21 @@ private fun ItemDetailContent(
                                     } else {
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                     },
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                        }
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            IconButton(
+                                onClick = { viewModel.toggleWatchlist() }
+                            ) {
+                                Icon(
+                                    imageVector = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
+                                    tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }

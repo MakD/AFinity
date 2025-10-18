@@ -83,6 +83,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.settings.update.UpdateSection
 import com.makd.afinity.ui.theme.ThemeMode
 import timber.log.Timber
 
@@ -215,6 +216,10 @@ fun SettingsScreen(
                         onUseExoPlayerToggle = viewModel::toggleUseExoPlayer,
                         onPipGestureToggle = viewModel::togglePipGesture
                     )
+                }
+
+                item {
+                    UpdateSection()
                 }
 
                 item {

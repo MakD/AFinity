@@ -56,6 +56,10 @@ class PreferencesRepositoryImpl @Inject constructor(
 
         val CRASH_REPORTING = booleanPreferencesKey("crash_reporting")
         val USAGE_ANALYTICS = booleanPreferencesKey("usage_analytics")
+
+        val UPDATE_CHECK_FREQUENCY = intPreferencesKey("update_check_frequency")
+        val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
+        val AUTO_DOWNLOAD_UPDATES = booleanPreferencesKey("auto_download_updates")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -399,6 +403,48 @@ class PreferencesRepositoryImpl @Inject constructor(
     override fun getPipGestureEnabledFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[Keys.PIP_GESTURE_ENABLED] ?: false
+        }
+    }
+
+    override suspend fun setUpdateCheckFrequency(hours: Int) {
+        dataStore.edit { preferences ->
+            preferences[Keys.UPDATE_CHECK_FREQUENCY] = hours
+        }
+    }
+
+    override suspend fun getUpdateCheckFrequency(): Int {
+        return dataStore.data.first()[Keys.UPDATE_CHECK_FREQUENCY] ?: 0
+    }
+
+    override fun getUpdateCheckFrequencyFlow(): Flow<Int> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.UPDATE_CHECK_FREQUENCY] ?: 0
+        }
+    }
+
+    override suspend fun setLastUpdateCheck(timestamp: Long) {
+        dataStore.edit { preferences ->
+            preferences[Keys.LAST_UPDATE_CHECK] = timestamp
+        }
+    }
+
+    override suspend fun getLastUpdateCheck(): Long {
+        return dataStore.data.first()[Keys.LAST_UPDATE_CHECK] ?: 0L
+    }
+
+    override suspend fun setAutoDownloadUpdates(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.AUTO_DOWNLOAD_UPDATES] = enabled
+        }
+    }
+
+    override suspend fun getAutoDownloadUpdates(): Boolean {
+        return dataStore.data.first()[Keys.AUTO_DOWNLOAD_UPDATES] ?: true
+    }
+
+    override fun getAutoDownloadUpdatesFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.AUTO_DOWNLOAD_UPDATES] ?: true
         }
     }
 }
