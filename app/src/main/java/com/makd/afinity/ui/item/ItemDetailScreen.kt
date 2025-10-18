@@ -101,6 +101,7 @@ fun ItemDetailScreen(
     val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
     val nextEpisode = uiState.nextEpisode
     val context = LocalContext.current
+    val selectedEpisodeWatchlistStatus by viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -178,6 +179,7 @@ fun ItemDetailScreen(
             EpisodeDetailOverlay(
                 episode = episode,
                 isLoading = isLoadingEpisode,
+                isInWatchlist = selectedEpisodeWatchlistStatus,
                 onDismiss = { viewModel.clearSelectedEpisode() },
                 onPlayClick = { episodeToPlay, selection ->
                     viewModel.clearSelectedEpisode()
@@ -359,17 +361,11 @@ private fun ItemDetailContent(
                             ) {
                                 when (item) {
                                     is AfinityShow -> {
-                                        var episodeToPlay by remember { mutableStateOf<AfinityEpisode?>(null) }
-                                        var isLoadingEpisode by remember { mutableStateOf(false) }
 
-                                        LaunchedEffect(item.id) {
-                                            isLoadingEpisode = true
-                                            episodeToPlay = viewModel.getEpisodeToPlay(item.id)
-                                            isLoadingEpisode = false
-                                        }
+                                        val episodeToPlay = nextEpisode
 
                                         when {
-                                            isLoadingEpisode -> {
+                                            episodeToPlay == null -> {
                                                 Button(
                                                     onClick = { },
                                                     enabled = false,
@@ -386,7 +382,7 @@ private fun ItemDetailContent(
                                                     Text("Loading...")
                                                 }
                                             }
-                                            episodeToPlay != null -> {
+                                            else -> {
                                                 val episode = episodeToPlay!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
@@ -427,33 +423,15 @@ private fun ItemDetailContent(
                                                         )
                                                     }
                                                 )
-                                            }
-                                            else -> {
-                                                Button(
-                                                    onClick = { },
-                                                    enabled = false,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(56.dp),
-                                                    shape = RoundedCornerShape(28.dp)
-                                                ) {
-                                                    Text("No Episodes Available")
-                                                }
                                             }
                                         }
                                     }
                                     is AfinitySeason -> {
-                                        var episodeToPlay by remember { mutableStateOf<AfinityEpisode?>(null) }
-                                        var isLoadingEpisode by remember { mutableStateOf(false) }
 
-                                        LaunchedEffect(item.id) {
-                                            isLoadingEpisode = true
-                                            episodeToPlay = viewModel.getEpisodeToPlayForSeason(item.id, item.seriesId)
-                                            isLoadingEpisode = false
-                                        }
+                                        val episodeToPlay = nextEpisode
 
                                         when {
-                                            isLoadingEpisode -> {
+                                            episodeToPlay == null -> {
                                                 Button(
                                                     onClick = { },
                                                     enabled = false,
@@ -470,7 +448,7 @@ private fun ItemDetailContent(
                                                     Text("Loading...")
                                                 }
                                             }
-                                            episodeToPlay != null -> {
+                                            else -> {
                                                 val episode = episodeToPlay!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
@@ -511,18 +489,6 @@ private fun ItemDetailContent(
                                                         )
                                                     }
                                                 )
-                                            }
-                                            else -> {
-                                                Button(
-                                                    onClick = { },
-                                                    enabled = false,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(56.dp),
-                                                    shape = RoundedCornerShape(28.dp)
-                                                ) {
-                                                    Text("No Episodes Available")
-                                                }
                                             }
                                         }
                                     }
@@ -631,17 +597,11 @@ private fun ItemDetailContent(
                     if (item !is AfinityBoxSet && item.canPlay) {
                         when (item) {
                             is AfinityShow -> {
-                                var episodeToPlay by remember { mutableStateOf<AfinityEpisode?>(null) }
-                                var isLoadingEpisode by remember { mutableStateOf(false) }
 
-                                LaunchedEffect(item.id) {
-                                    isLoadingEpisode = true
-                                    episodeToPlay = viewModel.getEpisodeToPlay(item.id)
-                                    isLoadingEpisode = false
-                                }
+                                val episodeToPlay = nextEpisode
 
                                 when {
-                                    isLoadingEpisode -> {
+                                    episodeToPlay == null -> {
                                         Button(
                                             onClick = { },
                                             enabled = false,
@@ -658,7 +618,7 @@ private fun ItemDetailContent(
                                             Text("Loading...")
                                         }
                                     }
-                                    episodeToPlay != null -> {
+                                    else -> {
                                         val episode = episodeToPlay!!
                                         val (buttonText, buttonIcon) = when {
                                             episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
@@ -699,33 +659,15 @@ private fun ItemDetailContent(
                                                 )
                                             }
                                         )
-                                    }
-                                    else -> {
-                                        Button(
-                                            onClick = { },
-                                            enabled = false,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(56.dp),
-                                            shape = RoundedCornerShape(28.dp)
-                                        ) {
-                                            Text("No Episodes Available")
-                                        }
                                     }
                                 }
                             }
                             is AfinitySeason -> {
-                                var episodeToPlay by remember { mutableStateOf<AfinityEpisode?>(null) }
-                                var isLoadingEpisode by remember { mutableStateOf(false) }
 
-                                LaunchedEffect(item.id) {
-                                    isLoadingEpisode = true
-                                    episodeToPlay = viewModel.getEpisodeToPlayForSeason(item.id, item.seriesId)
-                                    isLoadingEpisode = false
-                                }
+                                val episodeToPlay = nextEpisode
 
                                 when {
-                                    isLoadingEpisode -> {
+                                    episodeToPlay == null -> {
                                         Button(
                                             onClick = { },
                                             enabled = false,
@@ -742,7 +684,7 @@ private fun ItemDetailContent(
                                             Text("Loading...")
                                         }
                                     }
-                                    episodeToPlay != null -> {
+                                    else -> {
                                         val episode = episodeToPlay!!
                                         val (buttonText, buttonIcon) = when {
                                             episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
@@ -783,18 +725,6 @@ private fun ItemDetailContent(
                                                 )
                                             }
                                         )
-                                    }
-                                    else -> {
-                                        Button(
-                                            onClick = { },
-                                            enabled = false,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(56.dp),
-                                            shape = RoundedCornerShape(28.dp)
-                                        ) {
-                                            Text("No Episodes Available")
-                                        }
                                     }
                                 }
                             }

@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.player
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -9,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import java.util.UUID
 
@@ -35,7 +37,9 @@ fun PlayerScreenWrapper(
     when {
         isLoading -> {
             Box(
-                modifier = modifier.fillMaxSize(),
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
@@ -55,10 +59,15 @@ fun PlayerScreenWrapper(
         }
         else -> {
             Box(
-                modifier = modifier.fillMaxSize(),
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
                 contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Text("Failed to load media")
+                androidx.compose.material3.Text(
+                    text = "Failed to load media",
+                    color = Color.White
+                )
             }
         }
     }

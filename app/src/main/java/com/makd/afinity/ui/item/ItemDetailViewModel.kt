@@ -287,6 +287,14 @@ class ItemDetailViewModel @Inject constructor(
                 is AfinitySeason -> {
                     launch {
                         try {
+                            val episodeToPlay = jellyfinRepository.getEpisodeToPlayForSeason(item.id, item.seriesId)
+                            _uiState.value = _uiState.value.copy(nextEpisode = episodeToPlay)
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load episode to play for season")
+                        }
+                    }
+                    launch {
+                        try {
                             _episodesPagingData.value = Pager(
                                 config = PagingConfig(
                                     pageSize = 50,
@@ -387,6 +395,9 @@ class ItemDetailViewModel @Inject constructor(
     private val _isLoadingEpisode = MutableStateFlow(false)
     val isLoadingEpisode: StateFlow<Boolean> = _isLoadingEpisode.asStateFlow()
 
+    private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
+    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> = _selectedEpisodeWatchlistStatus.asStateFlow()
+
     fun selectEpisode(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
@@ -401,10 +412,19 @@ class ItemDetailViewModel @Inject constructor(
                     _selectedEpisode.value = episode
                 }
 
+                try {
+                    val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
+                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load episode watchlist status")
+                    _selectedEpisodeWatchlistStatus.value = false
+                }
+
                 _isLoadingEpisode.value = false
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load full episode details")
                 _selectedEpisode.value = episode
+                _selectedEpisodeWatchlistStatus.value = false
                 _isLoadingEpisode.value = false
             }
         }
@@ -431,7 +451,10 @@ class ItemDetailViewModel @Inject constructor(
     fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
-                val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
+                val isInWatchlist = _selectedEpisodeWatchlistStatus.value
+
+                // Optimistic update
+                _selectedEpisodeWatchlistStatus.value = !isInWatchlist
 
                 val success = if (isInWatchlist) {
                     watchlistRepository.removeFromWatchlist(episode.id)
@@ -440,10 +463,15 @@ class ItemDetailViewModel @Inject constructor(
                 }
 
                 if (!success) {
+                    // Revert on failure
+                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
                     Timber.w("Failed to toggle watchlist status")
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watchlist")
+                // Revert on error
+                val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
+                _selectedEpisodeWatchlistStatus.value = isInWatchlist
             }
         }
     }
@@ -471,6 +499,7 @@ class ItemDetailViewModel @Inject constructor(
 
     fun clearSelectedEpisode() {
         _selectedEpisode.value = null
+        _selectedEpisodeWatchlistStatus.value = false
     }
 
     fun toggleFavorite() {

@@ -318,6 +318,7 @@ fun HomeScreen(
         )
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
         val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
+        val selectedEpisodeWatchlistStatus by viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
 
         var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
@@ -334,6 +335,7 @@ fun HomeScreen(
                 EpisodeDetailOverlay(
                     episode = episode,
                     isLoading = isLoadingEpisode,
+                    isInWatchlist = selectedEpisodeWatchlistStatus,
                     onDismiss = {
                         viewModel.clearSelectedEpisode()
                         pendingNavigationSeriesId = null

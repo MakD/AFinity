@@ -45,6 +45,7 @@ import java.time.format.FormatStyle
 fun EpisodeDetailOverlay(
     episode: AfinityEpisode,
     isLoading: Boolean,
+    isInWatchlist: Boolean,
     onDismiss: () -> Unit,
     onPlayClick: (AfinityEpisode, PlaybackSelection) -> Unit,
     onToggleFavorite: () -> Unit,
@@ -216,9 +217,9 @@ fun EpisodeDetailOverlay(
                 }
                 IconButton(onClick = onToggleWatchlist) {
                     Icon(
-                        imageVector = if (false) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                        imageVector = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                         contentDescription = "Watchlist",
-                        tint = if (false) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp)
                     )
                 }

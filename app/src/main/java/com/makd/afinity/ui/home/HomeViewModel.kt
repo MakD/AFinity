@@ -129,6 +129,9 @@ class HomeViewModel @Inject constructor(
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
     val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
 
+    private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
+    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> = _selectedEpisodeWatchlistStatus.asStateFlow()
+
     private val _isLoadingEpisode = MutableStateFlow(false)
     val isLoadingEpisode: StateFlow<Boolean> = _isLoadingEpisode.asStateFlow()
 
@@ -146,6 +149,14 @@ class HomeViewModel @Inject constructor(
                     _selectedEpisode.value = episode
                 }
 
+                try {
+                    val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
+                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load episode watchlist status")
+                    _selectedEpisodeWatchlistStatus.value = false
+                }
+
                 _isLoadingEpisode.value = false
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load full episode details")
@@ -157,6 +168,7 @@ class HomeViewModel @Inject constructor(
 
     fun clearSelectedEpisode() {
         _selectedEpisode.value = null
+        _selectedEpisodeWatchlistStatus.value = false
     }
 
     fun toggleEpisodeFavorite(episode: AfinityEpisode) {
@@ -180,15 +192,31 @@ class HomeViewModel @Inject constructor(
     fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
-                val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
+                val isInWatchlist = _selectedEpisodeWatchlistStatus.value
 
-                if (isInWatchlist) {
+                // Optimistic update
+                _selectedEpisodeWatchlistStatus.value = !isInWatchlist
+
+                val success = if (isInWatchlist) {
                     watchlistRepository.removeFromWatchlist(episode.id)
                 } else {
                     watchlistRepository.addToWatchlist(episode.id, "EPISODE")
                 }
+
+                if (!success) {
+                    // Revert on failure
+                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
+                    Timber.w("Failed to toggle watchlist status")
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watchlist")
+                // Revert on error
+                try {
+                    val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
+                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
+                } catch (e2: Exception) {
+                    Timber.e(e2, "Failed to reload watchlist status")
+                }
             }
         }
     }
