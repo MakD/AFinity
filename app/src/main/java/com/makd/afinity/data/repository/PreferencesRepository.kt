@@ -90,10 +90,6 @@ interface PreferencesRepository {
     suspend fun setLastUpdateCheck(timestamp: Long)
     suspend fun getLastUpdateCheck(): Long
 
-    suspend fun setAutoDownloadUpdates(enabled: Boolean)
-    suspend fun getAutoDownloadUpdates(): Boolean
-    fun getAutoDownloadUpdatesFlow(): Flow<Boolean>
-
     suspend fun setCrashReporting(enabled: Boolean)
     suspend fun getCrashReporting(): Boolean
 

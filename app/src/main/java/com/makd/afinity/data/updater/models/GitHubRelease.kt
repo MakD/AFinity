@@ -29,7 +29,7 @@ sealed class UpdateState {
     data class Available(val release: GitHubRelease) : UpdateState()
     object UpToDate : UpdateState()
     data class Downloading(val progress: Int) : UpdateState()
-    data class Downloaded(val file: java.io.File) : UpdateState()
+    data class Downloaded(val file: java.io.File, val release: GitHubRelease) : UpdateState()
     data class Error(val message: String) : UpdateState()
 }
 

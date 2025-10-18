@@ -89,20 +89,24 @@ fun UpdateSection(
         showUpdateDialog = true
     }
 
-    if (updateState is UpdateState.Downloaded) {
-        showUpdateDialog = false
-        val file = (updateState as UpdateState.Downloaded).file
-        viewModel.installUpdate(file)
-        viewModel.dismissUpdate()
+    if (updateState is UpdateState.Downloaded && !showUpdateDialog && pendingRelease == null) {
+        pendingRelease = (updateState as UpdateState.Downloaded).release
+        showUpdateDialog = true
     }
 
     if (showUpdateDialog && pendingRelease != null) {
         UpdateAvailableDialog(
             release = pendingRelease!!,
-            isAutoDownloadEnabled = uiState.autoDownload,
+            downloadedFile = if (updateState is UpdateState.Downloaded) (updateState as UpdateState.Downloaded).file else null,
             isDownloading = updateState is UpdateState.Downloading,
             onDownload = {
                 viewModel.downloadUpdate(pendingRelease!!)
+            },
+            onInstall = { file ->
+                viewModel.installUpdate(file)
+                showUpdateDialog = false
+                viewModel.dismissUpdate()
+                pendingRelease = null
             },
             onDismiss = {
                 showUpdateDialog = false
@@ -148,12 +152,6 @@ fun UpdateSection(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            UpdateInfoItem(
-                icon = Icons.Outlined.Info,
-                title = "Current Version",
-                subtitle = uiState.currentVersion
-            )
-
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
@@ -180,56 +178,6 @@ fun UpdateSection(
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             )
 
-            UpdateSwitchItem(
-                icon = Icons.Outlined.Download,
-                title = "Auto-Download Updates",
-                subtitle = "Automatically download when available",
-                checked = uiState.autoDownload,
-                onCheckedChange = { viewModel.setAutoDownload(it) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun UpdateInfoItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }
@@ -472,16 +420,12 @@ private fun UpdateSwitchItem(
 @Composable
 private fun UpdateAvailableDialog(
     release: GitHubRelease,
-    isAutoDownloadEnabled: Boolean,
+    downloadedFile: File? = null,
     isDownloading: Boolean,
     onDownload: () -> Unit,
+    onInstall: (File) -> Unit,
     onDismiss: () -> Unit
 ) {
-    LaunchedEffect(Unit) {
-        if (isAutoDownloadEnabled && !isDownloading) {
-            onDownload()
-        }
-    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -560,31 +504,45 @@ private fun UpdateAvailableDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (!isDownloading) {
+                    if (downloadedFile != null) {
+                        onInstall(downloadedFile)
+                    } else if (!isDownloading) {
                         onDownload()
                     }
                 },
-                enabled = !isDownloading,
+                enabled = downloadedFile != null || !isDownloading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                if (isDownloading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Downloading...")
-                } else {
-                    Icon(
-                        imageVector = Icons.Outlined.Download,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Download")
+                when {
+                    downloadedFile != null -> {
+                        Icon(
+                            imageVector = Icons.Outlined.SystemUpdate,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Install")
+                    }
+                    isDownloading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Downloading...")
+                    }
+                    else -> {
+                        Icon(
+                            imageVector = Icons.Outlined.Download,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Download")
+                    }
                 }
             }
         },

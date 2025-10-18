@@ -46,14 +46,6 @@ class UpdateViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            preferencesRepository.getAutoDownloadUpdatesFlow().collect { autoDownload ->
-                _uiState.value = _uiState.value.copy(
-                    autoDownload = autoDownload
-                )
-            }
-        }
-
-        viewModelScope.launch {
             val lastCheck = preferencesRepository.getLastUpdateCheck()
             _uiState.value = _uiState.value.copy(
                 lastCheckTime = if (lastCheck > 0) formatTimestamp(lastCheck) else "Never"
@@ -69,10 +61,6 @@ class UpdateViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     lastCheckTime = formatTimestamp(lastCheck)
                 )
-
-                if (release != null && _uiState.value.autoDownload) {
-                    updateManager.downloadUpdate(release)
-                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check for updates")
             }
@@ -85,14 +73,6 @@ class UpdateViewModel @Inject constructor(
             updateScheduler.scheduleUpdateChecks(frequency)
             _uiState.value = _uiState.value.copy(checkFrequency = frequency)
             Timber.d("Update check frequency set to: ${frequency.displayName}")
-        }
-    }
-
-    fun setAutoDownload(enabled: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setAutoDownloadUpdates(enabled)
-            _uiState.value = _uiState.value.copy(autoDownload = enabled)
-            Timber.d("Auto-download updates set to: $enabled")
         }
     }
 
@@ -117,6 +97,5 @@ class UpdateViewModel @Inject constructor(
 data class UpdateUiState(
     val currentVersion: String = BuildConfig.VERSION_NAME,
     val checkFrequency: UpdateCheckFrequency = UpdateCheckFrequency.ON_APP_OPEN,
-    val autoDownload: Boolean = true,
     val lastCheckTime: String = "Never"
 )

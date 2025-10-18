@@ -38,6 +38,7 @@ class UpdateManager @Inject constructor(
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
 
     private var currentDownloadId: Long? = null
+    private var currentRelease: GitHubRelease? = null
     private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     private var progressJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -72,10 +73,11 @@ class UpdateManager @Inject constructor(
         return result.fold(
             onSuccess = { release ->
                 if (isNewerVersion(release.tagName)) {
+                    currentRelease = release
                     val existingFile = getDownloadedApkFile(release)
                     if (existingFile != null) {
                         Timber.d("Update already downloaded: ${existingFile.absolutePath}")
-                        _updateState.value = UpdateState.Downloaded(existingFile)
+                        _updateState.value = UpdateState.Downloaded(existingFile, release)
                     } else {
                         _updateState.value = UpdateState.Available(release)
                     }
@@ -96,6 +98,13 @@ class UpdateManager @Inject constructor(
     }
 
     fun downloadUpdate(release: GitHubRelease) {
+        currentRelease = release
+        val existingFile = getDownloadedApkFile(release)
+        if (existingFile != null) {
+            Timber.d("Found existing file, skipping download: ${existingFile.absolutePath}")
+            _updateState.value = UpdateState.Downloaded(existingFile, release)
+        }
+
         val currentAbi = getCurrentAbi()
         val apkAsset = release.assets.firstOrNull { asset ->
             asset.name.endsWith(".apk") && asset.name.contains(currentAbi)
@@ -243,7 +252,7 @@ class UpdateManager @Inject constructor(
                         }
 
                         if (file?.exists() == true) {
-                            _updateState.value = UpdateState.Downloaded(file)
+                            _updateState.value = UpdateState.Downloaded(file, currentRelease!!)
                             Timber.d("Download completed: ${file.absolutePath}")
                         } else {
                             Timber.e("File not found at: ${file?.absolutePath}")
@@ -319,6 +328,7 @@ class UpdateManager @Inject constructor(
 
     fun resetState() {
         _updateState.value = UpdateState.Idle
+        currentRelease = null
     }
 
     fun cleanup() {
