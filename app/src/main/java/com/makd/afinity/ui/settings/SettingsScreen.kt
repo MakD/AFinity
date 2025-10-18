@@ -92,6 +92,7 @@ import timber.log.Timber
 fun SettingsScreen(
     onBackClick: () -> Unit,
     onLogoutComplete: () -> Unit,
+    onLicensesClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -224,7 +225,8 @@ fun SettingsScreen(
 
                 item {
                     AboutSection(
-                        appVersion = AppConstants.VERSION_NAME
+                        appVersion = AppConstants.VERSION_NAME,
+                        onLicensesClick = onLicensesClick
                     )
                 }
 
@@ -583,6 +585,7 @@ private fun PlaybackSection(
 @Composable
 private fun AboutSection(
     appVersion: String,
+    onLicensesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     SettingsSection(
@@ -616,9 +619,9 @@ private fun AboutSection(
 
         SettingsItem(
             icon = Icons.Outlined.Info,
-            title = "Version Code",
-            subtitle = AppConstants.VERSION_CODE.toString(),
-            onClick = null
+            title = "Open Source Licenses",
+            subtitle = "View licenses for open source libraries",
+            onClick = onLicensesClick
         )
     }
 }

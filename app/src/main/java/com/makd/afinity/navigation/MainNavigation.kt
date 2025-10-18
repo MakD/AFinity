@@ -55,6 +55,7 @@ import com.makd.afinity.ui.main.MainViewModel
 import com.makd.afinity.ui.person.PersonScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
+import com.makd.afinity.ui.settings.LicensesScreen
 import com.makd.afinity.ui.settings.SettingsScreen
 import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
 import com.makd.afinity.ui.watchlist.WatchlistScreen
@@ -95,7 +96,8 @@ fun MainNavigation(
                 !route.startsWith("person/") &&
                 route != "search" &&
                 !route.startsWith("genre_results/") &&
-                route != "settings"
+                route != "settings" &&
+                route != "licenses"
     } ?: true
 
     val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
@@ -379,6 +381,17 @@ fun MainNavigation(
                     onLogoutComplete = {
                         // Logout is handled by MainViewModel observing auth state
                         // MainActivity will automatically show LoginScreen
+                    },
+                    onLicensesClick = {
+                        val route = Destination.createLicensesRoute()
+                        navController.navigate(route)
+                    }
+                )
+            }
+            composable(Destination.LICENSES_ROUTE) {
+                LicensesScreen(
+                    onBackClick = {
+                        navController.popBackStack()
                     }
                 )
             }
