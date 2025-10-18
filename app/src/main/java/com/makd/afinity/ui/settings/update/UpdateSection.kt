@@ -50,6 +50,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -83,12 +84,13 @@ fun UpdateSection(
     var showUpdateDialog by remember { mutableStateOf(false) }
     var pendingRelease by remember { mutableStateOf<GitHubRelease?>(null) }
 
-    if (updateState is UpdateState.Available && !showUpdateDialog) {
+    if (updateState is UpdateState.Available && !showUpdateDialog && pendingRelease == null) {
         pendingRelease = (updateState as UpdateState.Available).release
         showUpdateDialog = true
     }
 
     if (updateState is UpdateState.Downloaded) {
+        showUpdateDialog = false
         val file = (updateState as UpdateState.Downloaded).file
         viewModel.installUpdate(file)
         viewModel.dismissUpdate()
@@ -97,13 +99,15 @@ fun UpdateSection(
     if (showUpdateDialog && pendingRelease != null) {
         UpdateAvailableDialog(
             release = pendingRelease!!,
+            isAutoDownloadEnabled = uiState.autoDownload,
+            isDownloading = updateState is UpdateState.Downloading,
             onDownload = {
                 viewModel.downloadUpdate(pendingRelease!!)
-                showUpdateDialog = false
             },
             onDismiss = {
                 showUpdateDialog = false
                 viewModel.dismissUpdate()
+                pendingRelease = null
             }
         )
     }
@@ -468,9 +472,17 @@ private fun UpdateSwitchItem(
 @Composable
 private fun UpdateAvailableDialog(
     release: GitHubRelease,
+    isAutoDownloadEnabled: Boolean,
+    isDownloading: Boolean,
     onDownload: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    LaunchedEffect(Unit) {
+        if (isAutoDownloadEnabled && !isDownloading) {
+            onDownload()
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
@@ -547,18 +559,33 @@ private fun UpdateAvailableDialog(
         },
         confirmButton = {
             Button(
-                onClick = onDownload,
+                onClick = {
+                    if (!isDownloading) {
+                        onDownload()
+                    }
+                },
+                enabled = !isDownloading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Download,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Download")
+                if (isDownloading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Downloading...")
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.Download,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Download")
+                }
             }
         },
         dismissButton = {
