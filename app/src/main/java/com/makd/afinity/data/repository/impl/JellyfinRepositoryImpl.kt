@@ -550,12 +550,11 @@ class JellyfinRepositoryImpl @Inject constructor(
         return try {
             Timber.d("Getting episode to play for series: $seriesId")
 
-            // OPTIMIZED: Use NextUp API directly with proper fields
             try {
                 val nextUpEpisodes = mediaRepository.getNextUp(
                     seriesId = seriesId,
                     limit = 1,
-                    fields = FieldSets.ITEM_DETAIL,  // ADD THIS - includes media sources
+                    fields = FieldSets.ITEM_DETAIL,
                     enableResumable = false
                 )
                 if (nextUpEpisodes.isNotEmpty()) {
@@ -566,7 +565,6 @@ class JellyfinRepositoryImpl @Inject constructor(
                 Timber.w(e, "NextUp API failed, falling back to manual logic")
             }
 
-            // FALLBACK: Get all seasons, then find first unwatched episode
             val seasons = getSeasons(seriesId, SortBy.NAME, sortDescending = false)
             if (seasons.isEmpty()) {
                 Timber.w("No seasons found for series: $seriesId")
@@ -577,7 +575,7 @@ class JellyfinRepositoryImpl @Inject constructor(
 
             val allEpisodes = mutableListOf<AfinityEpisode>()
             for (season in sortedSeasons) {
-                val episodes = getEpisodes(season.id, seriesId, fields = FieldSets.ITEM_DETAIL)  // ADD FIELDS
+                val episodes = getEpisodes(season.id, seriesId, fields = FieldSets.ITEM_DETAIL)
                 allEpisodes.addAll(episodes)
             }
 
@@ -641,12 +639,11 @@ class JellyfinRepositoryImpl @Inject constructor(
         return try {
             Timber.d("Getting episode to play for season: $seasonId")
 
-            // OPTIMIZED: Use NextUp API first with proper fields
             try {
                 val nextUpEpisodes = mediaRepository.getNextUp(
                     seriesId = seriesId,
                     limit = 10,
-                    fields = FieldSets.ITEM_DETAIL,  // ADD THIS - includes media sources
+                    fields = FieldSets.ITEM_DETAIL,
                     enableResumable = false
                 )
                 val nextUpForSeason = nextUpEpisodes.firstOrNull { it.seasonId == seasonId }
@@ -658,8 +655,7 @@ class JellyfinRepositoryImpl @Inject constructor(
                 Timber.w(e, "NextUp API failed for season")
             }
 
-            // FALLBACK: Get episodes for this specific season
-            val episodes = getEpisodes(seasonId, seriesId, fields = FieldSets.ITEM_DETAIL)  // ADD FIELDS
+            val episodes = getEpisodes(seasonId, seriesId, fields = FieldSets.ITEM_DETAIL)
             if (episodes.isEmpty()) {
                 Timber.w("No episodes found for season: $seasonId")
                 return null

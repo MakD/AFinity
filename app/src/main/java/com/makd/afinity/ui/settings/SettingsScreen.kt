@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PictureInPicture
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.SkipNext
@@ -79,6 +80,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.theme.ThemeMode
@@ -206,10 +208,12 @@ fun SettingsScreen(
                         skipIntroEnabled = uiState.skipIntroEnabled,
                         skipOutroEnabled = uiState.skipOutroEnabled,
                         useExoPlayer = uiState.useExoPlayer,
+                        pipGestureEnabled = uiState.pipGestureEnabled,
                         onAutoPlayToggle = viewModel::toggleAutoPlay,
                         onSkipIntroToggle = viewModel::toggleSkipIntro,
                         onSkipOutroToggle = viewModel::toggleSkipOutro,
-                        onUseExoPlayerToggle = viewModel::toggleUseExoPlayer
+                        onUseExoPlayerToggle = viewModel::toggleUseExoPlayer,
+                        onPipGestureToggle = viewModel::togglePipGesture
                     )
                 }
 
@@ -497,10 +501,12 @@ private fun PlaybackSection(
     skipIntroEnabled: Boolean,
     skipOutroEnabled: Boolean,
     useExoPlayer: Boolean,
+    pipGestureEnabled: Boolean,
     onAutoPlayToggle: (Boolean) -> Unit,
     onSkipIntroToggle: (Boolean) -> Unit,
     onSkipOutroToggle: (Boolean) -> Unit,
     onUseExoPlayerToggle: (Boolean) -> Unit,
+    onPipGestureToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     SettingsSection(
@@ -514,6 +520,19 @@ private fun PlaybackSection(
             subtitle = "Uses LibMPV when disabled",
             checked = useExoPlayer,
             onCheckedChange = onUseExoPlayerToggle
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+
+        SettingsSwitchItem(
+            icon = Icons.Outlined.PictureInPicture,
+            title = "Picture-in-Picture Home Gesture",
+            subtitle = "Use home button or gesture to enter picture-in-picture while video is playing",
+            checked = pipGestureEnabled,
+            onCheckedChange = onPipGestureToggle
         )
 
         HorizontalDivider(

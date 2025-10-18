@@ -453,7 +453,6 @@ class ItemDetailViewModel @Inject constructor(
             try {
                 val isInWatchlist = _selectedEpisodeWatchlistStatus.value
 
-                // Optimistic update
                 _selectedEpisodeWatchlistStatus.value = !isInWatchlist
 
                 val success = if (isInWatchlist) {
@@ -463,13 +462,11 @@ class ItemDetailViewModel @Inject constructor(
                 }
 
                 if (!success) {
-                    // Revert on failure
                     _selectedEpisodeWatchlistStatus.value = isInWatchlist
                     Timber.w("Failed to toggle watchlist status")
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watchlist")
-                // Revert on error
                 val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
                 _selectedEpisodeWatchlistStatus.value = isInWatchlist
             }

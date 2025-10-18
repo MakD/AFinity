@@ -48,28 +48,6 @@ fun PlayerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> {
-                    Timber.d("Player screen resumed")
-                    viewModel.onResume()
-                }
-                Lifecycle.Event.ON_PAUSE -> {
-                    Timber.d("Player screen paused")
-                    viewModel.onPause()
-                }
-                else -> {}
-            }
-        }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
     DisposableEffect(Unit) {
         onDispose {
             Timber.d("PlayerScreen disposed")
@@ -211,6 +189,9 @@ fun PlayerScreen(
                 },
                 onNextEpisode = viewModel::onNextEpisode,
                 onPreviousEpisode = viewModel::onPreviousEpisode,
+                onPipToggle = {
+                    viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture)
+                },
                 modifier = Modifier.fillMaxSize()
             )
 

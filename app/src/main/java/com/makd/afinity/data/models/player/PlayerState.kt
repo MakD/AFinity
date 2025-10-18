@@ -21,7 +21,8 @@ data class PlayerState(
     val error: PlayerError? = null,
     val isFullscreen: Boolean = true,
     val sessionId: String? = null,
-    val isControlsLocked: Boolean = false
+    val isControlsLocked: Boolean = false,
+    val isInPictureInPictureMode: Boolean = false
 )
 
 data class PlayerError(
@@ -43,6 +44,7 @@ sealed class PlayerEvent {
     object ToggleControls : PlayerEvent()
     object ToggleLock : PlayerEvent()
     object ToggleFullscreen : PlayerEvent()
+    object EnterPictureInPicture : PlayerEvent()
     data class LoadMedia(
         val item: AfinityItem,
         val mediaSourceId: String,

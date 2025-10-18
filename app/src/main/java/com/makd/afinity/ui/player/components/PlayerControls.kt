@@ -91,6 +91,7 @@ fun PlayerControls(
     onBackClick: () -> Unit,
     onNextEpisode: () -> Unit = {},
     onPreviousEpisode: () -> Unit = {},
+    onPipToggle: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showAudioSelector by remember { mutableStateOf(false) }
@@ -151,7 +152,7 @@ fun PlayerControls(
     }
 
     AnimatedVisibility(
-        visible = uiState.showControls,
+        visible = uiState.showControls && !uiState.isInPictureInPictureMode,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300)),
     ) {
@@ -165,10 +166,11 @@ fun PlayerControls(
                 onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
                 onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
                 onLockToggle = { onPlayerEvent(PlayerEvent.ToggleLock) },
+                onPipToggle = onPipToggle,
                 modifier = Modifier.align(Alignment.TopCenter)
             )
 
-            if (!uiState.isControlsLocked) {
+            if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
                 CenterPlayButton(
                     isPlaying = uiState.isPlaying,
                     showPlayButton = uiState.showControls,
@@ -185,7 +187,7 @@ fun PlayerControls(
                 )
             }
 
-            if (!uiState.isControlsLocked) {
+            if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
                 BottomControls(
                     uiState = uiState,
                     onPlayerEvent = onPlayerEvent,
@@ -509,14 +511,14 @@ private fun TopControls(
                     )
                 }
 
-                if (!uiState.isControlsLocked) {
+                if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
                     IconButton(
                         onClick = onPipToggle,
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_pip),
-                            contentDescription = "PiP",
+                            contentDescription = "Enter Picture-in-Picture",
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )
