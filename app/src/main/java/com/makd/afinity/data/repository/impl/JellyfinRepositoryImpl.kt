@@ -550,26 +550,23 @@ class JellyfinRepositoryImpl @Inject constructor(
         return try {
             Timber.d("Getting episode to play for series: $seriesId")
 
-            val continueWatchingEpisodes = getContinueWatching(limit = 50)
-            val seriesContinueWatching = continueWatchingEpisodes
-                .filterIsInstance<AfinityEpisode>()
-                .firstOrNull { it.seriesId == seriesId && it.playbackPositionTicks > 0 && !it.played }
-
-            if (seriesContinueWatching != null) {
-                Timber.d("Found continue watching episode: ${seriesContinueWatching.name}")
-                return getFullEpisodeDetails(seriesContinueWatching.id)
-            }
-
+            // OPTIMIZED: Use NextUp API directly with proper fields
             try {
-                val nextUpEpisodes = mediaRepository.getNextUp(seriesId, limit = 1)
+                val nextUpEpisodes = mediaRepository.getNextUp(
+                    seriesId = seriesId,
+                    limit = 1,
+                    fields = FieldSets.ITEM_DETAIL,  // ADD THIS - includes media sources
+                    enableResumable = false
+                )
                 if (nextUpEpisodes.isNotEmpty()) {
                     Timber.d("Found next up episode: ${nextUpEpisodes.first().name}")
-                    return getFullEpisodeDetails(nextUpEpisodes.first().id)
+                    return nextUpEpisodes.first()
                 }
             } catch (e: Exception) {
                 Timber.w(e, "NextUp API failed, falling back to manual logic")
             }
 
+            // FALLBACK: Get all seasons, then find first unwatched episode
             val seasons = getSeasons(seriesId, SortBy.NAME, sortDescending = false)
             if (seasons.isEmpty()) {
                 Timber.w("No seasons found for series: $seriesId")
@@ -578,27 +575,32 @@ class JellyfinRepositoryImpl @Inject constructor(
 
             val sortedSeasons = seasons.sortedBy { it.indexNumber ?: 0 }
 
+            val allEpisodes = mutableListOf<AfinityEpisode>()
             for (season in sortedSeasons) {
-                val episodes = getEpisodes(season.id, seriesId)
-                if (episodes.isEmpty()) continue
-
-                val sortedEpisodes = episodes.sortedBy { it.indexNumber ?: 0 }
-
-                val nextEpisode = sortedEpisodes.firstOrNull { !it.played }
-                if (nextEpisode != null) {
-                    Timber.d("Found next unwatched episode: ${nextEpisode.name}")
-                    return getFullEpisodeDetails(nextEpisode.id)
-                }
+                val episodes = getEpisodes(season.id, seriesId, fields = FieldSets.ITEM_DETAIL)  // ADD FIELDS
+                allEpisodes.addAll(episodes)
             }
 
-            val firstSeason = sortedSeasons.firstOrNull()
-            if (firstSeason != null) {
-                val firstSeasonEpisodes = getEpisodes(firstSeason.id, seriesId)
-                val firstEpisode = firstSeasonEpisodes.sortedBy { it.indexNumber ?: 0 }.firstOrNull()
-                if (firstEpisode != null) {
-                    Timber.d("All episodes watched, returning first episode: ${firstEpisode.name}")
-                    return getFullEpisodeDetails(firstEpisode.id)
-                }
+            if (allEpisodes.isEmpty()) {
+                Timber.w("No episodes found for series: $seriesId")
+                return null
+            }
+
+            val sortedEpisodes = allEpisodes.sortedWith(
+                compareBy<AfinityEpisode> { it.parentIndexNumber ?: 0 }
+                    .thenBy { it.indexNumber ?: 0 }
+            )
+
+            val nextEpisode = sortedEpisodes.firstOrNull { !it.played }
+            if (nextEpisode != null) {
+                Timber.d("Found next unwatched episode: ${nextEpisode.name}")
+                return nextEpisode
+            }
+
+            val firstEpisode = sortedEpisodes.firstOrNull()
+            if (firstEpisode != null) {
+                Timber.d("All episodes watched, returning first episode: ${firstEpisode.name}")
+                return firstEpisode
             }
 
             Timber.w("No episode found to play for series: $seriesId")
@@ -639,28 +641,25 @@ class JellyfinRepositoryImpl @Inject constructor(
         return try {
             Timber.d("Getting episode to play for season: $seasonId")
 
-            val continueWatchingEpisodes = getContinueWatching(limit = 50)
-            val seasonContinueWatching = continueWatchingEpisodes
-                .filterIsInstance<AfinityEpisode>()
-                .firstOrNull { it.seasonId == seasonId && it.playbackPositionTicks > 0 && !it.played }
-
-            if (seasonContinueWatching != null) {
-                Timber.d("Found continue watching episode for season: ${seasonContinueWatching.name}")
-                return getFullEpisodeDetails(seasonContinueWatching.id)
-            }
-
+            // OPTIMIZED: Use NextUp API first with proper fields
             try {
-                val nextUpEpisodes = mediaRepository.getNextUp(seriesId, limit = 10)
+                val nextUpEpisodes = mediaRepository.getNextUp(
+                    seriesId = seriesId,
+                    limit = 10,
+                    fields = FieldSets.ITEM_DETAIL,  // ADD THIS - includes media sources
+                    enableResumable = false
+                )
                 val nextUpForSeason = nextUpEpisodes.firstOrNull { it.seasonId == seasonId }
                 if (nextUpForSeason != null) {
                     Timber.d("Found next up episode for season: ${nextUpForSeason.name}")
-                    return getFullEpisodeDetails(nextUpForSeason.id)
+                    return nextUpForSeason
                 }
             } catch (e: Exception) {
-                Timber.w(e, "NextUp API failed for season, falling back to manual logic")
+                Timber.w(e, "NextUp API failed for season")
             }
 
-            val episodes = getEpisodes(seasonId, seriesId)
+            // FALLBACK: Get episodes for this specific season
+            val episodes = getEpisodes(seasonId, seriesId, fields = FieldSets.ITEM_DETAIL)  // ADD FIELDS
             if (episodes.isEmpty()) {
                 Timber.w("No episodes found for season: $seasonId")
                 return null
@@ -671,13 +670,13 @@ class JellyfinRepositoryImpl @Inject constructor(
             val nextEpisode = sortedEpisodes.firstOrNull { !it.played }
             if (nextEpisode != null) {
                 Timber.d("Found next unwatched episode in season: ${nextEpisode.name}")
-                return getFullEpisodeDetails(nextEpisode.id)
+                return nextEpisode
             }
 
             val firstEpisode = sortedEpisodes.firstOrNull()
             if (firstEpisode != null) {
                 Timber.d("All episodes watched in season, returning first episode: ${firstEpisode.name}")
-                return getFullEpisodeDetails(firstEpisode.id)
+                return firstEpisode
             }
 
             Timber.w("No episode found to play for season: $seasonId")
