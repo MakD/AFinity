@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -91,10 +92,18 @@ fun EpisodeDetailOverlay(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            val imageUrl = remember(episode.id) {
+                episode.images.primaryImageUrl ?: episode.images.thumbImageUrl
+            }
+
+            val blurHash = remember(episode.id) {
+                episode.images.primaryBlurHash ?: episode.images.thumbBlurHash
+            }
+
             OptimizedAsyncImage(
-                imageUrl = episode.images.primaryImageUrl ?: episode.images.thumbImageUrl,
+                imageUrl = imageUrl,
                 contentDescription = episode.name,
-                blurHash = episode.images.primaryBlurHash ?: episode.images.thumbBlurHash,
+                blurHash = blurHash,
                 targetWidth = 400.dp,
                 targetHeight = 225.dp,
                 modifier = Modifier

@@ -136,7 +136,6 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _isLoadingEpisode.value = true
-                _selectedEpisode.value = episode
 
                 val fullEpisode = jellyfinRepository.getItem(
                     episode.id,
@@ -144,12 +143,13 @@ class HomeViewModel @Inject constructor(
                 )?.toAfinityEpisode(jellyfinRepository, null)
 
                 if (fullEpisode != null) {
-                    _selectedEpisode.value = fullEpisode
+                    _selectedEpisode.value = episode
                 }
 
                 _isLoadingEpisode.value = false
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load full episode details")
+                _selectedEpisode.value = episode
                 _isLoadingEpisode.value = false
             }
         }

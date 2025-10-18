@@ -1,10 +1,13 @@
 package com.makd.afinity.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -44,10 +47,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -89,7 +94,8 @@ import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import com.makd.afinity.data.models.media.AfinityEpisode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,7 +110,6 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -314,38 +319,62 @@ fun HomeScreen(
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
         val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
 
-        selectedEpisode?.let { episode ->
-            EpisodeDetailOverlay(
-                episode = episode,
-                isLoading = isLoadingEpisode,
-                onDismiss = { viewModel.clearSelectedEpisode() },
-                onPlayClick = { episodeToPlay, selection ->
-                    viewModel.clearSelectedEpisode()
+        var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
-                    com.makd.afinity.ui.player.PlayerLauncher.launch(
-                        context = context,
-                        itemId = episodeToPlay.id,
-                        mediaSourceId = selection.mediaSourceId,
-                        audioStreamIndex = selection.audioStreamIndex,
-                        subtitleStreamIndex = selection.subtitleStreamIndex,
-                        startPositionMs = selection.startPositionMs
-                    )
-                },
-                onToggleFavorite = {
-                    viewModel.toggleEpisodeFavorite(episode)
-                },
-                onToggleWatchlist = {
-                    viewModel.toggleEpisodeWatchlist(episode)
-                },
-                onToggleWatched = {
-                    viewModel.toggleEpisodeWatched(episode)
-                },
-                onGoToSeries = {
-                    viewModel.clearSelectedEpisode()
-                    val route = Destination.createItemDetailRoute(episode.seriesId.toString())
-                    navController.navigate(route)
-                }
-            )
+        var episodeForOverlay by remember { mutableStateOf<AfinityEpisode?>(null) }
+        if (selectedEpisode != null) {
+            episodeForOverlay = selectedEpisode
+        }
+
+        AnimatedVisibility(
+            visible = selectedEpisode != null,
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
+            episodeForOverlay?.let { episode ->
+                EpisodeDetailOverlay(
+                    episode = episode,
+                    isLoading = isLoadingEpisode,
+                    onDismiss = {
+                        viewModel.clearSelectedEpisode()
+                        pendingNavigationSeriesId = null
+                    },
+                    onPlayClick = { episodeToPlay, selection ->
+                        viewModel.clearSelectedEpisode()
+
+                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                            context = context,
+                            itemId = episodeToPlay.id,
+                            mediaSourceId = selection.mediaSourceId,
+                            audioStreamIndex = selection.audioStreamIndex,
+                            subtitleStreamIndex = selection.subtitleStreamIndex,
+                            startPositionMs = selection.startPositionMs
+                        )
+                    },
+                    onToggleFavorite = {
+                        viewModel.toggleEpisodeFavorite(episode)
+                    },
+                    onToggleWatchlist = {
+                        viewModel.toggleEpisodeWatchlist(episode)
+                    },
+                    onToggleWatched = {
+                        viewModel.toggleEpisodeWatched(episode)
+                    },
+                    onGoToSeries = {
+                        viewModel.clearSelectedEpisode()
+                        pendingNavigationSeriesId = episode.seriesId.toString()
+                    }
+                )
+            }
+        }
+
+
+        LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
+            if (selectedEpisode == null && pendingNavigationSeriesId != null) {
+                delay(300)
+                val route = Destination.createItemDetailRoute(pendingNavigationSeriesId!!)
+                navController.navigate(route)
+                pendingNavigationSeriesId = null
+            }
         }
     }
 }

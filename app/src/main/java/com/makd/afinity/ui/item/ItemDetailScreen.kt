@@ -56,6 +56,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.paging.PagingData
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
+import com.makd.afinity.data.models.extensions.showLogoImageUrl
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -245,13 +246,33 @@ private fun ItemDetailContent(
                     .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (item.images.logo != null) {
+                val logoToDisplay = if (item is AfinitySeason) {
+                    item.images.showLogo
+                } else {
+                    item.images.logo
+                }
+
+                val logoUrlToDisplay = if (item is AfinitySeason) {
+                    (item as AfinitySeason).images.showLogoImageUrl?.let { url ->
+                        if (url.contains("?")) "$url&format=png" else "$url?format=png"
+                    }
+                } else {
+                    item.images.logoImageUrlWithTransparency
+                }
+
+                val logoNameToDisplay = if (item is AfinitySeason) {
+                    (item as AfinitySeason).seriesName ?: item.name
+                } else {
+                    item.name
+                }
+
+                if (logoToDisplay != null) {
                     val logoAlignment = if (isLandscape) Alignment.Start else Alignment.CenterHorizontally
                     val logoContentAlignment = if (isLandscape) Alignment.CenterStart else Alignment.Center
 
                     OptimizedAsyncImage(
-                        imageUrl = item.images.logoImageUrlWithTransparency,
-                        contentDescription = "${item.name} logo",
+                        imageUrl = logoUrlToDisplay,
+                        contentDescription = "$logoNameToDisplay logo",
                         targetWidth = 240.dp,
                         targetHeight = 120.dp,
                         modifier = Modifier
@@ -265,9 +286,9 @@ private fun ItemDetailContent(
                     Spacer(modifier = Modifier.height(0.dp))
                 }
 
-                if (item.images.logo == null) {
+                if (logoToDisplay == null) {
                     Text(
-                        text = item.name,
+                        text = logoNameToDisplay,
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 32.sp

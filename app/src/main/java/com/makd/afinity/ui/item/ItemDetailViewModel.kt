@@ -391,7 +391,6 @@ class ItemDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _isLoadingEpisode.value = true
-                _selectedEpisode.value = episode
 
                 val fullEpisode = jellyfinRepository.getItem(
                     episode.id,
@@ -399,12 +398,13 @@ class ItemDetailViewModel @Inject constructor(
                 )?.toAfinityEpisode(jellyfinRepository, null)
 
                 if (fullEpisode != null) {
-                    _selectedEpisode.value = fullEpisode
+                    _selectedEpisode.value = episode
                 }
 
                 _isLoadingEpisode.value = false
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load full episode details")
+                _selectedEpisode.value = episode
                 _isLoadingEpisode.value = false
             }
         }
@@ -483,6 +483,7 @@ class ItemDetailViewModel @Inject constructor(
                     is AfinityShow -> currentItem.copy(favorite = !currentItem.favorite)
                     is AfinityEpisode -> currentItem.copy(favorite = !currentItem.favorite)
                     is AfinityBoxSet -> currentItem.copy(favorite = !currentItem.favorite)
+                    is AfinitySeason -> currentItem.copy(favorite = !currentItem.favorite)
                     else -> currentItem
                 }
                 _uiState.value = _uiState.value.copy(item = optimisticItem)
@@ -522,6 +523,7 @@ class ItemDetailViewModel @Inject constructor(
                         playbackPositionTicks = if (!currentItem.played) currentItem.runtimeTicks else 0
                     )
                     is AfinityBoxSet -> currentItem.copy(played = !currentItem.played)
+                    is AfinitySeason -> currentItem.copy(played = !currentItem.played)
                     else -> currentItem
                 }
                 _uiState.value = _uiState.value.copy(item = optimisticItem)

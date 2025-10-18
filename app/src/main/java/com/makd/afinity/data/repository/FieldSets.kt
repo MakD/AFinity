@@ -74,8 +74,9 @@ object FieldSets {
      */
     val CONTINUE_WATCHING = listOf(
         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        ItemFields.TRICKPLAY
-    )
+        ItemFields.TRICKPLAY,
+        ItemFields.OVERVIEW
+        )
 
     /**
      * NEXT_UP - Next up episodes section (HomeScreen.kt, NextUpSection.kt)
