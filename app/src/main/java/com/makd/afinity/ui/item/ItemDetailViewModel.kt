@@ -559,6 +559,7 @@ class ItemDetailViewModel @Inject constructor(
                     val itemType = when (currentItem) {
                         is AfinityMovie -> "MOVIE"
                         is AfinityShow -> "SERIES"
+                        is AfinitySeason -> "SEASON"
                         is AfinityEpisode -> "EPISODE"
                         else -> "UNKNOWN"
                     }

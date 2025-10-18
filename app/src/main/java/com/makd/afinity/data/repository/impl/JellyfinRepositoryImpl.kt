@@ -631,6 +631,10 @@ class JellyfinRepositoryImpl @Inject constructor(
         return mediaRepository.getFavoriteEpisodes()
     }
 
+    override suspend fun getFavoriteSeasons(): List<AfinitySeason> {
+        return mediaRepository.getFavoriteSeasons()
+    }
+
     suspend fun getPlayableItemForSeries(seriesId: UUID): AfinityItem? {
         return getEpisodeToPlay(seriesId)
     }

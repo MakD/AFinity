@@ -4,6 +4,7 @@ import com.makd.afinity.data.database.dao.WatchlistDao
 import com.makd.afinity.data.database.entities.WatchlistItemEntity
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.JellyfinRepository
 import kotlinx.coroutines.Dispatchers
@@ -104,6 +105,30 @@ class WatchlistRepositoryImpl @Inject constructor(
                 shows
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load watchlist shows")
+                emptyList()
+            }
+        }
+    }
+
+    override suspend fun getWatchlistSeasons(): List<AfinitySeason> {
+        return withContext(Dispatchers.IO) {
+            try {
+
+                val watchlistItems = watchlistDao.getWatchlistItemsByType("SEASON")
+
+                val seasons = watchlistItems.mapNotNull { entity ->
+                    try {
+                        val item = jellyfinRepository.getItemById(entity.itemId)
+                        item as? AfinitySeason
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to load season ${entity.itemId} from watchlist")
+                        null
+                    }
+                }
+                Timber.d("Loaded ${seasons.size} seasons from watchlist")
+                seasons
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load watchlist seasons")
                 emptyList()
             }
         }

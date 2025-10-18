@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -38,12 +39,14 @@ class FavoritesViewModel @Inject constructor(
 
                 val movies = jellyfinRepository.getFavoriteMovies()
                 val shows = jellyfinRepository.getFavoriteShows()
+                val seasons = jellyfinRepository.getFavoriteSeasons()
                 val episodes = jellyfinRepository.getFavoriteEpisodes()
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     movies = movies.sortedBy { it.name },
                     shows = shows.sortedBy { it.name },
+                    seasons = seasons.sortedBy { it.name },
                     episodes = episodes.sortedBy { it.name },
                     people = emptyList(),
                     error = null
@@ -73,6 +76,7 @@ class FavoritesViewModel @Inject constructor(
 data class FavoritesUiState(
     val movies: List<AfinityMovie> = emptyList(),
     val shows: List<AfinityShow> = emptyList(),
+    val seasons: List<AfinitySeason> = emptyList(),
     val episodes: List<AfinityEpisode> = emptyList(),
     val people: List<com.makd.afinity.data.models.media.AfinityPersonDetail> = emptyList(),
     val isLoading: Boolean = false,

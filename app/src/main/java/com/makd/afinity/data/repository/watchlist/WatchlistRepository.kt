@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.watchlist
 
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
@@ -19,6 +20,8 @@ interface WatchlistRepository {
     suspend fun getWatchlistMovies(): List<AfinityMovie>
 
     suspend fun getWatchlistShows(): List<AfinityShow>
+
+    suspend fun getWatchlistSeasons(): List<AfinitySeason>
 
     suspend fun getWatchlistEpisodes(): List<AfinityEpisode>
 
