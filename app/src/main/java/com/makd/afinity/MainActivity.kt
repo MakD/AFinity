@@ -70,7 +70,8 @@ class MainActivity : ComponentActivity() {
                 dynamicColor = dynamicColors
             ) {
                 MainContent(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    updateManager = updateManager
                 )
             }
         }
@@ -86,7 +87,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MainContent(
     modifier: Modifier = Modifier,
-    viewModel: MainViewModel = hiltViewModel()
+    viewModel: MainViewModel = hiltViewModel(),
+    updateManager: UpdateManager
 ) {
     val authState by viewModel.authenticationState.collectAsStateWithLifecycle()
 
@@ -99,7 +101,8 @@ private fun MainContent(
 
         AuthenticationState.Authenticated -> {
             MainNavigation(
-                modifier = modifier
+                modifier = modifier,
+                updateManager = updateManager
             )
         }
 

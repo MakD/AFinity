@@ -45,6 +45,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.makd.afinity.R
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
@@ -55,6 +56,7 @@ import com.makd.afinity.ui.person.PersonScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
 import com.makd.afinity.ui.settings.SettingsScreen
+import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
 import com.makd.afinity.ui.watchlist.WatchlistScreen
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -64,7 +66,8 @@ import timber.log.Timber
 fun MainNavigation(
     modifier: Modifier = Modifier,
     mainViewModel: MainViewModel = hiltViewModel(),
-    viewModel: MainNavigationViewModel = hiltViewModel()
+    viewModel: MainNavigationViewModel = hiltViewModel(),
+    updateManager: UpdateManager
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val watchlistRepository: WatchlistRepository = hiltViewModel<MainNavigationViewModel>().watchlistRepository
@@ -381,6 +384,7 @@ fun MainNavigation(
             }
         }
     }
+    GlobalUpdateDialog(updateManager = updateManager)
 }
 
 @Composable
