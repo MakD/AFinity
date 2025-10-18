@@ -91,6 +91,7 @@ interface JellyfinRepository {
     ): List<AfinityItem>
 
     suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode?
+    suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode?  // ADD THIS
 
     suspend fun getMovies(
         parentId: UUID? = null,

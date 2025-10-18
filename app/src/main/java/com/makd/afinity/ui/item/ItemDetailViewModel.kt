@@ -608,6 +608,10 @@ class ItemDetailViewModel @Inject constructor(
     suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode? {
         return jellyfinRepository.getEpisodeToPlay(seriesId)
     }
+
+    suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode? {
+        return jellyfinRepository.getEpisodeToPlayForSeason(seasonId, seriesId)
+    }
 }
 
 data class ItemDetailUiState(

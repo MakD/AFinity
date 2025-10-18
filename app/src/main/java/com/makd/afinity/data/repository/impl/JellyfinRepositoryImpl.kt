@@ -635,7 +635,56 @@ class JellyfinRepositoryImpl @Inject constructor(
         return mediaRepository.getFavoriteSeasons()
     }
 
-    suspend fun getPlayableItemForSeries(seriesId: UUID): AfinityItem? {
-        return getEpisodeToPlay(seriesId)
+    override suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode? {
+        return try {
+            Timber.d("Getting episode to play for season: $seasonId")
+
+            val continueWatchingEpisodes = getContinueWatching(limit = 50)
+            val seasonContinueWatching = continueWatchingEpisodes
+                .filterIsInstance<AfinityEpisode>()
+                .firstOrNull { it.seasonId == seasonId && it.playbackPositionTicks > 0 && !it.played }
+
+            if (seasonContinueWatching != null) {
+                Timber.d("Found continue watching episode for season: ${seasonContinueWatching.name}")
+                return getFullEpisodeDetails(seasonContinueWatching.id)
+            }
+
+            try {
+                val nextUpEpisodes = mediaRepository.getNextUp(seriesId, limit = 10)
+                val nextUpForSeason = nextUpEpisodes.firstOrNull { it.seasonId == seasonId }
+                if (nextUpForSeason != null) {
+                    Timber.d("Found next up episode for season: ${nextUpForSeason.name}")
+                    return getFullEpisodeDetails(nextUpForSeason.id)
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "NextUp API failed for season, falling back to manual logic")
+            }
+
+            val episodes = getEpisodes(seasonId, seriesId)
+            if (episodes.isEmpty()) {
+                Timber.w("No episodes found for season: $seasonId")
+                return null
+            }
+
+            val sortedEpisodes = episodes.sortedBy { it.indexNumber ?: 0 }
+
+            val nextEpisode = sortedEpisodes.firstOrNull { !it.played }
+            if (nextEpisode != null) {
+                Timber.d("Found next unwatched episode in season: ${nextEpisode.name}")
+                return getFullEpisodeDetails(nextEpisode.id)
+            }
+
+            val firstEpisode = sortedEpisodes.firstOrNull()
+            if (firstEpisode != null) {
+                Timber.d("All episodes watched in season, returning first episode: ${firstEpisode.name}")
+                return getFullEpisodeDetails(firstEpisode.id)
+            }
+
+            Timber.w("No episode found to play for season: $seasonId")
+            null
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to determine episode to play for season: $seasonId")
+            null
+        }
     }
 }

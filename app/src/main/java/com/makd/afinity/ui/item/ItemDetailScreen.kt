@@ -442,6 +442,90 @@ private fun ItemDetailContent(
                                             }
                                         }
                                     }
+                                    is AfinitySeason -> {
+                                        var episodeToPlay by remember { mutableStateOf<AfinityEpisode?>(null) }
+                                        var isLoadingEpisode by remember { mutableStateOf(false) }
+
+                                        LaunchedEffect(item.id) {
+                                            isLoadingEpisode = true
+                                            episodeToPlay = viewModel.getEpisodeToPlayForSeason(item.id, item.seriesId)
+                                            isLoadingEpisode = false
+                                        }
+
+                                        when {
+                                            isLoadingEpisode -> {
+                                                Button(
+                                                    onClick = { },
+                                                    enabled = false,
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(56.dp),
+                                                    shape = RoundedCornerShape(28.dp)
+                                                ) {
+                                                    CircularProgressIndicator(
+                                                        modifier = Modifier.size(16.dp),
+                                                        strokeWidth = 2.dp
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text("Loading...")
+                                                }
+                                            }
+                                            episodeToPlay != null -> {
+                                                val episode = episodeToPlay!!
+                                                val (buttonText, buttonIcon) = when {
+                                                    episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
+                                                        "Rewatch" to Icons.Default.Replay
+                                                    }
+                                                    episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
+                                                        "Resume Playback" to Icons.Default.PlayArrow
+                                                    }
+                                                    else -> {
+                                                        "Play" to Icons.Default.PlayArrow
+                                                    }
+                                                }
+
+                                                PlaybackSelectionButton(
+                                                    item = episode,
+                                                    buttonText = buttonText,
+                                                    buttonIcon = buttonIcon,
+                                                    onPlayClick = { selection ->
+                                                        if (episode.sources.isEmpty()) {
+                                                            Timber.w("Episode ${episode.name} has no media sources")
+                                                            return@PlaybackSelectionButton
+                                                        }
+                                                        val finalSelection = selection.copy(
+                                                            mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull()?.id ?: "",
+                                                            startPositionMs = if (episode.playbackPositionTicks > 0) {
+                                                                episode.playbackPositionTicks / 10000
+                                                            } else {
+                                                                0L
+                                                            }
+                                                        )
+                                                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                            context = navController.context,
+                                                            itemId = episode.id,
+                                                            mediaSourceId = finalSelection.mediaSourceId,
+                                                            audioStreamIndex = finalSelection.audioStreamIndex,
+                                                            subtitleStreamIndex = finalSelection.subtitleStreamIndex,
+                                                            startPositionMs = finalSelection.startPositionMs
+                                                        )
+                                                    }
+                                                )
+                                            }
+                                            else -> {
+                                                Button(
+                                                    onClick = { },
+                                                    enabled = false,
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(56.dp),
+                                                    shape = RoundedCornerShape(28.dp)
+                                                ) {
+                                                    Text("No Episodes Available")
+                                                }
+                                            }
+                                        }
+                                    }
                                     else -> {
                                         val (buttonText, buttonIcon) = when {
                                             item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
@@ -553,6 +637,90 @@ private fun ItemDetailContent(
                                 LaunchedEffect(item.id) {
                                     isLoadingEpisode = true
                                     episodeToPlay = viewModel.getEpisodeToPlay(item.id)
+                                    isLoadingEpisode = false
+                                }
+
+                                when {
+                                    isLoadingEpisode -> {
+                                        Button(
+                                            onClick = { },
+                                            enabled = false,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(56.dp),
+                                            shape = RoundedCornerShape(28.dp)
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Loading...")
+                                        }
+                                    }
+                                    episodeToPlay != null -> {
+                                        val episode = episodeToPlay!!
+                                        val (buttonText, buttonIcon) = when {
+                                            episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
+                                                "Rewatch" to Icons.Default.Replay
+                                            }
+                                            episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
+                                                "Resume Playback" to Icons.Default.PlayArrow
+                                            }
+                                            else -> {
+                                                "Play" to Icons.Default.PlayArrow
+                                            }
+                                        }
+
+                                        PlaybackSelectionButton(
+                                            item = episode,
+                                            buttonText = buttonText,
+                                            buttonIcon = buttonIcon,
+                                            onPlayClick = { selection ->
+                                                if (episode.sources.isEmpty()) {
+                                                    Timber.w("Episode ${episode.name} has no media sources")
+                                                    return@PlaybackSelectionButton
+                                                }
+                                                val finalSelection = selection.copy(
+                                                    mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull()?.id ?: "",
+                                                    startPositionMs = if (episode.playbackPositionTicks > 0) {
+                                                        episode.playbackPositionTicks / 10000
+                                                    } else {
+                                                        0L
+                                                    }
+                                                )
+                                                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                    context = navController.context,
+                                                    itemId = episode.id,
+                                                    mediaSourceId = finalSelection.mediaSourceId,
+                                                    audioStreamIndex = finalSelection.audioStreamIndex,
+                                                    subtitleStreamIndex = finalSelection.subtitleStreamIndex,
+                                                    startPositionMs = finalSelection.startPositionMs
+                                                )
+                                            }
+                                        )
+                                    }
+                                    else -> {
+                                        Button(
+                                            onClick = { },
+                                            enabled = false,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(56.dp),
+                                            shape = RoundedCornerShape(28.dp)
+                                        ) {
+                                            Text("No Episodes Available")
+                                        }
+                                    }
+                                }
+                            }
+                            is AfinitySeason -> {
+                                var episodeToPlay by remember { mutableStateOf<AfinityEpisode?>(null) }
+                                var isLoadingEpisode by remember { mutableStateOf(false) }
+
+                                LaunchedEffect(item.id) {
+                                    isLoadingEpisode = true
+                                    episodeToPlay = viewModel.getEpisodeToPlayForSeason(item.id, item.seriesId)
                                     isLoadingEpisode = false
                                 }
 
