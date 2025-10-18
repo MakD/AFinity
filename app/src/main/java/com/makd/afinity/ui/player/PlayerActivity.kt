@@ -159,17 +159,6 @@ class PlayerActivity : ComponentActivity() {
         }
     }
 
-    /*override fun onResume() {
-        super.onResume()
-        hideSystemUI()
-        viewModel.onResume()
-    }*/
-
-    /*override fun onPause() {
-        super.onPause()
-        viewModel.onPause()
-    }*/
-
     private fun hideSystemUI() {
         WindowCompat.getInsetsController(window, window.decorView).apply {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE

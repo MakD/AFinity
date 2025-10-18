@@ -292,25 +292,6 @@ fun MainNavigation(
                 )
             }
 
-            /*composable(
-                route = Destination.EPISODE_LIST_ROUTE,
-                arguments = listOf(
-                    navArgument("seasonId") { type = NavType.StringType },
-                    navArgument("seasonName") { type = NavType.StringType }
-                )
-            ) {
-                EpisodeListScreen(
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
-                    onEpisodeClick = { episode ->
-                        // TODO: Navigate to player screen
-                    },
-                    navController = navController,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }*/
-
             composable(
                 route = Destination.PERSON_ROUTE,
                 arguments = listOf(
