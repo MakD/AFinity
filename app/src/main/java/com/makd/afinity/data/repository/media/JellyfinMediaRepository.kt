@@ -852,6 +852,32 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
+    override suspend fun getFavoriteSeasons(
+        fields: List<ItemFields>?
+    ): List<AfinitySeason> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val userId = getCurrentUserId() ?: return@withContext emptyList()
+            val itemsApi = ItemsApi(apiClient)
+
+            val response = itemsApi.getItems(
+                userId = userId,
+                includeItemTypes = listOf(BaseItemKind.SEASON),
+                isFavorite = true,
+                recursive = true,
+                fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                enableImages = true,
+                enableUserData = true,
+                sortBy = listOf(ItemSortBy.SORT_NAME)
+            )
+            response.content?.items?.mapNotNull { baseItem ->
+                baseItem.toAfinitySeason(getBaseUrl())
+            } ?: emptyList()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get favorite seasons")
+            emptyList()
+        }
+    }
+
     override suspend fun getNextUp(
         seriesId: UUID?,
         limit: Int,

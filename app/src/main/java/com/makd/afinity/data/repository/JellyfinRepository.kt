@@ -91,6 +91,7 @@ interface JellyfinRepository {
     ): List<AfinityItem>
 
     suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode?
+    suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode?
 
     suspend fun getMovies(
         parentId: UUID? = null,
@@ -189,6 +190,7 @@ interface JellyfinRepository {
     suspend fun getFavoriteMovies(): List<AfinityMovie>
     suspend fun getFavoriteShows(): List<AfinityShow>
     suspend fun getFavoriteEpisodes(): List<AfinityEpisode>
+    suspend fun getFavoriteSeasons(): List<AfinitySeason>
 
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>
     fun getLatestMediaFlow(parentId: UUID? = null): Flow<List<AfinityItem>>

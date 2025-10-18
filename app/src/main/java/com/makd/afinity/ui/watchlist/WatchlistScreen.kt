@@ -91,7 +91,7 @@ fun WatchlistScreen(
                 }
             }
 
-            uiState.movies.isEmpty() && uiState.shows.isEmpty() && uiState.episodes.isEmpty() -> {
+            uiState.movies.isEmpty() && uiState.shows.isEmpty() && uiState.seasons.isEmpty() && uiState.episodes.isEmpty() -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -129,6 +129,16 @@ fun WatchlistScreen(
                             WatchlistSection(
                                 title = "TV Shows",
                                 items = uiState.shows,
+                                onItemClick = onItemClick
+                            )
+                        }
+                    }
+
+                    if (uiState.seasons.isNotEmpty()) {
+                        item {
+                            WatchlistSection(
+                                title = "Seasons",
+                                items = uiState.seasons,
                                 onItemClick = onItemClick
                             )
                         }

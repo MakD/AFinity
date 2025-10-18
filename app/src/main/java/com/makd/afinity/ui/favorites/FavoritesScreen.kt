@@ -42,6 +42,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
@@ -119,6 +120,7 @@ fun FavoritesScreen(
                 else -> {
                     val hasAnyFavorites = uiState.movies.isNotEmpty() ||
                             uiState.shows.isNotEmpty() ||
+                            uiState.seasons.isNotEmpty() ||
                             uiState.episodes.isNotEmpty() ||
                             uiState.people.isNotEmpty()
 
@@ -167,6 +169,19 @@ fun FavoritesScreen(
                                     ) {
                                         FavoriteShowsRow(
                                             shows = uiState.shows,
+                                            onItemClick = onItemClick
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (uiState.seasons.isNotEmpty()) {
+                                item {
+                                    FavoriteSection(
+                                        title = "Seasons (${uiState.seasons.size})"
+                                    ) {
+                                        FavoriteSeasonsRow(
+                                            seasons = uiState.seasons,
                                             onItemClick = onItemClick
                                         )
                                     }
@@ -258,6 +273,24 @@ private fun FavoriteShowsRow(
             MediaItemCard(
                 item = show,
                 onClick = { onItemClick(show) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun FavoriteSeasonsRow(
+    seasons: List<AfinitySeason>,
+    onItemClick: (AfinityItem) -> Unit
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 0.dp)
+    ) {
+        items(seasons) { season ->
+            MediaItemCard(
+                item = season,
+                onClick = { onItemClick(season) }
             )
         }
     }

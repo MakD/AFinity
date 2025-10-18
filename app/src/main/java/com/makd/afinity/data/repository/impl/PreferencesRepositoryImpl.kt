@@ -39,6 +39,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         val SKIP_OUTRO_ENABLED = booleanPreferencesKey("skip_outro_enabled")
         val USE_EXO_PLAYER = booleanPreferencesKey("use_exo_player")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val PIP_GESTURE_ENABLED = booleanPreferencesKey("pip_gesture_enabled")
 
         val DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
         val GRID_LAYOUT = booleanPreferencesKey("grid_layout")
@@ -382,6 +383,22 @@ class PreferencesRepositoryImpl @Inject constructor(
     override suspend fun setUseExoPlayer(value: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.USE_EXO_PLAYER] = value
+        }
+    }
+
+    override suspend fun setPipGestureEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.PIP_GESTURE_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun getPipGestureEnabled(): Boolean {
+        return dataStore.data.first()[Keys.PIP_GESTURE_ENABLED] ?: false
+    }
+
+    override fun getPipGestureEnabledFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.PIP_GESTURE_ENABLED] ?: false
         }
     }
 }

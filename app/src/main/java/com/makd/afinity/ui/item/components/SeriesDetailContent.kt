@@ -44,12 +44,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
@@ -172,7 +175,8 @@ internal fun WriterSection(item: AfinityItem) {
 @Composable
 internal fun SeasonsSection(
     seasons: List<AfinitySeason>,
-    onSeasonClick: (AfinitySeason) -> Unit
+    onSeasonClick: (AfinitySeason) -> Unit,
+    navController: NavController
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -192,7 +196,10 @@ internal fun SeasonsSection(
             items(seasons) { season ->
                 SeasonCard(
                     season = season,
-                    onClick = { onSeasonClick(season) }
+                    onClick = {
+                        val route = Destination.createItemDetailRoute(season.id.toString())
+                        navController.navigate(route)
+                    }
                 )
             }
         }

@@ -91,6 +91,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.useExoPlayer.collect { _uiState.value = _uiState.value.copy(useExoPlayer = it) }
         }
+
+        viewModelScope.launch {
+            preferencesRepository.getPipGestureEnabledFlow().collect {
+                _uiState.value = _uiState.value.copy(pipGestureEnabled = it)
+            }
+        }
     }
 
     fun setThemeMode(mode: String) {
@@ -134,6 +140,17 @@ class SettingsViewModel @Inject constructor(
                 Timber.d("Auto-play set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle auto-play")
+            }
+        }
+    }
+
+    fun togglePipGesture(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setPipGestureEnabled(enabled)
+                Timber.d("PIP gesture set to: $enabled")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle PIP gesture")
             }
         }
     }
@@ -203,6 +220,7 @@ data class SettingsUiState(
     val themeMode: String = "SYSTEM",
     val dynamicColors: Boolean = true,
     val autoPlay: Boolean = true,
+    val pipGestureEnabled: Boolean = false,
     val skipIntroEnabled: Boolean = true,
     val skipOutroEnabled: Boolean = true,
     val useExoPlayer: Boolean = true,

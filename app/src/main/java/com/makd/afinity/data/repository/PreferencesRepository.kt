@@ -51,6 +51,10 @@ interface PreferencesRepository {
     suspend fun getDynamicColors(): Boolean
     fun getDynamicColorsFlow(): Flow<Boolean>
 
+    suspend fun setPipGestureEnabled(enabled: Boolean)
+    suspend fun getPipGestureEnabled(): Boolean
+    fun getPipGestureEnabledFlow(): Flow<Boolean>
+
     suspend fun setGridLayout(enabled: Boolean)
     suspend fun getGridLayout(): Boolean
 

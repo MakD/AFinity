@@ -22,7 +22,10 @@ import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.extensions.showBackdropBlurHash
+import com.makd.afinity.data.models.extensions.showBackdropImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,15 +40,27 @@ fun HeroSection(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val heightMultiplier = if (isLandscape) 0.9f else 0.5f
 
+    val backdropUrl = if (item is AfinitySeason) {
+        item.images.backdropImageUrl ?: item.images.showBackdropImageUrl ?: item.images.primaryImageUrl
+    } else {
+        item.images.backdropImageUrl ?: item.images.primaryImageUrl
+    }
+
+    val backdropBlur = if (item is AfinitySeason) {
+        item.images.backdropBlurHash ?: item.images.showBackdropBlurHash ?: item.images.primaryBlurHash
+    } else {
+        item.images.backdropBlurHash ?: item.images.primaryBlurHash
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(screenHeight * heightMultiplier)
     ) {
         OptimizedAsyncImage(
-            imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
+            imageUrl = backdropUrl,
             contentDescription = null,
-            blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
+            blurHash = backdropBlur,
             targetWidth = configuration.screenWidthDp.dp,
             targetHeight = screenHeight * heightMultiplier,
             modifier = Modifier

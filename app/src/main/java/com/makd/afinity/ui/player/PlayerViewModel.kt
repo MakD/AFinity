@@ -86,6 +86,7 @@ class PlayerViewModel @Inject constructor(
     private var currentTrickplay: Trickplay? = null
 
     var onAutoplayNextEpisode: ((AfinityItem) -> Unit)? = null
+    var enterPictureInPicture: (() -> Unit)? = null
     val playlistState = playlistManager.playlistState
 
     init {
@@ -278,6 +279,7 @@ class PlayerViewModel @Inject constructor(
                 is PlayerEvent.ToggleControls -> toggleControls()
                 is PlayerEvent.ToggleLock -> onLockToggle()
                 is PlayerEvent.ToggleFullscreen -> { /* Handled at UI level */ }
+                is PlayerEvent.EnterPictureInPicture -> enterPictureInPicture()
                 is PlayerEvent.LoadMedia -> {
                     updateUiState { it.copy(isLoading = true) }
                     loadMedia(
@@ -897,6 +899,22 @@ class PlayerViewModel @Inject constructor(
         player.release()
     }
 
+    fun onPipModeChanged(isInPictureInPictureMode: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            isInPictureInPictureMode = isInPictureInPictureMode
+        )
+
+        if (isInPictureInPictureMode) {
+            hideControls()
+        } else {
+            showControls()
+        }
+    }
+
+    fun enterPictureInPicture() {
+        enterPictureInPicture?.invoke()
+    }
+
     data class PlayerUiState(
         val isPlaying: Boolean = false,
         val isPaused: Boolean = false,
@@ -932,6 +950,8 @@ class PlayerViewModel @Inject constructor(
         val isSeeking: Boolean = false,
         val seekPosition: Long = 0L,
         val dragStartPosition: Long = 0L,
-        val showRemainingTime: Boolean = false
+        val showRemainingTime: Boolean = false,
+        val isInPictureInPictureMode: Boolean = false,
+        val isControlsVisible: Boolean = true
     )
 }

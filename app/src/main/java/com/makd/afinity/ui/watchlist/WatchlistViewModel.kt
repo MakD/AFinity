@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
@@ -36,17 +37,19 @@ class WatchlistViewModel @Inject constructor(
 
                 val movies = watchlistRepository.getWatchlistMovies()
                 val shows = watchlistRepository.getWatchlistShows()
+                val seasons = watchlistRepository.getWatchlistSeasons()
                 val episodes = watchlistRepository.getWatchlistEpisodes()
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     movies = movies.sortedBy { it.name },
                     shows = shows.sortedBy { it.name },
+                    seasons = seasons.sortedBy { it.name },
                     episodes = episodes.sortedBy { it.name },
                     error = null,
                 )
 
-                Timber.d("Loaded watchlist: ${movies.size} movies, ${shows.size} shows, ${episodes.size} episodes")
+                Timber.d("Loaded watchlist: ${movies.size} movies, ${shows.size} shows, ${seasons.size} seasons, ${episodes.size} episodes")
 
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load watchlist")
@@ -67,6 +70,7 @@ class WatchlistViewModel @Inject constructor(
 data class WatchlistUiState(
     val movies: List<AfinityMovie> = emptyList(),
     val shows: List<AfinityShow> = emptyList(),
+    val seasons: List<AfinitySeason> = emptyList(),
     val episodes: List<AfinityEpisode> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,

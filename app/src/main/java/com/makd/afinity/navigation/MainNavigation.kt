@@ -45,7 +45,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.makd.afinity.R
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
-import com.makd.afinity.ui.episode.EpisodeListScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
@@ -275,6 +274,30 @@ fun MainNavigation(
                     navArgument("seasonId") { type = NavType.StringType },
                     navArgument("seasonName") { type = NavType.StringType }
                 )
+            ) { backStackEntry ->
+                ItemDetailScreen(
+                    onPlayClick = { item, selection ->
+                        if (selection != null) {
+                            com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                context = navController.context,
+                                itemId = item.id,
+                                mediaSourceId = selection.mediaSourceId,
+                                audioStreamIndex = selection.audioStreamIndex,
+                                subtitleStreamIndex = selection.subtitleStreamIndex,
+                                startPositionMs = selection.startPositionMs
+                            )
+                        }
+                    },
+                    navController = navController
+                )
+            }
+
+            /*composable(
+                route = Destination.EPISODE_LIST_ROUTE,
+                arguments = listOf(
+                    navArgument("seasonId") { type = NavType.StringType },
+                    navArgument("seasonName") { type = NavType.StringType }
+                )
             ) {
                 EpisodeListScreen(
                     onBackClick = {
@@ -286,7 +309,7 @@ fun MainNavigation(
                     navController = navController,
                     modifier = Modifier.fillMaxSize()
                 )
-            }
+            }*/
 
             composable(
                 route = Destination.PERSON_ROUTE,

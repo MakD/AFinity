@@ -74,8 +74,9 @@ object FieldSets {
      */
     val CONTINUE_WATCHING = listOf(
         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        ItemFields.TRICKPLAY
-    )
+        ItemFields.TRICKPLAY,
+        ItemFields.OVERVIEW
+        )
 
     /**
      * NEXT_UP - Next up episodes section (HomeScreen.kt, NextUpSection.kt)
@@ -192,7 +193,7 @@ object FieldSets {
     )
 
     /**
-     * EPISODE_LIST - Season episode listings (EpisodeListContent.kt, NextUpSection.kt)
+     * EPISODE_LIST - Season episode listings (NextUpSection.kt)
      *
      * Displays:
      * - Episode thumbnail
@@ -209,7 +210,7 @@ object FieldSets {
     )
 
     /**
-     * SEASON_DETAIL - Season detail pages (EpisodeListContent.kt - SeasonDetailsSection)
+     * SEASON_DETAIL - Season detail pages (SeasonDetailsSection)
      *
      * Displays:
      * - Season poster

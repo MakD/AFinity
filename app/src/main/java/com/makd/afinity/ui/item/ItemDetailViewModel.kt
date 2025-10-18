@@ -4,9 +4,14 @@ import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -16,7 +21,9 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
+import com.makd.afinity.data.models.media.toAfinitySeason
 import com.makd.afinity.data.models.media.toAfinityShow
+import com.makd.afinity.data.paging.EpisodesPagingSource
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -26,6 +33,7 @@ import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,6 +55,8 @@ class ItemDetailViewModel @Inject constructor(
     private val itemId: UUID = UUID.fromString(
         savedStateHandle.get<String>("itemId") ?: throw IllegalArgumentException("itemId is required")
     )
+
+    private val _episodesPagingData = MutableStateFlow<Flow<PagingData<AfinityEpisode>>?>(null)
 
     private val _uiState = MutableStateFlow(ItemDetailUiState())
     val uiState: StateFlow<ItemDetailUiState> = _uiState.asStateFlow()
@@ -197,6 +207,9 @@ class ItemDetailViewModel @Inject constructor(
                         org.jellyfin.sdk.model.api.BaseItemKind.BOX_SET -> {
                             baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
                         }
+                        org.jellyfin.sdk.model.api.BaseItemKind.SEASON -> {
+                            baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
+                        }
                         else -> null
                     }
                 }
@@ -271,6 +284,50 @@ class ItemDetailViewModel @Inject constructor(
                         }
                     }
                 }
+                is AfinitySeason -> {
+                    launch {
+                        try {
+                            val episodeToPlay = jellyfinRepository.getEpisodeToPlayForSeason(item.id, item.seriesId)
+                            _uiState.value = _uiState.value.copy(nextEpisode = episodeToPlay)
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load episode to play for season")
+                        }
+                    }
+                    launch {
+                        try {
+                            _episodesPagingData.value = Pager(
+                                config = PagingConfig(
+                                    pageSize = 50,
+                                    enablePlaceholders = false,
+                                    initialLoadSize = 50
+                                )
+                            ) {
+                                EpisodesPagingSource(
+                                    mediaRepository = mediaRepository,
+                                    seasonId = item.id,
+                                    seriesId = item.seriesId
+                                )
+                            }.flow.cachedIn(viewModelScope)
+
+                            _uiState.value = _uiState.value.copy(
+                                episodesPagingData = _episodesPagingData.value
+                            )
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load episodes")
+                        }
+                    }
+                    launch {
+                        try {
+                            val userId = getCurrentUserId()
+                            if (userId != null) {
+                                val features = jellyfinRepository.getSpecialFeatures(item.id, userId)
+                                _uiState.value = _uiState.value.copy(specialFeatures = features)
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load special features")
+                        }
+                    }
+                }
                 is AfinityBoxSet -> {
                     launch {
                         try {
@@ -332,6 +389,116 @@ class ItemDetailViewModel @Inject constructor(
         }
     }
 
+    private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
+    val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
+
+    private val _isLoadingEpisode = MutableStateFlow(false)
+    val isLoadingEpisode: StateFlow<Boolean> = _isLoadingEpisode.asStateFlow()
+
+    private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
+    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> = _selectedEpisodeWatchlistStatus.asStateFlow()
+
+    fun selectEpisode(episode: AfinityEpisode) {
+        viewModelScope.launch {
+            try {
+                _isLoadingEpisode.value = true
+
+                val fullEpisode = jellyfinRepository.getItem(
+                    episode.id,
+                    fields = FieldSets.ITEM_DETAIL
+                )?.toAfinityEpisode(jellyfinRepository, null)
+
+                if (fullEpisode != null) {
+                    _selectedEpisode.value = episode
+                }
+
+                try {
+                    val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
+                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load episode watchlist status")
+                    _selectedEpisodeWatchlistStatus.value = false
+                }
+
+                _isLoadingEpisode.value = false
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load full episode details")
+                _selectedEpisode.value = episode
+                _selectedEpisodeWatchlistStatus.value = false
+                _isLoadingEpisode.value = false
+            }
+        }
+    }
+
+    fun toggleEpisodeFavorite(episode: AfinityEpisode) {
+        viewModelScope.launch {
+            try {
+                val success = if (episode.favorite) {
+                    userDataRepository.removeFromFavorites(episode.id)
+                } else {
+                    userDataRepository.addToFavorites(episode.id)
+                }
+
+                if (success) {
+                    _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error toggling episode favorite")
+            }
+        }
+    }
+
+    fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
+        viewModelScope.launch {
+            try {
+                val isInWatchlist = _selectedEpisodeWatchlistStatus.value
+
+                _selectedEpisodeWatchlistStatus.value = !isInWatchlist
+
+                val success = if (isInWatchlist) {
+                    watchlistRepository.removeFromWatchlist(episode.id)
+                } else {
+                    watchlistRepository.addToWatchlist(episode.id, "EPISODE")
+                }
+
+                if (!success) {
+                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
+                    Timber.w("Failed to toggle watchlist status")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error toggling episode watchlist")
+                val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
+                _selectedEpisodeWatchlistStatus.value = isInWatchlist
+            }
+        }
+    }
+
+    fun toggleEpisodeWatched(episode: AfinityEpisode) {
+        viewModelScope.launch {
+            try {
+                val success = if (episode.played) {
+                    userDataRepository.markUnwatched(episode.id)
+                } else {
+                    userDataRepository.markWatched(episode.id)
+                }
+
+                if (success) {
+                    _selectedEpisode.value = episode.copy(
+                        played = !episode.played,
+                        playbackPositionTicks = if (!episode.played) episode.runtimeTicks else 0
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error toggling episode watched status")
+            }
+        }
+    }
+
+    fun clearSelectedEpisode() {
+        _selectedEpisode.value = null
+        _selectedEpisodeWatchlistStatus.value = false
+    }
+
     fun toggleFavorite() {
         viewModelScope.launch {
             try {
@@ -342,6 +509,7 @@ class ItemDetailViewModel @Inject constructor(
                     is AfinityShow -> currentItem.copy(favorite = !currentItem.favorite)
                     is AfinityEpisode -> currentItem.copy(favorite = !currentItem.favorite)
                     is AfinityBoxSet -> currentItem.copy(favorite = !currentItem.favorite)
+                    is AfinitySeason -> currentItem.copy(favorite = !currentItem.favorite)
                     else -> currentItem
                 }
                 _uiState.value = _uiState.value.copy(item = optimisticItem)
@@ -381,6 +549,7 @@ class ItemDetailViewModel @Inject constructor(
                         playbackPositionTicks = if (!currentItem.played) currentItem.runtimeTicks else 0
                     )
                     is AfinityBoxSet -> currentItem.copy(played = !currentItem.played)
+                    is AfinitySeason -> currentItem.copy(played = !currentItem.played)
                     else -> currentItem
                 }
                 _uiState.value = _uiState.value.copy(item = optimisticItem)
@@ -416,6 +585,7 @@ class ItemDetailViewModel @Inject constructor(
                     val itemType = when (currentItem) {
                         is AfinityMovie -> "MOVIE"
                         is AfinityShow -> "SERIES"
+                        is AfinitySeason -> "SEASON"
                         is AfinityEpisode -> "EPISODE"
                         else -> "UNKNOWN"
                     }
@@ -464,6 +634,10 @@ class ItemDetailViewModel @Inject constructor(
     suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode? {
         return jellyfinRepository.getEpisodeToPlay(seriesId)
     }
+
+    suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode? {
+        return jellyfinRepository.getEpisodeToPlayForSeason(seasonId, seriesId)
+    }
 }
 
 data class ItemDetailUiState(
@@ -476,4 +650,5 @@ data class ItemDetailUiState(
     val error: String? = null,
     val nextEpisode: AfinityEpisode? = null,
     val isInWatchlist: Boolean = false,
+    val episodesPagingData: Flow<PagingData<AfinityEpisode>>? = null
 )

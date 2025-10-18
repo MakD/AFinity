@@ -3,4 +3,9 @@
     <string name="none">None</string>
     <string name="select_audio_track">Select Audio Track</string>
     <string name="select_subtitle_track">Select Subtitle Track</string>
+    <!-- Picture-in-Picture -->
+    <string name="picture_in_picture">Picture-in-picture</string>
+    <string name="picture_in_picture_gesture">Picture-in-picture home gesture</string>
+    <string name="picture_in_picture_gesture_summary">Use home button or gesture to enter picture-in-picture while the video is playing</string>
+    <string name="enter_picture_in_picture">Enter picture-in-picture</string>
 </resources>

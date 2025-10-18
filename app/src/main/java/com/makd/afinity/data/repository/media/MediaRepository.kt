@@ -132,6 +132,10 @@ interface MediaRepository {
         fields: List<ItemFields>? = null
     ): List<AfinityEpisode>
 
+    suspend fun getFavoriteSeasons(
+        fields: List<ItemFields>? = null
+    ): List<AfinitySeason>
+
     suspend fun getGenres(
         parentId: UUID? = null,
         limit: Int? = null,
