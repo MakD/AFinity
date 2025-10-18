@@ -193,7 +193,7 @@ object FieldSets {
     )
 
     /**
-     * EPISODE_LIST - Season episode listings (EpisodeListContent.kt, NextUpSection.kt)
+     * EPISODE_LIST - Season episode listings (NextUpSection.kt)
      *
      * Displays:
      * - Episode thumbnail
@@ -210,7 +210,7 @@ object FieldSets {
     )
 
     /**
-     * SEASON_DETAIL - Season detail pages (EpisodeListContent.kt - SeasonDetailsSection)
+     * SEASON_DETAIL - Season detail pages (SeasonDetailsSection)
      *
      * Displays:
      * - Season poster
