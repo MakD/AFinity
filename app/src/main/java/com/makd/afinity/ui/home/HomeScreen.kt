@@ -96,6 +96,7 @@ import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 import kotlinx.coroutines.delay
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.ui.components.OfflineIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,6 +111,7 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val offlineMode = uiState.offlineMode
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -314,7 +316,8 @@ fun HomeScreen(
             },
             onProfileClick = onProfileClick,
             userProfileImageUrl = mainUiState.userProfileImageUrl,
-            backgroundOpacity = topBarOpacity
+            backgroundOpacity = topBarOpacity,
+            offlineMode = offlineMode
         )
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
         val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
@@ -384,6 +387,7 @@ fun HomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TransparentTopBar(
+    offlineMode: Boolean = false,
     onSearchClick: () -> Unit,
     onProfileClick: () -> Unit,
     userProfileImageUrl: String? = null,
@@ -418,6 +422,10 @@ private fun TransparentTopBar(
             }
         },
         actions = {
+            OfflineIndicator(
+                isOffline = offlineMode,
+                modifier = Modifier.padding(end = 8.dp)
+            )
             Button(
                 onClick = onSearchClick,
                 modifier = Modifier

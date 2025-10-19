@@ -15,6 +15,7 @@ import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.utils.IntentUtils
@@ -31,13 +32,19 @@ class HomeViewModel @Inject constructor(
     private val appDataRepository: AppDataRepository,
     private val jellyfinRepository: JellyfinRepository,
     private val userDataRepository: UserDataRepository,
-    private val watchlistRepository: WatchlistRepository
+    private val watchlistRepository: WatchlistRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            preferencesRepository.getOfflineModeFlow().collect { isOffline ->
+                _uiState.value = _uiState.value.copy(offlineMode = isOffline)
+            }
+        }
 
         viewModelScope.launch {
             appDataRepository.isInitialDataLoaded.collect { isLoaded ->
@@ -284,6 +291,7 @@ class HomeViewModel @Inject constructor(
 }
 
 data class HomeUiState(
+    val offlineMode: Boolean = false,
     val heroCarouselItems: List<AfinityItem> = emptyList(),
     val latestMedia: List<AfinityItem> = emptyList(),
     val continueWatching: List<AfinityItem> = emptyList(),
