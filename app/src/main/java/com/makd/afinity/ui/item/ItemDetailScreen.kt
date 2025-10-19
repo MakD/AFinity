@@ -55,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.paging.PagingData
+import com.makd.afinity.data.models.download.DownloadState
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.showLogoImageUrl
 import com.makd.afinity.data.models.media.AfinityBoxSet
@@ -338,6 +339,7 @@ private fun ItemDetailContent(
                 }
 
                 val selectedMediaSource by viewModel.selectedMediaSource.collectAsStateWithLifecycle()
+                val downloadState by viewModel.downloadState.collectAsStateWithLifecycle()
 
                 LaunchedEffect(mediaSourceOptions) {
                     if (selectedMediaSource == null && mediaSourceOptions.isNotEmpty()) {
@@ -603,14 +605,46 @@ private fun ItemDetailContent(
                             }
 
                             IconButton(
-                                onClick = { /* TODO: Download */ }
+                                onClick = {
+                                    when (downloadState) {
+                                        is DownloadState.Idle, is DownloadState.Failed, is DownloadState.Cancelled -> {
+                                            viewModel.downloadItem()
+                                        }
+                                        is DownloadState.Downloading, is DownloadState.Queued -> {
+                                            viewModel.cancelDownload()
+                                        }
+                                        is DownloadState.Completed -> {
+                                            // Already downloaded, do nothing or show message
+                                        }
+                                    }
+                                }
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Download,
-                                    contentDescription = "Download",
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(28.dp)
-                                )
+                                when (downloadState) {
+                                    is DownloadState.Downloading -> {
+                                        val progress = (downloadState as DownloadState.Downloading).progress
+                                        CircularProgressIndicator(
+                                            progress = { progress / 100f },
+                                            modifier = Modifier.size(28.dp),
+                                            strokeWidth = 2.dp,
+                                        )
+                                    }
+                                    is DownloadState.Completed -> {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Downloaded",
+                                            tint = Color.Green,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                    else -> {
+                                        Icon(
+                                            imageVector = Icons.Default.Download,
+                                            contentDescription = "Download",
+                                            tint = MaterialTheme.colorScheme.onBackground,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -865,14 +899,46 @@ private fun ItemDetailContent(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             IconButton(
-                                onClick = { /* TODO: Download */ }
+                                onClick = {
+                                    when (downloadState) {
+                                        is DownloadState.Idle, is DownloadState.Failed, is DownloadState.Cancelled -> {
+                                            viewModel.downloadItem()
+                                        }
+                                        is DownloadState.Downloading, is DownloadState.Queued -> {
+                                            viewModel.cancelDownload()
+                                        }
+                                        is DownloadState.Completed -> {
+                                            // Already downloaded, do nothing or show message
+                                        }
+                                    }
+                                }
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Download,
-                                    contentDescription = "Download",
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(28.dp)
-                                )
+                                when (downloadState) {
+                                    is DownloadState.Downloading -> {
+                                        val progress = (downloadState as DownloadState.Downloading).progress
+                                        CircularProgressIndicator(
+                                            progress = { progress / 100f },
+                                            modifier = Modifier.size(28.dp),
+                                            strokeWidth = 2.dp,
+                                        )
+                                    }
+                                    is DownloadState.Completed -> {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Downloaded",
+                                            tint = Color.Green,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                    else -> {
+                                        Icon(
+                                            imageVector = Icons.Default.Download,
+                                            contentDescription = "Download",
+                                            tint = MaterialTheme.colorScheme.onBackground,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

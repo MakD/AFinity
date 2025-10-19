@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.api.client.ApiClient
 import timber.log.Timber
 import java.io.File
 import java.util.UUID
@@ -43,7 +44,8 @@ import javax.inject.Singleton
 class MediaDownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sourceDao: SourceDao,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val apiClient: ApiClient
 ) {
     private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -72,6 +74,10 @@ class MediaDownloadManager @Inject constructor(
             Context.RECEIVER_NOT_EXPORTED
         )
         Timber.d("MediaDownloadManager initialized")
+
+        coroutineScope.launch(Dispatchers.IO) {
+            restoreDownloadStates()
+        }
     }
 
     /**
@@ -89,7 +95,8 @@ class MediaDownloadManager @Inject constructor(
         itemName: String,
         sourceId: String,
         downloadUrl: String,
-        itemType: DownloadItemType
+        itemType: DownloadItemType,
+        baseUrl: String
     ): Long? {
         try {
             val existingSource = sourceDao.getSourcesForItem(itemId)
@@ -105,14 +112,33 @@ class MediaDownloadManager @Inject constructor(
                 downloadDir.mkdirs()
             }
 
-            val extension = getFileExtension(downloadUrl)
-            val fileName = "${itemId}_${sourceId}.$extension"
+            val streamUrl = if (downloadUrl.isNotBlank()) {
+                downloadUrl
+            } else {
+                "$baseUrl/Videos/$itemId/stream?static=true&mediaSourceId=$sourceId"
+            }
 
-            val request = DownloadManager.Request(Uri.parse(downloadUrl))
+            val apiKey = apiClient.accessToken ?: ""
+            val finalDownloadUrl = if (streamUrl.contains("?")) {
+                "$streamUrl&api_key=$apiKey"
+            } else {
+                "$streamUrl?api_key=$apiKey"
+            }
+
+            val fileName = "${itemId}_${sourceId}"
+
+            Timber.d("Download URL: $finalDownloadUrl (with auth)")
+            Timber.d("Saving to: ${File(downloadDir, fileName).absolutePath}")
+
+            val request = DownloadManager.Request(Uri.parse(finalDownloadUrl))
                 .setTitle(itemName)
                 .setDescription("Downloading $itemName")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationUri(Uri.fromFile(File(downloadDir, fileName)))
+                .setDestinationInExternalFilesDir(
+                    context,
+                    Environment.DIRECTORY_DOWNLOADS + "/media",
+                    fileName
+                )
                 .setAllowedOverMetered(!preferencesRepository.getDownloadOverWifiOnly())
                 .setAllowedOverRoaming(false)
 
@@ -122,7 +148,7 @@ class MediaDownloadManager @Inject constructor(
                 itemId = itemId,
                 itemName = itemName,
                 sourceId = sourceId,
-                downloadUrl = downloadUrl,
+                downloadUrl = finalDownloadUrl,
                 downloadId = downloadId,
                 fileName = fileName,
                 itemType = itemType
@@ -261,9 +287,21 @@ class MediaDownloadManager @Inject constructor(
 
             when (status) {
                 DownloadManager.STATUS_SUCCESSFUL -> {
-                    val file = File(getDownloadDirectory(), task.fileName)
+                    val uriIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
+                    val uriString = cursor.getString(uriIndex)
 
-                    if (file.exists()) {
+                    val file = if (uriString != null) {
+                        if (uriString.startsWith("file://")) {
+                            File(Uri.parse(uriString).path ?: "")
+                        } else {
+                            File(uriString)
+                        }
+                    } else {
+                        null
+                    }
+
+                    if (file?.exists() == true) {
+                        Timber.d("Downloaded file: ${file.absolutePath}")
                         coroutineScope.launch {
                             try {
                                 val sourceDto = AfinitySourceDto(
@@ -292,7 +330,7 @@ class MediaDownloadManager @Inject constructor(
                             }
                         }
                     } else {
-                        Timber.e("Downloaded file not found: ${file.absolutePath}")
+                        Timber.e("Downloaded file not found: ${file?.absolutePath ?: "null"}")
                         updateDownloadState(
                             task.itemId,
                             DownloadState.Failed(task.itemId, task.itemName, "Downloaded file not found")
@@ -380,5 +418,41 @@ class MediaDownloadManager @Inject constructor(
         progressJobs.values.forEach { it.cancel() }
         progressJobs.clear()
         activeTasks.clear()
+    }
+
+    /**
+     * Restore download states from database on app startup
+     */
+    suspend fun restoreDownloadStates() {
+        try {
+            val localSources = sourceDao.getLocalSources()
+
+            Timber.d("Restoring ${localSources.size} download states from database")
+
+            val states = mutableMapOf<UUID, DownloadState>()
+
+            localSources.forEach { source ->
+                val file = File(source.path)
+
+                if (file.exists()) {
+                    states[source.itemId] = DownloadState.Completed(
+                        itemId = source.itemId,
+                        itemName = source.name,
+                        file = file
+                    )
+                    Timber.d("Restored completed download: ${source.name}")
+                } else {
+                    Timber.w("Download file missing: ${source.path}, removing from database")
+                    sourceDao.deleteSource(source)
+                }
+            }
+
+            _downloadStates.value = states
+
+            Timber.d("Successfully restored ${states.size} download states")
+
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to restore download states")
+        }
     }
 }

@@ -9,6 +9,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.repository.JellyfinRepository
 import kotlinx.coroutines.flow.StateFlow
 import timber.log.Timber
 import java.util.UUID
@@ -33,7 +34,8 @@ interface DownloadRepository {
  */
 @Singleton
 class DownloadRepositoryImpl @Inject constructor(
-    private val mediaDownloadManager: MediaDownloadManager
+    private val mediaDownloadManager: MediaDownloadManager,
+    private val jellyfinRepository: JellyfinRepository
 ) : DownloadRepository {
 
     override val downloadStates: StateFlow<Map<UUID, DownloadState>>
@@ -52,16 +54,6 @@ class DownloadRepositoryImpl @Inject constructor(
             return null
         }
 
-        if (!item.canDownload) {
-            Timber.w("Item ${item.name} cannot be downloaded")
-            return null
-        }
-
-        if (source.path.isBlank()) {
-            Timber.w("Source path is blank for item: ${item.name}")
-            return null
-        }
-
         val itemType = when (item) {
             is AfinityMovie -> DownloadItemType.MOVIE
             is AfinityEpisode -> DownloadItemType.EPISODE
@@ -72,14 +64,17 @@ class DownloadRepositoryImpl @Inject constructor(
             }
         }
 
-        Timber.d("Starting download for ${item.name} (${itemType.name})")
+        val baseUrl = jellyfinRepository.getBaseUrl()
+
+        Timber.d("Starting download for ${item.name} (${itemType.name}) from $baseUrl")
 
         return mediaDownloadManager.downloadItem(
             itemId = item.id,
             itemName = item.name,
             sourceId = source.id,
             downloadUrl = source.path,
-            itemType = itemType
+            itemType = itemType,
+            baseUrl = baseUrl
         )
     }
 

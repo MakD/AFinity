@@ -9,6 +9,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.models.download.DownloadState
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinitySeason
@@ -26,6 +27,7 @@ import com.makd.afinity.data.models.media.toAfinityShow
 import com.makd.afinity.data.paging.EpisodesPagingSource
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
@@ -49,6 +51,7 @@ class ItemDetailViewModel @Inject constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
     private val watchlistRepository: WatchlistRepository,
+    private val downloadRepository: DownloadRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -64,12 +67,16 @@ class ItemDetailViewModel @Inject constructor(
     private val _selectedMediaSource = MutableStateFlow<MediaSourceOption?>(null)
     val selectedMediaSource = _selectedMediaSource.asStateFlow()
 
+    private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
+    val downloadState: StateFlow<DownloadState> = _downloadState.asStateFlow()
+
     fun selectMediaSource(source: MediaSourceOption) {
         _selectedMediaSource.value = source
     }
 
     init {
         loadItem()
+        observeDownloadState()
 
         playbackStateManager.setOnItemUpdatedCallback { updatedItemId ->
             if (updatedItemId == itemId) {
@@ -637,6 +644,46 @@ class ItemDetailViewModel @Inject constructor(
 
     suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode? {
         return jellyfinRepository.getEpisodeToPlayForSeason(seasonId, seriesId)
+    }
+
+    private fun observeDownloadState() {
+        viewModelScope.launch {
+            downloadRepository.downloadStates.collect { states ->
+                _downloadState.value = states[itemId] ?: DownloadState.Idle
+            }
+        }
+    }
+
+    fun downloadItem() {
+        viewModelScope.launch {
+            val currentItem = _uiState.value.item
+            if (currentItem == null) {
+                Timber.w("Cannot download: item not loaded")
+                return@launch
+            }
+
+            val selectedOption = _selectedMediaSource.value
+            if (selectedOption == null) {
+                Timber.w("Cannot download: no source selected")
+                return@launch
+            }
+
+            val source = currentItem.sources.find { it.id == selectedOption.id }
+            if (source == null) {
+                Timber.w("Cannot download: source not found in item")
+                return@launch
+            }
+
+            Timber.d("Starting download for: ${currentItem.name}, source: ${source.name}")
+            downloadRepository.downloadItem(currentItem, source)
+        }
+    }
+
+    fun cancelDownload() {
+        viewModelScope.launch {
+            Timber.d("Cancelling download for item: $itemId")
+            downloadRepository.cancelDownload(itemId)
+        }
     }
 }
 
