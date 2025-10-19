@@ -9,6 +9,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.models.download.DownloadPriority
 import com.makd.afinity.data.models.download.DownloadState
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
@@ -690,6 +691,18 @@ class ItemDetailViewModel @Inject constructor(
         viewModelScope.launch {
             Timber.d("Deleting download for item: $itemId")
             downloadRepository.deleteDownload(itemId)
+        }
+    }
+
+    fun downloadEntireSeason(seasonId: UUID, seriesId: UUID) {
+        viewModelScope.launch {
+            Timber.d("Downloading entire season: $seasonId")
+            val count = downloadRepository.downloadSeason(
+                seasonId = seasonId,
+                seriesId = seriesId,
+                priority = DownloadPriority.NORMAL
+            )
+            Timber.d("Queued $count episodes for download")
         }
     }
 }

@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.FastForward
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
@@ -80,6 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.core.AppConstants
+import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.settings.update.UpdateSection
 import com.makd.afinity.ui.theme.ThemeMode
@@ -91,6 +93,7 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     onLogoutComplete: () -> Unit,
     onLicensesClick: () -> Unit,
+    onDownloadsClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -186,6 +189,15 @@ fun SettingsScreen(
                         uiState = uiState,
                         onLogoutClick = { showLogoutDialog = true },
                         isLoggingOut = uiState.isLoggingOut
+                    )
+                }
+
+                item {
+                    SettingsItem(
+                        icon = Icons.Outlined.Download,
+                        title = "Downloads",
+                        subtitle = "Manage downloads and offline content",
+                        onClick = onDownloadsClick
                     )
                 }
 

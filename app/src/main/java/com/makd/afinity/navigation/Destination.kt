@@ -51,6 +51,7 @@ enum class Destination(
         const val GENRE_RESULTS_ROUTE = "genre_results/{genre}"
         const val SETTINGS_ROUTE = "settings"
         const val LICENSES_ROUTE = "licenses"
+        const val DOWNLOAD_SETTINGS_ROUTE = "download_settings"
 
         fun createPersonRoute(personId: String): String {
             return "person/$personId"
@@ -98,6 +99,10 @@ enum class Destination(
 
         fun createLicensesRoute(): String {
             return LICENSES_ROUTE
+        }
+
+        fun createDownloadSettingsRoute(): String {
+            return DOWNLOAD_SETTINGS_ROUTE
         }
     }
 }

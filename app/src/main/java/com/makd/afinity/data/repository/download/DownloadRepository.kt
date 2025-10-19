@@ -2,7 +2,9 @@ package com.makd.afinity.data.repository.download
 
 import com.makd.afinity.data.download.MediaDownloadManager
 import com.makd.afinity.data.models.download.DownloadItemType
+import com.makd.afinity.data.models.download.DownloadPriority
 import com.makd.afinity.data.models.download.DownloadState
+import com.makd.afinity.data.models.download.QueuedDownloadItem
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -10,15 +12,14 @@ import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.repository.JellyfinRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Repository interface for download operations
- */
 interface DownloadRepository {
     val downloadStates: StateFlow<Map<UUID, DownloadState>>
 
@@ -28,11 +29,13 @@ interface DownloadRepository {
     fun getDownloadState(itemId: UUID): DownloadState
     fun isDownloaded(itemId: UUID): Boolean
     fun isDownloading(itemId: UUID): Boolean
+    fun getDownloadQueue(): List<QueuedDownloadItem>
+    fun removeFromQueue(itemId: UUID)
+    fun changePriority(itemId: UUID, priority: DownloadPriority)
+    fun setMaxConcurrentDownloads(max: Int)
+    suspend fun downloadSeason(seasonId: UUID, seriesId: UUID, priority: DownloadPriority = DownloadPriority.NORMAL): Int
 }
 
-/**
- * Implementation of DownloadRepository
- */
 @Singleton
 class DownloadRepositoryImpl @Inject constructor(
     private val mediaDownloadManager: MediaDownloadManager,
@@ -42,13 +45,6 @@ class DownloadRepositoryImpl @Inject constructor(
     override val downloadStates: StateFlow<Map<UUID, DownloadState>>
         get() = mediaDownloadManager.downloadStates
 
-    /**
-     * Download a media item
-     *
-     * @param item The item to download (Movie, Episode, or Video)
-     * @param source The source to download from
-     * @return The download ID, or null if download failed to start
-     */
     override suspend fun downloadItem(item: AfinityItem, source: AfinitySource): Long? {
         if (source.type != AfinitySourceType.REMOTE) {
             Timber.w("Cannot download from non-remote source: ${source.type}")
@@ -79,40 +75,87 @@ class DownloadRepositoryImpl @Inject constructor(
         )
     }
 
-    /**
-     * Cancel an active download
-     */
     override fun cancelDownload(itemId: UUID) {
         mediaDownloadManager.cancelDownload(itemId)
     }
 
-    /**
-     * Delete a downloaded item
-     */
     override suspend fun deleteDownload(itemId: UUID) {
         mediaDownloadManager.deleteDownload(itemId)
     }
 
-    /**
-     * Get the current download state for an item
-     */
     override fun getDownloadState(itemId: UUID): DownloadState {
         return mediaDownloadManager.getDownloadState(itemId)
     }
 
-    /**
-     * Check if an item is fully downloaded
-     */
     override fun isDownloaded(itemId: UUID): Boolean {
         val state = getDownloadState(itemId)
         return state is DownloadState.Completed
     }
 
-    /**
-     * Check if an item is currently downloading
-     */
     override fun isDownloading(itemId: UUID): Boolean {
         val state = getDownloadState(itemId)
         return state is DownloadState.Downloading || state is DownloadState.Queued
+    }
+
+    override fun getDownloadQueue(): List<QueuedDownloadItem> {
+        return mediaDownloadManager.getDownloadQueue()
+    }
+
+    override fun removeFromQueue(itemId: UUID) {
+        mediaDownloadManager.removeFromQueue(itemId)
+    }
+
+    override fun changePriority(itemId: UUID, priority: DownloadPriority) {
+        mediaDownloadManager.changePriority(itemId, priority)
+    }
+
+    override fun setMaxConcurrentDownloads(max: Int) {
+        mediaDownloadManager.setMaxConcurrentDownloads(max)
+    }
+
+    override suspend fun downloadSeason(
+        seasonId: UUID,
+        seriesId: UUID,
+        priority: DownloadPriority
+    ): Int {
+        return withContext(Dispatchers.IO) {
+            try {
+                val episodes = jellyfinRepository.getEpisodes(seasonId, seriesId)
+                val baseUrl = jellyfinRepository.getBaseUrl()
+
+                var queuedCount = 0
+
+                episodes.forEach { episode ->
+                    if (isDownloaded(episode.id)) {
+                        Timber.d("Episode already downloaded: ${episode.name}")
+                        return@forEach
+                    }
+
+                    val source = episode.sources.firstOrNull { it.type == AfinitySourceType.REMOTE }
+                    if (source == null) {
+                        Timber.w("No remote source found for episode: ${episode.name}")
+                        return@forEach
+                    }
+
+                    mediaDownloadManager.addToQueue(
+                        itemId = episode.id,
+                        itemName = episode.name,
+                        sourceId = source.id,
+                        downloadUrl = source.path,
+                        itemType = DownloadItemType.EPISODE,
+                        priority = priority
+                    )
+
+                    queuedCount++
+                }
+
+                Timber.d("Queued $queuedCount episodes for download")
+                queuedCount
+
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to download season: $seasonId")
+                0
+            }
+        }
     }
 }

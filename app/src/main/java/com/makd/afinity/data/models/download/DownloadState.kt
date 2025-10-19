@@ -92,6 +92,35 @@ enum class DownloadItemType {
 }
 
 /**
+ * Download queue item with priority
+ */
+data class QueuedDownloadItem(
+    val itemId: UUID,
+    val itemName: String,
+    val sourceId: String,
+    val downloadUrl: String,
+    val itemType: DownloadItemType,
+    val priority: DownloadPriority = DownloadPriority.NORMAL,
+    val addedAt: Long = System.currentTimeMillis()
+)
+
+/**
+ * Priority levels for downloads
+ */
+enum class DownloadPriority(val value: Int) {
+    LOW(0),
+    NORMAL(1),
+    HIGH(2),
+    URGENT(3);
+
+    companion object {
+        fun fromValue(value: Int): DownloadPriority {
+            return entries.find { it.value == value } ?: NORMAL
+        }
+    }
+}
+
+/**
  * Download progress information
  */
 data class DownloadProgress(

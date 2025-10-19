@@ -21,10 +21,13 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.MovieCreation
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -669,10 +672,26 @@ private fun ItemDetailContent(
                                 when (downloadState) {
                                     is DownloadState.Downloading -> {
                                         val progress = (downloadState as DownloadState.Downloading).progress
-                                        CircularProgressIndicator(
-                                            progress = { progress / 100f },
-                                            modifier = Modifier.size(28.dp),
-                                            strokeWidth = 2.dp,
+                                        Box(contentAlignment = Alignment.Center) {
+                                            CircularProgressIndicator(
+                                                progress = { progress / 100f },
+                                                modifier = Modifier.size(28.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Cancel Download",
+                                                modifier = Modifier.size(16.dp),
+                                                tint = Color.Red
+                                            )
+                                        }
+                                    }
+                                    is DownloadState.Queued -> {
+                                        Icon(
+                                            imageVector = Icons.Default.HourglassEmpty,
+                                            contentDescription = "Queued - Tap to Cancel",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(28.dp)
                                         )
                                     }
                                     is DownloadState.Completed -> {
@@ -687,7 +706,6 @@ private fun ItemDetailContent(
                                         Icon(
                                             imageVector = Icons.Default.Download,
                                             contentDescription = "Download",
-                                            tint = MaterialTheme.colorScheme.onBackground,
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }
@@ -963,10 +981,26 @@ private fun ItemDetailContent(
                                 when (downloadState) {
                                     is DownloadState.Downloading -> {
                                         val progress = (downloadState as DownloadState.Downloading).progress
-                                        CircularProgressIndicator(
-                                            progress = { progress / 100f },
-                                            modifier = Modifier.size(28.dp),
-                                            strokeWidth = 2.dp,
+                                        Box(contentAlignment = Alignment.Center) {
+                                            CircularProgressIndicator(
+                                                progress = { progress / 100f },
+                                                modifier = Modifier.size(28.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Cancel Download",
+                                                modifier = Modifier.size(16.dp),
+                                                tint = Color.Red
+                                            )
+                                        }
+                                    }
+                                    is DownloadState.Queued -> {
+                                        Icon(
+                                            imageVector = Icons.Default.HourglassEmpty,
+                                            contentDescription = "Queued - Tap to Cancel",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(28.dp)
                                         )
                                     }
                                     is DownloadState.Completed -> {
@@ -981,7 +1015,6 @@ private fun ItemDetailContent(
                                         Icon(
                                             imageVector = Icons.Default.Download,
                                             contentDescription = "Download",
-                                            tint = MaterialTheme.colorScheme.onBackground,
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }

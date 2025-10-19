@@ -10,9 +10,14 @@ import android.os.Environment
 import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.models.download.DownloadItemType
+import com.makd.afinity.data.models.download.DownloadPriority
 import com.makd.afinity.data.models.download.DownloadState
 import com.makd.afinity.data.models.download.DownloadTask
+import com.makd.afinity.data.models.download.QueuedDownloadItem
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.network.ConnectionType
+import com.makd.afinity.data.network.NetworkMonitor
+import com.makd.afinity.data.network.NetworkState
 import com.makd.afinity.data.repository.PreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -31,21 +36,13 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Manages media downloads using Android's DownloadManager
- *
- * This class handles:
- * - Initiating downloads for movies and episodes
- * - Tracking download progress
- * - Handling download completion
- * - Storing download metadata in the database
- */
 @Singleton
 class MediaDownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sourceDao: SourceDao,
     private val preferencesRepository: PreferencesRepository,
-    private val apiClient: ApiClient
+    private val apiClient: ApiClient,
+    private val networkMonitor: NetworkMonitor
 ) {
     private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -55,6 +52,11 @@ class MediaDownloadManager @Inject constructor(
 
     private val activeTasks = mutableMapOf<Long, DownloadTask>()
     private val progressJobs = mutableMapOf<Long, Job>()
+    private var networkMonitorJob: Job? = null
+
+    private val downloadQueue = mutableListOf<QueuedDownloadItem>()
+    private var maxConcurrentDownloads = 3
+    private val queueLock = Any()
 
     private val downloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -64,6 +66,113 @@ class MediaDownloadManager @Inject constructor(
             if (downloadId in activeTasks) {
                 handleDownloadComplete(downloadId)
             }
+        }
+    }
+
+    fun addToQueue(
+        itemId: UUID,
+        itemName: String,
+        sourceId: String,
+        downloadUrl: String,
+        itemType: DownloadItemType,
+        priority: DownloadPriority = DownloadPriority.NORMAL
+    ) {
+        synchronized(queueLock) {
+            if (downloadQueue.any { it.itemId == itemId }) {
+                Timber.w("Item already in download queue: $itemName")
+                return
+            }
+
+            if (activeTasks.values.any { it.itemId == itemId }) {
+                Timber.w("Item already downloading: $itemName")
+                return
+            }
+
+            val queueItem = QueuedDownloadItem(
+                itemId = itemId,
+                itemName = itemName,
+                sourceId = sourceId,
+                downloadUrl = downloadUrl,
+                itemType = itemType,
+                priority = priority
+            )
+
+            downloadQueue.add(queueItem)
+            Timber.d("Added to queue: $itemName (priority: ${priority.name})")
+
+            updateDownloadState(itemId, DownloadState.Queued(itemId, itemName))
+
+            coroutineScope.launch(Dispatchers.IO) {
+                processQueue()
+            }
+        }
+    }
+
+    private suspend fun processQueue() {
+        synchronized(queueLock) {
+            if (activeTasks.size >= maxConcurrentDownloads) {
+                Timber.d("Max concurrent downloads reached (${activeTasks.size}/$maxConcurrentDownloads)")
+                return
+            }
+
+            val sortedQueue = downloadQueue.sortedWith(
+                compareByDescending<QueuedDownloadItem> { it.priority.value }
+                    .thenBy { it.addedAt }
+            )
+
+            val itemsToStart = sortedQueue.take(maxConcurrentDownloads - activeTasks.size)
+
+            itemsToStart.forEach { queueItem ->
+                downloadQueue.remove(queueItem)
+
+                coroutineScope.launch(Dispatchers.IO) {
+                    val baseUrl = apiClient.baseUrl ?: return@launch
+                    downloadItem(
+                        itemId = queueItem.itemId,
+                        itemName = queueItem.itemName,
+                        sourceId = queueItem.sourceId,
+                        downloadUrl = queueItem.downloadUrl,
+                        itemType = queueItem.itemType,
+                        baseUrl = baseUrl
+                    )
+                }
+            }
+        }
+    }
+
+    fun getDownloadQueue(): List<QueuedDownloadItem> {
+        synchronized(queueLock) {
+            return downloadQueue.toList()
+        }
+    }
+
+    fun removeFromQueue(itemId: UUID) {
+        synchronized(queueLock) {
+            downloadQueue.removeAll { it.itemId == itemId }
+            updateDownloadState(itemId, DownloadState.Idle)
+            Timber.d("Removed from queue: $itemId")
+        }
+    }
+
+    fun changePriority(itemId: UUID, newPriority: DownloadPriority) {
+        synchronized(queueLock) {
+            val item = downloadQueue.find { it.itemId == itemId } ?: return
+            downloadQueue.remove(item)
+            downloadQueue.add(item.copy(priority = newPriority))
+            Timber.d("Changed priority for ${item.itemName} to ${newPriority.name}")
+
+            coroutineScope.launch(Dispatchers.IO) {
+                processQueue()
+            }
+        }
+    }
+
+    fun setMaxConcurrentDownloads(max: Int) {
+        maxConcurrentDownloads = max.coerceIn(1, 10)
+        Timber.d("Max concurrent downloads set to: $maxConcurrentDownloads")
+
+        coroutineScope.launch(Dispatchers.IO) {
+            processQueue()
         }
     }
 
@@ -78,18 +187,42 @@ class MediaDownloadManager @Inject constructor(
         coroutineScope.launch(Dispatchers.IO) {
             restoreDownloadStates()
         }
+        startNetworkObservation()
     }
 
-    /**
-     * Download a media item
-     *
-     * @param itemId The UUID of the item to download
-     * @param itemName The name of the item
-     * @param sourceId The source ID from Jellyfin
-     * @param downloadUrl The URL to download from
-     * @param itemType The type of item (MOVIE, EPISODE, VIDEO)
-     * @return The download ID from DownloadManager, or null if download failed to start
-     */
+    private fun startNetworkObservation() {
+        networkMonitorJob = coroutineScope.launch {
+            networkMonitor.observeNetworkState().collect { networkState ->
+                logNetworkState(networkState)
+            }
+        }
+    }
+
+    private suspend fun logNetworkState(networkState: NetworkState) {
+        val wifiOnly = preferencesRepository.getDownloadOverWifiOnly()
+
+        when {
+            !wifiOnly -> {
+                Timber.d("Network changed to ${networkState.connectionType}, WiFi-only disabled, downloads continue")
+            }
+            networkState.connectionType == ConnectionType.WIFI ||
+                    networkState.connectionType == ConnectionType.ETHERNET -> {
+                Timber.d("WiFi/Ethernet connected - DownloadManager will auto-resume paused downloads")
+            }
+            networkState.connectionType == ConnectionType.CELLULAR -> {
+                Timber.d("Switched to cellular - DownloadManager will auto-pause WiFi-only downloads")
+            }
+            networkState.connectionType == ConnectionType.NONE -> {
+                Timber.d("Network disconnected - downloads paused")
+            }
+        }
+    }
+
+    private fun stopNetworkObservation() {
+        networkMonitorJob?.cancel()
+        networkMonitorJob = null
+    }
+
     suspend fun downloadItem(
         itemId: UUID,
         itemName: String,
@@ -171,9 +304,6 @@ class MediaDownloadManager @Inject constructor(
         }
     }
 
-    /**
-     * Cancel an active download
-     */
     fun cancelDownload(itemId: UUID) {
         val task = activeTasks.values.find { it.itemId == itemId } ?: return
 
@@ -192,16 +322,10 @@ class MediaDownloadManager @Inject constructor(
         Timber.d("Cancelled download for: ${task.itemName}")
     }
 
-    /**
-     * Get download state for a specific item
-     */
     fun getDownloadState(itemId: UUID): DownloadState {
         return _downloadStates.value[itemId] ?: DownloadState.Idle
     }
 
-    /**
-     * Track download progress
-     */
     private fun trackDownloadProgress(downloadId: Long, task: DownloadTask) {
         progressJobs[downloadId]?.cancel()
 
@@ -269,9 +393,6 @@ class MediaDownloadManager @Inject constructor(
         }
     }
 
-    /**
-     * Handle download completion
-     */
     private fun handleDownloadComplete(downloadId: Long) {
         Timber.d("Handling download completion for ID: $downloadId")
 
@@ -354,20 +475,17 @@ class MediaDownloadManager @Inject constructor(
         cursor.close()
         activeTasks.remove(downloadId)
         progressJobs.remove(downloadId)
+        coroutineScope.launch(Dispatchers.IO) {
+            processQueue()
+        }
     }
 
-    /**
-     * Update download state for an item
-     */
     private fun updateDownloadState(itemId: UUID, state: DownloadState) {
         val currentStates = _downloadStates.value.toMutableMap()
         currentStates[itemId] = state
         _downloadStates.value = currentStates
     }
 
-    /**
-     * Get the download directory
-     */
     private fun getDownloadDirectory(): File {
         return File(
             context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
@@ -375,9 +493,6 @@ class MediaDownloadManager @Inject constructor(
         )
     }
 
-    /**
-     * Get file extension from URL
-     */
     private fun getFileExtension(url: String): String {
         return when {
             url.contains(".mkv", ignoreCase = true) -> "mkv"
@@ -387,9 +502,6 @@ class MediaDownloadManager @Inject constructor(
         }
     }
 
-    /**
-     * Get human-readable error message from DownloadManager error code
-     */
     private fun getDownloadErrorMessage(errorCode: Int): String {
         return when (errorCode) {
             DownloadManager.ERROR_CANNOT_RESUME -> "Download cannot resume"
@@ -405,9 +517,6 @@ class MediaDownloadManager @Inject constructor(
         }
     }
 
-    /**
-     * Delete a downloaded item
-     */
     suspend fun deleteDownload(itemId: UUID) {
         try {
             val localSources = sourceDao.getSourcesForItem(itemId)
@@ -444,9 +553,6 @@ class MediaDownloadManager @Inject constructor(
         }
     }
 
-    /**
-     * Clean up resources
-     */
     fun cleanup() {
         try {
             context.unregisterReceiver(downloadReceiver)
@@ -454,14 +560,12 @@ class MediaDownloadManager @Inject constructor(
             Timber.e(e, "Error unregistering download receiver")
         }
 
+        stopNetworkObservation()
         progressJobs.values.forEach { it.cancel() }
         progressJobs.clear()
         activeTasks.clear()
     }
 
-    /**
-     * Restore download states from database on app startup
-     */
     suspend fun restoreDownloadStates() {
         try {
             val localSources = sourceDao.getLocalSources()
