@@ -94,7 +94,7 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     onLogoutComplete: () -> Unit,
     onLicensesClick: () -> Unit,
-    onDownloadsClick: () -> Unit,
+    onDownloadClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -181,8 +181,9 @@ fun SettingsScreen(
                         userName = uiState.currentUser?.name ?: "Unknown User",
                         serverName = uiState.serverName,
                         serverUrl = uiState.serverUrl,
-                        userProfileImageUrl = uiState.userProfileImageUrl
-                    )
+                        userProfileImageUrl = uiState.userProfileImageUrl,
+                        uiState = uiState
+                        )
                 }
 
                 item {
@@ -190,16 +191,8 @@ fun SettingsScreen(
                         userName = uiState.currentUser?.name ?: "Unknown User",
                         uiState = uiState,
                         onLogoutClick = { showLogoutDialog = true },
-                        isLoggingOut = uiState.isLoggingOut
-                    )
-                }
-
-                item {
-                    SettingsItem(
-                        icon = Icons.Outlined.Download,
-                        title = "Downloads",
-                        subtitle = "Manage downloads and offline content",
-                        onClick = onDownloadsClick
+                        isLoggingOut = uiState.isLoggingOut,
+                        onDownloadsClick = onDownloadClick
                     )
                 }
 
@@ -258,6 +251,7 @@ private fun ProfileHeader(
     serverName: String?,
     serverUrl: String?,
     userProfileImageUrl: String?,
+    uiState: SettingsUiState,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -314,7 +308,12 @@ private fun ProfileHeader(
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     Text(
-                        text = serverName ?: "Jellyfin Server",
+                        text = listOfNotNull(
+                            uiState.serverName ?: "Unknown",
+                            uiState.serverVersion.let { url ->
+                                try { java.net.URL(url).host } catch (e: Exception) { url }
+                            }
+                        ).joinToString(" • "),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                         maxLines = 1,
@@ -341,6 +340,7 @@ private fun AccountSection(
     uiState: SettingsUiState,
     onLogoutClick: () -> Unit,
     isLoggingOut: Boolean,
+    onDownloadsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     SettingsSection(
@@ -361,16 +361,10 @@ private fun AccountSection(
         )
 
         SettingsItem(
-            icon = Icons.Outlined.Info,
-            title = "Server",
-            subtitle = listOfNotNull(
-                uiState.serverName ?: "Unknown",
-                uiState.serverVersion,
-                uiState.serverUrl?.let { url ->
-                    try { java.net.URL(url).host } catch (e: Exception) { url }
-                }
-            ).joinToString(" • "),
-            onClick = null
+                icon = Icons.Outlined.Download,
+                title = "Downloads",
+                subtitle = "Manage downloads and offline content",
+                onClick = onDownloadsClick
         )
 
         HorizontalDivider(

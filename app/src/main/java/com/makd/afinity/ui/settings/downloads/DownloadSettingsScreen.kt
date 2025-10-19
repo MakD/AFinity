@@ -485,7 +485,8 @@ private fun CompletedDownloadCard(
             }
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
@@ -497,7 +498,8 @@ private fun CompletedDownloadCard(
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Delete",
-                        tint = Color.Red
+                        tint = Color.Red,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }

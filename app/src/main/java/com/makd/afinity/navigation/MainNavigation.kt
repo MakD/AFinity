@@ -98,7 +98,8 @@ fun MainNavigation(
                 route != "search" &&
                 !route.startsWith("genre_results/") &&
                 route != "settings" &&
-                route != "licenses"
+                route != "licenses" &&
+                route != "download_settings"
     } ?: true
 
     val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
@@ -387,7 +388,7 @@ fun MainNavigation(
                         val route = Destination.createLicensesRoute()
                         navController.navigate(route)
                     },
-                    onDownloadsClick = {
+                    onDownloadClick = {
                         val route = Destination.createDownloadSettingsRoute()
                         navController.navigate(route)
                     }
