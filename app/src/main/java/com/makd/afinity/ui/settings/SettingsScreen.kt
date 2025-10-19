@@ -192,7 +192,9 @@ fun SettingsScreen(
                         uiState = uiState,
                         onLogoutClick = { showLogoutDialog = true },
                         isLoggingOut = uiState.isLoggingOut,
-                        onDownloadsClick = onDownloadClick
+                        onDownloadsClick = onDownloadClick,
+                        offlineMode = offlineMode,
+                        onOfflineModeToggle = viewModel::toggleOfflineMode
                     )
                 }
 
@@ -205,9 +207,7 @@ fun SettingsScreen(
                         combineLibrarySections = combineLibrarySections,
                         onCombineLibrarySectionsToggle = viewModel::toggleCombineLibrarySections,
                         homeSortByDateAdded = homeSortByDateAdded,
-                        onHomeSortByDateAddedToggle = viewModel::toggleHomeSortByDateAdded,
-                        offlineMode = offlineMode,
-                        onOfflineModeToggle = viewModel::toggleOfflineMode
+                        onHomeSortByDateAddedToggle = viewModel::toggleHomeSortByDateAdded
                     )
                 }
 
@@ -341,6 +341,8 @@ private fun AccountSection(
     onLogoutClick: () -> Unit,
     isLoggingOut: Boolean,
     onDownloadsClick: () -> Unit,
+    offlineMode: Boolean,
+    onOfflineModeToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     SettingsSection(
@@ -348,11 +350,13 @@ private fun AccountSection(
         icon = Icons.Outlined.AccountCircle,
         modifier = modifier
     ) {
-        SettingsItem(
-            icon = Icons.Outlined.Person,
-            title = "Username",
-            subtitle = userName,
-            onClick = null
+
+        SettingsSwitchItem(
+            icon = Icons.Outlined.CloudOff,
+            title = "Offline Mode",
+            subtitle = "Access downloaded content without server connection",
+            checked = offlineMode,
+            onCheckedChange = onOfflineModeToggle
         )
 
         HorizontalDivider(
@@ -365,11 +369,6 @@ private fun AccountSection(
                 title = "Downloads",
                 subtitle = "Manage downloads and offline content",
                 onClick = onDownloadsClick
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
         )
 
         Button(
@@ -419,8 +418,6 @@ private fun AppearanceSection(
     onCombineLibrarySectionsToggle: (Boolean) -> Unit,
     homeSortByDateAdded: Boolean,
     onHomeSortByDateAddedToggle: (Boolean) -> Unit,
-    offlineMode: Boolean,
-    onOfflineModeToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var themeMenuExpanded by remember { mutableStateOf(false) }
@@ -514,19 +511,6 @@ private fun AppearanceSection(
             subtitle = "Show newest content first on home screen",
             checked = homeSortByDateAdded,
             onCheckedChange = onHomeSortByDateAddedToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = Icons.Outlined.CloudOff,
-            title = "Offline Mode",
-            subtitle = "Access downloaded content without server connection",
-            checked = offlineMode,
-            onCheckedChange = onOfflineModeToggle
         )
     }
 }
