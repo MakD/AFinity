@@ -153,11 +153,6 @@ fun UpdateSection(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
-
             CheckForUpdatesButton(
                 updateState = updateState,
                 lastCheckTime = uiState.lastCheckTime,

@@ -236,10 +236,6 @@ fun SettingsScreen(
                         onLicensesClick = onLicensesClick
                     )
                 }
-
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
             }
         }
     }
