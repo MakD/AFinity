@@ -25,6 +25,7 @@ import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.paging.JellyfinItemsPagingSource
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
@@ -58,8 +59,21 @@ class JellyfinRepositoryImpl @Inject constructor(
     private val userDataRepository: UserDataRepository,
     private val playbackRepository: PlaybackRepository,
     private val apiClient: ApiClient,
-    private val database: AfinityDatabase
+    private val database: AfinityDatabase,
+    private val preferencesRepository: PreferencesRepository
 ) : JellyfinRepository {
+
+    private suspend fun isOfflineMode(): Boolean {
+        return preferencesRepository.getOfflineMode()
+    }
+
+    private suspend fun checkOfflineAccess(operation: String): Boolean {
+        if (isOfflineMode()) {
+            Timber.w("Offline mode: Cannot perform operation '$operation'")
+            return false
+        }
+        return true
+    }
 
     override fun getBaseUrl(): String {
         return serverRepository.getBaseUrl()
@@ -770,11 +784,8 @@ class JellyfinRepositoryImpl @Inject constructor(
     override suspend fun getTrickplayManifest(itemId: UUID): Map<String, Map<Int, AfinityTrickplayInfo>>? =
         withContext(Dispatchers.IO) {
             try {
-                // Get the BaseItemDto which contains the trickplay data
                 val baseItemDto = mediaRepository.getItem(itemId)
 
-                // The trickplay property from Jellyfin SDK is a Map<String, Map<String, TrickplayInfo>>
-                // where first key is sourceId, second key is width as string
                 val trickplayData = baseItemDto?.trickplay ?: return@withContext null
 
                 val result = mutableMapOf<String, Map<Int, AfinityTrickplayInfo>>()

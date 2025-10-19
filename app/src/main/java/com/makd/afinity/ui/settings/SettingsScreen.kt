@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.AppSettingsAlt
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.DarkMode
@@ -101,6 +102,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val combineLibrarySections by viewModel.combineLibrarySections.collectAsStateWithLifecycle()
     val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsStateWithLifecycle()
+    val offlineMode = uiState.offlineMode
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     if (showLogoutDialog) {
@@ -210,7 +212,9 @@ fun SettingsScreen(
                         combineLibrarySections = combineLibrarySections,
                         onCombineLibrarySectionsToggle = viewModel::toggleCombineLibrarySections,
                         homeSortByDateAdded = homeSortByDateAdded,
-                        onHomeSortByDateAddedToggle = viewModel::toggleHomeSortByDateAdded
+                        onHomeSortByDateAddedToggle = viewModel::toggleHomeSortByDateAdded,
+                        offlineMode = offlineMode,
+                        onOfflineModeToggle = viewModel::toggleOfflineMode
                     )
                 }
 
@@ -421,6 +425,8 @@ private fun AppearanceSection(
     onCombineLibrarySectionsToggle: (Boolean) -> Unit,
     homeSortByDateAdded: Boolean,
     onHomeSortByDateAddedToggle: (Boolean) -> Unit,
+    offlineMode: Boolean,
+    onOfflineModeToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var themeMenuExpanded by remember { mutableStateOf(false) }
@@ -514,6 +520,19 @@ private fun AppearanceSection(
             subtitle = "Show newest content first on home screen",
             checked = homeSortByDateAdded,
             onCheckedChange = onHomeSortByDateAddedToggle
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+
+        SettingsSwitchItem(
+            icon = Icons.Outlined.CloudOff,
+            title = "Offline Mode",
+            subtitle = "Access downloaded content without server connection",
+            checked = offlineMode,
+            onCheckedChange = onOfflineModeToggle
         )
     }
 }

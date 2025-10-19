@@ -35,6 +35,11 @@ class SettingsViewModel @Inject constructor(
 
     init {
         loadSettings()
+        viewModelScope.launch {
+            preferencesRepository.getOfflineModeFlow().collect {
+                _uiState.value = _uiState.value.copy(offlineMode = it)
+            }
+        }
     }
 
     private fun loadSettings() {
@@ -157,6 +162,17 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun toggleOfflineMode(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setOfflineMode(enabled)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle offline mode")
+                _uiState.value = _uiState.value.copy(error = "Failed to update offline mode")
+            }
+        }
+    }
+
     fun toggleUseExoPlayer(enabled: Boolean) {
         viewModelScope.launch {
             try {
@@ -224,6 +240,7 @@ data class SettingsUiState(
     val dynamicColors: Boolean = true,
     val autoPlay: Boolean = true,
     val pipGestureEnabled: Boolean = false,
+    val offlineMode: Boolean = false,
     val skipIntroEnabled: Boolean = true,
     val skipOutroEnabled: Boolean = true,
     val useExoPlayer: Boolean = true,

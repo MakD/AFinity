@@ -90,6 +90,10 @@ interface PreferencesRepository {
     suspend fun setLastUpdateCheck(timestamp: Long)
     suspend fun getLastUpdateCheck(): Long
 
+    suspend fun setOfflineMode(enabled: Boolean)
+    suspend fun getOfflineMode(): Boolean
+    fun getOfflineModeFlow(): Flow<Boolean>
+
     suspend fun setCrashReporting(enabled: Boolean)
     suspend fun getCrashReporting(): Boolean
 

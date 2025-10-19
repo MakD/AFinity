@@ -54,6 +54,8 @@ class PreferencesRepositoryImpl @Inject constructor(
         val SYNC_INTERVAL = intPreferencesKey("sync_interval")
         val LAST_SYNC_TIME = longPreferencesKey("last_sync_time")
 
+        val OFFLINE_MODE = booleanPreferencesKey("offline_mode")
+
         val CRASH_REPORTING = booleanPreferencesKey("crash_reporting")
         val USAGE_ANALYTICS = booleanPreferencesKey("usage_analytics")
 
@@ -429,5 +431,21 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun getLastUpdateCheck(): Long {
         return dataStore.data.first()[Keys.LAST_UPDATE_CHECK] ?: 0L
+    }
+
+    override suspend fun setOfflineMode(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.OFFLINE_MODE] = enabled
+        }
+    }
+
+    override suspend fun getOfflineMode(): Boolean {
+        return dataStore.data.first()[Keys.OFFLINE_MODE] ?: false
+    }
+
+    override fun getOfflineModeFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.OFFLINE_MODE] ?: false
+        }
     }
 }
