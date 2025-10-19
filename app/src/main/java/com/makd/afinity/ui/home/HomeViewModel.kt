@@ -133,6 +133,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+
+    fun dismissOfflineModePrompt() {
+        appDataRepository.dismissOfflineModePrompt()
+    }
+
+    fun enableOfflineModeFromPrompt() {
+        viewModelScope.launch {
+            appDataRepository.enableOfflineMode()
+        }
+    }
+
+    val showOfflineModePrompt = appDataRepository.showOfflineModePrompt
+
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
     val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
 

@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -43,6 +44,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -112,6 +114,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val offlineMode = uiState.offlineMode
+    val showOfflineModePrompt by viewModel.showOfflineModePrompt.collectAsStateWithLifecycle()
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -380,6 +383,38 @@ fun HomeScreen(
                 navController.navigate(route)
                 pendingNavigationSeriesId = null
             }
+        }
+
+        if (showOfflineModePrompt) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissOfflineModePrompt() },
+                title = {
+                    Text(
+                        text = "Connection Error",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Unable to connect to Jellyfin server. Would you like to enable offline mode to access your downloaded content?",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { viewModel.enableOfflineModeFromPrompt() }
+                    ) {
+                        Text("Enable Offline Mode")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { viewModel.dismissOfflineModePrompt() }
+                    ) {
+                        Text("Dismiss")
+                    }
+                }
+            )
         }
     }
 }

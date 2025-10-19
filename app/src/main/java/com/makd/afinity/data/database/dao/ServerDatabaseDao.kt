@@ -97,6 +97,12 @@ abstract class ServerDatabaseDao {
     @Query("SELECT * FROM episodes WHERE seriesId = :seriesId ORDER BY parentIndexNumber ASC, indexNumber ASC")
     abstract suspend fun getEpisodesForSeries(seriesId: UUID): List<AfinityEpisodeDto>
 
+    @Query("SELECT * FROM movies WHERE serverId = :serverId OR serverId IS NULL ORDER BY name ASC")
+    abstract suspend fun getMoviesByServerId(serverId: String?): List<AfinityMovieDto>
+
+    @Query("SELECT * FROM shows WHERE serverId = :serverId OR serverId IS NULL ORDER BY name ASC")
+    abstract suspend fun getShowsByServerId(serverId: String?): List<AfinityShowDto>
+
     @Query("SELECT * FROM segments WHERE itemId = :itemId")
     abstract suspend fun getSegmentsForItem(itemId: UUID): List<AfinitySegmentDto>
 
@@ -192,6 +198,24 @@ abstract class ServerDatabaseDao {
         LIMIT :limit
     """)
     abstract suspend fun getContinueWatchingEpisodes(userId: UUID, limit: Int): List<AfinityEpisodeDto>
+
+    @Transaction
+    open suspend fun setPlaybackPositionTicks(itemId: UUID, userId: UUID, positionTicks: Long) {
+        val userData = getUserDataOrCreateNew(itemId, userId)
+        insertUserData(userData.copy(playbackPositionTicks = positionTicks))
+    }
+
+    @Transaction
+    open suspend fun setPlayed(userId: UUID, itemId: UUID, played: Boolean) {
+        val userData = getUserDataOrCreateNew(itemId, userId)
+        insertUserData(userData.copy(played = played))
+    }
+
+    @Transaction
+    open suspend fun setUserDataToBeSynced(userId: UUID, itemId: UUID, toBeSynced: Boolean) {
+        val userData = getUserDataOrCreateNew(itemId, userId)
+        insertUserData(userData.copy(toBeSynced = toBeSynced))
+    }
 
     @Query("SELECT COUNT(*) FROM movies")
     abstract suspend fun getMovieCount(): Int

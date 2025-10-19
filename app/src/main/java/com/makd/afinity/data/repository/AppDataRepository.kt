@@ -57,6 +57,9 @@ class AppDataRepository @Inject constructor(
     private val _latestTvSeries = MutableStateFlow<List<AfinityShow>>(emptyList())
     val latestTvSeries: StateFlow<List<AfinityShow>> = _latestTvSeries.asStateFlow()
 
+    private val _showOfflineModePrompt = MutableStateFlow(false)
+    val showOfflineModePrompt: StateFlow<Boolean> = _showOfflineModePrompt.asStateFlow()
+
     fun getCombineLibrarySectionsFlow(): Flow<Boolean> {
         return preferencesRepository.getCombineLibrarySectionsFlow()
     }
@@ -80,9 +83,6 @@ class AppDataRepository @Inject constructor(
     private val _loadingPhase = MutableStateFlow("")
     val loadingPhase: StateFlow<String> = _loadingPhase.asStateFlow()
 
-    /**
-     * Loads all essential app data in the correct order for optimal UX
-     */
     suspend fun loadInitialData() {
         if (_isInitialDataLoaded.value) {
             Timber.d("Initial data already loaded, skipping...")
@@ -90,6 +90,14 @@ class AppDataRepository @Inject constructor(
         }
 
         try {
+            if (preferencesRepository.getOfflineMode()) {
+                Timber.d("Offline mode: Loading local data only")
+                // TODO: Load from local database when offline implementation is complete
+                updateProgress(1f, "Offline mode active")
+                _isInitialDataLoaded.value = true
+                return
+            }
+
             coroutineScope {
                 updateProgress(0.1f, "Getting latest content...")
                 val latestMediaTask = async { loadLatestMedia() }
@@ -175,21 +183,24 @@ class AppDataRepository @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load initial app data")
+
+            if (isConnectionError(e)) {
+                val isOffline = preferencesRepository.getOfflineMode()
+                if (!isOffline) {
+                    Timber.w("Connection error detected, showing offline mode prompt")
+                    showOfflineModePrompt()
+                }
+            }
+
             throw e
         }
     }
 
-    /**
-     * Forces a refresh of all data
-     */
     suspend fun refreshAllData() {
         _isInitialDataLoaded.value = false
         loadInitialData()
     }
 
-    /**
-     * Refreshes only specific data streams without full reload
-     */
     suspend fun refreshContinueWatching() {
         try {
             val freshData = jellyfinRepository.getContinueWatching(limit = 12)
@@ -200,9 +211,6 @@ class AppDataRepository @Inject constructor(
         }
     }
 
-    /**
-     * Reloads home-specific data (movies, shows, highest rated)
-     */
     suspend fun reloadHomeData() {
         if (!_isInitialDataLoaded.value) return
 
@@ -463,5 +471,36 @@ class AppDataRepository @Inject constructor(
         _loadingPhase.value = ""
         _separateMovieLibrarySections.value = emptyList()
         _separateTvLibrarySections.value = emptyList()
+    }
+
+    fun showOfflineModePrompt() {
+        _showOfflineModePrompt.value = true
+    }
+
+    fun dismissOfflineModePrompt() {
+        _showOfflineModePrompt.value = false
+    }
+
+    suspend fun enableOfflineMode() {
+        try {
+            preferencesRepository.setOfflineMode(true)
+            dismissOfflineModePrompt()
+            Timber.d("Offline mode enabled from prompt")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to enable offline mode")
+        }
+    }
+
+    private fun isConnectionError(exception: Exception): Boolean {
+        val message = exception.message?.lowercase() ?: ""
+        return message.contains("unable to resolve host") ||
+                message.contains("failed to connect") ||
+                message.contains("network is unreachable") ||
+                message.contains("timeout") ||
+                message.contains("connection refused") ||
+                exception is java.net.UnknownHostException ||
+                exception is java.net.SocketTimeoutException ||
+                exception is java.net.ConnectException ||
+                exception is java.io.IOException
     }
 }
