@@ -56,6 +56,7 @@ class LoginViewModel @Inject constructor(
             if (currentUrl.isNotBlank()) {
                 _serverUrl.value = currentUrl
                 _connectedServerUrl.value = currentUrl
+                jellyfinRepository.refreshServerInfo()
                 _uiState.value = _uiState.value.copy(isConnectedToServer = true)
                 loadPublicUsers()
             }
@@ -113,7 +114,7 @@ class LoginViewModel @Inject constructor(
                         Timber.d("Server validation successful for: $url")
 
                         jellyfinRepository.setBaseUrl(url)
-
+                        jellyfinRepository.refreshServerInfo()
                         _connectedServerUrl.value = url
 
                         loadPublicUsers()

@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
@@ -32,9 +31,9 @@ import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.FastForward
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PictureInPicture
@@ -80,7 +79,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.settings.update.UpdateSection
@@ -349,7 +347,13 @@ private fun AccountSection(
         SettingsItem(
             icon = Icons.Outlined.Info,
             title = "Server",
-            subtitle = "${uiState.serverName ?: "Unknown"} • ${uiState.serverUrl ?: "No URL"}",
+            subtitle = listOfNotNull(
+                uiState.serverName ?: "Unknown",
+                uiState.serverVersion,
+                uiState.serverUrl?.let { url ->
+                    try { java.net.URL(url).host } catch (e: Exception) { url }
+                }
+            ).joinToString(" • "),
             onClick = null
         )
 
@@ -618,7 +622,7 @@ private fun AboutSection(
         )
 
         SettingsItem(
-            icon = Icons.Outlined.Info,
+            icon = Icons.Outlined.Description,
             title = "Open Source Licenses",
             subtitle = "View licenses for open source libraries",
             onClick = onLicensesClick

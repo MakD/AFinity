@@ -46,10 +46,12 @@ class SettingsViewModel @Inject constructor(
             ) { user, profileImageUrl, server ->
                 Triple(user, profileImageUrl, server)
             }.collect { (user, profileImageUrl, server) ->
+                Timber.d("SettingsViewModel - Server name: ${server?.name ?: "NULL"}, Server ID: ${server?.id ?: "NULL"}")
                 _uiState.value = _uiState.value.copy(
                     currentUser = user,
                     userProfileImageUrl = profileImageUrl,
                     serverName = server?.name,
+                    serverVersion = server?.version,
                     serverUrl = serverRepository.getBaseUrl().ifEmpty { null },
                     isLoading = false
                 )
@@ -215,6 +217,7 @@ class SettingsViewModel @Inject constructor(
 data class SettingsUiState(
     val currentUser: User? = null,
     val serverName: String? = null,
+    val serverVersion: String? = null,
     val serverUrl: String? = null,
     val userProfileImageUrl: String? = null,
     val themeMode: String = "SYSTEM",

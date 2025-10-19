@@ -9,6 +9,7 @@ interface ServerRepository {
     val currentBaseUrl: StateFlow<String>
     val isConnected: StateFlow<Boolean>
     val currentServer: StateFlow<Server?>
+    suspend fun refreshServerInfo()
 
     fun getBaseUrl(): String
     suspend fun setBaseUrl(baseUrl: String)

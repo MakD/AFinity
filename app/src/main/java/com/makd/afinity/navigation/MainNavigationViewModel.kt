@@ -42,6 +42,7 @@ class MainNavigationViewModel @Inject constructor(
 
     init {
         observeAuthAndLoadData()
+        refreshServerInfo()
     }
 
     private fun observeAuthAndLoadData() {
@@ -58,6 +59,17 @@ class MainNavigationViewModel @Inject constructor(
                 }
 
                 previousAuthState = isAuthenticated
+            }
+        }
+    }
+
+    private fun refreshServerInfo() {
+        viewModelScope.launch {
+            try {
+                jellyfinRepository.refreshServerInfo()
+                Timber.d("Server info refreshed on app start")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh server info on app start")
             }
         }
     }

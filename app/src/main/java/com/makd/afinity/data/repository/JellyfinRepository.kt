@@ -30,6 +30,7 @@ interface JellyfinRepository {
     suspend fun discoverServers(): List<Server>
     suspend fun discoverServersFlow(): Flow<List<Server>>
     suspend fun validateServer(serverUrl: String): JellyfinServerRepository.ServerConnectionResult
+    suspend fun refreshServerInfo()
 
     suspend fun authenticateByName(username: String, password: String): AuthenticationResult?
     suspend fun authenticateWithQuickConnect(secret: String): AuthenticationResult?

@@ -18,7 +18,6 @@ fun GlobalUpdateDialog(
     var showDialog by remember { mutableStateOf(false) }
     var hasShownForCurrentUpdate by remember { mutableStateOf(false) }
 
-    // Show dialog when update is available or downloaded, but only once per update
     when (val state = updateState) {
         is UpdateState.Available -> {
             if (!hasShownForCurrentUpdate) {
@@ -33,7 +32,6 @@ fun GlobalUpdateDialog(
             }
         }
         UpdateState.Idle, UpdateState.UpToDate -> {
-            // Reset flag when update state is reset
             hasShownForCurrentUpdate = false
         }
         else -> {

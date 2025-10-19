@@ -98,6 +98,7 @@ class JellyfinServerRepository @Inject constructor(
                     id = serverInfo.address?.replace("http://", "")?.replace("https://", "")
                         ?: UUID.randomUUID().toString(),
                     name = serverInfo.name ?: "Jellyfin Server",
+                    version = null,
                     currentServerAddressId = null,
                     currentUserId = null
                 )
@@ -131,6 +132,7 @@ class JellyfinServerRepository @Inject constructor(
                         val server = Server(
                             id = systemInfo.id ?: UUID.randomUUID().toString(),
                             name = systemInfo.serverName ?: "Jellyfin Server",
+                            version = systemInfo.version,
                             currentServerAddressId = null,
                             currentUserId = null
                         )
@@ -182,6 +184,7 @@ class JellyfinServerRepository @Inject constructor(
                     Server(
                         id = it.id ?: UUID.randomUUID().toString(),
                         name = it.serverName ?: "Jellyfin Server",
+                        version = it.version,
                         currentServerAddressId = null,
                         currentUserId = null
                     )
@@ -189,6 +192,33 @@ class JellyfinServerRepository @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get server info")
                 null
+            }
+        }
+    }
+
+    override suspend fun refreshServerInfo() {
+        withContext(Dispatchers.IO) {
+            try {
+                val systemApi = SystemApi(apiClient)
+                val response = systemApi.getPublicSystemInfo()
+                val systemInfo = response.content
+
+                if (systemInfo != null) {
+                    val server = Server(
+                        id = systemInfo.id ?: UUID.randomUUID().toString(),
+                        name = systemInfo.serverName ?: "Jellyfin Server",
+                        version = systemInfo.version,
+                        currentServerAddressId = null,
+                        currentUserId = null
+                    )
+                    _currentServer.value = server
+                    _isConnected.value = true
+                    Timber.d("Server info refreshed: ${server.name}")
+                } else {
+                    Timber.e("Failed to refresh server info - no system info returned")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh server info")
             }
         }
     }

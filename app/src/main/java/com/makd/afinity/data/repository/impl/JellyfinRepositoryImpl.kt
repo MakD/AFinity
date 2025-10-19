@@ -87,6 +87,10 @@ class JellyfinRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun refreshServerInfo() {
+        serverRepository.refreshServerInfo()
+    }
+
     override suspend fun authenticateByName(username: String, password: String): AuthenticationResult? {
         return try {
             val result = authRepository.authenticateByName(username, password)

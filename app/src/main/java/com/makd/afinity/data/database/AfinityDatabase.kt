@@ -55,7 +55,7 @@ import com.makd.afinity.data.models.user.User
 
         AfinityUserDataDto::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(com.makd.afinity.data.database.TypeConverters::class)

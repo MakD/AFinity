@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -305,7 +306,7 @@ private fun UpdateFrequencySelector(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Icon(
-                imageVector = Icons.Outlined.Refresh,
+                imageVector = Icons.Outlined.Schedule,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
