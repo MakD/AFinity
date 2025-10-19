@@ -406,6 +406,45 @@ class MediaDownloadManager @Inject constructor(
     }
 
     /**
+     * Delete a downloaded item
+     */
+    suspend fun deleteDownload(itemId: UUID) {
+        try {
+            val localSources = sourceDao.getSourcesForItem(itemId)
+                .filter { it.type == AfinitySourceType.LOCAL }
+
+            if (localSources.isEmpty()) {
+                Timber.w("No downloaded files found for item: $itemId")
+                return
+            }
+
+            var deletedCount = 0
+
+            localSources.forEach { source ->
+                val file = File(source.path)
+
+                if (file.exists()) {
+                    if (file.delete()) {
+                        deletedCount++
+                        Timber.d("Deleted file: ${file.absolutePath}")
+                    } else {
+                        Timber.w("Failed to delete file: ${file.absolutePath}")
+                    }
+                }
+
+                sourceDao.deleteSource(source)
+            }
+
+            updateDownloadState(itemId, DownloadState.Idle)
+
+            Timber.d("Deleted $deletedCount downloaded files for item: $itemId")
+
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to delete download for item: $itemId")
+        }
+    }
+
+    /**
      * Clean up resources
      */
     fun cleanup() {

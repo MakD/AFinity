@@ -24,6 +24,7 @@ interface DownloadRepository {
 
     suspend fun downloadItem(item: AfinityItem, source: AfinitySource): Long?
     fun cancelDownload(itemId: UUID)
+    suspend fun deleteDownload(itemId: UUID)
     fun getDownloadState(itemId: UUID): DownloadState
     fun isDownloaded(itemId: UUID): Boolean
     fun isDownloading(itemId: UUID): Boolean
@@ -83,6 +84,13 @@ class DownloadRepositoryImpl @Inject constructor(
      */
     override fun cancelDownload(itemId: UUID) {
         mediaDownloadManager.cancelDownload(itemId)
+    }
+
+    /**
+     * Delete a downloaded item
+     */
+    override suspend fun deleteDownload(itemId: UUID) {
+        mediaDownloadManager.deleteDownload(itemId)
     }
 
     /**

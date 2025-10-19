@@ -685,6 +685,13 @@ class ItemDetailViewModel @Inject constructor(
             downloadRepository.cancelDownload(itemId)
         }
     }
+
+    fun deleteDownload() {
+        viewModelScope.launch {
+            Timber.d("Deleting download for item: $itemId")
+            downloadRepository.deleteDownload(itemId)
+        }
+    }
 }
 
 data class ItemDetailUiState(

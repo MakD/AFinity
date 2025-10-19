@@ -21,18 +21,22 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MovieCreation
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -228,6 +232,49 @@ private fun ItemDetailContent(
     viewModel: ItemDetailViewModel
 ) {
     val context = LocalContext.current
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = Color.Red
+                )
+            },
+            title = {
+                Text("Delete Download")
+            },
+            text = {
+                Text(
+                    "Are you sure you want to delete this downloaded file? " +
+                            "This will free up storage space, but you'll need to download it again to watch offline."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        viewModel.deleteDownload()
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color.Red
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteConfirmation = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -614,7 +661,7 @@ private fun ItemDetailContent(
                                             viewModel.cancelDownload()
                                         }
                                         is DownloadState.Completed -> {
-                                            // Already downloaded, do nothing or show message
+                                            showDeleteConfirmation = true
                                         }
                                     }
                                 }
@@ -630,9 +677,9 @@ private fun ItemDetailContent(
                                     }
                                     is DownloadState.Completed -> {
                                         Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = "Downloaded",
-                                            tint = Color.Green,
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete Download",
+                                            tint = Color.Red,
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }
@@ -908,7 +955,7 @@ private fun ItemDetailContent(
                                             viewModel.cancelDownload()
                                         }
                                         is DownloadState.Completed -> {
-                                            // Already downloaded, do nothing or show message
+                                            showDeleteConfirmation = true
                                         }
                                     }
                                 }
@@ -924,9 +971,9 @@ private fun ItemDetailContent(
                                     }
                                     is DownloadState.Completed -> {
                                         Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = "Downloaded",
-                                            tint = Color.Green,
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete Download",
+                                            tint = Color.Red,
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }

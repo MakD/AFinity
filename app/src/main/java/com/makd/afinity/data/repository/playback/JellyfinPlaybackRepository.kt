@@ -1,5 +1,7 @@
 package com.makd.afinity.data.repository.playback
 
+import com.makd.afinity.data.database.dao.SourceDao
+import com.makd.afinity.data.models.media.AfinitySourceType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
@@ -17,13 +19,15 @@ import org.jellyfin.sdk.model.api.RepeatMode
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
 import timber.log.Timber
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class JellyfinPlaybackRepository @Inject constructor(
-    private val apiClient: ApiClient
+    private val apiClient: ApiClient,
+    private val sourceDao: SourceDao
 ) : PlaybackRepository {
 
     private suspend fun getCurrentUserId(): UUID? {
@@ -175,6 +179,23 @@ class JellyfinPlaybackRepository @Inject constructor(
     ): String? {
         return withContext(Dispatchers.IO) {
             try {
+                val localSources = sourceDao.getSourcesForItem(itemId)
+                    .filter { it.type == AfinitySourceType.LOCAL }
+
+                if (localSources.isNotEmpty()) {
+                    val localSource = localSources.firstOrNull { it.id == mediaSourceId }
+                        ?: localSources.first()
+
+                    val localFile = File(localSource.path)
+                    if (localFile.exists()) {
+                        Timber.d("Using local file for playback: ${localFile.absolutePath}")
+                        return@withContext localFile.absolutePath
+                    } else {
+                        Timber.w("Local file not found: ${localFile.absolutePath}, falling back to streaming")
+                        sourceDao.deleteSource(localSource)
+                    }
+                }
+
                 val videosApi = VideosApi(apiClient)
 
                 val streamUrl = videosApi.getVideoStreamUrl(
