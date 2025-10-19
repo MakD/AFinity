@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
@@ -196,4 +197,7 @@ interface JellyfinRepository {
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>
     fun getLatestMediaFlow(parentId: UUID? = null): Flow<List<AfinityItem>>
     fun getContinueWatchingFlow(): Flow<List<AfinityItem>>
+    suspend fun getTrickplayTileImage(itemId: UUID, width: Int, index: Int): ByteArray?
+    suspend fun getTrickplayData(itemId: UUID, width: Int, index: Int): ByteArray?
+    suspend fun getTrickplayManifest(itemId: UUID): Map<String, Map<Int, AfinityTrickplayInfo>>?
 }

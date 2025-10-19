@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.impl
 
 
+import android.content.Context
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -16,6 +17,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityItem
 import com.makd.afinity.data.models.server.Server
@@ -30,13 +32,18 @@ import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.library.FilterType
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -44,11 +51,13 @@ import javax.inject.Singleton
 
 @Singleton
 class JellyfinRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val serverRepository: ServerRepository,
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
     private val userDataRepository: UserDataRepository,
     private val playbackRepository: PlaybackRepository,
+    private val apiClient: ApiClient,
     private val database: AfinityDatabase
 ) : JellyfinRepository {
 
@@ -91,7 +100,10 @@ class JellyfinRepositoryImpl @Inject constructor(
         serverRepository.refreshServerInfo()
     }
 
-    override suspend fun authenticateByName(username: String, password: String): AuthenticationResult? {
+    override suspend fun authenticateByName(
+        username: String,
+        password: String
+    ): AuthenticationResult? {
         return try {
             val result = authRepository.authenticateByName(username, password)
             when (result) {
@@ -201,7 +213,12 @@ class JellyfinRepositoryImpl @Inject constructor(
 
     override suspend fun getNextUp(limit: Int): List<AfinityEpisode> {
         return try {
-            mediaRepository.getNextUp(seriesId = null, limit = limit, fields = FieldSets.NEXT_UP, enableResumable = false)
+            mediaRepository.getNextUp(
+                seriesId = null,
+                limit = limit,
+                fields = FieldSets.NEXT_UP,
+                enableResumable = false
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get next up episodes")
             emptyList()
@@ -279,9 +296,22 @@ class JellyfinRepositoryImpl @Inject constructor(
     ): BaseItemDtoQueryResult {
         return try {
             mediaRepository.getItems(
-                parentId, collectionTypes, sortBy, sortDescending, limit, startIndex,
-                searchTerm, includeItemTypes, genres, years, isFavorite, isPlayed, nameStartsWith, fields,
-                imageTypes, hasOverview
+                parentId,
+                collectionTypes,
+                sortBy,
+                sortDescending,
+                limit,
+                startIndex,
+                searchTerm,
+                includeItemTypes,
+                genres,
+                years,
+                isFavorite,
+                isPlayed,
+                nameStartsWith,
+                fields,
+                imageTypes,
+                hasOverview
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get items")
@@ -337,7 +367,15 @@ class JellyfinRepositoryImpl @Inject constructor(
         isPlayed: Boolean?
     ): List<AfinityMovie> {
         return try {
-            mediaRepository.getMovies(parentId, sortBy, sortDescending, limit, startIndex, searchTerm, isPlayed)
+            mediaRepository.getMovies(
+                parentId,
+                sortBy,
+                sortDescending,
+                limit,
+                startIndex,
+                searchTerm,
+                isPlayed
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get movies")
             emptyList()
@@ -354,7 +392,15 @@ class JellyfinRepositoryImpl @Inject constructor(
         isPlayed: Boolean?
     ): List<AfinityShow> {
         return try {
-            mediaRepository.getShows(parentId, sortBy, sortDescending, limit, startIndex, searchTerm, isPlayed)
+            mediaRepository.getShows(
+                parentId,
+                sortBy,
+                sortDescending,
+                limit,
+                startIndex,
+                searchTerm,
+                isPlayed
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get shows")
             emptyList()
@@ -639,7 +685,10 @@ class JellyfinRepositoryImpl @Inject constructor(
         return mediaRepository.getFavoriteSeasons()
     }
 
-    override suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode? {
+    override suspend fun getEpisodeToPlayForSeason(
+        seasonId: UUID,
+        seriesId: UUID
+    ): AfinityEpisode? {
         return try {
             Timber.d("Getting episode to play for season: $seasonId")
 
@@ -686,4 +735,71 @@ class JellyfinRepositoryImpl @Inject constructor(
             null
         }
     }
+
+    override suspend fun getTrickplayTileImage(itemId: UUID, width: Int, index: Int): ByteArray? =
+        withContext(Dispatchers.IO) {
+            try {
+                val trickplayApi = org.jellyfin.sdk.api.operations.TrickplayApi(apiClient)
+                trickplayApi.getTrickplayTileImage(itemId, width, index).content
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to fetch trickplay tile image for item $itemId")
+                null
+            }
+        }
+
+    override suspend fun getTrickplayData(itemId: UUID, width: Int, index: Int): ByteArray? =
+        withContext(Dispatchers.IO) {
+            try {
+                val localFile = File(context.filesDir, "trickplay/$itemId")
+                if (localFile.exists()) {
+                    val sources = localFile.listFiles()
+                    if (sources != null && sources.isNotEmpty()) {
+                        val imageFile = File(sources.first(), index.toString())
+                        if (imageFile.exists()) {
+                            return@withContext imageFile.readBytes()
+                        }
+                    }
+                }
+                getTrickplayTileImage(itemId, width, index)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get trickplay data for item $itemId")
+                null
+            }
+        }
+
+    override suspend fun getTrickplayManifest(itemId: UUID): Map<String, Map<Int, AfinityTrickplayInfo>>? =
+        withContext(Dispatchers.IO) {
+            try {
+                // Get the BaseItemDto which contains the trickplay data
+                val baseItemDto = mediaRepository.getItem(itemId)
+
+                // The trickplay property from Jellyfin SDK is a Map<String, Map<String, TrickplayInfo>>
+                // where first key is sourceId, second key is width as string
+                val trickplayData = baseItemDto?.trickplay ?: return@withContext null
+
+                val result = mutableMapOf<String, Map<Int, AfinityTrickplayInfo>>()
+
+                trickplayData.forEach { (sourceId, widthMap) ->
+                    val infoMap = widthMap.mapKeys { (widthStr, _) ->
+                        widthStr.toIntOrNull() ?: 0
+                    }.mapValues { (_, trickplayInfo) ->
+                        AfinityTrickplayInfo(
+                            width = trickplayInfo.width,
+                            height = trickplayInfo.height,
+                            tileWidth = trickplayInfo.tileWidth,
+                            tileHeight = trickplayInfo.tileHeight,
+                            thumbnailCount = trickplayInfo.thumbnailCount,
+                            interval = trickplayInfo.interval,
+                            bandwidth = trickplayInfo.bandwidth
+                        )
+                    }
+                    result[sourceId] = infoMap
+                }
+
+                result.ifEmpty { null }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to fetch trickplay manifest for item $itemId")
+                null
+            }
+        }
 }

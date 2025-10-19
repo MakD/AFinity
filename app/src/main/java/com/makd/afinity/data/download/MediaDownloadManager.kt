@@ -13,12 +13,19 @@ import com.makd.afinity.data.models.download.DownloadItemType
 import com.makd.afinity.data.models.download.DownloadPriority
 import com.makd.afinity.data.models.download.DownloadState
 import com.makd.afinity.data.models.download.DownloadTask
+import kotlin.math.ceil
+import org.jellyfin.sdk.model.api.MediaStreamType
 import com.makd.afinity.data.models.download.QueuedDownloadItem
+import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.network.ConnectionType
 import com.makd.afinity.data.network.NetworkMonitor
 import com.makd.afinity.data.network.NetworkState
+import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.segments.SegmentsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +49,10 @@ class MediaDownloadManager @Inject constructor(
     private val sourceDao: SourceDao,
     private val preferencesRepository: PreferencesRepository,
     private val apiClient: ApiClient,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val jellyfinRepository: JellyfinRepository,
+    private val databaseRepository: DatabaseRepository,
+    private val segmentsRepository: SegmentsRepository
 ) {
     private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -304,6 +314,139 @@ class MediaDownloadManager @Inject constructor(
         }
     }
 
+    private suspend fun downloadTrickplayData(
+        itemId: UUID,
+        sourceId: String,
+        trickplayManifest: Map<String, Map<Int, AfinityTrickplayInfo>>?
+    ) {
+        try {
+            if (trickplayManifest == null || trickplayManifest.isEmpty()) {
+                Timber.d("No trickplay data available for item: $itemId")
+                return
+            }
+
+            val trickplayInfo = trickplayManifest[sourceId]?.values?.firstOrNull()
+            if (trickplayInfo == null) {
+                Timber.d("No trickplay info found for source: $sourceId")
+                return
+            }
+
+            val maxIndex = ceil(
+                trickplayInfo.thumbnailCount.toDouble() /
+                        (trickplayInfo.tileWidth * trickplayInfo.tileHeight)
+            ).toInt()
+
+            Timber.d("Downloading $maxIndex trickplay tiles for item $itemId")
+
+            val byteArrays = mutableListOf<ByteArray>()
+            for (i in 0 until maxIndex) {
+                jellyfinRepository.getTrickplayTileImage(itemId, trickplayInfo.width, i)?.let { byteArray ->
+                    byteArrays.add(byteArray)
+                    Timber.d("Downloaded trickplay tile $i of $maxIndex")
+                }
+            }
+
+            saveTrickplayData(itemId, sourceId, trickplayInfo, byteArrays)
+            Timber.d("Successfully downloaded and saved ${byteArrays.size} trickplay tiles")
+
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to download trickplay data for item: $itemId")
+        }
+    }
+
+    private suspend fun saveTrickplayData(
+        itemId: UUID,
+        sourceId: String,
+        trickplayInfo: AfinityTrickplayInfo,
+        byteArrays: List<ByteArray>
+    ) {
+        try {
+            val basePath = "trickplay/$itemId/$sourceId"
+            val trickplayDir = File(context.filesDir, basePath)
+            if (!trickplayDir.exists()) {
+                trickplayDir.mkdirs()
+            }
+
+            databaseRepository.insertTrickplayInfo(trickplayInfo, sourceId)
+
+            for ((index, byteArray) in byteArrays.withIndex()) {
+                val file = File(trickplayDir, index.toString())
+                file.writeBytes(byteArray)
+            }
+
+            Timber.d("Saved ${byteArrays.size} trickplay tiles to $basePath")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to save trickplay data")
+        }
+    }
+
+    private suspend fun downloadExternalSubtitles(
+        itemId: UUID,
+        source: AfinitySource,
+        storageDir: File
+    ) {
+        try {
+            val externalStreams = source.mediaStreams.filter {
+                it.isExternal && it.type == org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE
+            }
+
+            if (externalStreams.isEmpty()) {
+                Timber.d("No external subtitles found for item: $itemId")
+                return
+            }
+
+            Timber.d("Downloading ${externalStreams.size} external subtitle files")
+
+            for (mediaStream in externalStreams) {
+                val subtitleUrl = mediaStream.path ?: continue
+                val streamId = UUID.randomUUID()
+                val fileName = "${itemId}_${source.id}_${streamId}_subtitle"
+
+                val apiKey = apiClient.accessToken ?: ""
+                val finalUrl = if (subtitleUrl.contains("?")) {
+                    "$subtitleUrl&api_key=$apiKey"
+                } else {
+                    "$subtitleUrl?api_key=$apiKey"
+                }
+
+                val request = DownloadManager.Request(Uri.parse(finalUrl))
+                    .setTitle("Subtitle: ${mediaStream.title}")
+                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
+                    .setDestinationInExternalFilesDir(
+                        context,
+                        Environment.DIRECTORY_DOWNLOADS + "/media",
+                        fileName
+                    )
+                    .setAllowedOverMetered(!preferencesRepository.getDownloadOverWifiOnly())
+                    .setAllowedOverRoaming(false)
+
+                val downloadId = downloadManager.enqueue(request)
+
+                val subtitlePath = File(storageDir, fileName).absolutePath
+                databaseRepository.insertMediaStream(
+                    mediaStream.copy(path = subtitlePath),
+                    source.id
+                )
+
+                Timber.d("Started download of subtitle: ${mediaStream.title}")
+            }
+
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to download external subtitles for item: $itemId")
+        }
+    }
+
+    private suspend fun downloadSegments(itemId: UUID) {
+        try {
+            val segments = segmentsRepository.getSegments(itemId)
+
+            Timber.d("Fetched ${segments.size} segments for item: $itemId (already cached by SegmentsRepository)")
+
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to fetch segments for item: $itemId")
+        }
+    }
+
     fun cancelDownload(itemId: UUID) {
         val task = activeTasks.values.find { it.itemId == itemId } ?: return
 
@@ -442,6 +585,26 @@ class MediaDownloadManager @Inject constructor(
                                 )
 
                                 Timber.d("Download completed and saved to database: ${file.absolutePath}")
+
+                                Timber.d("Starting download of additional content for ${task.itemName}")
+
+                                try {
+                                    downloadSegments(task.itemId)
+
+                                    val trickplayManifest = jellyfinRepository.getTrickplayManifest(task.itemId)
+                                    downloadTrickplayData(task.itemId, task.sourceId, trickplayManifest)
+
+                                    val sources = databaseRepository.getSourcesForItem(task.itemId)
+                                    val localSource = sources.firstOrNull { it.id == task.sourceId }
+                                    if (localSource != null) {
+                                        downloadExternalSubtitles(task.itemId, localSource, file.parentFile ?: getDownloadDirectory())
+                                    }
+
+                                    Timber.d("Completed download of all additional content for ${task.itemName}")
+                                } catch (e: Exception) {
+                                    Timber.e(e, "Failed to download additional content, but main file is saved")
+                                }
+
                             } catch (e: Exception) {
                                 Timber.e(e, "Failed to save download to database")
                                 updateDownloadState(
