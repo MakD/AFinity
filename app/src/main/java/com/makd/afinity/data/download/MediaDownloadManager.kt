@@ -16,6 +16,10 @@ import com.makd.afinity.data.models.download.DownloadTask
 import kotlin.math.ceil
 import org.jellyfin.sdk.model.api.MediaStreamType
 import com.makd.afinity.data.models.download.QueuedDownloadItem
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
@@ -85,6 +89,7 @@ class MediaDownloadManager @Inject constructor(
         sourceId: String,
         downloadUrl: String,
         itemType: DownloadItemType,
+        item: AfinityItem,
         priority: DownloadPriority = DownloadPriority.NORMAL
     ) {
         synchronized(queueLock) {
@@ -104,7 +109,8 @@ class MediaDownloadManager @Inject constructor(
                 sourceId = sourceId,
                 downloadUrl = downloadUrl,
                 itemType = itemType,
-                priority = priority
+                priority = priority,
+                item = item
             )
 
             downloadQueue.add(queueItem)
@@ -143,7 +149,8 @@ class MediaDownloadManager @Inject constructor(
                         sourceId = queueItem.sourceId,
                         downloadUrl = queueItem.downloadUrl,
                         itemType = queueItem.itemType,
-                        baseUrl = baseUrl
+                        baseUrl = baseUrl,
+                        item = queueItem.item
                     )
                 }
             }
@@ -239,7 +246,8 @@ class MediaDownloadManager @Inject constructor(
         sourceId: String,
         downloadUrl: String,
         itemType: DownloadItemType,
-        baseUrl: String
+        baseUrl: String,
+        item: AfinityItem
     ): Long? {
         try {
             val existingSource = sourceDao.getSourcesForItem(itemId)
@@ -294,7 +302,8 @@ class MediaDownloadManager @Inject constructor(
                 downloadUrl = finalDownloadUrl,
                 downloadId = downloadId,
                 fileName = fileName,
-                itemType = itemType
+                itemType = itemType,
+                item = item
             )
 
             activeTasks[downloadId] = task
@@ -585,6 +594,43 @@ class MediaDownloadManager @Inject constructor(
                                 )
 
                                 Timber.d("Download completed and saved to database: ${file.absolutePath}")
+
+                                try {
+                                    val serverId = null
+                                    when (val downloadedItem = task.item) {
+                                        is AfinityMovie -> {
+                                            Timber.d("Saving movie metadata: ${downloadedItem.name}")
+                                            databaseRepository.insertMovie(downloadedItem, serverId)
+                                        }
+                                        is AfinityEpisode -> {
+                                            Timber.d("Saving episode metadata: ${downloadedItem.name}")
+                                            databaseRepository.insertEpisode(downloadedItem, serverId)
+
+                                            try {
+                                                val seasons = jellyfinRepository.getSeasons(downloadedItem.seriesId)
+                                                val season = seasons.firstOrNull { it.id == downloadedItem.seasonId }
+                                                season?.let {
+                                                    Timber.d("Saving season metadata: ${it.name}")
+                                                    databaseRepository.insertSeason(it)
+                                                }
+
+                                                val show = jellyfinRepository.getItemById(downloadedItem.seriesId)
+                                                if (show is AfinityShow) {
+                                                    Timber.d("Saving show metadata: ${show.name}")
+                                                    databaseRepository.insertShow(show, serverId)
+                                                }
+                                            } catch (e: Exception) {
+                                                Timber.w(e, "Failed to save season/show metadata")
+                                            }
+                                        }
+                                        else -> {
+                                            Timber.d("Item type ${downloadedItem::class.simpleName} - no metadata save needed")
+                                        }
+                                    }
+                                    Timber.d("Item metadata saved for offline access")
+                                } catch (e: Exception) {
+                                    Timber.e(e, "Failed to save item metadata")
+                                }
 
                                 Timber.d("Starting download of additional content for ${task.itemName}")
 

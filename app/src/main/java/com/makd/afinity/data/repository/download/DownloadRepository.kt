@@ -71,7 +71,8 @@ class DownloadRepositoryImpl @Inject constructor(
             sourceId = source.id,
             downloadUrl = source.path,
             itemType = itemType,
-            baseUrl = baseUrl
+            baseUrl = baseUrl,
+            item = item
         )
     }
 
@@ -143,7 +144,8 @@ class DownloadRepositoryImpl @Inject constructor(
                         sourceId = source.id,
                         downloadUrl = source.path,
                         itemType = DownloadItemType.EPISODE,
-                        priority = priority
+                        priority = priority,
+                        item = episode
                     )
 
                     queuedCount++

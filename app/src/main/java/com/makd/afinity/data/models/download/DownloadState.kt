@@ -1,5 +1,6 @@
 package com.makd.afinity.data.models.download
 
+import com.makd.afinity.data.models.media.AfinityItem
 import java.io.File
 import java.util.UUID
 
@@ -79,7 +80,8 @@ data class DownloadTask(
     val downloadUrl: String,
     val downloadId: Long,
     val fileName: String,
-    val itemType: DownloadItemType
+    val itemType: DownloadItemType,
+    val item: AfinityItem
 )
 
 /**
@@ -100,6 +102,7 @@ data class QueuedDownloadItem(
     val sourceId: String,
     val downloadUrl: String,
     val itemType: DownloadItemType,
+    val item: AfinityItem,
     val priority: DownloadPriority = DownloadPriority.NORMAL,
     val addedAt: Long = System.currentTimeMillis()
 )
