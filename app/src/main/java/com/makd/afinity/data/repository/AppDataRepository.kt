@@ -92,9 +92,22 @@ class AppDataRepository @Inject constructor(
         try {
             if (preferencesRepository.getOfflineMode()) {
                 Timber.d("Offline mode: Loading local data only")
-                // TODO: Load from local database when offline implementation is complete
-                updateProgress(1f, "Offline mode active")
-                _isInitialDataLoaded.value = true
+                coroutineScope {
+                    updateProgress(0.3f, "Loading offline content...")
+
+                    val continueWatchingTask = async { loadContinueWatching() }
+                    val nextUpTask = async { loadNextUp() }
+
+                    val continueWatching = continueWatchingTask.await()
+                    _continueWatching.value = continueWatching
+                    updateProgress(0.6f, "Continue watching loaded...")
+
+                    val nextUp = nextUpTask.await()
+                    _nextUp.value = nextUp
+                    updateProgress(1f, "Offline mode ready")
+
+                    _isInitialDataLoaded.value = true
+                }
                 return
             }
 
@@ -197,6 +210,11 @@ class AppDataRepository @Inject constructor(
     }
 
     suspend fun refreshAllData() {
+        _isInitialDataLoaded.value = false
+        loadInitialData()
+    }
+
+    suspend fun reloadOnOfflineModeChange() {
         _isInitialDataLoaded.value = false
         loadInitialData()
     }
