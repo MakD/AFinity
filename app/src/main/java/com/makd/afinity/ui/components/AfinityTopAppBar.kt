@@ -146,7 +146,7 @@ fun AfinityTopAppBar(
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .size(24.dp)
+                                .size(20.dp)
                                 .background(
                                     color = MaterialTheme.colorScheme.tertiaryContainer,
                                     shape = CircleShape

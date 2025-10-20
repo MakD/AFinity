@@ -46,6 +46,7 @@ import androidx.navigation.navArgument
 import com.makd.afinity.R
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.updater.UpdateManager
+import com.makd.afinity.ui.downloads.DownloadsScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
@@ -75,12 +76,14 @@ fun MainNavigation(
     val watchlistRepository: WatchlistRepository = hiltViewModel<MainNavigationViewModel>().watchlistRepository
     val watchlistCount by watchlistRepository.getWatchlistCountFlow().collectAsStateWithLifecycle(initialValue = 0)
     val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
+    val isOfflineMode by viewModel.isOfflineMode.collectAsStateWithLifecycle()
+    val isOfflineDataRefreshing by viewModel.isOfflineDataRefreshing.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val coroutineScope = rememberCoroutineScope()
 
-    if (appLoadingState.isLoading) {
+    if (appLoadingState.isLoading && !isOfflineDataRefreshing) {
         AppSplashScreen(
             progress = appLoadingState.loadingProgress,
             phase = appLoadingState.loadingPhase,
@@ -115,10 +118,16 @@ fun MainNavigation(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+    val destinations = if (isOfflineMode) {
+        listOf(Destination.HOME, Destination.DOWNLOADS)
+    } else {
+        Destination.entries.toList().filter { it != Destination.DOWNLOADS }
+    }
+
     NavigationSuiteScaffold(
         layoutType = if (isLandscape) NavigationSuiteType.NavigationRail else NavigationSuiteType.NavigationBar,
         navigationSuiteItems = {
-            Destination.entries.forEach { destination ->
+            destinations.forEach { destination ->
                 if (destination == Destination.WATCHLIST && watchlistCount == 0) {
                     return@forEach
                 }
@@ -339,6 +348,22 @@ fun MainNavigation(
                 )
             }
 
+            composable(Destination.DOWNLOADS.route) {
+                DownloadsScreen(
+                    onItemClick = { item ->
+                        val route = Destination.createItemDetailRoute(item.id.toString())
+                        navController.navigate(route)
+                    },
+                    onPersonClick = { personId ->
+                        val route = Destination.createPersonRoute(personId)
+                        navController.navigate(route)
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    mainUiState = mainUiState,
+                    navController = navController
+                )
+            }
+
             composable(Destination.SEARCH_ROUTE) {
                 SearchScreen(
                     onBackClick = {
@@ -431,7 +456,7 @@ private fun AppSplashScreen(
         )
 
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 100.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

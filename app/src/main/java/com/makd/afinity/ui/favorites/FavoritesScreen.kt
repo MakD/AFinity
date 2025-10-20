@@ -342,7 +342,7 @@ private fun FavoritePersonCard(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp)) // Add some space between image and text
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = person.name,

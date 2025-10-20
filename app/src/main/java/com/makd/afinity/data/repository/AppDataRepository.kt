@@ -76,6 +76,9 @@ class AppDataRepository @Inject constructor(
     private val _isInitialDataLoaded = MutableStateFlow(false)
     val isInitialDataLoaded: StateFlow<Boolean> = _isInitialDataLoaded.asStateFlow()
 
+    private val _isOfflineDataRefreshing = MutableStateFlow(false)
+    val isOfflineDataRefreshing: StateFlow<Boolean> = _isOfflineDataRefreshing.asStateFlow()
+
     private val _loadingProgress = MutableStateFlow(0f)
     val loadingProgress: StateFlow<Float> = _loadingProgress.asStateFlow()
 
@@ -214,8 +217,59 @@ class AppDataRepository @Inject constructor(
     }
 
     suspend fun reloadOnOfflineModeChange() {
-        _isInitialDataLoaded.value = false
-        loadInitialData()
+        Timber.d("Reloading data due to offline mode change...")
+        _isOfflineDataRefreshing.value = true
+        try {
+            if (preferencesRepository.getOfflineMode()) {
+                Timber.d("Offline mode enabled: Reloading offline content only")
+                coroutineScope {
+                    val continueWatchingTask = async { loadContinueWatching() }
+                    val nextUpTask = async { loadNextUp() }
+
+                    _continueWatching.value = continueWatchingTask.await()
+                    _nextUp.value = nextUpTask.await()
+                }
+            } else {
+                Timber.d("Offline mode disabled: Reloading online content")
+                coroutineScope {
+                    val latestMediaTask = async { loadLatestMedia() }
+                    val heroCarouselTask = async { loadHeroCarousel() }
+                    val continueWatchingTask = async { loadContinueWatching() }
+                    val nextUpTask = async { loadNextUp() }
+                    val librariesTask = async { loadLibraries() }
+                    val userProfileTask = async { loadUserProfileImage() }
+
+                    _latestMedia.value = latestMediaTask.await()
+                    _heroCarouselItems.value = heroCarouselTask.await()
+                    _continueWatching.value = continueWatchingTask.await()
+                    _nextUp.value = nextUpTask.await()
+                    val libraries = librariesTask.await()
+                    _libraries.value = libraries
+                    _userProfileImageUrl.value = userProfileTask.await()
+
+                    val homeDataTask = async { loadHomeSpecificData(libraries) }
+                    val (latestMovies, latestTvSeries, highestRated) = homeDataTask.await()
+                    _latestMovies.value = latestMovies
+                    _latestTvSeries.value = latestTvSeries
+                    _highestRated.value = highestRated
+
+                    launch {
+                        try {
+                            Timber.d("Loading recommendations in background...")
+                            val recommendationCategories = loadRecommendations()
+                            _recommendationCategories.value = recommendationCategories
+                            Timber.d("Recommendations loaded successfully")
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to load recommendations in background")
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to reload data on offline mode change")
+        } finally {
+            _isOfflineDataRefreshing.value = false
+        }
     }
 
     suspend fun refreshContinueWatching() {

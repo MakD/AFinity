@@ -6,11 +6,14 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -21,7 +24,8 @@ class MainNavigationViewModel @Inject constructor(
     private val appDataRepository: AppDataRepository,
     private val authRepository: AuthRepository,
     private val jellyfinRepository: JellyfinRepository,
-    val watchlistRepository: WatchlistRepository
+    val watchlistRepository: WatchlistRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
     val appLoadingState = combine(
@@ -39,6 +43,20 @@ class MainNavigationViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = AppLoadingState(isLoading = true)
     )
+
+    val isOfflineMode: StateFlow<Boolean> = preferencesRepository.getOfflineModeFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    val isOfflineDataRefreshing: StateFlow<Boolean> = appDataRepository.isOfflineDataRefreshing
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
 
     init {
         observeAuthAndLoadData()
