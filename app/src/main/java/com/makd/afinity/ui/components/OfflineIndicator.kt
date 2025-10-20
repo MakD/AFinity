@@ -5,9 +5,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudOff
@@ -30,26 +32,21 @@ fun OfflineIndicator(
         exit = fadeOut(),
         modifier = modifier
     ) {
-        Row(
+        Box(
             modifier = Modifier
+                .size(24.dp)
                 .background(
                     color = MaterialTheme.colorScheme.tertiaryContainer,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = CircleShape
                 )
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(4.dp),
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Outlined.CloudOff,
                 contentDescription = "Offline Mode",
                 tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.size(16.dp)
-            )
-            Text(
-                text = "Offline",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer
+                modifier = Modifier.size(14.dp)
             )
         }
     }

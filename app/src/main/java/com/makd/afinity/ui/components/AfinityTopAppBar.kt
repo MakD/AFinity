@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,12 +67,6 @@ fun AfinityTopAppBar(
     TopAppBar(
         title = title,
         actions = {
-            if (isOffline) {
-                OfflineIndicator(
-                    isOffline = isOffline,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-            }
             if (onSearchClick != null) {
                 Button(
                     onClick = onSearchClick,
@@ -112,40 +107,63 @@ fun AfinityTopAppBar(
             }
 
             if (onProfileClick != null) {
-                IconButton(
-                    onClick = onProfileClick,
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Color.Black.copy(alpha = 0.3f),
-                                CircleShape
-                            )
-                            .clip(CircleShape),
-                        contentAlignment = Alignment.Center
+                Box {
+                    IconButton(
+                        onClick = onProfileClick,
+                        modifier = Modifier.size(48.dp)
                     ) {
-                        if (userProfileImageUrl != null) {
-                            OptimizedAsyncImage(
-                                imageUrl = userProfileImageUrl,
-                                contentDescription = "Profile",
-                                targetWidth = 48.dp,
-                                targetHeight = 48.dp,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Color.Black.copy(alpha = 0.3f),
+                                    CircleShape
+                                )
+                                .clip(CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (userProfileImageUrl != null) {
+                                OptimizedAsyncImage(
+                                    imageUrl = userProfileImageUrl,
+                                    contentDescription = "Profile",
+                                    targetWidth = 48.dp,
+                                    targetHeight = 48.dp,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.AccountCircle,
+                                    contentDescription = "Profile",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    if (isOffline) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(24.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                                    shape = CircleShape
+                                )
+                                .padding(4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Icon(
-                                imageVector = Icons.Default.AccountCircle,
-                                contentDescription = "Profile",
-                                tint = Color.White,
-                                modifier = Modifier.size(32.dp)
+                                imageVector = Icons.Outlined.CloudOff,
+                                contentDescription = "Offline Mode",
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(14.dp)
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
             }
             actions()
         },
