@@ -11,7 +11,6 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.impl.DatabaseRepositoryImpl
 import com.makd.afinity.data.repository.impl.DynamicJellyfinRepository
-import com.makd.afinity.data.repository.impl.JellyfinRepositoryImpl
 import com.makd.afinity.data.repository.impl.PreferencesRepositoryImpl
 import com.makd.afinity.data.repository.media.JellyfinMediaRepository
 import com.makd.afinity.data.repository.media.MediaRepository

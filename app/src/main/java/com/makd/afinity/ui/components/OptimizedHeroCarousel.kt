@@ -55,7 +55,6 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.logoBlurHash
-import com.makd.afinity.data.models.extensions.logoImageUrl
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl

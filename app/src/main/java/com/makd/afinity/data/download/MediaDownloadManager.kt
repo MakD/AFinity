@@ -13,12 +13,10 @@ import com.makd.afinity.data.models.download.DownloadItemType
 import com.makd.afinity.data.models.download.DownloadPriority
 import com.makd.afinity.data.models.download.DownloadState
 import com.makd.afinity.data.models.download.DownloadTask
-import kotlin.math.ceil
-import org.jellyfin.sdk.model.api.MediaStreamType
 import com.makd.afinity.data.models.download.QueuedDownloadItem
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
@@ -46,6 +44,7 @@ import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.ceil
 
 @Singleton
 class MediaDownloadManager @Inject constructor(

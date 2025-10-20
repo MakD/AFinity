@@ -23,7 +23,6 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
-import com.makd.afinity.data.models.media.toAfinitySeason
 import com.makd.afinity.data.models.media.toAfinityShow
 import com.makd.afinity.data.paging.EpisodesPagingSource
 import com.makd.afinity.data.repository.FieldSets
