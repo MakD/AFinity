@@ -221,7 +221,19 @@ class AppDataRepository @Inject constructor(
         _isOfflineDataRefreshing.value = true
         try {
             if (preferencesRepository.getOfflineMode()) {
-                Timber.d("Offline mode enabled: Reloading offline content only")
+                Timber.d("Offline mode enabled: Clearing online data and reloading offline content only")
+                // Clear online-only data flows
+                _latestMedia.value = emptyList()
+                _heroCarouselItems.value = emptyList()
+                _libraries.value = emptyList()
+                _userProfileImageUrl.value = null
+                _latestMovies.value = emptyList()
+                _latestTvSeries.value = emptyList()
+                _highestRated.value = emptyList()
+                _recommendationCategories.value = emptyList()
+                _separateMovieLibrarySections.value = emptyList()
+                _separateTvLibrarySections.value = emptyList()
+
                 coroutineScope {
                     val continueWatchingTask = async { loadContinueWatching() }
                     val nextUpTask = async { loadNextUp() }
@@ -231,6 +243,22 @@ class AppDataRepository @Inject constructor(
                 }
             } else {
                 Timber.d("Offline mode disabled: Reloading online content")
+                // When going online, clear offline data (if any) and then reload all online data
+                // The existing online loading logic in loadInitialData() will handle populating these.
+                // It's safe to clear them here as they will be repopulated.
+                _latestMedia.value = emptyList()
+                _heroCarouselItems.value = emptyList()
+                _libraries.value = emptyList()
+                _userProfileImageUrl.value = null
+                _latestMovies.value = emptyList()
+                _latestTvSeries.value = emptyList()
+                _highestRated.value = emptyList()
+                _recommendationCategories.value = emptyList()
+                _separateMovieLibrarySections.value = emptyList()
+                _separateTvLibrarySections.value = emptyList()
+                _continueWatching.value = emptyList()
+                _nextUp.value = emptyList()
+
                 coroutineScope {
                     val latestMediaTask = async { loadLatestMedia() }
                     val heroCarouselTask = async { loadHeroCarousel() }
