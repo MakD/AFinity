@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +36,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.data.repository.PreferencesRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import javax.inject.Inject
+
+@HiltViewModel
+class AfinityTopAppBarViewModel @Inject constructor(
+    private val preferencesRepository: PreferencesRepository
+) : androidx.lifecycle.ViewModel() {
+    val isOffline = preferencesRepository.getOfflineModeFlow()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,9 +58,11 @@ fun AfinityTopAppBar(
     onProfileClick: (() -> Unit)? = null,
     userProfileImageUrl: String? = null,
     backgroundOpacity: Float = 0f,
-    isOffline: Boolean = false,
     actions: @Composable (RowScope.() -> Unit) = {},
+    viewModel: AfinityTopAppBarViewModel = hiltViewModel()
 ) {
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle(initialValue = false)
+
     TopAppBar(
         title = title,
         actions = {

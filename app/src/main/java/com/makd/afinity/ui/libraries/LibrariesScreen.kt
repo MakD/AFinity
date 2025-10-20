@@ -33,6 +33,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -58,6 +59,8 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.EmptyStateMessage
+import com.makd.afinity.ui.components.ErrorStateMessage
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.rememberGridMinColumnSize
@@ -83,77 +86,85 @@ fun LibrariesScreen(
         }
     }
 
-    Box(
+    Scaffold(
+        topBar = {
+            AfinityTopAppBar(
+                title = {
+                    Text(
+                        text = "Your Libraries",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
+                backgroundOpacity = topBarOpacity,
+                onSearchClick = {
+                    val route = Destination.createSearchRoute()
+                    navController.navigate(route)
+                },
+                onProfileClick = onProfileClick,
+                userProfileImageUrl = mainUiState.userProfileImageUrl
+            )
+        },
         modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        when {
-            uiState.isLoading && uiState.libraries.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            when {
+                uiState.isLoading && uiState.libraries.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
 
-            uiState.error != null -> {
-                ErrorMessage(
-                    message = uiState.error!!,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+                uiState.error != null -> {
+                    ErrorStateMessage(
+                        message = uiState.error!!,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
-            uiState.libraries.isEmpty() -> {
-                EmptyLibrariesMessage(
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+                uiState.libraries.isEmpty() -> {
+                    EmptyStateMessage(
+                        title = "No libraries found",
+                        subtitle = "Your Jellyfin server doesn't have any libraries configured yet.",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
-            else -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(rememberGridMinColumnSize()),
-                    state = lazyGridState,
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 180.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(
-                        items = sortLibraries(uiState.libraries),
-                        key = { library -> library.id }
-                    ) { library ->
-                        LibraryCard(
-                            library = library,
-                            onClick = {
-                                viewModel.onLibraryClick(library)
-                                onLibraryClick(library)
-                            }
-                        )
+                else -> {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(rememberGridMinColumnSize()),
+                        state = lazyGridState,
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(
+                            items = sortLibraries(uiState.libraries),
+                            key = { library -> library.id }
+                        ) { library ->
+                            LibraryCard(
+                                library = library,
+                                onClick = {
+                                    viewModel.onLibraryClick(library)
+                                    onLibraryClick(library)
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
-
-        AfinityTopAppBar(
-            title = {
-                Text(
-                    text = "Your Libraries",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            },
-            backgroundOpacity = topBarOpacity,
-            onSearchClick = {
-                val route = Destination.createSearchRoute()
-                navController.navigate(route)
-            },
-            onProfileClick = onProfileClick,
-            userProfileImageUrl = mainUiState.userProfileImageUrl
-        )
     }
 }
 
@@ -228,64 +239,6 @@ private fun LibraryCard(
                 overflow = TextOverflow.Ellipsis
             )
         }
-    }
-}
-
-@Composable
-private fun ErrorMessage(
-    message: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = "Something went wrong",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = "Data will refresh automatically",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-private fun EmptyLibrariesMessage(
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = "No libraries found",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            text = "Your Jellyfin server doesn't have any libraries configured yet.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
     }
 }
 

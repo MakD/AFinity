@@ -106,7 +106,6 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val offlineMode = uiState.offlineMode
     val showOfflineModePrompt by viewModel.showOfflineModePrompt.collectAsStateWithLifecycle()
 
     val configuration = LocalConfiguration.current
@@ -339,8 +338,7 @@ fun HomeScreen(
             },
             onProfileClick = onProfileClick,
             userProfileImageUrl = mainUiState.userProfileImageUrl,
-            backgroundOpacity = topBarOpacity,
-            isOffline = offlineMode
+            backgroundOpacity = topBarOpacity
         )
 
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()

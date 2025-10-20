@@ -29,6 +29,8 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.ContinueWatchingCard
+import com.makd.afinity.ui.components.EmptyStateMessage
+import com.makd.afinity.ui.components.ErrorStateMessage
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.main.MainUiState
 
@@ -85,33 +87,18 @@ fun WatchlistScreen(
             }
 
             uiState.error != null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = uiState.error ?: "Unknown error",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+                ErrorStateMessage(
+                    message = uiState.error ?: "Unknown error",
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
             uiState.movies.isEmpty() && uiState.shows.isEmpty() && uiState.seasons.isEmpty() && uiState.episodes.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Your watchlist is empty",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                EmptyStateMessage(
+                    title = "No Watchlist Item Yet",
+                    subtitle = "Items you add to Watchlist will appear here",
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
             else -> {

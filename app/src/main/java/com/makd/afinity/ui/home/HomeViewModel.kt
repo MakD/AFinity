@@ -40,15 +40,14 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            var isFirstEmission = true
             preferencesRepository.getOfflineModeFlow().collect { isOffline ->
+                val isOfflineChanged = _uiState.value.offlineMode != isOffline
                 _uiState.value = _uiState.value.copy(offlineMode = isOffline)
 
-                if (!isFirstEmission) {
+                if (isOfflineChanged) {
                     Timber.d("Offline mode changed to: $isOffline - reloading data")
                     appDataRepository.reloadOnOfflineModeChange()
                 }
-                isFirstEmission = false
             }
         }
 

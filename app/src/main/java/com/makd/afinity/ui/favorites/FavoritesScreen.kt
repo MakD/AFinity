@@ -47,6 +47,8 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.ContinueWatchingCard
+import com.makd.afinity.ui.components.EmptyStateMessage
+import com.makd.afinity.ui.components.ErrorStateMessage
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.main.MainUiState
@@ -105,24 +107,10 @@ fun FavoritesScreen(
                 }
 
                 uiState.error != null -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "Something went wrong",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = uiState.error ?: "Unknown error",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    ErrorStateMessage(
+                        message = uiState.error ?: "Unknown error",
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
 
                 else -> {
@@ -133,24 +121,11 @@ fun FavoritesScreen(
                             uiState.people.isNotEmpty()
 
                     if (!hasAnyFavorites) {
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Text(
-                                text = "No Favorites Yet",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = "Items you mark as favorites will appear here",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        EmptyStateMessage(
+                            title = "No Favorites Yet",
+                            subtitle = "Items you mark as favorites will appear here",
+                            modifier = Modifier.fillMaxSize()
+                        )
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
