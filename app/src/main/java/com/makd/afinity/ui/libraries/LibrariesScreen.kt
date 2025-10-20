@@ -137,7 +137,15 @@ fun LibrariesScreen(
         }
 
         AfinityTopAppBar(
-            title = "Your Libraries",
+            title = {
+                Text(
+                    text = "Your Libraries",
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            },
             backgroundOpacity = topBarOpacity,
             onSearchClick = {
                 val route = Destination.createSearchRoute()

@@ -50,7 +50,15 @@ fun WatchlistScreen(
     Scaffold(
         topBar = {
             AfinityTopAppBar(
-                title = "Watchlist",
+                title = {
+                    Text(
+                        text = "Watchlist",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
                 onSearchClick = {
                     val route = Destination.createSearchRoute()
                     navController.navigate(route)

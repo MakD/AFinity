@@ -45,8 +45,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -84,6 +82,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.components.OptimizedHeroCarousel
 import com.makd.afinity.ui.home.components.NextUpSection
@@ -98,7 +97,6 @@ import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 import kotlinx.coroutines.delay
 import com.makd.afinity.data.models.media.AfinityEpisode
-import com.makd.afinity.ui.components.OfflineIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -312,7 +310,34 @@ fun HomeScreen(
             }
         }
 
-        TransparentTopBar(
+        AfinityTopAppBar(
+            title = {
+                IconButton(
+                    onClick = { /* TODO: Handle app icon click if needed */ },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Color.Black.copy(alpha = 0.3f),
+                                CircleShape
+                            )
+                            .clip(CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = ic_launcher_monochrome),
+                            contentDescription = "App Logo",
+                            modifier = Modifier
+                                .size(60.dp)
+                                .fillMaxSize(),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
+            },
             onSearchClick = {
                 val route = Destination.createSearchRoute()
                 navController.navigate(route)
@@ -320,8 +345,9 @@ fun HomeScreen(
             onProfileClick = onProfileClick,
             userProfileImageUrl = mainUiState.userProfileImageUrl,
             backgroundOpacity = topBarOpacity,
-            offlineMode = offlineMode
+            isOffline = offlineMode
         )
+
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
         val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
         val selectedEpisodeWatchlistStatus by viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
@@ -420,127 +446,6 @@ fun HomeScreen(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TransparentTopBar(
-    offlineMode: Boolean = false,
-    onSearchClick: () -> Unit,
-    onProfileClick: () -> Unit,
-    userProfileImageUrl: String? = null,
-    backgroundOpacity: Float = 0f
-) {
-    TopAppBar(
-        title = {
-            IconButton(
-                onClick = { /* TODO: Handle app icon click if needed */ },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Color.Black.copy(alpha = 0.3f),
-                            CircleShape
-                        )
-                        .clip(CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = ic_launcher_monochrome),
-                        contentDescription = "App Logo",
-                        modifier = Modifier
-                            .size(60.dp)
-                            .fillMaxSize(),
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                        contentScale = ContentScale.Fit
-                    )
-                }
-            }
-        },
-        actions = {
-            OfflineIndicator(
-                isOffline = offlineMode,
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Button(
-                onClick = onSearchClick,
-                modifier = Modifier
-                    .height(48.dp)
-                    .width(120.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(24.dp),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Search",
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            IconButton(
-                onClick = onProfileClick,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Color.Black.copy(alpha = 0.3f),
-                            CircleShape
-                        )
-                        .clip(CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (userProfileImageUrl != null) {
-                        OptimizedAsyncImage(
-                            imageUrl = userProfileImageUrl,
-                            contentDescription = "Profile Picture",
-                            targetWidth = 48.dp,
-                            targetHeight = 48.dp,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Profile",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = backgroundOpacity)
-        ),
-        modifier = Modifier.zIndex(1f)
-    )
-}
-
 @Composable
 private fun HighestRatedSection(
     items: List<AfinityItem>,

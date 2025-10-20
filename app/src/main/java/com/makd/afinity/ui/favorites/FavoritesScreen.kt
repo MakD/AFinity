@@ -70,7 +70,15 @@ fun FavoritesScreen(
     Scaffold(
         topBar = {
             AfinityTopAppBar(
-                title = "Favorites",
+                title = {
+                    Text(
+                        text = "Favorites",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
                 onSearchClick = {
                     val route = Destination.createSearchRoute()
                     navController.navigate(route)
@@ -79,7 +87,7 @@ fun FavoritesScreen(
                     val route = Destination.createSettingsRoute()
                     navController.navigate(route)
                 },
-                userProfileImageUrl = mainUiState.userProfileImageUrl
+                userProfileImageUrl = mainUiState.userProfileImageUrl,
             )
         },
         modifier = modifier
@@ -359,7 +367,7 @@ private fun FavoritePersonCard(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp)) // Add some space between image and text
 
         Text(
             text = person.name,
