@@ -88,27 +88,72 @@ class ItemDetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            eventBus.events.collect { event ->
-                when (event) {
-                    is WebSocketEvent.UserDataChanged -> {
-                        if (event.itemId == itemId) {
-                            Timber.d("WebSocket: Item data changed for $itemId")
-                            refreshFromCacheImmediate()
-                        }
-                        val currentItem = _uiState.value.item
-                        if (currentItem is AfinityShow && event.itemId in getRelatedItemIds(currentItem)) {
-                            refreshFromCacheImmediate()
-                        }
+            try {
+                eventBus.events.collect { event ->
+                    try {
+                        handleWebSocketEvent(event)
+                    } catch (e: Exception) {
+                        Timber.e(e, "Error handling WebSocket event in ItemDetail (recovered)")
                     }
-                    is WebSocketEvent.LibraryChanged -> {
-                        if (itemId in event.itemsUpdated) {
-                            Timber.d("WebSocket: Library updated for $itemId")
-                            refreshFromCacheImmediate()
-                        }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "WebSocket event collection failed in ItemDetail (recovered)")
+            }
+        }
+    }
+
+    private suspend fun handleWebSocketEvent(event: WebSocketEvent) {
+        when (event) {
+            is WebSocketEvent.UserDataChanged -> {
+                if (event.itemId == itemId) {
+                    Timber.d("WebSocket: Direct item update for $itemId")
+                    refreshFromCacheImmediate()
+                } else {
+                    val currentItem = _uiState.value.item
+                    if (currentItem != null && isRelatedItem(currentItem, event.itemId)) {
+                        Timber.d("WebSocket: Related item update for $itemId")
+                        refreshFromCacheImmediate()
                     }
-                    else -> { /* Ignore other events */ }
                 }
             }
+
+            is WebSocketEvent.BatchUserDataChanged -> {
+                val currentItem = _uiState.value.item
+                val shouldRefresh = itemId in event.itemIds ||
+                        (currentItem != null && event.itemIds.any { isRelatedItem(currentItem, it) })
+
+                if (shouldRefresh) {
+                    Timber.d("WebSocket: Batch update affects current item")
+                    refreshFromCacheImmediate()
+                }
+            }
+
+            is WebSocketEvent.LibraryChanged -> {
+                if (itemId in event.itemsUpdated || itemId in event.itemsAdded) {
+                    Timber.d("WebSocket: Library update for $itemId")
+                    refreshFromCacheImmediate()
+                }
+            }
+
+            is WebSocketEvent.ServerRestarting,
+            is WebSocketEvent.ServerShuttingDown -> {
+                Timber.w("Server event: ${event::class.simpleName}")
+            }
+        }
+    }
+
+    private fun isRelatedItem(currentItem: AfinityItem, changedItemId: UUID): Boolean {
+        return when (currentItem) {
+            is AfinityShow -> {
+                _uiState.value.seasons.any { it.id == changedItemId }
+            }
+            is AfinitySeason -> {
+                currentItem.seriesId == changedItemId
+            }
+            is AfinityEpisode -> {
+                currentItem.seasonId == changedItemId || currentItem.seriesId == changedItemId
+            }
+            else -> false
         }
     }
 

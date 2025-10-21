@@ -146,47 +146,75 @@ class JellyfinWebSocketManager @Inject constructor(
     }
 
     private suspend fun handleLibraryChanged(message: LibraryChangedMessage) {
-        Timber.d("Library changed - refreshing caches")
+        try {
+            Timber.d("Library changed - refreshing caches")
 
-        val itemsAdded = message.data?.itemsAdded?.mapNotNull {
-            try { UUID.fromString(it) } catch (e: Exception) { null }
-        } ?: emptyList()
+            val data = message.data
+            val itemsAdded = data?.itemsAdded?.mapNotNull {
+                safeParseUUID(it)
+            } ?: emptyList()
 
-        val itemsUpdated = message.data?.itemsUpdated?.mapNotNull {
-            try { UUID.fromString(it) } catch (e: Exception) { null }
-        } ?: emptyList()
+            val itemsUpdated = data?.itemsUpdated?.mapNotNull {
+                safeParseUUID(it)
+            } ?: emptyList()
 
-        val itemsRemoved = message.data?.itemsRemoved?.mapNotNull {
-            try { UUID.fromString(it) } catch (e: Exception) { null }
-        } ?: emptyList()
+            val itemsRemoved = data?.itemsRemoved?.mapNotNull {
+                safeParseUUID(it)
+            } ?: emptyList()
 
-        eventBus.emit(
-            WebSocketEvent.LibraryChanged(
-                itemsAdded = itemsAdded,
-                itemsUpdated = itemsUpdated,
-                itemsRemoved = itemsRemoved
-            )
-        )
+            try {
+                eventBus.emit(
+                    WebSocketEvent.LibraryChanged(
+                        itemsAdded = itemsAdded,
+                        itemsUpdated = itemsUpdated,
+                        itemsRemoved = itemsRemoved
+                    )
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to emit library event (non-critical)")
+            }
 
-        mediaRepository.invalidateAllCaches()
+            scope.launch {
+                try {
+                    mediaRepository.invalidateAllCaches()
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to invalidate library caches")
+                }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error handling library change (recovered)")
+        }
     }
 
     private suspend fun handleUserDataChanged(message: UserDataChangedMessage) {
-        val userDataChangeInfo = message.data
+        try {
+            val userDataChangeInfo = message.data ?: return
+            val userId = userDataChangeInfo.userId ?: return
 
-        userDataChangeInfo?.userDataList?.forEach { userData ->
-            val itemId = userData.itemId
+            userDataChangeInfo.userDataList?.forEach { userData ->
+                val itemId = userData.itemId ?: return@forEach
 
-            if (itemId != null) {
                 Timber.d("User data changed for item: $itemId")
 
-                userDataChangeInfo.userId?.let { userId ->
+                try {
                     eventBus.emit(WebSocketEvent.UserDataChanged(itemId, userId))
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to emit user data event (non-critical, continuing)")
                 }
 
-                mediaRepository.invalidateItemCache(itemId)
-                mediaRepository.invalidateNextUpCache()
+                scope.launch {
+                    try {
+                        mediaRepository.invalidateContinueWatchingCache()
+                        mediaRepository.invalidateNextUpCache()
+
+                        Timber.d("Full cache refresh completed for user data change")
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to invalidate caches")
+                    }
+                }
             }
+        } catch (e: Exception) {
+            Timber.e(e, "Error handling user data change (recovered)")
         }
     }
 
@@ -203,14 +231,31 @@ class JellyfinWebSocketManager @Inject constructor(
     }
 
     private suspend fun handleServerRestarting() {
-        Timber.w("Server is restarting")
-        eventBus.emit(WebSocketEvent.ServerRestarting)
-        _connectionState.value = WebSocketState.SERVER_RESTARTING
+        try {
+            Timber.w("Server is restarting")
+            eventBus.emit(WebSocketEvent.ServerRestarting())
+            _connectionState.value = WebSocketState.SERVER_RESTARTING
+        } catch (e: Exception) {
+            Timber.e(e, "Error handling server restart (recovered)")
+        }
     }
 
     private suspend fun handleServerShutdown() {
-        Timber.w("Server is shutting down")
-        eventBus.emit(WebSocketEvent.ServerShuttingDown)
-        _connectionState.value = WebSocketState.SERVER_SHUTDOWN
+        try {
+            Timber.w("Server is shutting down")
+            eventBus.emit(WebSocketEvent.ServerShuttingDown())
+            _connectionState.value = WebSocketState.SERVER_SHUTDOWN
+        } catch (e: Exception) {
+            Timber.e(e, "Error handling server shutdown (recovered)")
+        }
+    }
+
+    private fun safeParseUUID(uuidString: String): UUID? {
+        return try {
+            UUID.fromString(uuidString)
+        } catch (e: Exception) {
+            Timber.w("Invalid UUID string: $uuidString")
+            null
+        }
     }
 }

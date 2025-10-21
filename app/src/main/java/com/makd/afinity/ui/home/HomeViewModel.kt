@@ -142,20 +142,73 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            eventBus.events.collect { event ->
-                when (event) {
-                    is WebSocketEvent.UserDataChanged -> {
-                        Timber.d("WebSocket: User data changed, checking if home data needs update")
-                        handleUserDataChange(event.itemId)
+            try {
+                eventBus.events.collect { event ->
+                    try {
+                        handleWebSocketEvent(event)
+                    } catch (e: Exception) {
+                        Timber.e(e, "Error handling WebSocket event in Home (recovered)")
                     }
-                    is WebSocketEvent.LibraryChanged -> {
-                        Timber.d("WebSocket: Library changed, will refresh on next view")
-                    }
-                    else -> { /* Ignore server events */ }
                 }
+            } catch (e: Exception) {
+                Timber.e(e, "WebSocket event collection failed in Home (recovered)")
             }
         }
     }
+
+    private suspend fun handleWebSocketEvent(event: WebSocketEvent) {
+        when (event) {
+            is WebSocketEvent.UserDataChanged -> {
+                val itemId = event.itemId
+                val isVisible = isItemVisibleInHome(itemId)
+
+                if (isVisible) {
+                    Timber.d("WebSocket: Visible item updated in home screen: $itemId")
+                }
+            }
+
+            is WebSocketEvent.BatchUserDataChanged -> {
+                val visibleItems = event.itemIds.count { isItemVisibleInHome(it) }
+
+                if (visibleItems > 0) {
+                    Timber.d("WebSocket: $visibleItems visible items updated in batch")
+                }
+            }
+
+            is WebSocketEvent.LibraryChanged -> {
+                val totalChanges = event.itemsAdded.size +
+                        event.itemsUpdated.size +
+                        event.itemsRemoved.size
+                Timber.d("WebSocket: Library changed ($totalChanges items)")
+            }
+
+            is WebSocketEvent.ServerRestarting,
+            is WebSocketEvent.ServerShuttingDown -> {
+                Timber.w("Server event in home screen: ${event::class.simpleName}")
+            }
+        }
+    }
+
+    private fun isItemVisibleInHome(itemId: UUID): Boolean {
+        val currentState = _uiState.value
+        return currentState.continueWatching.any { it.id == itemId } ||
+                currentState.nextUp.any { it.id == itemId } ||
+                currentState.latestMovies.any { it.id == itemId } ||
+                currentState.latestTvSeries.any { it.id == itemId } ||
+                currentState.heroCarouselItems.any { it.id == itemId }
+    }
+
+    fun refreshOnResume() {
+        viewModelScope.launch {
+            try {
+                Timber.d("Refreshing home screen on resume")
+                appDataRepository.refreshContinueWatching()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh on resume")
+            }
+        }
+    }
+
 
     private suspend fun handleUserDataChange(itemId: UUID) {
         val isInContinueWatching = _uiState.value.continueWatching.any { it.id == itemId }

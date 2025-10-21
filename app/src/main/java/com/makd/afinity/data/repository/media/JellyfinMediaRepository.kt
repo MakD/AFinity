@@ -73,15 +73,45 @@ class JellyfinMediaRepository @Inject constructor(
                 )
                 val freshBaseItemDto = response.content?.items?.firstOrNull()
                 val freshItem = freshBaseItemDto?.toAfinityItem(getBaseUrl())
+
                 if (freshItem != null) {
-                    updateItemInCache(_continueWatching, freshItem)
-                    updateItemInCache(_latestMedia, freshItem)
-                    if (freshItem is AfinityEpisode) {
-                        updateEpisodeInNextUpCache(freshItem)
+                    val progressPercent = if (freshItem.runtimeTicks > 0) {
+                        (freshItem.playbackPositionTicks.toFloat() / freshItem.runtimeTicks * 100f)
+                    } else {
+                        0f
                     }
+
+                    if (freshItem is AfinityEpisode) {
+                        when {
+                            progressPercent > 0f && progressPercent < 95f && !freshItem.played -> {
+                                updateItemInCache(_continueWatching, freshItem)
+                                removeEpisodeFromNextUp(freshItem.id)
+                                Timber.d("Episode has progress - in Continue Watching only: ${freshItem.name}")
+                            }
+                            freshItem.played || progressPercent >= 95f -> {
+                                updateItemInCache(_continueWatching, freshItem)
+                                updateEpisodeInNextUpCache(freshItem)
+                                Timber.d("Episode completed - removed from both lists: ${freshItem.name}")
+                            }
+                            else -> {
+                                updateEpisodeInNextUpCache(freshItem)
+                                val continueList = _continueWatching.value.toMutableList()
+                                val idx = continueList.indexOfFirst { it.id == freshItem.id }
+                                if (idx != -1) {
+                                    continueList.removeAt(idx)
+                                    _continueWatching.value = continueList
+                                    Timber.d("Episode has no progress - removed from Continue Watching: ${freshItem.name}")
+                                }
+                            }
+                        }
+                    } else {
+                        updateItemInCache(_continueWatching, freshItem)
+                        updateItemInCache(_latestMedia, freshItem)
+                    }
+
                     Timber.d("Successfully refreshed UserData for item: ${freshItem.name} (${freshItem.id})")
                     Timber.d("- Played: ${freshItem.played}")
-                    Timber.d("- Progress: ${(freshItem.playbackPositionTicks.toFloat() / freshItem.runtimeTicks * 100f)}%")
+                    Timber.d("- Progress: ${"%.1f".format(progressPercent)}%")
                 } else {
                     Timber.w("No fresh item data received for itemId: $itemId")
                 }
@@ -97,32 +127,49 @@ class JellyfinMediaRepository @Inject constructor(
         val currentList = cache.value.toMutableList()
         val existingIndex = currentList.indexOfFirst { it.id == updatedItem.id }
 
+        val progressPercent = if (updatedItem.runtimeTicks > 0) {
+            (updatedItem.playbackPositionTicks.toFloat() / updatedItem.runtimeTicks * 100f)
+        } else {
+            0f
+        }
+
         when {
-            updatedItem.played && cache == _continueWatching -> {
-                if (existingIndex != -1) {
+            updatedItem.played || progressPercent >= 95f -> {
+                if (cache == _continueWatching && existingIndex != -1) {
                     currentList.removeAt(existingIndex)
                     Timber.d("Removed completed item from continue watching: ${updatedItem.name}")
                 }
+
+                if (updatedItem is AfinityEpisode) {
+                    removeEpisodeFromNextUp(updatedItem.id)
+                }
             }
 
-            (updatedItem.playbackPositionTicks.toFloat() / updatedItem.runtimeTicks * 100f) > 0f &&
-                    !updatedItem.played &&
-                    cache == _continueWatching -> {
+            progressPercent > 0f && progressPercent < 95f && cache == _continueWatching -> {
                 if (existingIndex != -1) {
                     currentList[existingIndex] = updatedItem
-                    Timber.d("Updated item in continue watching: ${updatedItem.name} (${updatedItem.playbackPositionTicks.toFloat() / updatedItem.runtimeTicks * 100f}%)")
+                    Timber.d("Updated item in continue watching: ${updatedItem.name} (${"%.1f".format(progressPercent)}%)")
                 } else {
                     currentList.add(0, updatedItem)
-                    Timber.d("Added item to continue watching: ${updatedItem.name} (${updatedItem.playbackPositionTicks.toFloat() / updatedItem.runtimeTicks * 100f}%)")
+                    Timber.d("Added item to continue watching: ${updatedItem.name} (${"%.1f".format(progressPercent)}%)")
+                }
+
+                if (updatedItem is AfinityEpisode && progressPercent > 0f) {
+                    removeEpisodeFromNextUp(updatedItem.id)
+                    Timber.d("Removed episode from Next Up (now has progress): ${updatedItem.name}")
+                }
+            }
+
+            progressPercent == 0f && cache == _continueWatching -> {
+                if (existingIndex != -1) {
+                    currentList.removeAt(existingIndex)
+                    Timber.d("Removed item with no progress from continue watching: ${updatedItem.name}")
                 }
             }
 
             existingIndex != -1 -> {
                 currentList[existingIndex] = updatedItem
                 Timber.d("Updated item in cache: ${updatedItem.name}")
-            }
-
-            else -> {
             }
         }
 
@@ -133,25 +180,43 @@ class JellyfinMediaRepository @Inject constructor(
         val currentList = _nextUp.value.toMutableList()
         val existingIndex = currentList.indexOfFirst { it.id == updatedEpisode.id }
 
+        val progressPercent = if (updatedEpisode.runtimeTicks > 0) {
+            (updatedEpisode.playbackPositionTicks.toFloat() / updatedEpisode.runtimeTicks * 100f)
+        } else {
+            0f
+        }
+
         when {
-            updatedEpisode.played -> {
+            updatedEpisode.played || progressPercent > 0f -> {
                 if (existingIndex != -1) {
                     currentList.removeAt(existingIndex)
-                    Timber.d("Removed completed episode from next up: ${updatedEpisode.name}")
+                    if (updatedEpisode.played) {
+                        Timber.d("Removed completed episode from next up: ${updatedEpisode.name}")
+                    } else {
+                        Timber.d("Removed episode with progress from next up: ${updatedEpisode.name} (${"%.1f".format(progressPercent)}%)")
+                    }
                 }
             }
 
-            existingIndex != -1 -> {
-                currentList[existingIndex] = updatedEpisode
-                Timber.d("Updated episode in next up: ${updatedEpisode.name}")
-            }
-
-            else -> {
-                // Episode not in next up, don't add it here
+            !updatedEpisode.played && progressPercent == 0f -> {
+                if (existingIndex != -1) {
+                    currentList[existingIndex] = updatedEpisode
+                    Timber.d("Updated episode in next up: ${updatedEpisode.name}")
+                }
             }
         }
 
         _nextUp.value = currentList
+    }
+
+    private fun removeEpisodeFromNextUp(episodeId: UUID) {
+        val currentList = _nextUp.value.toMutableList()
+        val existingIndex = currentList.indexOfFirst { it.id == episodeId }
+
+        if (existingIndex != -1) {
+            currentList.removeAt(existingIndex)
+            _nextUp.value = currentList
+        }
     }
 
     override suspend fun invalidateContinueWatchingCache() {
