@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.sockets.SocketApiState
+import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.LibraryChangedMessage
 import org.jellyfin.sdk.model.api.PlayMessage
 import org.jellyfin.sdk.model.api.PlaystateMessage
@@ -26,7 +27,8 @@ import javax.inject.Singleton
 class JellyfinWebSocketManager @Inject constructor(
     private val apiClient: ApiClient,
     private val mediaRepository: MediaRepository,
-    private val userDataRepository: UserDataRepository
+    private val userDataRepository: UserDataRepository,
+    private val eventBus: WebSocketEventBus
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -145,6 +147,27 @@ class JellyfinWebSocketManager @Inject constructor(
 
     private suspend fun handleLibraryChanged(message: LibraryChangedMessage) {
         Timber.d("Library changed - refreshing caches")
+
+        val itemsAdded = message.data?.itemsAdded?.mapNotNull {
+            try { UUID.fromString(it) } catch (e: Exception) { null }
+        } ?: emptyList()
+
+        val itemsUpdated = message.data?.itemsUpdated?.mapNotNull {
+            try { UUID.fromString(it) } catch (e: Exception) { null }
+        } ?: emptyList()
+
+        val itemsRemoved = message.data?.itemsRemoved?.mapNotNull {
+            try { UUID.fromString(it) } catch (e: Exception) { null }
+        } ?: emptyList()
+
+        eventBus.emit(
+            WebSocketEvent.LibraryChanged(
+                itemsAdded = itemsAdded,
+                itemsUpdated = itemsUpdated,
+                itemsRemoved = itemsRemoved
+            )
+        )
+
         mediaRepository.invalidateAllCaches()
     }
 
@@ -156,6 +179,11 @@ class JellyfinWebSocketManager @Inject constructor(
 
             if (itemId != null) {
                 Timber.d("User data changed for item: $itemId")
+
+                userDataChangeInfo.userId?.let { userId ->
+                    eventBus.emit(WebSocketEvent.UserDataChanged(itemId, userId))
+                }
+
                 mediaRepository.invalidateItemCache(itemId)
                 mediaRepository.invalidateNextUpCache()
             }
@@ -176,11 +204,13 @@ class JellyfinWebSocketManager @Inject constructor(
 
     private suspend fun handleServerRestarting() {
         Timber.w("Server is restarting")
+        eventBus.emit(WebSocketEvent.ServerRestarting)
         _connectionState.value = WebSocketState.SERVER_RESTARTING
     }
 
     private suspend fun handleServerShutdown() {
         Timber.w("Server is shutting down")
+        eventBus.emit(WebSocketEvent.ServerShuttingDown)
         _connectionState.value = WebSocketState.SERVER_SHUTDOWN
     }
 }

@@ -17,12 +17,15 @@ import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.websocket.WebSocketEvent
+import com.makd.afinity.data.websocket.WebSocketEventBus
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.model.UUID
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -32,7 +35,8 @@ class HomeViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val userDataRepository: UserDataRepository,
     private val watchlistRepository: WatchlistRepository,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val eventBus: WebSocketEventBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -135,6 +139,30 @@ class HomeViewModel @Inject constructor(
             appDataRepository.recommendationCategories.collect { recommendations ->
                 _uiState.value = _uiState.value.copy(recommendationCategories = recommendations)
             }
+        }
+
+        viewModelScope.launch {
+            eventBus.events.collect { event ->
+                when (event) {
+                    is WebSocketEvent.UserDataChanged -> {
+                        Timber.d("WebSocket: User data changed, checking if home data needs update")
+                        handleUserDataChange(event.itemId)
+                    }
+                    is WebSocketEvent.LibraryChanged -> {
+                        Timber.d("WebSocket: Library changed, will refresh on next view")
+                    }
+                    else -> { /* Ignore server events */ }
+                }
+            }
+        }
+    }
+
+    private suspend fun handleUserDataChange(itemId: UUID) {
+        val isInContinueWatching = _uiState.value.continueWatching.any { it.id == itemId }
+        val isInNextUp = _uiState.value.nextUp.any { it.id == itemId }
+
+        if (isInContinueWatching || isInNextUp) {
+            Timber.d("Changed item is visible in home screen, UI will auto-update from flows")
         }
     }
 

@@ -21,6 +21,7 @@ import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.JellyfinUserDataRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
+import com.makd.afinity.data.websocket.WebSocketEventBus
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -96,9 +97,10 @@ abstract class RepositoryModule {
         fun provideWebSocketManager(
             apiClient: ApiClient,
             mediaRepository: MediaRepository,
-            userDataRepository: UserDataRepository
+            userDataRepository: UserDataRepository,
+            eventBus: WebSocketEventBus
         ): JellyfinWebSocketManager {
-            return JellyfinWebSocketManager(apiClient, mediaRepository, userDataRepository)
+            return JellyfinWebSocketManager(apiClient, mediaRepository, userDataRepository, eventBus)
         }
     }
 }

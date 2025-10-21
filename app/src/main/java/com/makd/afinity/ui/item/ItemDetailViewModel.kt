@@ -31,6 +31,8 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.websocket.WebSocketEvent
+import com.makd.afinity.data.websocket.WebSocketEventBus
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.utils.IntentUtils
@@ -52,6 +54,7 @@ class ItemDetailViewModel @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
+    private val eventBus: WebSocketEventBus,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -82,6 +85,38 @@ class ItemDetailViewModel @Inject constructor(
             if (updatedItemId == itemId) {
                 refreshFromCacheImmediate()
             }
+        }
+
+        viewModelScope.launch {
+            eventBus.events.collect { event ->
+                when (event) {
+                    is WebSocketEvent.UserDataChanged -> {
+                        if (event.itemId == itemId) {
+                            Timber.d("WebSocket: Item data changed for $itemId")
+                            refreshFromCacheImmediate()
+                        }
+                        val currentItem = _uiState.value.item
+                        if (currentItem is AfinityShow && event.itemId in getRelatedItemIds(currentItem)) {
+                            refreshFromCacheImmediate()
+                        }
+                    }
+                    is WebSocketEvent.LibraryChanged -> {
+                        if (itemId in event.itemsUpdated) {
+                            Timber.d("WebSocket: Library updated for $itemId")
+                            refreshFromCacheImmediate()
+                        }
+                    }
+                    else -> { /* Ignore other events */ }
+                }
+            }
+        }
+    }
+
+    private fun getRelatedItemIds(item: AfinityItem): List<UUID> {
+        return when (item) {
+            is AfinityShow -> _uiState.value.seasons.map { it.id }
+            is AfinitySeason -> listOfNotNull(item.seriesId)
+            else -> emptyList()
         }
     }
 

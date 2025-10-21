@@ -222,7 +222,6 @@ class AppDataRepository @Inject constructor(
         try {
             if (preferencesRepository.getOfflineMode()) {
                 Timber.d("Offline mode enabled: Clearing online data and reloading offline content only")
-                // Clear online-only data flows
                 _latestMedia.value = emptyList()
                 _heroCarouselItems.value = emptyList()
                 _libraries.value = emptyList()
@@ -243,9 +242,6 @@ class AppDataRepository @Inject constructor(
                 }
             } else {
                 Timber.d("Offline mode disabled: Reloading online content")
-                // When going online, clear offline data (if any) and then reload all online data
-                // The existing online loading logic in loadInitialData() will handle populating these.
-                // It's safe to clear them here as they will be repopulated.
                 _latestMedia.value = emptyList()
                 _heroCarouselItems.value = emptyList()
                 _libraries.value = emptyList()
