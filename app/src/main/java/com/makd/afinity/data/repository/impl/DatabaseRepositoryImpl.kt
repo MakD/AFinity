@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository.impl
 
+import android.net.Uri
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
@@ -15,6 +16,9 @@ import com.makd.afinity.data.database.entities.AfinityEpisodeDto
 import com.makd.afinity.data.database.entities.AfinityMovieDto
 import com.makd.afinity.data.database.entities.AfinitySeasonDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
+import com.makd.afinity.data.database.entities.getExternalUrlsList
+import com.makd.afinity.data.database.entities.getGenresList
+import com.makd.afinity.data.database.entities.getProviderIdsMap
 import com.makd.afinity.data.database.entities.toAfinityEpisodeDto
 import com.makd.afinity.data.database.entities.toAfinityImages
 import com.makd.afinity.data.database.entities.toAfinityMediaStreamDto
@@ -25,11 +29,17 @@ import com.makd.afinity.data.database.entities.toAfinityShowDto
 import com.makd.afinity.data.database.entities.toAfinitySourceDto
 import com.makd.afinity.data.database.entities.toAfinityTrickplayInfoDto
 import com.makd.afinity.data.database.entities.toItemImageEntity
+import com.makd.afinity.data.database.entities.toItemMetadataEntity
+import com.makd.afinity.data.database.entities.toItemPeopleCrossRefs
+import com.makd.afinity.data.database.entities.toPersonEntity
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPerson
+import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
@@ -52,6 +62,7 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.jellyfin.sdk.model.api.PersonKind
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -155,9 +166,15 @@ class DatabaseRepositoryImpl @Inject constructor(
     override suspend fun insertMovie(movie: AfinityMovie, serverId: String?) {
         val userId = authRepository.currentUser.value?.id ?: return
 
+        val peopleEntities = movie.people.map { it.toPersonEntity() }
+        val peopleCrossRefs = movie.people.toItemPeopleCrossRefs(movie.id)
+
         serverDatabaseDao.saveMovieWithImages(
             movie = movie.toAfinityMovieDto(serverId),
             images = movie.images.toItemImageEntity(movie.id),
+            metadata = movie.toItemMetadataEntity(),
+            people = peopleEntities,
+            peopleCrossRefs = peopleCrossRefs,
             sources = movie.sources.map { it.toAfinitySourceDto(movie.id, it.path) },
             userData = movie.toAfinityUserDataDto(userId)
         )
@@ -197,9 +214,15 @@ class DatabaseRepositoryImpl @Inject constructor(
     override suspend fun insertShow(show: AfinityShow, serverId: String?) {
         val userId = authRepository.currentUser.value?.id ?: return
 
+        val peopleEntities = show.people.map { it.toPersonEntity() }
+        val peopleCrossRefs = show.people.toItemPeopleCrossRefs(show.id)
+
         serverDatabaseDao.saveShowWithImages(
             show = show.toAfinityShowDto(serverId),
             images = show.images.toItemImageEntity(show.id),
+            metadata = show.toItemMetadataEntity(),
+            people = peopleEntities,
+            peopleCrossRefs = peopleCrossRefs,
             userData = show.toAfinityUserDataDto(userId)
         )
     }
@@ -262,9 +285,15 @@ class DatabaseRepositoryImpl @Inject constructor(
     override suspend fun insertEpisode(episode: AfinityEpisode, serverId: String?) {
         val userId = authRepository.currentUser.value?.id ?: return
 
+        val peopleEntities = episode.people.map { it.toPersonEntity() }
+        val peopleCrossRefs = episode.people.toItemPeopleCrossRefs(episode.id)
+
         serverDatabaseDao.saveEpisodeWithImages(
             episode = episode.toAfinityEpisodeDto(serverId),
             images = episode.images.toItemImageEntity(episode.id),
+            metadata = episode.toItemMetadataEntity(),
+            people = peopleEntities,
+            peopleCrossRefs = peopleCrossRefs,
             sources = episode.sources.map { it.toAfinitySourceDto(episode.id, it.path) },
             userData = episode.toAfinityUserDataDto(userId),
             segments = emptyList()
@@ -525,8 +554,34 @@ class DatabaseRepositoryImpl @Inject constructor(
                 trickplayInfos[source.id] = it
             }
         }
+
         val imageEntity = database.getImage(id)
         val images = imageEntity?.toAfinityImages() ?: AfinityImages()
+
+        val metadataEntity = database.getMetadata(id)
+        val genres = metadataEntity?.getGenresList() ?: emptyList()
+        val providerIds = metadataEntity?.getProviderIdsMap()
+        val externalUrls = metadataEntity?.getExternalUrlsList()?.map { map ->
+            AfinityExternalUrl(
+                name = map["name"] ?: "",
+                url = map["url"] ?: ""
+            )
+        }
+
+        val peopleEntities = database.getPeopleForItem(id)
+        val people = peopleEntities.map { personEntity ->
+            AfinityPerson(
+                id = UUID.randomUUID(),
+                name = personEntity.name,
+                type = PersonKind.UNKNOWN,
+                role = personEntity.role ?: "",
+                image = AfinityPersonImage(
+                    uri = personEntity.imageUrl?.let { Uri.parse(it) },
+                    blurHash = personEntity.imageBlurHash
+                )
+            )
+        }
+
         return AfinityMovie(
             id = id,
             name = name,
@@ -538,8 +593,8 @@ class DatabaseRepositoryImpl @Inject constructor(
             playbackPositionTicks = userData.playbackPositionTicks,
             premiereDate = premiereDate,
             dateCreated = dateCreated,
-            genres = emptyList(),
-            people = emptyList(),
+            genres = genres,
+            people = people,
             communityRating = communityRating,
             officialRating = officialRating,
             criticRating = criticRating,
@@ -549,14 +604,14 @@ class DatabaseRepositoryImpl @Inject constructor(
             canDownload = false,
             canPlay = true,
             sources = sources,
-            trailer = null,
+            trailer = metadataEntity?.trailer,
             images = images,
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
-            tagline = null,
-            providerIds = null,
-            externalUrls = null,
-            )
+            tagline = metadataEntity?.tagline,
+            providerIds = providerIds,
+            externalUrls = externalUrls,
+        )
     }
 
     private suspend fun AfinityShowDto.toAfinityShow(
@@ -565,8 +620,34 @@ class DatabaseRepositoryImpl @Inject constructor(
     ): AfinityShow {
         val userData = database.getUserDataOrCreateNew(id, userId)
         val seasonCount = database.getSeasonsForSeries(id).size
+
         val imageEntity = database.getImage(id)
         val images = imageEntity?.toAfinityImages() ?: AfinityImages()
+
+        val metadataEntity = database.getMetadata(id)
+        val genres = metadataEntity?.getGenresList() ?: emptyList()
+        val providerIds = metadataEntity?.getProviderIdsMap()
+        val externalUrls = metadataEntity?.getExternalUrlsList()?.map { map ->
+            AfinityExternalUrl(
+                name = map["name"] ?: "",
+                url = map["url"] ?: ""
+            )
+        }
+
+        val peopleEntities = database.getPeopleForItem(id)
+        val people = peopleEntities.map { personEntity ->
+            AfinityPerson(
+                id = UUID.randomUUID(),
+                name = personEntity.name,
+                type = org.jellyfin.sdk.model.api.PersonKind.UNKNOWN,
+                role = personEntity.role ?: "",
+                image = AfinityPersonImage(
+                    uri = personEntity.imageUrl?.let { android.net.Uri.parse(it) },
+                    blurHash = personEntity.imageBlurHash
+                )
+            )
+        }
+
         return AfinityShow(
             id = id,
             name = name,
@@ -579,8 +660,8 @@ class DatabaseRepositoryImpl @Inject constructor(
             unplayedItemCount = null,
             sources = emptyList(),
             seasons = emptyList(),
-            genres = emptyList(),
-            people = emptyList(),
+            genres = genres,
+            people = people,
             runtimeTicks = runtimeTicks,
             communityRating = communityRating,
             officialRating = officialRating,
@@ -590,14 +671,14 @@ class DatabaseRepositoryImpl @Inject constructor(
             dateCreated = dateCreated,
             dateLastContentAdded = dateLastContentAdded,
             endDate = endDate,
-            trailer = null,
+            trailer = metadataEntity?.trailer,
             images = images,
             seasonCount = seasonCount,
             episodeCount = null,
-            tagline = null,
-            providerIds = null,
-            externalUrls = null,
-            )
+            tagline = metadataEntity?.tagline,
+            providerIds = providerIds,
+            externalUrls = externalUrls,
+        )
     }
 
     private suspend fun AfinitySeasonDto.toAfinitySeason(
@@ -645,8 +726,34 @@ class DatabaseRepositoryImpl @Inject constructor(
                 trickplayInfos[source.id] = it
             }
         }
+
         val imageEntity = database.getImage(id)
         val images = imageEntity?.toAfinityImages() ?: AfinityImages()
+
+        val metadataEntity = database.getMetadata(id)
+        val genres = metadataEntity?.getGenresList() ?: emptyList()
+        val providerIds = metadataEntity?.getProviderIdsMap()
+        val externalUrls = metadataEntity?.getExternalUrlsList()?.map { map ->
+            AfinityExternalUrl(
+                name = map["name"] ?: "",
+                url = map["url"] ?: ""
+            )
+        }
+
+        val peopleEntities = database.getPeopleForItem(id)
+        val people = peopleEntities.map { personEntity ->
+            AfinityPerson(
+                id = UUID.randomUUID(),
+                name = personEntity.name,
+                type = org.jellyfin.sdk.model.api.PersonKind.UNKNOWN,
+                role = personEntity.role ?: "",
+                image = AfinityPersonImage(
+                    uri = personEntity.imageUrl?.let { android.net.Uri.parse(it) },
+                    blurHash = personEntity.imageBlurHash
+                )
+            )
+        }
+
         return AfinityEpisode(
             id = id,
             name = name,
@@ -669,12 +776,12 @@ class DatabaseRepositoryImpl @Inject constructor(
             seriesLogoBlurHash = null,
             seasonId = seasonId,
             communityRating = communityRating,
-            people = emptyList(),
+            people = people,
             images = images,
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
-            providerIds = null,
-            externalUrls = null,
+            providerIds = providerIds,
+            externalUrls = externalUrls,
         )
     }
 }

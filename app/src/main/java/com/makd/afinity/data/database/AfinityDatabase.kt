@@ -7,9 +7,12 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.ItemImageDao
+import com.makd.afinity.data.database.dao.ItemMetadataDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
+import com.makd.afinity.data.database.dao.ListCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
+import com.makd.afinity.data.database.dao.PeopleDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
 import com.makd.afinity.data.database.dao.ServerDao
@@ -28,7 +31,11 @@ import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
 import com.makd.afinity.data.database.entities.ItemImageEntity
+import com.makd.afinity.data.database.entities.ItemMetadataEntity
+import com.makd.afinity.data.database.entities.ItemPeopleCrossRef
 import com.makd.afinity.data.database.entities.LibraryCacheEntity
+import com.makd.afinity.data.database.entities.ListCacheEntity
+import com.makd.afinity.data.database.entities.PersonEntity
 import com.makd.afinity.data.database.entities.WatchlistItemEntity
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
@@ -44,6 +51,7 @@ import com.makd.afinity.data.models.user.User
 
         LibraryCacheEntity::class,
         WatchlistItemEntity::class,
+        ListCacheEntity::class,
 
         AfinityMovieDto::class,
         AfinityShowDto::class,
@@ -57,8 +65,11 @@ import com.makd.afinity.data.models.user.User
 
         AfinityUserDataDto::class,
         ItemImageEntity::class,
+        ItemMetadataEntity::class,
+        PersonEntity::class,
+        ItemPeopleCrossRef::class,
     ],
-    version = 9,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(com.makd.afinity.data.database.TypeConverters::class)
@@ -77,11 +88,14 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun mediaStreamDao(): MediaStreamDao
     abstract fun userDataDao(): UserDataDao
     abstract fun itemImageDao(): ItemImageDao
+    abstract fun itemMetadataDao(): ItemMetadataDao
+    abstract fun peopleDao(): PeopleDao
 
     abstract fun serverDatabaseDao(): ServerDatabaseDao
 
     abstract fun libraryCacheDao(): LibraryCacheDao
     abstract fun watchlistDao(): WatchlistDao
+    abstract fun listCacheDao(): ListCacheDao
 
     companion object {
         @Volatile

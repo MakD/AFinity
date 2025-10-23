@@ -4,11 +4,13 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.makd.afinity.data.repository.CacheRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
+import com.makd.afinity.data.repository.impl.CacheRepositoryImpl
 import com.makd.afinity.data.repository.impl.DatabaseRepositoryImpl
 import com.makd.afinity.data.repository.impl.DynamicJellyfinRepository
 import com.makd.afinity.data.repository.impl.PreferencesRepositoryImpl
@@ -84,6 +86,12 @@ abstract class RepositoryModule {
     abstract fun bindPreferencesRepository(
         preferencesRepositoryImpl: PreferencesRepositoryImpl
     ): PreferencesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCacheRepository(
+        cacheRepositoryImpl: CacheRepositoryImpl
+    ): CacheRepository
 
     companion object {
         @Provides

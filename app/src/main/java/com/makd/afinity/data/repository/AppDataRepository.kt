@@ -9,6 +9,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.repository.auth.AuthRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -18,13 +19,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class AppDataRepository @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val cacheRepository: CacheRepository,
+    private val authRepository: AuthRepository
 ) {
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     val latestMedia: StateFlow<List<AfinityItem>> = _latestMedia.asStateFlow()
@@ -92,122 +96,181 @@ class AppDataRepository @Inject constructor(
         }
 
         try {
-            if (preferencesRepository.getOfflineMode()) {
-                Timber.d("Offline mode: Loading local data only")
-                coroutineScope {
-                    updateProgress(0.3f, "Loading offline content...")
-
-                    val continueWatchingTask = async { loadContinueWatching() }
-                    val nextUpTask = async { loadNextUp() }
-
-                    val continueWatching = continueWatchingTask.await()
-                    _continueWatching.value = continueWatching
-                    updateProgress(0.6f, "Continue watching loaded...")
-
-                    val nextUp = nextUpTask.await()
-                    _nextUp.value = nextUp
-                    updateProgress(1f, "Offline mode ready")
-
-                    _isInitialDataLoaded.value = true
-                }
+            val userId = authRepository.currentUser.value?.id
+            if (userId == null) {
+                Timber.e("No user ID available, cannot load data")
                 return
             }
 
-            coroutineScope {
-                updateProgress(0.1f, "Getting latest content...")
-                val latestMediaTask = async { loadLatestMedia() }
-
-                val heroCarouselTask = async { loadHeroCarousel() }
-                updateProgress(0.25f, "Loading your watchlist...")
-                val continueWatchingTask = async { loadContinueWatching() }
-
-                updateProgress(0.35f, "Finding next episodes...")
-                val nextUpTask = async { loadNextUp() }
-
-                updateProgress(0.4f, "Organizing libraries...")
-                val librariesTask = async { loadLibraries() }
-
-                updateProgress(0.55f, "Loading user profile...")
-                val userProfileTask = async { loadUserProfileImage() }
-
-                val latestMedia = latestMediaTask.await()
-                _latestMedia.value = latestMedia
-                val heroItems = heroCarouselTask.await()
-                _heroCarouselItems.value = heroItems
-                updateProgress(0.65f, "Latest content loaded...")
-
-                val continueWatching = continueWatchingTask.await()
-                _continueWatching.value = continueWatching
-                updateProgress(0.75f, "Watchlist loaded...")
-
-                val nextUp = nextUpTask.await()
-                _nextUp.value = nextUp
-                updateProgress(0.8f, "Next episodes loaded...")
-
-                val libraries = librariesTask.await()
-                _libraries.value = libraries
-                updateProgress(0.85f, "Libraries organized...")
-
-                val userProfileImageUrl = userProfileTask.await()
-                _userProfileImageUrl.value = userProfileImageUrl
-
-                updateProgress(0.9f, "Loading movies and shows...")
-                val homeDataTask = async { loadHomeSpecificData(libraries) }
-
-                val (latestMovies, latestTvSeries, highestRated) = homeDataTask.await()
-                _latestMovies.value = latestMovies
-                _latestTvSeries.value = latestTvSeries
-                _highestRated.value = highestRated
-
-                updateProgress(1f, "Ready!")
-                _isInitialDataLoaded.value = true
-
-                launch {
-                    try {
-                        Timber.d("Loading recommendations in background...")
-                        val recommendationCategories = loadRecommendations()
-                        _recommendationCategories.value = recommendationCategories
-                        Timber.d("Recommendations loaded successfully")
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to load recommendations in background")
-                    }
-                }
-
-                launch {
-                    jellyfinRepository.getContinueWatchingFlow().collect { liveData ->
-                        _continueWatching.value = liveData
-                    }
-                }
-
-                launch {
-                    jellyfinRepository.getLatestMediaFlow().collect { liveData ->
-                        val filteredData = liveData.filter { item ->
-                            item is AfinityMovie || item is AfinityShow
-                        }
-                        _latestMedia.value = filteredData
-                    }
-                }
-
-                launch {
-                    jellyfinRepository.getNextUpFlow().collect { liveData ->
-                        _nextUp.value = liveData
-                    }
-                }
-
-                Timber.d("All initial data loaded successfully")
+            if (preferencesRepository.getOfflineMode()) {
+                Timber.d("Offline mode: Loading cached data only")
+                loadOfflineData(userId)
+                return
             }
+
+            Timber.d("Online mode: Loading data with cache-first strategy")
+            loadOnlineData(userId)
         } catch (e: Exception) {
-            Timber.e(e, "Failed to load initial app data")
+            Timber.e(e, "Failed to load initial data")
+        }
+    }
 
-            if (isConnectionError(e)) {
-                val isOffline = preferencesRepository.getOfflineMode()
-                if (!isOffline) {
-                    Timber.w("Connection error detected, showing offline mode prompt")
-                    showOfflineModePrompt()
+    private suspend fun loadOfflineData(userId: UUID) {
+        coroutineScope {
+            updateProgress(0.1f, "Loading cached content...")
+
+            val cachedContinueWatching = cacheRepository.loadContinueWatchingCache(userId)
+            val cachedNextUp = cacheRepository.loadNextUpCache(userId)
+
+            if (cachedContinueWatching != null) {
+                _continueWatching.value = cachedContinueWatching
+                updateProgress(0.5f, "Continue watching loaded from cache...")
+            } else {
+                val continueWatching = loadContinueWatching()
+                _continueWatching.value = continueWatching
+                updateProgress(0.5f, "Continue watching loaded...")
+            }
+
+            if (cachedNextUp != null) {
+                _nextUp.value = cachedNextUp
+                updateProgress(0.9f, "Next up loaded from cache...")
+            } else {
+                val nextUp = loadNextUp()
+                _nextUp.value = nextUp
+                updateProgress(0.9f, "Next up loaded...")
+            }
+
+            updateProgress(1f, "Offline mode ready")
+            _isInitialDataLoaded.value = true
+        }
+    }
+
+    private suspend fun loadOnlineData(userId: UUID) {
+        coroutineScope {
+            updateProgress(0.05f, "Checking cache...")
+
+            launch {
+                val cachedLatestMedia = cacheRepository.loadLatestMediaCache(userId)
+                if (cachedLatestMedia != null) {
+                    _latestMedia.value = cachedLatestMedia
+                    Timber.d("Loaded latest media from cache")
                 }
             }
 
-            throw e
+            launch {
+                val cachedHeroCarousel = cacheRepository.loadHeroCarouselCache(userId)
+                if (cachedHeroCarousel != null) {
+                    _heroCarouselItems.value = cachedHeroCarousel
+                    Timber.d("Loaded hero carousel from cache")
+                }
+            }
+
+            launch {
+                val cachedContinueWatching = cacheRepository.loadContinueWatchingCache(userId)
+                if (cachedContinueWatching != null) {
+                    _continueWatching.value = cachedContinueWatching
+                    Timber.d("Loaded continue watching from cache")
+                }
+            }
+
+            launch {
+                val cachedNextUp = cacheRepository.loadNextUpCache(userId)
+                if (cachedNextUp != null) {
+                    _nextUp.value = cachedNextUp
+                    Timber.d("Loaded next up from cache")
+                }
+            }
+
+            launch {
+                val cachedLatestMovies = cacheRepository.loadLatestMoviesCache(userId)
+                if (cachedLatestMovies != null) {
+                    _latestMovies.value = cachedLatestMovies
+                    Timber.d("Loaded latest movies from cache")
+                }
+            }
+
+            launch {
+                val cachedLatestTvSeries = cacheRepository.loadLatestTvSeriesCache(userId)
+                if (cachedLatestTvSeries != null) {
+                    _latestTvSeries.value = cachedLatestTvSeries
+                    Timber.d("Loaded latest TV series from cache")
+                }
+            }
+
+            launch {
+                val cachedHighestRated = cacheRepository.loadHighestRatedCache(userId)
+                if (cachedHighestRated != null) {
+                    _highestRated.value = cachedHighestRated
+                    Timber.d("Loaded highest rated from cache")
+                }
+            }
+
+            updateProgress(0.1f, "Getting latest content...")
+            val latestMediaTask = async { loadLatestMedia() }
+
+            val heroCarouselTask = async { loadHeroCarousel() }
+
+            updateProgress(0.25f, "Loading your watchlist...")
+            val continueWatchingTask = async { loadContinueWatching() }
+
+            updateProgress(0.35f, "Finding next episodes...")
+            val nextUpTask = async { loadNextUp() }
+
+            updateProgress(0.4f, "Organizing libraries...")
+            val librariesTask = async { loadLibraries() }
+
+            updateProgress(0.55f, "Loading user profile...")
+            val userProfileTask = async { loadUserProfileImage() }
+
+            val latestMedia = latestMediaTask.await()
+            _latestMedia.value = latestMedia
+            cacheRepository.saveLatestMediaCache(userId, latestMedia, ttlHours = 6)
+
+            val heroItems = heroCarouselTask.await()
+            _heroCarouselItems.value = heroItems
+            cacheRepository.saveHeroCarouselCache(userId, heroItems, ttlHours = 6)
+            updateProgress(0.65f, "Latest content loaded...")
+
+            val continueWatching = continueWatchingTask.await()
+            _continueWatching.value = continueWatching
+            cacheRepository.saveContinueWatchingCache(userId, continueWatching, ttlHours = 1)
+            updateProgress(0.75f, "Watchlist loaded...")
+
+            val nextUp = nextUpTask.await()
+            _nextUp.value = nextUp
+            cacheRepository.saveNextUpCache(userId, nextUp, ttlHours = 1)
+            updateProgress(0.8f, "Next episodes loaded...")
+
+            val libraries = librariesTask.await()
+            _libraries.value = libraries
+            cacheRepository.saveLibrariesCache(userId, libraries, ttlHours = 24)
+            updateProgress(0.85f, "Libraries organized...")
+
+            updateProgress(0.88f, "Loading recommendations...")
+            val recommendationsTask = async { loadRecommendations() }
+
+            val userProfileImageUrl = userProfileTask.await()
+            _userProfileImageUrl.value = userProfileImageUrl
+
+            updateProgress(0.9f, "Loading movies and shows...")
+            val homeDataTask = async { loadHomeSpecificData(libraries) }
+
+            val recommendations = recommendationsTask.await()
+            _recommendationCategories.value = recommendations
+            updateProgress(0.95f, "Recommendations loaded...")
+
+            val (latestMovies, latestTvSeries, highestRated) = homeDataTask.await()
+            _latestMovies.value = latestMovies
+            cacheRepository.saveLatestMoviesCache(userId, latestMovies, ttlHours = 6)
+
+            _latestTvSeries.value = latestTvSeries
+            cacheRepository.saveLatestTvSeriesCache(userId, latestTvSeries, ttlHours = 6)
+
+            _highestRated.value = highestRated
+            cacheRepository.saveHighestRatedCache(userId, highestRated, ttlHours = 12)
+
+            updateProgress(1f, "Ready!")
+            _isInitialDataLoaded.value = true
         }
     }
 
@@ -220,6 +283,13 @@ class AppDataRepository @Inject constructor(
         Timber.d("Reloading data due to offline mode change...")
         _isOfflineDataRefreshing.value = true
         try {
+            val userId = authRepository.currentUser.value?.id
+            if (userId == null) {
+                Timber.e("No user ID available")
+                _isOfflineDataRefreshing.value = false
+                return
+            }
+
             if (preferencesRepository.getOfflineMode()) {
                 Timber.d("Offline mode enabled: Clearing online data and reloading offline content only")
                 _latestMedia.value = emptyList()
@@ -233,13 +303,7 @@ class AppDataRepository @Inject constructor(
                 _separateMovieLibrarySections.value = emptyList()
                 _separateTvLibrarySections.value = emptyList()
 
-                coroutineScope {
-                    val continueWatchingTask = async { loadContinueWatching() }
-                    val nextUpTask = async { loadNextUp() }
-
-                    _continueWatching.value = continueWatchingTask.await()
-                    _nextUp.value = nextUpTask.await()
-                }
+                loadOfflineData(userId)
             } else {
                 Timber.d("Offline mode disabled: Reloading online content")
                 _latestMedia.value = emptyList()
@@ -255,42 +319,10 @@ class AppDataRepository @Inject constructor(
                 _continueWatching.value = emptyList()
                 _nextUp.value = emptyList()
 
-                coroutineScope {
-                    val latestMediaTask = async { loadLatestMedia() }
-                    val heroCarouselTask = async { loadHeroCarousel() }
-                    val continueWatchingTask = async { loadContinueWatching() }
-                    val nextUpTask = async { loadNextUp() }
-                    val librariesTask = async { loadLibraries() }
-                    val userProfileTask = async { loadUserProfileImage() }
-
-                    _latestMedia.value = latestMediaTask.await()
-                    _heroCarouselItems.value = heroCarouselTask.await()
-                    _continueWatching.value = continueWatchingTask.await()
-                    _nextUp.value = nextUpTask.await()
-                    val libraries = librariesTask.await()
-                    _libraries.value = libraries
-                    _userProfileImageUrl.value = userProfileTask.await()
-
-                    val homeDataTask = async { loadHomeSpecificData(libraries) }
-                    val (latestMovies, latestTvSeries, highestRated) = homeDataTask.await()
-                    _latestMovies.value = latestMovies
-                    _latestTvSeries.value = latestTvSeries
-                    _highestRated.value = highestRated
-
-                    launch {
-                        try {
-                            Timber.d("Loading recommendations in background...")
-                            val recommendationCategories = loadRecommendations()
-                            _recommendationCategories.value = recommendationCategories
-                            Timber.d("Recommendations loaded successfully")
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to load recommendations in background")
-                        }
-                    }
-                }
+                loadOnlineData(userId)
             }
         } catch (e: Exception) {
-            Timber.e(e, "Failed to reload data on offline mode change")
+            Timber.e(e, "Failed to handle offline mode change")
         } finally {
             _isOfflineDataRefreshing.value = false
         }
@@ -307,18 +339,50 @@ class AppDataRepository @Inject constructor(
     }
 
     suspend fun reloadHomeData() {
-        if (!_isInitialDataLoaded.value) return
-
         try {
-            val libraries = _libraries.value
-            if (libraries.isNotEmpty()) {
-                Timber.d("Reloading home data...")
-                val (latestMovies, latestTvSeries, highestRated) = loadHomeSpecificData(libraries)
+            val userId = authRepository.currentUser.value?.id ?: return
+
+            coroutineScope {
+                val latestMediaTask = async { loadLatestMedia() }
+                val heroCarouselTask = async { loadHeroCarousel() }
+                val continueWatchingTask = async { loadContinueWatching() }
+                val nextUpTask = async { loadNextUp() }
+                val librariesTask = async { loadLibraries() }
+
+                val latestMedia = latestMediaTask.await()
+                _latestMedia.value = latestMedia
+                cacheRepository.saveLatestMediaCache(userId, latestMedia, ttlHours = 6)
+
+                val heroItems = heroCarouselTask.await()
+                _heroCarouselItems.value = heroItems
+                cacheRepository.saveHeroCarouselCache(userId, heroItems, ttlHours = 6)
+
+                val continueWatching = continueWatchingTask.await()
+                _continueWatching.value = continueWatching
+                cacheRepository.saveContinueWatchingCache(userId, continueWatching, ttlHours = 1)
+
+                val nextUp = nextUpTask.await()
+                _nextUp.value = nextUp
+                cacheRepository.saveNextUpCache(userId, nextUp, ttlHours = 1)
+
+                val libraries = librariesTask.await()
+                _libraries.value = libraries
+                cacheRepository.saveLibrariesCache(userId, libraries, ttlHours = 24)
+
+                val homeDataTask = async { loadHomeSpecificData(libraries) }
+                val (latestMovies, latestTvSeries, highestRated) = homeDataTask.await()
+
                 _latestMovies.value = latestMovies
+                cacheRepository.saveLatestMoviesCache(userId, latestMovies, ttlHours = 6)
+
                 _latestTvSeries.value = latestTvSeries
+                cacheRepository.saveLatestTvSeriesCache(userId, latestTvSeries, ttlHours = 6)
+
                 _highestRated.value = highestRated
-                Timber.d("Home data reloaded successfully")
+                cacheRepository.saveHighestRatedCache(userId, highestRated, ttlHours = 12)
             }
+
+            Timber.d("Home data reload completed successfully")
         } catch (e: Exception) {
             Timber.e(e, "Failed to reload home data")
         }
@@ -541,6 +605,16 @@ class AppDataRepository @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to load recommendations")
             emptyList()
+        }
+    }
+
+    suspend fun clearAllCaches() {
+        try {
+            val userId = authRepository.currentUser.value?.id ?: return
+            cacheRepository.clearAllUserCaches(userId)
+            Timber.d("Cleared all caches for user")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to clear caches")
         }
     }
 

@@ -6,9 +6,12 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.DatabaseMigrations
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.ItemImageDao
+import com.makd.afinity.data.database.dao.ItemMetadataDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
+import com.makd.afinity.data.database.dao.ListCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
+import com.makd.afinity.data.database.dao.PeopleDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
 import com.makd.afinity.data.database.dao.ServerDao
@@ -112,5 +115,20 @@ object DatabaseModule {
     @Provides
     fun provideItemImageDao(database: AfinityDatabase): ItemImageDao {
         return database.itemImageDao()
+    }
+
+    @Provides
+    fun provideItemMetadataDao(database: AfinityDatabase): ItemMetadataDao {
+        return database.itemMetadataDao()
+    }
+
+    @Provides
+    fun providePeopleDao(database: AfinityDatabase): PeopleDao {
+        return database.peopleDao()
+    }
+
+    @Provides
+    fun provideListCacheDao(database: AfinityDatabase): ListCacheDao {
+        return database.listCacheDao()
     }
 }

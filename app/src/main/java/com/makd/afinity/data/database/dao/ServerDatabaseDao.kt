@@ -14,6 +14,9 @@ import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
 import com.makd.afinity.data.database.entities.ItemImageEntity
+import com.makd.afinity.data.database.entities.ItemMetadataEntity
+import com.makd.afinity.data.database.entities.ItemPeopleCrossRef
+import com.makd.afinity.data.database.entities.PersonEntity
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import java.util.UUID
 
@@ -57,15 +60,47 @@ abstract class ServerDatabaseDao {
     @Query("SELECT * FROM item_images WHERE itemId = :itemId")
     abstract suspend fun getImage(itemId: UUID): ItemImageEntity?
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertMetadata(metadata: ItemMetadataEntity)
+
+    @Query("SELECT * FROM item_metadata WHERE itemId = :itemId")
+    abstract suspend fun getMetadata(itemId: UUID): ItemMetadataEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertPeople(people: List<PersonEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertItemPeopleCrossRefs(crossRefs: List<ItemPeopleCrossRef>)
+
+    @Query("""
+    SELECT p.* FROM people p
+    INNER JOIN item_people ip ON p.id = ip.personId
+    WHERE ip.itemId = :itemId
+    ORDER BY ip.sortOrder ASC
+""")
+    abstract suspend fun getPeopleForItem(itemId: UUID): List<PersonEntity>
+
+    @Query("DELETE FROM item_people WHERE itemId = :itemId")
+    abstract suspend fun deleteItemPeopleLinks(itemId: UUID)
+
     @Transaction
     open suspend fun saveMovieWithImages(
         movie: AfinityMovieDto,
         images: ItemImageEntity,
+        metadata: ItemMetadataEntity,
+        people: List<PersonEntity>,
+        peopleCrossRefs: List<ItemPeopleCrossRef>,
         sources: List<AfinitySourceDto>,
         userData: AfinityUserDataDto
     ) {
         insertMovie(movie)
         insertImage(images)
+        insertMetadata(metadata)
+        if (people.isNotEmpty()) {
+            insertPeople(people)
+            deleteItemPeopleLinks(movie.id)
+            insertItemPeopleCrossRefs(peopleCrossRefs)
+        }
         sources.forEach { insertSource(it) }
         insertUserData(userData)
     }
@@ -74,10 +109,19 @@ abstract class ServerDatabaseDao {
     open suspend fun saveShowWithImages(
         show: AfinityShowDto,
         images: ItemImageEntity,
+        metadata: ItemMetadataEntity,
+        people: List<PersonEntity>,
+        peopleCrossRefs: List<ItemPeopleCrossRef>,
         userData: AfinityUserDataDto
     ) {
         insertShow(show)
         insertImage(images)
+        insertMetadata(metadata)
+        if (people.isNotEmpty()) {
+            insertPeople(people)
+            deleteItemPeopleLinks(show.id)
+            insertItemPeopleCrossRefs(peopleCrossRefs)
+        }
         insertUserData(userData)
     }
 
@@ -85,12 +129,21 @@ abstract class ServerDatabaseDao {
     open suspend fun saveEpisodeWithImages(
         episode: AfinityEpisodeDto,
         images: ItemImageEntity,
+        metadata: ItemMetadataEntity,
+        people: List<PersonEntity>,
+        peopleCrossRefs: List<ItemPeopleCrossRef>,
         sources: List<AfinitySourceDto>,
         userData: AfinityUserDataDto,
         segments: List<AfinitySegmentDto>
     ) {
         insertEpisode(episode)
         insertImage(images)
+        insertMetadata(metadata)
+        if (people.isNotEmpty()) {
+            insertPeople(people)
+            deleteItemPeopleLinks(episode.id)
+            insertItemPeopleCrossRefs(peopleCrossRefs)
+        }
         sources.forEach { insertSource(it) }
         segments.forEach { insertSegment(it) }
         insertUserData(userData)
