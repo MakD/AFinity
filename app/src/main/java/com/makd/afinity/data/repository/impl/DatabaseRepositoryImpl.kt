@@ -516,6 +516,29 @@ class DatabaseRepositoryImpl @Inject constructor(
             items
         }
     }
+    override suspend fun getDownloadedMovies(userId: UUID): List<AfinityMovie> {
+        return serverDatabaseDao.getDownloadedMovies().map {
+            it.toAfinityMovie(serverDatabaseDao, userId)
+        }
+    }
+
+    override suspend fun getDownloadedEpisodes(userId: UUID): List<AfinityEpisode> {
+        return serverDatabaseDao.getDownloadedEpisodes().map {
+            it.toAfinityEpisode(serverDatabaseDao, userId)
+        }
+    }
+
+    override suspend fun getDownloadedContinueWatchingMovies(userId: UUID, limit: Int): List<AfinityMovie> {
+        return serverDatabaseDao.getDownloadedContinueWatchingMovies(userId, limit).map {
+            it.toAfinityMovie(serverDatabaseDao, userId)
+        }
+    }
+
+    override suspend fun getDownloadedContinueWatchingEpisodes(userId: UUID, limit: Int): List<AfinityEpisode> {
+        return serverDatabaseDao.getDownloadedContinueWatchingEpisodes(userId, limit).map {
+            it.toAfinityEpisode(serverDatabaseDao, userId)
+        }
+    }
 
     override suspend fun searchAllItems(query: String, userId: UUID): List<AfinityItem> {
         val movies = searchMovies(query, userId)

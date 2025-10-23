@@ -12,9 +12,11 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.websocket.WebSocketEvent
@@ -36,7 +38,9 @@ class HomeViewModel @Inject constructor(
     private val userDataRepository: UserDataRepository,
     private val watchlistRepository: WatchlistRepository,
     private val preferencesRepository: PreferencesRepository,
-    private val eventBus: WebSocketEventBus
+    private val eventBus: WebSocketEventBus,
+    private val databaseRepository: DatabaseRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -50,7 +54,11 @@ class HomeViewModel @Inject constructor(
 
                 if (isOfflineChanged) {
                     Timber.d("Offline mode changed to: $isOffline - reloading data")
-                    appDataRepository.reloadOnOfflineModeChange()
+                    if (isOffline) {
+                        loadOfflineHomeData()
+                    } else {
+                        appDataRepository.reloadOnOfflineModeChange()
+                    }
                 }
             }
         }
@@ -205,6 +213,44 @@ class HomeViewModel @Inject constructor(
                 appDataRepository.refreshContinueWatching()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh on resume")
+            }
+        }
+    }
+
+    private suspend fun loadOfflineHomeData() {
+        viewModelScope.launch {
+            try {
+                val userId = authRepository.currentUser.value?.id
+                if (userId == null) {
+                    Timber.e("No user ID available for offline mode")
+                    return@launch
+                }
+
+                Timber.d("Loading offline home data from downloaded content")
+
+                val continueWatchingMovies = databaseRepository.getDownloadedContinueWatchingMovies(userId, 6)
+                val continueWatchingEpisodes = databaseRepository.getDownloadedContinueWatchingEpisodes(userId, 6)
+                val continueWatching: List<AfinityItem> = (continueWatchingMovies + continueWatchingEpisodes)
+                    .sortedByDescending { it.playbackPositionTicks }
+                    .take(12)
+
+                val allEpisodes = databaseRepository.getDownloadedEpisodes(userId)
+                val nextUpEpisodes = allEpisodes
+                    .filter { !it.played && it.playbackPositionTicks == 0L }
+                    .sortedWith(compareBy<AfinityEpisode> { it.seriesName }
+                        .thenBy { it.parentIndexNumber }
+                        .thenBy { it.indexNumber })
+                    .take(12)
+
+                _uiState.value = _uiState.value.copy(
+                    continueWatching = continueWatching,
+                    nextUp = nextUpEpisodes
+                )
+
+                Timber.d("Loaded ${continueWatching.size} continue watching items and ${nextUpEpisodes.size} next up episodes from downloads")
+
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load offline home data")
             }
         }
     }

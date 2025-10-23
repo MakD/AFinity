@@ -300,6 +300,49 @@ abstract class ServerDatabaseDao {
         LIMIT :limit
     """)
     abstract suspend fun getContinueWatchingEpisodes(userId: UUID, limit: Int): List<AfinityEpisodeDto>
+    @Query("""
+        SELECT DISTINCT m.* FROM movies m
+        INNER JOIN sources s ON m.id = s.itemId
+        WHERE s.type = 'LOCAL' AND s.path NOT LIKE '%.download'
+        ORDER BY m.name ASC
+    """)
+    abstract suspend fun getDownloadedMovies(): List<AfinityMovieDto>
+
+    @Query("""
+        SELECT DISTINCT e.* FROM episodes e
+        INNER JOIN sources s ON e.id = s.itemId
+        WHERE s.type = 'LOCAL' AND s.path NOT LIKE '%.download'
+        ORDER BY e.seriesName ASC, e.parentIndexNumber ASC, e.indexNumber ASC
+    """)
+    abstract suspend fun getDownloadedEpisodes(): List<AfinityEpisodeDto>
+
+    @Query("""
+        SELECT DISTINCT m.* FROM movies m
+        INNER JOIN sources s ON m.id = s.itemId
+        INNER JOIN userdata u ON m.id = u.itemId
+        WHERE s.type = 'LOCAL' 
+        AND s.path NOT LIKE '%.download'
+        AND u.userId = :userId 
+        AND u.playbackPositionTicks > 0 
+        AND u.played = 0
+        ORDER BY u.playbackPositionTicks DESC
+        LIMIT :limit
+    """)
+    abstract suspend fun getDownloadedContinueWatchingMovies(userId: UUID, limit: Int): List<AfinityMovieDto>
+
+    @Query("""
+        SELECT DISTINCT e.* FROM episodes e
+        INNER JOIN sources s ON e.id = s.itemId
+        INNER JOIN userdata u ON e.id = u.itemId
+        WHERE s.type = 'LOCAL' 
+        AND s.path NOT LIKE '%.download'
+        AND u.userId = :userId 
+        AND u.playbackPositionTicks > 0 
+        AND u.played = 0
+        ORDER BY u.playbackPositionTicks DESC
+        LIMIT :limit
+    """)
+    abstract suspend fun getDownloadedContinueWatchingEpisodes(userId: UUID, limit: Int): List<AfinityEpisodeDto>
 
     @Transaction
     open suspend fun setPlaybackPositionTicks(itemId: UUID, userId: UUID, positionTicks: Long) {

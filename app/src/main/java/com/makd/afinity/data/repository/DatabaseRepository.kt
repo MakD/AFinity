@@ -77,6 +77,11 @@ interface DatabaseRepository {
     suspend fun searchEpisodes(query: String, userId: UUID): List<AfinityEpisode>
     fun getEpisodesFlow(seasonId: UUID, userId: UUID): Flow<List<AfinityEpisode>>
 
+    suspend fun getDownloadedMovies(userId: UUID): List<AfinityMovie>
+    suspend fun getDownloadedEpisodes(userId: UUID): List<AfinityEpisode>
+    suspend fun getDownloadedContinueWatchingMovies(userId: UUID, limit: Int = 16): List<AfinityMovie>
+    suspend fun getDownloadedContinueWatchingEpisodes(userId: UUID, limit: Int = 16): List<AfinityEpisode>
+
     suspend fun insertSource(source: AfinitySource, itemId: UUID)
     suspend fun updateSource(source: AfinitySource)
     suspend fun deleteSource(sourceId: String)
