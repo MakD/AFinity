@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.DatabaseMigrations
 import com.makd.afinity.data.database.dao.EpisodeDao
+import com.makd.afinity.data.database.dao.ItemImageDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
@@ -106,5 +107,10 @@ object DatabaseModule {
     @Provides
     fun provideWatchlistDao(database: AfinityDatabase): WatchlistDao {
         return database.watchlistDao()
+    }
+
+    @Provides
+    fun provideItemImageDao(database: AfinityDatabase): ItemImageDao {
+        return database.itemImageDao()
     }
 }

@@ -13,6 +13,7 @@ import com.makd.afinity.data.database.entities.AfinitySegmentDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.ItemImageEntity
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import java.util.UUID
 
@@ -49,6 +50,54 @@ abstract class ServerDatabaseDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertUserData(userData: AfinityUserDataDto)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertImage(image: ItemImageEntity)
+
+    @Query("SELECT * FROM item_images WHERE itemId = :itemId")
+    abstract suspend fun getImage(itemId: UUID): ItemImageEntity?
+
+    @Transaction
+    open suspend fun saveMovieWithImages(
+        movie: AfinityMovieDto,
+        images: ItemImageEntity,
+        sources: List<AfinitySourceDto>,
+        userData: AfinityUserDataDto
+    ) {
+        insertMovie(movie)
+        insertImage(images)
+        sources.forEach { insertSource(it) }
+        insertUserData(userData)
+    }
+
+    @Transaction
+    open suspend fun saveShowWithImages(
+        show: AfinityShowDto,
+        images: ItemImageEntity,
+        userData: AfinityUserDataDto
+    ) {
+        insertShow(show)
+        insertImage(images)
+        insertUserData(userData)
+    }
+
+    @Transaction
+    open suspend fun saveEpisodeWithImages(
+        episode: AfinityEpisodeDto,
+        images: ItemImageEntity,
+        sources: List<AfinitySourceDto>,
+        userData: AfinityUserDataDto,
+        segments: List<AfinitySegmentDto>
+    ) {
+        insertEpisode(episode)
+        insertImage(images)
+        sources.forEach { insertSource(it) }
+        segments.forEach { insertSegment(it) }
+        insertUserData(userData)
+    }
+
+    @Query("SELECT * FROM sources WHERE itemId = :itemId")
+    abstract suspend fun getSourcesForItem(itemId: UUID): List<AfinitySourceDto>
 
     @Query("SELECT * FROM movies WHERE id = :movieId")
     abstract suspend fun getMovie(movieId: UUID): AfinityMovieDto?
@@ -240,6 +289,7 @@ abstract class ServerDatabaseDao {
         deleteAllTrickplayInfos()
         deleteAllSegments()
         deleteAllUserData()
+        deleteAllImages()
     }
 
     @Query("DELETE FROM movies")
@@ -268,4 +318,7 @@ abstract class ServerDatabaseDao {
 
     @Query("DELETE FROM userdata")
     abstract suspend fun deleteAllUserData()
+
+    @Query("DELETE FROM item_images")
+    abstract suspend fun deleteAllImages()
 }

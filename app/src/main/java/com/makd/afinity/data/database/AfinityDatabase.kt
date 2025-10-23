@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.makd.afinity.data.database.dao.EpisodeDao
+import com.makd.afinity.data.database.dao.ItemImageDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
@@ -26,6 +27,7 @@ import com.makd.afinity.data.database.entities.AfinitySegmentDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.ItemImageEntity
 import com.makd.afinity.data.database.entities.LibraryCacheEntity
 import com.makd.afinity.data.database.entities.WatchlistItemEntity
 import com.makd.afinity.data.models.server.Server
@@ -54,8 +56,9 @@ import com.makd.afinity.data.models.user.User
         AfinitySegmentDto::class,
 
         AfinityUserDataDto::class,
+        ItemImageEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(com.makd.afinity.data.database.TypeConverters::class)
@@ -73,6 +76,7 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun sourceDao(): SourceDao
     abstract fun mediaStreamDao(): MediaStreamDao
     abstract fun userDataDao(): UserDataDao
+    abstract fun itemImageDao(): ItemImageDao
 
     abstract fun serverDatabaseDao(): ServerDatabaseDao
 

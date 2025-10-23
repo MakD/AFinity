@@ -47,11 +47,31 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS item_images (
+                    itemId TEXT PRIMARY KEY NOT NULL,
+                    primaryImageUrl TEXT,
+                    backdropImageUrl TEXT,
+                    logoImageUrl TEXT,
+                    thumbImageUrl TEXT,
+                    primaryBlurHash TEXT,
+                    backdropBlurHash TEXT,
+                    logoBlurHash TEXT,
+                    thumbBlurHash TEXT,
+                    cachedAt INTEGER NOT NULL
+                )
+            """.trimIndent())
+        }
+    }
+
     val ALL_MIGRATIONS = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
         MIGRATION_5_6,
         MIGRATION_6_7,
-        MIGRATION_7_8
+        MIGRATION_7_8,
+        MIGRATION_8_9
     )
 }

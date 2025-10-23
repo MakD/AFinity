@@ -22,6 +22,8 @@ import com.makd.afinity.data.models.media.RecommendationType
 import com.makd.afinity.data.models.media.buildTitle
 import com.makd.afinity.data.models.media.toAfinityRecommendationType
 import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.di.IoDispatcher
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -54,13 +56,14 @@ import javax.inject.Singleton
 
 @Singleton
 class JellyfinMediaRepository @Inject constructor(
-    private val apiClient: ApiClient
+    private val apiClient: ApiClient,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : MediaRepository {
     override suspend fun refreshItemUserData(
         itemId: UUID,
         fields: List<ItemFields>?
     ): AfinityItem? {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext null
                 val itemsApi = ItemsApi(apiClient)
@@ -220,7 +223,7 @@ class JellyfinMediaRepository @Inject constructor(
     }
 
     override suspend fun invalidateContinueWatchingCache() {
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext
                 val itemsApi = ItemsApi(apiClient)
@@ -245,7 +248,7 @@ class JellyfinMediaRepository @Inject constructor(
     }
 
     override suspend fun invalidateLatestMediaCache() {
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext
                 val userLibraryApi = UserLibraryApi(apiClient)
@@ -272,7 +275,7 @@ class JellyfinMediaRepository @Inject constructor(
     }
 
     override suspend fun invalidateNextUpCache() {
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext
                 val tvShowsApi = TvShowsApi(apiClient)
@@ -321,7 +324,7 @@ class JellyfinMediaRepository @Inject constructor(
     private val _nextUp = MutableStateFlow<List<AfinityEpisode>>(emptyList())
     override val nextUp: Flow<List<AfinityEpisode>> = _nextUp.asStateFlow()
 
-    private suspend fun getCurrentUserId(): UUID? = withContext(Dispatchers.IO) {
+    private suspend fun getCurrentUserId(): UUID? = withContext(ioDispatcher) {
         return@withContext try {
             val userApi = UserApi(apiClient)
             val response = userApi.getCurrentUser()
@@ -336,7 +339,7 @@ class JellyfinMediaRepository @Inject constructor(
         return apiClient.baseUrl ?: ""
     }
 
-    override suspend fun getLibraries(): List<AfinityCollection> = withContext(Dispatchers.IO) {
+    override suspend fun getLibraries(): List<AfinityCollection> = withContext(ioDispatcher) {
         return@withContext try {
             Timber.d("Attempting to get libraries via MediaFolders API")
             try {
@@ -394,7 +397,7 @@ class JellyfinMediaRepository @Inject constructor(
         parentId: UUID?,
         limit: Int,
         fields: List<ItemFields>?
-        ): List<AfinityItem> = withContext(Dispatchers.IO) {
+        ): List<AfinityItem> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -429,7 +432,7 @@ class JellyfinMediaRepository @Inject constructor(
     override suspend fun getContinueWatching(
         limit: Int,
         fields: List<ItemFields>?
-    ): List<AfinityItem> = withContext(Dispatchers.IO) {
+    ): List<AfinityItem> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -462,7 +465,7 @@ class JellyfinMediaRepository @Inject constructor(
         categoryLimit: Int,
         itemLimit: Int,
         fields: List<ItemFields>?
-    ): List<AfinityRecommendationCategory> = withContext(Dispatchers.IO) {
+    ): List<AfinityRecommendationCategory> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -583,7 +586,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?,
         imageTypes: List<String>,
         hasOverview: Boolean?
-    ): BaseItemDtoQueryResult = withContext(Dispatchers.IO) {
+    ): BaseItemDtoQueryResult = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext BaseItemDtoQueryResult(
                 items = emptyList(),
@@ -647,7 +650,7 @@ class JellyfinMediaRepository @Inject constructor(
     override suspend fun getItem(
         itemId: UUID,
         fields: List<ItemFields>?
-    ): BaseItemDto? = withContext(Dispatchers.IO) {
+    ): BaseItemDto? = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext null
 
@@ -673,7 +676,7 @@ class JellyfinMediaRepository @Inject constructor(
         itemId: UUID,
         limit: Int,
         fields: List<ItemFields>?
-    ): List<AfinityItem> = withContext(Dispatchers.IO) {
+    ): List<AfinityItem> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -706,7 +709,7 @@ class JellyfinMediaRepository @Inject constructor(
         isPlayed: Boolean?,
         isFavorite: Boolean?,
         fields: List<ItemFields>?
-    ): List<AfinityMovie> = withContext(Dispatchers.IO) {
+    ): List<AfinityMovie> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -748,7 +751,7 @@ class JellyfinMediaRepository @Inject constructor(
         isPlayed: Boolean?,
         isFavorite: Boolean?,
         fields: List<ItemFields>?
-    ): List<AfinityShow> = withContext(Dispatchers.IO) {
+    ): List<AfinityShow> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -781,7 +784,7 @@ class JellyfinMediaRepository @Inject constructor(
     override suspend fun getSeasons(
         seriesId: UUID,
         fields: List<ItemFields>?
-    ): List<AfinitySeason> = withContext(Dispatchers.IO) {
+    ): List<AfinitySeason> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -808,7 +811,7 @@ class JellyfinMediaRepository @Inject constructor(
         seasonId: UUID,
         seriesId: UUID?,
         fields: List<ItemFields>?
-    ): List<AfinityEpisode> = withContext(Dispatchers.IO) {
+    ): List<AfinityEpisode> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -839,7 +842,7 @@ class JellyfinMediaRepository @Inject constructor(
 
     override suspend fun getFavoriteMovies(
         fields: List<ItemFields>?
-    ): List<AfinityMovie> = withContext(Dispatchers.IO) {
+    ): List<AfinityMovie> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val itemsApi = ItemsApi(apiClient)
@@ -865,7 +868,7 @@ class JellyfinMediaRepository @Inject constructor(
 
     override suspend fun getFavoriteShows(
         fields: List<ItemFields>?
-    ): List<AfinityShow> = withContext(Dispatchers.IO) {
+    ): List<AfinityShow> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val itemsApi = ItemsApi(apiClient)
@@ -892,7 +895,7 @@ class JellyfinMediaRepository @Inject constructor(
 
     override suspend fun getFavoriteEpisodes(
         fields: List<ItemFields>?
-    ): List<AfinityEpisode> = withContext(Dispatchers.IO) {
+    ): List<AfinityEpisode> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val itemsApi = ItemsApi(apiClient)
@@ -919,7 +922,7 @@ class JellyfinMediaRepository @Inject constructor(
 
     override suspend fun getFavoriteSeasons(
         fields: List<ItemFields>?
-    ): List<AfinitySeason> = withContext(Dispatchers.IO) {
+    ): List<AfinitySeason> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val itemsApi = ItemsApi(apiClient)
@@ -948,7 +951,7 @@ class JellyfinMediaRepository @Inject constructor(
         limit: Int,
         fields: List<ItemFields>?,
         enableResumable: Boolean
-    ): List<AfinityEpisode> = withContext(Dispatchers.IO) {
+    ): List<AfinityEpisode> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -977,7 +980,7 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
-    override suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem> = withContext(Dispatchers.IO) {
+    override suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem> = withContext(ioDispatcher) {
         return@withContext try {
             val userLibraryApi = UserLibraryApi(apiClient)
             val response = userLibraryApi.getSpecialFeatures(
@@ -1016,7 +1019,7 @@ class JellyfinMediaRepository @Inject constructor(
         limit: Int,
         includeItemTypes: List<String>,
         fields: List<ItemFields>?
-    ): List<AfinityItem> = withContext(Dispatchers.IO) {
+    ): List<AfinityItem> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -1041,7 +1044,7 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
-    override suspend fun getPerson(personId: UUID): AfinityPersonDetail? = withContext(Dispatchers.IO) {
+    override suspend fun getPerson(personId: UUID): AfinityPersonDetail? = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext null
 
@@ -1070,7 +1073,7 @@ class JellyfinMediaRepository @Inject constructor(
         personId: UUID,
         includeItemTypes: List<String>,
         fields: List<ItemFields>?
-    ): List<AfinityItem> = withContext(Dispatchers.IO) {
+    ): List<AfinityItem> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -1097,7 +1100,7 @@ class JellyfinMediaRepository @Inject constructor(
     }
 
     override suspend fun getTrickplayData(itemId: UUID, width: Int, index: Int): ByteArray? =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             return@withContext try {
                 val trickplayApi = TrickplayApi(apiClient)
                 val response = trickplayApi.getTrickplayTileImage(itemId, width, index)
@@ -1111,7 +1114,7 @@ class JellyfinMediaRepository @Inject constructor(
         parentId: UUID?,
         limit: Int?,
         includeItemTypes: List<String>
-    ): List<String> = withContext(Dispatchers.IO) {
+    ): List<String> = withContext(ioDispatcher) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val genresApi = GenresApi(apiClient)

@@ -16,6 +16,7 @@ import com.makd.afinity.data.database.entities.AfinityMovieDto
 import com.makd.afinity.data.database.entities.AfinitySeasonDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.toAfinityEpisodeDto
+import com.makd.afinity.data.database.entities.toAfinityImages
 import com.makd.afinity.data.database.entities.toAfinityMediaStreamDto
 import com.makd.afinity.data.database.entities.toAfinityMovieDto
 import com.makd.afinity.data.database.entities.toAfinitySeasonDto
@@ -23,6 +24,7 @@ import com.makd.afinity.data.database.entities.toAfinitySegmentsDto
 import com.makd.afinity.data.database.entities.toAfinityShowDto
 import com.makd.afinity.data.database.entities.toAfinitySourceDto
 import com.makd.afinity.data.database.entities.toAfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.toItemImageEntity
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
@@ -45,7 +47,9 @@ import com.makd.afinity.data.models.server.ServerWithAddresses
 import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.data.models.user.toAfinityUserDataDto
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.auth.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -64,7 +68,8 @@ class DatabaseRepositoryImpl @Inject constructor(
     private val sourceDao: SourceDao,
     private val mediaStreamDao: MediaStreamDao,
     private val userDataDao: UserDataDao,
-    private val serverDatabaseDao: ServerDatabaseDao
+    private val serverDatabaseDao: ServerDatabaseDao,
+    private val authRepository: AuthRepository
 ) : DatabaseRepository {
 
     override suspend fun insertServer(server: Server) {
@@ -148,7 +153,14 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertMovie(movie: AfinityMovie, serverId: String?) {
-        movieDao.insertMovie(movie.toAfinityMovieDto(serverId))
+        val userId = authRepository.currentUser.value?.id ?: return
+
+        serverDatabaseDao.saveMovieWithImages(
+            movie = movie.toAfinityMovieDto(serverId),
+            images = movie.images.toItemImageEntity(movie.id),
+            sources = movie.sources.map { it.toAfinitySourceDto(movie.id, it.path) },
+            userData = movie.toAfinityUserDataDto(userId)
+        )
     }
 
     override suspend fun updateMovie(movie: AfinityMovie) {
@@ -183,7 +195,13 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertShow(show: AfinityShow, serverId: String?) {
-        showDao.insertShow(show.toAfinityShowDto(serverId))
+        val userId = authRepository.currentUser.value?.id ?: return
+
+        serverDatabaseDao.saveShowWithImages(
+            show = show.toAfinityShowDto(serverId),
+            images = show.images.toItemImageEntity(show.id),
+            userData = show.toAfinityUserDataDto(userId)
+        )
     }
 
     override suspend fun updateShow(show: AfinityShow) {
@@ -219,6 +237,7 @@ class DatabaseRepositoryImpl @Inject constructor(
 
     override suspend fun insertSeason(season: AfinitySeason) {
         seasonDao.insertSeason(season.toAfinitySeasonDto())
+        serverDatabaseDao.insertImage(season.images.toItemImageEntity(season.id))
     }
 
     override suspend fun updateSeason(season: AfinitySeason) {
@@ -241,7 +260,15 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertEpisode(episode: AfinityEpisode, serverId: String?) {
-        episodeDao.insertEpisode(episode.toAfinityEpisodeDto(serverId))
+        val userId = authRepository.currentUser.value?.id ?: return
+
+        serverDatabaseDao.saveEpisodeWithImages(
+            episode = episode.toAfinityEpisodeDto(serverId),
+            images = episode.images.toItemImageEntity(episode.id),
+            sources = episode.sources.map { it.toAfinitySourceDto(episode.id, it.path) },
+            userData = episode.toAfinityUserDataDto(userId),
+            segments = emptyList()
+        )
     }
 
     override suspend fun updateEpisode(episode: AfinityEpisode) {
@@ -498,6 +525,8 @@ class DatabaseRepositoryImpl @Inject constructor(
                 trickplayInfos[source.id] = it
             }
         }
+        val imageEntity = database.getImage(id)
+        val images = imageEntity?.toAfinityImages() ?: AfinityImages()
         return AfinityMovie(
             id = id,
             name = name,
@@ -521,7 +550,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             canPlay = true,
             sources = sources,
             trailer = null,
-            images = AfinityImages(),
+            images = images,
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
             tagline = null,
@@ -536,6 +565,8 @@ class DatabaseRepositoryImpl @Inject constructor(
     ): AfinityShow {
         val userData = database.getUserDataOrCreateNew(id, userId)
         val seasonCount = database.getSeasonsForSeries(id).size
+        val imageEntity = database.getImage(id)
+        val images = imageEntity?.toAfinityImages() ?: AfinityImages()
         return AfinityShow(
             id = id,
             name = name,
@@ -560,7 +591,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             dateLastContentAdded = dateLastContentAdded,
             endDate = endDate,
             trailer = null,
-            images = AfinityImages(),
+            images = images,
             seasonCount = seasonCount,
             episodeCount = null,
             tagline = null,
@@ -575,6 +606,8 @@ class DatabaseRepositoryImpl @Inject constructor(
     ): AfinitySeason {
         val userData = database.getUserDataOrCreateNew(id, userId)
         val episodeCount = database.getEpisodesForSeason(id).size
+        val imageEntity = database.getImage(id)
+        val images = imageEntity?.toAfinityImages() ?: AfinityImages()
         return AfinitySeason(
             id = id,
             name = name,
@@ -590,7 +623,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             episodes = emptyList(),
             seriesId = seriesId,
             seriesName = seriesName,
-            images = AfinityImages(),
+            images = images,
             episodeCount = episodeCount,
             productionYear = null,
             premiereDate = null,
@@ -612,6 +645,8 @@ class DatabaseRepositoryImpl @Inject constructor(
                 trickplayInfos[source.id] = it
             }
         }
+        val imageEntity = database.getImage(id)
+        val images = imageEntity?.toAfinityImages() ?: AfinityImages()
         return AfinityEpisode(
             id = id,
             name = name,
@@ -635,7 +670,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             seasonId = seasonId,
             communityRating = communityRating,
             people = emptyList(),
-            images = AfinityImages(),
+            images = images,
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
             providerIds = null,
