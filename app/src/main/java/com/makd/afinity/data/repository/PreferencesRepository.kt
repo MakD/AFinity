@@ -96,6 +96,10 @@ interface PreferencesRepository {
     suspend fun setUsageAnalytics(enabled: Boolean)
     suspend fun getUsageAnalytics(): Boolean
 
+    suspend fun setOfflineMode(enabled: Boolean)
+    suspend fun getOfflineMode(): Boolean
+    fun getOfflineModeFlow(): Flow<Boolean>
+
     suspend fun clearAllPreferences()
     suspend fun clearServerPreferences()
     suspend fun clearUserPreferences()

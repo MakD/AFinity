@@ -31,9 +31,6 @@ class PlaylistManager @Inject constructor(
     private var currentQueue: MutableList<AfinityItem> = mutableListOf()
     private var currentIndex: Int = -1
 
-    /**
-     * Initialize playlist based on item type
-     */
     suspend fun initializePlaylist(startingItem: AfinityItem): Boolean {
         Timber.d("Initializing playlist for: ${startingItem.name} (type: ${startingItem::class.simpleName})")
 
@@ -61,9 +58,6 @@ class PlaylistManager @Inject constructor(
         }
     }
 
-    /**
-     * Initialize queue for TV episodes
-     */
     private suspend fun initializeEpisodeQueue(startingEpisode: AfinityEpisode): Boolean {
         return try {
             Timber.d("Getting seasons for series: ${startingEpisode.seriesId}")
@@ -146,18 +140,12 @@ class PlaylistManager @Inject constructor(
         }
     }
 
-    /**
-     * Initialize queue for single item (movies, etc.)
-     */
     private suspend fun initializeSingleItemQueue(item: AfinityItem): Boolean {
         Timber.d("Initializing single item queue for: ${item.name}")
         setQueue(listOf(item), 0)
         return true
     }
 
-    /**
-     * Set the queue and current index
-     */
     fun setQueue(queue: List<AfinityItem>, startIndex: Int = 0) {
         currentQueue.clear()
         currentQueue.addAll(queue)
@@ -168,18 +156,12 @@ class PlaylistManager @Inject constructor(
         Timber.d("Queue set with ${queue.size} items, starting at index $currentIndex")
     }
 
-    /**
-     * Add item to queue
-     */
     fun addToQueue(item: AfinityItem) {
         currentQueue.add(item)
         updatePlaylistState()
         Timber.d("Added ${item.name} to queue")
     }
 
-    /**
-     * Move to next item
-     */
     fun next(): AfinityItem? {
         if (!hasNext()) {
             Timber.d("No next item available (current: $currentIndex, size: ${currentQueue.size})")
@@ -194,9 +176,6 @@ class PlaylistManager @Inject constructor(
         return nextItem
     }
 
-    /**
-     * Move to previous item
-     */
     fun previous(): AfinityItem? {
         if (!hasPrevious()) {
             Timber.d("No previous item available (current: $currentIndex)")
@@ -211,44 +190,26 @@ class PlaylistManager @Inject constructor(
         return previousItem
     }
 
-    /**
-     * Check if there's a next item
-     */
     fun hasNext(): Boolean {
         return currentIndex >= 0 && currentIndex < currentQueue.size - 1
     }
 
-    /**
-     * Check if there's a previous item
-     */
     fun hasPrevious(): Boolean {
         return currentIndex > 0 && currentQueue.isNotEmpty()
     }
 
-    /**
-     * Get current item
-     */
     fun getCurrentItem(): AfinityItem? {
         return currentQueue.getOrNull(currentIndex)
     }
 
-    /**
-     * Get next item without moving
-     */
     fun getNextItem(): AfinityItem? {
         return if (hasNext()) currentQueue.getOrNull(currentIndex + 1) else null
     }
 
-    /**
-     * Get previous item without moving
-     */
     fun getPreviousItem(): AfinityItem? {
         return if (hasPrevious()) currentQueue.getOrNull(currentIndex - 1) else null
     }
 
-    /**
-     * Jump to specific item by ID
-     */
     fun jumpToItem(itemId: UUID): AfinityItem? {
         val targetIndex = currentQueue.indexOfFirst { it.id == itemId }
         if (targetIndex == -1) {
@@ -264,9 +225,6 @@ class PlaylistManager @Inject constructor(
         return targetItem
     }
 
-    /**
-     * Get queue info
-     */
     fun getQueueInfo(): String {
         return if (currentQueue.isNotEmpty() && currentIndex >= 0) {
             "${currentIndex + 1} of ${currentQueue.size}"
@@ -275,9 +233,6 @@ class PlaylistManager @Inject constructor(
         }
     }
 
-    /**
-     * Clear queue
-     */
     fun clearQueue() {
         currentQueue.clear()
         currentIndex = -1
@@ -285,16 +240,10 @@ class PlaylistManager @Inject constructor(
         Timber.d("Queue cleared")
     }
 
-    /**
-     * Check if queue is empty
-     */
     fun isEmpty(): Boolean {
         return currentQueue.isEmpty()
     }
 
-    /**
-     * Get all items in queue
-     */
     fun getAllItems(): List<AfinityItem> {
         return currentQueue.toList()
     }

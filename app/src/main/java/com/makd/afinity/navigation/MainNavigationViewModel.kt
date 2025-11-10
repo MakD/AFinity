@@ -2,6 +2,7 @@ package com.makd.afinity.navigation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
@@ -21,7 +22,8 @@ class MainNavigationViewModel @Inject constructor(
     private val appDataRepository: AppDataRepository,
     private val authRepository: AuthRepository,
     private val jellyfinRepository: JellyfinRepository,
-    val watchlistRepository: WatchlistRepository
+    val watchlistRepository: WatchlistRepository,
+    private val offlineModeManager: OfflineModeManager
 ) : ViewModel() {
 
     val appLoadingState = combine(
@@ -46,9 +48,18 @@ class MainNavigationViewModel @Inject constructor(
     }
 
     private fun observeAuthAndLoadData() {
-        var previousAuthState = false
-
         viewModelScope.launch {
+            val initialAuthState = authRepository.isAuthenticated.value
+            Timber.d("Initial auth state: $initialAuthState")
+
+            if (initialAuthState) {
+                val isDataLoaded = appDataRepository.isInitialDataLoaded.value
+                Timber.d("Already authenticated - isDataLoaded: $isDataLoaded - triggering data load")
+                loadAppData()
+            }
+
+            var previousAuthState = initialAuthState
+
             authRepository.isAuthenticated.collect { isAuthenticated ->
                 Timber.d("Auth state changed - isAuthenticated: $isAuthenticated, previous: $previousAuthState")
 
@@ -66,6 +77,12 @@ class MainNavigationViewModel @Inject constructor(
     private fun refreshServerInfo() {
         viewModelScope.launch {
             try {
+                val isOffline = offlineModeManager.isCurrentlyOffline()
+                if (isOffline) {
+                    Timber.d("Device is offline, skipping server info refresh")
+                    return@launch
+                }
+
                 jellyfinRepository.refreshServerInfo()
                 Timber.d("Server info refreshed on app start")
             } catch (e: Exception) {
@@ -77,6 +94,14 @@ class MainNavigationViewModel @Inject constructor(
     private fun loadAppData() {
         viewModelScope.launch {
             try {
+                val isOffline = offlineModeManager.isCurrentlyOffline()
+
+                if (isOffline) {
+                    Timber.d("Device is offline, skipping initial data load")
+                    appDataRepository.skipInitialDataLoad()
+                    return@launch
+                }
+
                 appDataRepository.loadInitialData()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load app data")

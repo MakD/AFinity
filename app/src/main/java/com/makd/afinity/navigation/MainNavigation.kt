@@ -44,8 +44,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.updater.UpdateManager
+import com.makd.afinity.ui.downloads.DownloadsScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
@@ -68,12 +70,14 @@ fun MainNavigation(
     modifier: Modifier = Modifier,
     mainViewModel: MainViewModel = hiltViewModel(),
     viewModel: MainNavigationViewModel = hiltViewModel(),
-    updateManager: UpdateManager
+    updateManager: UpdateManager,
+    offlineModeManager: OfflineModeManager
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val watchlistRepository: WatchlistRepository = hiltViewModel<MainNavigationViewModel>().watchlistRepository
     val watchlistCount by watchlistRepository.getWatchlistCountFlow().collectAsStateWithLifecycle(initialValue = 0)
     val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
+    val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -113,10 +117,30 @@ fun MainNavigation(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+    LaunchedEffect(isOffline) {
+        if (isOffline) {
+            val currentRoute = currentDestination?.route
+            if (currentRoute != Destination.HOME.route && currentRoute != Destination.DOWNLOADS.route) {
+                Timber.d("Switching to offline mode, navigating to HOME")
+                navController.navigate(Destination.HOME.route) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+    }
+
     NavigationSuiteScaffold(
         layoutType = if (isLandscape) NavigationSuiteType.NavigationRail else NavigationSuiteType.NavigationBar,
         navigationSuiteItems = {
             Destination.entries.forEach { destination ->
+                if (isOffline && destination != Destination.HOME && destination != Destination.DOWNLOADS) {
+                    return@forEach
+                }
+
                 if (destination == Destination.WATCHLIST && watchlistCount == 0) {
                     return@forEach
                 }
@@ -204,6 +228,7 @@ fun MainNavigation(
                     },
                     navController = navController,
                     mainUiState = mainUiState,
+                    isOffline = isOffline,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -334,6 +359,12 @@ fun MainNavigation(
                     modifier = Modifier.fillMaxSize(),
                     mainUiState = mainUiState,
                     navController = navController
+                )
+            }
+
+            composable(Destination.DOWNLOADS.route) {
+                DownloadsScreen(
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 

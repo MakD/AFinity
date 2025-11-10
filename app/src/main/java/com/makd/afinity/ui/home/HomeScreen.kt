@@ -106,6 +106,7 @@ fun HomeScreen(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavController,
+    isOffline: Boolean = false,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

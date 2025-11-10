@@ -2,10 +2,12 @@ package com.makd.afinity.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
@@ -36,10 +38,16 @@ enum class Destination(
         unselectedIcon = Icons.Outlined.FavoriteBorder
     ),
     WATCHLIST(
-    route = "watchlist",
-    title = "Watchlist",
-    selectedIcon = Icons.Filled.Bookmark,
-    unselectedIcon = Icons.Outlined.BookmarkBorder
+        route = "watchlist",
+        title = "Watchlist",
+        selectedIcon = Icons.Filled.Bookmark,
+        unselectedIcon = Icons.Outlined.BookmarkBorder
+    ),
+    DOWNLOADS(
+        route = "downloads",
+        title = "Downloads",
+        selectedIcon = Icons.Filled.Download,
+        unselectedIcon = Icons.Outlined.Download
     );
 
     companion object {

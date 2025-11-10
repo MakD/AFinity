@@ -3,10 +3,6 @@ package com.makd.afinity.data.database
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-/**
- * Database migrations for schema changes between versions.
- * Replace fallbackToDestructiveMigration() with these migrations in production.
- */
 object DatabaseMigrations {
 
     val MIGRATION_1_2 = object : Migration(1, 2) {

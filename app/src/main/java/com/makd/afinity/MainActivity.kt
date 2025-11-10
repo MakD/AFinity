@@ -31,6 +31,7 @@ import androidx.core.view.WindowCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.updater.UpdateScheduler
@@ -48,6 +49,8 @@ class MainActivity : ComponentActivity() {
     lateinit var preferencesRepository: PreferencesRepository
     @Inject
     lateinit var updateManager: UpdateManager
+    @Inject
+    lateinit var offlineModeManager: OfflineModeManager
 
     @Inject
     lateinit var updateScheduler: UpdateScheduler
@@ -71,7 +74,8 @@ class MainActivity : ComponentActivity() {
             ) {
                 MainContent(
                     modifier = Modifier.fillMaxSize(),
-                    updateManager = updateManager
+                    updateManager = updateManager,
+                    offlineModeManager = offlineModeManager
                 )
             }
         }
@@ -88,7 +92,8 @@ class MainActivity : ComponentActivity() {
 private fun MainContent(
     modifier: Modifier = Modifier,
     viewModel: MainViewModel = hiltViewModel(),
-    updateManager: UpdateManager
+    updateManager: UpdateManager,
+    offlineModeManager: OfflineModeManager
 ) {
     val authState by viewModel.authenticationState.collectAsStateWithLifecycle()
 
@@ -102,7 +107,8 @@ private fun MainContent(
         AuthenticationState.Authenticated -> {
             MainNavigation(
                 modifier = modifier,
-                updateManager = updateManager
+                updateManager = updateManager,
+                offlineModeManager = offlineModeManager
             )
         }
 
@@ -177,13 +183,3 @@ sealed class AuthenticationState {
     object Authenticated : AuthenticationState()
     object NotAuthenticated : AuthenticationState()
 }
-
-/*@Preview(showBackground = true)
-@Composable
-fun MainActivityPreview() {
-    AFinityTheme {
-        LoginScreen(
-            onLoginSuccess = {}
-        )
-    }
-}*/

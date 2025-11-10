@@ -3,9 +3,6 @@ package com.makd.afinity.data.models.media
 import java.time.LocalDateTime
 import java.util.UUID
 
-/**
- * Represents a Video item (special features, trailers, etc.)
- */
 data class AfinityVideo(
     override val id: UUID,
     override val name: String,

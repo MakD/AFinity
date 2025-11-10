@@ -16,10 +16,6 @@ import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import java.util.UUID
 
-/**
- * Master DAO that combines all database operations for a Jellyfin server.
- * This provides a unified interface for all database operations.
- */
 @Dao
 abstract class ServerDatabaseDao {
 

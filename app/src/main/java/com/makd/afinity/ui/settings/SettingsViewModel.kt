@@ -2,16 +2,20 @@ package com.makd.afinity.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -21,7 +25,9 @@ class SettingsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val preferencesRepository: PreferencesRepository,
     private val appDataRepository: AppDataRepository,
-    private val serverRepository: ServerRepository
+    private val serverRepository: ServerRepository,
+    private val offlineModeManager: OfflineModeManager,
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -32,6 +38,19 @@ class SettingsViewModel @Inject constructor(
 
     private val _homeSortByDateAdded = MutableStateFlow(true)
     val homeSortByDateAdded: StateFlow<Boolean> = _homeSortByDateAdded.asStateFlow()
+
+    private val _manualOfflineMode = MutableStateFlow(false)
+    val manualOfflineMode: StateFlow<Boolean> = _manualOfflineMode.asStateFlow()
+
+    private val _isNetworkAvailable = MutableStateFlow(true)
+    val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
+
+    val effectiveOfflineMode: StateFlow<Boolean> = combine(
+        _manualOfflineMode,
+        _isNetworkAvailable
+    ) { manual, networkAvailable ->
+        manual || !networkAvailable
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     init {
         loadSettings()
@@ -97,6 +116,19 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.getPipGestureEnabledFlow().collect {
                 _uiState.value = _uiState.value.copy(pipGestureEnabled = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getOfflineModeFlow().collect {
+                _manualOfflineMode.value = it
+            }
+        }
+
+        viewModelScope.launch {
+            networkConnectivityMonitor.isNetworkAvailable.collect { isAvailable ->
+                _isNetworkAvailable.value = isAvailable
+                Timber.d("Network availability changed: $isAvailable")
             }
         }
     }
@@ -186,6 +218,17 @@ class SettingsViewModel @Inject constructor(
                 Timber.d("Skip outro set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle skip outro")
+            }
+        }
+    }
+
+    fun toggleOfflineMode(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setOfflineMode(enabled)
+                Timber.d("Offline mode set to: $enabled")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle offline mode")
             }
         }
     }

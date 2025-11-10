@@ -68,9 +68,6 @@ class JellyfinImageUrlBuilder @Inject constructor() {
         quality = quality
     )
 
-    /**
-     * Convert Dp to pixels for image sizing
-     */
     fun dpToPx(dp: Dp, density: Density): Int {
         return with(density) { (dp.toPx() * 1.2f).toInt() }
     }
