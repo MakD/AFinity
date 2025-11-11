@@ -46,11 +46,16 @@ fun EpisodeDetailOverlay(
     episode: AfinityEpisode,
     isLoading: Boolean,
     isInWatchlist: Boolean,
+    downloadInfo: com.makd.afinity.data.models.download.DownloadInfo?,
     onDismiss: () -> Unit,
     onPlayClick: (AfinityEpisode, PlaybackSelection) -> Unit,
     onToggleFavorite: () -> Unit,
     onToggleWatchlist: () -> Unit,
     onToggleWatched: () -> Unit,
+    onDownloadClick: () -> Unit,
+    onPauseDownload: () -> Unit,
+    onResumeDownload: () -> Unit,
+    onCancelDownload: () -> Unit,
     onGoToSeries: (() -> Unit)? = null
 ) {
     val sheetState = rememberModalBottomSheetState(
@@ -241,6 +246,14 @@ fun EpisodeDetailOverlay(
                         modifier = Modifier.size(28.dp)
                     )
                 }
+
+                DownloadProgressIndicator(
+                    downloadInfo = downloadInfo,
+                    onDownloadClick = onDownloadClick,
+                    onPauseClick = onPauseDownload,
+                    onResumeClick = onResumeDownload,
+                    onCancelClick = onCancelDownload
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

@@ -710,11 +710,11 @@ class ItemDetailViewModel @Inject constructor(
     fun onDownloadClick() {
         viewModelScope.launch {
             try {
-                val item = _uiState.value.item ?: return@launch
+                val item = _selectedEpisode.value ?: _uiState.value.item ?: return@launch
                 val sources = item.sources.filter { it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE }
 
                 if (sources.isEmpty()) {
-                    Timber.w("No remote sources available for download")
+                    Timber.w("No remote sources available for download for item: ${item.name}")
                     return@launch
                 }
 
@@ -728,7 +728,7 @@ class ItemDetailViewModel @Inject constructor(
     fun onQualitySelected(sourceId: String) {
         viewModelScope.launch {
             try {
-                val item = _uiState.value.item ?: return@launch
+                val item = _selectedEpisode.value ?: _uiState.value.item ?: return@launch
 
                 _uiState.value = _uiState.value.copy(showQualityDialog = false)
 

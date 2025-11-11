@@ -360,6 +360,7 @@ fun HomeScreen(
                     episode = episode,
                     isLoading = isLoadingEpisode,
                     isInWatchlist = selectedEpisodeWatchlistStatus,
+                    downloadInfo = null,
                     onDismiss = {
                         viewModel.clearSelectedEpisode()
                         pendingNavigationSeriesId = null
@@ -385,6 +386,10 @@ fun HomeScreen(
                     onToggleWatched = {
                         viewModel.toggleEpisodeWatched(episode)
                     },
+                    onDownloadClick = { },
+                    onPauseDownload = { },
+                    onResumeDownload = { },
+                    onCancelDownload = { },
                     onGoToSeries = {
                         viewModel.clearSelectedEpisode()
                         pendingNavigationSeriesId = episode.seriesId.toString()

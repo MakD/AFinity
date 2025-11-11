@@ -184,6 +184,7 @@ fun ItemDetailScreen(
                 episode = episode,
                 isLoading = isLoadingEpisode,
                 isInWatchlist = selectedEpisodeWatchlistStatus,
+                downloadInfo = uiState.downloadInfo,
                 onDismiss = { viewModel.clearSelectedEpisode() },
                 onPlayClick = { episodeToPlay, selection ->
                     viewModel.clearSelectedEpisode()
@@ -205,6 +206,18 @@ fun ItemDetailScreen(
                 },
                 onToggleWatched = {
                     viewModel.toggleEpisodeWatched(episode)
+                },
+                onDownloadClick = {
+                    viewModel.onDownloadClick()
+                },
+                onPauseDownload = {
+                    viewModel.pauseDownload()
+                },
+                onResumeDownload = {
+                    viewModel.resumeDownload()
+                },
+                onCancelDownload = {
+                    viewModel.cancelDownload()
                 }
             )
         }
