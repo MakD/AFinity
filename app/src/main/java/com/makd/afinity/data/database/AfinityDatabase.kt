@@ -26,6 +26,7 @@ import com.makd.afinity.data.database.entities.AfinitySegmentDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.LibraryCacheEntity
 import com.makd.afinity.data.database.entities.WatchlistItemEntity
 import com.makd.afinity.data.models.server.Server
@@ -54,8 +55,10 @@ import com.makd.afinity.data.models.user.User
         AfinitySegmentDto::class,
 
         AfinityUserDataDto::class,
+
+        DownloadDto::class,
     ],
-    version = 8,
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(com.makd.afinity.data.database.TypeConverters::class)

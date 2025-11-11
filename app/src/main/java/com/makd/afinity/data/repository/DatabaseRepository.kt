@@ -10,6 +10,8 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
+import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.models.server.ServerWithAddressAndUser
@@ -43,6 +45,7 @@ interface DatabaseRepository {
     suspend fun deleteUser(userId: UUID)
     suspend fun getUser(userId: UUID): User?
     suspend fun getUsersForServer(serverId: String): List<User>
+    suspend fun getAllUsers(): List<User>
     suspend fun getCurrentUser(): User?
 
     suspend fun insertMovie(movie: AfinityMovie, serverId: String? = null)
@@ -123,4 +126,12 @@ interface DatabaseRepository {
     suspend fun clearServerData(serverId: String)
     suspend fun clearUserData(userId: UUID)
     suspend fun getDatabaseSize(): Long
+
+    suspend fun insertDownload(download: DownloadDto)
+    suspend fun getDownload(downloadId: UUID): DownloadDto?
+    suspend fun getDownloadByItemId(itemId: UUID): DownloadDto?
+    fun getAllDownloadsFlow(): Flow<List<DownloadDto>>
+    fun getDownloadsByStatusFlow(statuses: List<DownloadStatus>): Flow<List<DownloadDto>>
+    suspend fun deleteDownload(downloadId: UUID)
+    suspend fun getSources(itemId: UUID): List<com.makd.afinity.data.database.entities.AfinitySourceDto>
 }

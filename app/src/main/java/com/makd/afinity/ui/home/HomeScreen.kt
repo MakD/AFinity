@@ -180,7 +180,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    if (uiState.heroCarouselItems.isNotEmpty()) {
+                    if (!uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()) {
                         item(key = "hero_carousel") {
                             OptimizedHeroCarousel(
                                 items = uiState.heroCarouselItems,
@@ -205,10 +205,30 @@ fun HomeScreen(
                                 Modifier.fillMaxWidth()
                             }
                         ) {
-                            if (uiState.continueWatching.isNotEmpty()) {
+                            if (!uiState.isOffline) {
+                                if (uiState.continueWatching.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    OptimizedContinueWatchingSection(
+                                        items = uiState.continueWatching,
+                                        onItemClick = { item ->
+                                            if (item is com.makd.afinity.data.models.media.AfinityEpisode) {
+                                                viewModel.selectEpisode(item)
+                                            } else {
+                                                onItemClick(item)
+                                            }
+                                        }
+                                    )
+                                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    ContinueWatchingSkeleton()
+                                }
+                            }
+
+                            if (uiState.downloadedContent.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(24.dp))
-                                OptimizedContinueWatchingSection(
-                                    items = uiState.continueWatching,
+                                OptimizedLatestTvSeriesSection(
+                                    title = "Downloaded",
+                                    items = uiState.downloadedContent,
                                     onItemClick = { item ->
                                         if (item is com.makd.afinity.data.models.media.AfinityEpisode) {
                                             viewModel.selectEpisode(item)
@@ -217,12 +237,9 @@ fun HomeScreen(
                                         }
                                     }
                                 )
-                            } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                ContinueWatchingSkeleton()
                             }
 
-                            if (uiState.nextUp.isNotEmpty()) {
+                            if (!uiState.isOffline && uiState.nextUp.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(24.dp))
                                 NextUpSection(
                                     episodes = uiState.nextUp,
@@ -232,73 +249,79 @@ fun HomeScreen(
                                 )
                             }
 
-                            if (uiState.combineLibrarySections) {
-                                if (uiState.latestMovies.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedLatestMoviesSection(
-                                        items = uiState.latestMovies,
-                                        onItemClick = onItemClick
-                                    )
-                                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    MoviesSectionSkeleton()
-                                }
-                            } else {
-                                uiState.separateMovieLibrarySections.forEachIndexed { index, (library, movies) ->
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedLatestMoviesSection(
-                                        title = library.name,
-                                        items = movies,
-                                        onItemClick = onItemClick
-                                    )
-                                }
-                            }
-
-                            if (uiState.combineLibrarySections) {
-                                if (uiState.latestTvSeries.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedLatestTvSeriesSection(
-                                        items = uiState.latestTvSeries,
-                                        onItemClick = onItemClick
-                                    )
-                                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    TvSeriesSectionSkeleton()
-                                }
-                            } else {
-                                uiState.separateTvLibrarySections.forEachIndexed { index, (library, shows) ->
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedLatestTvSeriesSection(
-                                        title = library.name,
-                                        items = shows,
-                                        onItemClick = onItemClick
-                                    )
+                            if (!uiState.isOffline) {
+                                if (uiState.combineLibrarySections) {
+                                    if (uiState.latestMovies.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        OptimizedLatestMoviesSection(
+                                            items = uiState.latestMovies,
+                                            onItemClick = onItemClick
+                                        )
+                                    } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        MoviesSectionSkeleton()
+                                    }
+                                } else {
+                                    uiState.separateMovieLibrarySections.forEachIndexed { index, (library, movies) ->
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        OptimizedLatestMoviesSection(
+                                            title = library.name,
+                                            items = movies,
+                                            onItemClick = onItemClick
+                                        )
+                                    }
                                 }
                             }
 
-                            if (uiState.highestRated.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                HighestRatedSection(
-                                    items = uiState.highestRated,
-                                    onItemClick = onItemClick
-                                )
+                            if (!uiState.isOffline) {
+                                if (uiState.combineLibrarySections) {
+                                    if (uiState.latestTvSeries.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        OptimizedLatestTvSeriesSection(
+                                            items = uiState.latestTvSeries,
+                                            onItemClick = onItemClick
+                                        )
+                                    } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        TvSeriesSectionSkeleton()
+                                    }
+                                } else {
+                                    uiState.separateTvLibrarySections.forEachIndexed { index, (library, shows) ->
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        OptimizedLatestTvSeriesSection(
+                                            title = library.name,
+                                            items = shows,
+                                            onItemClick = onItemClick
+                                        )
+                                    }
+                                }
                             }
 
-                            uiState.recommendationCategories.forEach { category ->
-                                Spacer(modifier = Modifier.height(24.dp))
-                                OptimizedRecommendationCategorySection(
-                                    category = category,
-                                    onItemClick = onItemClick
-                                )
-                            }
+                            if (!uiState.isOffline) {
+                                if (uiState.highestRated.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    HighestRatedSection(
+                                        items = uiState.highestRated,
+                                        onItemClick = onItemClick
+                                    )
+                                }
 
-                            if (uiState.recommendationCategories.isEmpty() &&
-                                uiState.latestMovies.isNotEmpty() &&
-                                uiState.latestTvSeries.isNotEmpty() &&
-                                uiState.isLoading
-                            ) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                RecommendationsSkeleton()
+                                uiState.recommendationCategories.forEach { category ->
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    OptimizedRecommendationCategorySection(
+                                        category = category,
+                                        onItemClick = onItemClick
+                                    )
+                                }
+
+                                if (uiState.recommendationCategories.isEmpty() &&
+                                    uiState.latestMovies.isNotEmpty() &&
+                                    uiState.latestTvSeries.isNotEmpty() &&
+                                    uiState.isLoading
+                                ) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    RecommendationsSkeleton()
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(32.dp))

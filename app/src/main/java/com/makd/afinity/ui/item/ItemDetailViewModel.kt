@@ -25,10 +25,15 @@ import com.makd.afinity.data.models.media.toAfinitySeason
 import com.makd.afinity.data.models.media.toAfinityShow
 import com.makd.afinity.data.paging.EpisodesPagingSource
 import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.utils.IntentUtils
@@ -49,6 +54,10 @@ class ItemDetailViewModel @Inject constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
     private val watchlistRepository: WatchlistRepository,
+    private val downloadRepository: DownloadRepository,
+    private val databaseRepository: DatabaseRepository,
+    private val offlineModeManager: OfflineModeManager,
+    private val authRepository: AuthRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -70,10 +79,29 @@ class ItemDetailViewModel @Inject constructor(
 
     init {
         loadItem()
+        observeDownloadStatus()
 
         playbackStateManager.setOnItemUpdatedCallback { updatedItemId ->
             if (updatedItemId == itemId) {
                 refreshFromCacheImmediate()
+            }
+        }
+    }
+
+    private fun observeDownloadStatus() {
+        viewModelScope.launch {
+            try {
+                val existingDownload = downloadRepository.getDownloadByItemId(itemId)
+                if (existingDownload != null) {
+                    _uiState.value = _uiState.value.copy(downloadInfo = existingDownload)
+                }
+
+                downloadRepository.getAllDownloadsFlow().collect { downloads ->
+                    val itemDownload = downloads.find { it.itemId == itemId }
+                    _uiState.value = _uiState.value.copy(downloadInfo = itemDownload)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to observe download status")
             }
         }
     }
@@ -191,39 +219,49 @@ class ItemDetailViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-                val item = jellyfinRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let { baseItemDto ->
-                    Timber.d("MediaSources count: ${baseItemDto.mediaSources?.size ?: 0}")
+                val isOffline = offlineModeManager.isCurrentlyOffline()
 
-                    when (baseItemDto.type) {
-                        org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
-                            baseItemDto.toAfinityMovie(jellyfinRepository, null)
+                val item = if (isOffline) {
+                    Timber.d("Device is offline, loading item from database")
+                    loadItemFromDatabase()
+                } else {
+                    jellyfinRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let { baseItemDto ->
+                        Timber.d("MediaSources count: ${baseItemDto.mediaSources?.size ?: 0}")
+
+                        when (baseItemDto.type) {
+                            org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                                baseItemDto.toAfinityMovie(jellyfinRepository, null)
+                            }
+                            org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                                baseItemDto.toAfinityShow(jellyfinRepository)
+                            }
+                            org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                                baseItemDto.toAfinityEpisode(jellyfinRepository, null)
+                            }
+                            org.jellyfin.sdk.model.api.BaseItemKind.BOX_SET -> {
+                                baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
+                            }
+                            org.jellyfin.sdk.model.api.BaseItemKind.SEASON -> {
+                                baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
+                            }
+                            else -> null
                         }
-                        org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
-                            baseItemDto.toAfinityShow(jellyfinRepository)
-                        }
-                        org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
-                            baseItemDto.toAfinityEpisode(jellyfinRepository, null)
-                        }
-                        org.jellyfin.sdk.model.api.BaseItemKind.BOX_SET -> {
-                            baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
-                        }
-                        org.jellyfin.sdk.model.api.BaseItemKind.SEASON -> {
-                            baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
-                        }
-                        else -> null
                     }
                 }
 
                 if (item == null) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = "Item not found"
+                        error = if (isOffline) "Item not available offline" else "Item not found"
                     )
                     return@launch
                 }
 
                 _uiState.value = _uiState.value.copy(item = item, isLoading = false)
-                loadAdditionalDetails(item)
+
+                if (!isOffline) {
+                    loadAdditionalDetails(item)
+                }
 
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load item: $itemId")
@@ -232,6 +270,36 @@ class ItemDetailViewModel @Inject constructor(
                     error = "Failed to load item: ${e.message}"
                 )
             }
+        }
+    }
+
+    private suspend fun loadItemFromDatabase(): AfinityItem? {
+        return try {
+            val userId = authRepository.currentUser.value?.id ?: return null
+
+            val movie = databaseRepository.getMovie(itemId, userId)
+            if (movie != null) {
+                Timber.d("Loaded movie from database: ${movie.name}")
+                return movie
+            }
+
+            val show = databaseRepository.getShow(itemId, userId)
+            if (show != null) {
+                Timber.d("Loaded show from database: ${show.name}")
+                return show
+            }
+
+            val episode = databaseRepository.getEpisode(itemId, userId)
+            if (episode != null) {
+                Timber.d("Loaded episode from database: ${episode.name}")
+                return episode
+            }
+
+            Timber.w("Item $itemId not found in database")
+            null
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load item from database")
+            null
         }
     }
 
@@ -638,6 +706,96 @@ class ItemDetailViewModel @Inject constructor(
     suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode? {
         return jellyfinRepository.getEpisodeToPlayForSeason(seasonId, seriesId)
     }
+
+    fun onDownloadClick() {
+        viewModelScope.launch {
+            try {
+                val item = _uiState.value.item ?: return@launch
+                val sources = item.sources.filter { it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE }
+
+                if (sources.isEmpty()) {
+                    Timber.w("No remote sources available for download")
+                    return@launch
+                }
+
+                _uiState.value = _uiState.value.copy(showQualityDialog = true)
+            } catch (e: Exception) {
+                Timber.e(e, "Error preparing download")
+            }
+        }
+    }
+
+    fun onQualitySelected(sourceId: String) {
+        viewModelScope.launch {
+            try {
+                val item = _uiState.value.item ?: return@launch
+
+                _uiState.value = _uiState.value.copy(showQualityDialog = false)
+
+                val result = downloadRepository.startDownload(item.id, sourceId)
+                result.onSuccess {
+                    Timber.i("Download started successfully for: ${item.name}")
+                }.onFailure { error ->
+                    Timber.e(error, "Failed to start download")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error starting download")
+            }
+        }
+    }
+
+    fun dismissQualityDialog() {
+        _uiState.value = _uiState.value.copy(showQualityDialog = false)
+    }
+
+    fun isItemDownloaded(): Boolean {
+        val item = _uiState.value.item ?: return false
+        return item.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }
+    }
+
+    fun pauseDownload() {
+        viewModelScope.launch {
+            try {
+                val downloadInfo = _uiState.value.downloadInfo ?: return@launch
+                val result = downloadRepository.pauseDownload(downloadInfo.id)
+                result.onFailure { error ->
+                    Timber.e(error, "Failed to pause download")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error pausing download")
+            }
+        }
+    }
+
+    fun resumeDownload() {
+        viewModelScope.launch {
+            try {
+                val downloadInfo = _uiState.value.downloadInfo ?: return@launch
+                val result = downloadRepository.resumeDownload(downloadInfo.id)
+                result.onFailure { error ->
+                    Timber.e(error, "Failed to resume download")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error resuming download")
+            }
+        }
+    }
+
+    fun cancelDownload() {
+        viewModelScope.launch {
+            try {
+                val downloadInfo = _uiState.value.downloadInfo ?: return@launch
+                val result = downloadRepository.cancelDownload(downloadInfo.id)
+                result.onSuccess {
+                    Timber.i("Download cancelled successfully")
+                }.onFailure { error ->
+                    Timber.e(error, "Failed to cancel download")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error cancelling download")
+            }
+        }
+    }
 }
 
 data class ItemDetailUiState(
@@ -650,5 +808,7 @@ data class ItemDetailUiState(
     val error: String? = null,
     val nextEpisode: AfinityEpisode? = null,
     val isInWatchlist: Boolean = false,
-    val episodesPagingData: Flow<PagingData<AfinityEpisode>>? = null
+    val episodesPagingData: Flow<PagingData<AfinityEpisode>>? = null,
+    val showQualityDialog: Boolean = false,
+    val downloadInfo: DownloadInfo? = null
 )

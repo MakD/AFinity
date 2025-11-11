@@ -4,11 +4,14 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.work.WorkManager
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
+import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.impl.DatabaseRepositoryImpl
 import com.makd.afinity.data.repository.impl.JellyfinRepositoryImpl
 import com.makd.afinity.data.repository.impl.PreferencesRepositoryImpl
@@ -84,7 +87,18 @@ abstract class RepositoryModule {
         preferencesRepositoryImpl: PreferencesRepositoryImpl
     ): PreferencesRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindDownloadRepository(
+        jellyfinDownloadRepository: JellyfinDownloadRepository
+    ): DownloadRepository
+
     companion object {
+        @Provides
+        @Singleton
+        fun provideWorkManager(@ApplicationContext context: Context): WorkManager {
+            return WorkManager.getInstance(context)
+        }
         @Provides
         @Singleton
         fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {

@@ -34,6 +34,9 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
+import com.makd.afinity.data.database.entities.AfinitySourceDto
+import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.media.toAfinitySegment
 import com.makd.afinity.data.models.media.toAfinitySource
@@ -145,6 +148,10 @@ class DatabaseRepositoryImpl @Inject constructor(
 
     override suspend fun getCurrentUser(): User? {
         return userDao.getCurrentUser()
+    }
+
+    override suspend fun getAllUsers(): List<User> {
+        return userDao.getAllUsers()
     }
 
     override suspend fun insertMovie(movie: AfinityMovie, serverId: String?) {
@@ -521,7 +528,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             canPlay = true,
             sources = sources,
             trailer = null,
-            images = AfinityImages(),
+            images = images ?: AfinityImages(),
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
             tagline = null,
@@ -635,11 +642,39 @@ class DatabaseRepositoryImpl @Inject constructor(
             seasonId = seasonId,
             communityRating = communityRating,
             people = emptyList(),
-            images = AfinityImages(),
+            images = images ?: AfinityImages(),
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
             providerIds = null,
             externalUrls = null,
         )
+    }
+
+    override suspend fun insertDownload(download: DownloadDto) {
+        serverDatabaseDao.insertDownload(download)
+    }
+
+    override suspend fun getDownload(downloadId: UUID): DownloadDto? {
+        return serverDatabaseDao.getDownload(downloadId)
+    }
+
+    override suspend fun getDownloadByItemId(itemId: UUID): DownloadDto? {
+        return serverDatabaseDao.getDownloadByItemId(itemId)
+    }
+
+    override fun getAllDownloadsFlow(): Flow<List<DownloadDto>> {
+        return serverDatabaseDao.getAllDownloadsFlow()
+    }
+
+    override fun getDownloadsByStatusFlow(statuses: List<DownloadStatus>): Flow<List<DownloadDto>> {
+        return serverDatabaseDao.getDownloadsByStatusFlow(statuses)
+    }
+
+    override suspend fun deleteDownload(downloadId: UUID) {
+        serverDatabaseDao.deleteDownload(downloadId)
+    }
+
+    override suspend fun getSources(itemId: UUID): List<AfinitySourceDto> {
+        return serverDatabaseDao.getSources(itemId)
     }
 }

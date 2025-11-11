@@ -12,9 +12,12 @@ import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.utils.IntentUtils
@@ -31,7 +34,10 @@ class HomeViewModel @Inject constructor(
     private val appDataRepository: AppDataRepository,
     private val jellyfinRepository: JellyfinRepository,
     private val userDataRepository: UserDataRepository,
-    private val watchlistRepository: WatchlistRepository
+    private val watchlistRepository: WatchlistRepository,
+    private val databaseRepository: DatabaseRepository,
+    private val offlineModeManager: OfflineModeManager,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -123,6 +129,48 @@ class HomeViewModel @Inject constructor(
             appDataRepository.recommendationCategories.collect { recommendations ->
                 _uiState.value = _uiState.value.copy(recommendationCategories = recommendations)
             }
+        }
+
+        viewModelScope.launch {
+            loadDownloadedContent()
+        }
+
+        viewModelScope.launch {
+            offlineModeManager.isOffline.collect { isOffline ->
+                Timber.d("Offline mode changed: $isOffline")
+                _uiState.value = _uiState.value.copy(isOffline = isOffline)
+                if (isOffline) {
+                    loadDownloadedContent()
+                }
+            }
+        }
+    }
+
+    private suspend fun loadDownloadedContent() {
+        try {
+            val userId = authRepository.currentUser.value?.id ?: return
+
+            Timber.d("Loading downloaded content for user: $userId")
+
+            val downloadedMovies = databaseRepository.getAllMovies(userId)
+                .filter { movie -> movie.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL } }
+
+            val allShows = databaseRepository.getAllShows(userId)
+            val downloadedEpisodes = allShows.flatMap { show ->
+                show.seasons.flatMap { season ->
+                    season.episodes.filter { episode ->
+                        episode.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }
+                    }
+                }
+            }
+
+            val downloadedContent = downloadedMovies + downloadedEpisodes
+
+            Timber.d("Found ${downloadedMovies.size} movies and ${downloadedEpisodes.size} episodes downloaded")
+
+            _uiState.value = _uiState.value.copy(downloadedContent = downloadedContent)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load downloaded content")
         }
     }
 
@@ -292,9 +340,11 @@ data class HomeUiState(
     val latestTvSeries: List<AfinityShow> = emptyList(),
     val highestRated: List<AfinityItem> = emptyList(),
     val recommendationCategories: List<AfinityRecommendationCategory> = emptyList(),
+    val downloadedContent: List<AfinityItem> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val combineLibrarySections: Boolean = false,
     val separateMovieLibrarySections: List<Pair<AfinityCollection, List<AfinityMovie>>> = emptyList(),
-    val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList()
+    val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList(),
+    val isOffline: Boolean = false
 )

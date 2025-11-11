@@ -24,7 +24,12 @@ import timber.log.Timber
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class DownloadClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -80,6 +85,50 @@ object NetworkModule {
             val loggingInterceptor = HttpLoggingInterceptor { message ->
                 if (message.contains("ERROR") || message.contains("FAILED") || message.contains("-->") || message.contains("<--")) {
                     Timber.tag("Jellyfin-HTTP").d(message)
+                }
+            }.apply {
+                level = HttpLoggingInterceptor.Level.BASIC
+            }
+            builder.addInterceptor(loggingInterceptor)
+        }
+
+        return builder.build()
+    }
+
+    @Provides
+    @Singleton
+    @DownloadClient
+    fun provideDownloadOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
+        val dispatcher = Dispatcher(Executors.newCachedThreadPool { runnable ->
+            Thread(runnable, "Download-OkHttp").apply {
+                isDaemon = false
+            }
+        }).apply {
+            maxRequests = 5
+            maxRequestsPerHost = 2
+        }
+
+        val connectionPool = ConnectionPool(
+            maxIdleConnections = 5,
+            keepAliveDuration = 5,
+            timeUnit = TimeUnit.MINUTES
+        )
+
+        val builder = OkHttpClient.Builder()
+            .dispatcher(dispatcher)
+            .connectionPool(connectionPool)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.MINUTES)
+            .writeTimeout(5, TimeUnit.MINUTES)
+            .callTimeout(0, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .followRedirects(true)
+            .followSslRedirects(true)
+
+        if (BuildConfig.DEBUG) {
+            val loggingInterceptor = HttpLoggingInterceptor { message ->
+                if (message.contains("ERROR") || message.contains("FAILED") || message.contains("-->") || message.contains("<--")) {
+                    Timber.tag("Download-HTTP").d(message)
                 }
             }.apply {
                 level = HttpLoggingInterceptor.Level.BASIC

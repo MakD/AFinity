@@ -68,9 +68,11 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.item.components.BoxSetDetailContent
 import com.makd.afinity.ui.item.components.DirectorSection
+import com.makd.afinity.ui.item.components.DownloadProgressIndicator
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.MovieDetailContent
 import com.makd.afinity.ui.item.components.OverviewSection
+import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.item.components.SeasonDetailContent
 import com.makd.afinity.ui.item.components.SeasonsSection
 import com.makd.afinity.ui.item.components.TaglineSection
@@ -155,6 +157,7 @@ fun ItemDetailScreen(
                     specialFeatures = uiState.specialFeatures,
                     isInWatchlist = uiState.isInWatchlist,
                     episodesPagingData = uiState.episodesPagingData,
+                    downloadInfo = uiState.downloadInfo,
                     onPlayClick = { item, selection -> onPlayClick(item, selection) },
                     onSeasonClick = { season ->
                         val route = Destination.createEpisodeListRoute(
@@ -205,6 +208,21 @@ fun ItemDetailScreen(
                 }
             )
         }
+
+        if (uiState.showQualityDialog && uiState.item != null) {
+            val currentItem = uiState.item!!
+            val remoteSources = currentItem.sources.filter {
+                it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
+            }
+
+            QualitySelectionDialog(
+                sources = remoteSources,
+                onSourceSelected = { source ->
+                    viewModel.onQualitySelected(source.id)
+                },
+                onDismiss = { viewModel.dismissQualityDialog() }
+            )
+        }
     }
 }
 
@@ -219,6 +237,7 @@ private fun ItemDetailContent(
     specialFeatures: List<AfinityItem>,
     isInWatchlist: Boolean,
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
+    downloadInfo: com.makd.afinity.data.models.download.DownloadInfo?,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onSeasonClick: (AfinitySeason) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
@@ -413,8 +432,13 @@ private fun ItemDetailContent(
                                                             Timber.w("Episode ${episode.name} has no media sources")
                                                             return@PlaybackSelectionButton
                                                         }
+
+                                                        val mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull {
+                                                            it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                                                        }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+
                                                         val finalSelection = selection.copy(
-                                                            mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull()?.id ?: "",
+                                                            mediaSourceId = mediaSourceId,
                                                             startPositionMs = if (episode.playbackPositionTicks > 0) {
                                                                 episode.playbackPositionTicks / 10000
                                                             } else {
@@ -479,8 +503,13 @@ private fun ItemDetailContent(
                                                             Timber.w("Episode ${episode.name} has no media sources")
                                                             return@PlaybackSelectionButton
                                                         }
+
+                                                        val mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull {
+                                                            it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                                                        }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+
                                                         val finalSelection = selection.copy(
-                                                            mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull()?.id ?: "",
+                                                            mediaSourceId = mediaSourceId,
                                                             startPositionMs = if (episode.playbackPositionTicks > 0) {
                                                                 episode.playbackPositionTicks / 10000
                                                             } else {
@@ -602,16 +631,14 @@ private fun ItemDetailContent(
                                 )
                             }
 
-                            IconButton(
-                                onClick = { /* TODO: Download */ }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Download,
-                                    contentDescription = "Download",
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
+                            DownloadProgressIndicator(
+                                downloadInfo = downloadInfo,
+                                onDownloadClick = { viewModel.onDownloadClick() },
+                                onPauseClick = { viewModel.pauseDownload() },
+                                onResumeClick = { viewModel.resumeDownload() },
+                                onCancelClick = { viewModel.cancelDownload() },
+                                isLandscape = true
+                            )
                         }
                     }
                 } else {
@@ -662,8 +689,12 @@ private fun ItemDetailContent(
                                                     Timber.w("Episode ${episode.name} has no media sources")
                                                     return@PlaybackSelectionButton
                                                 }
+                                                val mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull {
+                                                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                                                }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+
                                                 val finalSelection = selection.copy(
-                                                    mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull()?.id ?: "",
+                                                    mediaSourceId = mediaSourceId,
                                                     startPositionMs = if (episode.playbackPositionTicks > 0) {
                                                         episode.playbackPositionTicks / 10000
                                                     } else {
@@ -728,8 +759,12 @@ private fun ItemDetailContent(
                                                     Timber.w("Episode ${episode.name} has no media sources")
                                                     return@PlaybackSelectionButton
                                                 }
+                                                val mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull {
+                                                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                                                }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+
                                                 val finalSelection = selection.copy(
-                                                    mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull()?.id ?: "",
+                                                    mediaSourceId = mediaSourceId,
                                                     startPositionMs = if (episode.playbackPositionTicks > 0) {
                                                         episode.playbackPositionTicks / 10000
                                                     } else {
@@ -864,16 +899,14 @@ private fun ItemDetailContent(
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            IconButton(
-                                onClick = { /* TODO: Download */ }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Download,
-                                    contentDescription = "Download",
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
+                            DownloadProgressIndicator(
+                                downloadInfo = downloadInfo,
+                                onDownloadClick = { viewModel.onDownloadClick() },
+                                onPauseClick = { viewModel.pauseDownload() },
+                                onResumeClick = { viewModel.resumeDownload() },
+                                onCancelClick = { viewModel.cancelDownload() },
+                                isLandscape = false
+                            )
                         }
                     }
                 }

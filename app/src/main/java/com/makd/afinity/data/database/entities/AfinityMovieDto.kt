@@ -3,6 +3,7 @@ package com.makd.afinity.data.database.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.makd.afinity.data.models.media.AfinityChapter
+import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityMovie
 import java.time.LocalDateTime
 import java.util.UUID
@@ -25,6 +26,7 @@ data class AfinityMovieDto(
     val productionYear: Int?,
     val endDate: LocalDateTime?,
     val chapters: List<AfinityChapter>?,
+    val images: AfinityImages? = null,
 )
 
 fun AfinityMovie.toAfinityMovieDto(serverId: String? = null): AfinityMovieDto {
@@ -44,5 +46,6 @@ fun AfinityMovie.toAfinityMovieDto(serverId: String? = null): AfinityMovieDto {
         productionYear = productionYear,
         endDate = endDate,
         chapters = chapters,
+        images = images,
     )
 }

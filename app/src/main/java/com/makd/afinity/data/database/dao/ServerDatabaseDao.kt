@@ -13,8 +13,11 @@ import com.makd.afinity.data.database.entities.AfinitySegmentDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 abstract class ServerDatabaseDao {
@@ -95,6 +98,30 @@ abstract class ServerDatabaseDao {
 
     @Query("SELECT * FROM segments WHERE itemId = :itemId")
     abstract suspend fun getSegmentsForItem(itemId: UUID): List<AfinitySegmentDto>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertDownload(download: DownloadDto)
+
+    @Query("SELECT * FROM downloads WHERE id = :downloadId")
+    abstract suspend fun getDownload(downloadId: UUID): DownloadDto?
+
+    @Query("SELECT * FROM downloads WHERE itemId = :itemId")
+    abstract suspend fun getDownloadByItemId(itemId: UUID): DownloadDto?
+
+    @Query("SELECT * FROM downloads ORDER BY createdAt DESC")
+    abstract fun getAllDownloadsFlow(): Flow<List<DownloadDto>>
+
+    @Query("SELECT * FROM downloads WHERE status IN (:statuses) ORDER BY createdAt DESC")
+    abstract fun getDownloadsByStatusFlow(statuses: List<DownloadStatus>): Flow<List<DownloadDto>>
+
+    @Query("SELECT * FROM downloads WHERE status = :status ORDER BY createdAt DESC")
+    abstract suspend fun getDownloadsByStatus(status: DownloadStatus): List<DownloadDto>
+
+    @Query("DELETE FROM downloads WHERE id = :downloadId")
+    abstract suspend fun deleteDownload(downloadId: UUID)
+
+    @Query("DELETE FROM downloads WHERE status = :status")
+    abstract suspend fun deleteDownloadsByStatus(status: DownloadStatus)
 
     @Query("DELETE FROM movies WHERE id = :movieId")
     abstract suspend fun deleteMovie(movieId: UUID)
@@ -212,6 +239,7 @@ abstract class ServerDatabaseDao {
         deleteAllTrickplayInfos()
         deleteAllSegments()
         deleteAllUserData()
+        deleteAllDownloads()
     }
 
     @Query("DELETE FROM movies")
@@ -240,4 +268,7 @@ abstract class ServerDatabaseDao {
 
     @Query("DELETE FROM userdata")
     abstract suspend fun deleteAllUserData()
+
+    @Query("DELETE FROM downloads")
+    abstract suspend fun deleteAllDownloads()
 }
