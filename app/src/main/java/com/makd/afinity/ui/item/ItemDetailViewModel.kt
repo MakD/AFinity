@@ -800,7 +800,17 @@ class ItemDetailViewModel @Inject constructor(
                     return@launch
                 }
 
-                _uiState.value = _uiState.value.copy(showQualityDialog = true)
+                if (sources.size == 1) {
+                    Timber.d("Only one source available, starting download immediately")
+                    val result = downloadRepository.startDownload(item.id, sources.first().id)
+                    result.onSuccess {
+                        Timber.i("Download started successfully for: ${item.name}")
+                    }.onFailure { error ->
+                        Timber.e(error, "Failed to start download")
+                    }
+                } else {
+                    _uiState.value = _uiState.value.copy(showQualityDialog = true)
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Error preparing download")
             }
