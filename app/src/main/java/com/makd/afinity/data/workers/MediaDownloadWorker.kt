@@ -13,6 +13,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityShow
+import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.di.DownloadClient
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -273,6 +274,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                     ItemFields.OVERVIEW,
                     ItemFields.GENRES,
                     ItemFields.PEOPLE,
+                    ItemFields.TAGLINES,
                     ItemFields.CHAPTERS,
                     ItemFields.TRICKPLAY
                 )
@@ -303,11 +305,48 @@ class MediaDownloadWorker @AssistedInject constructor(
                             if (userId != null) {
                                 val existingShow = databaseRepository.getShow(seriesId, userId)
                                 if (existingShow == null) {
-                                    val showDto = mediaRepository.getItem(seriesId, emptyList())
+                                    val showDto = mediaRepository.getItem(
+                                        seriesId,
+                                        listOf(
+                                            ItemFields.OVERVIEW,
+                                            ItemFields.GENRES,
+                                            ItemFields.PEOPLE
+                                        )
+                                    )
                                     if (showDto != null) {
                                         val show = showDto.toAfinityShow(baseUrl)
                                         databaseRepository.insertShow(show)
                                         Timber.d("Saved show to database: ${show.name}")
+
+                                        try {
+                                            downloadShowImages(seriesId, userId)
+                                        } catch (e: Exception) {
+                                            Timber.w(e, "Failed to download show images")
+                                        }
+                                    }
+                                }
+
+                                val seasonId = episode.seasonId
+                                val existingSeason = databaseRepository.getSeason(seasonId, userId)
+                                if (existingSeason == null) {
+                                    val seasonDto = mediaRepository.getItem(
+                                        seasonId,
+                                        listOf(ItemFields.OVERVIEW)
+                                    )
+                                    if (seasonDto != null) {
+                                        try {
+                                            val season = seasonDto.toAfinitySeason(baseUrl)
+                                            databaseRepository.insertSeason(season)
+                                            Timber.d("Saved season to database: ${season.name}")
+
+                                            try {
+                                                downloadSeasonImages(seasonId, userId)
+                                            } catch (e: Exception) {
+                                                Timber.w(e, "Failed to download season images")
+                                            }
+                                        } catch (e: Exception) {
+                                            Timber.w(e, "Failed to convert season to AfinitySeason")
+                                        }
                                     }
                                 }
                             }
@@ -466,6 +505,12 @@ class MediaDownloadWorker @AssistedInject constructor(
                 is com.makd.afinity.data.models.media.AfinityMovie -> {
                     databaseRepository.insertMovie(item.copy(images = updatedImages))
                     Timber.i("Updated movie in database with local image paths")
+
+                    try {
+                        downloadPersonImages(itemId, userId)
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to download person images for movie")
+                    }
                 }
                 is com.makd.afinity.data.models.media.AfinityEpisode -> {
                     databaseRepository.insertEpisode(item.copy(images = updatedImages))
@@ -475,6 +520,193 @@ class MediaDownloadWorker @AssistedInject constructor(
 
         } catch (e: Exception) {
             Timber.e(e, "Failed to download images")
+        }
+    }
+
+    private suspend fun downloadShowImages(showId: UUID, userId: UUID) {
+        try {
+            Timber.d("Starting show image download for showId: $showId")
+
+            val show = databaseRepository.getShow(showId, userId)
+            if (show == null) {
+                Timber.w("Show not found in database for image download")
+                return
+            }
+
+            Timber.d("Found show in database: ${show.name}")
+
+            val showDir = downloadRepository.getItemDownloadDirectory(showId)
+            val imagesDir = File(showDir, "images").also {
+                it.mkdirs()
+                Timber.d("Created show images directory: ${it.absolutePath}")
+            }
+
+            val images = show.images
+            val downloadedImages = mutableMapOf<String, android.net.Uri?>()
+            var successCount = 0
+
+            Timber.d("Starting to download show images - Primary: ${images.primary != null}, Backdrop: ${images.backdrop != null}, Logo: ${images.logo != null}")
+
+            images.primary?.let { uri ->
+                Timber.d("Downloading show primary image from: $uri")
+                val localPath = downloadImage(uri.toString(), imagesDir, "primary")
+                if (localPath != null) {
+                    downloadedImages["primary"] = localPath
+                    successCount++
+                    Timber.i("✓ Show primary image downloaded")
+                }
+            }
+
+            images.backdrop?.let { uri ->
+                Timber.d("Downloading show backdrop image from: $uri")
+                val localPath = downloadImage(uri.toString(), imagesDir, "backdrop")
+                if (localPath != null) {
+                    downloadedImages["backdrop"] = localPath
+                    successCount++
+                    Timber.i("✓ Show backdrop image downloaded")
+                }
+            }
+
+            images.logo?.let { uri ->
+                Timber.d("Downloading show logo image from: $uri")
+                val localPath = downloadImage(uri.toString(), imagesDir, "logo")
+                if (localPath != null) {
+                    downloadedImages["logo"] = localPath
+                    successCount++
+                    Timber.i("✓ Show logo image downloaded")
+                }
+            }
+
+            Timber.i("Successfully downloaded $successCount show images")
+
+            val updatedImages = com.makd.afinity.data.models.media.AfinityImages(
+                primary = downloadedImages["primary"] ?: images.primary,
+                backdrop = downloadedImages["backdrop"] ?: images.backdrop,
+                thumb = downloadedImages["thumb"] ?: images.thumb,
+                logo = downloadedImages["logo"] ?: images.logo,
+                primaryImageBlurHash = images.primaryImageBlurHash,
+                backdropImageBlurHash = images.backdropImageBlurHash,
+                thumbImageBlurHash = images.thumbImageBlurHash,
+                logoImageBlurHash = images.logoImageBlurHash
+            )
+
+            databaseRepository.insertShow(show.copy(images = updatedImages))
+            Timber.i("Updated show in database with local image paths")
+
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to download show images")
+        }
+    }
+
+    private suspend fun downloadSeasonImages(seasonId: UUID, userId: UUID) {
+        try {
+            Timber.d("Starting season image download for seasonId: $seasonId")
+
+            val season = databaseRepository.getSeason(seasonId, userId)
+            if (season == null) {
+                Timber.w("Season not found in database for image download")
+                return
+            }
+
+            Timber.d("Found season in database: ${season.name}")
+
+            val seasonDir = downloadRepository.getItemDownloadDirectory(seasonId)
+            val imagesDir = File(seasonDir, "images").also {
+                it.mkdirs()
+                Timber.d("Created season images directory: ${it.absolutePath}")
+            }
+
+            val images = season.images
+            val downloadedImages = mutableMapOf<String, android.net.Uri?>()
+            var successCount = 0
+
+            Timber.d("Starting to download season images - Primary: ${images.primary != null}, Backdrop: ${images.backdrop != null}")
+
+            images.primary?.let { uri ->
+                Timber.d("Downloading season primary image from: $uri")
+                val localPath = downloadImage(uri.toString(), imagesDir, "primary")
+                if (localPath != null) {
+                    downloadedImages["primary"] = localPath
+                    successCount++
+                    Timber.i("✓ Season primary image downloaded")
+                }
+            }
+
+            images.backdrop?.let { uri ->
+                Timber.d("Downloading season backdrop image from: $uri")
+                val localPath = downloadImage(uri.toString(), imagesDir, "backdrop")
+                if (localPath != null) {
+                    downloadedImages["backdrop"] = localPath
+                    successCount++
+                    Timber.i("✓ Season backdrop image downloaded")
+                }
+            }
+
+            Timber.i("Successfully downloaded $successCount season images")
+
+            val updatedImages = com.makd.afinity.data.models.media.AfinityImages(
+                primary = downloadedImages["primary"] ?: images.primary,
+                backdrop = downloadedImages["backdrop"] ?: images.backdrop,
+                thumb = downloadedImages["thumb"] ?: images.thumb,
+                logo = downloadedImages["logo"] ?: images.logo,
+                primaryImageBlurHash = images.primaryImageBlurHash,
+                backdropImageBlurHash = images.backdropImageBlurHash,
+                thumbImageBlurHash = images.thumbImageBlurHash,
+                logoImageBlurHash = images.logoImageBlurHash
+            )
+
+            databaseRepository.insertSeason(season.copy(images = updatedImages))
+            Timber.i("Updated season in database with local image paths")
+
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to download season images")
+        }
+    }
+
+    private suspend fun downloadPersonImages(itemId: UUID, userId: UUID) {
+        try {
+            val movie = databaseRepository.getMovie(itemId, userId)
+            if (movie == null) {
+                Timber.w("Movie not found in database for person image download")
+                return
+            }
+
+            if (movie.people.isEmpty()) {
+                Timber.d("No people to download images for")
+                return
+            }
+
+            Timber.d("Starting person image downloads for ${movie.people.size} people")
+
+            val movieDir = downloadRepository.getItemDownloadDirectory(itemId)
+            val peopleImagesDir = File(movieDir, "people").also {
+                it.mkdirs()
+                Timber.d("Created people images directory: ${it.absolutePath}")
+            }
+
+            val updatedPeople = movie.people.map { person ->
+                person.image.uri?.let { uri ->
+                    Timber.d("Downloading image for person: ${person.name}")
+                    val localPath = downloadImage(uri.toString(), peopleImagesDir, person.id.toString())
+                    if (localPath != null) {
+                        Timber.i("✓ Downloaded image for ${person.name}")
+                        person.copy(
+                            image = com.makd.afinity.data.models.media.AfinityPersonImage(
+                                uri = localPath,
+                                blurHash = person.image.blurHash
+                            )
+                        )
+                    } else {
+                        person
+                    }
+                } ?: person
+            }
+
+            databaseRepository.insertMovie(movie.copy(people = updatedPeople))
+            Timber.i("Updated movie with ${updatedPeople.count { it.image.uri?.scheme == "file" }} local person images")
+
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to download person images")
         }
     }
 

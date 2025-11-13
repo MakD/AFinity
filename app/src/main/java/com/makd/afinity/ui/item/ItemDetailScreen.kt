@@ -105,6 +105,7 @@ fun ItemDetailScreen(
     val nextEpisode = uiState.nextEpisode
     val context = LocalContext.current
     val selectedEpisodeWatchlistStatus by viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
+    val selectedEpisodeDownloadInfo by viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -184,7 +185,7 @@ fun ItemDetailScreen(
                 episode = episode,
                 isLoading = isLoadingEpisode,
                 isInWatchlist = selectedEpisodeWatchlistStatus,
-                downloadInfo = uiState.downloadInfo,
+                downloadInfo = selectedEpisodeDownloadInfo,
                 onDismiss = { viewModel.clearSelectedEpisode() },
                 onPlayClick = { episodeToPlay, selection ->
                     viewModel.clearSelectedEpisode()
@@ -222,19 +223,21 @@ fun ItemDetailScreen(
             )
         }
 
-        if (uiState.showQualityDialog && uiState.item != null) {
-            val currentItem = uiState.item!!
-            val remoteSources = currentItem.sources.filter {
+        if (uiState.showQualityDialog) {
+            val currentItem = selectedEpisode ?: uiState.item
+            val remoteSources = currentItem?.sources?.filter {
                 it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
-            }
+            } ?: emptyList()
 
-            QualitySelectionDialog(
-                sources = remoteSources,
-                onSourceSelected = { source ->
-                    viewModel.onQualitySelected(source.id)
-                },
-                onDismiss = { viewModel.dismissQualityDialog() }
-            )
+            if (remoteSources.isNotEmpty()) {
+                QualitySelectionDialog(
+                    sources = remoteSources,
+                    onSourceSelected = { source ->
+                        viewModel.onQualitySelected(source.id)
+                    },
+                    onDismiss = { viewModel.dismissQualityDialog() }
+                )
+            }
         }
     }
 }

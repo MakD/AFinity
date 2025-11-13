@@ -58,7 +58,7 @@ import com.makd.afinity.data.models.user.User
 
         DownloadDto::class,
     ],
-    version = 10,
+    version = 14,
     exportSchema = false
 )
 @TypeConverters(com.makd.afinity.data.database.TypeConverters::class)

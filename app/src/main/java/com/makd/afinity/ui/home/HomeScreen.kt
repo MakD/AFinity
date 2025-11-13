@@ -224,17 +224,24 @@ fun HomeScreen(
                                 }
                             }
 
-                            if (uiState.downloadedContent.isNotEmpty()) {
+                            if (uiState.downloadedMovies.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(24.dp))
                                 OptimizedLatestTvSeriesSection(
-                                    title = "Downloaded",
-                                    items = uiState.downloadedContent,
+                                    title = "Downloaded Movies",
+                                    items = uiState.downloadedMovies,
                                     onItemClick = { item ->
-                                        if (item is com.makd.afinity.data.models.media.AfinityEpisode) {
-                                            viewModel.selectEpisode(item)
-                                        } else {
-                                            onItemClick(item)
-                                        }
+                                        onItemClick(item)
+                                    }
+                                )
+                            }
+
+                            if (uiState.downloadedShows.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                OptimizedLatestTvSeriesSection(
+                                    title = "Downloaded Shows",
+                                    items = uiState.downloadedShows,
+                                    onItemClick = { item ->
+                                        onItemClick(item)
                                     }
                                 )
                             }

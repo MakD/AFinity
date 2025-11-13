@@ -4,12 +4,15 @@ import android.net.Uri
 import androidx.room.TypeConverter
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityPerson
+import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinitySourceType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.jellyfin.sdk.model.api.PersonKind
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -152,7 +155,55 @@ class TypeConverters {
             null
         }
     }
+
+    @TypeConverter
+    fun fromAfinityPersonList(people: List<AfinityPerson>?): String? {
+        if (people == null) return null
+        val serializable = people.map { person ->
+            SerializableAfinityPerson(
+                id = person.id.toString(),
+                name = person.name,
+                type = person.type.name,
+                role = person.role,
+                imageUri = person.image.uri?.toString(),
+                imageBlurHash = person.image.blurHash
+            )
+        }
+        return json.encodeToString(serializable)
+    }
+
+    @TypeConverter
+    fun toAfinityPersonList(peopleString: String?): List<AfinityPerson>? {
+        if (peopleString == null) return null
+        return try {
+            val serializable = json.decodeFromString<List<SerializableAfinityPerson>>(peopleString)
+            serializable.map { person ->
+                AfinityPerson(
+                    id = UUID.fromString(person.id),
+                    name = person.name,
+                    type = PersonKind.valueOf(person.type),
+                    role = person.role,
+                    image = AfinityPersonImage(
+                        uri = person.imageUri?.let { Uri.parse(it) },
+                        blurHash = person.imageBlurHash
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
+
+@Serializable
+private data class SerializableAfinityPerson(
+    val id: String,
+    val name: String,
+    val type: String,
+    val role: String,
+    val imageUri: String? = null,
+    val imageBlurHash: String? = null
+)
 
 @Serializable
 private data class SerializableAfinityImages(

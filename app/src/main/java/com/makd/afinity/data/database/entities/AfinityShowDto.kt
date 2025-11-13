@@ -2,6 +2,8 @@ package com.makd.afinity.data.database.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityShow
 import java.time.LocalDateTime
 import java.util.UUID
@@ -23,6 +25,9 @@ data class AfinityShowDto(
     val dateCreated: LocalDateTime?,
     val dateLastContentAdded: LocalDateTime?,
     val endDate: LocalDateTime?,
+    val images: AfinityImages? = null,
+    val genres: List<String>? = null,
+    val people: List<AfinityPerson>? = null,
 )
 
 fun AfinityShow.toAfinityShowDto(serverId: String? = null): AfinityShowDto {
@@ -41,5 +46,8 @@ fun AfinityShow.toAfinityShowDto(serverId: String? = null): AfinityShowDto {
         dateCreated = dateCreated,
         dateLastContentAdded = dateLastContentAdded,
         endDate = endDate,
+        images = images,
+        genres = genres,
+        people = people,
     )
 }

@@ -516,8 +516,8 @@ class DatabaseRepositoryImpl @Inject constructor(
             playbackPositionTicks = userData.playbackPositionTicks,
             premiereDate = premiereDate,
             dateCreated = dateCreated,
-            genres = emptyList(),
-            people = emptyList(),
+            genres = genres ?: emptyList(),
+            people = people ?: emptyList(),
             communityRating = communityRating,
             officialRating = officialRating,
             criticRating = criticRating,
@@ -531,7 +531,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             images = images ?: AfinityImages(),
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
-            tagline = null,
+            tagline = tagline,
             providerIds = null,
             externalUrls = null,
             )
@@ -542,7 +542,9 @@ class DatabaseRepositoryImpl @Inject constructor(
         userId: UUID
     ): AfinityShow {
         val userData = database.getUserDataOrCreateNew(id, userId)
-        val seasonCount = database.getSeasonsForSeries(id).size
+        val seasonDtos = database.getSeasonsForSeries(id)
+        val seasons = seasonDtos.map { it.toAfinitySeason(database, userId) }
+        val seasonCount = seasons.size
         return AfinityShow(
             id = id,
             name = name,
@@ -554,9 +556,9 @@ class DatabaseRepositoryImpl @Inject constructor(
             canDownload = false,
             unplayedItemCount = null,
             sources = emptyList(),
-            seasons = emptyList(),
-            genres = emptyList(),
-            people = emptyList(),
+            seasons = seasons,
+            genres = genres ?: emptyList(),
+            people = people ?: emptyList(),
             runtimeTicks = runtimeTicks,
             communityRating = communityRating,
             officialRating = officialRating,
@@ -567,7 +569,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             dateLastContentAdded = dateLastContentAdded,
             endDate = endDate,
             trailer = null,
-            images = AfinityImages(),
+            images = images ?: AfinityImages(),
             seasonCount = seasonCount,
             episodeCount = null,
             tagline = null,
@@ -581,7 +583,9 @@ class DatabaseRepositoryImpl @Inject constructor(
         userId: UUID
     ): AfinitySeason {
         val userData = database.getUserDataOrCreateNew(id, userId)
-        val episodeCount = database.getEpisodesForSeason(id).size
+        val episodeDtos = database.getEpisodesForSeason(id)
+        val episodes = episodeDtos.map { it.toAfinityEpisode(database, userId) }
+        val episodeCount = episodes.size
         return AfinitySeason(
             id = id,
             name = name,
@@ -594,10 +598,10 @@ class DatabaseRepositoryImpl @Inject constructor(
             unplayedItemCount = null,
             indexNumber = indexNumber,
             sources = emptyList(),
-            episodes = emptyList(),
+            episodes = episodes,
             seriesId = seriesId,
             seriesName = seriesName,
-            images = AfinityImages(),
+            images = images ?: AfinityImages(),
             episodeCount = episodeCount,
             productionYear = null,
             premiereDate = null,

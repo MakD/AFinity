@@ -261,6 +261,34 @@ class ItemDetailViewModel @Inject constructor(
 
                 if (!isOffline) {
                     loadAdditionalDetails(item)
+                } else {
+                    when (item) {
+                        is AfinityShow -> {
+                            if (item.seasons.isNotEmpty()) {
+                                _uiState.value = _uiState.value.copy(seasons = item.seasons)
+                                Timber.d("Loaded ${item.seasons.size} seasons from database for show: ${item.name}")
+
+                                val nextEpisode = getNextEpisodeOffline(item)
+                                _uiState.value = _uiState.value.copy(nextEpisode = nextEpisode)
+                                Timber.d("Next episode for show: ${nextEpisode?.name ?: "none"}")
+                            }
+                        }
+                        is AfinitySeason -> {
+                            if (item.episodes.isNotEmpty()) {
+                                Timber.d("Setting up ${item.episodes.size} episodes from database for season: ${item.name}")
+                                _episodesPagingData.value = kotlinx.coroutines.flow.flowOf(
+                                    androidx.paging.PagingData.from(item.episodes.toList())
+                                )
+                                _uiState.value = _uiState.value.copy(
+                                    episodesPagingData = _episodesPagingData.value
+                                )
+
+                                val nextEpisode = getNextEpisodeForSeasonOffline(item)
+                                _uiState.value = _uiState.value.copy(nextEpisode = nextEpisode)
+                                Timber.d("Next episode for season: ${nextEpisode?.name ?: "none"}")
+                            }
+                        }
+                    }
                 }
 
             } catch (e: Exception) {
@@ -287,6 +315,12 @@ class ItemDetailViewModel @Inject constructor(
             if (show != null) {
                 Timber.d("Loaded show from database: ${show.name}")
                 return show
+            }
+
+            val season = databaseRepository.getSeason(itemId, userId)
+            if (season != null) {
+                Timber.d("Loaded season from database: ${season.name} with ${season.episodes.size} episodes")
+                return season
             }
 
             val episode = databaseRepository.getEpisode(itemId, userId)
@@ -334,7 +368,11 @@ class ItemDetailViewModel @Inject constructor(
                     }
                     launch {
                         try {
-                            val seasons = jellyfinRepository.getSeasons(item.id)
+                            val seasons = if (item is AfinityShow && item.seasons.isNotEmpty()) {
+                                item.seasons
+                            } else {
+                                jellyfinRepository.getSeasons(item.id)
+                            }
                             _uiState.value = _uiState.value.copy(seasons = seasons)
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to load seasons")
@@ -363,19 +401,27 @@ class ItemDetailViewModel @Inject constructor(
                     }
                     launch {
                         try {
-                            _episodesPagingData.value = Pager(
-                                config = PagingConfig(
-                                    pageSize = 50,
-                                    enablePlaceholders = false,
-                                    initialLoadSize = 50
+                            val isCurrentlyOffline = offlineModeManager.isCurrentlyOffline()
+                            if (isCurrentlyOffline && item is AfinitySeason && item.episodes.isNotEmpty()) {
+                                Timber.d("Using ${item.episodes.size} episodes from database for season: ${item.name}")
+                                _episodesPagingData.value = kotlinx.coroutines.flow.flowOf(
+                                    androidx.paging.PagingData.from(item.episodes.toList())
                                 )
-                            ) {
-                                EpisodesPagingSource(
-                                    mediaRepository = mediaRepository,
-                                    seasonId = item.id,
-                                    seriesId = item.seriesId
-                                )
-                            }.flow.cachedIn(viewModelScope)
+                            } else {
+                                _episodesPagingData.value = Pager(
+                                    config = PagingConfig(
+                                        pageSize = 50,
+                                        enablePlaceholders = false,
+                                        initialLoadSize = 50
+                                    )
+                                ) {
+                                    EpisodesPagingSource(
+                                        mediaRepository = mediaRepository,
+                                        seasonId = item.id,
+                                        seriesId = item.seriesId
+                                    )
+                                }.flow.cachedIn(viewModelScope)
+                            }
 
                             _uiState.value = _uiState.value.copy(
                                 episodesPagingData = _episodesPagingData.value
@@ -466,17 +512,34 @@ class ItemDetailViewModel @Inject constructor(
     private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
     val selectedEpisodeWatchlistStatus: StateFlow<Boolean> = _selectedEpisodeWatchlistStatus.asStateFlow()
 
+    private val _selectedEpisodeDownloadInfo = MutableStateFlow<DownloadInfo?>(null)
+    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> = _selectedEpisodeDownloadInfo.asStateFlow()
+
     fun selectEpisode(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
                 _isLoadingEpisode.value = true
-
-                val fullEpisode = jellyfinRepository.getItem(
-                    episode.id,
-                    fields = FieldSets.ITEM_DETAIL
-                )?.toAfinityEpisode(jellyfinRepository, null)
+                val fullEpisode = try {
+                    jellyfinRepository.getItem(
+                        episode.id,
+                        fields = FieldSets.ITEM_DETAIL
+                    )?.toAfinityEpisode(jellyfinRepository, null)
+                } catch (e: Exception) {
+                    Timber.d(e, "Failed to load episode from online, trying database")
+                    try {
+                        val userId = authRepository.currentUser.value?.id
+                        if (userId != null) {
+                            databaseRepository.getEpisode(episode.id, userId)
+                        } else null
+                    } catch (dbError: Exception) {
+                        Timber.e(dbError, "Failed to load episode from database")
+                        null
+                    }
+                }
 
                 if (fullEpisode != null) {
+                    _selectedEpisode.value = fullEpisode
+                } else {
                     _selectedEpisode.value = episode
                 }
 
@@ -486,6 +549,24 @@ class ItemDetailViewModel @Inject constructor(
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load episode watchlist status")
                     _selectedEpisodeWatchlistStatus.value = false
+                }
+
+                try {
+                    val episodeDownload = downloadRepository.getDownloadByItemId(episode.id)
+                    _selectedEpisodeDownloadInfo.value = episodeDownload
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load episode download status")
+                    _selectedEpisodeDownloadInfo.value = null
+                }
+
+                launch {
+                    downloadRepository.getAllDownloadsFlow().collect { downloads ->
+                        val currentEpisodeId = _selectedEpisode.value?.id
+                        if (currentEpisodeId != null) {
+                            val episodeDownload = downloads.find { it.itemId == currentEpisodeId }
+                            _selectedEpisodeDownloadInfo.value = episodeDownload
+                        }
+                    }
                 }
 
                 _isLoadingEpisode.value = false
@@ -565,6 +646,7 @@ class ItemDetailViewModel @Inject constructor(
     fun clearSelectedEpisode() {
         _selectedEpisode.value = null
         _selectedEpisodeWatchlistStatus.value = false
+        _selectedEpisodeDownloadInfo.value = null
     }
 
     fun toggleFavorite() {
@@ -795,6 +877,39 @@ class ItemDetailViewModel @Inject constructor(
                 Timber.e(e, "Error cancelling download")
             }
         }
+    }
+
+    private fun getNextEpisodeOffline(show: AfinityShow): AfinityEpisode? {
+        val allEpisodes = show.seasons
+            .sortedBy { it.indexNumber }
+            .flatMap { season ->
+                season.episodes.sortedBy { it.indexNumber }
+            }
+
+        val inProgressEpisode = allEpisodes.firstOrNull { episode ->
+            episode.playbackPositionTicks > 0 && !episode.played
+        }
+
+        if (inProgressEpisode != null) {
+            return inProgressEpisode
+        }
+
+        return allEpisodes.firstOrNull { !it.played }
+    }
+
+
+    private fun getNextEpisodeForSeasonOffline(season: AfinitySeason): AfinityEpisode? {
+        val episodes = season.episodes.sortedBy { it.indexNumber }
+
+        val inProgressEpisode = episodes.firstOrNull { episode ->
+            episode.playbackPositionTicks > 0 && !episode.played
+        }
+
+        if (inProgressEpisode != null) {
+            return inProgressEpisode
+        }
+
+        return episodes.firstOrNull { !it.played }
     }
 }
 

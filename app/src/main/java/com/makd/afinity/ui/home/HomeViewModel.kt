@@ -156,19 +156,20 @@ class HomeViewModel @Inject constructor(
                 .filter { movie -> movie.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL } }
 
             val allShows = databaseRepository.getAllShows(userId)
-            val downloadedEpisodes = allShows.flatMap { show ->
-                show.seasons.flatMap { season ->
-                    season.episodes.filter { episode ->
-                        episode.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }
+            val downloadedShows = allShows.filter { show ->
+                show.seasons.any { season ->
+                    season.episodes.any { episode ->
+                        episode.sources.any { source -> source.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }
                     }
                 }
             }
 
-            val downloadedContent = downloadedMovies + downloadedEpisodes
+            Timber.d("Found ${downloadedMovies.size} movies and ${downloadedShows.size} shows with downloads")
 
-            Timber.d("Found ${downloadedMovies.size} movies and ${downloadedEpisodes.size} episodes downloaded")
-
-            _uiState.value = _uiState.value.copy(downloadedContent = downloadedContent)
+            _uiState.value = _uiState.value.copy(
+                downloadedMovies = downloadedMovies,
+                downloadedShows = downloadedShows
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to load downloaded content")
         }
@@ -340,7 +341,8 @@ data class HomeUiState(
     val latestTvSeries: List<AfinityShow> = emptyList(),
     val highestRated: List<AfinityItem> = emptyList(),
     val recommendationCategories: List<AfinityRecommendationCategory> = emptyList(),
-    val downloadedContent: List<AfinityItem> = emptyList(),
+    val downloadedMovies: List<AfinityMovie> = emptyList(),
+    val downloadedShows: List<AfinityShow> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val combineLibrarySections: Boolean = false,
