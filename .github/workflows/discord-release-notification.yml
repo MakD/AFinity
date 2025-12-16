@@ -50,15 +50,26 @@ jobs:
           REPO_NAME="${{ github.repository }}"
           REPO_URL="https://github.com/${{ github.repository }}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          
+
           # Get assets or set default message
           ASSETS="${{ env.ASSETS }}"
           if [ -z "$ASSETS" ]; then
             ASSETS="No downloadable assets"
           fi
-          
+
+          # Truncate release body if it exceeds Discord's 4096 character limit
+          RELEASE_BODY="${{ env.RELEASE_BODY }}"
+          MAX_DESC_LENGTH=4000  # Leave room for "Read more" link
+
+          if [ ${#RELEASE_BODY} -gt $MAX_DESC_LENGTH ]; then
+            echo "Release body is ${#RELEASE_BODY} characters, truncating to $MAX_DESC_LENGTH"
+            RELEASE_BODY="${RELEASE_BODY:0:$MAX_DESC_LENGTH}... [Read full release notes](${{ env.RELEASE_URL }})"
+          else
+            echo "Release body is ${#RELEASE_BODY} characters (within limit)"
+          fi
+
           # Escape special characters for JSON
-          RELEASE_BODY_ESCAPED=$(echo "${{ env.RELEASE_BODY }}" | jq -Rs .)
+          RELEASE_BODY_ESCAPED=$(echo "$RELEASE_BODY" | jq -Rs .)
           ASSETS_ESCAPED=$(echo "$ASSETS" | jq -Rs .)
           
           # Create Discord embed JSON
@@ -105,7 +116,19 @@ jobs:
           EOF
           )
           
-          # Send to Discord
-          curl -H "Content-Type: application/json" \
+          # Send to Discord with error handling
+          echo "Sending notification to Discord..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -H "Content-Type: application/json" \
                -d "$DISCORD_PAYLOAD" \
-               "$DISCORD_WEBHOOK_URL"
+               "$DISCORD_WEBHOOK_URL")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -eq 204 ] || [ "$HTTP_CODE" -eq 200 ]; then
+            echo "Successfully sent Discord notification (HTTP $HTTP_CODE)"
+          else
+            echo "Failed to send Discord notification (HTTP $HTTP_CODE)"
+            echo "Response: $RESPONSE_BODY"
+            exit 1
+          fi
