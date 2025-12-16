@@ -133,7 +133,7 @@ For remote access, ensure your Jellyfin server is configured for external connec
 
 ### Core Features
 
-- [ ] Download management for offline viewing
+- [X] Download management for offline viewing
 - [ ] Adaptive streaming with quality selection (transcoding support)
 - [ ] Chromecast support
 - [ ] Enhanced accessibility features
@@ -142,7 +142,7 @@ For remote access, ensure your Jellyfin server is configured for external connec
 
 ### Player Enhancements
 
-- [ ] Picture-in-picture mode
+- [X] Picture-in-picture mode
 - [ ] Advanced subtitle styling options
 - [ ] Audio delay adjustment
 - [X] Playback speed controls
@@ -152,7 +152,7 @@ For remote access, ensure your Jellyfin server is configured for external connec
 - [X] Tablet-optimized layouts
 - [X] Advanced search filters
 - [X] Custom library views
-- [ ] Gesture customization
+- [X] Gesture customization
 
 ### Technical
 
