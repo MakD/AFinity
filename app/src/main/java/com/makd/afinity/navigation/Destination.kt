@@ -2,12 +2,10 @@ package com.makd.afinity.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
@@ -42,12 +40,6 @@ enum class Destination(
         title = "Watchlist",
         selectedIcon = Icons.Filled.Bookmark,
         unselectedIcon = Icons.Outlined.BookmarkBorder
-    ),
-    DOWNLOADS(
-        route = "downloads",
-        title = "Downloads",
-        selectedIcon = Icons.Filled.Download,
-        unselectedIcon = Icons.Outlined.Download
     );
 
     companion object {
@@ -58,6 +50,7 @@ enum class Destination(
         const val SEARCH_ROUTE = "search"
         const val GENRE_RESULTS_ROUTE = "genre_results/{genre}"
         const val SETTINGS_ROUTE = "settings"
+        const val DOWNLOAD_SETTINGS_ROUTE = "download_settings"
         const val LICENSES_ROUTE = "licenses"
 
         fun createPersonRoute(personId: String): String {
@@ -102,6 +95,10 @@ enum class Destination(
         }
         fun createSettingsRoute(): String {
             return SETTINGS_ROUTE
+        }
+
+        fun createDownloadSettingsRoute(): String {
+            return DOWNLOAD_SETTINGS_ROUTE
         }
 
         fun createLicensesRoute(): String {

@@ -92,8 +92,11 @@ class TrickplayDownloadWorker @AssistedInject constructor(
 
             val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
             val trickplayDir = File(itemDir, "trickplay").also { it.mkdirs() }
+            Timber.d("Trickplay download base directory: ${trickplayDir.absolutePath}")
+            Timber.d("Trickplay resolutions available: ${trickplayInfo.keys.joinToString()}")
 
             trickplayInfo.forEach { (resolution, info) ->
+                Timber.d("Processing trickplay resolution: key='$resolution', info.width=${info.width}")
                 try {
                     downloadTrickplayTiles(
                         itemId = itemId,
@@ -107,9 +110,10 @@ class TrickplayDownloadWorker @AssistedInject constructor(
                 }
             }
 
+            val localSourceId = "${sourceId}_local"
             trickplayInfo.forEach { (_, info) ->
                 try {
-                    databaseRepository.insertTrickplayInfo(info, sourceId)
+                    databaseRepository.insertTrickplayInfo(info, localSourceId)
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to save trickplay info to database")
                 }
@@ -142,12 +146,20 @@ class TrickplayDownloadWorker @AssistedInject constructor(
 
         val width = info.width
 
-        for (index in 0 until info.thumbnailCount) {
+        val thumbnailsPerTile = info.tileWidth * info.tileHeight
+        val totalTiles = kotlin.math.ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile).toInt()
+
+        Timber.d("Downloading trickplay: ${info.thumbnailCount} thumbnails across $totalTiles tiled images (${info.tileWidth}x${info.tileHeight} grid per tile)")
+
+        for (tileIndex in 0 until totalTiles) {
             try {
-                val tileUrl = "$baseUrl/Videos/$itemId/Trickplay/$width/$index.jpg?api_key=${apiClient.accessToken}"
-                val outputFile = File(resolutionDir, "$index.jpg")
+                val tileUrl = "$baseUrl/Videos/$itemId/Trickplay/$width/$tileIndex.jpg?api_key=${apiClient.accessToken}"
+                val outputFile = File(resolutionDir, "$tileIndex.jpg")
+
+                Timber.d("Downloading trickplay tile to: ${outputFile.absolutePath}")
 
                 if (outputFile.exists()) {
+                    Timber.d("Trickplay tile $tileIndex already exists, skipping")
                     continue
                 }
 
@@ -158,7 +170,7 @@ class TrickplayDownloadWorker @AssistedInject constructor(
 
                 okHttpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        Timber.w("Failed to download trickplay tile $index: ${response.code}")
+                        Timber.w("Failed to download trickplay tile $tileIndex: ${response.code}")
                         return
                     }
 
@@ -173,10 +185,10 @@ class TrickplayDownloadWorker @AssistedInject constructor(
                     }
                 }
 
-                Timber.d("Downloaded trickplay tile: $resolution/$index.jpg")
+                Timber.i("✓ Downloaded trickplay tiled image: $resolution/$tileIndex.jpg (${outputFile.length()} bytes)")
 
             } catch (e: Exception) {
-                Timber.w(e, "Failed to download trickplay tile $index")
+                Timber.w(e, "Failed to download trickplay tile $tileIndex")
             }
         }
     }

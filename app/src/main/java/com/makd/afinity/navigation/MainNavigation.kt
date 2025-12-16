@@ -47,7 +47,6 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.updater.UpdateManager
-import com.makd.afinity.ui.downloads.DownloadsScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
@@ -59,6 +58,7 @@ import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
 import com.makd.afinity.ui.settings.LicensesScreen
 import com.makd.afinity.ui.settings.SettingsScreen
+import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
 import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
 import com.makd.afinity.ui.watchlist.WatchlistScreen
 import kotlinx.coroutines.launch
@@ -101,6 +101,7 @@ fun MainNavigation(
                 route != "search" &&
                 !route.startsWith("genre_results/") &&
                 route != "settings" &&
+                route != "download_settings" &&
                 route != "licenses"
     } ?: true
 
@@ -120,7 +121,7 @@ fun MainNavigation(
     LaunchedEffect(isOffline) {
         if (isOffline) {
             val currentRoute = currentDestination?.route
-            if (currentRoute != Destination.HOME.route && currentRoute != Destination.DOWNLOADS.route) {
+            if (currentRoute != Destination.HOME.route) {
                 Timber.d("Switching to offline mode, navigating to HOME")
                 navController.navigate(Destination.HOME.route) {
                     popUpTo(navController.graph.findStartDestination().id) {
@@ -137,7 +138,7 @@ fun MainNavigation(
         layoutType = if (isLandscape) NavigationSuiteType.NavigationRail else NavigationSuiteType.NavigationBar,
         navigationSuiteItems = {
             Destination.entries.forEach { destination ->
-                if (isOffline && destination != Destination.HOME && destination != Destination.DOWNLOADS) {
+                if (isOffline && destination != Destination.HOME) {
                     return@forEach
                 }
 
@@ -362,12 +363,6 @@ fun MainNavigation(
                 )
             }
 
-            composable(Destination.DOWNLOADS.route) {
-                DownloadsScreen(
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
             composable(Destination.SEARCH_ROUTE) {
                 SearchScreen(
                     onBackClick = {
@@ -416,9 +411,23 @@ fun MainNavigation(
                     onLicensesClick = {
                         val route = Destination.createLicensesRoute()
                         navController.navigate(route)
+                    },
+                    onDownloadClick = {
+                        val route = Destination.createDownloadSettingsRoute()
+                        navController.navigate(route)
                     }
                 )
             }
+            composable(Destination.DOWNLOAD_SETTINGS_ROUTE) {
+                DownloadSettingsScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    offlineModeManager = offlineModeManager,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
             composable(Destination.LICENSES_ROUTE) {
                 LicensesScreen(
                     onBackClick = {

@@ -21,6 +21,7 @@ import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityExternalUrl
+import com.makd.afinity.data.models.media.toAfinityTrickplayInfo
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.BaseItemPerson
@@ -108,7 +109,11 @@ fun BaseItemDto.toAfinityMovie(
         tagline = taglines?.firstOrNull(),
         images = toAfinityImages(baseUrl),
         chapters = toAfinityChapters(),
-        trickplayInfo = null,
+        trickplayInfo = trickplay?.flatMap { (_, widthMap) ->
+            widthMap.map { (width, info) ->
+                width.toString() to info.toAfinityTrickplayInfo()
+            }
+        }?.toMap(),
         providerIds = providerIds?.mapNotNull { (key, value) ->
             value?.let { key to it }
         }?.toMap(),
@@ -276,7 +281,11 @@ fun BaseItemDto.toAfinityEpisode(
             missing = locationType == LocationType.VIRTUAL,
             images = toAfinityImages(baseUrl),
             chapters = toAfinityChapters(),
-            trickplayInfo = null,
+            trickplayInfo = trickplay?.flatMap { (_, widthMap) ->
+                widthMap.map { (width, info) ->
+                    width.toString() to info.toAfinityTrickplayInfo()
+                }
+            }?.toMap(),
             providerIds = providerIds?.mapNotNull { (key, value) ->
                 value?.let { key to it }
             }?.toMap(),

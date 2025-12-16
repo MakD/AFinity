@@ -22,6 +22,8 @@ import com.makd.afinity.data.models.media.RecommendationType
 import com.makd.afinity.data.models.media.buildTitle
 import com.makd.afinity.data.models.media.toAfinityRecommendationType
 import com.makd.afinity.data.repository.FieldSets
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -48,13 +50,15 @@ import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class JellyfinMediaRepository @Inject constructor(
-    private val apiClient: ApiClient
+    private val apiClient: ApiClient,
+    @ApplicationContext private val context: Context
 ) : MediaRepository {
     override suspend fun refreshItemUserData(
         itemId: UUID,
@@ -1033,12 +1037,40 @@ class JellyfinMediaRepository @Inject constructor(
 
     override suspend fun getTrickplayData(itemId: UUID, width: Int, index: Int): ByteArray? =
         withContext(Dispatchers.IO) {
+            try {
+                val externalFilesDir = context.getExternalFilesDir(null)
+                Timber.d("Attempting to load trickplay tile: itemId=$itemId, width=$width, index=$index")
+
+                if (externalFilesDir != null) {
+                    val downloadDir = File(externalFilesDir, "AFinity/Downloads")
+                    val itemDir = File(downloadDir, itemId.toString())
+                    val trickplayFile = File(itemDir, "trickplay/$width/$index.jpg")
+
+                    Timber.d("Looking for trickplay file: ${trickplayFile.absolutePath}")
+                    Timber.d("File exists: ${trickplayFile.exists()}")
+
+                    if (trickplayFile.exists()) {
+                        Timber.i("✓ Loading trickplay tile from local storage: $width/$index.jpg (${trickplayFile.length()} bytes)")
+                        return@withContext trickplayFile.readBytes()
+                    } else {
+                        Timber.d("Trickplay file not found locally, trying API")
+                    }
+                } else {
+                    Timber.w("External files directory is null")
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to load trickplay from local storage, falling back to API")
+            }
+
             return@withContext try {
+                Timber.d("Fetching trickplay tile from API: $width/$index")
                 val trickplayApi = TrickplayApi(apiClient)
                 val response = trickplayApi.getTrickplayTileImage(itemId, width, index)
+                Timber.d("✓ Fetched trickplay tile from API: ${response.content?.size ?: 0} bytes")
                 response.content
             } catch (e: Exception) {
-                return@withContext null
+                Timber.w(e, "Failed to get trickplay data for tile $index")
+                null
             }
         }
 

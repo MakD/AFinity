@@ -166,9 +166,40 @@ class HomeViewModel @Inject constructor(
 
             Timber.d("Found ${downloadedMovies.size} movies and ${downloadedShows.size} shows with downloads")
 
+            val offlineContinueWatching = mutableListOf<AfinityItem>()
+
+            downloadedMovies.forEach { movie ->
+                if (movie.playbackPositionTicks > 0 && !movie.played) {
+                    offlineContinueWatching.add(movie)
+                }
+            }
+
+            allShows.forEach { show ->
+                show.seasons.forEach { season ->
+                    season.episodes.forEach { episode ->
+                        if (episode.playbackPositionTicks > 0 &&
+                            !episode.played &&
+                            episode.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }) {
+                            offlineContinueWatching.add(episode)
+                        }
+                    }
+                }
+            }
+
+            val sortedOfflineContinueWatching = offlineContinueWatching.sortedByDescending { item ->
+                when (item) {
+                    is AfinityMovie -> item.playbackPositionTicks
+                    is AfinityEpisode -> item.playbackPositionTicks
+                    else -> 0L
+                }
+            }
+
+            Timber.d("Found ${sortedOfflineContinueWatching.size} items to continue watching offline")
+
             _uiState.value = _uiState.value.copy(
                 downloadedMovies = downloadedMovies,
-                downloadedShows = downloadedShows
+                downloadedShows = downloadedShows,
+                offlineContinueWatching = sortedOfflineContinueWatching
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to load downloaded content")
@@ -336,6 +367,7 @@ data class HomeUiState(
     val heroCarouselItems: List<AfinityItem> = emptyList(),
     val latestMedia: List<AfinityItem> = emptyList(),
     val continueWatching: List<AfinityItem> = emptyList(),
+    val offlineContinueWatching: List<AfinityItem> = emptyList(),
     val nextUp: List<AfinityEpisode> = emptyList(),
     val latestMovies: List<AfinityMovie> = emptyList(),
     val latestTvSeries: List<AfinityShow> = emptyList(),

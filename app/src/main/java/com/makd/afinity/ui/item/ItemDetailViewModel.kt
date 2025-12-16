@@ -276,16 +276,27 @@ class ItemDetailViewModel @Inject constructor(
                         is AfinitySeason -> {
                             if (item.episodes.isNotEmpty()) {
                                 Timber.d("Setting up ${item.episodes.size} episodes from database for season: ${item.name}")
-                                _episodesPagingData.value = kotlinx.coroutines.flow.flowOf(
+                                val pagingData = kotlinx.coroutines.flow.flowOf(
                                     androidx.paging.PagingData.from(item.episodes.toList())
                                 )
+                                _episodesPagingData.value = pagingData
                                 _uiState.value = _uiState.value.copy(
-                                    episodesPagingData = _episodesPagingData.value
+                                    episodesPagingData = pagingData
                                 )
+                                Timber.d("✓ Episodes paging data set in UI state for offline season")
 
                                 val nextEpisode = getNextEpisodeForSeasonOffline(item)
                                 _uiState.value = _uiState.value.copy(nextEpisode = nextEpisode)
                                 Timber.d("Next episode for season: ${nextEpisode?.name ?: "none"}")
+                            } else {
+                                Timber.d("No episodes cached for season, setting empty paging data")
+                                val emptyPagingData = kotlinx.coroutines.flow.flowOf(
+                                    androidx.paging.PagingData.empty<AfinityEpisode>()
+                                )
+                                _episodesPagingData.value = emptyPagingData
+                                _uiState.value = _uiState.value.copy(
+                                    episodesPagingData = emptyPagingData
+                                )
                             }
                         }
                     }
@@ -402,11 +413,18 @@ class ItemDetailViewModel @Inject constructor(
                     launch {
                         try {
                             val isCurrentlyOffline = offlineModeManager.isCurrentlyOffline()
-                            if (isCurrentlyOffline && item is AfinitySeason && item.episodes.isNotEmpty()) {
-                                Timber.d("Using ${item.episodes.size} episodes from database for season: ${item.name}")
-                                _episodesPagingData.value = kotlinx.coroutines.flow.flowOf(
-                                    androidx.paging.PagingData.from(item.episodes.toList())
-                                )
+                            if (isCurrentlyOffline && item is AfinitySeason) {
+                                if (item.episodes.isNotEmpty()) {
+                                    Timber.d("Using ${item.episodes.size} episodes from database for season: ${item.name}")
+                                    _episodesPagingData.value = kotlinx.coroutines.flow.flowOf(
+                                        androidx.paging.PagingData.from(item.episodes.toList())
+                                    )
+                                } else {
+                                    Timber.d("No episodes cached for season: ${item.name}, showing empty list")
+                                    _episodesPagingData.value = kotlinx.coroutines.flow.flowOf(
+                                        androidx.paging.PagingData.empty()
+                                    )
+                                }
                             } else {
                                 _episodesPagingData.value = Pager(
                                     config = PagingConfig(

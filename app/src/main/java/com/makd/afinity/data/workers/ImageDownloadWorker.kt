@@ -84,15 +84,19 @@ class ImageDownloadWorker @AssistedInject constructor(
             if (images.primary != null) {
                 try {
                     val url = images.primary.toString()
-                    Timber.d("Downloading primary image from: $url")
-                    val localUri = downloadImage(
-                        url = url,
-                        outputDir = imagesDir,
-                        baseName = "primary"
-                    )
-                    if (localUri != null) {
-                        downloadedImages["primary"] = localUri
-                        Timber.i("✓ Primary image downloaded successfully")
+                    if (url.startsWith("file://")) {
+                        Timber.d("Primary image already local, skipping download: $url")
+                    } else {
+                        Timber.d("Downloading primary image from: $url")
+                        val localUri = downloadImage(
+                            url = url,
+                            outputDir = imagesDir,
+                            baseName = "primary"
+                        )
+                        if (localUri != null) {
+                            downloadedImages["primary"] = localUri
+                            Timber.i("✓ Primary image downloaded successfully")
+                        }
                     }
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to download primary image")
@@ -102,15 +106,19 @@ class ImageDownloadWorker @AssistedInject constructor(
             if (images.backdrop != null) {
                 try {
                     val url = images.backdrop.toString()
-                    Timber.d("Downloading backdrop image from: $url")
-                    val localUri = downloadImage(
-                        url = url,
-                        outputDir = imagesDir,
-                        baseName = "backdrop"
-                    )
-                    if (localUri != null) {
-                        downloadedImages["backdrop"] = localUri
-                        Timber.i("✓ Backdrop image downloaded successfully")
+                    if (url.startsWith("file://")) {
+                        Timber.d("Backdrop image already local, skipping download: $url")
+                    } else {
+                        Timber.d("Downloading backdrop image from: $url")
+                        val localUri = downloadImage(
+                            url = url,
+                            outputDir = imagesDir,
+                            baseName = "backdrop"
+                        )
+                        if (localUri != null) {
+                            downloadedImages["backdrop"] = localUri
+                            Timber.i("✓ Backdrop image downloaded successfully")
+                        }
                     }
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to download backdrop image")
@@ -120,15 +128,19 @@ class ImageDownloadWorker @AssistedInject constructor(
             if (images.logo != null) {
                 try {
                     val url = images.logo.toString()
-                    Timber.d("Downloading logo image from: $url")
-                    val localUri = downloadImage(
-                        url = url,
-                        outputDir = imagesDir,
-                        baseName = "logo"
-                    )
-                    if (localUri != null) {
-                        downloadedImages["logo"] = localUri
-                        Timber.i("✓ Logo image downloaded successfully")
+                    if (url.startsWith("file://")) {
+                        Timber.d("Logo image already local, skipping download: $url")
+                    } else {
+                        Timber.d("Downloading logo image from: $url")
+                        val localUri = downloadImage(
+                            url = url,
+                            outputDir = imagesDir,
+                            baseName = "logo"
+                        )
+                        if (localUri != null) {
+                            downloadedImages["logo"] = localUri
+                            Timber.i("✓ Logo image downloaded successfully")
+                        }
                     }
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to download logo image")
@@ -138,15 +150,19 @@ class ImageDownloadWorker @AssistedInject constructor(
             if (images.thumb != null) {
                 try {
                     val url = images.thumb.toString()
-                    Timber.d("Downloading thumb image from: $url")
-                    val localUri = downloadImage(
-                        url = url,
-                        outputDir = imagesDir,
-                        baseName = "thumb"
-                    )
-                    if (localUri != null) {
-                        downloadedImages["thumb"] = localUri
-                        Timber.i("✓ Thumb image downloaded successfully")
+                    if (url.startsWith("file://")) {
+                        Timber.d("Thumb image already local, skipping download: $url")
+                    } else {
+                        Timber.d("Downloading thumb image from: $url")
+                        val localUri = downloadImage(
+                            url = url,
+                            outputDir = imagesDir,
+                            baseName = "thumb"
+                        )
+                        if (localUri != null) {
+                            downloadedImages["thumb"] = localUri
+                            Timber.i("✓ Thumb image downloaded successfully")
+                        }
                     }
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to download thumb image")
@@ -157,15 +173,19 @@ class ImageDownloadWorker @AssistedInject constructor(
                 if (item.seriesLogo != null) {
                     try {
                         val url = item.seriesLogo.toString()
-                        Timber.d("Downloading series logo image from: $url")
-                        val localUri = downloadImage(
-                            url = url,
-                            outputDir = imagesDir,
-                            baseName = "series_logo"
-                        )
-                        if (localUri != null) {
-                            downloadedImages["series_logo"] = localUri
-                            Timber.i("✓ Series logo image downloaded successfully")
+                        if (url.startsWith("file://")) {
+                            Timber.d("Series logo already local, skipping download: $url")
+                        } else {
+                            Timber.d("Downloading series logo image from: $url")
+                            val localUri = downloadImage(
+                                url = url,
+                                outputDir = imagesDir,
+                                baseName = "series_logo"
+                            )
+                            if (localUri != null) {
+                                downloadedImages["series_logo"] = localUri
+                                Timber.i("✓ Series logo image downloaded successfully")
+                            }
                         }
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to download series logo")

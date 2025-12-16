@@ -10,6 +10,7 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityShow
@@ -40,6 +41,7 @@ class MediaDownloadWorker @AssistedInject constructor(
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: JellyfinDownloadRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val segmentsRepository: SegmentsRepository,
     @DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -207,6 +209,8 @@ class MediaDownloadWorker @AssistedInject constructor(
 
             downloadImages(itemId, itemType)
 
+            downloadSegments(itemId)
+
             createLocalSource(itemId, sourceId, source.name, finalFile)
 
             Timber.i("Media download completed successfully for: $itemName")
@@ -362,6 +366,22 @@ class MediaDownloadWorker @AssistedInject constructor(
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to ensure item is in database")
+        }
+    }
+
+    private suspend fun downloadSegments(itemId: UUID) {
+        try {
+            Timber.d("Downloading media segments for item: $itemId")
+
+            val segments = segmentsRepository.getSegments(itemId)
+
+            if (segments.isEmpty()) {
+                Timber.d("No segments available for item: $itemId")
+            } else {
+                Timber.i("Successfully cached ${segments.size} segments for offline use")
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to download segments (non-critical)")
         }
     }
 

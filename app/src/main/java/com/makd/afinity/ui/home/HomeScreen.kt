@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -30,11 +32,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,8 +40,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -68,7 +63,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -78,10 +72,12 @@ import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.components.OptimizedHeroCarousel
 import com.makd.afinity.ui.home.components.NextUpSection
@@ -95,7 +91,6 @@ import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 import kotlinx.coroutines.delay
-import com.makd.afinity.data.models.media.AfinityEpisode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -175,12 +170,19 @@ fun HomeScreen(
                 configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
             Box(modifier = Modifier.fillMaxSize()) {
+                val density = LocalDensity.current
+                val statusBarHeight = WindowInsets.statusBars.getTop(density)
+                val showCarousel = !uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()
+
                 LazyColumn(
                     state = lazyListState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    contentPadding = PaddingValues(
+                        top = if (!showCarousel) with(density) { statusBarHeight.toDp() + 56.dp } else 0.dp,
+                        bottom = 16.dp
+                    )
                 ) {
-                    if (!uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()) {
+                    if (showCarousel) {
                         item(key = "hero_carousel") {
                             OptimizedHeroCarousel(
                                 items = uiState.heroCarouselItems,
@@ -205,23 +207,27 @@ fun HomeScreen(
                                 Modifier.fillMaxWidth()
                             }
                         ) {
-                            if (!uiState.isOffline) {
-                                if (uiState.continueWatching.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedContinueWatchingSection(
-                                        items = uiState.continueWatching,
-                                        onItemClick = { item ->
-                                            if (item is com.makd.afinity.data.models.media.AfinityEpisode) {
-                                                viewModel.selectEpisode(item)
-                                            } else {
-                                                onItemClick(item)
-                                            }
+                            val continueWatchingItems = if (uiState.isOffline) {
+                                uiState.offlineContinueWatching
+                            } else {
+                                uiState.continueWatching
+                            }
+
+                            if (continueWatchingItems.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                OptimizedContinueWatchingSection(
+                                    items = continueWatchingItems,
+                                    onItemClick = { item ->
+                                        if (item is com.makd.afinity.data.models.media.AfinityEpisode) {
+                                            viewModel.selectEpisode(item)
+                                        } else {
+                                            onItemClick(item)
                                         }
-                                    )
-                                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    ContinueWatchingSkeleton()
-                                }
+                                    }
+                                )
+                            } else if (!uiState.isOffline && uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                ContinueWatchingSkeleton()
                             }
 
                             if (uiState.downloadedMovies.isNotEmpty()) {
@@ -338,7 +344,34 @@ fun HomeScreen(
             }
         }
 
-        TransparentTopBar(
+        AfinityTopAppBar(
+            title = {
+                IconButton(
+                    onClick = { /* TODO: Handle app icon click if needed */ },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Color.Black.copy(alpha = 0.3f),
+                                CircleShape
+                            )
+                            .clip(CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = ic_launcher_monochrome),
+                            contentDescription = "App Logo",
+                            modifier = Modifier
+                                .size(60.dp)
+                                .fillMaxSize(),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
+            },
             onSearchClick = {
                 val route = Destination.createSearchRoute()
                 navController.navigate(route)
@@ -415,123 +448,6 @@ fun HomeScreen(
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TransparentTopBar(
-    onSearchClick: () -> Unit,
-    onProfileClick: () -> Unit,
-    userProfileImageUrl: String? = null,
-    backgroundOpacity: Float = 0f
-) {
-    TopAppBar(
-        title = {
-            IconButton(
-                onClick = { /* TODO: Handle app icon click if needed */ },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Color.Black.copy(alpha = 0.3f),
-                            CircleShape
-                        )
-                        .clip(CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = ic_launcher_monochrome),
-                        contentDescription = "App Logo",
-                        modifier = Modifier
-                            .size(60.dp)
-                            .fillMaxSize(),
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                        contentScale = ContentScale.Fit
-                    )
-                }
-            }
-        },
-        actions = {
-            Button(
-                onClick = onSearchClick,
-                modifier = Modifier
-                    .height(48.dp)
-                    .width(120.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(24.dp),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Search",
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            IconButton(
-                onClick = onProfileClick,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Color.Black.copy(alpha = 0.3f),
-                            CircleShape
-                        )
-                        .clip(CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (userProfileImageUrl != null) {
-                        OptimizedAsyncImage(
-                            imageUrl = userProfileImageUrl,
-                            contentDescription = "Profile Picture",
-                            targetWidth = 48.dp,
-                            targetHeight = 48.dp,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Profile",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = backgroundOpacity)
-        ),
-        modifier = Modifier.zIndex(1f)
-    )
 }
 
 @Composable
