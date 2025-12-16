@@ -24,12 +24,16 @@ object FieldSets {
     val CONTINUE_WATCHING = listOf(
         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
         ItemFields.TRICKPLAY,
-        ItemFields.OVERVIEW
+        ItemFields.OVERVIEW,
+        ItemFields.MEDIA_SOURCES,
+        ItemFields.MEDIA_STREAMS
         )
 
     val NEXT_UP = listOf(
         ItemFields.OVERVIEW,
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+        ItemFields.MEDIA_SOURCES,
+        ItemFields.MEDIA_STREAMS
     )
 
     val LIBRARY_GRID = listOf(

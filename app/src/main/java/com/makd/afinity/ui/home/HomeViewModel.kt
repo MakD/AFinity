@@ -13,11 +13,13 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
+import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.utils.IntentUtils
@@ -36,6 +38,7 @@ class HomeViewModel @Inject constructor(
     private val userDataRepository: UserDataRepository,
     private val watchlistRepository: WatchlistRepository,
     private val databaseRepository: DatabaseRepository,
+    private val downloadRepository: DownloadRepository,
     private val offlineModeManager: OfflineModeManager,
     private val authRepository: AuthRepository
 ) : ViewModel() {
@@ -215,6 +218,9 @@ class HomeViewModel @Inject constructor(
     private val _isLoadingEpisode = MutableStateFlow(false)
     val isLoadingEpisode: StateFlow<Boolean> = _isLoadingEpisode.asStateFlow()
 
+    private val _selectedEpisodeDownloadInfo = MutableStateFlow<DownloadInfo?>(null)
+    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> = _selectedEpisodeDownloadInfo.asStateFlow()
+
     fun selectEpisode(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
@@ -237,6 +243,24 @@ class HomeViewModel @Inject constructor(
                     _selectedEpisodeWatchlistStatus.value = false
                 }
 
+                try {
+                    val episodeDownload = downloadRepository.getDownloadByItemId(episode.id)
+                    _selectedEpisodeDownloadInfo.value = episodeDownload
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load episode download status")
+                    _selectedEpisodeDownloadInfo.value = null
+                }
+
+                launch {
+                    downloadRepository.getAllDownloadsFlow().collect { downloads ->
+                        val currentEpisodeId = _selectedEpisode.value?.id
+                        if (currentEpisodeId != null) {
+                            val episodeDownload = downloads.find { it.itemId == currentEpisodeId }
+                            _selectedEpisodeDownloadInfo.value = episodeDownload
+                        }
+                    }
+                }
+
                 _isLoadingEpisode.value = false
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load full episode details")
@@ -249,6 +273,7 @@ class HomeViewModel @Inject constructor(
     fun clearSelectedEpisode() {
         _selectedEpisode.value = null
         _selectedEpisodeWatchlistStatus.value = false
+        _selectedEpisodeDownloadInfo.value = null
     }
 
     fun toggleEpisodeFavorite(episode: AfinityEpisode) {
@@ -361,6 +386,98 @@ class HomeViewModel @Inject constructor(
     fun onRecommendationItemClick(item: AfinityItem) {
         Timber.d("Recommendation item clicked: ${item.name}")
     }
+
+    fun onDownloadClick() {
+        viewModelScope.launch {
+            try {
+                val episode = _selectedEpisode.value ?: return@launch
+                val sources = episode.sources.filter { it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE }
+
+                if (sources.isEmpty()) {
+                    Timber.w("No remote sources available for download for episode: ${episode.name}")
+                    return@launch
+                }
+
+                if (sources.size == 1) {
+                    val result = downloadRepository.startDownload(episode.id, sources.first().id)
+                    result.onSuccess {
+                        Timber.i("Download started successfully for episode: ${episode.name}")
+                    }.onFailure { error ->
+                        Timber.e(error, "Failed to start download for episode: ${episode.name}")
+                    }
+                } else {
+                    _uiState.value = _uiState.value.copy(showQualityDialog = true)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error starting download")
+            }
+        }
+    }
+
+    fun onQualitySelected(sourceId: String) {
+        viewModelScope.launch {
+            try {
+                val episode = _selectedEpisode.value ?: return@launch
+                val result = downloadRepository.startDownload(episode.id, sourceId)
+                result.onSuccess {
+                    Timber.i("Download started successfully for episode: ${episode.name}")
+                }.onFailure { error ->
+                    Timber.e(error, "Failed to start download for episode: ${episode.name}")
+                }
+                _uiState.value = _uiState.value.copy(showQualityDialog = false)
+            } catch (e: Exception) {
+                Timber.e(e, "Error starting download with selected quality")
+            }
+        }
+    }
+
+    fun dismissQualityDialog() {
+        _uiState.value = _uiState.value.copy(showQualityDialog = false)
+    }
+
+    fun pauseDownload() {
+        viewModelScope.launch {
+            try {
+                val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
+                val result = downloadRepository.pauseDownload(downloadInfo.id)
+                result.onFailure { error ->
+                    Timber.e(error, "Failed to pause download")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error pausing download")
+            }
+        }
+    }
+
+    fun resumeDownload() {
+        viewModelScope.launch {
+            try {
+                val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
+                val result = downloadRepository.resumeDownload(downloadInfo.id)
+                result.onFailure { error ->
+                    Timber.e(error, "Failed to resume download")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error resuming download")
+            }
+        }
+    }
+
+    fun cancelDownload() {
+        viewModelScope.launch {
+            try {
+                val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
+                val result = downloadRepository.cancelDownload(downloadInfo.id)
+                result.onSuccess {
+                    Timber.i("Download cancelled successfully")
+                }.onFailure { error ->
+                    Timber.e(error, "Failed to cancel download")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error cancelling download")
+            }
+        }
+    }
 }
 
 data class HomeUiState(
@@ -380,5 +497,6 @@ data class HomeUiState(
     val combineLibrarySections: Boolean = false,
     val separateMovieLibrarySections: List<Pair<AfinityCollection, List<AfinityMovie>>> = emptyList(),
     val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList(),
-    val isOffline: Boolean = false
+    val isOffline: Boolean = false,
+    val showQualityDialog: Boolean = false
 )

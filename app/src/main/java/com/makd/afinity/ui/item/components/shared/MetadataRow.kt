@@ -46,12 +46,12 @@ fun MetadataRow(
         modifier = Modifier.fillMaxWidth()
     ) {
         if (isLandscape) {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
-                verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (item !is AfinityBoxSet && item.sources.isNotEmpty()) {
+            if (item !is AfinityBoxSet && item.sources.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
+                    verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     val source = item.sources.firstOrNull()
 
                     source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.let { videoStream ->
@@ -115,7 +115,15 @@ fun MetadataRow(
                         VideoMetadataChip(text = "CC")
                     }
                 }
+            }
 
+            Spacer(modifier = Modifier.height(2.dp))
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp, horizontalAlignment),
+                verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 if (item !is AfinityBoxSet && item.playbackPositionTicks > 0 && item.runtimeTicks > 0) {
                     val progress = item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()
                     val remainingTicks = item.runtimeTicks - item.playbackPositionTicks
@@ -130,9 +138,7 @@ fun MetadataRow(
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.padding(vertical = 2.dp)
-
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         CircularProgressIndicator(
                             progress = { progress },
@@ -174,8 +180,7 @@ fun MetadataRow(
                 communityRating?.let { imdbRating ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_imdb_logo),
@@ -201,8 +206,7 @@ fun MetadataRow(
                 criticRating?.let { rtRating ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
                             painter = painterResource(
@@ -237,8 +241,7 @@ fun MetadataRow(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                     )
                 }
 
@@ -253,8 +256,7 @@ fun MetadataRow(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                     )
                 }
 
@@ -269,8 +271,7 @@ fun MetadataRow(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                     )
                 }
 
@@ -287,8 +288,7 @@ fun MetadataRow(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                     )
                 }
             }

@@ -86,6 +86,7 @@ import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
 import com.makd.afinity.ui.home.components.OptimizedLatestTvSeriesSection
 import com.makd.afinity.ui.home.components.OptimizedRecommendationCategorySection
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
+import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.calculateCardHeight
@@ -383,6 +384,7 @@ fun HomeScreen(
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
         val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
         val selectedEpisodeWatchlistStatus by viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
+        val selectedEpisodeDownloadInfo by viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
 
         var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
@@ -400,7 +402,7 @@ fun HomeScreen(
                     episode = episode,
                     isLoading = isLoadingEpisode,
                     isInWatchlist = selectedEpisodeWatchlistStatus,
-                    downloadInfo = null,
+                    downloadInfo = selectedEpisodeDownloadInfo,
                     onDismiss = {
                         viewModel.clearSelectedEpisode()
                         pendingNavigationSeriesId = null
@@ -426,10 +428,18 @@ fun HomeScreen(
                     onToggleWatched = {
                         viewModel.toggleEpisodeWatched(episode)
                     },
-                    onDownloadClick = { },
-                    onPauseDownload = { },
-                    onResumeDownload = { },
-                    onCancelDownload = { },
+                    onDownloadClick = {
+                        viewModel.onDownloadClick()
+                    },
+                    onPauseDownload = {
+                        viewModel.pauseDownload()
+                    },
+                    onResumeDownload = {
+                        viewModel.resumeDownload()
+                    },
+                    onCancelDownload = {
+                        viewModel.cancelDownload()
+                    },
                     onGoToSeries = {
                         viewModel.clearSelectedEpisode()
                         pendingNavigationSeriesId = episode.seriesId.toString()
@@ -445,6 +455,23 @@ fun HomeScreen(
                 val route = Destination.createItemDetailRoute(pendingNavigationSeriesId!!)
                 navController.navigate(route)
                 pendingNavigationSeriesId = null
+            }
+        }
+
+        if (uiState.showQualityDialog) {
+            val currentEpisode = selectedEpisode
+            val remoteSources = currentEpisode?.sources?.filter {
+                it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
+            } ?: emptyList()
+
+            if (remoteSources.isNotEmpty()) {
+                QualitySelectionDialog(
+                    sources = remoteSources,
+                    onSourceSelected = { source ->
+                        viewModel.onQualitySelected(source.id)
+                    },
+                    onDismiss = { viewModel.dismissQualityDialog() }
+                )
             }
         }
     }
