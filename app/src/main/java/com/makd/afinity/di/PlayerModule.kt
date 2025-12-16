@@ -3,6 +3,7 @@ package com.makd.afinity.di
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
+import com.makd.afinity.data.sync.UserDataSyncScheduler
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,8 +18,9 @@ object PlayerModule {
     @Singleton
     fun providePlaybackStateManager(
         mediaRepository: MediaRepository,
-        playbackRepository: PlaybackRepository
+        playbackRepository: PlaybackRepository,
+        syncScheduler: UserDataSyncScheduler
     ): PlaybackStateManager {
-        return PlaybackStateManager(mediaRepository, playbackRepository)
+        return PlaybackStateManager(mediaRepository, playbackRepository, syncScheduler)
     }
 }

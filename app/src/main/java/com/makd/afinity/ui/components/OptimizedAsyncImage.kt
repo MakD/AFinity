@@ -69,13 +69,17 @@ fun OptimizedAsyncImage(
         }
     }
 
+    if (imageUrl != null) {
+        Timber.d("Loading image: $imageUrl (isLocal: ${imageUrl.startsWith("file://")})")
+    }
+
     AsyncImage(
         model = ImageRequest.Builder(context)
             .data(imageUrl)
             .size(imageSize)
             .memoryCachePolicy(CachePolicy.ENABLED)
             .diskCachePolicy(CachePolicy.ENABLED)
-            .networkCachePolicy(CachePolicy.ENABLED)
+            .networkCachePolicy(if (imageUrl?.startsWith("file://") == true) CachePolicy.DISABLED else CachePolicy.ENABLED)
             .crossfade(true)
             .placeholderMemoryCacheKey(blurHash)
             .listener(
@@ -83,11 +87,12 @@ fun OptimizedAsyncImage(
                 onSuccess = { _, _ ->
                     onLoading?.invoke(false)
                     onSuccess?.invoke()
+                    Timber.d("Image loaded successfully: $imageUrl")
                 },
-                onError = { _, _ ->
+                onError = { _, result ->
                     onLoading?.invoke(false)
                     onError?.invoke()
-                    Timber.w("Image load failed for URL: $imageUrl")
+                    Timber.e("Image load failed for URL: $imageUrl, error: ${result.throwable?.message}")
                 }
             )
             .build(),

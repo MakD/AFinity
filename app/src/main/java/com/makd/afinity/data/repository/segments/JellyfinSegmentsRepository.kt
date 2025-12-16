@@ -20,32 +20,50 @@ class JellyfinSegmentsRepository @Inject constructor(
 
     override suspend fun getSegments(itemId: UUID): List<AfinitySegment> = withContext(Dispatchers.IO) {
         return@withContext try {
+            Timber.d("Checking database for cached segments for item $itemId")
             val cachedSegments = databaseRepository.getSegmentsForItem(itemId)
             if (cachedSegments.isNotEmpty()) {
-                Timber.d("Found ${cachedSegments.size} cached segments for item $itemId")
+                Timber.i("✓ Loaded ${cachedSegments.size} segments from database for item $itemId")
                 return@withContext cachedSegments
             }
 
-            val mediaSegmentsApi = MediaSegmentsApi(apiClient)
-            val response = mediaSegmentsApi.getItemSegments(itemId)
+            Timber.d("No cached segments found in database, fetching from API")
 
-            val segments = response.content?.items?.map { mediaSegmentDto ->
-                mediaSegmentDto.toAfinitySegment()
-            } ?: emptyList()
+            try {
+                val mediaSegmentsApi = MediaSegmentsApi(apiClient)
+                val response = mediaSegmentsApi.getItemSegments(itemId)
 
-            Timber.d("Fetched ${segments.size} segments from API for item $itemId")
+                val segments = response.content?.items?.map { mediaSegmentDto ->
+                    mediaSegmentDto.toAfinitySegment()
+                } ?: emptyList()
 
-            segments.forEach { segment ->
-                try {
-                    databaseRepository.insertSegment(segment, itemId)
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to cache segment in database")
+                Timber.d("Fetched ${segments.size} segments from API for item $itemId")
+
+                if (segments.isNotEmpty()) {
+                    segments.forEach { segment ->
+                        try {
+                            Timber.d("Caching segment ${segment.type} (${segment.startTicks}-${segment.endTicks}) for item $itemId")
+                            databaseRepository.insertSegment(segment, itemId)
+                            Timber.d("✓ Successfully cached segment ${segment.type}")
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to cache segment ${segment.type} in database")
+                        }
+                    }
                 }
-            }
 
-            segments
+                segments
+            } catch (e: Exception) {
+                Timber.w(e, "API fetch failed, checking database again in case segments were cached")
+                val fallbackSegments = databaseRepository.getSegmentsForItem(itemId)
+                if (fallbackSegments.isNotEmpty()) {
+                    Timber.i("✓ Loaded ${fallbackSegments.size} segments from database after API failure")
+                } else {
+                    Timber.d("No segments available offline for item $itemId")
+                }
+                fallbackSegments
+            }
         } catch (e: Exception) {
-            Timber.e(e, "Failed to fetch segments for item $itemId")
+            Timber.e(e, "Failed to get segments for item $itemId")
             emptyList()
         }
     }

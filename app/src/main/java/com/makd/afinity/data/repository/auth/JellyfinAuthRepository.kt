@@ -4,6 +4,7 @@ import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.QuickConnectApi
@@ -19,13 +21,15 @@ import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.ClientCapabilitiesDto
 import timber.log.Timber
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class JellyfinAuthRepository @Inject constructor(
     private val apiClient: ApiClient,
-    private val securePreferencesRepository: SecurePreferencesRepository
+    private val securePreferencesRepository: SecurePreferencesRepository,
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor
 ) : AuthRepository {
 
     private val _currentUser = MutableStateFlow<User?>(null)
@@ -35,13 +39,7 @@ class JellyfinAuthRepository @Inject constructor(
     override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
     init {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                restoreAuthenticationState()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to restore authentication state on init")
-            }
-        }
+        Timber.d("AuthRepository initialized")
     }
 
     override suspend fun restoreAuthenticationState(): Boolean {
@@ -67,10 +65,37 @@ class JellyfinAuthRepository @Inject constructor(
 
                 apiClient.update(baseUrl = serverUrl, accessToken = accessToken)
 
-                val userApi = UserApi(apiClient)
-                val response = userApi.getCurrentUser()
+                val isConnected = networkConnectivityMonitor.isCurrentlyConnected()
 
-                if (response.content != null) {
+                if (!isConnected) {
+                    Timber.d("Device is offline, restoring auth from cache without validation")
+                    try {
+                        val user = User(
+                            id = UUID.fromString(userId),
+                            name = username,
+                            serverId = serverId ?: "",
+                            accessToken = accessToken,
+                            primaryImageTag = null
+                        )
+
+                        _currentUser.value = user
+                        _isAuthenticated.value = true
+
+                        Timber.d("Successfully restored authentication from cache in offline mode for user: $username")
+                        return@withContext true
+                    } catch (e: IllegalArgumentException) {
+                        Timber.e(e, "Invalid UUID format for userId, clearing auth data")
+                        clearAllAuthData()
+                        return@withContext false
+                    }
+                }
+
+                val response = withTimeoutOrNull(5000L) {
+                    val userApi = UserApi(apiClient)
+                    userApi.getCurrentUser()
+                }
+
+                if (response?.content != null) {
                     val userDto = response.content!!
                     val user = User(
                         id = userDto.id,
@@ -86,7 +111,7 @@ class JellyfinAuthRepository @Inject constructor(
                     Timber.d("Successfully restored authentication from encrypted storage for user: $username")
                     return@withContext true
                 } else {
-                    Timber.w("Token validation failed, clearing encrypted auth data")
+                    Timber.w("Token validation failed or timed out, clearing encrypted auth data")
                     clearAllAuthData()
                     return@withContext false
                 }

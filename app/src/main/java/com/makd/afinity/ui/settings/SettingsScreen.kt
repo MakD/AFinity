@@ -34,6 +34,8 @@ import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.FastForward
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PictureInPicture
@@ -91,6 +93,7 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     onLogoutComplete: () -> Unit,
     onLicensesClick: () -> Unit,
+    onDownloadClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -98,6 +101,9 @@ fun SettingsScreen(
     val context = LocalContext.current
     val combineLibrarySections by viewModel.combineLibrarySections.collectAsStateWithLifecycle()
     val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsStateWithLifecycle()
+    val manualOfflineMode by viewModel.manualOfflineMode.collectAsStateWithLifecycle()
+    val effectiveOfflineMode by viewModel.effectiveOfflineMode.collectAsStateWithLifecycle()
+    val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     if (showLogoutDialog) {
@@ -181,9 +187,12 @@ fun SettingsScreen(
                 }
 
                 item {
-                    AccountSection(
-                        userName = uiState.currentUser?.name ?: "Unknown User",
-                        uiState = uiState,
+                    GeneralSection(
+                        manualOfflineMode = manualOfflineMode,
+                        effectiveOfflineMode = effectiveOfflineMode,
+                        isNetworkAvailable = isNetworkAvailable,
+                        onOfflineModeToggle = viewModel::toggleOfflineMode,
+                        onDownloadClick = onDownloadClick,
                         onLogoutClick = { showLogoutDialog = true },
                         isLoggingOut = uiState.isLoggingOut
                     )
@@ -320,23 +329,34 @@ private fun ProfileHeader(
 }
 
 @Composable
-private fun AccountSection(
-    userName: String,
-    uiState: SettingsUiState,
+private fun GeneralSection(
+    manualOfflineMode: Boolean,
+    effectiveOfflineMode: Boolean,
+    isNetworkAvailable: Boolean,
+    onOfflineModeToggle: (Boolean) -> Unit,
+    onDownloadClick: () -> Unit,
     onLogoutClick: () -> Unit,
     isLoggingOut: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val subtitle = when {
+        !isNetworkAvailable -> "Offline (No network connection)"
+        manualOfflineMode -> "Manually enabled"
+        else -> "Manually enable offline mode"
+    }
+
     SettingsSection(
-        title = "Account",
-        icon = Icons.Outlined.AccountCircle,
+        title = "General",
+        icon = Icons.Outlined.AppSettingsAlt,
         modifier = modifier
     ) {
-        SettingsItem(
-            icon = Icons.Outlined.Person,
-            title = "Username",
-            subtitle = userName,
-            onClick = null
+        SettingsSwitchItem(
+            icon = Icons.Outlined.CloudOff,
+            title = "Offline Mode",
+            subtitle = subtitle,
+            checked = effectiveOfflineMode,
+            onCheckedChange = onOfflineModeToggle,
+            enabled = isNetworkAvailable
         )
 
         HorizontalDivider(
@@ -345,16 +365,10 @@ private fun AccountSection(
         )
 
         SettingsItem(
-            icon = Icons.Outlined.Info,
-            title = "Server",
-            subtitle = listOfNotNull(
-                uiState.serverName ?: "Unknown",
-                uiState.serverVersion,
-                uiState.serverUrl?.let { url ->
-                    try { java.net.URL(url).host } catch (e: Exception) { url }
-                }
-            ).joinToString(" • "),
-            onClick = null
+            icon = Icons.Outlined.Download,
+            title = "Downloads",
+            subtitle = "Manage downloads and offline content",
+            onClick = onDownloadClick
         )
 
         HorizontalDivider(
@@ -748,21 +762,25 @@ private fun SettingsSwitchItem(
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     SettingsItem(
         icon = icon,
         title = title,
         subtitle = subtitle,
-        onClick = { onCheckedChange(!checked) },
+        onClick = if (enabled) { { onCheckedChange(!checked) } } else null,
         modifier = modifier,
         trailing = {
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
+                enabled = enabled,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                    disabledCheckedThumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    disabledCheckedTrackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                 )
             )
         }

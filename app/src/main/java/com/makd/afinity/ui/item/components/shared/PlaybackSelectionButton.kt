@@ -51,9 +51,14 @@ fun PlaybackSelectionButton(
             } else {
                 0L
             }
+
+            val selectedSource = item.sources.firstOrNull {
+                it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+            } ?: item.sources.firstOrNull()
+
             onPlayClick(
                 PlaybackSelection(
-                    mediaSourceId = item.sources.firstOrNull()?.id ?: "",
+                    mediaSourceId = selectedSource?.id ?: "",
                     audioStreamIndex = null,
                     subtitleStreamIndex = null,
                     videoStreamIndex = null,

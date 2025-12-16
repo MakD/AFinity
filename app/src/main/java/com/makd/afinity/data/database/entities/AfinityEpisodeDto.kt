@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityImages
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -46,6 +47,7 @@ data class AfinityEpisodeDto(
     val premiereDate: LocalDateTime?,
     val communityRating: Float?,
     val chapters: List<AfinityChapter>?,
+    val images: AfinityImages? = null,
 )
 
 fun AfinityEpisode.toAfinityEpisodeDto(serverId: String? = null): AfinityEpisodeDto {
@@ -64,5 +66,6 @@ fun AfinityEpisode.toAfinityEpisodeDto(serverId: String? = null): AfinityEpisode
         premiereDate = premiereDate,
         communityRating = communityRating,
         chapters = chapters,
+        images = images,
     )
 }

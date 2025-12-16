@@ -85,17 +85,6 @@ private fun EpisodesSection(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        if (lazyEpisodeItems.loadState.refresh is LoadState.Loading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        }
-
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),

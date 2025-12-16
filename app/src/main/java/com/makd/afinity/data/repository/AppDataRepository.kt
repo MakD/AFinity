@@ -80,9 +80,13 @@ class AppDataRepository @Inject constructor(
     private val _loadingPhase = MutableStateFlow("")
     val loadingPhase: StateFlow<String> = _loadingPhase.asStateFlow()
 
-    /**
-     * Loads all essential app data in the correct order for optimal UX
-     */
+    fun skipInitialDataLoad() {
+        Timber.d("Skipping initial data load for offline mode")
+        _loadingProgress.value = 1f
+        _loadingPhase.value = "Ready (Offline Mode)"
+        _isInitialDataLoaded.value = true
+    }
+
     suspend fun loadInitialData() {
         if (_isInitialDataLoaded.value) {
             Timber.d("Initial data already loaded, skipping...")
@@ -179,17 +183,11 @@ class AppDataRepository @Inject constructor(
         }
     }
 
-    /**
-     * Forces a refresh of all data
-     */
     suspend fun refreshAllData() {
         _isInitialDataLoaded.value = false
         loadInitialData()
     }
 
-    /**
-     * Refreshes only specific data streams without full reload
-     */
     suspend fun refreshContinueWatching() {
         try {
             val freshData = jellyfinRepository.getContinueWatching(limit = 12)
@@ -200,9 +198,6 @@ class AppDataRepository @Inject constructor(
         }
     }
 
-    /**
-     * Reloads home-specific data (movies, shows, highest rated)
-     */
     suspend fun reloadHomeData() {
         if (!_isInitialDataLoaded.value) return
 

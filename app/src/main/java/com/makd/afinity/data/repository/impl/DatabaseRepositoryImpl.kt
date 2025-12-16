@@ -34,6 +34,9 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
+import com.makd.afinity.data.database.entities.AfinitySourceDto
+import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.media.toAfinitySegment
 import com.makd.afinity.data.models.media.toAfinitySource
@@ -145,6 +148,10 @@ class DatabaseRepositoryImpl @Inject constructor(
 
     override suspend fun getCurrentUser(): User? {
         return userDao.getCurrentUser()
+    }
+
+    override suspend fun getAllUsers(): List<User> {
+        return userDao.getAllUsers()
     }
 
     override suspend fun insertMovie(movie: AfinityMovie, serverId: String?) {
@@ -509,8 +516,8 @@ class DatabaseRepositoryImpl @Inject constructor(
             playbackPositionTicks = userData.playbackPositionTicks,
             premiereDate = premiereDate,
             dateCreated = dateCreated,
-            genres = emptyList(),
-            people = emptyList(),
+            genres = genres ?: emptyList(),
+            people = people ?: emptyList(),
             communityRating = communityRating,
             officialRating = officialRating,
             criticRating = criticRating,
@@ -521,10 +528,10 @@ class DatabaseRepositoryImpl @Inject constructor(
             canPlay = true,
             sources = sources,
             trailer = null,
-            images = AfinityImages(),
+            images = images ?: AfinityImages(),
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
-            tagline = null,
+            tagline = tagline,
             providerIds = null,
             externalUrls = null,
             )
@@ -535,7 +542,9 @@ class DatabaseRepositoryImpl @Inject constructor(
         userId: UUID
     ): AfinityShow {
         val userData = database.getUserDataOrCreateNew(id, userId)
-        val seasonCount = database.getSeasonsForSeries(id).size
+        val seasonDtos = database.getSeasonsForSeries(id)
+        val seasons = seasonDtos.map { it.toAfinitySeason(database, userId) }
+        val seasonCount = seasons.size
         return AfinityShow(
             id = id,
             name = name,
@@ -547,9 +556,9 @@ class DatabaseRepositoryImpl @Inject constructor(
             canDownload = false,
             unplayedItemCount = null,
             sources = emptyList(),
-            seasons = emptyList(),
-            genres = emptyList(),
-            people = emptyList(),
+            seasons = seasons,
+            genres = genres ?: emptyList(),
+            people = people ?: emptyList(),
             runtimeTicks = runtimeTicks,
             communityRating = communityRating,
             officialRating = officialRating,
@@ -560,7 +569,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             dateLastContentAdded = dateLastContentAdded,
             endDate = endDate,
             trailer = null,
-            images = AfinityImages(),
+            images = images ?: AfinityImages(),
             seasonCount = seasonCount,
             episodeCount = null,
             tagline = null,
@@ -574,7 +583,9 @@ class DatabaseRepositoryImpl @Inject constructor(
         userId: UUID
     ): AfinitySeason {
         val userData = database.getUserDataOrCreateNew(id, userId)
-        val episodeCount = database.getEpisodesForSeason(id).size
+        val episodeDtos = database.getEpisodesForSeason(id)
+        val episodes = episodeDtos.map { it.toAfinityEpisode(database, userId) }
+        val episodeCount = episodes.size
         return AfinitySeason(
             id = id,
             name = name,
@@ -587,10 +598,10 @@ class DatabaseRepositoryImpl @Inject constructor(
             unplayedItemCount = null,
             indexNumber = indexNumber,
             sources = emptyList(),
-            episodes = emptyList(),
+            episodes = episodes,
             seriesId = seriesId,
             seriesName = seriesName,
-            images = AfinityImages(),
+            images = images ?: AfinityImages(),
             episodeCount = episodeCount,
             productionYear = null,
             premiereDate = null,
@@ -635,11 +646,39 @@ class DatabaseRepositoryImpl @Inject constructor(
             seasonId = seasonId,
             communityRating = communityRating,
             people = emptyList(),
-            images = AfinityImages(),
+            images = images ?: AfinityImages(),
             chapters = chapters ?: emptyList(),
             trickplayInfo = trickplayInfos,
             providerIds = null,
             externalUrls = null,
         )
+    }
+
+    override suspend fun insertDownload(download: DownloadDto) {
+        serverDatabaseDao.insertDownload(download)
+    }
+
+    override suspend fun getDownload(downloadId: UUID): DownloadDto? {
+        return serverDatabaseDao.getDownload(downloadId)
+    }
+
+    override suspend fun getDownloadByItemId(itemId: UUID): DownloadDto? {
+        return serverDatabaseDao.getDownloadByItemId(itemId)
+    }
+
+    override fun getAllDownloadsFlow(): Flow<List<DownloadDto>> {
+        return serverDatabaseDao.getAllDownloadsFlow()
+    }
+
+    override fun getDownloadsByStatusFlow(statuses: List<DownloadStatus>): Flow<List<DownloadDto>> {
+        return serverDatabaseDao.getDownloadsByStatusFlow(statuses)
+    }
+
+    override suspend fun deleteDownload(downloadId: UUID) {
+        serverDatabaseDao.deleteDownload(downloadId)
+    }
+
+    override suspend fun getSources(itemId: UUID): List<AfinitySourceDto> {
+        return serverDatabaseDao.getSources(itemId)
     }
 }

@@ -2,6 +2,7 @@ package com.makd.afinity
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
@@ -19,7 +20,8 @@ class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val playbackStateManager: PlaybackStateManager,
     private val webSocketManager: JellyfinWebSocketManager,
-    private val appDataRepository: AppDataRepository
+    private val appDataRepository: AppDataRepository,
+    private val offlineModeManager: OfflineModeManager
 ) : ViewModel() {
 
     private val _authenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Loading)
@@ -37,13 +39,21 @@ class MainViewModel @Inject constructor(
             try {
                 Timber.d("Checking authentication state...")
 
+                val hasValidSavedAuth = authRepository.hasValidSavedAuth()
+
+                if (!hasValidSavedAuth) {
+                    Timber.d("No valid saved authentication, user needs to login")
+                    _authenticationState.value = AuthenticationState.NotAuthenticated
+                    return@launch
+                }
+
                 val restored = authRepository.restoreAuthenticationState()
 
                 if (restored) {
                     Timber.d("Authentication restored successfully")
                     _authenticationState.value = AuthenticationState.Authenticated
                 } else {
-                    Timber.d("No valid authentication found, user needs to login")
+                    Timber.d("Failed to restore authentication, user needs to login")
                     _authenticationState.value = AuthenticationState.NotAuthenticated
                 }
             } catch (e: Exception) {

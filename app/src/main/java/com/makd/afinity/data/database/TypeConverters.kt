@@ -1,11 +1,18 @@
 package com.makd.afinity.data.database
 
+import android.net.Uri
 import androidx.room.TypeConverter
 import com.makd.afinity.data.models.media.AfinityChapter
+import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityPerson
+import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinitySourceType
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.jellyfin.sdk.model.api.PersonKind
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -94,4 +101,124 @@ class TypeConverters {
                 null
             }
         }
+
+    @TypeConverter
+    fun fromUri(uri: Uri?): String? = uri?.toString()
+
+    @TypeConverter
+    fun toUri(uriString: String?): Uri? = uriString?.let { Uri.parse(it) }
+
+    @TypeConverter
+    fun fromAfinityImages(images: AfinityImages?): String? {
+        if (images == null) return null
+        val serializable = SerializableAfinityImages(
+            primary = images.primary?.toString(),
+            backdrop = images.backdrop?.toString(),
+            thumb = images.thumb?.toString(),
+            logo = images.logo?.toString(),
+            showPrimary = images.showPrimary?.toString(),
+            showBackdrop = images.showBackdrop?.toString(),
+            showLogo = images.showLogo?.toString(),
+            primaryImageBlurHash = images.primaryImageBlurHash,
+            backdropImageBlurHash = images.backdropImageBlurHash,
+            thumbImageBlurHash = images.thumbImageBlurHash,
+            logoImageBlurHash = images.logoImageBlurHash,
+            showPrimaryImageBlurHash = images.showPrimaryImageBlurHash,
+            showBackdropImageBlurHash = images.showBackdropImageBlurHash,
+            showLogoImageBlurHash = images.showLogoImageBlurHash
+        )
+        return json.encodeToString(serializable)
+    }
+
+    @TypeConverter
+    fun toAfinityImages(imagesString: String?): AfinityImages? {
+        if (imagesString == null) return null
+        return try {
+            val serializable = json.decodeFromString<SerializableAfinityImages>(imagesString)
+            AfinityImages(
+                primary = serializable.primary?.let { Uri.parse(it) },
+                backdrop = serializable.backdrop?.let { Uri.parse(it) },
+                thumb = serializable.thumb?.let { Uri.parse(it) },
+                logo = serializable.logo?.let { Uri.parse(it) },
+                showPrimary = serializable.showPrimary?.let { Uri.parse(it) },
+                showBackdrop = serializable.showBackdrop?.let { Uri.parse(it) },
+                showLogo = serializable.showLogo?.let { Uri.parse(it) },
+                primaryImageBlurHash = serializable.primaryImageBlurHash,
+                backdropImageBlurHash = serializable.backdropImageBlurHash,
+                thumbImageBlurHash = serializable.thumbImageBlurHash,
+                logoImageBlurHash = serializable.logoImageBlurHash,
+                showPrimaryImageBlurHash = serializable.showPrimaryImageBlurHash,
+                showBackdropImageBlurHash = serializable.showBackdropImageBlurHash,
+                showLogoImageBlurHash = serializable.showLogoImageBlurHash
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    @TypeConverter
+    fun fromAfinityPersonList(people: List<AfinityPerson>?): String? {
+        if (people == null) return null
+        val serializable = people.map { person ->
+            SerializableAfinityPerson(
+                id = person.id.toString(),
+                name = person.name,
+                type = person.type.name,
+                role = person.role,
+                imageUri = person.image.uri?.toString(),
+                imageBlurHash = person.image.blurHash
+            )
+        }
+        return json.encodeToString(serializable)
+    }
+
+    @TypeConverter
+    fun toAfinityPersonList(peopleString: String?): List<AfinityPerson>? {
+        if (peopleString == null) return null
+        return try {
+            val serializable = json.decodeFromString<List<SerializableAfinityPerson>>(peopleString)
+            serializable.map { person ->
+                AfinityPerson(
+                    id = UUID.fromString(person.id),
+                    name = person.name,
+                    type = PersonKind.valueOf(person.type),
+                    role = person.role,
+                    image = AfinityPersonImage(
+                        uri = person.imageUri?.let { Uri.parse(it) },
+                        blurHash = person.imageBlurHash
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
+
+@Serializable
+private data class SerializableAfinityPerson(
+    val id: String,
+    val name: String,
+    val type: String,
+    val role: String,
+    val imageUri: String? = null,
+    val imageBlurHash: String? = null
+)
+
+@Serializable
+private data class SerializableAfinityImages(
+    val primary: String? = null,
+    val backdrop: String? = null,
+    val thumb: String? = null,
+    val logo: String? = null,
+    val showPrimary: String? = null,
+    val showBackdrop: String? = null,
+    val showLogo: String? = null,
+    val primaryImageBlurHash: String? = null,
+    val backdropImageBlurHash: String? = null,
+    val thumbImageBlurHash: String? = null,
+    val logoImageBlurHash: String? = null,
+    val showPrimaryImageBlurHash: String? = null,
+    val showBackdropImageBlurHash: String? = null,
+    val showLogoImageBlurHash: String? = null
+)

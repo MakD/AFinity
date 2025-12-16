@@ -57,6 +57,8 @@ class PreferencesRepositoryImpl @Inject constructor(
         val CRASH_REPORTING = booleanPreferencesKey("crash_reporting")
         val USAGE_ANALYTICS = booleanPreferencesKey("usage_analytics")
 
+        val OFFLINE_MODE = booleanPreferencesKey("offline_mode")
+
         val UPDATE_CHECK_FREQUENCY = intPreferencesKey("update_check_frequency")
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
     }
@@ -348,6 +350,22 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun getUsageAnalytics(): Boolean {
         return dataStore.data.first()[Keys.USAGE_ANALYTICS] ?: true
+    }
+
+    override suspend fun setOfflineMode(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.OFFLINE_MODE] = enabled
+        }
+    }
+
+    override suspend fun getOfflineMode(): Boolean {
+        return dataStore.data.first()[Keys.OFFLINE_MODE] ?: false
+    }
+
+    override fun getOfflineModeFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.OFFLINE_MODE] ?: false
+        }
     }
 
     override suspend fun clearAllPreferences() {

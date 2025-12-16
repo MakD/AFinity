@@ -3,6 +3,7 @@ package com.makd.afinity.data.manager
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
+import com.makd.afinity.data.sync.UserDataSyncScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,7 +16,8 @@ import javax.inject.Singleton
 @Singleton
 class PlaybackStateManager @Inject constructor(
     private val mediaRepository: MediaRepository,
-    private val playbackRepository: PlaybackRepository
+    private val playbackRepository: PlaybackRepository,
+    private val syncScheduler: UserDataSyncScheduler
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -73,18 +75,25 @@ class PlaybackStateManager @Inject constructor(
             val positionTicks = lastKnownPosition * 10000
 
             if (itemId != null && sessionId != null && !mediaSourceId.isNullOrEmpty()) {
-                playbackRepository.reportPlaybackStop(
+                val success = playbackRepository.reportPlaybackStop(
                     itemId = itemId,
                     sessionId = sessionId,
                     positionTicks = positionTicks,
                     mediaSourceId = mediaSourceId
                 )
-                Timber.d("Playback stop reported to Jellyfin: item=$itemId, position=${lastKnownPosition}ms")
+
+                if (success) {
+                    Timber.d("Playback stop reported to Jellyfin: item=$itemId, position=${lastKnownPosition}ms")
+                } else {
+                    Timber.w("Failed to report playback stop, progress saved locally. Scheduling sync...")
+                    syncScheduler.scheduleSyncNow()
+                }
             } else {
                 Timber.w("Cannot report playback stop - missing data: item=$itemId, session=$sessionId, source=$mediaSourceId")
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback stop to Jellyfin")
+            syncScheduler.scheduleSyncNow()
         }
     }
 

@@ -1,5 +1,8 @@
 package com.makd.afinity.data.repository.playback
 
+import com.makd.afinity.data.models.user.AfinityUserDataDto
+import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
@@ -23,7 +26,9 @@ import javax.inject.Singleton
 
 @Singleton
 class JellyfinPlaybackRepository @Inject constructor(
-    private val apiClient: ApiClient
+    private val apiClient: ApiClient,
+    private val databaseRepository: DatabaseRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : PlaybackRepository {
 
     private suspend fun getCurrentUserId(): UUID? {
@@ -263,10 +268,12 @@ class JellyfinPlaybackRepository @Inject constructor(
                 )
                 true
             } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to report playback progress for item: $itemId")
+                Timber.e(e, "Failed to report playback progress for item: $itemId, saving locally")
+                savePlaybackProgressLocally(itemId, positionTicks)
                 false
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error reporting playback progress for item: $itemId")
+                Timber.e(e, "Unexpected error reporting playback progress for item: $itemId, saving locally")
+                savePlaybackProgressLocally(itemId, positionTicks)
                 false
             }
         }
@@ -293,12 +300,46 @@ class JellyfinPlaybackRepository @Inject constructor(
                 )
                 true
             } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to report playback stop for item: $itemId")
+                Timber.e(e, "Failed to report playback stop for item: $itemId, saving locally")
+                savePlaybackProgressLocally(itemId, positionTicks)
                 false
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error reporting playback stop for item: $itemId")
+                Timber.e(e, "Unexpected error reporting playback stop for item: $itemId, saving locally")
+                savePlaybackProgressLocally(itemId, positionTicks)
                 false
             }
+        }
+    }
+
+    private suspend fun savePlaybackProgressLocally(itemId: UUID, positionTicks: Long) {
+        try {
+            val userIdString = preferencesRepository.getCurrentUserId() ?: run {
+                Timber.w("Cannot save playback progress locally: no current user ID in preferences")
+                return
+            }
+
+            val userId = try {
+                UUID.fromString(userIdString)
+            } catch (e: IllegalArgumentException) {
+                Timber.w("Cannot save playback progress locally: invalid user ID format")
+                return
+            }
+
+            val existingData = databaseRepository.getUserData(userId, itemId)
+
+            val updatedData = AfinityUserDataDto(
+                userId = userId,
+                itemId = itemId,
+                played = existingData?.played ?: false,
+                favorite = existingData?.favorite ?: false,
+                playbackPositionTicks = positionTicks,
+                toBeSynced = true
+            )
+
+            databaseRepository.insertUserData(updatedData)
+            Timber.i("✓ Saved playback progress locally for item $itemId: ${positionTicks / 10000}ms (will sync when online)")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to save playback progress locally for item: $itemId")
         }
     }
 

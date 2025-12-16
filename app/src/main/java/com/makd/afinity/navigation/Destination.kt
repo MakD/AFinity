@@ -36,10 +36,10 @@ enum class Destination(
         unselectedIcon = Icons.Outlined.FavoriteBorder
     ),
     WATCHLIST(
-    route = "watchlist",
-    title = "Watchlist",
-    selectedIcon = Icons.Filled.Bookmark,
-    unselectedIcon = Icons.Outlined.BookmarkBorder
+        route = "watchlist",
+        title = "Watchlist",
+        selectedIcon = Icons.Filled.Bookmark,
+        unselectedIcon = Icons.Outlined.BookmarkBorder
     );
 
     companion object {
@@ -50,6 +50,7 @@ enum class Destination(
         const val SEARCH_ROUTE = "search"
         const val GENRE_RESULTS_ROUTE = "genre_results/{genre}"
         const val SETTINGS_ROUTE = "settings"
+        const val DOWNLOAD_SETTINGS_ROUTE = "download_settings"
         const val LICENSES_ROUTE = "licenses"
 
         fun createPersonRoute(personId: String): String {
@@ -94,6 +95,10 @@ enum class Destination(
         }
         fun createSettingsRoute(): String {
             return SETTINGS_ROUTE
+        }
+
+        fun createDownloadSettingsRoute(): String {
+            return DOWNLOAD_SETTINGS_ROUTE
         }
 
         fun createLicensesRoute(): String {

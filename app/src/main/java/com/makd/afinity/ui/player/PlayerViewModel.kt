@@ -62,6 +62,7 @@ class PlayerViewModel @Inject constructor(
     private val segmentsRepository: SegmentsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val playlistManager: PlaylistManager,
+    private val downloadRepository: com.makd.afinity.data.repository.download.JellyfinDownloadRepository,
     private val apiClient: ApiClient
 ) : ViewModel(), Player.Listener {
 
@@ -352,21 +353,32 @@ class PlayerViewModel @Inject constructor(
             playbackStateManager.trackCurrentItem(item.id)
 
             coroutineScope {
+                val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
+                val useLocalSource = mediaSource?.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+
                 val streamUrlDeferred = async(Dispatchers.IO) {
-                    playbackRepository.getStreamUrl(
-                        itemId = item.id,
-                        mediaSourceId = mediaSourceId,
-                        audioStreamIndex = audioStreamIndex,
-                        subtitleStreamIndex = null,
-                        videoStreamIndex = null,
-                        maxStreamingBitrate = null,
-                        startTimeTicks = null
-                    )
+                    if (useLocalSource) {
+                        mediaSource?.path?.let { "file://$it" }
+                    } else {
+                        playbackRepository.getStreamUrl(
+                            itemId = item.id,
+                            mediaSourceId = mediaSourceId,
+                            audioStreamIndex = audioStreamIndex,
+                            subtitleStreamIndex = null,
+                            videoStreamIndex = null,
+                            maxStreamingBitrate = null,
+                            startTimeTicks = null
+                        )
+                    }
                 }
 
                 val segmentsJob = launch(Dispatchers.IO) { loadSegments(item.id) }
                 val trickplayJob = launch(Dispatchers.IO) { loadTrickplayData() }
-                val reportStartJob = launch(Dispatchers.IO) { reportPlaybackStart(item) }
+                val reportStartJob = launch(Dispatchers.IO) {
+                    if (!useLocalSource) {
+                        reportPlaybackStart(item)
+                    }
+                }
 
                 val streamUrl = streamUrlDeferred.await()
                 if (streamUrl.isNullOrBlank()) {
@@ -374,25 +386,69 @@ class PlayerViewModel @Inject constructor(
                     updateUiState { it.copy(isLoading = false, showError = true, errorMessage = "Failed to load stream.") }
                     return@coroutineScope
                 }
-
-                val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
-                val externalSubtitles = mediaSource?.mediaStreams
-                    ?.filter { stream ->
-                        stream.type == MediaStreamType.SUBTITLE && stream.isExternal
-                    }
-                    ?.mapNotNull { stream ->
-                        try {
-                            val subtitleUrl = "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
-                            MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
-                                .setLabel(stream.displayTitle ?: stream.language ?: "Track ${stream.index}")
-                                .setMimeType(MimeTypes.APPLICATION_SUBRIP)
-                                .setLanguage(stream.language ?: "eng")
-                                .build()
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to build subtitle config for stream ${stream.index}")
-                            null
+                val externalSubtitles = if (useLocalSource) {
+                    val itemDir = downloadRepository.getItemDownloadDirectory(item.id)
+                    val subtitlesDir = java.io.File(itemDir, "subtitles")
+                    Timber.d("PlayerViewModel: Looking for local subtitles in: ${subtitlesDir.absolutePath}")
+                    Timber.d("PlayerViewModel: Subtitles directory exists: ${subtitlesDir.exists()}")
+                    if (subtitlesDir.exists()) {
+                        val files = subtitlesDir.listFiles()
+                        Timber.d("PlayerViewModel: Found ${files?.size ?: 0} subtitle files")
+                        files?.forEach { file ->
+                            Timber.d("PlayerViewModel: Subtitle file: ${file.name}")
                         }
-                    } ?: emptyList()
+                        files?.mapNotNull { subtitleFile ->
+                            try {
+                                val extension = subtitleFile.extension
+                                val mimeType = when (extension.lowercase()) {
+                                    "srt" -> MimeTypes.APPLICATION_SUBRIP
+                                    "vtt" -> MimeTypes.TEXT_VTT
+                                    "ass", "ssa" -> MimeTypes.TEXT_SSA
+                                    else -> MimeTypes.TEXT_UNKNOWN
+                                }
+
+                                val language = subtitleFile.nameWithoutExtension.split("_").firstOrNull() ?: "unknown"
+
+                                val subtitleConfig = MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse("file://${subtitleFile.absolutePath}"))
+                                    .setLabel(language)
+                                    .setMimeType(mimeType)
+                                    .setLanguage(language)
+                                    .build()
+                                Timber.d("PlayerViewModel: Built subtitle config - Label: $language, MimeType: $mimeType, URI: file://${subtitleFile.absolutePath}")
+                                subtitleConfig
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to build subtitle config for local file: ${subtitleFile.name}")
+                                null
+                            }
+                        } ?: emptyList()
+                    } else {
+                        Timber.w("PlayerViewModel: Subtitles directory does not exist")
+                        emptyList()
+                    }
+                } else {
+                    mediaSource?.mediaStreams
+                        ?.filter { stream ->
+                            stream.type == MediaStreamType.SUBTITLE && stream.isExternal
+                        }
+                        ?.mapNotNull { stream ->
+                            try {
+                                val subtitleUrl = "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
+                                MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
+                                    .setLabel(stream.displayTitle ?: stream.language ?: "Track ${stream.index}")
+                                    .setMimeType(MimeTypes.APPLICATION_SUBRIP)
+                                    .setLanguage(stream.language ?: "eng")
+                                    .build()
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to build subtitle config for stream ${stream.index}")
+                                null
+                            }
+                        } ?: emptyList()
+                }
+
+                Timber.d("PlayerViewModel: Total subtitles added to MediaItem: ${externalSubtitles.size}")
+                externalSubtitles.forEach { subtitle ->
+                    Timber.d("PlayerViewModel: Subtitle in MediaItem - Label: ${subtitle.label}, Language: ${subtitle.language}, URI: ${subtitle.uri}")
+                }
 
                 val mediaItem = MediaItem.Builder()
                     .setMediaId(item.id.toString())
