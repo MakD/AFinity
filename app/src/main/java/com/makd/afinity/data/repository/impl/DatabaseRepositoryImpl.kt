@@ -534,6 +534,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             tagline = tagline,
             providerIds = null,
             externalUrls = null,
+            liked = false,
             )
     }
 
@@ -575,6 +576,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             tagline = null,
             providerIds = null,
             externalUrls = null,
+            liked = false,
             )
     }
 
@@ -608,6 +610,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             people = emptyList(),
             providerIds = null,
             externalUrls = null,
+            liked = false,
         )
     }
 
@@ -651,6 +654,7 @@ class DatabaseRepositoryImpl @Inject constructor(
             trickplayInfo = trickplayInfos,
             providerIds = null,
             externalUrls = null,
+            liked = false,
         )
     }
 

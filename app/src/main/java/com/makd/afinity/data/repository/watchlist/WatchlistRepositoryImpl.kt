@@ -1,14 +1,20 @@
 package com.makd.afinity.data.repository.watchlist
 
-import com.makd.afinity.data.database.dao.WatchlistDao
-import com.makd.afinity.data.database.entities.WatchlistItemEntity
+import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.toAfinityEpisode
+import com.makd.afinity.data.models.media.toAfinitySeason
+import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.userdata.UserDataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.UUID
@@ -17,44 +23,24 @@ import javax.inject.Singleton
 
 @Singleton
 class WatchlistRepositoryImpl @Inject constructor(
-    private val watchlistDao: WatchlistDao,
+    private val userDataRepository: UserDataRepository,
+    private val mediaRepository: MediaRepository,
     private val jellyfinRepository: JellyfinRepository
 ) : WatchlistRepository {
 
     override suspend fun addToWatchlist(itemId: UUID, itemType: String): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val entity = WatchlistItemEntity(
-                    itemId = itemId,
-                    itemType = itemType
-                )
-                watchlistDao.addToWatchlist(entity)
-                Timber.d("Added item $itemId to watchlist")
-                true
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to add item to watchlist: $itemId")
-                false
-            }
-        }
+        return userDataRepository.setLike(itemId, isLiked = true)
     }
 
     override suspend fun removeFromWatchlist(itemId: UUID): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                watchlistDao.removeFromWatchlistById(itemId)
-                Timber.d("Removed item $itemId from watchlist")
-                true
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to remove item from watchlist: $itemId")
-                false
-            }
-        }
+        return userDataRepository.setLike(itemId, isLiked = false)
     }
 
     override suspend fun isInWatchlist(itemId: UUID): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                watchlistDao.isInWatchlist(itemId)
+                val userData = userDataRepository.getUserData(itemId)
+                userData?.likes == true
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check if item is in watchlist: $itemId")
                 false
@@ -63,26 +49,22 @@ class WatchlistRepositoryImpl @Inject constructor(
     }
 
     override fun isInWatchlistFlow(itemId: UUID): Flow<Boolean> {
-        return watchlistDao.isInWatchlistFlow(itemId)
+        return flow {
+            emit(isInWatchlist(itemId))
+        }.flowOn(Dispatchers.IO)
     }
 
     override suspend fun getWatchlistMovies(): List<AfinityMovie> {
         return withContext(Dispatchers.IO) {
             try {
-                val watchlistItems = watchlistDao.getWatchlistItemsByType("MOVIE")
-                val movies = watchlistItems.mapNotNull { entity ->
-                    try {
-                        val item = jellyfinRepository.getItemById(entity.itemId)
-                        item as? AfinityMovie
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to load movie ${entity.itemId} from watchlist")
-                        null
-                    }
-                }
-                Timber.d("Loaded ${movies.size} movies from watchlist")
-                movies
+                mediaRepository.getMovies(
+                    isLiked = true,
+                    sortBy = SortBy.DATE_ADDED,
+                    sortDescending = true,
+                    fields = FieldSets.MEDIA_ITEM_CARDS
+                )
             } catch (e: Exception) {
-                Timber.e(e, "Failed to load watchlist movies")
+                Timber.e(e, "Failed to load liked movies")
                 emptyList()
             }
         }
@@ -91,20 +73,14 @@ class WatchlistRepositoryImpl @Inject constructor(
     override suspend fun getWatchlistShows(): List<AfinityShow> {
         return withContext(Dispatchers.IO) {
             try {
-                val watchlistItems = watchlistDao.getWatchlistItemsByType("SERIES")
-                val shows = watchlistItems.mapNotNull { entity ->
-                    try {
-                        val item = jellyfinRepository.getItemById(entity.itemId)
-                        item as? AfinityShow
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to load show ${entity.itemId} from watchlist")
-                        null
-                    }
-                }
-                Timber.d("Loaded ${shows.size} shows from watchlist")
-                shows
+                mediaRepository.getShows(
+                    isLiked = true,
+                    sortBy = SortBy.DATE_ADDED,
+                    sortDescending = true,
+                    fields = FieldSets.MEDIA_ITEM_CARDS
+                )
             } catch (e: Exception) {
-                Timber.e(e, "Failed to load watchlist shows")
+                Timber.e(e, "Failed to load liked shows")
                 emptyList()
             }
         }
@@ -113,22 +89,20 @@ class WatchlistRepositoryImpl @Inject constructor(
     override suspend fun getWatchlistSeasons(): List<AfinitySeason> {
         return withContext(Dispatchers.IO) {
             try {
-
-                val watchlistItems = watchlistDao.getWatchlistItemsByType("SEASON")
-
-                val seasons = watchlistItems.mapNotNull { entity ->
-                    try {
-                        val item = jellyfinRepository.getItemById(entity.itemId)
-                        item as? AfinitySeason
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to load season ${entity.itemId} from watchlist")
-                        null
-                    }
-                }
-                Timber.d("Loaded ${seasons.size} seasons from watchlist")
-                seasons
+                val response = mediaRepository.getItems(
+                    isLiked = true,
+                    includeItemTypes = listOf("SEASON"),
+                    sortBy = SortBy.DATE_ADDED,
+                    sortDescending = true,
+                    fields = FieldSets.MEDIA_ITEM_CARDS
+                )
+                response.items
+                    ?.filter { it.type?.name == "SEASON" }
+                    ?.mapNotNull {
+                        it.toAfinitySeason(jellyfinRepository)
+                    } ?: emptyList()
             } catch (e: Exception) {
-                Timber.e(e, "Failed to load watchlist seasons")
+                Timber.e(e, "Failed to load liked seasons")
                 emptyList()
             }
         }
@@ -137,20 +111,20 @@ class WatchlistRepositoryImpl @Inject constructor(
     override suspend fun getWatchlistEpisodes(): List<AfinityEpisode> {
         return withContext(Dispatchers.IO) {
             try {
-                val watchlistItems = watchlistDao.getWatchlistItemsByType("EPISODE")
-                val episodes = watchlistItems.mapNotNull { entity ->
-                    try {
-                        val item = jellyfinRepository.getItemById(entity.itemId)
-                        item as? AfinityEpisode
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to load episode ${entity.itemId} from watchlist")
-                        null
-                    }
-                }
-                Timber.d("Loaded ${episodes.size} episodes from watchlist")
-                episodes
+                val response = mediaRepository.getItems(
+                    isLiked = true,
+                    includeItemTypes = listOf("EPISODE"),
+                    sortBy = SortBy.DATE_ADDED,
+                    sortDescending = true,
+                    fields = FieldSets.MEDIA_ITEM_CARDS
+                )
+                response.items
+                    ?.filter { it.type?.name == "EPISODE" }
+                    ?.mapNotNull {
+                        it.toAfinityEpisode(jellyfinRepository)
+                    } ?: emptyList()
             } catch (e: Exception) {
-                Timber.e(e, "Failed to load watchlist episodes")
+                Timber.e(e, "Failed to load liked episodes")
                 emptyList()
             }
         }
@@ -159,7 +133,11 @@ class WatchlistRepositoryImpl @Inject constructor(
     override suspend fun getWatchlistCount(): Int {
         return withContext(Dispatchers.IO) {
             try {
-                watchlistDao.getWatchlistCount()
+                val response = mediaRepository.getItems(
+                    isLiked = true,
+                    limit = 0
+                )
+                response.totalRecordCount ?: 0
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get watchlist count")
                 0
@@ -168,14 +146,28 @@ class WatchlistRepositoryImpl @Inject constructor(
     }
 
     override fun getWatchlistCountFlow(): Flow<Int> {
-        return watchlistDao.getWatchlistCountFlow()
+        return flow {
+            emit(getWatchlistCount())
+        }.flowOn(Dispatchers.IO)
     }
 
     override suspend fun clearWatchlist() {
         return withContext(Dispatchers.IO) {
             try {
-                watchlistDao.clearWatchlist()
-                Timber.d("Cleared watchlist")
+                val allLikedResponse = mediaRepository.getItems(
+                    isLiked = true,
+                    limit = 1000
+                )
+                val likedItemIds = allLikedResponse.items?.mapNotNull { it.id } ?: emptyList()
+
+                likedItemIds.forEach { itemId ->
+                    try {
+                        userDataRepository.setLike(itemId, isLiked = false)
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to unlike item: $itemId")
+                    }
+                }
+                Timber.d("Cleared watchlist (unliked ${likedItemIds.size} items)")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to clear watchlist")
             }

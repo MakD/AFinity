@@ -167,7 +167,7 @@ fun ItemDetailScreen(
                     nextEpisode = nextEpisode,
                     baseUrl = viewModel.getBaseUrl(),
                     specialFeatures = uiState.specialFeatures,
-                    isInWatchlist = uiState.isInWatchlist,
+                    isInWatchlist = uiState.item?.liked == true,
                     episodesPagingData = uiState.episodesPagingData,
                     downloadInfo = uiState.downloadInfo,
                     onPlayClick = { item, selection -> onPlayClick(item, selection) },

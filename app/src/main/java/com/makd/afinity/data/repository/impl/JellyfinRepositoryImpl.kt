@@ -272,6 +272,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         years: List<Int>,
         isFavorite: Boolean?,
         isPlayed: Boolean?,
+        isLiked: Boolean?,
         nameStartsWith: String?,
         fields: List<ItemFields>?,
         imageTypes: List<String>,
@@ -280,7 +281,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         return try {
             mediaRepository.getItems(
                 parentId, collectionTypes, sortBy, sortDescending, limit, startIndex,
-                searchTerm, includeItemTypes, genres, years, isFavorite, isPlayed, nameStartsWith, fields,
+                searchTerm, includeItemTypes, genres, years, isFavorite, isPlayed, isLiked, nameStartsWith, fields,
                 imageTypes, hasOverview
             )
         } catch (e: Exception) {

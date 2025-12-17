@@ -10,6 +10,7 @@ data class AfinityVideo(
     override val overview: String,
     override val played: Boolean,
     override val favorite: Boolean,
+    override val liked: Boolean,
     override val canPlay: Boolean,
     override val canDownload: Boolean,
     override val sources: List<AfinitySource>,

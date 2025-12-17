@@ -350,15 +350,6 @@ class ItemDetailViewModel @Inject constructor(
 
     private fun loadAdditionalDetails(item: AfinityItem) {
         viewModelScope.launch {
-            launch {
-                try {
-                    val isInWatchlist = watchlistRepository.isInWatchlist(item.id)
-                    _uiState.value = _uiState.value.copy(isInWatchlist = isInWatchlist)
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to load watchlist status")
-                }
-            }
-
             when (item) {
                 is AfinityShow -> {
                     launch {
@@ -561,13 +552,7 @@ class ItemDetailViewModel @Inject constructor(
                     _selectedEpisode.value = episode
                 }
 
-                try {
-                    val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
-                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to load episode watchlist status")
-                    _selectedEpisodeWatchlistStatus.value = false
-                }
+                _selectedEpisodeWatchlistStatus.value = episode.liked
 
                 try {
                     val episodeDownload = downloadRepository.getDownloadByItemId(episode.id)
@@ -618,24 +603,27 @@ class ItemDetailViewModel @Inject constructor(
     fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
-                val isInWatchlist = _selectedEpisodeWatchlistStatus.value
+                val isLiked = _selectedEpisodeWatchlistStatus.value
 
-                _selectedEpisodeWatchlistStatus.value = !isInWatchlist
+                _selectedEpisodeWatchlistStatus.value = !isLiked
+                _selectedEpisode.value = _selectedEpisode.value?.copy(liked = !isLiked)
 
-                val success = if (isInWatchlist) {
-                    watchlistRepository.removeFromWatchlist(episode.id)
-                } else {
-                    watchlistRepository.addToWatchlist(episode.id, "EPISODE")
-                }
+                val success = userDataRepository.setLike(
+                    itemId = episode.id,
+                    isLiked = !isLiked
+                )
 
                 if (!success) {
-                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
-                    Timber.w("Failed to toggle watchlist status")
+                    _selectedEpisodeWatchlistStatus.value = isLiked
+                    _selectedEpisode.value = _selectedEpisode.value?.copy(liked = isLiked)
+                    Timber.w("Failed to toggle like status")
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Error toggling episode watchlist")
-                val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
-                _selectedEpisodeWatchlistStatus.value = isInWatchlist
+                Timber.e(e, "Error toggling episode like status")
+                val userData = userDataRepository.getUserData(episode.id)
+                val isLiked = userData?.likes == true
+                _selectedEpisodeWatchlistStatus.value = isLiked
+                _selectedEpisode.value = _selectedEpisode.value?.copy(liked = isLiked)
             }
         }
     }
@@ -745,33 +733,30 @@ class ItemDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val currentItem = _uiState.value.item ?: return@launch
-                val isCurrentlyInWatchlist = _uiState.value.isInWatchlist
 
-                _uiState.value = _uiState.value.copy(isInWatchlist = !isCurrentlyInWatchlist)
+                val optimisticItem = when (currentItem) {
+                    is AfinityMovie -> currentItem.copy(liked = !currentItem.liked)
+                    is AfinityShow -> currentItem.copy(liked = !currentItem.liked)
+                    is AfinityEpisode -> currentItem.copy(liked = !currentItem.liked)
+                    is AfinitySeason -> currentItem.copy(liked = !currentItem.liked)
+                    is AfinityBoxSet -> currentItem.copy(liked = !currentItem.liked)
+                    else -> currentItem
+                }
+                _uiState.value = _uiState.value.copy(item = optimisticItem)
 
                 launch {
-                    val itemType = when (currentItem) {
-                        is AfinityMovie -> "MOVIE"
-                        is AfinityShow -> "SERIES"
-                        is AfinitySeason -> "SEASON"
-                        is AfinityEpisode -> "EPISODE"
-                        else -> "UNKNOWN"
-                    }
-
-                    val success = if (isCurrentlyInWatchlist) {
-                        watchlistRepository.removeFromWatchlist(currentItem.id)
-                    } else {
-                        watchlistRepository.addToWatchlist(currentItem.id, itemType)
-                    }
+                    val success = userDataRepository.setLike(
+                        itemId = currentItem.id,
+                        isLiked = !currentItem.liked
+                    )
 
                     if (!success) {
-                        _uiState.value = _uiState.value.copy(isInWatchlist = isCurrentlyInWatchlist)
-                        Timber.w("Failed to toggle watchlist status, reverted UI")
+                        _uiState.value = _uiState.value.copy(item = currentItem)
+                        Timber.w("Failed to toggle like status, reverted UI")
                     }
                 }
-
             } catch (e: Exception) {
-                Timber.e(e, "Error toggling watchlist status")
+                Timber.e(e, "Error toggling like status")
             }
         }
     }
@@ -950,7 +935,6 @@ data class ItemDetailUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val nextEpisode: AfinityEpisode? = null,
-    val isInWatchlist: Boolean = false,
     val episodesPagingData: Flow<PagingData<AfinityEpisode>>? = null,
     val showQualityDialog: Boolean = false,
     val downloadInfo: DownloadInfo? = null

@@ -11,6 +11,7 @@ data class AfinityFolder(
     override val overview: String = "",
     override val played: Boolean,
     override val favorite: Boolean,
+    override val liked: Boolean,
     override val canPlay: Boolean = false,
     override val canDownload: Boolean = false,
     override val sources: List<AfinitySource> = emptyList(),
@@ -31,6 +32,7 @@ fun BaseItemDto.toAfinityFolder(
         name = name.orEmpty(),
         played = userData?.played == true,
         favorite = userData?.isFavorite == true,
+        liked = userData?.likes == true,
         unplayedItemCount = userData?.unplayedItemCount,
         images = toAfinityImages(jellyfinRepository),
         providerIds = providerIds?.mapNotNull { (key, value) ->

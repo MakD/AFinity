@@ -12,6 +12,7 @@ data class AfinityCollection(
     override val overview: String = "",
     override val played: Boolean = false,
     override val favorite: Boolean = false,
+    override val liked: Boolean = false,
     override val canPlay: Boolean = false,
     override val canDownload: Boolean = false,
     override val sources: List<AfinitySource> = emptyList(),
@@ -38,6 +39,9 @@ fun BaseItemDto.toAfinityCollection(
         id = id,
         name = name.orEmpty(),
         type = type,
+        played = userData?.played == true,
+        favorite = userData?.isFavorite == true,
+        liked = userData?.likes == true,
         images = toAfinityImages(jellyfinRepository),
         providerIds = providerIds?.mapNotNull { (key, value) ->
             value?.let { key to it }

@@ -13,6 +13,7 @@ interface AfinityItem {
     val overview: String
     val played: Boolean
     val favorite: Boolean
+    val liked: Boolean
     val canPlay: Boolean
     val canDownload: Boolean
     val sources: List<AfinitySource>

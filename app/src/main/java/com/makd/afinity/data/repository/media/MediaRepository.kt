@@ -69,6 +69,7 @@ interface MediaRepository {
         years: List<Int> = emptyList(),
         isFavorite: Boolean? = null,
         isPlayed: Boolean? = null,
+        isLiked: Boolean? = null,
         nameStartsWith: String? = null,
         fields: List<ItemFields>? = null,
         imageTypes: List<String> = emptyList(),
@@ -94,6 +95,7 @@ interface MediaRepository {
         searchTerm: String? = null,
         isPlayed: Boolean? = null,
         isFavorite: Boolean? = null,
+        isLiked: Boolean? = null,
         fields: List<ItemFields>? = null
     ): List<AfinityMovie>
 
@@ -106,6 +108,7 @@ interface MediaRepository {
         searchTerm: String? = null,
         isPlayed: Boolean? = null,
         isFavorite: Boolean? = null,
+        isLiked: Boolean? = null,
         fields: List<ItemFields>? = null
     ): List<AfinityShow>
 

@@ -32,6 +32,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -557,23 +559,48 @@ private fun HighestRatedCard(
                         modifier = Modifier.fillMaxSize()
                     )
 
-                    if (item is AfinityShow) {
-                        item.episodeCount?.let { episodeCount ->
-                            Surface(
+                    when {
+                        item.played -> {
+                            Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(8.dp),
-                                shape = RoundedCornerShape(4.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
-                            ) {
-                                Text(
-                                    text = if (episodeCount > 99) "99+ EP" else "$episodeCount EP",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold
+                                    .padding(8.dp)
+                                    .size(24.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.primary,
+                                        CircleShape
                                     ),
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Watched",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(16.dp)
                                 )
+                            }
+                        }
+                        item is AfinityShow -> {
+                            val displayCount = item.unplayedItemCount ?: item.episodeCount
+                            displayCount?.let { count ->
+                                if (count > 0) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(8.dp),
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                                    ) {
+                                        Text(
+                                            text = if (count > 99) "99+ EP" else "$count EP",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
