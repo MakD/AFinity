@@ -26,7 +26,7 @@ class BoxSetCache @Inject constructor(
 
     private var lastBuiltTimestamp: Long = 0
 
-    private val cacheLifetimeMs = 24 * 60 * 60 * 1000L
+    private val cacheLifetimeMs = 60 * 60 * 1000L
 
     private val currentCacheVersion = 1
 
@@ -78,37 +78,22 @@ class BoxSetCache @Inject constructor(
         }
     }
 
-    /**
-     * Check if the cache is stale and needs rebuilding
-     */
     suspend fun isStale(): Boolean {
         ensureInitialized()
         val currentTime = System.currentTimeMillis()
         return (currentTime - lastBuiltTimestamp) > cacheLifetimeMs
     }
 
-    /**
-     * Check if cache is empty (not yet built)
-     */
     suspend fun isEmpty(): Boolean {
         ensureInitialized()
         return itemToBoxSetsMap.isEmpty()
     }
 
-    /**
-     * Get BoxSet IDs for a specific item from cache
-     * Returns empty list if item is not in any BoxSets
-     */
     suspend fun getBoxSetIdsForItem(itemId: UUID): List<UUID> {
         ensureInitialized()
         return itemToBoxSetsMap[itemId] ?: emptyList()
     }
 
-    /**
-     * Build the cache by fetching all BoxSets and their children
-     * This creates a reverse lookup map: ItemId -> BoxSet IDs
-     * Saves to database for persistence
-     */
     suspend fun buildCache(
         fetchAllBoxSets: suspend () -> List<BoxSetWithChildren>
     ) = mutex.withLock {
