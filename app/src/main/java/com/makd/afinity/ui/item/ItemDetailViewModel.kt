@@ -78,6 +78,18 @@ class ItemDetailViewModel @Inject constructor(
     }
 
     init {
+        viewModelScope.launch {
+            try {
+                val boxSets = mediaRepository.getBoxSetsContaining(
+                    itemId = itemId,
+                    fields = FieldSets.MEDIA_ITEM_CARDS
+                )
+                _uiState.value = _uiState.value.copy(containingBoxSets = boxSets)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load containing BoxSets in init")
+            }
+        }
+
         loadItem()
         observeDownloadStatus()
 
@@ -930,6 +942,7 @@ data class ItemDetailUiState(
     val item: AfinityItem? = null,
     val seasons: List<AfinitySeason> = emptyList(),
     val boxSetItems: List<AfinityItem> = emptyList(),
+    val containingBoxSets: List<AfinityBoxSet> = emptyList(),
     val similarItems: List<AfinityItem> = emptyList(),
     val specialFeatures: List<AfinityItem> = emptyList(),
     val isLoading: Boolean = false,

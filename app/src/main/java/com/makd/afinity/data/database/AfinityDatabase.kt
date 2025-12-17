@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
@@ -25,6 +26,8 @@ import com.makd.afinity.data.database.entities.AfinitySegmentDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.BoxSetCacheEntity
+import com.makd.afinity.data.database.entities.BoxSetCacheMetadata
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.LibraryCacheEntity
 import com.makd.afinity.data.models.server.Server
@@ -40,6 +43,8 @@ import com.makd.afinity.data.models.user.User
         User::class,
 
         LibraryCacheEntity::class,
+        BoxSetCacheEntity::class,
+        BoxSetCacheMetadata::class,
 
         AfinityMovieDto::class,
         AfinityShowDto::class,
@@ -55,7 +60,7 @@ import com.makd.afinity.data.models.user.User
 
         DownloadDto::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = false
 )
 @TypeConverters(com.makd.afinity.data.database.TypeConverters::class)
@@ -77,6 +82,7 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun serverDatabaseDao(): ServerDatabaseDao
 
     abstract fun libraryCacheDao(): LibraryCacheDao
+    abstract fun boxSetCacheDao(): BoxSetCacheDao
 
     companion object {
         @Volatile

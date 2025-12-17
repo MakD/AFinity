@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.media
 
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityCollection
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityImages
@@ -10,6 +11,7 @@ import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityShow
 import com.makd.afinity.data.models.extensions.toAfinityVideo
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -31,6 +33,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
@@ -59,7 +63,8 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinMediaRepository @Inject constructor(
     private val apiClient: ApiClient,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val boxSetCache: BoxSetCache
 ) : MediaRepository {
     override suspend fun refreshItemUserData(
         itemId: UUID,
@@ -1135,6 +1140,111 @@ class JellyfinMediaRepository @Inject constructor(
             emptyList()
         } catch (e: Exception) {
             Timber.e(e, "Unexpected error getting genres")
+            emptyList()
+        }
+    }
+
+    override suspend fun ensureBoxSetCacheBuilt() = withContext(Dispatchers.IO) {
+        try {
+            if (boxSetCache.isEmpty() || boxSetCache.isStale()) {
+                val stats = boxSetCache.getStats()
+                Timber.d("BoxSet cache needs rebuild - Empty: ${stats.isEmpty}, Stale: ${stats.isStale}, Age: ${stats.ageMs}ms")
+
+                boxSetCache.buildCache {
+                    fetchAllBoxSetsWithChildren()
+                }
+            } else {
+                val stats = boxSetCache.getStats()
+                Timber.d("BoxSet cache is fresh - ${stats.itemCount} items cached, Age: ${stats.ageMs}ms")
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to ensure BoxSet cache is built")
+        }
+    }
+
+    private suspend fun fetchAllBoxSetsWithChildren(): List<BoxSetWithChildren> {
+        val userId = getCurrentUserId() ?: return emptyList()
+        val itemsApi = ItemsApi(apiClient)
+
+        val boxSetsResponse = itemsApi.getItems(
+            userId = userId,
+            includeItemTypes = listOf(BaseItemKind.BOX_SET),
+            recursive = true,
+            fields = listOf(ItemFields.CHILD_COUNT),
+            enableImages = false,
+            enableUserData = false,
+            limit = null
+        )
+
+        val allBoxSets = boxSetsResponse.content?.items ?: emptyList()
+        Timber.d("Fetching children for ${allBoxSets.size} BoxSets")
+
+        val nonEmptyBoxSets = allBoxSets.filter { (it.childCount ?: 0) > 0 }
+
+        val semaphore = Semaphore(10)
+        return coroutineScope {
+            nonEmptyBoxSets.map { boxSetDto ->
+                async {
+                    semaphore.withPermit {
+                        try {
+                            val childrenResponse = itemsApi.getItems(
+                                userId = userId,
+                                parentId = boxSetDto.id,
+                                recursive = false,
+                                fields = emptyList(),
+                                enableImages = false,
+                                enableUserData = false
+                            )
+
+                            val childItemIds = childrenResponse.content?.items?.mapNotNull { it.id } ?: emptyList()
+
+                            BoxSetWithChildren(
+                                boxSetId = boxSetDto.id,
+                                childItemIds = childItemIds
+                            )
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to fetch children for BoxSet ${boxSetDto.name}")
+                            BoxSetWithChildren(boxSetDto.id, emptyList())
+                        }
+                    }
+                }
+            }.awaitAll()
+        }
+    }
+
+    override suspend fun getBoxSetsContaining(
+        itemId: UUID,
+        fields: List<ItemFields>?
+    ): List<AfinityBoxSet> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            ensureBoxSetCacheBuilt()
+
+            val boxSetIds = boxSetCache.getBoxSetIdsForItem(itemId)
+
+            if (boxSetIds.isEmpty()) {
+                Timber.d("Item $itemId is not in any BoxSets (cache lookup)")
+                return@withContext emptyList()
+            }
+
+            val userId = getCurrentUserId() ?: return@withContext emptyList()
+            val itemsApi = ItemsApi(apiClient)
+
+            val boxSetsResponse = itemsApi.getItems(
+                userId = userId,
+                ids = boxSetIds,
+                fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                enableImages = true,
+                enableUserData = true
+            )
+
+            val boxSets = boxSetsResponse.content?.items?.mapNotNull { boxSetDto ->
+                boxSetDto.toAfinityBoxSet(getBaseUrl())
+            } ?: emptyList()
+
+            Timber.d("Item $itemId is in ${boxSets.size} BoxSets (cache lookup)")
+            boxSets
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get BoxSets containing item $itemId")
             emptyList()
         }
     }

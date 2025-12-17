@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -34,6 +35,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.item.components.shared.CastSection
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
+import com.makd.afinity.ui.item.components.shared.InCollectionsSection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import java.util.UUID
@@ -43,6 +45,7 @@ fun MovieDetailContent(
     item: AfinityMovie,
     baseUrl: String,
     specialFeatures: List<AfinityItem>,
+    containingBoxSets: List<AfinityBoxSet>,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onPlayClick: (AfinityMovie, PlaybackSelection) -> Unit,
     navController: androidx.navigation.NavController
@@ -85,6 +88,14 @@ fun MovieDetailContent(
         SpecialFeaturesSection(
             specialFeatures = specialFeatures,
             onItemClick = onSpecialFeatureClick
+        )
+
+        InCollectionsSection(
+            boxSets = containingBoxSets,
+            onBoxSetClick = { boxSet ->
+                val route = Destination.createItemDetailRoute(boxSet.id.toString())
+                navController.navigate(route)
+            }
         )
 
         CastSection(

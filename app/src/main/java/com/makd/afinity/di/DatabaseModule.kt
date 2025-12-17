@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.DatabaseMigrations
+import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
@@ -100,6 +101,11 @@ object DatabaseModule {
     @Provides
     fun provideLibraryCacheDao(database: AfinityDatabase): LibraryCacheDao {
         return database.libraryCacheDao()
+    }
+
+    @Provides
+    fun provideBoxSetCacheDao(database: AfinityDatabase): BoxSetCacheDao {
+        return database.boxSetCacheDao()
     }
 
 }
