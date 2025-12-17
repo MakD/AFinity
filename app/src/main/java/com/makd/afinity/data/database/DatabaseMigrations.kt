@@ -101,6 +101,12 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_14_15 = object : Migration(14, 15) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("DROP TABLE IF EXISTS watchlist")
+        }
+    }
+
     val ALL_MIGRATIONS = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -112,6 +118,7 @@ object DatabaseMigrations {
         MIGRATION_10_11,
         MIGRATION_11_12,
         MIGRATION_12_13,
-        MIGRATION_13_14
+        MIGRATION_13_14,
+        MIGRATION_14_15
     )
 }

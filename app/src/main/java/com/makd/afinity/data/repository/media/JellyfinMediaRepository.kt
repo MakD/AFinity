@@ -47,6 +47,7 @@ import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
@@ -518,6 +519,7 @@ class JellyfinMediaRepository @Inject constructor(
         years: List<Int>,
         isFavorite: Boolean?,
         isPlayed: Boolean?,
+        isLiked: Boolean?,
         nameStartsWith: String?,
         fields: List<ItemFields>?,
         imageTypes: List<String>,
@@ -531,6 +533,11 @@ class JellyfinMediaRepository @Inject constructor(
             )
 
             val itemsApi = ItemsApi(apiClient)
+
+            val filters = buildList {
+                if (isLiked == true) add(ItemFilter.LIKES)
+            }
+
             val response = itemsApi.getItems(
                 userId = userId,
                 parentId = parentId,
@@ -548,6 +555,7 @@ class JellyfinMediaRepository @Inject constructor(
                 years = years,
                 isFavorite = isFavorite,
                 isPlayed = isPlayed,
+                filters = filters.ifEmpty { null },
                 nameStartsWith = nameStartsWith,
                 fields = fields ?: FieldSets.LIBRARY_GRID,
                 imageTypes = if (imageTypes.isNotEmpty()) {
@@ -644,30 +652,41 @@ class JellyfinMediaRepository @Inject constructor(
         searchTerm: String?,
         isPlayed: Boolean?,
         isFavorite: Boolean?,
+        isLiked: Boolean?,
         fields: List<ItemFields>?
     ): List<AfinityMovie> = withContext(Dispatchers.IO) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
+
+            val filters = buildList {
+                if (isLiked == true) add(ItemFilter.LIKES)
+            }
+
             val response = itemsApi.getItems(
                 userId = userId,
                 parentId = parentId,
                 includeItemTypes = listOf(BaseItemKind.MOVIE),
+                recursive = true,
                 limit = limit,
                 startIndex = startIndex,
                 searchTerm = searchTerm,
                 sortBy = listOf(sortBy.toJellyfinSortBy()),
                 sortOrder = if (sortDescending) listOf(SortOrder.DESCENDING) else listOf(SortOrder.ASCENDING),
                 isPlayed = isPlayed,
+                isFavorite = isFavorite,
+                filters = filters.ifEmpty { null },
                 fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                 enableImages = true,
                 enableUserData = true
             )
 
-            response.content?.items?.mapNotNull { baseItem ->
-                baseItem.toAfinityMovie(getBaseUrl())
-            } ?: emptyList()
+            response.content?.items
+                ?.filter { it.type == BaseItemKind.MOVIE }
+                ?.mapNotNull { baseItem ->
+                    baseItem.toAfinityMovie(getBaseUrl())
+                } ?: emptyList()
         } catch (e: ApiClientException) {
             Timber.e(e, "Failed to get movies")
             emptyList()
@@ -686,12 +705,18 @@ class JellyfinMediaRepository @Inject constructor(
         searchTerm: String?,
         isPlayed: Boolean?,
         isFavorite: Boolean?,
+        isLiked: Boolean?,
         fields: List<ItemFields>?
     ): List<AfinityShow> = withContext(Dispatchers.IO) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
+
+            val filters = buildList {
+                if (isLiked == true) add(ItemFilter.LIKES)
+            }
+
             val response = itemsApi.getItems(
                 userId = userId,
                 parentId = parentId,
@@ -704,13 +729,18 @@ class JellyfinMediaRepository @Inject constructor(
                 sortBy = listOf(sortBy.toJellyfinSortBy()),
                 sortOrder = if (sortDescending) listOf(SortOrder.DESCENDING) else listOf(SortOrder.ASCENDING),
                 isPlayed = isPlayed,
+                isFavorite = isFavorite,
+                filters = filters.ifEmpty { null },
                 fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                 enableImages = true,
                 enableUserData = true
             )
-            response.content?.items?.mapNotNull { baseItem ->
-                baseItem.toAfinityShow(getBaseUrl())
-            } ?: emptyList()
+
+            response.content?.items
+                ?.filter { it.type == BaseItemKind.SERIES }
+                ?.mapNotNull { baseItem ->
+                    baseItem.toAfinityShow(getBaseUrl())
+                } ?: emptyList()
         } catch (e: Exception) {
             Timber.e(e, "Failed to get shows")
             emptyList()

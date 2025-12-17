@@ -74,6 +74,7 @@ interface JellyfinRepository {
         years: List<Int> = emptyList(),
         isFavorite: Boolean? = null,
         isPlayed: Boolean? = null,
+        isLiked: Boolean? = null,
         nameStartsWith: String? = null,
         fields: List<ItemFields>? = null,
         imageTypes: List<String> = emptyList(),

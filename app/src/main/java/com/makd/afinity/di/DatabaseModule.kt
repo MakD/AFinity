@@ -16,7 +16,6 @@ import com.makd.afinity.data.database.dao.ShowDao
 import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
-import com.makd.afinity.data.database.dao.WatchlistDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -103,8 +102,4 @@ object DatabaseModule {
         return database.libraryCacheDao()
     }
 
-    @Provides
-    fun provideWatchlistDao(database: AfinityDatabase): WatchlistDao {
-        return database.watchlistDao()
-    }
 }

@@ -118,6 +118,7 @@ fun BaseItemDto.toAfinityMovie(
             value?.let { key to it }
         }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
+        liked = userData?.likes == true,
     )
 }
 
@@ -187,6 +188,7 @@ fun BaseItemDto.toAfinityShow(
             value?.let { key to it }
         }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
+        liked = userData?.likes == true,
     )
 }
 
@@ -217,6 +219,7 @@ fun BaseItemDto.toAfinitySeason(
             value?.let { key to it }
         }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
+        liked = userData?.likes == true,
     )
 }
 
@@ -290,6 +293,7 @@ fun BaseItemDto.toAfinityEpisode(
                 value?.let { key to it }
             }?.toMap(),
             externalUrls = toAfinityExternalUrls(),
+            liked = userData?.likes == true,
         )
     } catch (_: NullPointerException) {
         null
@@ -324,6 +328,7 @@ fun BaseItemDto.toAfinityBoxSet(
             value?.let { key to it }
         }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
+        liked = userData?.likes == true,
     )
 }
 
@@ -341,6 +346,7 @@ fun BaseItemDto.toAfinityFolder(
             value?.let { key to it }
         }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
+        liked = userData?.likes == true,
     )
 }
 
@@ -471,6 +477,7 @@ fun BaseItemDto.toAfinityVideo(
             value?.let { key to it }
         }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
+        liked = userData?.likes == true,
     )
 }
 
