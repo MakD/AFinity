@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.media
 
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -167,6 +168,13 @@ interface MediaRepository {
         includeItemTypes: List<String> = emptyList(),
         fields: List<ItemFields>? = null
     ): List<AfinityItem>
+
+    suspend fun getBoxSetsContaining(
+        itemId: UUID,
+        fields: List<ItemFields>? = null
+    ): List<AfinityBoxSet>
+
+    suspend fun ensureBoxSetCacheBuilt()
 
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>
     fun getLatestMediaFlow(parentId: UUID? = null): Flow<List<AfinityItem>>

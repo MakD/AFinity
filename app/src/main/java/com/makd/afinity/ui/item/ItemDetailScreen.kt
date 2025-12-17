@@ -91,6 +91,7 @@ import com.makd.afinity.ui.item.components.WriterSection
 import com.makd.afinity.ui.item.components.shared.CastSection
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.HeroSection
+import com.makd.afinity.ui.item.components.shared.InCollectionsSection
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.MetadataRow
 import com.makd.afinity.ui.item.components.shared.NextUpSection
@@ -163,6 +164,7 @@ fun ItemDetailScreen(
                     item = uiState.item!!,
                     seasons = uiState.seasons,
                     boxSetItems = uiState.boxSetItems,
+                    containingBoxSets = uiState.containingBoxSets,
                     similarItems = uiState.similarItems,
                     nextEpisode = nextEpisode,
                     baseUrl = viewModel.getBaseUrl(),
@@ -258,6 +260,7 @@ private fun ItemDetailContent(
     item: AfinityItem,
     seasons: List<AfinitySeason>,
     boxSetItems: List<AfinityItem>,
+    containingBoxSets: List<AfinityBoxSet>,
     similarItems: List<AfinityItem>,
     nextEpisode: AfinityEpisode?,
     baseUrl: String,
@@ -281,6 +284,7 @@ private fun ItemDetailContent(
             item = item,
             seasons = seasons,
             boxSetItems = boxSetItems,
+            containingBoxSets = containingBoxSets,
             similarItems = similarItems,
             nextEpisode = nextEpisode,
             baseUrl = baseUrl,
@@ -301,6 +305,7 @@ private fun ItemDetailContent(
             item = item,
             seasons = seasons,
             boxSetItems = boxSetItems,
+            containingBoxSets = containingBoxSets,
             similarItems = similarItems,
             nextEpisode = nextEpisode,
             baseUrl = baseUrl,
@@ -324,6 +329,7 @@ private fun LandscapeItemDetailContent(
     item: AfinityItem,
     seasons: List<AfinitySeason>,
     boxSetItems: List<AfinityItem>,
+    containingBoxSets: List<AfinityBoxSet>,
     similarItems: List<AfinityItem>,
     nextEpisode: AfinityEpisode?,
     baseUrl: String,
@@ -754,6 +760,7 @@ private fun LandscapeItemDetailContent(
                             seasons = seasons,
                             nextEpisode = nextEpisode,
                             specialFeatures = specialFeatures,
+                            containingBoxSets = containingBoxSets,
                             onSeasonClick = onSeasonClick,
                             onEpisodeClick = { clickedEpisode ->
                                 if (clickedEpisode.sources.isEmpty()) {
@@ -797,6 +804,7 @@ private fun LandscapeItemDetailContent(
                             item = item,
                             baseUrl = baseUrl,
                             specialFeatures = specialFeatures,
+                            containingBoxSets = containingBoxSets,
                             onSpecialFeatureClick = onSpecialFeatureClick,
                             onPlayClick = { movie, selection ->
                                 onPlayClick(movie, selection)
@@ -846,6 +854,7 @@ private fun PortraitItemDetailContent(
     item: AfinityItem,
     seasons: List<AfinitySeason>,
     boxSetItems: List<AfinityItem>,
+    containingBoxSets: List<AfinityBoxSet>,
     similarItems: List<AfinityItem>,
     nextEpisode: AfinityEpisode?,
     baseUrl: String,
@@ -1535,6 +1544,7 @@ private fun PortraitItemDetailContent(
                         seasons = seasons,
                         nextEpisode = nextEpisode,
                         specialFeatures = specialFeatures,
+                        containingBoxSets = containingBoxSets,
                         onSeasonClick = onSeasonClick,
                         onEpisodeClick = { clickedEpisode ->
                             if (clickedEpisode.sources.isEmpty()) {
@@ -1578,6 +1588,7 @@ private fun PortraitItemDetailContent(
                         item = item,
                         baseUrl = baseUrl,
                         specialFeatures = specialFeatures,
+                        containingBoxSets = containingBoxSets,
                         onSpecialFeatureClick = onSpecialFeatureClick,
                         onPlayClick = { movie, selection ->
                             onPlayClick(movie, selection)
@@ -1627,6 +1638,7 @@ fun SeriesDetailContent(
     seasons: List<AfinitySeason>,
     nextEpisode: AfinityEpisode?,
     specialFeatures: List<AfinityItem>,
+    containingBoxSets: List<AfinityBoxSet>,
     onSeasonClick: (AfinitySeason) -> Unit,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -1661,6 +1673,14 @@ fun SeriesDetailContent(
             item = item,
             onPersonClick = { personId ->
                 val route = Destination.createPersonRoute(personId.toString())
+                navController.navigate(route)
+            }
+        )
+
+        InCollectionsSection(
+            boxSets = containingBoxSets,
+            onBoxSetClick = { boxSet ->
+                val route = Destination.createItemDetailRoute(boxSet.id.toString())
                 navController.navigate(route)
             }
         )
