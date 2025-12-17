@@ -3,6 +3,7 @@ package com.makd.afinity.di
 import android.content.Context
 import coil3.ImageLoader
 import coil3.disk.DiskCache
+import coil3.gif.AnimatedImageDecoder
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
@@ -30,6 +31,7 @@ object ImageLoadingModule {
             .components {
                 add(OkHttpNetworkFetcherFactory(callFactory = { okHttpClient }))
                 add(SvgDecoder.Factory())
+                add(AnimatedImageDecoder.Factory())
             }
             .memoryCache {
                 MemoryCache.Builder()

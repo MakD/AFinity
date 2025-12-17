@@ -60,6 +60,7 @@ blurhash = { module = "com.vanniktech:blurhash", version.ref = "blurhash" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 coil-svg = { group = "io.coil-kt.coil3", name = "coil-svg", version.ref = "coilCompose" }
+coil-gif = { group = "io.coil-kt.coil3", name = "coil-gif", version.ref = "coilCompose" }
 coil-network-cache-control = { group = "io.coil-kt.coil3", name = "coil-network-cache-control", version.ref = "coilCompose" }
 compose-markdown = { group = "com.github.jeziellago", name = "compose-markdown", version.ref = "compose-markdown" }
 richtext-ui = { group = "com.halilibo.compose-richtext", name = "richtext-ui", version.ref = "richtext" }

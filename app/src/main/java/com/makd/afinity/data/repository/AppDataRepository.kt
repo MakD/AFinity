@@ -377,14 +377,17 @@ class AppDataRepository @Inject constructor(
 
             _separateMovieLibrarySections.value = movieResults
                 .filter { it.second.isNotEmpty() }
-                .map { (library, movies) -> library to movies.take(15) }
+                .map { (library, movies) -> library to movies.filter { !it.played }.take(15) }
 
             _separateTvLibrarySections.value = showResults
                 .filter { it.second.isNotEmpty() }
-                .map { (library, shows) -> library to shows.take(15) }
+                .map { (library, shows) -> library to shows.filter { !it.played }.take(15) }
 
-            val allLatestMovies = movieResults.flatMap { it.second }
-            val allLatestSeries = showResults.flatMap { it.second }
+            val allMoviesIncludingWatched = movieResults.flatMap { it.second }
+            val allSeriesIncludingWatched = showResults.flatMap { it.second }
+
+            val allLatestMovies = allMoviesIncludingWatched.filter { !it.played }
+            val allLatestSeries = allSeriesIncludingWatched.filter { !it.played }
 
             val latestMovies = if (useJellyfinDefault) {
                 allLatestMovies.sortedByDescending { it.dateCreated }.take(15)
@@ -398,10 +401,10 @@ class AppDataRepository @Inject constructor(
                 allLatestSeries.sortedByDescending { it.premiereDate }.take(15)
             }
 
-            val highRatedMovies = allLatestMovies.filter {
+            val highRatedMovies = allMoviesIncludingWatched.filter {
                 (it.communityRating ?: 0f) > 6.5f
             }
-            val highRatedShows = allLatestSeries.filter {
+            val highRatedShows = allSeriesIncludingWatched.filter {
                 (it.communityRating ?: 0f) > 6.5f
             }
 

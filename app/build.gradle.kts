@@ -155,6 +155,7 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.coil.network.cache.control)
     implementation(libs.coil.svg)
+    implementation(libs.coil.gif)
     implementation(libs.jellyfin.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.libmpv)

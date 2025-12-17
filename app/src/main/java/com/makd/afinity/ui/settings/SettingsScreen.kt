@@ -371,11 +371,6 @@ private fun GeneralSection(
             onClick = onDownloadClick
         )
 
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
         Button(
             onClick = onLogoutClick,
             modifier = Modifier
