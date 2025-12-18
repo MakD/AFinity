@@ -26,6 +26,7 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.player.GestureConfig
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.Trickplay
+import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
@@ -86,6 +87,9 @@ class PlayerViewModel @Inject constructor(
     private var currentItem: AfinityItem? = null
     private var currentTrickplay: Trickplay? = null
 
+    private var playerView: androidx.media3.ui.PlayerView? = null
+    private var currentZoomMode: VideoZoomMode = VideoZoomMode.FIT
+
     var onAutoplayNextEpisode: ((AfinityItem) -> Unit)? = null
     var enterPictureInPicture: (() -> Unit)? = null
     val playlistState = playlistManager.playlistState
@@ -95,11 +99,18 @@ class PlayerViewModel @Inject constructor(
         startPositionUpdateLoop()
         startProgressReporting()
         initializeBrightness()
+        initializeVideoZoomMode()
     }
 
     private fun initializeBrightness() {
         val systemBrightness = getSystemBrightness()
         _uiState.value = _uiState.value.copy(brightnessLevel = systemBrightness)
+    }
+
+    private fun initializeVideoZoomMode() {
+        viewModelScope.launch {
+            updateUiState { it.copy(videoZoomMode = currentZoomMode) }
+        }
     }
 
     private fun getSystemBrightness(): Float {
@@ -312,8 +323,52 @@ class PlayerViewModel @Inject constructor(
                 is PlayerEvent.ToggleRemainingTime -> {
                     updateUiState { it.copy(showRemainingTime = !it.showRemainingTime) }
                 }
+                is PlayerEvent.SetVideoZoomMode -> {
+                    applyZoomMode(event.mode)
+                }
+                is PlayerEvent.CycleVideoZoomMode -> {
+                    cycleZoomMode()
+                }
             }
         }
+    }
+
+    private fun applyZoomMode(mode: VideoZoomMode) {
+        when (player) {
+            is ExoPlayer -> {
+                playerView?.resizeMode = mode.toExoPlayerResizeMode()
+            }
+            is MPVPlayer -> {
+                applyMPVZoomMode(mode)
+            }
+        }
+
+        currentZoomMode = mode
+        updateUiState { it.copy(videoZoomMode = mode) }
+    }
+
+    private fun applyMPVZoomMode(mode: VideoZoomMode) {
+        val mpvPlayer = player as? MPVPlayer ?: return
+
+        when (mode) {
+            VideoZoomMode.FIT -> {
+                mpvPlayer.setOption("video-aspect-override", "-1")
+                mpvPlayer.setOption("panscan", "0.0")
+            }
+            VideoZoomMode.ZOOM -> {
+                mpvPlayer.setOption("video-aspect-override", "-1")
+                mpvPlayer.setOption("panscan", "1.0")
+            }
+        }
+    }
+
+    fun cycleZoomMode() {
+        applyZoomMode(currentZoomMode.toggle())
+    }
+
+    fun setPlayerView(view: androidx.media3.ui.PlayerView) {
+        playerView = view
+        applyZoomMode(currentZoomMode)
     }
 
     private suspend fun loadMedia(
@@ -1008,6 +1063,7 @@ class PlayerViewModel @Inject constructor(
         val dragStartPosition: Long = 0L,
         val showRemainingTime: Boolean = false,
         val isInPictureInPictureMode: Boolean = false,
-        val isControlsVisible: Boolean = true
+        val isControlsVisible: Boolean = true,
+        val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT
     )
 }

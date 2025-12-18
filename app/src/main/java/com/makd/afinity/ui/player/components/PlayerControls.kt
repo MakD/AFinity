@@ -161,6 +161,7 @@ fun PlayerControls(
         ) {
             TopControls(
                 uiState = uiState,
+                onPlayerEvent = onPlayerEvent,
                 onBackClick = onBackClick,
                 onAudioToggle = { showAudioSelector = !showAudioSelector },
                 onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
@@ -376,6 +377,7 @@ fun PlayerControls(
 @Composable
 private fun TopControls(
     uiState: PlayerViewModel.PlayerUiState,
+    onPlayerEvent: (PlayerEvent) -> Unit,
     onBackClick: () -> Unit,
     onLockToggle: () -> Unit,
     onPipToggle: () -> Unit = { /* TODO */ },
@@ -512,6 +514,17 @@ private fun TopControls(
                 }
 
                 if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
+                    IconButton(
+                        onClick = { onPlayerEvent(PlayerEvent.CycleVideoZoomMode) },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = uiState.videoZoomMode.getIconVector(),
+                            contentDescription = "Aspect Ratio",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                     IconButton(
                         onClick = onPipToggle,
                         modifier = Modifier.size(40.dp)

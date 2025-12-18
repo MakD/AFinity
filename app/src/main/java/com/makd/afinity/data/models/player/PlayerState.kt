@@ -58,6 +58,8 @@ sealed class PlayerEvent {
     data class OnSeekBarValueChange(val positionMs: Long) : PlayerEvent()
     object OnSeekBarDragFinished : PlayerEvent()
     object ToggleRemainingTime : PlayerEvent()
+    data class SetVideoZoomMode(val mode: VideoZoomMode) : PlayerEvent()
+    data object CycleVideoZoomMode : PlayerEvent()
 }
 
 data class GestureConfig(

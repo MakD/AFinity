@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.player.VideoZoomMode
 import kotlinx.coroutines.flow.Flow
 
 interface PreferencesRepository {

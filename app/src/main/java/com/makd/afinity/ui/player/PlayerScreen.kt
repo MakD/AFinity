@@ -160,6 +160,7 @@ fun PlayerScreen(
                                 androidx.media3.ui.PlayerView(context).apply {
                                     useController = false
                                     this.player = player
+                                    viewModel.setPlayerView(this)
                                 }
                             },
                             modifier = Modifier.fillMaxSize()

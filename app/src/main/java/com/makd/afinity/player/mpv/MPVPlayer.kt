@@ -828,6 +828,15 @@ class MPVPlayer(
         }
     }
 
+    fun setOption(name: String, value: String) {
+        try {
+            MPVLib.setPropertyString(name, value)
+            Timber.d("MPV option set: $name = $value")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to set MPV option: $name = $value")
+        }
+    }
+
     companion object {
         private const val AUDIO_FOCUS_DUCKING = 0.5f
 

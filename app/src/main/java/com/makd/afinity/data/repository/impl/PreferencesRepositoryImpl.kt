@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.di.AppPreferences
 import kotlinx.coroutines.flow.Flow
@@ -61,6 +62,8 @@ class PreferencesRepositoryImpl @Inject constructor(
 
         val UPDATE_CHECK_FREQUENCY = intPreferencesKey("update_check_frequency")
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
+
+        val VIDEO_ZOOM_MODE = intPreferencesKey("video_zoom_mode")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
