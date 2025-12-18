@@ -150,50 +150,147 @@ fun PlayerControls(
             }
         options
     }
-
-    AnimatedVisibility(
-        visible = uiState.showControls && !uiState.isInPictureInPictureMode,
-        enter = fadeIn(animationSpec = tween(300)),
-        exit = fadeOut(animationSpec = tween(300)),
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
         Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            TopControls(
-                uiState = uiState,
-                onPlayerEvent = onPlayerEvent,
-                onBackClick = onBackClick,
-                onAudioToggle = { showAudioSelector = !showAudioSelector },
-                onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
-                onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
-                onLockToggle = { onPlayerEvent(PlayerEvent.ToggleLock) },
-                onPipToggle = onPipToggle,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
-
-            if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
-                CenterPlayButton(
-                    isPlaying = uiState.isPlaying,
-                    showPlayButton = uiState.showControls,
-                    isBuffering = uiState.isBuffering,
-                    onPlayPauseClick = {
-                        if (uiState.isPlaying) onPlayerEvent(PlayerEvent.Pause)
-                        else onPlayerEvent(PlayerEvent.Play)
-                    },
-                    onSeekBackward = { onPlayerEvent(PlayerEvent.SeekRelative(-10000L)) },
-                    onSeekForward = { onPlayerEvent(PlayerEvent.SeekRelative(30000L)) },
-                    onNextEpisode = onNextEpisode,
-                    onPreviousEpisode = onPreviousEpisode,
-                    modifier = Modifier.align(Alignment.Center)
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.7f),
+                            Color.Transparent
+                        )
+                    )
                 )
-            }
+                .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier.padding(start = 16.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    val currentItem = uiState.currentItem
 
-            if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
-                BottomControls(
+                    if (currentItem is com.makd.afinity.data.models.media.AfinityMovie) {
+                        if (currentItem.images?.logo != null) {
+                            OptimizedAsyncImage(
+                                imageUrl = currentItem.images.logoImageUrlWithTransparency.toString(),
+                                contentDescription = "Logo",
+                                modifier = Modifier
+                                    .height(60.dp)
+                                    .widthIn(max = 200.dp),
+                                contentScale = ContentScale.Fit,
+                                blurHash = currentItem.images.logoBlurHash
+                            )
+                        } else {
+                            Text(
+                                text = currentItem.name,
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    if (currentItem is com.makd.afinity.data.models.media.AfinityEpisode) {
+                        val seasonNumber = currentItem.parentIndexNumber
+                        val episodeNumber = currentItem.indexNumber
+                        val episodeTitle = currentItem.name
+                        val seriesName = currentItem.seriesName
+
+                        if (seasonNumber != null && episodeNumber != null) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.wrapContentWidth()
+                            ) {
+                                if (currentItem.seriesLogo != null) {
+                                    val logoUrl = currentItem.seriesLogo.toString().let { url ->
+                                        if (url.contains("?")) "$url&format=png" else "$url?format=png"
+                                    }
+                                    OptimizedAsyncImage(
+                                        imageUrl = logoUrl,
+                                        contentDescription = "Series Logo",
+                                        modifier = Modifier
+                                            .height(60.dp)
+                                            .widthIn(max = 200.dp),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                } else {
+                                    Text(
+                                        text = seriesName ?: "",
+                                        color = Color.White.copy(alpha = 0.8f),
+                                        fontSize = 18.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                Text(
+                                    text = "S${
+                                        seasonNumber.toString().padStart(2, '0')
+                                    }:E${episodeNumber.toString().padStart(2, '0')}: $episodeTitle",
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 14.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        AnimatedVisibility(
+            visible = uiState.showControls && !uiState.isInPictureInPictureMode,
+            enter = fadeIn(animationSpec = tween(300)),
+            exit = fadeOut(animationSpec = tween(300)),
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                TopControls(
                     uiState = uiState,
                     onPlayerEvent = onPlayerEvent,
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    onBackClick = onBackClick,
+                    onAudioToggle = { showAudioSelector = !showAudioSelector },
+                    onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
+                    onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
+                    onLockToggle = { onPlayerEvent(PlayerEvent.ToggleLock) },
+                    onPipToggle = onPipToggle,
+                    modifier = Modifier.align(Alignment.TopCenter)
                 )
+
+                if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
+                    CenterPlayButton(
+                        isPlaying = uiState.isPlaying,
+                        showPlayButton = uiState.showControls,
+                        isBuffering = uiState.isBuffering,
+                        onPlayPauseClick = {
+                            if (uiState.isPlaying) onPlayerEvent(PlayerEvent.Pause)
+                            else onPlayerEvent(PlayerEvent.Play)
+                        },
+                        onSeekBackward = { onPlayerEvent(PlayerEvent.SeekRelative(-10000L)) },
+                        onSeekForward = { onPlayerEvent(PlayerEvent.SeekRelative(30000L)) },
+                        onNextEpisode = onNextEpisode,
+                        onPreviousEpisode = onPreviousEpisode,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
+                    BottomControls(
+                        uiState = uiState,
+                        onPlayerEvent = onPlayerEvent,
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
+                }
             }
         }
     }
@@ -418,81 +515,6 @@ private fun TopControls(
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
-            }
-            Column(
-                modifier = Modifier.padding(start = 16.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-                val currentItem = uiState.currentItem
-
-                if (currentItem is com.makd.afinity.data.models.media.AfinityMovie) {
-                    if (currentItem.images?.logo != null) {
-                        OptimizedAsyncImage(
-                            imageUrl = currentItem.images.logoImageUrlWithTransparency.toString(),
-                            contentDescription = "Logo",
-                            modifier = Modifier
-                                .height(60.dp)
-                                .widthIn(max = 200.dp),
-                            contentScale = ContentScale.Fit,
-                            blurHash = currentItem.images.logoBlurHash
-                        )
-                    } else {
-                        Text(
-                            text = currentItem.name,
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                if (currentItem is com.makd.afinity.data.models.media.AfinityEpisode) {
-                    val seasonNumber = currentItem.parentIndexNumber
-                    val episodeNumber = currentItem.indexNumber
-                    val episodeTitle = currentItem.name
-                    val seriesName = currentItem.seriesName
-
-                    if (seasonNumber != null && episodeNumber != null) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.wrapContentWidth()
-                        ) {
-                            if (currentItem.seriesLogo != null) {
-                                val logoUrl = currentItem.seriesLogo.toString().let { url ->
-                                    if (url.contains("?")) "$url&format=png" else "$url?format=png"
-                                }
-                                OptimizedAsyncImage(
-                                    imageUrl = logoUrl,
-                                    contentDescription = "Series Logo",
-                                    modifier = Modifier
-                                        .height(60.dp)
-                                        .widthIn(max = 200.dp),
-                                    contentScale = ContentScale.Fit
-                                )
-                            } else {
-                                Text(
-                                    text = seriesName ?: "",
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    fontSize = 18.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            Text(
-                                text = "S${
-                                    seasonNumber.toString().padStart(2, '0')
-                                }:E${episodeNumber.toString().padStart(2, '0')}: $episodeTitle",
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 14.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.weight(1f))
