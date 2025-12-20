@@ -225,7 +225,7 @@ class PlayerViewModel @Inject constructor(
             .setUsage(C.USAGE_MEDIA)
             .build()
 
-        return MPVPlayer.Builder(application)
+        val mpvPlayer = MPVPlayer.Builder(application)
             .setAudioAttributes(audioAttributes, true)
             .setSeekBackIncrementMs(10000)
             .setSeekForwardIncrementMs(10000)
@@ -234,6 +234,17 @@ class PlayerViewModel @Inject constructor(
             .setAudioOutput("audiotrack")
             .setHwDec("mediacodec")
             .build()
+
+        mpvPlayer.setOption("sub-ass-override", "force")
+        mpvPlayer.setOption("sub-use-margins", "yes")
+        mpvPlayer.setOption("sub-color", "#FFFFFF")
+        mpvPlayer.setOption("sub-border-size", "0")
+        mpvPlayer.setOption("sub-shadow-offset", "0")
+        mpvPlayer.setOption("sub-back-color", "#00000000")
+        mpvPlayer.setOption("sub-font-size", "55")
+        mpvPlayer.setOption("sub-bold", "no")
+
+        return mpvPlayer
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {

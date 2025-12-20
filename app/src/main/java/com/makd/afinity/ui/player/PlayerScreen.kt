@@ -1,6 +1,8 @@
 package com.makd.afinity.ui.player
 
+import android.graphics.Typeface
 import androidx.activity.compose.BackHandler
+import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,10 +16,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.ui.player.components.ErrorIndicator
@@ -159,6 +163,7 @@ fun PlayerScreen(
                             factory = { context ->
                                 androidx.media3.ui.PlayerView(context).apply {
                                     useController = false
+                                    subtitleView?.visibility = android.view.View.GONE
                                     this.player = player
                                     viewModel.setPlayerView(this)
                                 }
@@ -179,6 +184,13 @@ fun PlayerScreen(
                         )
                     }
                 }
+            }
+
+            if (viewModel.player is androidx.media3.exoplayer.ExoPlayer) {
+                ExoPlayerSubtitles(
+                    player = viewModel.player as androidx.media3.exoplayer.ExoPlayer,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
             PlayerControls(
@@ -230,4 +242,62 @@ fun PlayerScreen(
     ScreenBrightnessController(brightness = uiState.brightnessLevel)
     KeepScreenOn(keepOn = uiState.isPlaying)
     PlayerSystemBarsController(isControlsVisible = uiState.showControls)
+}
+
+@OptIn(UnstableApi::class)
+@Composable
+private fun ExoPlayerSubtitles(
+    player: androidx.media3.exoplayer.ExoPlayer,
+    modifier: Modifier = Modifier
+) {
+    var subtitleView: androidx.media3.ui.SubtitleView? by remember {
+        mutableStateOf(null)
+    }
+
+    AndroidView(
+        factory = { context ->
+            androidx.media3.ui.SubtitleView(context).apply {
+                setApplyEmbeddedStyles(false)
+                setApplyEmbeddedFontSizes(false)
+
+                val typeface = Typeface.createFromAsset(
+                    context.assets,
+                    "subfont.ttf"
+                )
+
+                val customStyle = androidx.media3.ui.CaptionStyleCompat(
+                    android.graphics.Color.WHITE,
+                    android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT,
+                    androidx.media3.ui.CaptionStyleCompat.EDGE_TYPE_NONE,
+                    android.graphics.Color.TRANSPARENT,
+                    typeface
+                )
+                setStyle(customStyle)
+                setFractionalTextSize(
+                    androidx.media3.ui.SubtitleView.DEFAULT_TEXT_SIZE_FRACTION
+                )
+
+                subtitleView = this
+            }
+        },
+        modifier = modifier
+    )
+
+    DisposableEffect(player) {
+        val listener = object : androidx.media3.common.Player.Listener {
+            override fun onCues(
+                cueGroup: androidx.media3.common.text.CueGroup
+            ) {
+                subtitleView?.setCues(cueGroup.cues)
+            }
+        }
+
+        player.addListener(listener)
+
+        onDispose {
+            player.removeListener(listener)
+            subtitleView?.setCues(emptyList())
+        }
+    }
 }
