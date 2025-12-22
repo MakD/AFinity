@@ -721,6 +721,14 @@ class MPVPlayer(
     override fun getDeviceVolume(): Int = MPVLib.getPropertyInt("volume")
     override fun isDeviceMuted(): Boolean = MPVLib.getPropertyBoolean("mute")
 
+    override fun mute() {
+        MPVLib.setPropertyBoolean("mute", true)
+    }
+
+    override fun unmute() {
+        MPVLib.setPropertyBoolean("mute", false)
+    }
+
     @Deprecated("Deprecated in Java")
     override fun setDeviceVolume(volume: Int) {
         MPVLib.setPropertyInt("volume", volume)

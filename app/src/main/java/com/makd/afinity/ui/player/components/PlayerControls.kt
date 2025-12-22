@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.player.components
 
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -57,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.logoBlurHash
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
@@ -82,7 +84,7 @@ data class SubtitleStreamOption(
     val isNone: Boolean = false
 )
 
-@androidx.media3.common.util.UnstableApi
+@OptIn(UnstableApi::class)
 @Composable
 fun PlayerControls(
     uiState: PlayerViewModel.PlayerUiState,
@@ -269,6 +271,7 @@ fun PlayerControls(
 
                 if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
                     CenterPlayButton(
+                        uiState = uiState,
                         isPlaying = uiState.isPlaying,
                         showPlayButton = uiState.showControls,
                         isBuffering = uiState.isBuffering,
@@ -470,7 +473,7 @@ fun PlayerControls(
         )
     }
 }
-@androidx.media3.common.util.UnstableApi
+@OptIn(UnstableApi::class)
 @Composable
 private fun TopControls(
     uiState: PlayerViewModel.PlayerUiState,
@@ -600,8 +603,10 @@ private fun TopControls(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun CenterPlayButton(
+    uiState: PlayerViewModel.PlayerUiState,
     isPlaying: Boolean,
     showPlayButton: Boolean,
     isBuffering: Boolean,
@@ -622,16 +627,18 @@ private fun CenterPlayButton(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(
-                onClick = onPreviousEpisode,
-                modifier = Modifier.size(60.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.SkipPrevious,
-                    contentDescription = "Previous",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
+            if (uiState.currentItem is com.makd.afinity.data.models.media.AfinityEpisode) {
+                IconButton(
+                    onClick = onPreviousEpisode,
+                    modifier = Modifier.size(60.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SkipPrevious,
+                        contentDescription = "Previous",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
 
             IconButton(
@@ -650,19 +657,18 @@ private fun CenterPlayButton(
                 onClick = onPlayPauseClick,
                 modifier = Modifier
                     .size(60.dp)
-                    .background(Color.White, CircleShape)
             ) {
                 if (isBuffering) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(40.dp),
-                        color = Color.Black,
-                        strokeWidth = 3.dp
+                        color = Color.White,
+                        strokeWidth = 4.dp
                     )
                 } else {
                     Icon(
                         imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = if (isPlaying) "Pause" else "Play",
-                        tint = Color.Black,
+                        tint = Color.White,
                         modifier = Modifier.size(40.dp)
                     )
                 }
@@ -680,21 +686,24 @@ private fun CenterPlayButton(
                 )
             }
 
-            IconButton(
-                onClick = onNextEpisode,
-                modifier = Modifier.size(60.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.SkipNext,
-                    contentDescription = "Next",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
+            if (uiState.currentItem is com.makd.afinity.data.models.media.AfinityEpisode) {
+                IconButton(
+                    onClick = onNextEpisode,
+                    modifier = Modifier.size(60.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "Next",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
         }
     }
 }
-@androidx.media3.common.util.UnstableApi
+
+@OptIn(UnstableApi::class)
 @Composable
 private fun BottomControls(
     uiState: PlayerViewModel.PlayerUiState,
@@ -725,7 +734,7 @@ private fun BottomControls(
         )
     }
 }
-@androidx.media3.common.util.UnstableApi
+@OptIn(UnstableApi::class)
 @Composable
 private fun SeekBar(
     uiState: PlayerViewModel.PlayerUiState,
@@ -736,36 +745,18 @@ private fun SeekBar(
     val duration = uiState.duration
     val position = if (uiState.isSeeking) uiState.seekPosition else uiState.currentPosition
 
-    Column(
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 12.dp, start = 8.dp, end = 8.dp)
+            .padding(bottom = 12.dp, start = 8.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = formatTime(draggedPosition?.toLong() ?: position),
-                color = Color.White,
-                fontSize = 12.sp
-            )
-            Text(
-                text = if (uiState.showRemainingTime) {
-                    "${formatTime((duration - position).coerceAtLeast(0L))}"
-                } else {
-                    formatTime(duration)
-                },
-                color = Color.White,
-                fontSize = 12.sp,
-                modifier = Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    onPlayerEvent(PlayerEvent.ToggleRemainingTime)
-                }
-            )
-        }
+        Text(
+            text = formatTime(draggedPosition?.toLong() ?: position),
+            color = Color.White,
+            fontSize = 12.sp
+        )
 
         Slider(
             value = draggedPosition ?: position.toFloat(),
@@ -793,8 +784,24 @@ private fun SeekBar(
                 )
             },
             modifier = Modifier
-                .fillMaxWidth()
+                .weight(1f)
                 .height(18.dp)
+        )
+
+        Text(
+            text = if (uiState.showRemainingTime) {
+                "-${formatTime((duration - position).coerceAtLeast(0L))}"
+            } else {
+                formatTime(duration)
+            },
+            color = Color.White,
+            fontSize = 12.sp,
+            modifier = Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                onPlayerEvent(PlayerEvent.ToggleRemainingTime)
+            }
         )
     }
 }
