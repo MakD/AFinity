@@ -21,18 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeDown
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.BrightnessHigh
-import androidx.compose.material.icons.filled.BrightnessLow
-import androidx.compose.material.icons.filled.BrightnessMedium
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.VolumeDown
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -42,14 +30,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.common.util.UnstableApi
+import com.makd.afinity.R
 import com.makd.afinity.ui.player.PlayerViewModel
 import kotlin.math.roundToInt
 
-@androidx.media3.common.util.UnstableApi
+@UnstableApi
 @Composable
 fun PlayerIndicators(
     uiState: PlayerViewModel.PlayerUiState,
@@ -104,7 +95,7 @@ private fun SeekIndicator(
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(
-                    imageVector = if (direction > 0) Icons.Default.FastForward else Icons.Default.FastRewind,
+                    painter = if (direction > 0) painterResource(id = R.drawable.fast_forward) else painterResource(id = R.drawable.fast_rewind),
                     contentDescription = if (direction > 0) "Fast Forward" else "Rewind",
                     tint = Color.White,
                     modifier = Modifier.size(40.dp)
@@ -158,7 +149,7 @@ private fun BrightnessIndicator(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Icon(
-                    imageVector = getBrightnessIcon(level),
+                    painter = getBrightnessIcon(level),
                     contentDescription = "Brightness",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
@@ -231,7 +222,7 @@ private fun VolumeIndicator(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Icon(
-                    imageVector = getVolumeIcon(level),
+                    painter = getVolumeIcon(level),
                     contentDescription = "Volume",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
@@ -269,18 +260,20 @@ private fun VolumeIndicator(
     }
 }
 
-private fun getBrightnessIcon(level: Float): ImageVector {
+@Composable
+private fun getBrightnessIcon(level: Float): Painter {
     return when {
-        level < 0.3f -> Icons.Default.BrightnessLow
-        level < 0.7f -> Icons.Default.BrightnessMedium
-        else -> Icons.Default.BrightnessHigh
+        level < 0.3f -> painterResource(id = R.drawable.brightness_down)
+        level < 0.7f -> painterResource(id = R.drawable.brightness_medium)
+        else -> painterResource(id = R.drawable.brightness_up)
     }
 }
 
-private fun getVolumeIcon(level: Int): ImageVector {
+@Composable
+private fun getVolumeIcon(level: Int): Painter {
     return when {
-        level == 0 -> Icons.AutoMirrored.Filled.VolumeOff
-        level < 30 -> Icons.AutoMirrored.Filled.VolumeDown
-        else -> Icons.AutoMirrored.Filled.VolumeUp
+        level == 0 -> painterResource(id = R.drawable.volume_off)
+        level < 30 -> painterResource(id = R.drawable.volume_down)
+        else -> painterResource(id = R.drawable.volume_up)
     }
 }

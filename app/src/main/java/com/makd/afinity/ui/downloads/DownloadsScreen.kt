@@ -14,14 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -43,12 +35,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import java.util.UUID
@@ -242,7 +236,7 @@ private fun ActiveDownloadCard(
                         DownloadStatus.DOWNLOADING, DownloadStatus.QUEUED -> {
                             IconButton(onClick = { onPause(download.id) }) {
                                 Icon(
-                                    imageVector = Icons.Default.Pause,
+                                    painter = painterResource(id = R.drawable.cloud_pause),
                                     contentDescription = "Pause"
                                 )
                             }
@@ -250,14 +244,14 @@ private fun ActiveDownloadCard(
                         DownloadStatus.PAUSED -> {
                             IconButton(onClick = { onResume(download.id) }) {
                                 Icon(
-                                    imageVector = Icons.Default.PlayArrow,
+                                    painter = painterResource(id = R.drawable.play_arrow),
                                     contentDescription = "Resume"
                                 )
                             }
                         }
                         DownloadStatus.FAILED -> {
                             Icon(
-                                imageVector = Icons.Default.Error,
+                                painter = painterResource(id = R.drawable.exclamation_circle),
                                 contentDescription = "Failed",
                                 tint = MaterialTheme.colorScheme.error
                             )
@@ -267,7 +261,7 @@ private fun ActiveDownloadCard(
 
                     IconButton(onClick = { onCancel(download.id) }) {
                         Icon(
-                            imageVector = Icons.Default.Cancel,
+                            painter = painterResource(id = R.drawable.cancel),
                             contentDescription = "Cancel"
                         )
                     }
@@ -337,7 +331,7 @@ private fun CompletedDownloadCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.CheckCircle,
+                    painter = painterResource(id = R.drawable.circle_check),
                     contentDescription = "Completed",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(40.dp)
@@ -366,7 +360,7 @@ private fun CompletedDownloadCard(
 
             IconButton(onClick = { onDelete(download.id) }) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
+                    painter = painterResource(id = R.drawable.delete),
                     contentDescription = "Delete",
                     tint = MaterialTheme.colorScheme.error
                 )
@@ -391,7 +385,7 @@ private fun EmptyState(
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                imageVector = Icons.Outlined.Download,
+                painter = painterResource(id = R.drawable.download),
                 contentDescription = null,
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant

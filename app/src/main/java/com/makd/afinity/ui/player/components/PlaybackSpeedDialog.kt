@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,11 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.makd.afinity.R
 import kotlin.math.absoluteValue
 
 @Composable
@@ -110,7 +109,7 @@ fun PlaybackSpeedDialog(
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Remove,
+                                painter = painterResource(id = R.drawable.remove),
                                 contentDescription = "Decrease speed",
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -147,7 +146,7 @@ fun PlaybackSpeedDialog(
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Add,
+                                painter = painterResource(id = R.drawable.add),
                                 contentDescription = "Increase speed",
                                 tint = MaterialTheme.colorScheme.primary
                             )

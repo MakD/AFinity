@@ -23,17 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Forward30
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay10
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -261,9 +251,6 @@ fun PlayerControls(
                     uiState = uiState,
                     onPlayerEvent = onPlayerEvent,
                     onBackClick = onBackClick,
-                    onAudioToggle = { showAudioSelector = !showAudioSelector },
-                    onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
-                    onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
                     onLockToggle = { onPlayerEvent(PlayerEvent.ToggleLock) },
                     onPipToggle = onPipToggle,
                     modifier = Modifier.align(Alignment.TopCenter)
@@ -291,6 +278,9 @@ fun PlayerControls(
                     BottomControls(
                         uiState = uiState,
                         onPlayerEvent = onPlayerEvent,
+                        onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
+                        onAudioToggle = { showAudioSelector = !showAudioSelector },
+                        onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
                 }
@@ -356,7 +346,12 @@ fun PlayerControls(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onPlayerEvent(PlayerEvent.SwitchToTrack(androidx.media3.common.C.TRACK_TYPE_AUDIO, option.position))
+                                        onPlayerEvent(
+                                            PlayerEvent.SwitchToTrack(
+                                                androidx.media3.common.C.TRACK_TYPE_AUDIO,
+                                                option.position
+                                            )
+                                        )
                                         showAudioSelector = false
                                     }
                                     .padding(vertical = 6.dp),
@@ -365,7 +360,12 @@ fun PlayerControls(
                                 RadioButton(
                                     selected = uiState.audioStreamIndex == option.position,
                                     onClick = {
-                                        onPlayerEvent(PlayerEvent.SwitchToTrack(androidx.media3.common.C.TRACK_TYPE_AUDIO, option.position))
+                                        onPlayerEvent(
+                                            PlayerEvent.SwitchToTrack(
+                                                androidx.media3.common.C.TRACK_TYPE_AUDIO,
+                                                option.position
+                                            )
+                                        )
                                         showAudioSelector = false
                                     },
                                     colors = RadioButtonDefaults.colors(
@@ -432,7 +432,12 @@ fun PlayerControls(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onPlayerEvent(PlayerEvent.SwitchToTrack(androidx.media3.common.C.TRACK_TYPE_TEXT, option.index))
+                                        onPlayerEvent(
+                                            PlayerEvent.SwitchToTrack(
+                                                androidx.media3.common.C.TRACK_TYPE_TEXT,
+                                                option.index
+                                            )
+                                        )
                                         showSubtitleSelector = false
                                     }
                                     .padding(vertical = 6.dp),
@@ -441,7 +446,12 @@ fun PlayerControls(
                                 RadioButton(
                                     selected = uiState.subtitleStreamIndex == option.index,
                                     onClick = {
-                                        onPlayerEvent(PlayerEvent.SwitchToTrack(androidx.media3.common.C.TRACK_TYPE_TEXT, option.index))
+                                        onPlayerEvent(
+                                            PlayerEvent.SwitchToTrack(
+                                                androidx.media3.common.C.TRACK_TYPE_TEXT,
+                                                option.index
+                                            )
+                                        )
                                         showSubtitleSelector = false
                                     },
                                     colors = RadioButtonDefaults.colors(
@@ -473,6 +483,7 @@ fun PlayerControls(
         )
     }
 }
+
 @OptIn(UnstableApi::class)
 @Composable
 private fun TopControls(
@@ -481,9 +492,6 @@ private fun TopControls(
     onBackClick: () -> Unit,
     onLockToggle: () -> Unit,
     onPipToggle: () -> Unit = { /* TODO */ },
-    onSpeedToggle: () -> Unit,
-    onAudioToggle: () -> Unit = {},
-    onSubtitleToggle: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -501,7 +509,8 @@ private fun TopControls(
                 start = 16.dp,
                 end = 16.dp,
                 bottom = 16.dp,
-                top = 32.dp)
+                top = 32.dp
+            )
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -513,7 +522,7 @@ private fun TopControls(
                     .size(36.dp)
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    painter = painterResource(R.drawable.chevron_left),
                     contentDescription = "Back",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
@@ -540,17 +549,6 @@ private fun TopControls(
 
                 if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
                     IconButton(
-                        onClick = { onPlayerEvent(PlayerEvent.CycleVideoZoomMode) },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = uiState.videoZoomMode.getIconVector(),
-                            contentDescription = "Aspect Ratio",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    IconButton(
                         onClick = onPipToggle,
                         modifier = Modifier.size(40.dp)
                     ) {
@@ -558,42 +556,6 @@ private fun TopControls(
                             painter = painterResource(id = R.drawable.ic_pip),
                             contentDescription = "Enter Picture-in-Picture",
                             tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onSpeedToggle,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_speed),
-                            contentDescription = "Speed",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onAudioToggle,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Speaker,
-                            contentDescription = "Audio",
-                            tint = if (uiState.audioStreamIndex != null) MaterialTheme.colorScheme.primary else Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onSubtitleToggle,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_cc),
-                            contentDescription = "Subtitles",
-                            tint = if (uiState.subtitleStreamIndex != null) MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -633,7 +595,7 @@ private fun CenterPlayButton(
                     modifier = Modifier.size(60.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.SkipPrevious,
+                        painter = painterResource(id = R.drawable.skip_previous),
                         contentDescription = "Previous",
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
@@ -646,7 +608,7 @@ private fun CenterPlayButton(
                 modifier = Modifier.size(60.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Replay10,
+                    painter = painterResource(id = R.drawable.replay_10),
                     contentDescription = "Rewind 10s",
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
@@ -666,7 +628,9 @@ private fun CenterPlayButton(
                     )
                 } else {
                     Icon(
-                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        painter = if (isPlaying) painterResource(id = R.drawable.pause) else painterResource(
+                            id = R.drawable.play_arrow
+                        ),
                         contentDescription = if (isPlaying) "Pause" else "Play",
                         tint = Color.White,
                         modifier = Modifier.size(40.dp)
@@ -679,7 +643,7 @@ private fun CenterPlayButton(
                 modifier = Modifier.size(60.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Forward30,
+                    painter = painterResource(id = R.drawable.forward_30),
                     contentDescription = "Forward 30s",
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
@@ -692,7 +656,7 @@ private fun CenterPlayButton(
                     modifier = Modifier.size(60.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.SkipNext,
+                        painter = painterResource(id = R.drawable.skip_next),
                         contentDescription = "Next",
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
@@ -708,6 +672,9 @@ private fun CenterPlayButton(
 private fun BottomControls(
     uiState: PlayerViewModel.PlayerUiState,
     onPlayerEvent: (PlayerEvent) -> Unit,
+    onSpeedToggle: () -> Unit,
+    onAudioToggle: () -> Unit,
+    onSubtitleToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -728,12 +695,74 @@ private fun BottomControls(
                 bottom = 32.dp
             )
     ) {
-        SeekBar(
-            uiState = uiState,
-            onPlayerEvent = onPlayerEvent
-        )
+        Column {
+            SeekBar(
+                uiState = uiState,
+                onPlayerEvent = onPlayerEvent
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(
+                        onClick = onSpeedToggle,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_speed),
+                            contentDescription = "Speed",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onAudioToggle,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.audio),
+                            contentDescription = "Audio",
+                            tint = if (uiState.audioStreamIndex != null) MaterialTheme.colorScheme.primary else Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onSubtitleToggle,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_cc),
+                            contentDescription = "Subtitles",
+                            tint = if (uiState.subtitleStreamIndex != null) MaterialTheme.colorScheme.primary else Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { onPlayerEvent(PlayerEvent.CycleVideoZoomMode) },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            painter = uiState.videoZoomMode.getIconPainter(),
+                            contentDescription = "Aspect Ratio",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
+
 @OptIn(UnstableApi::class)
 @Composable
 private fun SeekBar(
@@ -746,18 +775,10 @@ private fun SeekBar(
     val position = if (uiState.isSeeking) uiState.seekPosition else uiState.currentPosition
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp, start = 8.dp, end = 8.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = formatTime(draggedPosition?.toLong() ?: position),
-            color = Color.White,
-            fontSize = 12.sp
-        )
-
         Slider(
             value = draggedPosition ?: position.toFloat(),
             onValueChange = { newPosition ->
@@ -786,22 +807,25 @@ private fun SeekBar(
             modifier = Modifier
                 .weight(1f)
                 .height(18.dp)
+                .padding(start = 8.dp)
         )
 
         Text(
             text = if (uiState.showRemainingTime) {
                 "-${formatTime((duration - position).coerceAtLeast(0L))}"
             } else {
-                formatTime(duration)
+                "${formatTime(position)} / ${formatTime(duration)}"
             },
             color = Color.White,
             fontSize = 12.sp,
-            modifier = Modifier.clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                onPlayerEvent(PlayerEvent.ToggleRemainingTime)
-            }
+            modifier = Modifier
+                .padding(end = 8.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    onPlayerEvent(PlayerEvent.ToggleRemainingTime)
+                }
         )
     }
 }

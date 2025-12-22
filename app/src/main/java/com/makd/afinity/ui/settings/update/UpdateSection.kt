@@ -27,13 +27,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -62,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,6 +66,7 @@ import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.models.UpdateState
 import com.halilibo.richtext.markdown.Markdown
 import com.halilibo.richtext.ui.material3.RichText
+import com.makd.afinity.R
 import java.io.File
 
 @Composable
@@ -137,7 +132,7 @@ fun UpdateSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.SystemUpdate,
+                    painter = painterResource(id = R.drawable.system_update),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
@@ -213,7 +208,7 @@ private fun CheckForUpdatesButton(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Icon(
-            imageVector = Icons.Outlined.Refresh,
+            painter = painterResource(id = R.drawable.refresh),
             contentDescription = null,
             tint = if (isChecking) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -306,7 +301,7 @@ private fun UpdateFrequencySelector(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Icon(
-                imageVector = Icons.Outlined.Schedule,
+                painter = painterResource(id = R.drawable.schedule),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
@@ -345,7 +340,7 @@ private fun UpdateFrequencySelector(
                             Text(frequency.displayName)
                             if (frequency == currentFrequency) {
                                 Icon(
-                                    imageVector = Icons.Outlined.Check,
+                                    painter = painterResource(id = R.drawable.circle_check),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)

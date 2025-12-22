@@ -19,10 +19,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -514,7 +510,8 @@ fun HeroCarouselPortrait(
                     )
             ) {
                 Icon(
-                    imageVector = Icons.Default.Info,
+                    painter = painterResource(id = R.drawable.info),
+
                     contentDescription = "More Information",
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(24.dp)
@@ -535,7 +532,7 @@ fun HeroCarouselPortrait(
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Movie,
+                        painter = painterResource(id = R.drawable.video),
                         contentDescription = "Play Trailer",
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(24.dp)
@@ -552,7 +549,7 @@ fun HeroCarouselPortrait(
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.PlayArrow,
+                        painter = painterResource(id = R.drawable.play_arrow),
                         contentDescription = "Play Media",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(28.dp)
@@ -981,7 +978,7 @@ private fun HeroCarouselLandscape(
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Info,
+                        painter = painterResource(id = R.drawable.info),
                         contentDescription = "More Information",
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(24.dp)
@@ -998,7 +995,7 @@ private fun HeroCarouselLandscape(
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Movie,
+                        painter = painterResource(id = R.drawable.video),
                         contentDescription = "Play Trailer",
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(24.dp)
@@ -1015,7 +1012,7 @@ private fun HeroCarouselLandscape(
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.PlayArrow,
+                        painter = painterResource(id = R.drawable.play_arrow),
                         contentDescription = "Watch Now",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(24.dp)

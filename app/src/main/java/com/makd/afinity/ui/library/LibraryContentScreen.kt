@@ -24,12 +24,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -219,6 +213,7 @@ fun LibraryContentScreen(
                                             }
                                         }
                                     }
+
                                     loadState.append is LoadState.Error -> {
                                         item {
                                             Box(
@@ -263,7 +258,7 @@ fun LibraryContentScreen(
                 .padding(end = 24.dp)
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.Sort,
+                painter = painterResource(id = R.drawable.arrows_sort),
                 contentDescription = "Sort"
             )
         }
@@ -326,7 +321,7 @@ private fun LibraryContentTopBar(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Search,
+                            painter = painterResource(id = R.drawable.search),
                             contentDescription = "Search",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
@@ -369,7 +364,7 @@ private fun LibraryContentTopBar(
                         )
                     } else {
                         Icon(
-                            imageVector = Icons.Default.AccountCircle,
+                            painter = painterResource(id = R.drawable.user_circle),
                             contentDescription = "Profile",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(32.dp)
@@ -429,19 +424,22 @@ private fun MediaItemGridCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Check,
+                                painter = painterResource(id = R.drawable.circle_check),
                                 contentDescription = "Watched",
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                     }
+
                     item is AfinityShow -> {
                         val episodeText = when {
                             item.unplayedItemCount != null && item.unplayedItemCount > 0 ->
                                 "${item.unplayedItemCount}"
+
                             item.episodeCount != null && item.episodeCount > 0 ->
                                 "${item.episodeCount}"
+
                             else -> null
                         }
 
@@ -538,6 +536,7 @@ private fun MediaItemGridCard(
                     }
                 }
             }
+
             is AfinityShow -> {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -667,11 +666,25 @@ private fun SortDialog(
 
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     SortOptionRow("Title", SortBy.NAME, selectedSort) { selectedSort = it }
-                    SortOptionRow("IMDB Rating", SortBy.IMDB_RATING, selectedSort) { selectedSort = it }
-                    SortOptionRow("Parental Rating", SortBy.PARENTAL_RATING, selectedSort) { selectedSort = it }
-                    SortOptionRow("Date Added", SortBy.DATE_ADDED, selectedSort) { selectedSort = it }
-                    SortOptionRow("Date Played", SortBy.DATE_PLAYED, selectedSort) { selectedSort = it }
-                    SortOptionRow("Release Date", SortBy.RELEASE_DATE, selectedSort) { selectedSort = it }
+                    SortOptionRow("IMDB Rating", SortBy.IMDB_RATING, selectedSort) {
+                        selectedSort = it
+                    }
+                    SortOptionRow(
+                        "Parental Rating",
+                        SortBy.PARENTAL_RATING,
+                        selectedSort
+                    ) { selectedSort = it }
+                    SortOptionRow("Date Added", SortBy.DATE_ADDED, selectedSort) {
+                        selectedSort = it
+                    }
+                    SortOptionRow("Date Played", SortBy.DATE_PLAYED, selectedSort) {
+                        selectedSort = it
+                    }
+                    SortOptionRow(
+                        "Release Date",
+                        SortBy.RELEASE_DATE,
+                        selectedSort
+                    ) { selectedSort = it }
                 }
             }
         },
@@ -753,10 +766,23 @@ private fun FilterRow(
                 leadingIcon = if (currentFilter == filterType) {
                     when (filterType) {
                         FilterType.FAVORITES -> {
-                            { Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                            {
+                                Icon(
+                                    painterResource(id = R.drawable.favorite_filled),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
+
                         else -> {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                            {
+                                Icon(
+                                    painterResource(id = R.drawable.circle_check),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 } else null,

@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,9 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinitySource
 
 @Composable
@@ -129,7 +128,7 @@ private fun QualityOption(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                painter = if (isSelected) painterResource(id = R.drawable.radio_button_checked) else painterResource(id = R.drawable.radio_button_unchecked),
                 contentDescription = if (isSelected) "Selected" else "Not selected",
                 tint = if (isSelected) {
                     MaterialTheme.colorScheme.primary

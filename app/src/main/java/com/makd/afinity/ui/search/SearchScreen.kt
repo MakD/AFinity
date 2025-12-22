@@ -23,34 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Article
-import androidx.compose.material.icons.filled.Animation
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Article
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Landscape
-import androidx.compose.material.icons.filled.LocalMovies
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.QuestionMark
-import androidx.compose.material.icons.filled.Science
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.SentimentSatisfied
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.SportsBaseball
-import androidx.compose.material.icons.filled.TheaterComedy
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -72,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -91,6 +64,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.theme.rememberGridMinColumnSize
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,7 +81,7 @@ fun SearchScreen(
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(300)
+        delay(300)
         viewModel.loadGenres()
         viewModel.loadLibraries()
     }
@@ -172,7 +146,7 @@ fun SearchScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Search,
+                                painter = painterResource(id = R.drawable.search),
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -207,7 +181,7 @@ private fun SearchTopBar(
     ) {
         IconButton(onClick = onBackClick) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                painter = painterResource(id = R.drawable.arrow_left),
                 contentDescription = "Back",
                 tint = MaterialTheme.colorScheme.onBackground
             )
@@ -227,7 +201,7 @@ private fun SearchTopBar(
             },
             leadingIcon = {
                 Icon(
-                    imageVector = Icons.Default.Search,
+                    painter = painterResource(id = R.drawable.search),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -236,7 +210,7 @@ private fun SearchTopBar(
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { onSearchQueryChange("") }) {
                         Icon(
-                            imageVector = Icons.Default.Clear,
+                            painter = painterResource(id = R.drawable.clear),
                             contentDescription = "Clear",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -377,7 +351,7 @@ private fun LibraryFilterChip(
         leadingIcon = if (isSelected && showCheckIcon) {
             {
                 Icon(
-                    imageVector = Icons.Default.Check,
+                    painter = painterResource(id = R.drawable.circle_check),
                     contentDescription = null,
                     modifier = Modifier.size(16.dp)
                 )
@@ -415,7 +389,7 @@ private fun GenreCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Icon(
-                    imageVector = getGenreIcon(genre),
+                    painter = getGenreIcon(genre),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.primary
@@ -579,28 +553,29 @@ private fun SearchResultItem(
     }
 }
 
-private fun getGenreIcon(genre: String): androidx.compose.ui.graphics.vector.ImageVector {
+@Composable
+private fun getGenreIcon(genre: String): Painter {
     return when (genre.lowercase()) {
-        "action" -> Icons.Default.LocalMovies
-        "comedy" -> Icons.Default.SentimentSatisfied
-        "drama" -> Icons.Default.TheaterComedy
-        "horror" -> Icons.Default.Warning
-        "thriller" -> Icons.Default.Bolt
-        "romance" -> Icons.Default.Favorite
-        "sci-fi", "science fiction" -> Icons.Default.Science
-        "fantasy" -> Icons.Default.AutoAwesome
-        "documentary" -> Icons.AutoMirrored.Filled.Article
-        "animation" -> Icons.Default.Animation
-        "family" -> Icons.Default.People
-        "adventure" -> Icons.Default.Explore
-        "crime" -> Icons.Default.Security
-        "mystery" -> Icons.Default.QuestionMark
-        "western" -> Icons.Default.Landscape
-        "war" -> Icons.Default.Shield
-        "music" -> Icons.Default.MusicNote
-        "sport" -> Icons.Default.SportsBaseball
-        "biography" -> Icons.Default.Person
-        "history" -> Icons.Default.History
-        else -> Icons.Default.Movie
+        "action" -> painterResource(id = R.drawable.boom)
+        "comedy" -> painterResource(id = R.drawable.comedy)
+        "drama" -> painterResource(id = R.drawable.theater)
+        "horror" -> painterResource(id = R.drawable.horror)
+        "thriller" -> painterResource(id = R.drawable.bolt)
+        "romance" -> painterResource(id = R.drawable.favorite)
+        "sci-fi", "science fiction" -> painterResource(id = R.drawable.alien)
+        "fantasy" -> painterResource(id = R.drawable.auto_awesome)
+        "documentary" -> painterResource(id = R.drawable.article)
+        "animation" -> painterResource(id = R.drawable.animation)
+        "family" -> painterResource(id = R.drawable.family)
+        "adventure" -> painterResource(id = R.drawable.adventure)
+        "crime" -> painterResource(id = R.drawable.security)
+        "mystery" -> painterResource(id = R.drawable.mystery)
+        "western" -> painterResource(id = R.drawable.cactus)
+        "war" -> painterResource(id = R.drawable.war)
+        "music" -> painterResource(id = R.drawable.music_heart)
+        "sport" -> painterResource(id = R.drawable.sports)
+        "biography" -> painterResource(id = R.drawable.person_heart)
+        "history" -> painterResource(id = R.drawable.history)
+        else -> painterResource(id = R.drawable.movie)
     }
 }

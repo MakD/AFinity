@@ -1,45 +1,38 @@
 package com.makd.afinity.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import com.makd.afinity.R
 
 enum class Destination(
     val route: String,
     val title: String,
-    val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector
+    val selectedIconRes: Int,
+    val unselectedIconRes: Int
 ) {
     HOME(
         route = "home",
         title = "Home",
-        selectedIcon = Icons.Filled.Home,
-        unselectedIcon = Icons.Outlined.Home
+        selectedIconRes = R.drawable.home_filled,
+        unselectedIconRes = R.drawable.home
     ),
     LIBRARIES(
         route = "libraries",
         title = "Libraries",
-        selectedIcon = Icons.Filled.Folder,
-        unselectedIcon = Icons.Outlined.Folder
+        selectedIconRes = R.drawable.video_library_filled,
+        unselectedIconRes = R.drawable.video_library
     ),
     FAVORITES(
         route = "favorites",
         title = "Favorites",
-        selectedIcon = Icons.Filled.Favorite,
-        unselectedIcon = Icons.Outlined.FavoriteBorder
+        selectedIconRes = R.drawable.favorite_filled,
+        unselectedIconRes = R.drawable.favorite
     ),
     WATCHLIST(
         route = "watchlist",
         title = "Watchlist",
-        selectedIcon = Icons.Filled.Bookmark,
-        unselectedIcon = Icons.Outlined.BookmarkBorder
+        selectedIconRes = R.drawable.bookmarks_filled,
+        unselectedIconRes = R.drawable.bookmarks
     );
 
     companion object {

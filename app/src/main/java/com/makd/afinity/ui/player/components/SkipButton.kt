@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -22,9 +20,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinitySegment
 
 @Composable
@@ -62,7 +62,7 @@ fun SkipButton(
             )
         ) {
             Icon(
-                imageVector = Icons.Default.SkipNext,
+                painter = painterResource(id = R.drawable.skip_next),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp)
             )

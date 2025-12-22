@@ -15,9 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,10 +30,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.halilibo.richtext.markdown.Markdown
 import com.halilibo.richtext.ui.material3.RichText
+import com.makd.afinity.R
 import com.makd.afinity.data.updater.models.GitHubRelease
 import java.io.File
 
@@ -67,7 +66,7 @@ fun UpdateAvailableDialog(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.SystemUpdate,
+                    painter = painterResource(id = R.drawable.system_update),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(32.dp)
@@ -140,7 +139,7 @@ fun UpdateAvailableDialog(
                 when {
                     downloadedFile != null -> {
                         Icon(
-                            imageVector = Icons.Outlined.SystemUpdate,
+                            painter = painterResource(id = R.drawable.system_update),
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
@@ -158,7 +157,7 @@ fun UpdateAvailableDialog(
                     }
                     else -> {
                         Icon(
-                            imageVector = Icons.Outlined.Download,
+                            painter = painterResource(id = R.drawable.download_arrow),
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )

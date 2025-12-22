@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,17 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.CheckCircleOutline
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MovieCreation
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -43,9 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -53,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,8 +48,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import androidx.paging.PagingData
+import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -379,7 +366,7 @@ private fun LandscapeItemDetailContent(
         )
 
         Image(
-            painter = androidx.compose.ui.res.painterResource(id = com.makd.afinity.R.drawable.mask),
+            painter = painterResource(id = R.drawable.mask),
             contentDescription = "Mask overlay",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
@@ -406,7 +393,7 @@ private fun LandscapeItemDetailContent(
                     }
 
                     val logoUrlToDisplay = if (item is AfinitySeason) {
-                        (item as AfinitySeason).images.showLogoImageUrl?.let { url ->
+                        item.images.showLogoImageUrl?.let { url ->
                             if (url.contains("?")) "$url&format=png" else "$url?format=png"
                         }
                     } else {
@@ -414,7 +401,7 @@ private fun LandscapeItemDetailContent(
                     }
 
                     val logoNameToDisplay = if (item is AfinitySeason) {
-                        (item as AfinitySeason).seriesName ?: item.name
+                        item.seriesName
                     } else {
                         item.name
                     }
@@ -504,9 +491,8 @@ private fun LandscapeItemDetailContent(
                             ) {
                                 when (item) {
                                     is AfinityShow -> {
-                                        val episodeToPlay = nextEpisode
                                         when {
-                                            episodeToPlay == null -> {
+                                            nextEpisode == null -> {
                                                 Button(
                                                     onClick = { },
                                                     enabled = false,
@@ -524,16 +510,17 @@ private fun LandscapeItemDetailContent(
                                                 }
                                             }
                                             else -> {
-                                                val episode = episodeToPlay!!
+                                                val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                        "Rewatch" to Icons.Default.Replay
+                                                        "Rewatch" to painterResource(id = R.drawable.replay)
+
                                                     }
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                        "Resume Playback" to Icons.Default.PlayArrow
+                                                        "Resume Playback" to painterResource(id = R.drawable.play_arrow)
                                                     }
                                                     else -> {
-                                                        "Play" to Icons.Default.PlayArrow
+                                                        "Play" to painterResource(id = R.drawable.play_arrow)
                                                     }
                                                 }
 
@@ -573,9 +560,8 @@ private fun LandscapeItemDetailContent(
                                         }
                                     }
                                     is AfinitySeason -> {
-                                        val episodeToPlay = nextEpisode
                                         when {
-                                            episodeToPlay == null -> {
+                                            nextEpisode == null -> {
                                                 Button(
                                                     onClick = { },
                                                     enabled = false,
@@ -593,16 +579,16 @@ private fun LandscapeItemDetailContent(
                                                 }
                                             }
                                             else -> {
-                                                val episode = episodeToPlay!!
+                                                val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                        "Rewatch" to Icons.Default.Replay
+                                                        "Rewatch" to painterResource(id = R.drawable.replay)
                                                     }
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                        "Resume Playback" to Icons.Default.PlayArrow
+                                                        "Resume Playback" to painterResource(id = R.drawable.play_arrow)
                                                     }
                                                     else -> {
-                                                        "Play" to Icons.Default.PlayArrow
+                                                        "Play" to painterResource(id = R.drawable.play_arrow)
                                                     }
                                                 }
 
@@ -644,13 +630,13 @@ private fun LandscapeItemDetailContent(
                                     else -> {
                                         val (buttonText, buttonIcon) = when {
                                             item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
-                                                "Rewatch" to Icons.Default.Replay
+                                                "Rewatch" to painterResource(id = R.drawable.replay)
                                             }
                                             item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
-                                                "Resume Playback" to Icons.Default.PlayArrow
+                                                "Resume Playback" to painterResource(id = R.drawable.play_arrow)
                                             }
                                             else -> {
-                                                "Watch Now" to Icons.Default.PlayArrow
+                                                "Watch Now" to painterResource(id = R.drawable.play_arrow)
                                             }
                                         }
 
@@ -689,7 +675,7 @@ private fun LandscapeItemDetailContent(
                                 enabled = hasTrailer
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.MovieCreation,
+                                    painter = painterResource(id = R.drawable.video),
                                     contentDescription = "Play Trailer",
                                     tint = if (hasTrailer) {
                                         MaterialTheme.colorScheme.primary
@@ -704,7 +690,7 @@ private fun LandscapeItemDetailContent(
                                 onClick = { viewModel.toggleWatchlist() }
                             ) {
                                 Icon(
-                                    imageVector = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    painter = if (isInWatchlist) painterResource(id = R.drawable.bookmark) else painterResource(id = R.drawable.bookmark_filled),
                                     contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -715,7 +701,7 @@ private fun LandscapeItemDetailContent(
                                 onClick = { viewModel.toggleFavorite() }
                             ) {
                                 Icon(
-                                    imageVector = if (item.favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                    painter = if (item.favorite) painterResource(id = R.drawable.favorite_filled) else painterResource(id = R.drawable.favorite),
                                     contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
                                     tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -726,7 +712,7 @@ private fun LandscapeItemDetailContent(
                                 onClick = { viewModel.toggleWatched() }
                             ) {
                                 Icon(
-                                    imageVector = if (item.played) Icons.Default.CheckCircle else Icons.Default.CheckCircleOutline,
+                                    painter = if (item.played) painterResource(id = R.drawable.circle_check) else painterResource(id = R.drawable.circle_check_outline),
                                     contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
                                     tint = if (item.played) {
                                         Color.Green
@@ -900,7 +886,7 @@ private fun PortraitItemDetailContent(
                 }
 
                 val logoUrlToDisplay = if (item is AfinitySeason) {
-                    (item as AfinitySeason).images.showLogoImageUrl?.let { url ->
+                    item.images.showLogoImageUrl?.let { url ->
                         if (url.contains("?")) "$url&format=png" else "$url?format=png"
                     }
                 } else {
@@ -908,7 +894,7 @@ private fun PortraitItemDetailContent(
                 }
 
                 val logoNameToDisplay = if (item is AfinitySeason) {
-                    (item as AfinitySeason).seriesName ?: item.name
+                    item.seriesName
                 } else {
                     item.name
                 }
@@ -1010,10 +996,8 @@ private fun PortraitItemDetailContent(
                                 when (item) {
                                     is AfinityShow -> {
 
-                                        val episodeToPlay = nextEpisode
-
                                         when {
-                                            episodeToPlay == null -> {
+                                            nextEpisode == null -> {
                                                 Button(
                                                     onClick = { },
                                                     enabled = false,
@@ -1031,16 +1015,16 @@ private fun PortraitItemDetailContent(
                                                 }
                                             }
                                             else -> {
-                                                val episode = episodeToPlay!!
+                                                val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                        "Rewatch" to Icons.Default.Replay
+                                                        "Rewatch" to painterResource(id = R.drawable.replay)
                                                     }
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                        "Resume Playback" to Icons.Default.PlayArrow
+                                                        "Resume Playback" to painterResource(id = R.drawable.play_arrow)
                                                     }
                                                     else -> {
-                                                        "Play" to Icons.Default.PlayArrow
+                                                        "Play" to painterResource(id = R.drawable.play_arrow)
                                                     }
                                                 }
 
@@ -1081,10 +1065,8 @@ private fun PortraitItemDetailContent(
                                     }
                                     is AfinitySeason -> {
 
-                                        val episodeToPlay = nextEpisode
-
                                         when {
-                                            episodeToPlay == null -> {
+                                            nextEpisode == null -> {
                                                 Button(
                                                     onClick = { },
                                                     enabled = false,
@@ -1102,16 +1084,16 @@ private fun PortraitItemDetailContent(
                                                 }
                                             }
                                             else -> {
-                                                val episode = episodeToPlay!!
+                                                val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                        "Rewatch" to Icons.Default.Replay
+                                                        "Rewatch" to painterResource(id = R.drawable.replay)
                                                     }
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                        "Resume Playback" to Icons.Default.PlayArrow
+                                                        "Resume Playback" to painterResource(id = R.drawable.play_arrow)
                                                     }
                                                     else -> {
-                                                        "Play" to Icons.Default.PlayArrow
+                                                        "Play" to painterResource(id = R.drawable.play_arrow)
                                                     }
                                                 }
 
@@ -1153,13 +1135,13 @@ private fun PortraitItemDetailContent(
                                     else -> {
                                         val (buttonText, buttonIcon) = when {
                                             item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
-                                                "Rewatch" to Icons.Default.Replay
+                                                "Rewatch" to painterResource(id = R.drawable.replay)
                                             }
                                             item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
-                                                "Resume Playback" to Icons.Default.PlayArrow
+                                                "Resume Playback" to painterResource(id = R.drawable.play_arrow)
                                             }
                                             else -> {
-                                                "Watch Now" to Icons.Default.PlayArrow
+                                                "Watch Now" to painterResource(id = R.drawable.play_arrow)
                                             }
                                         }
 
@@ -1205,7 +1187,7 @@ private fun PortraitItemDetailContent(
                                 enabled = hasTrailer
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.MovieCreation,
+                                    painter = painterResource(id = R.drawable.video),
                                     contentDescription = "Play Trailer",
                                     tint = if (hasTrailer) {
                                         MaterialTheme.colorScheme.primary
@@ -1219,7 +1201,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatchlist() }
                             ) {
                                 Icon(
-                                    imageVector = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    painter = if (isInWatchlist) painterResource(id = R.drawable.bookmark_filled) else painterResource(id = R.drawable.bookmark),
                                     contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1230,7 +1212,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleFavorite() }
                             ) {
                                 Icon(
-                                    imageVector = if (item.favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                    painter = if (item.favorite) painterResource(id = R.drawable.favorite_filled) else painterResource(id = R.drawable.favorite),
                                     contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
                                     tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1241,7 +1223,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatched() }
                             ) {
                                 Icon(
-                                    imageVector = if (item.played) Icons.Default.CheckCircle else Icons.Default.CheckCircleOutline,
+                                    painter = if (item.played) painterResource(id = R.drawable.circle_check) else painterResource(id = R.drawable.circle_check_outline),
                                     contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
                                     tint = if (item.played) {
                                         Color.Green
@@ -1267,10 +1249,8 @@ private fun PortraitItemDetailContent(
                         when (item) {
                             is AfinityShow -> {
 
-                                val episodeToPlay = nextEpisode
-
                                 when {
-                                    episodeToPlay == null -> {
+                                    nextEpisode == null -> {
                                         Button(
                                             onClick = { },
                                             enabled = false,
@@ -1288,16 +1268,16 @@ private fun PortraitItemDetailContent(
                                         }
                                     }
                                     else -> {
-                                        val episode = episodeToPlay!!
+                                        val episode = nextEpisode!!
                                         val (buttonText, buttonIcon) = when {
                                             episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                "Rewatch" to Icons.Default.Replay
+                                                "Rewatch" to painterResource(id = R.drawable.replay)
                                             }
                                             episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                "Resume Playback" to Icons.Default.PlayArrow
+                                                "Resume Playback" to painterResource(id = R.drawable.play_arrow)
                                             }
                                             else -> {
-                                                "Play" to Icons.Default.PlayArrow
+                                                "Play" to painterResource(id = R.drawable.play_arrow)
                                             }
                                         }
 
@@ -1337,10 +1317,8 @@ private fun PortraitItemDetailContent(
                             }
                             is AfinitySeason -> {
 
-                                val episodeToPlay = nextEpisode
-
                                 when {
-                                    episodeToPlay == null -> {
+                                    nextEpisode == null -> {
                                         Button(
                                             onClick = { },
                                             enabled = false,
@@ -1358,16 +1336,16 @@ private fun PortraitItemDetailContent(
                                         }
                                     }
                                     else -> {
-                                        val episode = episodeToPlay!!
+                                        val episode = nextEpisode!!
                                         val (buttonText, buttonIcon) = when {
                                             episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                "Rewatch" to Icons.Default.Replay
+                                                "Rewatch" to painterResource(id = R.drawable.replay)
                                             }
                                             episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                "Resume Playback" to Icons.Default.PlayArrow
+                                                "Resume Playback" to painterResource(id = R.drawable.play_arrow)
                                             }
                                             else -> {
-                                                "Play" to Icons.Default.PlayArrow
+                                                "Play" to painterResource(id = R.drawable.play_arrow)
                                             }
                                         }
 
@@ -1408,13 +1386,13 @@ private fun PortraitItemDetailContent(
                             else -> {
                                 val (buttonText, buttonIcon) = when {
                                     item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
-                                        "Rewatch" to Icons.Default.Replay
+                                        "Rewatch" to painterResource(id = R.drawable.replay)
                                     }
                                     item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
-                                        "Resume Playback" to Icons.Default.PlayArrow
+                                        "Resume Playback" to painterResource(id = R.drawable.play_arrow)
                                     }
                                     else -> {
-                                        "Watch Now" to Icons.Default.PlayArrow
+                                        "Watch Now" to painterResource(id = R.drawable.play_arrow)
                                     }
                                 }
 
@@ -1456,7 +1434,7 @@ private fun PortraitItemDetailContent(
                                 enabled = hasTrailer
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.MovieCreation,
+                                    painter = painterResource(id = R.drawable.video),
                                     contentDescription = "Play Trailer",
                                     tint = if (hasTrailer) {
                                         MaterialTheme.colorScheme.primary
@@ -1475,7 +1453,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatchlist() }
                             ) {
                                 Icon(
-                                    imageVector = if (isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    painter = if (isInWatchlist) painterResource(id = R.drawable.bookmark_filled) else painterResource(id = R.drawable.bookmark),
                                     contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1490,7 +1468,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleFavorite() }
                             ) {
                                 Icon(
-                                    imageVector = if (item.favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                    painter = if (item.favorite) painterResource(id = R.drawable.favorite_filled) else painterResource(id = R.drawable.favorite),
                                     contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
                                     tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1505,7 +1483,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatched() }
                             ) {
                                 Icon(
-                                    imageVector = if (item.played) Icons.Default.CheckCircle else Icons.Default.CheckCircleOutline,
+                                    painter = if (item.played) painterResource(id = R.drawable.circle_check) else painterResource(id = R.drawable.circle_check_outline),
                                     contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
                                     tint = if (item.played) {
                                         Color.Green

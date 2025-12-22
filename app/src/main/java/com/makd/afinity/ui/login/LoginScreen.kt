@@ -28,17 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -69,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -83,6 +73,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 
@@ -169,7 +160,7 @@ fun LoginScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Outlined.Info,
+                        painterResource(id = R.drawable.info),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error
                     )
@@ -253,7 +244,12 @@ private fun ServerConnectionSection(
                 onValueChange = onUrlChange,
                 label = { Text("Server URL") },
                 placeholder = { Text("https://example.jellyfin.com") },
-                leadingIcon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
+                leadingIcon = {
+                    Icon(
+                        painterResource(id = R.drawable.link),
+                        contentDescription = null
+                    )
+                },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Uri,
                     imeAction = ImeAction.Done
@@ -291,7 +287,7 @@ private fun ServerConnectionSection(
                     Text("Connecting...")
                 } else if (isConnectedToServer) {
                     Icon(
-                        imageVector = Icons.Default.CheckCircle,
+                        painter = painterResource(id = R.drawable.circle_check),
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
@@ -321,7 +317,7 @@ private fun ServerConnectionSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Search,
+                        painter = painterResource(id = R.drawable.search),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
@@ -345,7 +341,7 @@ private fun ServerConnectionSection(
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Refresh,
+                            painter = painterResource(id = R.drawable.refresh),
                             contentDescription = "Refresh servers",
                             modifier = Modifier.size(16.dp)
                         )
@@ -440,7 +436,12 @@ private fun LoginMethodSection(
                     selected = selectedMethod == LoginMethod.PASSWORD,
                     onClick = { onMethodChanged(LoginMethod.PASSWORD) },
                     label = { Text("Password") },
-                    leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                    leadingIcon = {
+                        Icon(
+                            painterResource(id = R.drawable.password),
+                            contentDescription = null
+                        )
+                    },
                     modifier = Modifier.weight(1f)
                 )
 
@@ -450,7 +451,12 @@ private fun LoginMethodSection(
                     selected = selectedMethod == LoginMethod.QUICK_CONNECT,
                     onClick = { onMethodChanged(LoginMethod.QUICK_CONNECT) },
                     label = { Text("Quick Connect") },
-                    leadingIcon = { Icon(Icons.Default.QrCode, contentDescription = null) },
+                    leadingIcon = {
+                        Icon(
+                            painterResource(id = R.drawable.qrcode),
+                            contentDescription = null
+                        )
+                    },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -540,7 +546,12 @@ private fun PasswordLoginForm(
                 value = uiState.username,
                 onValueChange = onUsernameChange,
                 label = { Text("Username") },
-                leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.user),
+                        contentDescription = null
+                    )
+                },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
@@ -568,11 +579,18 @@ private fun PasswordLoginForm(
                 value = uiState.password,
                 onValueChange = onPasswordChange,
                 label = { Text("Password") },
-                leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.lock),
+                        contentDescription = null
+                    )
+                },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            painter = if (passwordVisible) painterResource(id = R.drawable.visibility_off) else painterResource(
+                                id = R.drawable.visibility
+                            ),
                             contentDescription = if (passwordVisible) "Hide password" else "Show password",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -747,7 +765,7 @@ private fun QuickConnectForm(
         ) {
             if (uiState.quickConnectCode == null && !uiState.isLoggingIn) {
                 Icon(
-                    imageVector = Icons.Default.QrCode,
+                    painter = painterResource(id = R.drawable.qrcode),
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary
@@ -781,7 +799,7 @@ private fun QuickConnectForm(
                 }
             } else if (uiState.quickConnectCode != null) {
                 Icon(
-                    imageVector = Icons.Default.QrCode,
+                    painter = painterResource(id = R.drawable.qrcode),
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary

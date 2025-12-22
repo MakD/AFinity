@@ -1,14 +1,13 @@
 package com.makd.afinity.data.models.player
 
 import androidx.annotation.OptIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FitScreen
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.QuestionMark
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
+import com.makd.afinity.R
 
 enum class VideoZoomMode(val value: Int) {
     FIT(0),
@@ -33,12 +32,14 @@ enum class VideoZoomMode(val value: Int) {
         }
     }
 
-    fun getIconVector(): ImageVector {
+    @Composable
+    fun getIconPainter(): Painter {
         return when (this) {
-            FIT -> Icons.Default.Fullscreen
-            ZOOM -> Icons.Default.FullscreenExit
+            FIT -> painterResource(id = R.drawable.fullscreen)
+            ZOOM -> painterResource(id = R.drawable.fullscreen_exit)
         }
     }
+
 
     fun toggle(): VideoZoomMode {
         return when (this) {

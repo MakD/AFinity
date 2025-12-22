@@ -163,13 +163,16 @@ fun MainNavigation(
                     },
                     icon = {
                         Icon(
-                            imageVector = if (selected) {
-                                destination.selectedIcon
-                            } else {
-                                destination.unselectedIcon
-                            },
+                            painter = painterResource(
+                                id = if (selected) {
+                                    destination.selectedIconRes
+                                } else {
+                                    destination.unselectedIconRes
+                                }
+                            ),
                             contentDescription = destination.title
                         )
+
                     },
                     label = {
                         Text(

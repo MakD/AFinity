@@ -18,32 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.AppSettingsAlt
-import androidx.compose.material.icons.outlined.CalendarToday
-import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.Colorize
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.FastForward
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.PictureInPicture
-import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.PlayCircle
-import androidx.compose.material.icons.outlined.SkipNext
-import androidx.compose.material.icons.outlined.Videocam
-import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -73,14 +47,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.R
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.settings.update.UpdateSection
@@ -148,7 +124,7 @@ fun SettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            painter = painterResource(id = R.drawable.arrow_left),
                             contentDescription = "Back"
                         )
                     }
@@ -285,7 +261,7 @@ private fun ProfileHeader(
                     )
                 } else {
                     Icon(
-                        imageVector = Icons.Default.Person,
+                        painter = painterResource(id = R.drawable.user),
                         contentDescription = "Profile",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(32.dp)
@@ -347,11 +323,11 @@ private fun GeneralSection(
 
     SettingsSection(
         title = "General",
-        icon = Icons.Outlined.AppSettingsAlt,
+        icon = painterResource(id = R.drawable.settings),
         modifier = modifier
     ) {
         SettingsSwitchItem(
-            icon = Icons.Outlined.CloudOff,
+            icon = painterResource(id = R.drawable.cloud_off),
             title = "Offline Mode",
             subtitle = subtitle,
             checked = effectiveOfflineMode,
@@ -365,7 +341,7 @@ private fun GeneralSection(
         )
 
         SettingsItem(
-            icon = Icons.Outlined.Download,
+            icon = painterResource(id = R.drawable.download),
             title = "Downloads",
             subtitle = "Manage downloads and offline content",
             onClick = onDownloadClick
@@ -392,7 +368,7 @@ private fun GeneralSection(
                 )
             } else {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Logout,
+                    painter = painterResource(id = R.drawable.logout),
                     contentDescription = "Logout",
                     modifier = Modifier.size(20.dp)
                 )
@@ -425,18 +401,18 @@ private fun AppearanceSection(
 
     SettingsSection(
         title = "Appearance",
-        icon = Icons.Outlined.Palette,
+        icon = painterResource(id = R.drawable.palette),
         modifier = modifier
     ) {
         SettingsItem(
-            icon = Icons.Outlined.DarkMode,
+            icon = painterResource(id = R.drawable.dark_mode),
             title = "Theme",
             subtitle = currentTheme.displayName,
             onClick = { themeMenuExpanded = true },
             trailing = {
                 Box {
                     Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
+                        painter = painterResource(id = R.drawable.keyboard_arrow_down),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -460,7 +436,7 @@ private fun AppearanceSection(
                                 leadingIcon = if (themeMode == mode.name) {
                                     {
                                         Icon(
-                                            imageVector = Icons.Default.Check,
+                                            painter = painterResource(id = R.drawable.check),
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(18.dp)
@@ -480,7 +456,7 @@ private fun AppearanceSection(
         )
 
         SettingsSwitchItem(
-            icon = Icons.Outlined.Colorize,
+            icon = painterResource(id = R.drawable.colorize),
             title = "Dynamic Colors",
             subtitle = "Use colors from wallpaper",
             checked = dynamicColors,
@@ -493,7 +469,7 @@ private fun AppearanceSection(
         )
 
         SettingsSwitchItem(
-            icon = Icons.Outlined.ViewModule,
+            icon = painterResource(id = R.drawable.view_module),
             title = "Combine Library Sections",
             subtitle = "Show one combined section for Movies and TV Shows",
             checked = combineLibrarySections,
@@ -506,7 +482,7 @@ private fun AppearanceSection(
         )
 
         SettingsSwitchItem(
-            icon = Icons.Outlined.CalendarToday,
+            icon = painterResource(id = R.drawable.calendar),
             title = "Sort by Date Added",
             subtitle = "Show newest content first on home screen",
             checked = homeSortByDateAdded,
@@ -531,11 +507,11 @@ private fun PlaybackSection(
 ) {
     SettingsSection(
         title = "Playback",
-        icon = Icons.Outlined.PlayCircle,
+        icon = painterResource(id = R.drawable.play_circle),
         modifier = modifier
     ) {
         SettingsSwitchItem(
-            icon = Icons.Outlined.Videocam,
+            icon = painterResource(id = R.drawable.video_settings),
             title = "Use ExoPlayer",
             subtitle = "Uses LibMPV when disabled",
             checked = useExoPlayer,
@@ -548,7 +524,7 @@ private fun PlaybackSection(
         )
 
         SettingsSwitchItem(
-            icon = Icons.Outlined.PictureInPicture,
+            icon = painterResource(id = R.drawable.ic_pip),
             title = "Picture-in-Picture Home Gesture",
             subtitle = "Use home button or gesture to enter picture-in-picture while video is playing",
             checked = pipGestureEnabled,
@@ -560,7 +536,7 @@ private fun PlaybackSection(
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
         )
         SettingsSwitchItem(
-            icon = Icons.Outlined.PlayArrow,
+            icon = painterResource(id = R.drawable.play_arrow),
             title = "Auto-play",
             subtitle = "Automatically play next episode",
             checked = autoPlay,
@@ -573,7 +549,7 @@ private fun PlaybackSection(
         )
 
         SettingsSwitchItem(
-            icon = Icons.Outlined.SkipNext,
+            icon = painterResource(id = R.drawable.skip_next),
             title = "Skip Intro",
             subtitle = "Show the Skip Intro Button",
             checked = skipIntroEnabled,
@@ -586,7 +562,7 @@ private fun PlaybackSection(
         )
 
         SettingsSwitchItem(
-            icon = Icons.Outlined.FastForward,
+            icon = painterResource(id = R.drawable.fast_forward),
             title = "Skip Outro",
             subtitle = "Show the Skip Outro Button",
             checked = skipOutroEnabled,
@@ -603,11 +579,11 @@ private fun AboutSection(
 ) {
     SettingsSection(
         title = "About",
-        icon = Icons.Outlined.Info,
+        icon = painterResource(id = R.drawable.info_outlined),
         modifier = modifier
     ) {
         SettingsItem(
-            icon = Icons.Outlined.AppSettingsAlt,
+            icon = painterResource(id = R.drawable.versions),
             title = "App Version",
             subtitle = appVersion,
             onClick = null
@@ -619,7 +595,7 @@ private fun AboutSection(
         )
 
         SettingsItem(
-            icon = Icons.Outlined.Code,
+            icon = painterResource(id = R.drawable.code),
             title = "Build Type",
             subtitle = if (AppConstants.IS_DEBUG) "Debug" else "Release",
             onClick = null
@@ -631,7 +607,7 @@ private fun AboutSection(
         )
 
         SettingsItem(
-            icon = Icons.Outlined.Description,
+            icon = painterResource(id = R.drawable.description),
             title = "Open Source Licenses",
             subtitle = "View licenses for open source libraries",
             onClick = onLicensesClick
@@ -642,9 +618,9 @@ private fun AboutSection(
 @Composable
 private fun SettingsSection(
     title: String,
-    icon: ImageVector,
+    icon: Painter,
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable (ColumnScope.() -> Unit)
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -666,7 +642,7 @@ private fun SettingsSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Icon(
-                    imageVector = icon,
+                    painter = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
@@ -689,7 +665,7 @@ private fun SettingsSection(
 
 @Composable
 private fun SettingsItem(
-    icon: ImageVector,
+    icon: Painter,
     title: String,
     subtitle: String,
     onClick: (() -> Unit)?,
@@ -711,7 +687,7 @@ private fun SettingsItem(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Icon(
-            imageVector = icon,
+            painter = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(24.dp)
@@ -741,7 +717,7 @@ private fun SettingsItem(
             trailing()
         } else if (onClick != null) {
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                painter = painterResource(id = R.drawable.chevron_right),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = Modifier.size(24.dp)
@@ -752,7 +728,7 @@ private fun SettingsItem(
 
 @Composable
 private fun SettingsSwitchItem(
-    icon: ImageVector,
+    icon: Painter,
     title: String,
     subtitle: String,
     checked: Boolean,
@@ -791,7 +767,7 @@ private fun LogoutConfirmationDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                imageVector = Icons.AutoMirrored.Outlined.Logout,
+                painter = painterResource(id = R.drawable.logout),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(32.dp)

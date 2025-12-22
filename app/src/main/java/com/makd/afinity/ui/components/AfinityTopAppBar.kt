@@ -14,10 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,11 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import timber.log.Timber
@@ -89,7 +87,7 @@ fun AfinityTopAppBar(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Search,
+                                painter = painterResource(id = R.drawable.search),
                                 contentDescription = "Search",
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
@@ -134,7 +132,7 @@ fun AfinityTopAppBar(
                                 )
                             } else {
                                 Icon(
-                                    imageVector = Icons.Default.AccountCircle,
+                                    painter = painterResource(id = R.drawable.user_circle),
                                     contentDescription = "Profile",
                                     tint = Color.White,
                                     modifier = Modifier.size(32.dp)
@@ -157,7 +155,7 @@ fun AfinityTopAppBar(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.CloudOff,
+                                painter = painterResource(id = R.drawable.cloud_off),
                                 contentDescription = "Offline Mode",
                                 tint = MaterialTheme.colorScheme.onTertiaryContainer,
                                 modifier = Modifier.size(14.dp)

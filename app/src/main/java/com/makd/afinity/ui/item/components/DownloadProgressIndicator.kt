@@ -2,11 +2,6 @@ package com.makd.afinity.ui.item.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -15,7 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 
@@ -43,7 +40,7 @@ fun DownloadProgressIndicator(
         when (downloadInfo?.status) {
             null, DownloadStatus.FAILED, DownloadStatus.CANCELLED -> {
                 Icon(
-                    imageVector = Icons.Default.Download,
+                    painter = painterResource(id = R.drawable.download),
                     contentDescription = "Download",
                     tint = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.size(28.dp)
@@ -57,7 +54,7 @@ fun DownloadProgressIndicator(
                         strokeWidth = 2.dp,
                     )
                     Icon(
-                        imageVector = Icons.Default.Close,
+                        painter = painterResource(id = R.drawable.cancel),
                         contentDescription = "Cancel Download",
                         modifier = Modifier.size(16.dp),
                         tint = Color.Red
@@ -66,7 +63,7 @@ fun DownloadProgressIndicator(
             }
             DownloadStatus.QUEUED -> {
                 Icon(
-                    imageVector = Icons.Default.HourglassEmpty,
+                    painter = painterResource(id = R.drawable.hourglass_empty),
                     contentDescription = "Queued - Tap to Cancel",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(28.dp)
@@ -80,7 +77,7 @@ fun DownloadProgressIndicator(
                         strokeWidth = 2.dp,
                     )
                     Icon(
-                        imageVector = Icons.Default.Close,
+                        painter = painterResource(id = R.drawable.cloud_pause),
                         contentDescription = "Resume Download",
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -89,7 +86,7 @@ fun DownloadProgressIndicator(
             }
             DownloadStatus.COMPLETED -> {
                 Icon(
-                    imageVector = Icons.Default.Delete,
+                    painter = painterResource(id = R.drawable.delete),
                     contentDescription = "Delete Download",
                     tint = Color.Red,
                     modifier = Modifier.size(28.dp)

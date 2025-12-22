@@ -17,17 +17,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.CollectionsBookmark
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.LiveTv
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,8 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.makd.afinity.R
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -205,7 +196,7 @@ private fun LibraryCard(
                         .padding(8.dp)
                 ) {
                     Icon(
-                        imageVector = getLibraryIcon(library.type),
+                        painter = getLibraryIcon(library.type),
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
                         tint = Color.White
@@ -289,18 +280,19 @@ private fun EmptyLibrariesMessage(
     }
 }
 
-private fun getLibraryIcon(type: CollectionType): ImageVector {
+@Composable
+private fun getLibraryIcon(type: CollectionType): Painter {
     return when (type) {
-        CollectionType.Movies -> Icons.Filled.Movie
-        CollectionType.TvShows -> Icons.Filled.Tv
-        CollectionType.Music -> Icons.Filled.LibraryMusic
-        CollectionType.Books -> Icons.AutoMirrored.Filled.MenuBook
-        CollectionType.HomeVideos -> Icons.Filled.VideoLibrary
-        CollectionType.Playlists -> Icons.AutoMirrored.Filled.PlaylistPlay
-        CollectionType.LiveTv -> Icons.Filled.LiveTv
-        CollectionType.BoxSets -> Icons.Filled.CollectionsBookmark
-        CollectionType.Mixed -> Icons.Filled.Apps
-        CollectionType.Unknown -> Icons.Filled.Folder
+        CollectionType.Movies -> painterResource(id = R.drawable.movie)
+        CollectionType.TvShows -> painterResource(id = R.drawable.tv)
+        CollectionType.Music -> painterResource(id = R.drawable.music)
+        CollectionType.Books -> painterResource(id = R.drawable.books)
+        CollectionType.HomeVideos -> painterResource(id = R.drawable.music_video)
+        CollectionType.Playlists -> painterResource(id = R.drawable.playlist)
+        CollectionType.LiveTv -> painterResource(id = R.drawable.live_tv)
+        CollectionType.BoxSets -> painterResource(id = R.drawable.collections_bookmark)
+        CollectionType.Mixed -> painterResource(id = R.drawable.mixed)
+        CollectionType.Unknown -> painterResource(id = R.drawable.folder)
     }
 }
 
