@@ -341,18 +341,31 @@ fun HomeScreen(
                                             GenreType.MOVIE -> {
                                                 GenreSection(
                                                     genre = genreItem.name,
-                                                    movies = uiState.genreMovies[genreItem.name] ?: emptyList(),
-                                                    isLoading = uiState.genreLoadingStates[genreItem.name] ?: false,
-                                                    onVisible = { viewModel.loadMoviesForGenre(genreItem.name) },
+                                                    movies = uiState.genreMovies[genreItem.name]
+                                                        ?: emptyList(),
+                                                    isLoading = uiState.genreLoadingStates[genreItem.name]
+                                                        ?: false,
+                                                    onVisible = {
+                                                        viewModel.loadMoviesForGenre(
+                                                            genreItem.name
+                                                        )
+                                                    },
                                                     onItemClick = onItemClick
                                                 )
                                             }
+
                                             GenreType.SHOW -> {
                                                 ShowGenreSection(
                                                     genre = genreItem.name,
-                                                    shows = uiState.genreShows[genreItem.name] ?: emptyList(),
-                                                    isLoading = uiState.genreLoadingStates[genreItem.name] ?: false,
-                                                    onVisible = { viewModel.loadShowsForGenre(genreItem.name) },
+                                                    shows = uiState.genreShows[genreItem.name]
+                                                        ?: emptyList(),
+                                                    isLoading = uiState.genreLoadingStates[genreItem.name]
+                                                        ?: false,
+                                                    onVisible = {
+                                                        viewModel.loadShowsForGenre(
+                                                            genreItem.name
+                                                        )
+                                                    },
                                                     onItemClick = onItemClick
                                                 )
                                             }
@@ -1009,10 +1022,10 @@ private fun PopularStudiosSection(
 ) {
     val cardWidth = rememberLandscapeCardWidth()
     val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val fixedRowHeight = cardHeight + 20.dp
 
     Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
+        modifier = Modifier.padding(horizontal = 14.dp)
     ) {
         Text(
             text = "Popular Studios",
@@ -1026,7 +1039,7 @@ private fun PopularStudiosSection(
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
             itemsIndexed(
                 items = studios,
@@ -1088,26 +1101,6 @@ private fun StudioCard(
                     }
                 }
             }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = studio.name,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-
-        if (studio.itemCount > 0) {
-            Text(
-                text = "${studio.itemCount} titles",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
