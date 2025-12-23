@@ -68,6 +68,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.R.drawable.ic_launcher_monochrome
+import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
@@ -76,22 +77,26 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.components.OptimizedHeroCarousel
+import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.NextUpSection
+import com.makd.afinity.ui.home.components.ShowGenreSection
 import com.makd.afinity.ui.home.components.OptimizedContinueWatchingSection
 import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
 import com.makd.afinity.ui.home.components.OptimizedLatestTvSeriesSection
-import com.makd.afinity.ui.home.components.OptimizedRecommendationCategorySection
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.calculateCardHeight
+import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 import kotlinx.coroutines.delay
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,7 +107,6 @@ fun HomeScreen(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavController,
-    isOffline: Boolean = false,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -219,7 +223,7 @@ fun HomeScreen(
                                 OptimizedContinueWatchingSection(
                                     items = continueWatchingItems,
                                     onItemClick = { item ->
-                                        if (item is com.makd.afinity.data.models.media.AfinityEpisode) {
+                                        if (item is AfinityEpisode) {
                                             viewModel.selectEpisode(item)
                                         } else {
                                             onItemClick(item)
@@ -320,21 +324,53 @@ fun HomeScreen(
                                     )
                                 }
 
-                                uiState.recommendationCategories.forEach { category ->
+                                if (uiState.studios.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedRecommendationCategorySection(
-                                        category = category,
-                                        onItemClick = onItemClick
+                                    PopularStudiosSection(
+                                        studios = uiState.studios,
+                                        onStudioClick = { studio ->
+                                            viewModel.onStudioClick(studio, navController)
+                                        }
                                     )
                                 }
 
-                                if (uiState.recommendationCategories.isEmpty() &&
-                                    uiState.latestMovies.isNotEmpty() &&
-                                    uiState.latestTvSeries.isNotEmpty() &&
-                                    uiState.isLoading
-                                ) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    RecommendationsSkeleton()
+                                if (uiState.combinedGenres.isNotEmpty()) {
+                                    uiState.combinedGenres.forEach { genreItem ->
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        when (genreItem.type) {
+                                            GenreType.MOVIE -> {
+                                                GenreSection(
+                                                    genre = genreItem.name,
+                                                    movies = uiState.genreMovies[genreItem.name]
+                                                        ?: emptyList(),
+                                                    isLoading = uiState.genreLoadingStates[genreItem.name]
+                                                        ?: false,
+                                                    onVisible = {
+                                                        viewModel.loadMoviesForGenre(
+                                                            genreItem.name
+                                                        )
+                                                    },
+                                                    onItemClick = onItemClick
+                                                )
+                                            }
+
+                                            GenreType.SHOW -> {
+                                                ShowGenreSection(
+                                                    genre = genreItem.name,
+                                                    shows = uiState.genreShows[genreItem.name]
+                                                        ?: emptyList(),
+                                                    isLoading = uiState.genreLoadingStates[genreItem.name]
+                                                        ?: false,
+                                                    onVisible = {
+                                                        viewModel.loadShowsForGenre(
+                                                            genreItem.name
+                                                        )
+                                                    },
+                                                    onItemClick = onItemClick
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
@@ -578,6 +614,7 @@ private fun HighestRatedCard(
                                 )
                             }
                         }
+
                         item is AfinityShow -> {
                             val displayCount = item.unplayedItemCount ?: item.episodeCount
                             displayCount?.let { count ->
@@ -595,7 +632,10 @@ private fun HighestRatedCard(
                                                 fontWeight = FontWeight.Bold
                                             ),
                                             color = MaterialTheme.colorScheme.onPrimary,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            modifier = Modifier.padding(
+                                                horizontal = 6.dp,
+                                                vertical = 2.dp
+                                            )
                                         )
                                     }
                                 }
@@ -677,7 +717,7 @@ private fun HighestRatedCard(
                                 )
                             )
                             Text(
-                                text = String.format("%.1f", rating),
+                                text = String.format(Locale.US, "%.1f", rating),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontSize = MaterialTheme.typography.bodySmall.fontSize *
                                             if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
@@ -959,71 +999,6 @@ private fun TvSeriesSectionSkeleton() {
 }
 
 @Composable
-private fun RecommendationsSkeleton() {
-    val cardWidth = rememberPortraitCardWidth()
-
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
-        repeat(2) {
-            Box(
-                modifier = Modifier
-                    .width(250.dp)
-                    .height(24.dp)
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        RoundedCornerShape(4.dp)
-                    )
-                    .shimmerEffect()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp)
-            ) {
-                items(4) {
-                    Column(modifier = Modifier.width(cardWidth)) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .shimmerEffect()
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .width(cardWidth * 0.8f)
-                                .height(14.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    RoundedCornerShape(4.dp)
-                                )
-                                .shimmerEffect()
-                        )
-                    }
-                }
-            }
-
-            if (it == 0) Spacer(modifier = Modifier.height(24.dp))
-        }
-    }
-}
-
-@Composable
 private fun Modifier.shimmerEffect(): Modifier = composed {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val alpha = transition.animateFloat(
@@ -1038,4 +1013,94 @@ private fun Modifier.shimmerEffect(): Modifier = composed {
     background(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha.value)
     )
+}
+
+@Composable
+private fun PopularStudiosSection(
+    studios: List<AfinityStudio>,
+    onStudioClick: (AfinityStudio) -> Unit
+) {
+    val cardWidth = rememberLandscapeCardWidth()
+    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val fixedRowHeight = cardHeight + 20.dp
+
+    Column(
+        modifier = Modifier.padding(horizontal = 14.dp)
+    ) {
+        Text(
+            text = "Popular Studios",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp)
+        ) {
+            itemsIndexed(
+                items = studios,
+                key = { _, studio -> studio.id }
+            ) { _, studio ->
+                StudioCard(
+                    studio = studio,
+                    onClick = { onStudioClick(studio) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StudioCard(
+    studio: AfinityStudio,
+    onClick: () -> Unit
+) {
+    val cardWidth = rememberLandscapeCardWidth()
+
+    Column(
+        modifier = Modifier.width(cardWidth)
+    ) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                studio.primaryImageUrl?.let { imageUrl ->
+                    OptimizedAsyncImage(
+                        imageUrl = imageUrl,
+                        contentDescription = studio.name,
+                        blurHash = null,
+                        targetWidth = cardWidth,
+                        targetHeight = cardWidth * 9f / 16f,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } ?: run {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_tmdb_collection),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

@@ -94,6 +94,7 @@ fun MainNavigation(
 
     val shouldShowNavigation = currentDestination?.route?.let { route ->
         !route.startsWith("library_content/") &&
+                !route.startsWith("studio_content/") &&
                 !route.startsWith("item_detail/") &&
                 !route.startsWith("episodes/") &&
                 !route.startsWith("player/") &&
@@ -232,7 +233,6 @@ fun MainNavigation(
                     },
                     navController = navController,
                     mainUiState = mainUiState,
-                    isOffline = isOffline,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -261,6 +261,29 @@ fun MainNavigation(
                 arguments = listOf(
                     navArgument("libraryId") { type = NavType.StringType },
                     navArgument("libraryName") { type = NavType.StringType }
+                )
+            ) {
+                LibraryContentScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onItemClick = { item ->
+                        val route = Destination.createItemDetailRoute(item.id.toString())
+                        navController.navigate(route)
+                    },
+                    onProfileClick = {
+                        val route = Destination.createSettingsRoute()
+                        navController.navigate(route)
+                    },
+                    navController = navController,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            composable(
+                route = Destination.STUDIO_CONTENT_ROUTE,
+                arguments = listOf(
+                    navArgument("studioName") { type = NavType.StringType }
                 )
             ) {
                 LibraryContentScreen(

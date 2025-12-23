@@ -9,9 +9,9 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
-import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
@@ -55,11 +55,31 @@ interface JellyfinRepository {
         limit: Int = 12
     ): List<AfinityItem>
 
-    suspend fun getRecommendationCategories(
+    suspend fun getGenres(
         parentId: UUID? = null,
-        categoryLimit: Int = 5,
-        itemLimit: Int = 8
-    ): List<AfinityRecommendationCategory>
+        limit: Int? = null,
+        includeItemTypes: List<String> = emptyList()
+    ): List<String>
+
+    suspend fun getMoviesByGenre(
+        genre: String,
+        parentId: UUID? = null,
+        limit: Int = 20,
+        shuffle: Boolean = true
+    ): List<AfinityMovie>
+
+    suspend fun getShowsByGenre(
+        genre: String,
+        parentId: UUID? = null,
+        limit: Int = 20,
+        shuffle: Boolean = true
+    ): List<AfinityShow>
+
+    suspend fun getStudios(
+        parentId: UUID? = null,
+        limit: Int? = null,
+        includeItemTypes: List<String> = emptyList()
+    ): List<AfinityStudio>
 
     suspend fun getItems(
         parentId: UUID? = null,
@@ -180,13 +200,14 @@ interface JellyfinRepository {
     ): String
 
     fun getItemsPaging(
-        parentId: UUID,
+        parentId: UUID?,
         libraryType: CollectionType,
         sortBy: SortBy,
         sortDescending: Boolean,
         filter: FilterType,
         nameStartsWith: String? = null,
-        fields: List<ItemFields>? = null
+        fields: List<ItemFields>? = null,
+        studioName: String? = null
     ): Flow<PagingData<AfinityItem>>
 
     suspend fun getFavoriteMovies(): List<AfinityMovie>
