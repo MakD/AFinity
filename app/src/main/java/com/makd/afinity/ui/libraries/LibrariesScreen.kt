@@ -188,12 +188,7 @@ private fun LibraryCard(
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(12.dp)
-                        .background(
-                            color = Color.Black.copy(alpha = 0.3f),
-                            shape = CircleShape
-                        )
-                        .padding(8.dp)
+                        .padding(6.dp)
                 ) {
                     Icon(
                         painter = getLibraryIcon(library.type),
