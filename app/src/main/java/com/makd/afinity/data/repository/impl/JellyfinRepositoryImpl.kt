@@ -13,7 +13,6 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
-import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
@@ -217,27 +216,69 @@ class JellyfinRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getRecommendationCategories(
+    override suspend fun getGenres(
         parentId: UUID?,
-        categoryLimit: Int,
-        itemLimit: Int
-    ): List<AfinityRecommendationCategory> {
+        limit: Int?,
+        includeItemTypes: List<String>
+    ): List<String> {
         return try {
-            mediaRepository.getRecommendationCategories(parentId, categoryLimit, itemLimit)
+            mediaRepository.getGenres(parentId, limit, includeItemTypes)
         } catch (e: Exception) {
-            Timber.e(e, "Failed to get recommendation categories")
+            Timber.e(e, "Failed to get genres")
+            emptyList()
+        }
+    }
+
+    override suspend fun getMoviesByGenre(
+        genre: String,
+        parentId: UUID?,
+        limit: Int,
+        shuffle: Boolean
+    ): List<AfinityMovie> {
+        return try {
+            mediaRepository.getMoviesByGenre(genre, parentId, limit, shuffle)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get movies by genre: $genre")
+            emptyList()
+        }
+    }
+
+    override suspend fun getShowsByGenre(
+        genre: String,
+        parentId: UUID?,
+        limit: Int,
+        shuffle: Boolean
+    ): List<AfinityShow> {
+        return try {
+            mediaRepository.getShowsByGenre(genre, parentId, limit, shuffle)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get shows by genre: $genre")
+            emptyList()
+        }
+    }
+
+    override suspend fun getStudios(
+        parentId: UUID?,
+        limit: Int?,
+        includeItemTypes: List<String>
+    ): List<com.makd.afinity.data.models.media.AfinityStudio> {
+        return try {
+            mediaRepository.getStudios(parentId, limit, includeItemTypes)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get studios")
             emptyList()
         }
     }
 
     override fun getItemsPaging(
-        parentId: UUID,
+        parentId: UUID?,
         libraryType: CollectionType,
         sortBy: SortBy,
         sortDescending: Boolean,
         filter: FilterType,
         nameStartsWith: String?,
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
+        studioName: String?
     ): Flow<PagingData<AfinityItem>> {
         return Pager(
             config = PagingConfig(
@@ -254,7 +295,8 @@ class JellyfinRepositoryImpl @Inject constructor(
                 sortDescending = sortDescending,
                 filter = filter,
                 baseUrl = getBaseUrl(),
-                nameStartsWith = nameStartsWith
+                nameStartsWith = nameStartsWith,
+                studioName = studioName
             )
         }.flow
     }

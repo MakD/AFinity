@@ -3,13 +3,15 @@ package com.makd.afinity.ui.home
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.manager.OfflineModeManager
@@ -22,6 +24,7 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -129,9 +132,41 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            appDataRepository.recommendationCategories.collect { recommendations ->
-                _uiState.value = _uiState.value.copy(recommendationCategories = recommendations)
+            appDataRepository.combinedGenres.collect { combinedGenres ->
+                _uiState.value = _uiState.value.copy(combinedGenres = combinedGenres)
             }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.genreMovies.collect { genreMovies ->
+                _uiState.value = _uiState.value.copy(genreMovies = genreMovies)
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.genreShows.collect { genreShows ->
+                _uiState.value = _uiState.value.copy(genreShows = genreShows)
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.genreLoadingStates.collect { loadingStates ->
+                _uiState.value = _uiState.value.copy(genreLoadingStates = loadingStates)
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.studios.collect { studios ->
+                _uiState.value = _uiState.value.copy(studios = studios)
+            }
+        }
+
+        viewModelScope.launch {
+            loadCombinedGenres()
+        }
+
+        viewModelScope.launch {
+            loadStudios()
         }
 
         viewModelScope.launch {
@@ -182,7 +217,8 @@ class HomeViewModel @Inject constructor(
                     season.episodes.forEach { episode ->
                         if (episode.playbackPositionTicks > 0 &&
                             !episode.played &&
-                            episode.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }) {
+                            episode.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }
+                        ) {
                             offlineContinueWatching.add(episode)
                         }
                     }
@@ -213,13 +249,15 @@ class HomeViewModel @Inject constructor(
     val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
 
     private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
-    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> = _selectedEpisodeWatchlistStatus.asStateFlow()
+    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> =
+        _selectedEpisodeWatchlistStatus.asStateFlow()
 
     private val _isLoadingEpisode = MutableStateFlow(false)
     val isLoadingEpisode: StateFlow<Boolean> = _isLoadingEpisode.asStateFlow()
 
     private val _selectedEpisodeDownloadInfo = MutableStateFlow<DownloadInfo?>(null)
-    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> = _selectedEpisodeDownloadInfo.asStateFlow()
+    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> =
+        _selectedEpisodeDownloadInfo.asStateFlow()
 
     fun selectEpisode(episode: AfinityEpisode) {
         viewModelScope.launch {
@@ -383,15 +421,58 @@ class HomeViewModel @Inject constructor(
         Timber.d("Highest rated item clicked: ${item.name}")
     }
 
-    fun onRecommendationItemClick(item: AfinityItem) {
-        Timber.d("Recommendation item clicked: ${item.name}")
+    private fun loadCombinedGenres() {
+        viewModelScope.launch {
+            try {
+                appDataRepository.loadCombinedGenres()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load combined genres")
+            }
+        }
+    }
+
+    fun loadMoviesForGenre(genre: String) {
+        viewModelScope.launch {
+            try {
+                appDataRepository.loadMoviesForGenre(genre)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load movies for genre: $genre")
+            }
+        }
+    }
+
+    fun loadShowsForGenre(genre: String) {
+        viewModelScope.launch {
+            try {
+                appDataRepository.loadShowsForGenre(genre)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load shows for genre: $genre")
+            }
+        }
+    }
+
+    private fun loadStudios() {
+        viewModelScope.launch {
+            try {
+                appDataRepository.loadStudios()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load studios")
+            }
+        }
+    }
+
+    fun onStudioClick(studio: AfinityStudio, navController: NavController) {
+        Timber.d("Studio clicked: ${studio.name}")
+        val route = Destination.createStudioContentRoute(studio.name)
+        navController.navigate(route)
     }
 
     fun onDownloadClick() {
         viewModelScope.launch {
             try {
                 val episode = _selectedEpisode.value ?: return@launch
-                val sources = episode.sources.filter { it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE }
+                val sources =
+                    episode.sources.filter { it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE }
 
                 if (sources.isEmpty()) {
                     Timber.w("No remote sources available for download for episode: ${episode.name}")
@@ -489,7 +570,11 @@ data class HomeUiState(
     val latestMovies: List<AfinityMovie> = emptyList(),
     val latestTvSeries: List<AfinityShow> = emptyList(),
     val highestRated: List<AfinityItem> = emptyList(),
-    val recommendationCategories: List<AfinityRecommendationCategory> = emptyList(),
+    val studios: List<AfinityStudio> = emptyList(),
+    val combinedGenres: List<GenreItem> = emptyList(),
+    val genreMovies: Map<String, List<AfinityMovie>> = emptyMap(),
+    val genreShows: Map<String, List<AfinityShow>> = emptyMap(),
+    val genreLoadingStates: Map<String, Boolean> = emptyMap(),
     val downloadedMovies: List<AfinityMovie> = emptyList(),
     val downloadedShows: List<AfinityShow> = emptyList(),
     val isLoading: Boolean = false,

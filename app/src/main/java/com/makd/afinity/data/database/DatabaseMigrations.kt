@@ -107,6 +107,71 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_15_16 = object : Migration(15, 16) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            // This migration is left empty as there were no schema changes
+        }
+    }
+
+    val MIGRATION_16_17 = object : Migration(16, 17) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS genre_cache (
+                    genreName TEXT PRIMARY KEY NOT NULL,
+                    lastFetchedTimestamp INTEGER NOT NULL,
+                    movieCount INTEGER NOT NULL DEFAULT 0
+                )
+            """.trimIndent())
+
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS genre_movie_cache (
+                    genreName TEXT NOT NULL,
+                    movieId TEXT NOT NULL,
+                    movieData TEXT NOT NULL,
+                    position INTEGER NOT NULL,
+                    cachedTimestamp INTEGER NOT NULL,
+                    PRIMARY KEY (genreName, movieId)
+                )
+            """.trimIndent())
+        }
+    }
+
+    val MIGRATION_17_18 = object : Migration(17, 18) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS show_genre_cache (
+                    genreName TEXT PRIMARY KEY NOT NULL,
+                    lastFetchedTimestamp INTEGER NOT NULL,
+                    showCount INTEGER NOT NULL DEFAULT 0
+                )
+            """.trimIndent())
+
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS genre_show_cache (
+                    genreName TEXT NOT NULL,
+                    showId TEXT NOT NULL,
+                    showData TEXT NOT NULL,
+                    position INTEGER NOT NULL,
+                    cachedTimestamp INTEGER NOT NULL,
+                    PRIMARY KEY (genreName, showId)
+                )
+            """.trimIndent())
+        }
+    }
+
+    val MIGRATION_18_19 = object : Migration(18, 19) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS studio_cache (
+                    studioId TEXT PRIMARY KEY NOT NULL,
+                    studioData TEXT NOT NULL,
+                    position INTEGER NOT NULL,
+                    cachedTimestamp INTEGER NOT NULL
+                )
+            """.trimIndent())
+        }
+    }
+
     val ALL_MIGRATIONS = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -119,6 +184,10 @@ object DatabaseMigrations {
         MIGRATION_11_12,
         MIGRATION_12_13,
         MIGRATION_13_14,
-        MIGRATION_14_15
+        MIGRATION_14_15,
+        MIGRATION_15_16,
+        MIGRATION_16_17,
+        MIGRATION_17_18,
+        MIGRATION_18_19
     )
 }

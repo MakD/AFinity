@@ -122,7 +122,6 @@ class BoxSetCache @Inject constructor(
             Timber.i("BoxSet cache built and saved in ${duration}ms. Cached ${itemToBoxSetsMap.size} items in ${boxSetsWithChildren.size} BoxSets")
         } catch (e: Exception) {
             Timber.e(e, "Failed to build BoxSet cache")
-            // Don't throw - keep old cache if available
         }
     }
 

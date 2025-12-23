@@ -29,13 +29,15 @@ class LibraryContentViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val libraryId: String = checkNotNull(savedStateHandle["libraryId"])
-    private val libraryName: String = checkNotNull(savedStateHandle["libraryName"])
+    private val libraryId: String? = savedStateHandle["libraryId"]
+    private val libraryName: String? = savedStateHandle["libraryName"]
+    private val studioName: String? = savedStateHandle["studioName"]
 
     private val _uiState = MutableStateFlow(
         LibraryContentUiState(
-            libraryId = UUID.fromString(libraryId),
-            libraryName = libraryName.replace("%2F", "/")
+            libraryId = libraryId?.let { UUID.fromString(it) },
+            libraryName = (libraryName ?: studioName ?: "Content").replace("%2F", "/"),
+            isStudioMode = studioName != null
         )
     )
     val uiState: StateFlow<LibraryContentUiState> = _uiState.asStateFlow()
@@ -68,6 +70,11 @@ class LibraryContentViewModel @Inject constructor(
     }
 
     private suspend fun determineLibraryType(): CollectionType {
+        if (studioName != null) {
+            Timber.d("Studio mode: using Mixed collection type")
+            return CollectionType.Mixed
+        }
+
         return try {
             val libraries = jellyfinRepository.getLibraries()
             val library = libraries.find { it.id.toString() == libraryId }
@@ -75,11 +82,12 @@ class LibraryContentViewModel @Inject constructor(
             library?.type ?: CollectionType.Mixed
         } catch (e: Exception) {
             Timber.w(e, "Failed to determine library type, falling back to name detection")
+            val name = libraryName ?: ""
             when {
-                libraryName.contains("TV", ignoreCase = true) ||
-                        libraryName.contains("Shows", ignoreCase = true) ||
-                        libraryName.contains("Series", ignoreCase = true) -> CollectionType.TvShows
-                libraryName.contains("Movie", ignoreCase = true) -> CollectionType.Movies
+                name.contains("TV", ignoreCase = true) ||
+                        name.contains("Shows", ignoreCase = true) ||
+                        name.contains("Series", ignoreCase = true) -> CollectionType.TvShows
+                name.contains("Movie", ignoreCase = true) -> CollectionType.Movies
                 else -> CollectionType.Mixed
             }
         }
@@ -89,12 +97,13 @@ class LibraryContentViewModel @Inject constructor(
         val type = libraryType ?: return
 
         _pagingData.value = jellyfinRepository.getItemsPaging(
-            parentId = UUID.fromString(libraryId),
+            parentId = libraryId?.let { UUID.fromString(it) },
             libraryType = type,
             sortBy = currentSortBy,
             sortDescending = currentSortDescending,
             filter = currentFilter,
-            nameStartsWith = null
+            nameStartsWith = null,
+            studioName = studioName
         ).cachedIn(viewModelScope)
     }
 
@@ -167,12 +176,13 @@ class LibraryContentViewModel @Inject constructor(
                 }
 
                 _pagingData.value = jellyfinRepository.getItemsPaging(
-                    parentId = UUID.fromString(libraryId),
+                    parentId = libraryId?.let { UUID.fromString(it) },
                     libraryType = type,
                     sortBy = currentSortBy,
                     sortDescending = currentSortDescending,
                     filter = currentFilter,
-                    nameStartsWith = letterFilter
+                    nameStartsWith = letterFilter,
+                    studioName = studioName
                 ).cachedIn(viewModelScope)
 
                 Timber.d("Alphabet scroll: Created new paging source for letter '$letter'")
@@ -185,7 +195,7 @@ class LibraryContentViewModel @Inject constructor(
 }
 
 data class LibraryContentUiState(
-    val libraryId: UUID,
+    val libraryId: UUID?,
     val libraryName: String,
     val libraryType: CollectionType? = null,
     val isLoading: Boolean = false,
@@ -193,5 +203,6 @@ data class LibraryContentUiState(
     val userProfileImageUrl: String? = null,
     val currentSortBy: SortBy = SortBy.NAME,
     val currentSortDescending: Boolean = false,
-    val currentFilter: FilterType = FilterType.ALL
+    val currentFilter: FilterType = FilterType.ALL,
+    val isStudioMode: Boolean = false
 )
