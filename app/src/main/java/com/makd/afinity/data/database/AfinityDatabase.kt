@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.EpisodeDao
+import com.makd.afinity.data.database.dao.GenreCacheDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
@@ -16,6 +17,7 @@ import com.makd.afinity.data.database.dao.ServerDao
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.dao.ShowDao
 import com.makd.afinity.data.database.dao.SourceDao
+import com.makd.afinity.data.database.dao.StudioCacheDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
@@ -29,7 +31,12 @@ import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
 import com.makd.afinity.data.database.entities.BoxSetCacheEntity
 import com.makd.afinity.data.database.entities.BoxSetCacheMetadata
 import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.database.entities.GenreCacheEntity
+import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
+import com.makd.afinity.data.database.entities.GenreShowCacheEntity
 import com.makd.afinity.data.database.entities.LibraryCacheEntity
+import com.makd.afinity.data.database.entities.ShowGenreCacheEntity
+import com.makd.afinity.data.database.entities.StudioCacheEntity
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.models.user.AfinityUserDataDto
@@ -46,6 +53,14 @@ import com.makd.afinity.data.models.user.User
         BoxSetCacheEntity::class,
         BoxSetCacheMetadata::class,
 
+        GenreCacheEntity::class,
+        GenreMovieCacheEntity::class,
+
+        ShowGenreCacheEntity::class,
+        GenreShowCacheEntity::class,
+
+        StudioCacheEntity::class,
+
         AfinityMovieDto::class,
         AfinityShowDto::class,
         AfinitySeasonDto::class,
@@ -60,7 +75,7 @@ import com.makd.afinity.data.models.user.User
 
         DownloadDto::class,
     ],
-    version = 16,
+    version = 19,
     exportSchema = false
 )
 @TypeConverters(com.makd.afinity.data.database.TypeConverters::class)
@@ -83,6 +98,8 @@ abstract class AfinityDatabase : RoomDatabase() {
 
     abstract fun libraryCacheDao(): LibraryCacheDao
     abstract fun boxSetCacheDao(): BoxSetCacheDao
+    abstract fun genreCacheDao(): GenreCacheDao
+    abstract fun studioCacheDao(): StudioCacheDao
 
     companion object {
         @Volatile

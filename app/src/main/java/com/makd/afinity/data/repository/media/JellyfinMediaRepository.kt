@@ -19,6 +19,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.repository.FieldSets
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,6 +39,7 @@ import org.jellyfin.sdk.api.operations.GenresApi
 import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.api.operations.MoviesApi
+import org.jellyfin.sdk.api.operations.StudiosApi
 import org.jellyfin.sdk.api.operations.TrickplayApi
 import org.jellyfin.sdk.api.operations.TvShowsApi
 import org.jellyfin.sdk.api.operations.UserApi
@@ -415,7 +417,8 @@ class JellyfinMediaRepository @Inject constructor(
         nameStartsWith: String?,
         fields: List<ItemFields>?,
         imageTypes: List<String>,
-        hasOverview: Boolean?
+        hasOverview: Boolean?,
+        studios: List<String>
     ): BaseItemDtoQueryResult = withContext(Dispatchers.IO) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext BaseItemDtoQueryResult(
@@ -449,6 +452,7 @@ class JellyfinMediaRepository @Inject constructor(
                 isPlayed = isPlayed,
                 filters = filters.ifEmpty { null },
                 nameStartsWith = nameStartsWith,
+                studios = studios.ifEmpty { null },
                 fields = fields ?: FieldSets.LIBRARY_GRID,
                 imageTypes = if (imageTypes.isNotEmpty()) {
                     imageTypes.mapNotNull {
@@ -623,6 +627,45 @@ class JellyfinMediaRepository @Inject constructor(
             emptyList()
         } catch (e: Exception) {
             Timber.e(e, "Unexpected error getting movies for genre: $genre")
+            emptyList()
+        }
+    }
+
+    override suspend fun getShowsByGenre(
+        genre: String,
+        parentId: UUID?,
+        limit: Int,
+        shuffle: Boolean,
+        fields: List<ItemFields>?
+    ): List<AfinityShow> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val userId = getCurrentUserId() ?: return@withContext emptyList()
+
+            val itemsApi = ItemsApi(apiClient)
+
+            val response = itemsApi.getItems(
+                userId = userId,
+                parentId = parentId,
+                includeItemTypes = listOf(BaseItemKind.SERIES),
+                recursive = true,
+                genres = listOf(genre),
+                limit = limit,
+                sortBy = if (shuffle) listOf(ItemSortBy.RANDOM) else listOf(ItemSortBy.SORT_NAME),
+                fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                enableImages = true,
+                enableUserData = true
+            )
+
+            response.content?.items
+                ?.filter { it.type == BaseItemKind.SERIES }
+                ?.mapNotNull { baseItem ->
+                    baseItem.toAfinityShow(getBaseUrl())
+                } ?: emptyList()
+        } catch (e: ApiClientException) {
+            Timber.e(e, "Failed to get shows for genre: $genre")
+            emptyList()
+        } catch (e: Exception) {
+            Timber.e(e, "Unexpected error getting shows for genre: $genre")
             emptyList()
         }
     }
@@ -1066,6 +1109,99 @@ class JellyfinMediaRepository @Inject constructor(
             emptyList()
         } catch (e: Exception) {
             Timber.e(e, "Unexpected error getting genres")
+            emptyList()
+        }
+    }
+
+    override suspend fun getStudios(
+        parentId: UUID?,
+        limit: Int?,
+        includeItemTypes: List<String>
+    ): List<AfinityStudio> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val userId = getCurrentUserId() ?: return@withContext emptyList()
+
+            val librariesResponse = getLibraries()
+            val tvLibraries = librariesResponse.filter { it.type == CollectionType.TvShows }
+
+            if (tvLibraries.isEmpty()) {
+                Timber.d("No TV libraries found")
+                return@withContext emptyList()
+            }
+
+            Timber.d("Found ${tvLibraries.size} TV libraries")
+
+            val studiosApi = StudiosApi(apiClient)
+            val allStudios = mutableListOf<Triple<UUID, String, Pair<String?, Int>>>()
+
+            for (library in tvLibraries) {
+                try {
+                    val response = studiosApi.getStudios(
+                        userId = userId,
+                        parentId = library.id,
+                        includeItemTypes = listOf(BaseItemKind.SERIES),
+                        enableImages = true
+                    )
+
+                    response.content?.items?.forEach { studioDto ->
+                        val id: UUID = studioDto.id ?: return@forEach
+                        val name: String = studioDto.name?.takeIf { it.isNotBlank() } ?: return@forEach
+                        val childCount: Int = studioDto.childCount ?: 0
+
+                        val imageTags: Map<ImageType, String>? = studioDto.imageTags
+                        val thumbImageUrl: String? = imageTags?.get(ImageType.THUMB)?.let { tag: String ->
+                            "${getBaseUrl()}/Items/$id/Images/Thumb?tag=$tag"
+                        }
+
+                        allStudios.add(Triple(id, name, Pair(thumbImageUrl, childCount)))
+                    }
+
+                    Timber.d("Fetched ${response.content?.items?.size ?: 0} studios from library: ${library.name}")
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to fetch studios from library: ${library.name}")
+                }
+            }
+
+            val uniqueStudios = mutableMapOf<UUID, Triple<String, String?, Int>>()
+            for ((id, name, imageData) in allStudios) {
+                val (thumbUrl, childCount) = imageData
+
+                if (uniqueStudios.containsKey(id)) {
+                    val existing = uniqueStudios[id]!!
+                    if (childCount > existing.third) {
+                        uniqueStudios[id] = Triple(name, thumbUrl, childCount)
+                    }
+                } else {
+                    uniqueStudios[id] = Triple(name, thumbUrl, childCount)
+                }
+            }
+
+            Timber.d("Deduplicated to ${uniqueStudios.size} unique studios")
+
+            val filteredStudios = uniqueStudios
+                .filter { (_, data) -> data.third >= 5 }
+                .filter { (_, data) -> data.second != null }
+
+            Timber.d("Filtered to ${filteredStudios.size} studios (min 5 shows, has Thumb)")
+
+            val sortedStudios = filteredStudios
+                .map { (id, data) ->
+                    AfinityStudio(
+                        id = id,
+                        name = data.first,
+                        primaryImageUrl = data.second,
+                        itemCount = data.third
+                    )
+                }
+                .sortedByDescending { it.itemCount }
+
+            sortedStudios.take(limit ?: 15)
+
+        } catch (e: ApiClientException) {
+            Timber.e(e, "API error getting studios: ${e.message}")
+            emptyList()
+        } catch (e: Exception) {
+            Timber.e(e, "Unexpected error getting studios")
             emptyList()
         }
     }

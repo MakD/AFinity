@@ -13,13 +13,14 @@ import java.util.UUID
 
 class JellyfinItemsPagingSource(
     private val mediaRepository: MediaRepository,
-    private val parentId: UUID,
+    private val parentId: UUID?,
     private val libraryType: CollectionType,
     private val sortBy: SortBy,
     private val sortDescending: Boolean,
     private val filter: FilterType,
     private val baseUrl: String,
-    private val nameStartsWith: String? = null
+    private val nameStartsWith: String? = null,
+    private val studioName: String? = null
 ) : PagingSource<Int, AfinityItem>() {
 
     companion object {
@@ -39,7 +40,7 @@ class JellyfinItemsPagingSource(
                 else -> null
             }
 
-            val items = if (nameStartsWith != null) {
+            val items = if (nameStartsWith != null || studioName != null) {
                 val includeTypes = when (libraryType) {
                     CollectionType.TvShows -> listOf("SERIES")
                     CollectionType.Movies -> listOf("MOVIE")
@@ -60,7 +61,8 @@ class JellyfinItemsPagingSource(
                         else -> null
                     },
                     isPlayed = filterIsPlayed,
-                    nameStartsWith = nameStartsWith
+                    nameStartsWith = nameStartsWith,
+                    studios = if (studioName != null) listOf(studioName) else emptyList()
                 )
 
                 response.items?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()

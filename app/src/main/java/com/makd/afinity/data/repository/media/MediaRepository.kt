@@ -10,6 +10,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityStudio
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
@@ -66,7 +67,8 @@ interface MediaRepository {
         nameStartsWith: String? = null,
         fields: List<ItemFields>? = null,
         imageTypes: List<String> = emptyList(),
-        hasOverview: Boolean? = null
+        hasOverview: Boolean? = null,
+        studios: List<String> = emptyList()
     ): BaseItemDtoQueryResult
 
     suspend fun getItem(
@@ -99,6 +101,14 @@ interface MediaRepository {
         shuffle: Boolean = true,
         fields: List<ItemFields>? = null
     ): List<AfinityMovie>
+
+    suspend fun getShowsByGenre(
+        genre: String,
+        parentId: UUID? = null,
+        limit: Int = 20,
+        shuffle: Boolean = true,
+        fields: List<ItemFields>? = null
+    ): List<AfinityShow>
 
     suspend fun getShows(
         parentId: UUID? = null,
@@ -145,6 +155,12 @@ interface MediaRepository {
         limit: Int? = null,
         includeItemTypes: List<String> = emptyList(),
     ): List<String>
+
+    suspend fun getStudios(
+        parentId: UUID? = null,
+        limit: Int? = null,
+        includeItemTypes: List<String> = emptyList(),
+    ): List<AfinityStudio>
 
     suspend fun getNextUp(
         seriesId: UUID? = null,

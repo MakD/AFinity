@@ -3,11 +3,17 @@ package com.makd.afinity.data.database
 import android.net.Uri
 import androidx.room.TypeConverter
 import com.makd.afinity.data.models.media.AfinityChapter
+import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySegmentType
+import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -193,7 +199,201 @@ class TypeConverters {
             null
         }
     }
+
+    @TypeConverter
+    fun fromAfinityMovie(movie: AfinityMovie?): String? {
+        if (movie == null) return null
+        val serializable = SerializableAfinityMovie(
+            id = movie.id.toString(),
+            name = movie.name,
+            originalTitle = movie.originalTitle,
+            overview = movie.overview,
+            played = movie.played,
+            favorite = movie.favorite,
+            liked = movie.liked,
+            canPlay = movie.canPlay,
+            canDownload = movie.canDownload,
+            runtimeTicks = movie.runtimeTicks,
+            playbackPositionTicks = movie.playbackPositionTicks,
+            premiereDate = movie.premiereDate?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            dateCreated = movie.dateCreated?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            genres = movie.genres,
+            communityRating = movie.communityRating,
+            officialRating = movie.officialRating,
+            criticRating = movie.criticRating,
+            taglines = movie.taglines,
+            status = movie.status,
+            productionYear = movie.productionYear,
+            endDate = movie.endDate?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            trailer = movie.trailer,
+            tagline = movie.tagline,
+            unplayedItemCount = movie.unplayedItemCount,
+            imagesJson = fromAfinityImages(movie.images),
+            peopleJson = fromAfinityPersonList(movie.people)
+        )
+        return json.encodeToString(serializable)
+    }
+
+    @TypeConverter
+    fun toAfinityMovie(movieString: String?): AfinityMovie? {
+        if (movieString == null) return null
+        return try {
+            val serializable = json.decodeFromString<SerializableAfinityMovie>(movieString)
+            AfinityMovie(
+                id = UUID.fromString(serializable.id),
+                name = serializable.name,
+                originalTitle = serializable.originalTitle,
+                overview = serializable.overview,
+                sources = emptyList(),
+                played = serializable.played,
+                favorite = serializable.favorite,
+                liked = serializable.liked,
+                canPlay = serializable.canPlay,
+                canDownload = serializable.canDownload,
+                runtimeTicks = serializable.runtimeTicks,
+                playbackPositionTicks = serializable.playbackPositionTicks,
+                premiereDate = serializable.premiereDate?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
+                dateCreated = serializable.dateCreated?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
+                people = toAfinityPersonList(serializable.peopleJson) ?: emptyList(),
+                genres = serializable.genres,
+                communityRating = serializable.communityRating,
+                officialRating = serializable.officialRating,
+                criticRating = serializable.criticRating,
+                taglines = serializable.taglines,
+                status = serializable.status,
+                productionYear = serializable.productionYear,
+                endDate = serializable.endDate?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
+                trailer = serializable.trailer,
+                tagline = serializable.tagline,
+                unplayedItemCount = serializable.unplayedItemCount,
+                images = toAfinityImages(serializable.imagesJson) ?: AfinityImages(),
+                chapters = emptyList(),
+                trickplayInfo = null,
+                providerIds = null,
+                externalUrls = null
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    @TypeConverter
+    fun fromAfinityShow(show: AfinityShow?): String? {
+        if (show == null) return null
+        val serializable = SerializableAfinityShow(
+            id = show.id.toString(),
+            name = show.name,
+            originalTitle = show.originalTitle,
+            overview = show.overview,
+            played = show.played,
+            favorite = show.favorite,
+            liked = show.liked,
+            canPlay = show.canPlay,
+            canDownload = show.canDownload,
+            runtimeTicks = show.runtimeTicks,
+            playbackPositionTicks = show.playbackPositionTicks,
+            premiereDate = show.premiereDate?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            dateCreated = show.dateCreated?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            dateLastContentAdded = show.dateLastContentAdded?.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            genres = show.genres,
+            communityRating = show.communityRating,
+            officialRating = show.officialRating,
+            taglines = show.taglines,
+            status = show.status,
+            productionYear = show.productionYear,
+            endDate = show.endDate?.toString(),
+            trailer = show.trailer,
+            tagline = show.tagline,
+            unplayedItemCount = show.unplayedItemCount,
+            seasonCount = show.seasonCount,
+            episodeCount = show.episodeCount,
+            imagesJson = fromAfinityImages(show.images),
+            peopleJson = fromAfinityPersonList(show.people)
+        )
+        return json.encodeToString(serializable)
+    }
+
+    @TypeConverter
+    fun toAfinityShow(showString: String?): AfinityShow? {
+        if (showString == null) return null
+        return try {
+            val serializable = json.decodeFromString<SerializableAfinityShow>(showString)
+            AfinityShow(
+                id = UUID.fromString(serializable.id),
+                name = serializable.name,
+                originalTitle = serializable.originalTitle,
+                overview = serializable.overview,
+                sources = emptyList(),
+                seasons = emptyList(),
+                played = serializable.played,
+                favorite = serializable.favorite,
+                liked = serializable.liked,
+                canPlay = serializable.canPlay,
+                canDownload = serializable.canDownload,
+                playbackPositionTicks = serializable.playbackPositionTicks,
+                runtimeTicks = serializable.runtimeTicks,
+                premiereDate = serializable.premiereDate?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
+                dateCreated = serializable.dateCreated?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
+                dateLastContentAdded = serializable.dateLastContentAdded?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
+                people = toAfinityPersonList(serializable.peopleJson) ?: emptyList(),
+                genres = serializable.genres,
+                communityRating = serializable.communityRating,
+                officialRating = serializable.officialRating,
+                taglines = serializable.taglines,
+                status = serializable.status,
+                productionYear = serializable.productionYear,
+                endDate = null,
+                trailer = serializable.trailer,
+                tagline = serializable.tagline,
+                unplayedItemCount = serializable.unplayedItemCount,
+                seasonCount = serializable.seasonCount,
+                episodeCount = serializable.episodeCount,
+                images = toAfinityImages(serializable.imagesJson) ?: AfinityImages(),
+                chapters = emptyList(),
+                providerIds = null,
+                externalUrls = null
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    @TypeConverter
+    fun fromAfinityStudio(studio: AfinityStudio?): String? {
+        if (studio == null) return null
+        val serializable = SerializableAfinityStudio(
+            id = studio.id.toString(),
+            name = studio.name,
+            primaryImageUrl = studio.primaryImageUrl,
+            itemCount = studio.itemCount
+        )
+        return json.encodeToString(serializable)
+    }
+
+    @TypeConverter
+    fun toAfinityStudio(studioString: String?): AfinityStudio? {
+        if (studioString == null) return null
+        return try {
+            val serializable = json.decodeFromString<SerializableAfinityStudio>(studioString)
+            AfinityStudio(
+                id = UUID.fromString(serializable.id),
+                name = serializable.name,
+                primaryImageUrl = serializable.primaryImageUrl,
+                itemCount = serializable.itemCount
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
+
+@Serializable
+private data class SerializableAfinityStudio(
+    val id: String,
+    val name: String,
+    val primaryImageUrl: String?,
+    val itemCount: Int
+)
 
 @Serializable
 private data class SerializableAfinityPerson(
@@ -221,4 +421,66 @@ private data class SerializableAfinityImages(
     val showPrimaryImageBlurHash: String? = null,
     val showBackdropImageBlurHash: String? = null,
     val showLogoImageBlurHash: String? = null
+)
+
+@Serializable
+private data class SerializableAfinityMovie(
+    val id: String,
+    val name: String,
+    val originalTitle: String?,
+    val overview: String,
+    val played: Boolean,
+    val favorite: Boolean,
+    val liked: Boolean,
+    val canPlay: Boolean,
+    val canDownload: Boolean,
+    val runtimeTicks: Long,
+    val playbackPositionTicks: Long,
+    val premiereDate: String?,
+    val dateCreated: String?,
+    val genres: List<String>,
+    val communityRating: Float?,
+    val officialRating: String?,
+    val criticRating: Float?,
+    val taglines: List<String>,
+    val status: String,
+    val productionYear: Int?,
+    val endDate: String?,
+    val trailer: String?,
+    val tagline: String?,
+    val unplayedItemCount: Int?,
+    val imagesJson: String?,
+    val peopleJson: String?
+)
+
+@Serializable
+private data class SerializableAfinityShow(
+    val id: String,
+    val name: String,
+    val originalTitle: String?,
+    val overview: String,
+    val played: Boolean,
+    val favorite: Boolean,
+    val liked: Boolean,
+    val canPlay: Boolean,
+    val canDownload: Boolean,
+    val runtimeTicks: Long,
+    val playbackPositionTicks: Long,
+    val premiereDate: String?,
+    val dateCreated: String?,
+    val dateLastContentAdded: String?,
+    val genres: List<String>,
+    val communityRating: Float?,
+    val officialRating: String?,
+    val taglines: List<String>,
+    val status: String,
+    val productionYear: Int?,
+    val endDate: String?,
+    val trailer: String?,
+    val tagline: String?,
+    val unplayedItemCount: Int?,
+    val seasonCount: Int?,
+    val episodeCount: Int?,
+    val imagesJson: String?,
+    val peopleJson: String?
 )

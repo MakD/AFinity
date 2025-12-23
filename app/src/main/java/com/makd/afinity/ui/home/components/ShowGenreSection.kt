@@ -10,13 +10,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,15 +34,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 
 @Composable
-fun GenreSection(
+fun ShowGenreSection(
     genre: String,
-    movies: List<AfinityMovie>,
+    shows: List<AfinityShow>,
     isLoading: Boolean,
     onVisible: () -> Unit,
     onItemClick: (AfinityItem) -> Unit,
@@ -61,14 +59,11 @@ fun GenreSection(
 
     val cardWidth = rememberPortraitCardWidth()
     val cardHeight = cardWidth / CardDimensions.ASPECT_RATIO_PORTRAIT
-
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
-    Column(
-        modifier = modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Text(
-            text = "$genre Movies",
+            text = "$genre Shows",
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -76,21 +71,20 @@ fun GenreSection(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        if (isLoading && movies.isEmpty()) {
-            GenreSkeletonRow(cardWidth = cardWidth, height = fixedRowHeight)
-        } else if (movies.isNotEmpty()) {
+        if (isLoading && shows.isEmpty()) {
+            ShowGenreSkeletonRow(cardWidth = cardWidth, height = fixedRowHeight)
+        } else if (shows.isNotEmpty()) {
             LazyRow(
                 modifier = Modifier.height(fixedRowHeight),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 0.dp)
             ) {
                 items(
-                    items = movies,
-                    key = { movie -> "genre_${genre}_${movie.id}" }
-                ) { movie ->
+                    shows,
+                    key = { "show_genre_${genre}_${it.id}" }) { show ->
                     MediaItemCard(
-                        item = movie,
-                        onClick = { onItemClick(movie) }
+                        item = show,
+                        onClick = { onItemClick(show) }
                     )
                 }
             }
@@ -99,17 +93,13 @@ fun GenreSection(
 }
 
 @Composable
-private fun GenreSkeletonRow(
+private fun ShowGenreSkeletonRow(
     cardWidth: Dp,
     height: Dp
 ) {
-    LazyRow(
-        modifier = Modifier.height(height),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
-    ) {
-        items(6) {
-            Column(modifier = Modifier.width(cardWidth)) {
+    LazyRow(modifier = Modifier.height(height)) {
+        items(5) {
+            Column(modifier = Modifier.padding(end = 12.dp)) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -126,16 +116,6 @@ private fun GenreSkeletonRow(
                             .shimmerEffect()
                     )
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .width(cardWidth * 0.8f)
-                        .height(14.dp)
-                        .padding(horizontal = 4.dp)
-                        .shimmerEffect()
-                )
             }
         }
     }
@@ -153,7 +133,5 @@ private fun Modifier.shimmerEffect(): Modifier = composed {
         ),
         label = "alpha"
     )
-    background(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha.value)
-    )
+    background(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha.value))
 }

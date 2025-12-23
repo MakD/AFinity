@@ -42,6 +42,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
+import java.util.Locale
 
 @Composable
 fun ContinueWatchingCard(
@@ -66,9 +67,11 @@ fun ContinueWatchingCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 OptimizedAsyncImage(
-                    imageUrl = item.images.thumbImageUrl ?: item.images.backdropImageUrl ?: item.images.primaryImageUrl,
+                    imageUrl = item.images.thumbImageUrl ?: item.images.backdropImageUrl
+                    ?: item.images.primaryImageUrl,
                     contentDescription = item.name,
-                    blurHash = item.images.thumbBlurHash ?: item.images.backdropBlurHash ?: item.images.primaryBlurHash,
+                    blurHash = item.images.thumbBlurHash ?: item.images.backdropBlurHash
+                    ?: item.images.primaryBlurHash,
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 9f / 16f,
                     contentScale = ContentScale.Crop,
@@ -78,7 +81,10 @@ fun ContinueWatchingCard(
                 )
 
                 val progressPercentage = if (item.runtimeTicks > 0) {
-                    (item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()).coerceIn(0f, 1f)
+                    (item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()).coerceIn(
+                        0f,
+                        1f
+                    )
                 } else 0f
 
                 LinearProgressIndicator(
@@ -119,7 +125,7 @@ fun ContinueWatchingCard(
         when (item) {
             is AfinityEpisode -> {
                 Text(
-                    text = "${item.seriesName} S${item.parentIndexNumber}:E${item.indexNumber}",
+                    text = item.seriesName,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
@@ -128,6 +134,7 @@ fun ContinueWatchingCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+
             else -> {
                 Text(
                     text = item.name,
@@ -172,7 +179,7 @@ fun ContinueWatchingCard(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = String.format("%.1f", imdbRating),
+                                    text = String.format(Locale.US, "%.1f", imdbRating),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -228,9 +235,13 @@ fun ContinueWatchingCard(
                     if (item.name.isNotBlank()) {
                         metadataItems.add {
                             val truncatedName = if (item.name.length > 15) {
-                                "${item.name.take(15)}..."
+                                "S${item.parentIndexNumber}:E${item.indexNumber} • ${
+                                    item.name.take(
+                                        15
+                                    )
+                                }..."
                             } else {
-                                item.name
+                                "S${item.parentIndexNumber}:E${item.indexNumber} • ${item.name}"
                             }
                             Text(
                                 text = truncatedName,
@@ -255,7 +266,7 @@ fun ContinueWatchingCard(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = String.format("%.1f", imdbRating),
+                                    text = String.format(Locale.US, "%.1f", imdbRating),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -278,11 +289,22 @@ fun ContinueWatchingCard(
 
             is AfinityShow -> {
                 item.communityRating?.let { rating ->
-                    Text(
-                        text = "⭐ ${String.format("%.1f", rating)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_imdb_logo),
+                            contentDescription = "IMDB",
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = String.format(Locale.US, "%.1f", rating),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
