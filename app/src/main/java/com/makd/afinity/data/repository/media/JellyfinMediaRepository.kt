@@ -17,12 +17,8 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
-import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.models.media.RecommendationType
-import com.makd.afinity.data.models.media.buildTitle
-import com.makd.afinity.data.models.media.toAfinityRecommendationType
 import com.makd.afinity.data.repository.FieldSets
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -402,115 +398,6 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
-    override suspend fun getRecommendationCategories(
-        parentId: UUID?,
-        categoryLimit: Int,
-        itemLimit: Int,
-        fields: List<ItemFields>?
-    ): List<AfinityRecommendationCategory> = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-            val libraries = getLibraries()
-            val movieLibraries = libraries.filter { it.type == CollectionType.Movies }
-
-            val allRecommendationCategories = coroutineScope {
-                movieLibraries.map { library ->
-                    async {
-                        try {
-                            val moviesApi = MoviesApi(apiClient)
-                            val recommendations = moviesApi.getMovieRecommendations(
-                                userId = userId,
-                                parentId = library.id,
-                                categoryLimit = 4,
-                                itemLimit = itemLimit,
-                                fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
-                            )
-
-                            recommendations.content?.mapNotNull { recommendationDto ->
-                                val items = recommendationDto.items?.mapNotNull { baseItem ->
-                                    baseItem.toAfinityItem(getBaseUrl())
-                                } ?: emptyList()
-
-                                if (items.isNotEmpty()) {
-                                    AfinityRecommendationCategory(
-                                        title = recommendationDto.recommendationType?.toAfinityRecommendationType()
-                                            ?.buildTitle(recommendationDto.baselineItemName)
-                                            ?: "Recommended for You",
-                                        items = items,
-                                        recommendationType = recommendationDto.recommendationType?.toAfinityRecommendationType()
-                                            ?: RecommendationType.RECOMMENDED_FOR_YOU,
-                                        baselineItemName = recommendationDto.baselineItemName
-                                    )
-                                } else null
-                            } ?: emptyList()
-
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to get movie recommendations for library ${library.id}")
-                            emptyList<AfinityRecommendationCategory>()
-                        }
-                    }
-                }.awaitAll().flatten()
-            }
-
-            val uniqueCategories = allRecommendationCategories
-                .distinctBy { "${it.recommendationType}-${it.baselineItemName}" }
-
-            val selectedCategories = mutableListOf<AfinityRecommendationCategory>()
-
-            val becauseYouWatched = uniqueCategories
-                .filter { it.recommendationType == RecommendationType.SIMILAR_TO_RECENTLY_PLAYED }
-                .shuffled()
-                .take(2)
-            selectedCategories.addAll(becauseYouWatched)
-
-            val becauseYouLiked = uniqueCategories
-                .filter { it.recommendationType == RecommendationType.SIMILAR_TO_LIKED_ITEM }
-                .shuffled()
-                .take(1)
-            selectedCategories.addAll(becauseYouLiked)
-
-            val directedBy = uniqueCategories
-                .filter {
-                    it.recommendationType == RecommendationType.HAS_DIRECTOR_FROM_RECENTLY_PLAYED ||
-                            it.recommendationType == RecommendationType.HAS_LIKED_DIRECTOR
-                }
-                .shuffled()
-                .take(1)
-            selectedCategories.addAll(directedBy)
-
-            val starring = uniqueCategories
-                .filter {
-                    it.recommendationType == RecommendationType.HAS_ACTOR_FROM_RECENTLY_PLAYED ||
-                            it.recommendationType == RecommendationType.HAS_LIKED_ACTOR
-                }
-                .shuffled()
-                .take(1)
-            selectedCategories.addAll(starring)
-
-            val remainingSlots = categoryLimit - selectedCategories.size
-            if (remainingSlots > 0) {
-                val usedCategories = selectedCategories.map { "${it.recommendationType}-${it.baselineItemName}" }.toSet()
-                val remaining = uniqueCategories
-                    .filter { "${it.recommendationType}-${it.baselineItemName}" !in usedCategories }
-                    .shuffled()
-                    .take(remainingSlots)
-                selectedCategories.addAll(remaining)
-            }
-
-            selectedCategories.shuffled().take(categoryLimit).map { category ->
-                category.copy(items = category.items.shuffled())
-            }
-
-        } catch (e: ApiClientException) {
-            Timber.e(e, "Failed to get recommendation categories")
-            emptyList()
-        } catch (e: Exception) {
-            Timber.e(e, "Unexpected error getting recommendation categories")
-            emptyList()
-        }
-    }
-
     override suspend fun getItems(
         parentId: UUID?,
         collectionTypes: List<CollectionType>,
@@ -697,6 +584,45 @@ class JellyfinMediaRepository @Inject constructor(
             emptyList()
         } catch (e: Exception) {
             Timber.e(e, "Unexpected error getting movies")
+            emptyList()
+        }
+    }
+
+    override suspend fun getMoviesByGenre(
+        genre: String,
+        parentId: UUID?,
+        limit: Int,
+        shuffle: Boolean,
+        fields: List<ItemFields>?
+    ): List<AfinityMovie> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val userId = getCurrentUserId() ?: return@withContext emptyList()
+
+            val itemsApi = ItemsApi(apiClient)
+
+            val response = itemsApi.getItems(
+                userId = userId,
+                parentId = parentId,
+                includeItemTypes = listOf(BaseItemKind.MOVIE),
+                recursive = true,
+                genres = listOf(genre),
+                limit = limit,
+                sortBy = if (shuffle) listOf(ItemSortBy.RANDOM) else listOf(ItemSortBy.SORT_NAME),
+                fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                enableImages = true,
+                enableUserData = true
+            )
+
+            response.content?.items
+                ?.filter { it.type == BaseItemKind.MOVIE }
+                ?.mapNotNull { baseItem ->
+                    baseItem.toAfinityMovie(getBaseUrl())
+                } ?: emptyList()
+        } catch (e: ApiClientException) {
+            Timber.e(e, "Failed to get movies for genre: $genre")
+            emptyList()
+        } catch (e: Exception) {
+            Timber.e(e, "Unexpected error getting movies for genre: $genre")
             emptyList()
         }
     }

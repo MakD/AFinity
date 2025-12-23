@@ -8,7 +8,6 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
-import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import kotlinx.coroutines.flow.Flow
@@ -50,13 +49,6 @@ interface MediaRepository {
         fields: List<ItemFields>? = null
     ): List<AfinityItem>
 
-    suspend fun getRecommendationCategories(
-        parentId: UUID? = null,
-        categoryLimit: Int = 5,
-        itemLimit: Int = 8,
-        fields: List<ItemFields>? = null
-    ): List<AfinityRecommendationCategory>
-
     suspend fun getItems(
         parentId: UUID? = null,
         collectionTypes: List<CollectionType> = emptyList(),
@@ -97,6 +89,14 @@ interface MediaRepository {
         isPlayed: Boolean? = null,
         isFavorite: Boolean? = null,
         isLiked: Boolean? = null,
+        fields: List<ItemFields>? = null
+    ): List<AfinityMovie>
+
+    suspend fun getMoviesByGenre(
+        genre: String,
+        parentId: UUID? = null,
+        limit: Int = 20,
+        shuffle: Boolean = true,
         fields: List<ItemFields>? = null
     ): List<AfinityMovie>
 

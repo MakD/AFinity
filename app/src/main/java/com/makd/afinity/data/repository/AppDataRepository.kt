@@ -7,7 +7,6 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinityShow
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -68,8 +67,14 @@ class AppDataRepository @Inject constructor(
     private val _highestRated = MutableStateFlow<List<AfinityItem>>(emptyList())
     val highestRated: StateFlow<List<AfinityItem>> = _highestRated.asStateFlow()
 
-    private val _recommendationCategories = MutableStateFlow<List<AfinityRecommendationCategory>>(emptyList())
-    val recommendationCategories: StateFlow<List<AfinityRecommendationCategory>> = _recommendationCategories.asStateFlow()
+    private val _genres = MutableStateFlow<List<String>>(emptyList())
+    val genres: StateFlow<List<String>> = _genres.asStateFlow()
+
+    private val _genreMovies = MutableStateFlow<Map<String, List<AfinityMovie>>>(emptyMap())
+    val genreMovies: StateFlow<Map<String, List<AfinityMovie>>> = _genreMovies.asStateFlow()
+
+    private val _genreLoadingStates = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val genreLoadingStates: StateFlow<Map<String, Boolean>> = _genreLoadingStates.asStateFlow()
 
     private val _isInitialDataLoaded = MutableStateFlow(false)
     val isInitialDataLoaded: StateFlow<Boolean> = _isInitialDataLoaded.asStateFlow()
@@ -142,17 +147,6 @@ class AppDataRepository @Inject constructor(
 
                 updateProgress(1f, "Ready!")
                 _isInitialDataLoaded.value = true
-
-                launch {
-                    try {
-                        Timber.d("Loading recommendations in background...")
-                        val recommendationCategories = loadRecommendations()
-                        _recommendationCategories.value = recommendationCategories
-                        Timber.d("Recommendations loaded successfully")
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to load recommendations in background")
-                    }
-                }
 
                 launch {
                     jellyfinRepository.getContinueWatchingFlow().collect { liveData ->
@@ -427,15 +421,44 @@ class AppDataRepository @Inject constructor(
         }
     }
 
-    private suspend fun loadRecommendations(): List<AfinityRecommendationCategory> {
-        return try {
-            jellyfinRepository.getRecommendationCategories(
-                categoryLimit = 4,
-                itemLimit = 6
+    suspend fun loadGenres() {
+        try {
+            Timber.d("Loading genres for movies")
+            val genres = jellyfinRepository.getGenres(
+                parentId = null,
+                limit = null,
+                includeItemTypes = listOf("MOVIE")
             )
+            _genres.value = genres
+            Timber.d("Loaded ${genres.size} genres")
         } catch (e: Exception) {
-            Timber.e(e, "Failed to load recommendations")
-            emptyList()
+            Timber.e(e, "Failed to load genres")
+        }
+    }
+
+    suspend fun loadMoviesForGenre(genre: String, limit: Int = 20) {
+        if (_genreMovies.value.containsKey(genre)) {
+            Timber.d("Genre '$genre' already loaded, skipping")
+            return
+        }
+
+        try {
+            _genreLoadingStates.value = _genreLoadingStates.value + (genre to true)
+            Timber.d("Loading movies for genre: $genre")
+
+            val movies = jellyfinRepository.getMoviesByGenre(
+                genre = genre,
+                limit = limit,
+                shuffle = true
+            )
+
+            _genreMovies.value = _genreMovies.value + (genre to movies)
+            _genreLoadingStates.value = _genreLoadingStates.value + (genre to false)
+
+            Timber.d("Loaded ${movies.size} movies for genre: $genre")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load movies for genre: $genre")
+            _genreLoadingStates.value = _genreLoadingStates.value + (genre to false)
         }
     }
 
@@ -455,7 +478,9 @@ class AppDataRepository @Inject constructor(
         _latestMovies.value = emptyList()
         _latestTvSeries.value = emptyList()
         _highestRated.value = emptyList()
-        _recommendationCategories.value = emptyList()
+        _genres.value = emptyList()
+        _genreMovies.value = emptyMap()
+        _genreLoadingStates.value = emptyMap()
         _isInitialDataLoaded.value = false
         _loadingProgress.value = 0f
         _loadingPhase.value = ""

@@ -80,11 +80,11 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.components.OptimizedHeroCarousel
+import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.NextUpSection
 import com.makd.afinity.ui.home.components.OptimizedContinueWatchingSection
 import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
 import com.makd.afinity.ui.home.components.OptimizedLatestTvSeriesSection
-import com.makd.afinity.ui.home.components.OptimizedRecommendationCategorySection
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -320,21 +320,17 @@ fun HomeScreen(
                                     )
                                 }
 
-                                uiState.recommendationCategories.forEach { category ->
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedRecommendationCategorySection(
-                                        category = category,
-                                        onItemClick = onItemClick
-                                    )
-                                }
-
-                                if (uiState.recommendationCategories.isEmpty() &&
-                                    uiState.latestMovies.isNotEmpty() &&
-                                    uiState.latestTvSeries.isNotEmpty() &&
-                                    uiState.isLoading
-                                ) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    RecommendationsSkeleton()
+                                if (uiState.genres.isNotEmpty()) {
+                                    uiState.genres.forEach { genre ->
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        GenreSection(
+                                            genre = genre,
+                                            movies = uiState.genreMovies[genre] ?: emptyList(),
+                                            isLoading = uiState.genreLoadingStates[genre] ?: false,
+                                            onVisible = { viewModel.loadMoviesForGenre(genre) },
+                                            onItemClick = onItemClick
+                                        )
+                                    }
                                 }
                             }
 
@@ -954,71 +950,6 @@ private fun TvSeriesSectionSkeleton() {
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun RecommendationsSkeleton() {
-    val cardWidth = rememberPortraitCardWidth()
-
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
-        repeat(2) {
-            Box(
-                modifier = Modifier
-                    .width(250.dp)
-                    .height(24.dp)
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        RoundedCornerShape(4.dp)
-                    )
-                    .shimmerEffect()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp)
-            ) {
-                items(4) {
-                    Column(modifier = Modifier.width(cardWidth)) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .shimmerEffect()
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .width(cardWidth * 0.8f)
-                                .height(14.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    RoundedCornerShape(4.dp)
-                                )
-                                .shimmerEffect()
-                        )
-                    }
-                }
-            }
-
-            if (it == 0) Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

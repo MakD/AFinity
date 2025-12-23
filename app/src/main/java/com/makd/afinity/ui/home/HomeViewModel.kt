@@ -8,7 +8,6 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
@@ -129,9 +128,25 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            appDataRepository.recommendationCategories.collect { recommendations ->
-                _uiState.value = _uiState.value.copy(recommendationCategories = recommendations)
+            appDataRepository.genres.collect { genres ->
+                _uiState.value = _uiState.value.copy(genres = genres)
             }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.genreMovies.collect { genreMovies ->
+                _uiState.value = _uiState.value.copy(genreMovies = genreMovies)
+            }
+        }
+
+        viewModelScope.launch {
+            appDataRepository.genreLoadingStates.collect { loadingStates ->
+                _uiState.value = _uiState.value.copy(genreLoadingStates = loadingStates)
+            }
+        }
+
+        viewModelScope.launch {
+            loadGenres()
         }
 
         viewModelScope.launch {
@@ -383,8 +398,24 @@ class HomeViewModel @Inject constructor(
         Timber.d("Highest rated item clicked: ${item.name}")
     }
 
-    fun onRecommendationItemClick(item: AfinityItem) {
-        Timber.d("Recommendation item clicked: ${item.name}")
+    private fun loadGenres() {
+        viewModelScope.launch {
+            try {
+                appDataRepository.loadGenres()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load genres")
+            }
+        }
+    }
+
+    fun loadMoviesForGenre(genre: String) {
+        viewModelScope.launch {
+            try {
+                appDataRepository.loadMoviesForGenre(genre)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load movies for genre: $genre")
+            }
+        }
     }
 
     fun onDownloadClick() {
@@ -489,7 +520,9 @@ data class HomeUiState(
     val latestMovies: List<AfinityMovie> = emptyList(),
     val latestTvSeries: List<AfinityShow> = emptyList(),
     val highestRated: List<AfinityItem> = emptyList(),
-    val recommendationCategories: List<AfinityRecommendationCategory> = emptyList(),
+    val genres: List<String> = emptyList(),
+    val genreMovies: Map<String, List<AfinityMovie>> = emptyMap(),
+    val genreLoadingStates: Map<String, Boolean> = emptyMap(),
     val downloadedMovies: List<AfinityMovie> = emptyList(),
     val downloadedShows: List<AfinityShow> = emptyList(),
     val isLoading: Boolean = false,

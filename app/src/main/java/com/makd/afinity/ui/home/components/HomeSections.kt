@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityRecommendationCategory
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
@@ -140,45 +139,6 @@ fun OptimizedLatestTvSeriesSection(
             items(
                 items = uniqueItems,
                 key = { item -> "latest_tv_${item.id}" }
-            ) { item ->
-                MediaItemCard(
-                    item = item,
-                    onClick = { onItemClick(item) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun OptimizedRecommendationCategorySection(
-    category: AfinityRecommendationCategory,
-    onItemClick: (AfinityItem) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
-    Column(
-        modifier = Modifier.padding(horizontal = 14.dp)
-    ) {
-        Text(
-            text = category.title,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
-        ) {
-            items(
-                items = category.items,
-                key = { item -> "rec_${category.title}_${item.id}" }
             ) { item ->
                 MediaItemCard(
                     item = item,
