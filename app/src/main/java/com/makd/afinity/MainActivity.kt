@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -39,6 +39,7 @@ import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.navigation.MainNavigation
 import com.makd.afinity.ui.login.LoginScreen
 import com.makd.afinity.ui.theme.AFinityTheme
+import com.makd.afinity.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -72,6 +73,19 @@ class MainActivity : ComponentActivity() {
                 themeMode = themeMode,
                 dynamicColor = dynamicColors
             ) {
+                val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+                val mode = ThemeMode.fromString(themeMode)
+                val systemInDarkTheme = isSystemInDarkTheme()
+
+                val isLightTheme = when (mode) {
+                    ThemeMode.SYSTEM -> !systemInDarkTheme
+                    ThemeMode.LIGHT -> true
+                    ThemeMode.DARK, ThemeMode.AMOLED -> false
+                }
+
+                windowInsetsController.isAppearanceLightStatusBars = isLightTheme
+                windowInsetsController.isAppearanceLightNavigationBars = isLightTheme
+
                 MainContent(
                     modifier = Modifier.fillMaxSize(),
                     updateManager = updateManager,
