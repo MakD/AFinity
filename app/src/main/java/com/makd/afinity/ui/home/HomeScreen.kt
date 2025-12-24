@@ -1022,7 +1022,7 @@ private fun PopularStudiosSection(
 ) {
     val cardWidth = rememberLandscapeCardWidth()
     val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 20.dp
+    val fixedRowHeight = cardHeight + 10.dp
 
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
