@@ -337,80 +337,65 @@ fun HomeScreen(
                                     )
                                 }
 
-                                uiState.starringActorSection?.let { section ->
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    PersonSection(
-                                        section = section,
-                                        onItemClick = { movie -> onItemClick(movie) }
-                                    )
-                                }
-
-                                uiState.directedBySection?.let { section ->
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    PersonSection(
-                                        section = section,
-                                        onItemClick = { movie -> onItemClick(movie) }
-                                    )
-                                }
-
-                                uiState.writtenBySection?.let { section ->
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    PersonSection(
-                                        section = section,
-                                        onItemClick = { movie -> onItemClick(movie) }
-                                    )
-                                }
-
-                                uiState.becauseYouWatchedSections.forEach { section ->
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    MovieRecommendationSection(
-                                        section = section,
-                                        onItemClick = { movie -> onItemClick(movie) }
-                                    )
-                                }
-
-                                uiState.actorFromRecentSections.forEach { section ->
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    PersonFromMovieSection(
-                                        section = section,
-                                        onItemClick = { movie -> onItemClick(movie) }
-                                    )
-                                }
-
-                                if (uiState.combinedGenres.isNotEmpty()) {
-                                    uiState.combinedGenres.forEach { genreItem ->
+                                if (uiState.combinedSections.isNotEmpty()) {
+                                    uiState.combinedSections.forEach { section ->
                                         Spacer(modifier = Modifier.height(24.dp))
-                                        when (genreItem.type) {
-                                            GenreType.MOVIE -> {
-                                                GenreSection(
-                                                    genre = genreItem.name,
-                                                    movies = uiState.genreMovies[genreItem.name]
-                                                        ?: emptyList(),
-                                                    isLoading = uiState.genreLoadingStates[genreItem.name]
-                                                        ?: false,
-                                                    onVisible = {
-                                                        viewModel.loadMoviesForGenre(
-                                                            genreItem.name
-                                                        )
-                                                    },
-                                                    onItemClick = onItemClick
+                                        when (section) {
+                                            is HomeSection.Person -> {
+                                                PersonSection(
+                                                    section = section.section,
+                                                    onItemClick = { movie -> onItemClick(movie) }
                                                 )
                                             }
 
-                                            GenreType.SHOW -> {
-                                                ShowGenreSection(
-                                                    genre = genreItem.name,
-                                                    shows = uiState.genreShows[genreItem.name]
-                                                        ?: emptyList(),
-                                                    isLoading = uiState.genreLoadingStates[genreItem.name]
-                                                        ?: false,
-                                                    onVisible = {
-                                                        viewModel.loadShowsForGenre(
-                                                            genreItem.name
-                                                        )
-                                                    },
-                                                    onItemClick = onItemClick
+                                            is HomeSection.Movie -> {
+                                                MovieRecommendationSection(
+                                                    section = section.section,
+                                                    onItemClick = { movie -> onItemClick(movie) }
                                                 )
+                                            }
+
+                                            is HomeSection.PersonFromMovie -> {
+                                                PersonFromMovieSection(
+                                                    section = section.section,
+                                                    onItemClick = { movie -> onItemClick(movie) }
+                                                )
+                                            }
+
+                                            is HomeSection.Genre -> {
+                                                when (section.genreItem.type) {
+                                                    GenreType.MOVIE -> {
+                                                        GenreSection(
+                                                            genre = section.genreItem.name,
+                                                            movies = uiState.genreMovies[section.genreItem.name]
+                                                                ?: emptyList(),
+                                                            isLoading = uiState.genreLoadingStates[section.genreItem.name]
+                                                                ?: false,
+                                                            onVisible = {
+                                                                viewModel.loadMoviesForGenre(
+                                                                    section.genreItem.name
+                                                                )
+                                                            },
+                                                            onItemClick = onItemClick
+                                                        )
+                                                    }
+
+                                                    GenreType.SHOW -> {
+                                                        ShowGenreSection(
+                                                            genre = section.genreItem.name,
+                                                            shows = uiState.genreShows[section.genreItem.name]
+                                                                ?: emptyList(),
+                                                            isLoading = uiState.genreLoadingStates[section.genreItem.name]
+                                                                ?: false,
+                                                            onVisible = {
+                                                                viewModel.loadShowsForGenre(
+                                                                    section.genreItem.name
+                                                                )
+                                                            },
+                                                            onItemClick = onItemClick
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
