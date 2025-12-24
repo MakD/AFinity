@@ -7,6 +7,9 @@ import androidx.navigation.NavController
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.GenreItem
+import com.makd.afinity.data.models.MovieSection
+import com.makd.afinity.data.models.PersonFromMovieSection
+import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -27,9 +30,12 @@ import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -181,6 +187,192 @@ class HomeViewModel @Inject constructor(
                     loadDownloadedContent()
                 }
             }
+        }
+
+        viewModelScope.launch {
+            loadNewHomescreenSections()
+        }
+    }
+
+    private val renderedPeopleNames = mutableSetOf<String>()
+    private val renderedItemIds = mutableSetOf<java.util.UUID>()
+    private val renderedWatchedMovies = mutableSetOf<java.util.UUID>()
+    private val renderedStarringWatchedMovies = mutableSetOf<java.util.UUID>()
+    private val renderedActorNames = mutableSetOf<String>()
+
+
+    private suspend fun loadNewHomescreenSections() {
+        try {
+            Timber.d("Loading new homescreen sections...")
+
+            if (offlineModeManager.isOffline.first()) {
+                Timber.d("Skipping new sections in offline mode")
+                return
+            }
+
+            coroutineScope {
+                val actorTask = async { loadStarringActorSection() }
+                val directorTask = async { loadDirectedBySection() }
+                val writerTask = async { loadWrittenBySection() }
+                val becauseYouWatchedTask = async { loadBecauseYouWatchedSections() }
+                val actorFromRecentTask = async { loadActorFromRecentSections() }
+
+                actorTask.await()
+                directorTask.await()
+                writerTask.await()
+                becauseYouWatchedTask.await()
+                actorFromRecentTask.await()
+            }
+
+            Timber.d("New homescreen sections loaded successfully")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load new homescreen sections")
+        }
+    }
+
+    private suspend fun loadStarringActorSection() {
+        try {
+            val topActors = appDataRepository.getTopPeople(
+                type = org.jellyfin.sdk.model.api.PersonKind.ACTOR,
+                limit = 100,
+                minAppearances = 10
+            )
+
+            val availableActors = topActors.filterNot { it.person.name in renderedPeopleNames }.toMutableList()
+            var attempts = 0
+            val maxAttempts = 10
+
+            while (attempts < maxAttempts && availableActors.isNotEmpty()) {
+                val selectedActor = availableActors.randomOrNull() ?: return
+                availableActors.remove(selectedActor)
+                attempts++
+
+                val section = appDataRepository.getPersonSection(
+                    personWithCount = selectedActor,
+                    sectionType = com.makd.afinity.data.models.PersonSectionType.STARRING
+                )
+
+                if (section != null) {
+                    renderedPeopleNames.add(selectedActor.person.name)
+                    _uiState.value = _uiState.value.copy(starringActorSection = section)
+                    section.items.forEach { renderedItemIds.add(it.id) }
+                    Timber.d("Loaded 'Starring ${section.person.name}' section (${section.items.size} items)")
+                    return
+                }
+            }
+
+            Timber.d("Could not find actor with sufficient items after $attempts attempts")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load starring actor section")
+        }
+    }
+
+    private suspend fun loadDirectedBySection() {
+        try {
+            val topDirectors = appDataRepository.getTopPeople(
+                type = org.jellyfin.sdk.model.api.PersonKind.DIRECTOR,
+                limit = 100,
+                minAppearances = 10
+            )
+
+            val availableDirectors = topDirectors.filterNot { it.person.name in renderedPeopleNames }.toMutableList()
+            var attempts = 0
+            val maxAttempts = 10
+
+            while (attempts < maxAttempts && availableDirectors.isNotEmpty()) {
+                val selectedDirector = availableDirectors.randomOrNull() ?: return
+                availableDirectors.remove(selectedDirector)
+                attempts++
+
+                val section = appDataRepository.getPersonSection(
+                    personWithCount = selectedDirector,
+                    sectionType = com.makd.afinity.data.models.PersonSectionType.DIRECTED_BY
+                )
+
+                if (section != null) {
+                    renderedPeopleNames.add(selectedDirector.person.name)
+                    _uiState.value = _uiState.value.copy(directedBySection = section)
+                    section.items.forEach { renderedItemIds.add(it.id) }
+                    Timber.d("Loaded 'Directed by ${section.person.name}' section (${section.items.size} items)")
+                    return
+                }
+            }
+
+            Timber.d("Could not find director with sufficient items after $attempts attempts")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load directed by section")
+        }
+    }
+
+    private suspend fun loadWrittenBySection() {
+        try {
+            val topWriters = appDataRepository.getTopPeople(
+                type = org.jellyfin.sdk.model.api.PersonKind.WRITER,
+                limit = 100,
+                minAppearances = 10
+            )
+
+            val availableWriters = topWriters.filterNot { it.person.name in renderedPeopleNames }.toMutableList()
+            var attempts = 0
+            val maxAttempts = 10
+
+            while (attempts < maxAttempts && availableWriters.isNotEmpty()) {
+                val selectedWriter = availableWriters.randomOrNull() ?: return
+                availableWriters.remove(selectedWriter)
+                attempts++
+
+                val section = appDataRepository.getPersonSection(
+                    personWithCount = selectedWriter,
+                    sectionType = com.makd.afinity.data.models.PersonSectionType.WRITTEN_BY
+                )
+
+                if (section != null) {
+                    renderedPeopleNames.add(selectedWriter.person.name)
+                    _uiState.value = _uiState.value.copy(writtenBySection = section)
+                    section.items.forEach { renderedItemIds.add(it.id) }
+                    Timber.d("Loaded 'Written by ${section.person.name}' section (${section.items.size} items)")
+                    return
+                }
+            }
+
+            Timber.d("Could not find writer with sufficient items after $attempts attempts")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load written by section")
+        }
+    }
+
+    private suspend fun loadBecauseYouWatchedSections() {
+        try {
+            val sections = appDataRepository.getBecauseYouWatchedSections(
+                count = 2,
+                renderedWatchedMovies = renderedWatchedMovies,
+                renderedItemIds = renderedItemIds
+            )
+
+            if (sections.isNotEmpty()) {
+                _uiState.value = _uiState.value.copy(becauseYouWatchedSections = sections)
+                Timber.d("Loaded ${sections.size} 'Because you watched' sections")
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load 'Because you watched' sections")
+        }
+    }
+
+    private suspend fun loadActorFromRecentSections() {
+        try {
+            val sections = appDataRepository.getActorFromRecentSections(
+                count = 1,
+                renderedStarringWatchedMovies = renderedStarringWatchedMovies,
+                renderedActorNames = renderedActorNames,
+                renderedItemIds = renderedItemIds
+            )
+
+            if (sections.isNotEmpty()) {
+                _uiState.value = _uiState.value.copy(actorFromRecentSections = sections)
+                Timber.d("Loaded ${sections.size} 'Starring actor from recent' sections")
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load actor from recent sections")
         }
     }
 
@@ -583,5 +775,10 @@ data class HomeUiState(
     val separateMovieLibrarySections: List<Pair<AfinityCollection, List<AfinityMovie>>> = emptyList(),
     val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList(),
     val isOffline: Boolean = false,
-    val showQualityDialog: Boolean = false
+    val showQualityDialog: Boolean = false,
+    val starringActorSection: PersonSection? = null,
+    val directedBySection: PersonSection? = null,
+    val writtenBySection: PersonSection? = null,
+    val becauseYouWatchedSections: List<MovieSection> = emptyList(),
+    val actorFromRecentSections: List<PersonFromMovieSection> = emptyList()
 )

@@ -83,7 +83,10 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.components.OptimizedHeroCarousel
 import com.makd.afinity.ui.home.components.GenreSection
+import com.makd.afinity.ui.home.components.MovieRecommendationSection
 import com.makd.afinity.ui.home.components.NextUpSection
+import com.makd.afinity.ui.home.components.PersonFromMovieSection
+import com.makd.afinity.ui.home.components.PersonSection
 import com.makd.afinity.ui.home.components.ShowGenreSection
 import com.makd.afinity.ui.home.components.OptimizedContinueWatchingSection
 import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
@@ -321,6 +324,46 @@ fun HomeScreen(
                                     HighestRatedSection(
                                         items = uiState.highestRated,
                                         onItemClick = onItemClick
+                                    )
+                                }
+
+                                uiState.starringActorSection?.let { section ->
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    PersonSection(
+                                        section = section,
+                                        onItemClick = { movie -> onItemClick(movie) }
+                                    )
+                                }
+
+                                uiState.directedBySection?.let { section ->
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    PersonSection(
+                                        section = section,
+                                        onItemClick = { movie -> onItemClick(movie) }
+                                    )
+                                }
+
+                                uiState.writtenBySection?.let { section ->
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    PersonSection(
+                                        section = section,
+                                        onItemClick = { movie -> onItemClick(movie) }
+                                    )
+                                }
+
+                                uiState.becauseYouWatchedSections.forEach { section ->
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    MovieRecommendationSection(
+                                        section = section,
+                                        onItemClick = { movie -> onItemClick(movie) }
+                                    )
+                                }
+
+                                uiState.actorFromRecentSections.forEach { section ->
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    PersonFromMovieSection(
+                                        section = section,
+                                        onItemClick = { movie -> onItemClick(movie) }
                                     )
                                 }
 

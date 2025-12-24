@@ -69,10 +69,6 @@ fun OptimizedAsyncImage(
         }
     }
 
-    if (imageUrl != null) {
-        Timber.d("Loading image: $imageUrl (isLocal: ${imageUrl.startsWith("file://")})")
-    }
-
     AsyncImage(
         model = ImageRequest.Builder(context)
             .data(imageUrl)
@@ -87,12 +83,10 @@ fun OptimizedAsyncImage(
                 onSuccess = { _, _ ->
                     onLoading?.invoke(false)
                     onSuccess?.invoke()
-                    Timber.d("Image loaded successfully: $imageUrl")
                 },
                 onError = { _, result ->
                     onLoading?.invoke(false)
                     onError?.invoke()
-                    Timber.e("Image load failed for URL: $imageUrl, error: ${result.throwable?.message}")
                 }
             )
             .build(),

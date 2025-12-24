@@ -1039,6 +1039,68 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
+    override suspend fun getMoviesWithPeople(
+        startIndex: Int,
+        limit: Int,
+        fields: List<ItemFields>?
+    ): List<AfinityMovie> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val userId = getCurrentUserId() ?: return@withContext emptyList()
+
+            val itemsApi = ItemsApi(apiClient)
+            val response = itemsApi.getItems(
+                userId = userId,
+                includeItemTypes = listOf(BaseItemKind.MOVIE),
+                fields = fields ?: listOf(
+                    ItemFields.PEOPLE,
+                    ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    ItemFields.DATE_CREATED,
+                    ItemFields.OVERVIEW
+                ),
+                startIndex = startIndex,
+                limit = limit,
+                enableImages = true,
+                recursive = true
+            )
+
+            response.content?.items?.mapNotNull { baseItem ->
+                baseItem.toAfinityMovie(getBaseUrl())
+            } ?: emptyList()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get movies with people at index: $startIndex")
+            emptyList()
+        }
+    }
+
+    override suspend fun getSimilarMovies(
+        movieId: UUID,
+        limit: Int,
+        fields: List<ItemFields>?
+    ): List<AfinityMovie> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val userId = getCurrentUserId() ?: return@withContext emptyList()
+
+            val libraryApi = LibraryApi(apiClient)
+            val response = libraryApi.getSimilarItems(
+                itemId = movieId,
+                userId = userId,
+                limit = limit,
+                fields = fields ?: FieldSets.MEDIA_ITEM_CARDS
+            )
+
+            response.content?.items
+                ?.filter { it.id != movieId }
+                ?.mapNotNull { baseItem ->
+                    baseItem.toAfinityMovie(getBaseUrl())
+                }
+                ?.shuffled()
+                ?: emptyList()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get similar movies for ID: $movieId")
+            emptyList()
+        }
+    }
+
     override suspend fun getTrickplayData(itemId: UUID, width: Int, index: Int): ByteArray? =
         withContext(Dispatchers.IO) {
             try {

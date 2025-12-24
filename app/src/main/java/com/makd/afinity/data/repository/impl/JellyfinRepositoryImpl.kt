@@ -729,4 +729,20 @@ class JellyfinRepositoryImpl @Inject constructor(
             null
         }
     }
+
+    override suspend fun getMoviesWithPeople(
+        startIndex: Int,
+        limit: Int,
+        fields: List<ItemFields>?
+    ): List<AfinityMovie> {
+        return mediaRepository.getMoviesWithPeople(startIndex, limit, fields)
+    }
+
+    override suspend fun getSimilarMovies(
+        movieId: UUID,
+        limit: Int,
+        fields: List<ItemFields>?
+    ): List<AfinityMovie> {
+        return mediaRepository.getSimilarMovies(movieId, limit, fields)
+    }
 }
