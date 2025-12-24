@@ -327,6 +327,16 @@ fun HomeScreen(
                                     )
                                 }
 
+                                if (uiState.studios.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    PopularStudiosSection(
+                                        studios = uiState.studios,
+                                        onStudioClick = { studio ->
+                                            viewModel.onStudioClick(studio, navController)
+                                        }
+                                    )
+                                }
+
                                 uiState.starringActorSection?.let { section ->
                                     Spacer(modifier = Modifier.height(24.dp))
                                     PersonSection(
@@ -364,16 +374,6 @@ fun HomeScreen(
                                     PersonFromMovieSection(
                                         section = section,
                                         onItemClick = { movie -> onItemClick(movie) }
-                                    )
-                                }
-
-                                if (uiState.studios.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    PopularStudiosSection(
-                                        studios = uiState.studios,
-                                        onStudioClick = { studio ->
-                                            viewModel.onStudioClick(studio, navController)
-                                        }
                                     )
                                 }
 
@@ -1065,7 +1065,7 @@ private fun PopularStudiosSection(
 ) {
     val cardWidth = rememberLandscapeCardWidth()
     val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 20.dp
+    val fixedRowHeight = cardHeight +   8.dp
 
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)

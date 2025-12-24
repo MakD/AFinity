@@ -4,12 +4,13 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.makd.afinity.data.models.extensions.toAfinityEpisode
-import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.MovieSection
 import com.makd.afinity.data.models.PersonFromMovieSection
 import com.makd.afinity.data.models.PersonSection
+import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -17,8 +18,6 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
-import com.makd.afinity.data.manager.OfflineModeManager
-import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
