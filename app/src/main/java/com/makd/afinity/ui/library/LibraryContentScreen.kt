@@ -258,7 +258,7 @@ fun LibraryContentScreen(
                 .padding(end = 24.dp)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.arrows_sort),
+                painter = painterResource(id = R.drawable.ic_arrows_sort),
                 contentDescription = "Sort"
             )
         }
@@ -321,7 +321,7 @@ private fun LibraryContentTopBar(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.search),
+                            painter = painterResource(id = R.drawable.ic_search),
                             contentDescription = "Search",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
@@ -364,7 +364,7 @@ private fun LibraryContentTopBar(
                         )
                     } else {
                         Icon(
-                            painter = painterResource(id = R.drawable.user_circle),
+                            painter = painterResource(id = R.drawable.ic_user_circle),
                             contentDescription = "Profile",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(32.dp)
@@ -424,7 +424,7 @@ private fun MediaItemGridCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.circle_check),
+                                painter = painterResource(id = R.drawable.ic_circle_check),
                                 contentDescription = "Watched",
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(16.dp)
@@ -768,7 +768,7 @@ private fun FilterRow(
                         FilterType.FAVORITES -> {
                             {
                                 Icon(
-                                    painterResource(id = R.drawable.favorite_filled),
+                                    painterResource(id = R.drawable.ic_favorite_filled),
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -778,7 +778,7 @@ private fun FilterRow(
                         else -> {
                             {
                                 Icon(
-                                    painterResource(id = R.drawable.circle_check),
+                                    painterResource(id = R.drawable.ic_circle_check),
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )

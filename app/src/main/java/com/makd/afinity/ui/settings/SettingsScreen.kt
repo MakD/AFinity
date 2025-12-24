@@ -124,7 +124,7 @@ fun SettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            painter = painterResource(id = R.drawable.arrow_left),
+                            painter = painterResource(id = R.drawable.ic_arrow_left),
                             contentDescription = "Back"
                         )
                     }
@@ -261,7 +261,7 @@ private fun ProfileHeader(
                     )
                 } else {
                     Icon(
-                        painter = painterResource(id = R.drawable.user),
+                        painter = painterResource(id = R.drawable.ic_user),
                         contentDescription = "Profile",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(32.dp)
@@ -323,11 +323,11 @@ private fun GeneralSection(
 
     SettingsSection(
         title = "General",
-        icon = painterResource(id = R.drawable.settings),
+        icon = painterResource(id = R.drawable.ic_settings),
         modifier = modifier
     ) {
         SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.cloud_off),
+            icon = painterResource(id = R.drawable.ic_cloud_off),
             title = "Offline Mode",
             subtitle = subtitle,
             checked = effectiveOfflineMode,
@@ -341,7 +341,7 @@ private fun GeneralSection(
         )
 
         SettingsItem(
-            icon = painterResource(id = R.drawable.download),
+            icon = painterResource(id = R.drawable.ic_download),
             title = "Downloads",
             subtitle = "Manage downloads and offline content",
             onClick = onDownloadClick
@@ -368,7 +368,7 @@ private fun GeneralSection(
                 )
             } else {
                 Icon(
-                    painter = painterResource(id = R.drawable.logout),
+                    painter = painterResource(id = R.drawable.ic_logout),
                     contentDescription = "Logout",
                     modifier = Modifier.size(20.dp)
                 )
@@ -401,18 +401,18 @@ private fun AppearanceSection(
 
     SettingsSection(
         title = "Appearance",
-        icon = painterResource(id = R.drawable.palette),
+        icon = painterResource(id = R.drawable.ic_palette),
         modifier = modifier
     ) {
         SettingsItem(
-            icon = painterResource(id = R.drawable.dark_mode),
+            icon = painterResource(id = R.drawable.ic_dark_mode),
             title = "Theme",
             subtitle = currentTheme.displayName,
             onClick = { themeMenuExpanded = true },
             trailing = {
                 Box {
                     Icon(
-                        painter = painterResource(id = R.drawable.keyboard_arrow_down),
+                        painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -436,7 +436,7 @@ private fun AppearanceSection(
                                 leadingIcon = if (themeMode == mode.name) {
                                     {
                                         Icon(
-                                            painter = painterResource(id = R.drawable.check),
+                                            painter = painterResource(id = R.drawable.ic_check),
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(18.dp)
@@ -456,7 +456,7 @@ private fun AppearanceSection(
         )
 
         SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.colorize),
+            icon = painterResource(id = R.drawable.ic_colorize),
             title = "Dynamic Colors",
             subtitle = "Use colors from wallpaper",
             checked = dynamicColors,
@@ -469,7 +469,7 @@ private fun AppearanceSection(
         )
 
         SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.view_module),
+            icon = painterResource(id = R.drawable.ic_view_module),
             title = "Combine Library Sections",
             subtitle = "Show one combined section for Movies and TV Shows",
             checked = combineLibrarySections,
@@ -482,7 +482,7 @@ private fun AppearanceSection(
         )
 
         SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.calendar),
+            icon = painterResource(id = R.drawable.ic_calendar),
             title = "Sort by Date Added",
             subtitle = "Show newest content first on home screen",
             checked = homeSortByDateAdded,
@@ -507,11 +507,11 @@ private fun PlaybackSection(
 ) {
     SettingsSection(
         title = "Playback",
-        icon = painterResource(id = R.drawable.play_circle),
+        icon = painterResource(id = R.drawable.ic_play_circle),
         modifier = modifier
     ) {
         SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.video_settings),
+            icon = painterResource(id = R.drawable.ic_video_settings),
             title = "Use ExoPlayer",
             subtitle = "Uses LibMPV when disabled",
             checked = useExoPlayer,
@@ -536,7 +536,7 @@ private fun PlaybackSection(
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
         )
         SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.play_arrow),
+            icon = painterResource(id = R.drawable.ic_play_arrow),
             title = "Auto-play",
             subtitle = "Automatically play next episode",
             checked = autoPlay,
@@ -549,7 +549,7 @@ private fun PlaybackSection(
         )
 
         SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.skip_next),
+            icon = painterResource(id = R.drawable.ic_skip_next),
             title = "Skip Intro",
             subtitle = "Show the Skip Intro Button",
             checked = skipIntroEnabled,
@@ -562,7 +562,7 @@ private fun PlaybackSection(
         )
 
         SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.fast_forward),
+            icon = painterResource(id = R.drawable.ic_fast_forward),
             title = "Skip Outro",
             subtitle = "Show the Skip Outro Button",
             checked = skipOutroEnabled,
@@ -579,11 +579,11 @@ private fun AboutSection(
 ) {
     SettingsSection(
         title = "About",
-        icon = painterResource(id = R.drawable.info_outlined),
+        icon = painterResource(id = R.drawable.ic_info_outlined),
         modifier = modifier
     ) {
         SettingsItem(
-            icon = painterResource(id = R.drawable.versions),
+            icon = painterResource(id = R.drawable.ic_versions),
             title = "App Version",
             subtitle = appVersion,
             onClick = null
@@ -595,7 +595,7 @@ private fun AboutSection(
         )
 
         SettingsItem(
-            icon = painterResource(id = R.drawable.code),
+            icon = painterResource(id = R.drawable.ic_code),
             title = "Build Type",
             subtitle = if (AppConstants.IS_DEBUG) "Debug" else "Release",
             onClick = null
@@ -607,7 +607,7 @@ private fun AboutSection(
         )
 
         SettingsItem(
-            icon = painterResource(id = R.drawable.description),
+            icon = painterResource(id = R.drawable.ic_description),
             title = "Open Source Licenses",
             subtitle = "View licenses for open source libraries",
             onClick = onLicensesClick
@@ -717,7 +717,7 @@ private fun SettingsItem(
             trailing()
         } else if (onClick != null) {
             Icon(
-                painter = painterResource(id = R.drawable.chevron_right),
+                painter = painterResource(id = R.drawable.ic_chevron_right),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = Modifier.size(24.dp)
@@ -767,7 +767,7 @@ private fun LogoutConfirmationDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                painter = painterResource(id = R.drawable.logout),
+                painter = painterResource(id = R.drawable.ic_logout),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(32.dp)

@@ -51,7 +51,6 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.logoBlurHash
-import com.makd.afinity.data.models.extensions.logoImageUrl
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -510,7 +509,7 @@ fun HeroCarouselPortrait(
                     )
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.info),
+                    painter = painterResource(id = R.drawable.ic_info),
 
                     contentDescription = "More Information",
                     tint = MaterialTheme.colorScheme.onSurface,
@@ -532,7 +531,7 @@ fun HeroCarouselPortrait(
                         )
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.video),
+                        painter = painterResource(id = R.drawable.ic_video),
                         contentDescription = "Play Trailer",
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(24.dp)
@@ -549,7 +548,7 @@ fun HeroCarouselPortrait(
                         )
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.play_arrow),
+                        painter = painterResource(id = R.drawable.ic_play_arrow),
                         contentDescription = "Play Media",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(28.dp)
@@ -978,7 +977,7 @@ private fun HeroCarouselLandscape(
                         )
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.info),
+                        painter = painterResource(id = R.drawable.ic_info),
                         contentDescription = "More Information",
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(24.dp)
@@ -995,7 +994,7 @@ private fun HeroCarouselLandscape(
                         )
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.video),
+                        painter = painterResource(id = R.drawable.ic_video),
                         contentDescription = "Play Trailer",
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(24.dp)
@@ -1012,7 +1011,7 @@ private fun HeroCarouselLandscape(
                         )
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.play_arrow),
+                        painter = painterResource(id = R.drawable.ic_play_arrow),
                         contentDescription = "Watch Now",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(24.dp)

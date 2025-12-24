@@ -62,7 +62,7 @@ fun SkipButton(
             )
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.skip_next),
+                painter = painterResource(id = R.drawable.ic_skip_next),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp)
             )

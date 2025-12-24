@@ -49,7 +49,7 @@ fun PlaybackSpeedDialog(
     onSpeedChange: (Float) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var sliderSpeed by remember { mutableFloatStateOf(currentSpeed) }
+    var sliderSpeed by remember(currentSpeed) { mutableFloatStateOf(currentSpeed) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -109,7 +109,7 @@ fun PlaybackSpeedDialog(
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.remove),
+                                painter = painterResource(id = R.drawable.ic_remove),
                                 contentDescription = "Decrease speed",
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -146,7 +146,7 @@ fun PlaybackSpeedDialog(
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.add),
+                                painter = painterResource(id = R.drawable.ic_add),
                                 contentDescription = "Increase speed",
                                 tint = MaterialTheme.colorScheme.primary
                             )

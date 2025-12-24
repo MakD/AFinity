@@ -1,7 +1,5 @@
 package com.makd.afinity.navigation
 
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import com.makd.afinity.R
 
 enum class Destination(
@@ -13,26 +11,26 @@ enum class Destination(
     HOME(
         route = "home",
         title = "Home",
-        selectedIconRes = R.drawable.home_filled,
-        unselectedIconRes = R.drawable.home
+        selectedIconRes = R.drawable.ic_home_filled,
+        unselectedIconRes = R.drawable.ic_home
     ),
     LIBRARIES(
         route = "libraries",
         title = "Libraries",
-        selectedIconRes = R.drawable.video_library_filled,
-        unselectedIconRes = R.drawable.video_library
+        selectedIconRes = R.drawable.ic_video_library_filled,
+        unselectedIconRes = R.drawable.ic_video_library
     ),
     FAVORITES(
         route = "favorites",
         title = "Favorites",
-        selectedIconRes = R.drawable.favorite_filled,
-        unselectedIconRes = R.drawable.favorite
+        selectedIconRes = R.drawable.ic_favorite_filled,
+        unselectedIconRes = R.drawable.ic_favorite
     ),
     WATCHLIST(
         route = "watchlist",
         title = "Watchlist",
-        selectedIconRes = R.drawable.bookmarks_filled,
-        unselectedIconRes = R.drawable.bookmarks
+        selectedIconRes = R.drawable.ic_bookmarks_filled,
+        unselectedIconRes = R.drawable.ic_bookmarks
     );
 
     companion object {

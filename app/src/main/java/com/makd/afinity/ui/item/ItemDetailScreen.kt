@@ -513,14 +513,14 @@ private fun LandscapeItemDetailContent(
                                                 val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                        "Rewatch" to painterResource(id = R.drawable.replay)
+                                                        "Rewatch" to painterResource(id = R.drawable.ic_replay)
 
                                                     }
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                        "Resume Playback" to painterResource(id = R.drawable.play_arrow)
+                                                        "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
                                                     else -> {
-                                                        "Play" to painterResource(id = R.drawable.play_arrow)
+                                                        "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
                                                 }
 
@@ -582,13 +582,13 @@ private fun LandscapeItemDetailContent(
                                                 val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                        "Rewatch" to painterResource(id = R.drawable.replay)
+                                                        "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                                     }
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                        "Resume Playback" to painterResource(id = R.drawable.play_arrow)
+                                                        "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
                                                     else -> {
-                                                        "Play" to painterResource(id = R.drawable.play_arrow)
+                                                        "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
                                                 }
 
@@ -630,13 +630,13 @@ private fun LandscapeItemDetailContent(
                                     else -> {
                                         val (buttonText, buttonIcon) = when {
                                             item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
-                                                "Rewatch" to painterResource(id = R.drawable.replay)
+                                                "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                             }
                                             item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
-                                                "Resume Playback" to painterResource(id = R.drawable.play_arrow)
+                                                "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
                                             else -> {
-                                                "Watch Now" to painterResource(id = R.drawable.play_arrow)
+                                                "Watch Now" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
                                         }
 
@@ -675,7 +675,7 @@ private fun LandscapeItemDetailContent(
                                 enabled = hasTrailer
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.video),
+                                    painter = painterResource(id = R.drawable.ic_video),
                                     contentDescription = "Play Trailer",
                                     tint = if (hasTrailer) {
                                         MaterialTheme.colorScheme.primary
@@ -690,7 +690,7 @@ private fun LandscapeItemDetailContent(
                                 onClick = { viewModel.toggleWatchlist() }
                             ) {
                                 Icon(
-                                    painter = if (isInWatchlist) painterResource(id = R.drawable.bookmark) else painterResource(id = R.drawable.bookmark_filled),
+                                    painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark) else painterResource(id = R.drawable.ic_bookmark_filled),
                                     contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -701,7 +701,7 @@ private fun LandscapeItemDetailContent(
                                 onClick = { viewModel.toggleFavorite() }
                             ) {
                                 Icon(
-                                    painter = if (item.favorite) painterResource(id = R.drawable.favorite_filled) else painterResource(id = R.drawable.favorite),
+                                    painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(id = R.drawable.ic_favorite),
                                     contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
                                     tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -712,7 +712,7 @@ private fun LandscapeItemDetailContent(
                                 onClick = { viewModel.toggleWatched() }
                             ) {
                                 Icon(
-                                    painter = if (item.played) painterResource(id = R.drawable.circle_check) else painterResource(id = R.drawable.circle_check_outline),
+                                    painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(id = R.drawable.ic_circle_check_outline),
                                     contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
                                     tint = if (item.played) {
                                         Color.Green
@@ -1018,13 +1018,13 @@ private fun PortraitItemDetailContent(
                                                 val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                        "Rewatch" to painterResource(id = R.drawable.replay)
+                                                        "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                                     }
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                        "Resume Playback" to painterResource(id = R.drawable.play_arrow)
+                                                        "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
                                                     else -> {
-                                                        "Play" to painterResource(id = R.drawable.play_arrow)
+                                                        "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
                                                 }
 
@@ -1087,13 +1087,13 @@ private fun PortraitItemDetailContent(
                                                 val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                        "Rewatch" to painterResource(id = R.drawable.replay)
+                                                        "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                                     }
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                        "Resume Playback" to painterResource(id = R.drawable.play_arrow)
+                                                        "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
                                                     else -> {
-                                                        "Play" to painterResource(id = R.drawable.play_arrow)
+                                                        "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
                                                 }
 
@@ -1135,13 +1135,13 @@ private fun PortraitItemDetailContent(
                                     else -> {
                                         val (buttonText, buttonIcon) = when {
                                             item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
-                                                "Rewatch" to painterResource(id = R.drawable.replay)
+                                                "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                             }
                                             item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
-                                                "Resume Playback" to painterResource(id = R.drawable.play_arrow)
+                                                "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
                                             else -> {
-                                                "Watch Now" to painterResource(id = R.drawable.play_arrow)
+                                                "Watch Now" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
                                         }
 
@@ -1187,7 +1187,7 @@ private fun PortraitItemDetailContent(
                                 enabled = hasTrailer
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.video),
+                                    painter = painterResource(id = R.drawable.ic_video),
                                     contentDescription = "Play Trailer",
                                     tint = if (hasTrailer) {
                                         MaterialTheme.colorScheme.primary
@@ -1201,7 +1201,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatchlist() }
                             ) {
                                 Icon(
-                                    painter = if (isInWatchlist) painterResource(id = R.drawable.bookmark_filled) else painterResource(id = R.drawable.bookmark),
+                                    painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(id = R.drawable.ic_bookmark),
                                     contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1212,7 +1212,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleFavorite() }
                             ) {
                                 Icon(
-                                    painter = if (item.favorite) painterResource(id = R.drawable.favorite_filled) else painterResource(id = R.drawable.favorite),
+                                    painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(id = R.drawable.ic_favorite),
                                     contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
                                     tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1223,7 +1223,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatched() }
                             ) {
                                 Icon(
-                                    painter = if (item.played) painterResource(id = R.drawable.circle_check) else painterResource(id = R.drawable.circle_check_outline),
+                                    painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(id = R.drawable.ic_circle_check_outline),
                                     contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
                                     tint = if (item.played) {
                                         Color.Green
@@ -1271,13 +1271,13 @@ private fun PortraitItemDetailContent(
                                         val episode = nextEpisode!!
                                         val (buttonText, buttonIcon) = when {
                                             episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                "Rewatch" to painterResource(id = R.drawable.replay)
+                                                "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                             }
                                             episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                "Resume Playback" to painterResource(id = R.drawable.play_arrow)
+                                                "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
                                             else -> {
-                                                "Play" to painterResource(id = R.drawable.play_arrow)
+                                                "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
                                         }
 
@@ -1339,13 +1339,13 @@ private fun PortraitItemDetailContent(
                                         val episode = nextEpisode!!
                                         val (buttonText, buttonIcon) = when {
                                             episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                "Rewatch" to painterResource(id = R.drawable.replay)
+                                                "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                             }
                                             episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                "Resume Playback" to painterResource(id = R.drawable.play_arrow)
+                                                "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
                                             else -> {
-                                                "Play" to painterResource(id = R.drawable.play_arrow)
+                                                "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
                                         }
 
@@ -1386,13 +1386,13 @@ private fun PortraitItemDetailContent(
                             else -> {
                                 val (buttonText, buttonIcon) = when {
                                     item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
-                                        "Rewatch" to painterResource(id = R.drawable.replay)
+                                        "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                     }
                                     item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
-                                        "Resume Playback" to painterResource(id = R.drawable.play_arrow)
+                                        "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                     }
                                     else -> {
-                                        "Watch Now" to painterResource(id = R.drawable.play_arrow)
+                                        "Watch Now" to painterResource(id = R.drawable.ic_play_arrow)
                                     }
                                 }
 
@@ -1434,7 +1434,7 @@ private fun PortraitItemDetailContent(
                                 enabled = hasTrailer
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.video),
+                                    painter = painterResource(id = R.drawable.ic_video),
                                     contentDescription = "Play Trailer",
                                     tint = if (hasTrailer) {
                                         MaterialTheme.colorScheme.primary
@@ -1453,7 +1453,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatchlist() }
                             ) {
                                 Icon(
-                                    painter = if (isInWatchlist) painterResource(id = R.drawable.bookmark_filled) else painterResource(id = R.drawable.bookmark),
+                                    painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(id = R.drawable.ic_bookmark),
                                     contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1468,7 +1468,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleFavorite() }
                             ) {
                                 Icon(
-                                    painter = if (item.favorite) painterResource(id = R.drawable.favorite_filled) else painterResource(id = R.drawable.favorite),
+                                    painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(id = R.drawable.ic_favorite),
                                     contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
                                     tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1483,7 +1483,7 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatched() }
                             ) {
                                 Icon(
-                                    painter = if (item.played) painterResource(id = R.drawable.circle_check) else painterResource(id = R.drawable.circle_check_outline),
+                                    painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(id = R.drawable.ic_circle_check_outline),
                                     contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
                                     tint = if (item.played) {
                                         Color.Green

@@ -42,7 +42,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -100,7 +99,7 @@ internal fun OverviewSection(item: AfinityItem) {
                     )
 
                     Icon(
-                        painter = if (isExpanded) painterResource(id = R.drawable.keyboard_arrow_up) else painterResource(id = R.drawable.keyboard_arrow_down),
+                        painter = if (isExpanded) painterResource(id = R.drawable.ic_keyboard_arrow_up) else painterResource(id = R.drawable.ic_keyboard_arrow_down),
                         contentDescription = if (isExpanded) "Collapse" else "Expand",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
@@ -250,7 +249,7 @@ internal fun SeasonCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.circle_check),
+                            painter = painterResource(id = R.drawable.ic_circle_check),
                             contentDescription = "Watched",
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)

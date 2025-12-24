@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -236,7 +235,7 @@ private fun ActiveDownloadCard(
                         DownloadStatus.DOWNLOADING, DownloadStatus.QUEUED -> {
                             IconButton(onClick = { onPause(download.id) }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.cloud_pause),
+                                    painter = painterResource(id = R.drawable.ic_cloud_pause),
                                     contentDescription = "Pause"
                                 )
                             }
@@ -244,14 +243,14 @@ private fun ActiveDownloadCard(
                         DownloadStatus.PAUSED -> {
                             IconButton(onClick = { onResume(download.id) }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.play_arrow),
+                                    painter = painterResource(id = R.drawable.ic_play_arrow),
                                     contentDescription = "Resume"
                                 )
                             }
                         }
                         DownloadStatus.FAILED -> {
                             Icon(
-                                painter = painterResource(id = R.drawable.exclamation_circle),
+                                painter = painterResource(id = R.drawable.ic_exclamation_circle),
                                 contentDescription = "Failed",
                                 tint = MaterialTheme.colorScheme.error
                             )
@@ -261,7 +260,7 @@ private fun ActiveDownloadCard(
 
                     IconButton(onClick = { onCancel(download.id) }) {
                         Icon(
-                            painter = painterResource(id = R.drawable.cancel),
+                            painter = painterResource(id = R.drawable.ic_cancel),
                             contentDescription = "Cancel"
                         )
                     }
@@ -331,7 +330,7 @@ private fun CompletedDownloadCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.circle_check),
+                    painter = painterResource(id = R.drawable.ic_circle_check),
                     contentDescription = "Completed",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(40.dp)
@@ -360,7 +359,7 @@ private fun CompletedDownloadCard(
 
             IconButton(onClick = { onDelete(download.id) }) {
                 Icon(
-                    painter = painterResource(id = R.drawable.delete),
+                    painter = painterResource(id = R.drawable.ic_delete),
                     contentDescription = "Delete",
                     tint = MaterialTheme.colorScheme.error
                 )
@@ -385,7 +384,7 @@ private fun EmptyState(
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.download),
+                painter = painterResource(id = R.drawable.ic_download),
                 contentDescription = null,
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant

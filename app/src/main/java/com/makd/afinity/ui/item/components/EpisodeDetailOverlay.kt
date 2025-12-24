@@ -3,7 +3,6 @@ package com.makd.afinity.ui.item.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -119,7 +118,7 @@ fun EpisodeDetailOverlay(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.calendar),
+                            painter = painterResource(id = R.drawable.ic_calendar),
                             contentDescription = "Air date",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(14.dp)
@@ -138,7 +137,7 @@ fun EpisodeDetailOverlay(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.clock),
+                            painter = painterResource(id = R.drawable.ic_clock),
                             contentDescription = "Duration",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
@@ -192,7 +191,7 @@ fun EpisodeDetailOverlay(
                     PlaybackSelectionButton(
                         item = episode,
                         buttonText = if (episode.playbackPositionTicks > 0) "Resume" else "Play",
-                        buttonIcon = painterResource(id = R.drawable.play_arrow),
+                        buttonIcon = painterResource(id = R.drawable.ic_play_arrow),
                         onPlayClick = { selection ->
                             onPlayClick(episode, selection)
                         }
@@ -202,7 +201,7 @@ fun EpisodeDetailOverlay(
                 onGoToSeries?.let { goToSeries ->
                     IconButton(onClick = goToSeries) {
                         Icon(
-                            painter = painterResource(id = R.drawable.info),
+                            painter = painterResource(id = R.drawable.ic_info),
                             contentDescription = "Go to Series",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(28.dp)
@@ -211,7 +210,7 @@ fun EpisodeDetailOverlay(
                 }
                 IconButton(onClick = onToggleWatchlist) {
                     Icon(
-                        painter = if (isInWatchlist) painterResource(id = R.drawable.bookmark_filled) else painterResource(id = R.drawable.bookmark),
+                        painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(id = R.drawable.ic_bookmark),
                         contentDescription = "Watchlist",
                         tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp)
@@ -220,7 +219,7 @@ fun EpisodeDetailOverlay(
 
                 IconButton(onClick = onToggleFavorite) {
                     Icon(
-                        painter = if (episode.favorite) painterResource(id = R.drawable.favorite_filled) else painterResource(id = R.drawable.favorite),
+                        painter = if (episode.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(id = R.drawable.ic_favorite),
                         contentDescription = "Favorite",
                         tint = if (episode.favorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp)
@@ -229,7 +228,7 @@ fun EpisodeDetailOverlay(
 
                 IconButton(onClick = onToggleWatched) {
                     Icon(
-                        painter = if (episode.played) painterResource(id = R.drawable.circle_check) else painterResource(id = R.drawable.circle_check_outline),
+                        painter = if (episode.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(id = R.drawable.ic_circle_check_outline),
                         contentDescription = "Watched",
                         tint = if (episode.played) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp)

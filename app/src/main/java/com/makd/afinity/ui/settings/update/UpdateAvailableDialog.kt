@@ -66,7 +66,7 @@ fun UpdateAvailableDialog(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.system_update),
+                    painter = painterResource(id = R.drawable.ic_system_update),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(32.dp)
@@ -139,7 +139,7 @@ fun UpdateAvailableDialog(
                 when {
                     downloadedFile != null -> {
                         Icon(
-                            painter = painterResource(id = R.drawable.system_update),
+                            painter = painterResource(id = R.drawable.ic_system_update),
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
@@ -157,7 +157,7 @@ fun UpdateAvailableDialog(
                     }
                     else -> {
                         Icon(
-                            painter = painterResource(id = R.drawable.download_arrow),
+                            painter = painterResource(id = R.drawable.ic_download_arrow),
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )

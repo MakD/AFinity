@@ -56,7 +56,7 @@ fun LicensesScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            painter = painterResource(id = R.drawable.arrow_left),
+                            painter = painterResource(id = R.drawable.ic_arrow_left),
                             contentDescription = "Back"
                         )
                     }

@@ -58,7 +58,7 @@ fun DownloadSettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            painter = painterResource(id = R.drawable.arrow_left),
+                            painter = painterResource(id = R.drawable.ic_arrow_left),
                             contentDescription = "Back"
                         )
                     }
@@ -156,9 +156,9 @@ private fun NetworkStatusCard(
     modifier: Modifier = Modifier
 ) {
     val (statusText, statusColor, statusIcon) = if (isOffline) {
-        Triple("Offline mode", MaterialTheme.colorScheme.tertiary, painterResource(id = R.drawable.wifi_off))
+        Triple("Offline mode", MaterialTheme.colorScheme.tertiary, painterResource(id = R.drawable.ic_wifi_off))
     } else {
-        Triple("Online - Downloads active", MaterialTheme.colorScheme.primary, painterResource(id = R.drawable.wifi))
+        Triple("Online - Downloads active", MaterialTheme.colorScheme.primary, painterResource(id = R.drawable.ic_wifi))
     }
 
     Card(
@@ -240,7 +240,7 @@ private fun StorageStatisticsCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.storage),
+                    painter = painterResource(id = R.drawable.ic_storage),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(28.dp)
@@ -312,7 +312,7 @@ private fun ActiveDownloadCard(
                         DownloadStatus.DOWNLOADING, DownloadStatus.QUEUED -> {
                             IconButton(onClick = { onPause(download.id) }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.pause),
+                                    painter = painterResource(id = R.drawable.ic_pause_outline),
                                     contentDescription = "Pause"
                                 )
                             }
@@ -320,14 +320,14 @@ private fun ActiveDownloadCard(
                         DownloadStatus.PAUSED -> {
                             IconButton(onClick = { onResume(download.id) }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.play_arrow),
+                                    painter = painterResource(id = R.drawable.ic_play_arrow),
                                     contentDescription = "Resume"
                                 )
                             }
                         }
                         DownloadStatus.FAILED -> {
                             Icon(
-                                painter = painterResource(id = R.drawable.exclamation_circle),
+                                painter = painterResource(id = R.drawable.ic_exclamation_circle),
                                 contentDescription = "Failed",
                                 tint = MaterialTheme.colorScheme.error
                             )
@@ -337,7 +337,7 @@ private fun ActiveDownloadCard(
 
                     IconButton(onClick = { onCancel(download.id) }) {
                         Icon(
-                            painter = painterResource(id = R.drawable.cancel),
+                            painter = painterResource(id = R.drawable.ic_cancel),
                             contentDescription = "Cancel"
                         )
                     }
@@ -407,7 +407,7 @@ private fun CompletedDownloadCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.circle_check),
+                    painter = painterResource(id = R.drawable.ic_circle_check),
                     contentDescription = "Completed",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(40.dp)
@@ -436,7 +436,7 @@ private fun CompletedDownloadCard(
 
             IconButton(onClick = { onDelete(download.id) }) {
                 Icon(
-                    painter = painterResource(id = R.drawable.delete),
+                    painter = painterResource(id = R.drawable.ic_delete),
                     contentDescription = "Delete",
                     tint = MaterialTheme.colorScheme.error
                 )
@@ -461,7 +461,7 @@ private fun EmptyState(
             modifier = Modifier.padding(32.dp)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.download),
+                painter = painterResource(id = R.drawable.ic_download),
                 contentDescription = null,
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)

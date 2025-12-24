@@ -160,7 +160,7 @@ fun LoginScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        painterResource(id = R.drawable.info),
+                        painterResource(id = R.drawable.ic_info),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error
                     )
@@ -246,7 +246,7 @@ private fun ServerConnectionSection(
                 placeholder = { Text("https://example.jellyfin.com") },
                 leadingIcon = {
                     Icon(
-                        painterResource(id = R.drawable.link),
+                        painterResource(id = R.drawable.ic_link_rotated),
                         contentDescription = null
                     )
                 },
@@ -287,7 +287,7 @@ private fun ServerConnectionSection(
                     Text("Connecting...")
                 } else if (isConnectedToServer) {
                     Icon(
-                        painter = painterResource(id = R.drawable.circle_check),
+                        painter = painterResource(id = R.drawable.ic_circle_check),
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
@@ -317,7 +317,7 @@ private fun ServerConnectionSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.search),
+                        painter = painterResource(id = R.drawable.ic_search),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
@@ -341,7 +341,7 @@ private fun ServerConnectionSection(
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.refresh),
+                            painter = painterResource(id = R.drawable.ic_refresh),
                             contentDescription = "Refresh servers",
                             modifier = Modifier.size(16.dp)
                         )
@@ -438,7 +438,7 @@ private fun LoginMethodSection(
                     label = { Text("Password") },
                     leadingIcon = {
                         Icon(
-                            painterResource(id = R.drawable.password),
+                            painterResource(id = R.drawable.ic_password),
                             contentDescription = null
                         )
                     },
@@ -453,7 +453,7 @@ private fun LoginMethodSection(
                     label = { Text("Quick Connect") },
                     leadingIcon = {
                         Icon(
-                            painterResource(id = R.drawable.qrcode),
+                            painterResource(id = R.drawable.ic_qrcode),
                             contentDescription = null
                         )
                     },
@@ -548,7 +548,7 @@ private fun PasswordLoginForm(
                 label = { Text("Username") },
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.user),
+                        painter = painterResource(id = R.drawable.ic_user),
                         contentDescription = null
                     )
                 },
@@ -581,15 +581,15 @@ private fun PasswordLoginForm(
                 label = { Text("Password") },
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.lock),
+                        painter = painterResource(id = R.drawable.ic_lock_filled),
                         contentDescription = null
                     )
                 },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            painter = if (passwordVisible) painterResource(id = R.drawable.visibility_off) else painterResource(
-                                id = R.drawable.visibility
+                            painter = if (passwordVisible) painterResource(id = R.drawable.ic_visibility_off) else painterResource(
+                                id = R.drawable.ic_visibility
                             ),
                             contentDescription = if (passwordVisible) "Hide password" else "Show password",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -765,7 +765,7 @@ private fun QuickConnectForm(
         ) {
             if (uiState.quickConnectCode == null && !uiState.isLoggingIn) {
                 Icon(
-                    painter = painterResource(id = R.drawable.qrcode),
+                    painter = painterResource(id = R.drawable.ic_qrcode),
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary
@@ -799,7 +799,7 @@ private fun QuickConnectForm(
                 }
             } else if (uiState.quickConnectCode != null) {
                 Icon(
-                    painter = painterResource(id = R.drawable.qrcode),
+                    painter = painterResource(id = R.drawable.ic_qrcode),
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary

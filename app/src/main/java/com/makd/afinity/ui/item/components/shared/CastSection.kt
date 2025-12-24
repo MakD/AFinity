@@ -100,8 +100,8 @@ private fun CastMemberCard(
                 .size(100.dp)
                 .clip(CircleShape),
             contentScale = ContentScale.Crop,
-            placeholder = painterResource(id = R.drawable.person_placeholder_vector),
-            error = painterResource(id = R.drawable.person_placeholder_vector)
+            placeholder = painterResource(id = R.drawable.ic_person_placeholder),
+            error = painterResource(id = R.drawable.ic_person_placeholder)
         )
 
         Text(

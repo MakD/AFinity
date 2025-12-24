@@ -110,7 +110,7 @@ fun ContinueWatchingCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.check),
+                            painter = painterResource(id = R.drawable.ic_check),
                             contentDescription = "Watched",
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)

@@ -3,7 +3,6 @@ package com.makd.afinity.data.models.player
 import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
@@ -35,8 +34,8 @@ enum class VideoZoomMode(val value: Int) {
     @Composable
     fun getIconPainter(): Painter {
         return when (this) {
-            FIT -> painterResource(id = R.drawable.fullscreen)
-            ZOOM -> painterResource(id = R.drawable.fullscreen_exit)
+            FIT -> painterResource(id = R.drawable.ic_fullscreen)
+            ZOOM -> painterResource(id = R.drawable.ic_fullscreen_exit)
         }
     }
 

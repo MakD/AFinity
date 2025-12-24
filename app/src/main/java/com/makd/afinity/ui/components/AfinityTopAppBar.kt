@@ -87,7 +87,7 @@ fun AfinityTopAppBar(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.search),
+                                painter = painterResource(id = R.drawable.ic_search),
                                 contentDescription = "Search",
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
@@ -132,7 +132,7 @@ fun AfinityTopAppBar(
                                 )
                             } else {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.user_circle),
+                                    painter = painterResource(id = R.drawable.ic_user_circle),
                                     contentDescription = "Profile",
                                     tint = Color.White,
                                     modifier = Modifier.size(32.dp)
@@ -155,7 +155,7 @@ fun AfinityTopAppBar(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.cloud_off),
+                                painter = painterResource(id = R.drawable.ic_cloud_off),
                                 contentDescription = "Offline Mode",
                                 tint = MaterialTheme.colorScheme.onTertiaryContainer,
                                 modifier = Modifier.size(14.dp)

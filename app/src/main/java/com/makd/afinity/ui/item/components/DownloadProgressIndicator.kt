@@ -40,7 +40,7 @@ fun DownloadProgressIndicator(
         when (downloadInfo?.status) {
             null, DownloadStatus.FAILED, DownloadStatus.CANCELLED -> {
                 Icon(
-                    painter = painterResource(id = R.drawable.download),
+                    painter = painterResource(id = R.drawable.ic_download),
                     contentDescription = "Download",
                     tint = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.size(28.dp)
@@ -54,7 +54,7 @@ fun DownloadProgressIndicator(
                         strokeWidth = 2.dp,
                     )
                     Icon(
-                        painter = painterResource(id = R.drawable.cancel),
+                        painter = painterResource(id = R.drawable.ic_cancel),
                         contentDescription = "Cancel Download",
                         modifier = Modifier.size(16.dp),
                         tint = Color.Red
@@ -63,7 +63,7 @@ fun DownloadProgressIndicator(
             }
             DownloadStatus.QUEUED -> {
                 Icon(
-                    painter = painterResource(id = R.drawable.hourglass_empty),
+                    painter = painterResource(id = R.drawable.ic_hourglass_empty),
                     contentDescription = "Queued - Tap to Cancel",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(28.dp)
@@ -77,7 +77,7 @@ fun DownloadProgressIndicator(
                         strokeWidth = 2.dp,
                     )
                     Icon(
-                        painter = painterResource(id = R.drawable.cloud_pause),
+                        painter = painterResource(id = R.drawable.ic_cloud_pause),
                         contentDescription = "Resume Download",
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -86,7 +86,7 @@ fun DownloadProgressIndicator(
             }
             DownloadStatus.COMPLETED -> {
                 Icon(
-                    painter = painterResource(id = R.drawable.delete),
+                    painter = painterResource(id = R.drawable.ic_delete),
                     contentDescription = "Delete Download",
                     tint = Color.Red,
                     modifier = Modifier.size(28.dp)

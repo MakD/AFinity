@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -278,16 +277,16 @@ private fun EmptyLibrariesMessage(
 @Composable
 private fun getLibraryIcon(type: CollectionType): Painter {
     return when (type) {
-        CollectionType.Movies -> painterResource(id = R.drawable.movie)
-        CollectionType.TvShows -> painterResource(id = R.drawable.tv)
-        CollectionType.Music -> painterResource(id = R.drawable.music)
-        CollectionType.Books -> painterResource(id = R.drawable.books)
-        CollectionType.HomeVideos -> painterResource(id = R.drawable.music_video)
-        CollectionType.Playlists -> painterResource(id = R.drawable.playlist)
-        CollectionType.LiveTv -> painterResource(id = R.drawable.live_tv)
-        CollectionType.BoxSets -> painterResource(id = R.drawable.collections_bookmark)
-        CollectionType.Mixed -> painterResource(id = R.drawable.mixed)
-        CollectionType.Unknown -> painterResource(id = R.drawable.folder)
+        CollectionType.Movies -> painterResource(id = R.drawable.ic_movie)
+        CollectionType.TvShows -> painterResource(id = R.drawable.ic_tv)
+        CollectionType.Music -> painterResource(id = R.drawable.ic_music)
+        CollectionType.Books -> painterResource(id = R.drawable.ic_books)
+        CollectionType.HomeVideos -> painterResource(id = R.drawable.ic_music_video)
+        CollectionType.Playlists -> painterResource(id = R.drawable.ic_playlist)
+        CollectionType.LiveTv -> painterResource(id = R.drawable.ic_live_tv)
+        CollectionType.BoxSets -> painterResource(id = R.drawable.ic_collections_bookmark)
+        CollectionType.Mixed -> painterResource(id = R.drawable.ic_mixed)
+        CollectionType.Unknown -> painterResource(id = R.drawable.ic_folder)
     }
 }
 

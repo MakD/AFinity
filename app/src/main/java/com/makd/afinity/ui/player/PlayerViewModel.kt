@@ -297,7 +297,10 @@ class PlayerViewModel @Inject constructor(
                 }
                 is PlayerEvent.SetVolume -> volumeManager.setVolume(event.volume)
                 is PlayerEvent.SetBrightness -> { /* Handle at UI level */ }
-                is PlayerEvent.SetPlaybackSpeed -> player.setPlaybackSpeed(event.speed)
+                is PlayerEvent.SetPlaybackSpeed -> {
+                    player.setPlaybackSpeed(event.speed)
+                    updateUiState { it.copy(playbackSpeed = event.speed) }
+                }
                 is PlayerEvent.SwitchToTrack -> switchToTrack(event.trackType, event.index)
                 is PlayerEvent.ToggleControls -> toggleControls()
                 is PlayerEvent.ToggleLock -> onLockToggle()

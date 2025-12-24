@@ -146,7 +146,7 @@ fun SearchScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.search),
+                                painter = painterResource(id = R.drawable.ic_search),
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -181,7 +181,7 @@ private fun SearchTopBar(
     ) {
         IconButton(onClick = onBackClick) {
             Icon(
-                painter = painterResource(id = R.drawable.arrow_left),
+                painter = painterResource(id = R.drawable.ic_arrow_left),
                 contentDescription = "Back",
                 tint = MaterialTheme.colorScheme.onBackground
             )
@@ -201,7 +201,7 @@ private fun SearchTopBar(
             },
             leadingIcon = {
                 Icon(
-                    painter = painterResource(id = R.drawable.search),
+                    painter = painterResource(id = R.drawable.ic_search),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -210,7 +210,7 @@ private fun SearchTopBar(
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { onSearchQueryChange("") }) {
                         Icon(
-                            painter = painterResource(id = R.drawable.clear),
+                            painter = painterResource(id = R.drawable.ic_clear),
                             contentDescription = "Clear",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -351,7 +351,7 @@ private fun LibraryFilterChip(
         leadingIcon = if (isSelected && showCheckIcon) {
             {
                 Icon(
-                    painter = painterResource(id = R.drawable.circle_check),
+                    painter = painterResource(id = R.drawable.ic_circle_check),
                     contentDescription = null,
                     modifier = Modifier.size(16.dp)
                 )
@@ -556,26 +556,26 @@ private fun SearchResultItem(
 @Composable
 private fun getGenreIcon(genre: String): Painter {
     return when (genre.lowercase()) {
-        "action" -> painterResource(id = R.drawable.boom)
-        "comedy" -> painterResource(id = R.drawable.comedy)
-        "drama" -> painterResource(id = R.drawable.theater)
-        "horror" -> painterResource(id = R.drawable.horror)
-        "thriller" -> painterResource(id = R.drawable.bolt)
-        "romance" -> painterResource(id = R.drawable.favorite)
-        "sci-fi", "science fiction" -> painterResource(id = R.drawable.alien)
-        "fantasy" -> painterResource(id = R.drawable.auto_awesome)
-        "documentary" -> painterResource(id = R.drawable.article)
-        "animation" -> painterResource(id = R.drawable.animation)
-        "family" -> painterResource(id = R.drawable.family)
-        "adventure" -> painterResource(id = R.drawable.adventure)
-        "crime" -> painterResource(id = R.drawable.security)
-        "mystery" -> painterResource(id = R.drawable.mystery)
-        "western" -> painterResource(id = R.drawable.cactus)
-        "war" -> painterResource(id = R.drawable.war)
-        "music" -> painterResource(id = R.drawable.music_heart)
-        "sport" -> painterResource(id = R.drawable.sports)
-        "biography" -> painterResource(id = R.drawable.person_heart)
-        "history" -> painterResource(id = R.drawable.history)
-        else -> painterResource(id = R.drawable.movie)
+        "action" -> painterResource(id = R.drawable.ic_boom)
+        "comedy" -> painterResource(id = R.drawable.ic_comedy)
+        "drama" -> painterResource(id = R.drawable.ic_theater)
+        "horror" -> painterResource(id = R.drawable.ic_horror)
+        "thriller" -> painterResource(id = R.drawable.ic_bolt)
+        "romance" -> painterResource(id = R.drawable.ic_favorite)
+        "sci-fi", "science fiction" -> painterResource(id = R.drawable.ic_alien)
+        "fantasy" -> painterResource(id = R.drawable.ic_auto_awesome)
+        "documentary" -> painterResource(id = R.drawable.ic_article)
+        "animation" -> painterResource(id = R.drawable.ic_animation)
+        "family" -> painterResource(id = R.drawable.ic_family)
+        "adventure" -> painterResource(id = R.drawable.ic_adventure)
+        "crime" -> painterResource(id = R.drawable.ic_security)
+        "mystery" -> painterResource(id = R.drawable.ic_mystery)
+        "western" -> painterResource(id = R.drawable.ic_cactus)
+        "war" -> painterResource(id = R.drawable.ic_war)
+        "music" -> painterResource(id = R.drawable.ic_music_heart)
+        "sport" -> painterResource(id = R.drawable.ic_sports)
+        "biography" -> painterResource(id = R.drawable.ic_person_heart)
+        "history" -> painterResource(id = R.drawable.ic_history)
+        else -> painterResource(id = R.drawable.ic_movie)
     }
 }

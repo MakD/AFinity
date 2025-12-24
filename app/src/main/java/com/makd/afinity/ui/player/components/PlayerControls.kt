@@ -163,7 +163,7 @@ fun PlayerControls(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
-                    modifier = Modifier.padding(start = 16.dp),
+                    modifier = Modifier.padding(start = 60.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
                     val currentItem = uiState.currentItem
@@ -199,7 +199,7 @@ fun PlayerControls(
 
                         if (seasonNumber != null && episodeNumber != null) {
                             Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                                horizontalAlignment = Alignment.Start,
                                 modifier = Modifier.wrapContentWidth()
                             ) {
                                 if (currentItem.seriesLogo != null) {
@@ -522,7 +522,7 @@ private fun TopControls(
                     .size(36.dp)
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.chevron_left),
+                    painter = painterResource(R.drawable.ic_chevron_left),
                     contentDescription = "Back",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
@@ -595,7 +595,7 @@ private fun CenterPlayButton(
                     modifier = Modifier.size(60.dp)
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.skip_previous),
+                        painter = painterResource(id = R.drawable.ic_player_skip_back),
                         contentDescription = "Previous",
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
@@ -608,7 +608,7 @@ private fun CenterPlayButton(
                 modifier = Modifier.size(60.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.replay_10),
+                    painter = painterResource(id = R.drawable.ic_rewind_backward_10),
                     contentDescription = "Rewind 10s",
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
@@ -628,8 +628,8 @@ private fun CenterPlayButton(
                     )
                 } else {
                     Icon(
-                        painter = if (isPlaying) painterResource(id = R.drawable.pause) else painterResource(
-                            id = R.drawable.play_arrow
+                        painter = if (isPlaying) painterResource(id = R.drawable.ic_player_pause_filled) else painterResource(
+                            id = R.drawable.ic_player_play_filled
                         ),
                         contentDescription = if (isPlaying) "Pause" else "Play",
                         tint = Color.White,
@@ -643,7 +643,7 @@ private fun CenterPlayButton(
                 modifier = Modifier.size(60.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.forward_30),
+                    painter = painterResource(id = R.drawable.ic_rewind_forward_30),
                     contentDescription = "Forward 30s",
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
@@ -656,7 +656,7 @@ private fun CenterPlayButton(
                     modifier = Modifier.size(60.dp)
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.skip_next),
+                        painter = painterResource(id = R.drawable.ic_player_skip_forward),
                         contentDescription = "Next",
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
@@ -691,8 +691,8 @@ private fun BottomControls(
             .padding(
                 start = 16.dp,
                 end = 16.dp,
-                top = 16.dp,
-                bottom = 32.dp
+                top = 10.dp,
+                bottom = 10.dp
             )
     ) {
         Column {
@@ -727,7 +727,7 @@ private fun BottomControls(
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.audio),
+                            painter = painterResource(id = R.drawable.ic_audio),
                             contentDescription = "Audio",
                             tint = if (uiState.audioStreamIndex != null) MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)
