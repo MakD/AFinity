@@ -260,10 +260,12 @@ private fun ExoPlayerSubtitles(
                 setApplyEmbeddedStyles(false)
                 setApplyEmbeddedFontSizes(false)
 
-                val typeface = Typeface.createFromAsset(
+                /*val typeface = Typeface.createFromAsset(
                     context.assets,
                     "subfont.ttf"
-                )
+                )*/
+
+                val typeface = Typeface.SANS_SERIF
 
                 val customStyle = androidx.media3.ui.CaptionStyleCompat(
                     android.graphics.Color.WHITE,

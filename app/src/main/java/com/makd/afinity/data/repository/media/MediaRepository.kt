@@ -185,6 +185,18 @@ interface MediaRepository {
         fields: List<ItemFields>? = null
     ): List<AfinityItem>
 
+    suspend fun getMoviesWithPeople(
+        startIndex: Int = 0,
+        limit: Int = 500,
+        fields: List<ItemFields>? = null
+    ): List<AfinityMovie>
+
+    suspend fun getSimilarMovies(
+        movieId: UUID,
+        limit: Int = 32,
+        fields: List<ItemFields>? = null
+    ): List<AfinityMovie>
+
     suspend fun getBoxSetsContaining(
         itemId: UUID,
         fields: List<ItemFields>? = null

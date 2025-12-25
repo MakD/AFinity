@@ -4,9 +4,13 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.makd.afinity.data.models.extensions.toAfinityEpisode
-import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.GenreItem
+import com.makd.afinity.data.models.MovieSection
+import com.makd.afinity.data.models.PersonFromMovieSection
+import com.makd.afinity.data.models.PersonSection
+import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -14,8 +18,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
-import com.makd.afinity.data.manager.OfflineModeManager
-import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
@@ -27,10 +30,18 @@ import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -48,6 +59,16 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private val loadedRecommendationSections = mutableListOf<HomeSection>()
+
+    private val recommendationMutex = Mutex()
+
+    private val renderedPeopleNames = mutableSetOf<String>()
+    private val renderedItemIds = mutableSetOf<java.util.UUID>()
+    private val renderedWatchedMovies = mutableSetOf<java.util.UUID>()
+    private val renderedStarringWatchedMovies = mutableSetOf<java.util.UUID>()
+    private val renderedActorNames = mutableSetOf<String>()
 
     init {
 
@@ -133,7 +154,7 @@ class HomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             appDataRepository.combinedGenres.collect { combinedGenres ->
-                _uiState.value = _uiState.value.copy(combinedGenres = combinedGenres)
+                combinedGenreSections(combinedGenres)
             }
         }
 
@@ -181,6 +202,313 @@ class HomeViewModel @Inject constructor(
                     loadDownloadedContent()
                 }
             }
+        }
+
+        viewModelScope.launch {
+            loadNewHomescreenSections()
+        }
+    }
+
+    private fun combinedGenreSections(genreItems: List<GenreItem>) {
+        val allSections = mutableListOf<HomeSection>()
+
+        allSections.addAll(loadedRecommendationSections)
+
+        genreItems.forEach { genreItem ->
+            allSections.add(HomeSection.Genre(genreItem))
+        }
+
+        val shuffledSections = allSections.shuffled()
+        _uiState.value = _uiState.value.copy(combinedSections = shuffledSections)
+
+        Timber.d("Combined ${loadedRecommendationSections.size} recommendation sections + ${genreItems.size} genres = ${shuffledSections.size} total sections (shuffled)")
+    }
+
+    private suspend fun loadNewHomescreenSections() {
+        try {
+            if (offlineModeManager.isOffline.first()) {
+                Timber.d("Skipping new sections in offline mode")
+                return
+            }
+
+            loadedRecommendationSections.clear()
+
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    coroutineScope {
+                        val actorTask = async { loadAllActorSections() }
+                        val directorTask = async { loadAllDirectorSections() }
+                        val writerTask = async { loadAllWriterSections() }
+                        val becauseYouWatchedTask = async { loadAllBecauseYouWatchedSections() }
+                        val actorFromRecentTask = async { loadAllActorFromRecentSections() }
+
+                        awaitAll(
+                            actorTask,
+                            directorTask,
+                            writerTask,
+                            becauseYouWatchedTask,
+                            actorFromRecentTask
+                        )
+                    }
+
+                    Timber.d("Loaded ${loadedRecommendationSections.size} total recommendation sections")
+
+                    withContext(Dispatchers.Main) {
+                        appDataRepository.combinedGenres.value.let { genres ->
+                            if (genres.isNotEmpty()) {
+                                combinedGenreSections(genres)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load recommendation sections in background")
+                }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to start recommendation sections loading")
+        }
+    }
+
+    private suspend fun loadAllActorSections() {
+        try {
+            val topActors = appDataRepository.getTopPeople(
+                type = org.jellyfin.sdk.model.api.PersonKind.ACTOR,
+                limit = 100,
+                minAppearances = 10
+            )
+
+            val availableActors = topActors.filterNot { it.person.name in renderedPeopleNames }
+            val maxActorSections = 15
+            val selectedActors = availableActors.shuffled().take(maxActorSections)
+
+            coroutineScope {
+                selectedActors.map { actor ->
+                    async {
+                        try {
+                            val section = appDataRepository.getPersonSection(
+                                personWithCount = actor,
+                                sectionType = com.makd.afinity.data.models.PersonSectionType.STARRING
+                            )
+
+                            if (section != null) {
+                                recommendationMutex.withLock {
+                                    renderedPeopleNames.add(actor.person.name)
+                                    section.items.forEach { renderedItemIds.add(it.id) }
+                                    loadedRecommendationSections.add(HomeSection.Person(section))
+                                }
+                                Timber.d("Loaded 'Starring ${section.person.name}' section (${section.items.size} items)")
+                            }
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to load actor section for ${actor.person.name}")
+                        }
+                    }
+                }.awaitAll()
+            }
+
+            Timber.d("Loaded ${loadedRecommendationSections.count { it is HomeSection.Person && it.section.sectionType == com.makd.afinity.data.models.PersonSectionType.STARRING }} actor sections (max: $maxActorSections)")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load actor sections")
+        }
+    }
+
+    private suspend fun loadAllDirectorSections() {
+        try {
+            val topDirectors = appDataRepository.getTopPeople(
+                type = org.jellyfin.sdk.model.api.PersonKind.DIRECTOR,
+                limit = 100,
+                minAppearances = 10
+            )
+
+            val availableDirectors = topDirectors.filterNot { it.person.name in renderedPeopleNames }
+            val maxDirectorSections = 8
+            val selectedDirectors = availableDirectors.shuffled().take(maxDirectorSections)
+
+            coroutineScope {
+                selectedDirectors.map { director ->
+                    async {
+                        try {
+                            val section = appDataRepository.getPersonSection(
+                                personWithCount = director,
+                                sectionType = com.makd.afinity.data.models.PersonSectionType.DIRECTED_BY
+                            )
+
+                            if (section != null) {
+                                recommendationMutex.withLock {
+                                    renderedPeopleNames.add(director.person.name)
+                                    section.items.forEach { renderedItemIds.add(it.id) }
+                                    loadedRecommendationSections.add(HomeSection.Person(section))
+                                }
+                                Timber.d("Loaded 'Directed by ${section.person.name}' section (${section.items.size} items)")
+                            }
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to load director section for ${director.person.name}")
+                        }
+                    }
+                }.awaitAll()
+            }
+
+            Timber.d("Loaded ${loadedRecommendationSections.count { it is HomeSection.Person && it.section.sectionType == com.makd.afinity.data.models.PersonSectionType.DIRECTED_BY }} director sections (max: $maxDirectorSections)")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load director sections")
+        }
+    }
+
+    private suspend fun loadAllWriterSections() {
+        try {
+            val topWriters = appDataRepository.getTopPeople(
+                type = org.jellyfin.sdk.model.api.PersonKind.WRITER,
+                limit = 100,
+                minAppearances = 10
+            )
+
+            val availableWriters = topWriters.filterNot { it.person.name in renderedPeopleNames }
+            val maxWriterSections = 7
+            val selectedWriters = availableWriters.shuffled().take(maxWriterSections)
+
+            coroutineScope {
+                selectedWriters.map { writer ->
+                    async {
+                        try {
+                            val section = appDataRepository.getPersonSection(
+                                personWithCount = writer,
+                                sectionType = com.makd.afinity.data.models.PersonSectionType.WRITTEN_BY
+                            )
+
+                            if (section != null) {
+                                recommendationMutex.withLock {
+                                    renderedPeopleNames.add(writer.person.name)
+                                    section.items.forEach { renderedItemIds.add(it.id) }
+                                    loadedRecommendationSections.add(HomeSection.Person(section))
+                                }
+                                Timber.d("Loaded 'Written by ${section.person.name}' section (${section.items.size} items)")
+                            }
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to load writer section for ${writer.person.name}")
+                        }
+                    }
+                }.awaitAll()
+            }
+
+            Timber.d("Loaded ${loadedRecommendationSections.count { it is HomeSection.Person && it.section.sectionType == com.makd.afinity.data.models.PersonSectionType.WRITTEN_BY }} writer sections (max: $maxWriterSections)")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load writer sections")
+        }
+    }
+
+    private suspend fun loadAllBecauseYouWatchedSections() {
+        try {
+            val maxBecauseYouWatchedSections = 7
+            var loadedCount = 0
+            while (loadedCount < maxBecauseYouWatchedSections) {
+                val referenceMovie = appDataRepository.getRandomRecentlyWatchedMovie(
+                    excludedMovies = renderedWatchedMovies
+                ) ?: break
+
+                renderedWatchedMovies.add(referenceMovie.id)
+
+                val similarMovies = jellyfinRepository.getSimilarMovies(
+                    movieId = referenceMovie.id,
+                    limit = 32
+                )
+                    .filterNot { it.id in renderedItemIds }
+                    .shuffled()
+                    .take(20)
+
+                if (similarMovies.size >= 5) {
+                    val section = MovieSection(
+                        referenceMovie = referenceMovie,
+                        recommendedItems = similarMovies,
+                        sectionType = com.makd.afinity.data.models.MovieSectionType.BECAUSE_YOU_WATCHED
+                    )
+
+                    similarMovies.forEach { renderedItemIds.add(it.id) }
+                    loadedRecommendationSections.add(HomeSection.Movie(section))
+                    loadedCount++
+                    Timber.d("Loaded 'Because you watched ${referenceMovie.name}' section (${similarMovies.size} items)")
+                } else {
+                    break
+                }
+            }
+
+            Timber.d("Loaded $loadedCount 'Because you watched' sections (max: $maxBecauseYouWatchedSections)")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load 'Because you watched' sections")
+        }
+    }
+
+    private suspend fun loadAllActorFromRecentSections() {
+        try {
+            val maxActorFromRecentSections = 3
+            var loadedCount = 0
+            while (loadedCount < maxActorFromRecentSections) {
+                val randomMovie = appDataRepository.getRandomRecentlyWatchedMovie(
+                    excludedMovies = renderedStarringWatchedMovies
+                ) ?: break
+
+                renderedStarringWatchedMovies.add(randomMovie.id)
+
+                val movieItem = jellyfinRepository.getItem(
+                    itemId = randomMovie.id,
+                    fields = listOf(org.jellyfin.sdk.model.api.ItemFields.PEOPLE)
+                )
+
+                val movieWithPeople = movieItem?.toAfinityMovie(jellyfinRepository.getBaseUrl())
+                if (movieWithPeople == null) {
+                    Timber.d("Failed to fetch or convert movie '${randomMovie.name}'")
+                    continue
+                }
+
+                val availableActors = movieWithPeople.people
+                    .filter { it.type == org.jellyfin.sdk.model.api.PersonKind.ACTOR }
+                    .filterNot { it.name in renderedActorNames }
+
+                if (availableActors.isEmpty()) {
+                    Timber.d("No available actors in '${randomMovie.name}'")
+                    continue
+                }
+
+                val selectedActor = availableActors.take(3).randomOrNull() ?: continue
+                renderedActorNames.add(selectedActor.name)
+
+                val allActorItems = jellyfinRepository.getPersonItems(
+                    personId = selectedActor.id,
+                    includeItemTypes = listOf("MOVIE"),
+                    fields = listOf(org.jellyfin.sdk.model.api.ItemFields.PEOPLE)
+                )
+
+                val actorMovies = allActorItems
+                    .filter { item ->
+                        when (item) {
+                            is AfinityMovie -> {
+                                item.people.any { person ->
+                                    person.id == selectedActor.id && person.type == org.jellyfin.sdk.model.api.PersonKind.ACTOR
+                                }
+                            }
+                            else -> false
+                        }
+                    }
+                    .filterIsInstance<AfinityMovie>()
+                    .filterNot { it.id == randomMovie.id || it.id in renderedItemIds }
+                    .shuffled()
+                    .take(20)
+
+                if (actorMovies.size >= 5) {
+                    val section = PersonFromMovieSection(
+                        person = selectedActor,
+                        referenceMovie = movieWithPeople,
+                        items = actorMovies
+                    )
+
+                    actorMovies.forEach { renderedItemIds.add(it.id) }
+                    loadedRecommendationSections.add(HomeSection.PersonFromMovie(section))
+                    loadedCount++
+                    Timber.d("Loaded 'Starring ${selectedActor.name} because you watched ${randomMovie.name}' section (${actorMovies.size} items)")
+                }
+            }
+
+            Timber.d("Loaded $loadedCount 'Starring actor from recent' sections (max: $maxActorFromRecentSections)")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load actor from recent sections")
         }
     }
 
@@ -561,6 +889,13 @@ class HomeViewModel @Inject constructor(
     }
 }
 
+sealed interface HomeSection {
+    data class Person(val section: PersonSection) : HomeSection
+    data class Movie(val section: MovieSection) : HomeSection
+    data class PersonFromMovie(val section: PersonFromMovieSection) : HomeSection
+    data class Genre(val genreItem: GenreItem) : HomeSection
+}
+
 data class HomeUiState(
     val heroCarouselItems: List<AfinityItem> = emptyList(),
     val latestMedia: List<AfinityItem> = emptyList(),
@@ -571,7 +906,7 @@ data class HomeUiState(
     val latestTvSeries: List<AfinityShow> = emptyList(),
     val highestRated: List<AfinityItem> = emptyList(),
     val studios: List<AfinityStudio> = emptyList(),
-    val combinedGenres: List<GenreItem> = emptyList(),
+    val combinedSections: List<HomeSection> = emptyList(),
     val genreMovies: Map<String, List<AfinityMovie>> = emptyMap(),
     val genreShows: Map<String, List<AfinityShow>> = emptyMap(),
     val genreLoadingStates: Map<String, Boolean> = emptyMap(),
