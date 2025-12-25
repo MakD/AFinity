@@ -185,7 +185,10 @@ class MPVPlayer(
         MPVLib.setOptionString("force-window", "no")
         MPVLib.setOptionString("keep-open", "always")
         MPVLib.setOptionString("save-position-on-quit", "no")
-        MPVLib.setOptionString("sub-font-provider", "none")
+
+        MPVLib.setOptionString("sub-font-provider", "auto")
+        MPVLib.setOptionString("sub-font", "sans-serif")
+
         MPVLib.setOptionString("ytdl", "no")
 
         MPVLib.init()

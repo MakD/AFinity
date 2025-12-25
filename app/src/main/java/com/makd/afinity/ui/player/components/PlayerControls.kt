@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -316,8 +319,8 @@ fun PlayerControls(
         ) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 80.dp, end = 56.dp)
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 110.dp, end = 56.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -331,8 +334,10 @@ fun PlayerControls(
                         )
                         .padding(12.dp)
                         .widthIn(min = 200.dp, max = 280.dp)
+                        .heightIn(max = 400.dp)
                 ) {
                     Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
@@ -402,8 +407,8 @@ fun PlayerControls(
         ) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 80.dp, end = 8.dp)
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 110.dp, end = 8.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -417,8 +422,10 @@ fun PlayerControls(
                         )
                         .padding(12.dp)
                         .widthIn(min = 200.dp, max = 280.dp)
+                        .heightIn(max = 400.dp)
                 ) {
                     Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
