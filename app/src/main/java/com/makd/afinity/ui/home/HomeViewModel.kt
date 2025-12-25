@@ -30,13 +30,18 @@ import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -56,6 +61,8 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val loadedRecommendationSections = mutableListOf<HomeSection>()
+
+    private val recommendationMutex = Mutex()
 
     private val renderedPeopleNames = mutableSetOf<String>()
     private val renderedItemIds = mutableSetOf<java.util.UUID>()
@@ -219,8 +226,6 @@ class HomeViewModel @Inject constructor(
 
     private suspend fun loadNewHomescreenSections() {
         try {
-            Timber.d("Loading all possible homescreen sections (no limits)...")
-
             if (offlineModeManager.isOffline.first()) {
                 Timber.d("Skipping new sections in offline mode")
                 return
@@ -228,29 +233,39 @@ class HomeViewModel @Inject constructor(
 
             loadedRecommendationSections.clear()
 
-            coroutineScope {
-                val actorTask = async { loadAllActorSections() }
-                val directorTask = async { loadAllDirectorSections() }
-                val writerTask = async { loadAllWriterSections() }
-                val becauseYouWatchedTask = async { loadAllBecauseYouWatchedSections() }
-                val actorFromRecentTask = async { loadAllActorFromRecentSections() }
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    coroutineScope {
+                        val actorTask = async { loadAllActorSections() }
+                        val directorTask = async { loadAllDirectorSections() }
+                        val writerTask = async { loadAllWriterSections() }
+                        val becauseYouWatchedTask = async { loadAllBecauseYouWatchedSections() }
+                        val actorFromRecentTask = async { loadAllActorFromRecentSections() }
 
-                actorTask.await()
-                directorTask.await()
-                writerTask.await()
-                becauseYouWatchedTask.await()
-                actorFromRecentTask.await()
-            }
+                        awaitAll(
+                            actorTask,
+                            directorTask,
+                            writerTask,
+                            becauseYouWatchedTask,
+                            actorFromRecentTask
+                        )
+                    }
 
-            Timber.d("Loaded ${loadedRecommendationSections.size} total recommendation sections")
+                    Timber.d("Loaded ${loadedRecommendationSections.size} total recommendation sections")
 
-            appDataRepository.combinedGenres.value.let { genres ->
-                if (genres.isNotEmpty()) {
-                    combinedGenreSections(genres)
+                    withContext(Dispatchers.Main) {
+                        appDataRepository.combinedGenres.value.let { genres ->
+                            if (genres.isNotEmpty()) {
+                                combinedGenreSections(genres)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load recommendation sections in background")
                 }
             }
         } catch (e: Exception) {
-            Timber.e(e, "Failed to load new homescreen sections")
+            Timber.e(e, "Failed to start recommendation sections loading")
         }
     }
 
@@ -276,10 +291,12 @@ class HomeViewModel @Inject constructor(
                 )
 
                 if (section != null) {
-                    renderedPeopleNames.add(selectedActor.person.name)
-                    section.items.forEach { renderedItemIds.add(it.id) }
-                    loadedRecommendationSections.add(HomeSection.Person(section))
-                    loadedCount++
+                    recommendationMutex.withLock {
+                        renderedPeopleNames.add(selectedActor.person.name)
+                        section.items.forEach { renderedItemIds.add(it.id) }
+                        loadedRecommendationSections.add(HomeSection.Person(section))
+                        loadedCount++
+                    }
                     Timber.d("Loaded 'Starring ${section.person.name}' section (${section.items.size} items)")
                 }
             }
@@ -312,10 +329,12 @@ class HomeViewModel @Inject constructor(
                 )
 
                 if (section != null) {
-                    renderedPeopleNames.add(selectedDirector.person.name)
-                    section.items.forEach { renderedItemIds.add(it.id) }
-                    loadedRecommendationSections.add(HomeSection.Person(section))
-                    loadedCount++
+                    recommendationMutex.withLock {
+                        renderedPeopleNames.add(selectedDirector.person.name)
+                        section.items.forEach { renderedItemIds.add(it.id) }
+                        loadedRecommendationSections.add(HomeSection.Person(section))
+                        loadedCount++
+                    }
                     Timber.d("Loaded 'Directed by ${section.person.name}' section (${section.items.size} items)")
                 }
             }
@@ -348,10 +367,12 @@ class HomeViewModel @Inject constructor(
                 )
 
                 if (section != null) {
-                    renderedPeopleNames.add(selectedWriter.person.name)
-                    section.items.forEach { renderedItemIds.add(it.id) }
-                    loadedRecommendationSections.add(HomeSection.Person(section))
-                    loadedCount++
+                    recommendationMutex.withLock {
+                        renderedPeopleNames.add(selectedWriter.person.name)
+                        section.items.forEach { renderedItemIds.add(it.id) }
+                        loadedRecommendationSections.add(HomeSection.Person(section))
+                        loadedCount++
+                    }
                     Timber.d("Loaded 'Written by ${section.person.name}' section (${section.items.size} items)")
                 }
             }
@@ -446,7 +467,7 @@ class HomeViewModel @Inject constructor(
                 val actorMovies = allActorItems
                     .filter { item ->
                         when (item) {
-                            is com.makd.afinity.data.models.media.AfinityMovie -> {
+                            is AfinityMovie -> {
                                 item.people.any { person ->
                                     person.id == selectedActor.id && person.type == org.jellyfin.sdk.model.api.PersonKind.ACTOR
                                 }
@@ -454,7 +475,7 @@ class HomeViewModel @Inject constructor(
                             else -> false
                         }
                     }
-                    .filterIsInstance<com.makd.afinity.data.models.media.AfinityMovie>()
+                    .filterIsInstance<AfinityMovie>()
                     .filterNot { it.id == randomMovie.id || it.id in renderedItemIds }
                     .shuffled()
                     .take(20)
