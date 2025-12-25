@@ -277,31 +277,35 @@ class HomeViewModel @Inject constructor(
                 minAppearances = 10
             )
 
-            val availableActors = topActors.filterNot { it.person.name in renderedPeopleNames }.toMutableList()
+            val availableActors = topActors.filterNot { it.person.name in renderedPeopleNames }
             val maxActorSections = 15
-            var loadedCount = 0
+            val selectedActors = availableActors.shuffled().take(maxActorSections)
 
-            while (availableActors.isNotEmpty() && loadedCount < maxActorSections) {
-                val selectedActor = availableActors.randomOrNull() ?: break
-                availableActors.remove(selectedActor)
+            coroutineScope {
+                selectedActors.map { actor ->
+                    async {
+                        try {
+                            val section = appDataRepository.getPersonSection(
+                                personWithCount = actor,
+                                sectionType = com.makd.afinity.data.models.PersonSectionType.STARRING
+                            )
 
-                val section = appDataRepository.getPersonSection(
-                    personWithCount = selectedActor,
-                    sectionType = com.makd.afinity.data.models.PersonSectionType.STARRING
-                )
-
-                if (section != null) {
-                    recommendationMutex.withLock {
-                        renderedPeopleNames.add(selectedActor.person.name)
-                        section.items.forEach { renderedItemIds.add(it.id) }
-                        loadedRecommendationSections.add(HomeSection.Person(section))
-                        loadedCount++
+                            if (section != null) {
+                                recommendationMutex.withLock {
+                                    renderedPeopleNames.add(actor.person.name)
+                                    section.items.forEach { renderedItemIds.add(it.id) }
+                                    loadedRecommendationSections.add(HomeSection.Person(section))
+                                }
+                                Timber.d("Loaded 'Starring ${section.person.name}' section (${section.items.size} items)")
+                            }
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to load actor section for ${actor.person.name}")
+                        }
                     }
-                    Timber.d("Loaded 'Starring ${section.person.name}' section (${section.items.size} items)")
-                }
+                }.awaitAll()
             }
 
-            Timber.d("Loaded $loadedCount actor sections (max: $maxActorSections)")
+            Timber.d("Loaded ${loadedRecommendationSections.count { it is HomeSection.Person && it.section.sectionType == com.makd.afinity.data.models.PersonSectionType.STARRING }} actor sections (max: $maxActorSections)")
         } catch (e: Exception) {
             Timber.e(e, "Failed to load actor sections")
         }
@@ -315,31 +319,35 @@ class HomeViewModel @Inject constructor(
                 minAppearances = 10
             )
 
-            val availableDirectors = topDirectors.filterNot { it.person.name in renderedPeopleNames }.toMutableList()
+            val availableDirectors = topDirectors.filterNot { it.person.name in renderedPeopleNames }
             val maxDirectorSections = 8
-            var loadedCount = 0
+            val selectedDirectors = availableDirectors.shuffled().take(maxDirectorSections)
 
-            while (availableDirectors.isNotEmpty() && loadedCount < maxDirectorSections) {
-                val selectedDirector = availableDirectors.randomOrNull() ?: break
-                availableDirectors.remove(selectedDirector)
+            coroutineScope {
+                selectedDirectors.map { director ->
+                    async {
+                        try {
+                            val section = appDataRepository.getPersonSection(
+                                personWithCount = director,
+                                sectionType = com.makd.afinity.data.models.PersonSectionType.DIRECTED_BY
+                            )
 
-                val section = appDataRepository.getPersonSection(
-                    personWithCount = selectedDirector,
-                    sectionType = com.makd.afinity.data.models.PersonSectionType.DIRECTED_BY
-                )
-
-                if (section != null) {
-                    recommendationMutex.withLock {
-                        renderedPeopleNames.add(selectedDirector.person.name)
-                        section.items.forEach { renderedItemIds.add(it.id) }
-                        loadedRecommendationSections.add(HomeSection.Person(section))
-                        loadedCount++
+                            if (section != null) {
+                                recommendationMutex.withLock {
+                                    renderedPeopleNames.add(director.person.name)
+                                    section.items.forEach { renderedItemIds.add(it.id) }
+                                    loadedRecommendationSections.add(HomeSection.Person(section))
+                                }
+                                Timber.d("Loaded 'Directed by ${section.person.name}' section (${section.items.size} items)")
+                            }
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to load director section for ${director.person.name}")
+                        }
                     }
-                    Timber.d("Loaded 'Directed by ${section.person.name}' section (${section.items.size} items)")
-                }
+                }.awaitAll()
             }
 
-            Timber.d("Loaded $loadedCount director sections (max: $maxDirectorSections)")
+            Timber.d("Loaded ${loadedRecommendationSections.count { it is HomeSection.Person && it.section.sectionType == com.makd.afinity.data.models.PersonSectionType.DIRECTED_BY }} director sections (max: $maxDirectorSections)")
         } catch (e: Exception) {
             Timber.e(e, "Failed to load director sections")
         }
@@ -353,31 +361,35 @@ class HomeViewModel @Inject constructor(
                 minAppearances = 10
             )
 
-            val availableWriters = topWriters.filterNot { it.person.name in renderedPeopleNames }.toMutableList()
+            val availableWriters = topWriters.filterNot { it.person.name in renderedPeopleNames }
             val maxWriterSections = 7
-            var loadedCount = 0
+            val selectedWriters = availableWriters.shuffled().take(maxWriterSections)
 
-            while (availableWriters.isNotEmpty() && loadedCount < maxWriterSections) {
-                val selectedWriter = availableWriters.randomOrNull() ?: break
-                availableWriters.remove(selectedWriter)
+            coroutineScope {
+                selectedWriters.map { writer ->
+                    async {
+                        try {
+                            val section = appDataRepository.getPersonSection(
+                                personWithCount = writer,
+                                sectionType = com.makd.afinity.data.models.PersonSectionType.WRITTEN_BY
+                            )
 
-                val section = appDataRepository.getPersonSection(
-                    personWithCount = selectedWriter,
-                    sectionType = com.makd.afinity.data.models.PersonSectionType.WRITTEN_BY
-                )
-
-                if (section != null) {
-                    recommendationMutex.withLock {
-                        renderedPeopleNames.add(selectedWriter.person.name)
-                        section.items.forEach { renderedItemIds.add(it.id) }
-                        loadedRecommendationSections.add(HomeSection.Person(section))
-                        loadedCount++
+                            if (section != null) {
+                                recommendationMutex.withLock {
+                                    renderedPeopleNames.add(writer.person.name)
+                                    section.items.forEach { renderedItemIds.add(it.id) }
+                                    loadedRecommendationSections.add(HomeSection.Person(section))
+                                }
+                                Timber.d("Loaded 'Written by ${section.person.name}' section (${section.items.size} items)")
+                            }
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to load writer section for ${writer.person.name}")
+                        }
                     }
-                    Timber.d("Loaded 'Written by ${section.person.name}' section (${section.items.size} items)")
-                }
+                }.awaitAll()
             }
 
-            Timber.d("Loaded $loadedCount writer sections (max: $maxWriterSections)")
+            Timber.d("Loaded ${loadedRecommendationSections.count { it is HomeSection.Person && it.section.sectionType == com.makd.afinity.data.models.PersonSectionType.WRITTEN_BY }} writer sections (max: $maxWriterSections)")
         } catch (e: Exception) {
             Timber.e(e, "Failed to load writer sections")
         }

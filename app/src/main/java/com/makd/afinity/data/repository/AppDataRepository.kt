@@ -48,7 +48,9 @@ class AppDataRepository @Inject constructor(
     private val database: AfinityDatabase
 ) {
     private val GENRE_CACHE_TTL = 12.hours.inWholeMilliseconds
+    private val PERSON_SECTION_CACHE_TTL = 48.hours.inWholeMilliseconds
     private val PEOPLE_CACHE_TTL = 24.hours.inWholeMilliseconds
+    private val RECENT_WATCHED_CACHE_TTL = 6.hours.inWholeMilliseconds
 
     private val genreCacheDao = database.genreCacheDao()
     private val studioCacheDao = database.studioCacheDao()
@@ -56,6 +58,8 @@ class AppDataRepository @Inject constructor(
     private val personSectionDao = database.personSectionDao()
     private val typeConverters = com.makd.afinity.data.database.TypeConverters()
     private val json = Json { ignoreUnknownKeys = true }
+
+    private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     val latestMedia: StateFlow<List<AfinityItem>> = _latestMedia.asStateFlow()
 
@@ -899,7 +903,7 @@ class AppDataRepository @Inject constructor(
             val cached = personSectionDao.getCachedSection(cacheKey)
             val currentTime = System.currentTimeMillis()
 
-            if (cached != null && personSectionDao.isSectionCacheFresh(cacheKey, GENRE_CACHE_TTL, currentTime)) {
+            if (cached != null && personSectionDao.isSectionCacheFresh(cacheKey, PERSON_SECTION_CACHE_TTL, currentTime)) {
                 val cachedPersonData = PersonWithCount.fromCached(
                     json.decodeFromString<CachedPersonWithCount>(cached.personData)
                 )
@@ -964,12 +968,25 @@ class AppDataRepository @Inject constructor(
         excludedMovies: Set<UUID>
     ): AfinityMovie? {
         try {
-            val recentWatched = jellyfinRepository.getMovies(
-                sortBy = SortBy.DATE_PLAYED,
-                sortDescending = true,
-                limit = 10,
-                isPlayed = true
-            ).filterNot { it.id in excludedMovies }
+            val now = System.currentTimeMillis()
+            val cached = recentWatchedCache
+
+            val allRecentWatched = if (cached != null && now - cached.first < RECENT_WATCHED_CACHE_TTL) {
+                Timber.d("Using cached recently watched movies")
+                cached.second
+            } else {
+                Timber.d("Fetching recently watched movies from API")
+                val movies = jellyfinRepository.getMovies(
+                    sortBy = SortBy.DATE_PLAYED,
+                    sortDescending = true,
+                    limit = 10,
+                    isPlayed = true
+                )
+                recentWatchedCache = now to movies
+                movies
+            }
+
+            val recentWatched = allRecentWatched.filterNot { it.id in excludedMovies }
 
             if (recentWatched.isEmpty()) {
                 Timber.d("No recent watched movies found (excluded=${excludedMovies.size})")
