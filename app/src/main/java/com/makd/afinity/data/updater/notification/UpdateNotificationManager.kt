@@ -18,7 +18,8 @@ import javax.inject.Singleton
 class UpdateNotificationManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val notificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     companion object {
         private const val CHANNEL_ID = "app_updates"
@@ -48,7 +49,8 @@ class UpdateNotificationManager @Inject constructor(
     fun showUpdateAvailableNotification(release: GitHubRelease) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
                 return
             }
         }

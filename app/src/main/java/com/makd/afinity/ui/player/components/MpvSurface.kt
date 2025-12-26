@@ -29,7 +29,12 @@ fun MpvSurface(
                         Timber.d("MPV surface created and attached")
                     }
 
-                    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+                    override fun surfaceChanged(
+                        holder: SurfaceHolder,
+                        format: Int,
+                        width: Int,
+                        height: Int
+                    ) {
                         MPVLib.setPropertyString("android-surface-size", "${width}x$height")
                         Timber.d("MPV surface changed: ${width}x${height}")
                     }

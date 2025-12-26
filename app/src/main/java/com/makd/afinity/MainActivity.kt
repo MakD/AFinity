@@ -48,8 +48,10 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject
     lateinit var preferencesRepository: PreferencesRepository
+
     @Inject
     lateinit var updateManager: UpdateManager
+
     @Inject
     lateinit var offlineModeManager: OfflineModeManager
 
@@ -73,7 +75,8 @@ class MainActivity : ComponentActivity() {
                 themeMode = themeMode,
                 dynamicColor = dynamicColors
             ) {
-                val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+                val windowInsetsController =
+                    WindowCompat.getInsetsController(window, window.decorView)
                 val mode = ThemeMode.fromString(themeMode)
                 val systemInDarkTheme = isSystemInDarkTheme()
 

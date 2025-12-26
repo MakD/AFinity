@@ -156,13 +156,59 @@ fun LibraryContentScreen(
                 }
 
                 lazyPagingItems.itemCount == 0 && lazyPagingItems.loadState.refresh !is LoadState.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        EmptyLibraryMessage()
+                    val selectedLetter = uiState.selectedLetter
+                    if (selectedLetter != null) {
+                        Row(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxSize()
+                                    .padding(top = 16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                EmptyLetterFilterMessage(
+                                    letter = selectedLetter,
+                                    onClearFilter = { viewModel.clearLetterFilter() }
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier.fillMaxHeight(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AlphabetScroller(
+                                    onLetterSelected = { letter ->
+                                        Timber.d("Alphabet scroll: Letter '$letter' selected")
+                                        viewModel.scrollToLetter(letter)
+                                    },
+                                    modifier = Modifier
+                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                                )
+                            }
+                        }
+                    } else if (uiState.currentFilter != FilterType.ALL) {
+                        // Filter active with no results
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            EmptyFilterMessage(
+                                filterType = uiState.currentFilter,
+                                onClearFilter = { viewModel.updateFilter(FilterType.ALL) }
+                            )
+                        }
+                    } else {
+                        // Truly empty library
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            EmptyLibraryMessage()
+                        }
                     }
                 }
 
@@ -424,7 +470,7 @@ private fun MediaItemGridCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_circle_check),
+                                painter = painterResource(id = R.drawable.ic_check),
                                 contentDescription = "Watched",
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(16.dp)
@@ -626,6 +672,76 @@ private fun EmptyLibraryMessage(
 }
 
 @Composable
+private fun EmptyLetterFilterMessage(
+    letter: String,
+    onClearFilter: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "No items found",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = "No content starting with \"$letter\"",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Button(onClick = onClearFilter) {
+            Text("Show All")
+        }
+    }
+}
+
+@Composable
+private fun EmptyFilterMessage(
+    filterType: FilterType,
+    onClearFilter: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val filterMessage = when (filterType) {
+        FilterType.WATCHED -> "No watched items found"
+        FilterType.UNWATCHED -> "No unwatched items found"
+        FilterType.WATCHLIST -> "No items in your watchlist"
+        FilterType.FAVORITES -> "No favorite items found"
+        FilterType.ALL -> "No items found"
+    }
+
+    Column(
+        modifier = modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "No items found",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = filterMessage,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Button(onClick = onClearFilter) {
+            Text("Clear Filter")
+        }
+    }
+}
+
+@Composable
 private fun SortDialog(
     onDismiss: () -> Unit,
     onSortSelected: (SortBy, Boolean) -> Unit
@@ -758,9 +874,7 @@ private fun FilterRow(
             FilterChip(
                 selected = currentFilter == filterType,
                 onClick = {
-                    if (filterType != FilterType.WATCHLIST) {
-                        onFilterSelected(filterType)
-                    }
+                    onFilterSelected(filterType)
                 },
                 label = { Text(label) },
                 leadingIcon = if (currentFilter == filterType) {
@@ -769,6 +883,16 @@ private fun FilterRow(
                             {
                                 Icon(
                                     painterResource(id = R.drawable.ic_favorite_filled),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        FilterType.WATCHLIST -> {
+                            {
+                                Icon(
+                                    painterResource(id = R.drawable.ic_bookmark_filled),
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )

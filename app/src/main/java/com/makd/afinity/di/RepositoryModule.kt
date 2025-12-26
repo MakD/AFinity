@@ -99,6 +99,7 @@ abstract class RepositoryModule {
         fun provideWorkManager(@ApplicationContext context: Context): WorkManager {
             return WorkManager.getInstance(context)
         }
+
         @Provides
         @Singleton
         fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {

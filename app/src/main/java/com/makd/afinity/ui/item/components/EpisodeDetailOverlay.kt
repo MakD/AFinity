@@ -210,7 +210,9 @@ fun EpisodeDetailOverlay(
                 }
                 IconButton(onClick = onToggleWatchlist) {
                     Icon(
-                        painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(id = R.drawable.ic_bookmark),
+                        painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
+                            id = R.drawable.ic_bookmark
+                        ),
                         contentDescription = "Watchlist",
                         tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp)
@@ -219,7 +221,9 @@ fun EpisodeDetailOverlay(
 
                 IconButton(onClick = onToggleFavorite) {
                     Icon(
-                        painter = if (episode.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(id = R.drawable.ic_favorite),
+                        painter = if (episode.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
+                            id = R.drawable.ic_favorite
+                        ),
                         contentDescription = "Favorite",
                         tint = if (episode.favorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp)
@@ -228,7 +232,9 @@ fun EpisodeDetailOverlay(
 
                 IconButton(onClick = onToggleWatched) {
                     Icon(
-                        painter = if (episode.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(id = R.drawable.ic_circle_check_outline),
+                        painter = if (episode.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
+                            id = R.drawable.ic_circle_check_outline
+                        ),
                         contentDescription = "Watched",
                         tint = if (episode.played) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp)

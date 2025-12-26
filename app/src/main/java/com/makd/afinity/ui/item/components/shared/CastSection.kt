@@ -81,12 +81,12 @@ private fun CastMemberCard(
     Column(
         modifier = Modifier
             .width(100.dp)
-            .clickable (
+            .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
             ) {
                 onPersonClick(person.id)
-              },
+            },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {

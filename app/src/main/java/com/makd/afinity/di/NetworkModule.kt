@@ -83,7 +83,10 @@ object NetworkModule {
 
         if (BuildConfig.DEBUG) {
             val loggingInterceptor = HttpLoggingInterceptor { message ->
-                if (message.contains("ERROR") || message.contains("FAILED") || message.contains("-->") || message.contains("<--")) {
+                if (message.contains("ERROR") || message.contains("FAILED") || message.contains("-->") || message.contains(
+                        "<--"
+                    )
+                ) {
                     Timber.tag("Jellyfin-HTTP").d(message)
                 }
             }.apply {
@@ -127,7 +130,10 @@ object NetworkModule {
 
         if (BuildConfig.DEBUG) {
             val loggingInterceptor = HttpLoggingInterceptor { message ->
-                if (message.contains("ERROR") || message.contains("FAILED") || message.contains("-->") || message.contains("<--")) {
+                if (message.contains("ERROR") || message.contains("FAILED") || message.contains("-->") || message.contains(
+                        "<--"
+                    )
+                ) {
                     Timber.tag("Download-HTTP").d(message)
                 }
             }.apply {

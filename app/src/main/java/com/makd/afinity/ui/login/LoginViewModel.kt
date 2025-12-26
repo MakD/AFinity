@@ -107,9 +107,7 @@ class LoginViewModel @Inject constructor(
 
             try {
                 Timber.d("Validating Jellyfin server at: $url")
-                val validationResult = jellyfinRepository.validateServer(url)
-
-                when (validationResult) {
+                when (val validationResult = jellyfinRepository.validateServer(url)) {
                     is JellyfinServerRepository.ServerConnectionResult.Success -> {
                         Timber.d("Server validation successful for: $url")
 
@@ -218,6 +216,7 @@ class LoginViewModel @Inject constructor(
                         )
                         Timber.d("Successfully logged in user: ${currentState.username}")
                     }
+
                     is AuthRepository.AuthResult.Error -> {
                         _uiState.value = _uiState.value.copy(
                             isLoggingIn = false,
@@ -279,9 +278,7 @@ class LoginViewModel @Inject constructor(
 
                 val state = authRepository.getQuickConnectState(secret)
                 if (state?.authenticated == true) {
-                    val result = authRepository.authenticateWithQuickConnect(secret)
-
-                    when (result) {
+                    when (val result = authRepository.authenticateWithQuickConnect(secret)) {
                         is AuthRepository.AuthResult.Success -> {
                             _uiState.value = _uiState.value.copy(
                                 isLoggingIn = false,
@@ -292,6 +289,7 @@ class LoginViewModel @Inject constructor(
                             Timber.d("Successfully authenticated with QuickConnect")
                             return
                         }
+
                         is AuthRepository.AuthResult.Error -> {
                             _uiState.value = _uiState.value.copy(
                                 isLoggingIn = false,

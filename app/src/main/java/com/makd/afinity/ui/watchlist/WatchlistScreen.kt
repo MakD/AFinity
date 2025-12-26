@@ -196,6 +196,7 @@ private fun WatchlistSection(
                             onClick = { onItemClick(item) }
                         )
                     }
+
                     else -> {
                         MediaItemCard(
                             item = item,

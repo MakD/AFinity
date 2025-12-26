@@ -54,49 +54,72 @@ fun MetadataRow(
                 ) {
                     val source = item.sources.firstOrNull()
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.let { videoStream ->
-                        val resolution = when {
-                            (videoStream.height ?: 0) <= 2160 && (videoStream.width ?: 0) <= 3840 &&
-                                    ((videoStream.height ?: 0) > 1080 || (videoStream.width ?: 0) > 1920) -> "4K"
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                        ?.let { videoStream ->
+                            val resolution = when {
+                                (videoStream.height ?: 0) <= 2160 && (videoStream.width
+                                    ?: 0) <= 3840 &&
+                                        ((videoStream.height ?: 0) > 1080 || (videoStream.width
+                                            ?: 0) > 1920) -> "4K"
 
-                            (videoStream.height ?: 0) <= 1080 && (videoStream.width ?: 0) <= 1920 &&
-                                    ((videoStream.height ?: 0) > 720 || (videoStream.width ?: 0) > 1280) -> "HD"
+                                (videoStream.height ?: 0) <= 1080 && (videoStream.width
+                                    ?: 0) <= 1920 &&
+                                        ((videoStream.height ?: 0) > 720 || (videoStream.width
+                                            ?: 0) > 1280) -> "HD"
 
-                            else -> "SD"
+                                else -> "SD"
+                            }
+
+                            VideoMetadataChip(text = resolution)
                         }
 
-                        VideoMetadataChip(text = resolution)
-                    }
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.codec?.takeIf { it.isNotEmpty() }
+                        ?.let { codec ->
+                            VideoMetadataChip(text = codec.uppercase())
+                        }
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.codec?.takeIf { it.isNotEmpty() }?.let { codec ->
-                        VideoMetadataChip(text = codec.uppercase())
-                    }
-
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.let { videoStream ->
-                        if (videoStream.videoDoViTitle != null) {
-                            VideoMetadataChipWithIcon(text = "Vision", iconRes = R.drawable.ic_dolby)
-                        } else {
-                            videoStream.videoRangeType?.let { rangeType ->
-                                val hdrType = when (rangeType.name) {
-                                    "HDR10" -> "HDR10"
-                                    "HDR10Plus" -> "HDR10+"
-                                    "HLG" -> "HLG"
-                                    else -> null
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                        ?.let { videoStream ->
+                            if (videoStream.videoDoViTitle != null) {
+                                VideoMetadataChipWithIcon(
+                                    text = "Vision",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+                            } else {
+                                videoStream.videoRangeType?.let { rangeType ->
+                                    val hdrType = when (rangeType.name) {
+                                        "HDR10" -> "HDR10"
+                                        "HDR10Plus" -> "HDR10+"
+                                        "HLG" -> "HLG"
+                                        else -> null
+                                    }
+                                    hdrType?.let { VideoMetadataChip(text = it) }
                                 }
-                                hdrType?.let { VideoMetadataChip(text = it) }
                             }
                         }
-                    }
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.codec?.takeIf { it.isNotEmpty() }?.let { codec ->
-                        when (codec.lowercase()) {
-                            "ac3" -> VideoMetadataChipWithIcon(text = "Digital", iconRes = R.drawable.ic_dolby)
-                            "eac3" -> VideoMetadataChipWithIcon(text = "Digital+", iconRes = R.drawable.ic_dolby)
-                            "truehd" -> VideoMetadataChipWithIcon(text = "TrueHD", iconRes = R.drawable.ic_dolby)
-                            "dts" -> VideoMetadataChip(text = "DTS")
-                            else -> VideoMetadataChip(text = codec.uppercase())
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.codec?.takeIf { it.isNotEmpty() }
+                        ?.let { codec ->
+                            when (codec.lowercase()) {
+                                "ac3" -> VideoMetadataChipWithIcon(
+                                    text = "Digital",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+
+                                "eac3" -> VideoMetadataChipWithIcon(
+                                    text = "Digital+",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+
+                                "truehd" -> VideoMetadataChipWithIcon(
+                                    text = "TrueHD",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+
+                                "dts" -> VideoMetadataChip(text = "DTS")
+                                else -> VideoMetadataChip(text = codec.uppercase())
+                            }
                         }
-                    }
 
                     source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.channelLayout?.let { layout ->
                         val channels = when {
@@ -109,7 +132,8 @@ fun MetadataRow(
                         channels?.let { VideoMetadataChip(text = it) }
                     }
 
-                    val hasSubtitles = source?.mediaStreams?.any { it.type == MediaStreamType.SUBTITLE } == true
+                    val hasSubtitles =
+                        source?.mediaStreams?.any { it.type == MediaStreamType.SUBTITLE } == true
 
                     if (hasSubtitles) {
                         VideoMetadataChip(text = "CC")
@@ -120,12 +144,15 @@ fun MetadataRow(
             Spacer(modifier = Modifier.height(2.dp))
 
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp, horizontalAlignment),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
                 verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
                 modifier = Modifier.fillMaxWidth()
             ) {
+                var needsSeparator = false
+
                 if (item !is AfinityBoxSet && item.playbackPositionTicks > 0 && item.runtimeTicks > 0) {
-                    val progress = item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()
+                    val progress =
+                        item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()
                     val remainingTicks = item.runtimeTicks - item.playbackPositionTicks
                     val remainingHours = (remainingTicks / 10_000_000 / 3600).toInt()
                     val remainingMinutes = ((remainingTicks / 10_000_000 % 3600) / 60).toInt()
@@ -156,6 +183,7 @@ fun MetadataRow(
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                         )
                     }
+                    needsSeparator = true
                 }
 
                 if (item is AfinityBoxSet) {
@@ -167,6 +195,7 @@ fun MetadataRow(
                             ),
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                         )
+                        needsSeparator = true
                     }
                 }
 
@@ -178,6 +207,8 @@ fun MetadataRow(
                 }
 
                 communityRating?.let { imdbRating ->
+                    if (needsSeparator) MetadataDot()
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -196,6 +227,7 @@ fun MetadataRow(
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                         )
                     }
+                    needsSeparator = true
                 }
 
                 val criticRating = when (item) {
@@ -204,6 +236,8 @@ fun MetadataRow(
                 }
 
                 criticRating?.let { rtRating ->
+                    if (needsSeparator) MetadataDot()
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -228,6 +262,7 @@ fun MetadataRow(
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                         )
                     }
+                    needsSeparator = true
                 }
 
                 when (item) {
@@ -236,6 +271,8 @@ fun MetadataRow(
                     is AfinityBoxSet -> item.productionYear?.toString()
                     else -> null
                 }?.let { year ->
+                    if (needsSeparator) MetadataDot()
+
                     Text(
                         text = year,
                         style = MaterialTheme.typography.bodyMedium.copy(
@@ -243,6 +280,7 @@ fun MetadataRow(
                         ),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                     )
+                    needsSeparator = true
                 }
 
                 if (item !is AfinityBoxSet && item.runtimeTicks > 0) {
@@ -251,6 +289,8 @@ fun MetadataRow(
 
                     val runtimeText = if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 
+                    if (needsSeparator) MetadataDot()
+
                     Text(
                         text = runtimeText,
                         style = MaterialTheme.typography.bodyMedium.copy(
@@ -258,6 +298,7 @@ fun MetadataRow(
                         ),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                     )
+                    needsSeparator = true
                 }
 
                 when (item) {
@@ -266,6 +307,8 @@ fun MetadataRow(
                     is AfinityBoxSet -> item.officialRating
                     else -> null
                 }?.let { rating ->
+                    if (needsSeparator) MetadataDot()
+
                     Text(
                         text = rating,
                         style = MaterialTheme.typography.bodyMedium.copy(
@@ -273,6 +316,7 @@ fun MetadataRow(
                         ),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                     )
+                    needsSeparator = true
                 }
 
                 val genres = when (item) {
@@ -283,6 +327,8 @@ fun MetadataRow(
                 }
 
                 if (genres.isNotEmpty()) {
+                    if (needsSeparator) MetadataDot()
+
                     Text(
                         text = genres.take(2).joinToString(", "),
                         style = MaterialTheme.typography.bodyMedium.copy(
@@ -301,49 +347,72 @@ fun MetadataRow(
                 ) {
                     val source = item.sources.firstOrNull()
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.let { videoStream ->
-                        val resolution = when {
-                            (videoStream.height ?: 0) <= 2160 && (videoStream.width ?: 0) <= 3840 &&
-                                    ((videoStream.height ?: 0) > 1080 || (videoStream.width ?: 0) > 1920) -> "4K"
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                        ?.let { videoStream ->
+                            val resolution = when {
+                                (videoStream.height ?: 0) <= 2160 && (videoStream.width
+                                    ?: 0) <= 3840 &&
+                                        ((videoStream.height ?: 0) > 1080 || (videoStream.width
+                                            ?: 0) > 1920) -> "4K"
 
-                            (videoStream.height ?: 0) <= 1080 && (videoStream.width ?: 0) <= 1920 &&
-                                    ((videoStream.height ?: 0) > 720 || (videoStream.width ?: 0) > 1280) -> "HD"
+                                (videoStream.height ?: 0) <= 1080 && (videoStream.width
+                                    ?: 0) <= 1920 &&
+                                        ((videoStream.height ?: 0) > 720 || (videoStream.width
+                                            ?: 0) > 1280) -> "HD"
 
-                            else -> "SD"
+                                else -> "SD"
+                            }
+
+                            VideoMetadataChip(text = resolution)
                         }
 
-                        VideoMetadataChip(text = resolution)
-                    }
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.codec?.takeIf { it.isNotEmpty() }
+                        ?.let { codec ->
+                            VideoMetadataChip(text = codec.uppercase())
+                        }
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.codec?.takeIf { it.isNotEmpty() }?.let { codec ->
-                        VideoMetadataChip(text = codec.uppercase())
-                    }
-
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.let { videoStream ->
-                        if (videoStream.videoDoViTitle != null) {
-                            VideoMetadataChipWithIcon(text = "Vision", iconRes = R.drawable.ic_dolby)
-                        } else {
-                            videoStream.videoRangeType?.let { rangeType ->
-                                val hdrType = when (rangeType.name) {
-                                    "HDR10" -> "HDR10"
-                                    "HDR10Plus" -> "HDR10+"
-                                    "HLG" -> "HLG"
-                                    else -> null
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                        ?.let { videoStream ->
+                            if (videoStream.videoDoViTitle != null) {
+                                VideoMetadataChipWithIcon(
+                                    text = "Vision",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+                            } else {
+                                videoStream.videoRangeType?.let { rangeType ->
+                                    val hdrType = when (rangeType.name) {
+                                        "HDR10" -> "HDR10"
+                                        "HDR10Plus" -> "HDR10+"
+                                        "HLG" -> "HLG"
+                                        else -> null
+                                    }
+                                    hdrType?.let { VideoMetadataChip(text = it) }
                                 }
-                                hdrType?.let { VideoMetadataChip(text = it) }
                             }
                         }
-                    }
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.codec?.takeIf { it.isNotEmpty() }?.let { codec ->
-                        when (codec.lowercase()) {
-                            "ac3" -> VideoMetadataChipWithIcon(text = "Digital", iconRes = R.drawable.ic_dolby)
-                            "eac3" -> VideoMetadataChipWithIcon(text = "Digital+", iconRes = R.drawable.ic_dolby)
-                            "truehd" -> VideoMetadataChipWithIcon(text = "TrueHD", iconRes = R.drawable.ic_dolby)
-                            "dts" -> VideoMetadataChip(text = "DTS")
-                            else -> VideoMetadataChip(text = codec.uppercase())
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.codec?.takeIf { it.isNotEmpty() }
+                        ?.let { codec ->
+                            when (codec.lowercase()) {
+                                "ac3" -> VideoMetadataChipWithIcon(
+                                    text = "Digital",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+
+                                "eac3" -> VideoMetadataChipWithIcon(
+                                    text = "Digital+",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+
+                                "truehd" -> VideoMetadataChipWithIcon(
+                                    text = "TrueHD",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+
+                                "dts" -> VideoMetadataChip(text = "DTS")
+                                else -> VideoMetadataChip(text = codec.uppercase())
+                            }
                         }
-                    }
 
                     source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.channelLayout?.let { layout ->
                         val channels = when {
@@ -356,7 +425,8 @@ fun MetadataRow(
                         channels?.let { VideoMetadataChip(text = it) }
                     }
 
-                    val hasSubtitles = source?.mediaStreams?.any { it.type == MediaStreamType.SUBTITLE } == true
+                    val hasSubtitles =
+                        source?.mediaStreams?.any { it.type == MediaStreamType.SUBTITLE } == true
 
                     if (hasSubtitles) {
                         VideoMetadataChip(text = "CC")
@@ -367,12 +437,15 @@ fun MetadataRow(
             Spacer(modifier = Modifier.height(2.dp))
 
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp, horizontalAlignment),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
                 verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
                 modifier = Modifier.fillMaxWidth()
             ) {
+                var needsSeparator = false
+
                 if (item !is AfinityBoxSet && item.playbackPositionTicks > 0 && item.runtimeTicks > 0) {
-                    val progress = item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()
+                    val progress =
+                        item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()
                     val remainingTicks = item.runtimeTicks - item.playbackPositionTicks
                     val remainingHours = (remainingTicks / 10_000_000 / 3600).toInt()
                     val remainingMinutes = ((remainingTicks / 10_000_000 % 3600) / 60).toInt()
@@ -403,6 +476,7 @@ fun MetadataRow(
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                         )
                     }
+                    needsSeparator = true
                 }
 
                 if (item is AfinityBoxSet) {
@@ -414,6 +488,7 @@ fun MetadataRow(
                             ),
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                         )
+                        needsSeparator = true
                     }
                 }
 
@@ -425,6 +500,8 @@ fun MetadataRow(
                 }
 
                 communityRating?.let { imdbRating ->
+                    if (needsSeparator) MetadataDot()
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -443,6 +520,7 @@ fun MetadataRow(
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                         )
                     }
+                    needsSeparator = true
                 }
 
                 val criticRating = when (item) {
@@ -451,6 +529,8 @@ fun MetadataRow(
                 }
 
                 criticRating?.let { rtRating ->
+                    if (needsSeparator) MetadataDot()
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -475,6 +555,7 @@ fun MetadataRow(
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                         )
                     }
+                    needsSeparator = true
                 }
 
                 when (item) {
@@ -483,6 +564,8 @@ fun MetadataRow(
                     is AfinityBoxSet -> item.productionYear?.toString()
                     else -> null
                 }?.let { year ->
+                    if (needsSeparator) MetadataDot()
+
                     Text(
                         text = year,
                         style = MaterialTheme.typography.bodyMedium.copy(
@@ -490,6 +573,7 @@ fun MetadataRow(
                         ),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                     )
+                    needsSeparator = true
                 }
 
                 if (item !is AfinityBoxSet && item.runtimeTicks > 0) {
@@ -498,6 +582,8 @@ fun MetadataRow(
 
                     val runtimeText = if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 
+                    if (needsSeparator) MetadataDot()
+
                     Text(
                         text = runtimeText,
                         style = MaterialTheme.typography.bodyMedium.copy(
@@ -505,6 +591,7 @@ fun MetadataRow(
                         ),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                     )
+                    needsSeparator = true
                 }
 
                 when (item) {
@@ -513,6 +600,8 @@ fun MetadataRow(
                     is AfinityBoxSet -> item.officialRating
                     else -> null
                 }?.let { rating ->
+                    if (needsSeparator) MetadataDot()
+
                     Text(
                         text = rating,
                         style = MaterialTheme.typography.bodyMedium.copy(
@@ -520,6 +609,7 @@ fun MetadataRow(
                         ),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
                     )
+                    needsSeparator = true
                 }
 
                 val genres = when (item) {
@@ -530,6 +620,8 @@ fun MetadataRow(
                 }
 
                 if (genres.isNotEmpty()) {
+                    if (needsSeparator) MetadataDot()
+
                     Text(
                         text = genres.take(2).joinToString(", "),
                         style = MaterialTheme.typography.bodyMedium.copy(
@@ -541,6 +633,17 @@ fun MetadataRow(
             }
         }
     }
+}
+
+@Composable
+private fun MetadataDot() {
+    Text(
+        text = "•",
+        style = MaterialTheme.typography.bodyMedium.copy(
+            fontWeight = FontWeight.SemiBold
+        ),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+    )
 }
 
 @Composable
@@ -576,7 +679,9 @@ private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
             painter = painterResource(id = iconRes),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.size(11.dp)
+            modifier = Modifier
+                .size(16.dp)
+                .padding(bottom = 1.dp)
         )
         Text(
             text = text,

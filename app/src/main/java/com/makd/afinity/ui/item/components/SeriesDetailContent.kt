@@ -99,7 +99,9 @@ internal fun OverviewSection(item: AfinityItem) {
                     )
 
                     Icon(
-                        painter = if (isExpanded) painterResource(id = R.drawable.ic_keyboard_arrow_up) else painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                        painter = if (isExpanded) painterResource(id = R.drawable.ic_keyboard_arrow_up) else painterResource(
+                            id = R.drawable.ic_keyboard_arrow_down
+                        ),
                         contentDescription = if (isExpanded) "Collapse" else "Expand",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
@@ -134,8 +136,8 @@ internal fun TaglineSection(item: AfinityItem) {
 @Composable
 internal fun DirectorSection(item: AfinityItem) {
     val directors = when (item) {
-        is AfinityMovie -> item.people.filter { it.type == PersonKind.DIRECTOR}
-        is AfinityShow -> item.people.filter { it.type == PersonKind.DIRECTOR}
+        is AfinityMovie -> item.people.filter { it.type == PersonKind.DIRECTOR }
+        is AfinityShow -> item.people.filter { it.type == PersonKind.DIRECTOR }
         else -> emptyList()
     }
 
@@ -153,8 +155,8 @@ internal fun DirectorSection(item: AfinityItem) {
 @Composable
 internal fun WriterSection(item: AfinityItem) {
     val writers = when (item) {
-        is AfinityMovie -> item.people.filter { it.type == PersonKind.WRITER}
-        is AfinityShow -> item.people.filter { it.type == PersonKind.WRITER}
+        is AfinityMovie -> item.people.filter { it.type == PersonKind.WRITER }
+        is AfinityShow -> item.people.filter { it.type == PersonKind.WRITER }
         else -> emptyList()
     }
 
@@ -202,7 +204,6 @@ internal fun SeasonsSection(
         }
     }
 }
-
 
 
 @Composable

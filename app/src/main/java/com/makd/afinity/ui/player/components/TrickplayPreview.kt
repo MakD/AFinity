@@ -47,7 +47,6 @@ fun TrickplayPreview(
 
                 val seekBarPadding = 16.dp
                 val seekBarWidth = screenWidth - (seekBarPadding * 2)
-                val seekBarStartX = seekBarPadding
 
                 val progress = if (durationMs > 0) {
                     (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
@@ -55,7 +54,7 @@ fun TrickplayPreview(
                     0f
                 }
 
-                val targetX = seekBarStartX + (seekBarWidth * progress)
+                val targetX = seekBarPadding + (seekBarWidth * progress)
 
                 val constrainedX = when {
                     targetX - previewWidth / 2 < 0.dp -> previewWidth / 2

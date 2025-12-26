@@ -122,6 +122,7 @@ fun SearchScreen(
                         onGenreClick = onGenreClick
                     )
                 }
+
                 uiState.isSearching -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -130,12 +131,14 @@ fun SearchScreen(
                         CircularProgressIndicator()
                     }
                 }
+
                 uiState.searchResults.isNotEmpty() -> {
                     SearchResultsContent(
                         results = uiState.searchResults,
                         onItemClick = onItemClick
                     )
                 }
+
                 else -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),

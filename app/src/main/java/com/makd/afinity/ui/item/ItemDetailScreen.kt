@@ -334,13 +334,15 @@ private fun LandscapeItemDetailContent(
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val statusBarHeight = WindowInsets.statusBars.getTop(density)
-    val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, androidx.compose.ui.unit.LayoutDirection.Ltr)
+    val displayCutoutLeft =
+        WindowInsets.displayCutout.getLeft(density, androidx.compose.ui.unit.LayoutDirection.Ltr)
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
         val backdropUrl = if (item is AfinitySeason) {
-            item.images.backdropImageUrl ?: item.images.showBackdropImageUrl ?: item.images.primaryImageUrl
+            item.images.backdropImageUrl ?: item.images.showBackdropImageUrl
+            ?: item.images.primaryImageUrl
         } else {
             item.images.backdropImageUrl ?: item.images.primaryImageUrl
         }
@@ -435,7 +437,8 @@ private fun LandscapeItemDetailContent(
 
                     val mediaSourceOptions = remember(item) {
                         item.sources.mapIndexed { index, source ->
-                            val videoStream = source.mediaStreams.firstOrNull { it.type == MediaStreamType.VIDEO }
+                            val videoStream =
+                                source.mediaStreams.firstOrNull { it.type == MediaStreamType.VIDEO }
 
                             val resolution = when {
                                 (videoStream?.height ?: 0) > 2160 -> "8K"
@@ -509,6 +512,7 @@ private fun LandscapeItemDetailContent(
                                                     Text("Loading...")
                                                 }
                                             }
+
                                             else -> {
                                                 val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
@@ -516,9 +520,11 @@ private fun LandscapeItemDetailContent(
                                                         "Rewatch" to painterResource(id = R.drawable.ic_replay)
 
                                                     }
+
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
                                                         "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
+
                                                     else -> {
                                                         "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
@@ -534,9 +540,12 @@ private fun LandscapeItemDetailContent(
                                                             return@PlaybackSelectionButton
                                                         }
 
-                                                        val mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull {
-                                                            it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                                                        }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+                                                        val mediaSourceId = selectedMediaSource?.id
+                                                            ?: episode.sources.firstOrNull {
+                                                                it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                                                            }?.id
+                                                            ?: episode.sources.firstOrNull()?.id
+                                                            ?: ""
 
                                                         val finalSelection = selection.copy(
                                                             mediaSourceId = mediaSourceId,
@@ -559,6 +568,7 @@ private fun LandscapeItemDetailContent(
                                             }
                                         }
                                     }
+
                                     is AfinitySeason -> {
                                         when {
                                             nextEpisode == null -> {
@@ -578,15 +588,18 @@ private fun LandscapeItemDetailContent(
                                                     Text("Loading...")
                                                 }
                                             }
+
                                             else -> {
                                                 val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
                                                         "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                                     }
+
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
                                                         "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
+
                                                     else -> {
                                                         "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
@@ -602,9 +615,12 @@ private fun LandscapeItemDetailContent(
                                                             return@PlaybackSelectionButton
                                                         }
 
-                                                        val mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull {
-                                                            it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                                                        }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+                                                        val mediaSourceId = selectedMediaSource?.id
+                                                            ?: episode.sources.firstOrNull {
+                                                                it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                                                            }?.id
+                                                            ?: episode.sources.firstOrNull()?.id
+                                                            ?: ""
 
                                                         val finalSelection = selection.copy(
                                                             mediaSourceId = mediaSourceId,
@@ -627,14 +643,17 @@ private fun LandscapeItemDetailContent(
                                             }
                                         }
                                     }
+
                                     else -> {
                                         val (buttonText, buttonIcon) = when {
                                             item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
                                                 "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                             }
+
                                             item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
                                                 "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
+
                                             else -> {
                                                 "Watch Now" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
@@ -646,7 +665,8 @@ private fun LandscapeItemDetailContent(
                                             buttonIcon = buttonIcon,
                                             onPlayClick = { selection ->
                                                 val finalSelection = selection.copy(
-                                                    mediaSourceId = selectedMediaSource?.id ?: selection.mediaSourceId
+                                                    mediaSourceId = selectedMediaSource?.id
+                                                        ?: selection.mediaSourceId
                                                 )
                                                 com.makd.afinity.ui.player.PlayerLauncher.launch(
                                                     context = navController.context,
@@ -690,7 +710,9 @@ private fun LandscapeItemDetailContent(
                                 onClick = { viewModel.toggleWatchlist() }
                             ) {
                                 Icon(
-                                    painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark) else painterResource(id = R.drawable.ic_bookmark_filled),
+                                    painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
+                                        id = R.drawable.ic_bookmark
+                                    ),
                                     contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -701,7 +723,9 @@ private fun LandscapeItemDetailContent(
                                 onClick = { viewModel.toggleFavorite() }
                             ) {
                                 Icon(
-                                    painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(id = R.drawable.ic_favorite),
+                                    painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
+                                        id = R.drawable.ic_favorite
+                                    ),
                                     contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
                                     tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -712,7 +736,9 @@ private fun LandscapeItemDetailContent(
                                 onClick = { viewModel.toggleWatched() }
                             ) {
                                 Icon(
-                                    painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(id = R.drawable.ic_circle_check_outline),
+                                    painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
+                                        id = R.drawable.ic_circle_check_outline
+                                    ),
                                     contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
                                     tint = if (item.played) {
                                         Color.Green
@@ -754,11 +780,12 @@ private fun LandscapeItemDetailContent(
                                     return@SeriesDetailContent
                                 }
                                 val mediaSourceId = clickedEpisode.sources.firstOrNull()?.id ?: ""
-                                val startPositionMs = if (clickedEpisode.playbackPositionTicks > 0) {
-                                    clickedEpisode.playbackPositionTicks / 10000
-                                } else {
-                                    0L
-                                }
+                                val startPositionMs =
+                                    if (clickedEpisode.playbackPositionTicks > 0) {
+                                        clickedEpisode.playbackPositionTicks / 10000
+                                    } else {
+                                        0L
+                                    }
                                 com.makd.afinity.ui.player.PlayerLauncher.launch(
                                     context = navController.context,
                                     itemId = clickedEpisode.id,
@@ -769,7 +796,8 @@ private fun LandscapeItemDetailContent(
                                 )
                             },
                             onSpecialFeatureClick = { specialFeature ->
-                                val route = Destination.createItemDetailRoute(specialFeature.id.toString())
+                                val route =
+                                    Destination.createItemDetailRoute(specialFeature.id.toString())
                                 navController.navigate(route)
                             },
                             navController = navController
@@ -824,7 +852,8 @@ private fun LandscapeItemDetailContent(
                         SimilarItemsSection(
                             items = similarItems,
                             onItemClick = { similarItem ->
-                                val route = Destination.createItemDetailRoute(similarItem.id.toString())
+                                val route =
+                                    Destination.createItemDetailRoute(similarItem.id.toString())
                                 navController.navigate(route)
                             }
                         )
@@ -900,8 +929,10 @@ private fun PortraitItemDetailContent(
                 }
 
                 if (logoToDisplay != null) {
-                    val logoAlignment = if (isLandscape) Alignment.Start else Alignment.CenterHorizontally
-                    val logoContentAlignment = if (isLandscape) Alignment.CenterStart else Alignment.Center
+                    val logoAlignment =
+                        if (isLandscape) Alignment.Start else Alignment.CenterHorizontally
+                    val logoContentAlignment =
+                        if (isLandscape) Alignment.CenterStart else Alignment.Center
 
                     OptimizedAsyncImage(
                         imageUrl = logoUrlToDisplay,
@@ -938,7 +969,8 @@ private fun PortraitItemDetailContent(
 
                 val mediaSourceOptions = remember(item) {
                     item.sources.mapIndexed { index, source ->
-                        val videoStream = source.mediaStreams.firstOrNull { it.type == MediaStreamType.VIDEO }
+                        val videoStream =
+                            source.mediaStreams.firstOrNull { it.type == MediaStreamType.VIDEO }
 
                         val resolution = when {
                             (videoStream?.height ?: 0) > 2160 -> "8K"
@@ -1014,15 +1046,18 @@ private fun PortraitItemDetailContent(
                                                     Text("Loading...")
                                                 }
                                             }
+
                                             else -> {
                                                 val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
                                                         "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                                     }
+
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
                                                         "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
+
                                                     else -> {
                                                         "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
@@ -1038,9 +1073,12 @@ private fun PortraitItemDetailContent(
                                                             return@PlaybackSelectionButton
                                                         }
 
-                                                        val mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull {
-                                                            it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                                                        }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+                                                        val mediaSourceId = selectedMediaSource?.id
+                                                            ?: episode.sources.firstOrNull {
+                                                                it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                                                            }?.id
+                                                            ?: episode.sources.firstOrNull()?.id
+                                                            ?: ""
 
                                                         val finalSelection = selection.copy(
                                                             mediaSourceId = mediaSourceId,
@@ -1063,6 +1101,7 @@ private fun PortraitItemDetailContent(
                                             }
                                         }
                                     }
+
                                     is AfinitySeason -> {
 
                                         when {
@@ -1083,15 +1122,18 @@ private fun PortraitItemDetailContent(
                                                     Text("Loading...")
                                                 }
                                             }
+
                                             else -> {
                                                 val episode = nextEpisode!!
                                                 val (buttonText, buttonIcon) = when {
                                                     episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
                                                         "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                                     }
+
                                                     episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
                                                         "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
+
                                                     else -> {
                                                         "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                                     }
@@ -1107,9 +1149,12 @@ private fun PortraitItemDetailContent(
                                                             return@PlaybackSelectionButton
                                                         }
 
-                                                        val mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull {
-                                                            it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                                                        }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+                                                        val mediaSourceId = selectedMediaSource?.id
+                                                            ?: episode.sources.firstOrNull {
+                                                                it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                                                            }?.id
+                                                            ?: episode.sources.firstOrNull()?.id
+                                                            ?: ""
 
                                                         val finalSelection = selection.copy(
                                                             mediaSourceId = mediaSourceId,
@@ -1132,14 +1177,17 @@ private fun PortraitItemDetailContent(
                                             }
                                         }
                                     }
+
                                     else -> {
                                         val (buttonText, buttonIcon) = when {
                                             item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
                                                 "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                             }
+
                                             item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
                                                 "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
+
                                             else -> {
                                                 "Watch Now" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
@@ -1151,7 +1199,8 @@ private fun PortraitItemDetailContent(
                                             buttonIcon = buttonIcon,
                                             onPlayClick = { selection ->
                                                 val finalSelection = selection.copy(
-                                                    mediaSourceId = selectedMediaSource?.id ?: selection.mediaSourceId
+                                                    mediaSourceId = selectedMediaSource?.id
+                                                        ?: selection.mediaSourceId
                                                 )
                                                 com.makd.afinity.ui.player.PlayerLauncher.launch(
                                                     context = navController.context,
@@ -1201,7 +1250,9 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatchlist() }
                             ) {
                                 Icon(
-                                    painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(id = R.drawable.ic_bookmark),
+                                    painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
+                                        id = R.drawable.ic_bookmark
+                                    ),
                                     contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1212,7 +1263,9 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleFavorite() }
                             ) {
                                 Icon(
-                                    painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(id = R.drawable.ic_favorite),
+                                    painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
+                                        id = R.drawable.ic_favorite
+                                    ),
                                     contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
                                     tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1223,7 +1276,9 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatched() }
                             ) {
                                 Icon(
-                                    painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(id = R.drawable.ic_circle_check_outline),
+                                    painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
+                                        id = R.drawable.ic_circle_check_outline
+                                    ),
                                     contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
                                     tint = if (item.played) {
                                         Color.Green
@@ -1267,15 +1322,18 @@ private fun PortraitItemDetailContent(
                                             Text("Loading...")
                                         }
                                     }
+
                                     else -> {
                                         val episode = nextEpisode!!
                                         val (buttonText, buttonIcon) = when {
                                             episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
                                                 "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                             }
+
                                             episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
                                                 "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
+
                                             else -> {
                                                 "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
@@ -1290,9 +1348,10 @@ private fun PortraitItemDetailContent(
                                                     Timber.w("Episode ${episode.name} has no media sources")
                                                     return@PlaybackSelectionButton
                                                 }
-                                                val mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull {
-                                                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                                                }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+                                                val mediaSourceId = selectedMediaSource?.id
+                                                    ?: episode.sources.firstOrNull {
+                                                        it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                                                    }?.id ?: episode.sources.firstOrNull()?.id ?: ""
 
                                                 val finalSelection = selection.copy(
                                                     mediaSourceId = mediaSourceId,
@@ -1315,6 +1374,7 @@ private fun PortraitItemDetailContent(
                                     }
                                 }
                             }
+
                             is AfinitySeason -> {
 
                                 when {
@@ -1335,15 +1395,18 @@ private fun PortraitItemDetailContent(
                                             Text("Loading...")
                                         }
                                     }
+
                                     else -> {
                                         val episode = nextEpisode!!
                                         val (buttonText, buttonIcon) = when {
                                             episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
                                                 "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                             }
+
                                             episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
                                                 "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
+
                                             else -> {
                                                 "Play" to painterResource(id = R.drawable.ic_play_arrow)
                                             }
@@ -1358,9 +1421,10 @@ private fun PortraitItemDetailContent(
                                                     Timber.w("Episode ${episode.name} has no media sources")
                                                     return@PlaybackSelectionButton
                                                 }
-                                                val mediaSourceId = selectedMediaSource?.id ?: episode.sources.firstOrNull {
-                                                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                                                }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+                                                val mediaSourceId = selectedMediaSource?.id
+                                                    ?: episode.sources.firstOrNull {
+                                                        it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                                                    }?.id ?: episode.sources.firstOrNull()?.id ?: ""
 
                                                 val finalSelection = selection.copy(
                                                     mediaSourceId = mediaSourceId,
@@ -1383,14 +1447,17 @@ private fun PortraitItemDetailContent(
                                     }
                                 }
                             }
+
                             else -> {
                                 val (buttonText, buttonIcon) = when {
                                     item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
                                         "Rewatch" to painterResource(id = R.drawable.ic_replay)
                                     }
+
                                     item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
                                         "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
                                     }
+
                                     else -> {
                                         "Watch Now" to painterResource(id = R.drawable.ic_play_arrow)
                                     }
@@ -1402,7 +1469,8 @@ private fun PortraitItemDetailContent(
                                     buttonIcon = buttonIcon,
                                     onPlayClick = { selection ->
                                         val finalSelection = selection.copy(
-                                            mediaSourceId = selectedMediaSource?.id ?: selection.mediaSourceId
+                                            mediaSourceId = selectedMediaSource?.id
+                                                ?: selection.mediaSourceId
                                         )
                                         com.makd.afinity.ui.player.PlayerLauncher.launch(
                                             context = navController.context,
@@ -1453,7 +1521,9 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatchlist() }
                             ) {
                                 Icon(
-                                    painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(id = R.drawable.ic_bookmark),
+                                    painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
+                                        id = R.drawable.ic_bookmark
+                                    ),
                                     contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1468,7 +1538,9 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleFavorite() }
                             ) {
                                 Icon(
-                                    painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(id = R.drawable.ic_favorite),
+                                    painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
+                                        id = R.drawable.ic_favorite
+                                    ),
                                     contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
                                     tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
@@ -1483,7 +1555,9 @@ private fun PortraitItemDetailContent(
                                 onClick = { viewModel.toggleWatched() }
                             ) {
                                 Icon(
-                                    painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(id = R.drawable.ic_circle_check_outline),
+                                    painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
+                                        id = R.drawable.ic_circle_check_outline
+                                    ),
                                     contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
                                     tint = if (item.played) {
                                         Color.Green
@@ -1545,7 +1619,8 @@ private fun PortraitItemDetailContent(
                             )
                         },
                         onSpecialFeatureClick = { specialFeature ->
-                            val route = Destination.createItemDetailRoute(specialFeature.id.toString())
+                            val route =
+                                Destination.createItemDetailRoute(specialFeature.id.toString())
                             navController.navigate(route)
                         },
                         navController = navController

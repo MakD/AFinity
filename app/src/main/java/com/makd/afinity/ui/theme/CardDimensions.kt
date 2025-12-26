@@ -40,8 +40,10 @@ fun rememberPortraitCardWidth(): Dp {
     return when {
         screenWidthDp < CardDimensions.WindowSize.COMPACT_MAX_WIDTH ->
             CardDimensions.Portrait.COMPACT
+
         screenWidthDp < CardDimensions.WindowSize.MEDIUM_MAX_WIDTH ->
             CardDimensions.Portrait.MEDIUM
+
         else ->
             CardDimensions.Portrait.EXPANDED
     }
@@ -53,8 +55,10 @@ fun rememberLandscapeCardWidth(): Dp {
     return when {
         screenWidthDp < CardDimensions.WindowSize.COMPACT_MAX_WIDTH ->
             CardDimensions.Landscape.COMPACT
+
         screenWidthDp < CardDimensions.WindowSize.MEDIUM_MAX_WIDTH ->
             CardDimensions.Landscape.MEDIUM
+
         else ->
             CardDimensions.Landscape.EXPANDED
     }
@@ -66,8 +70,10 @@ fun rememberGridMinColumnSize(): Dp {
     return when {
         screenWidthDp < CardDimensions.WindowSize.COMPACT_MAX_WIDTH ->
             CardDimensions.Grid.COMPACT
+
         screenWidthDp < CardDimensions.WindowSize.MEDIUM_MAX_WIDTH ->
             CardDimensions.Grid.MEDIUM
+
         else ->
             CardDimensions.Grid.EXPANDED
     }

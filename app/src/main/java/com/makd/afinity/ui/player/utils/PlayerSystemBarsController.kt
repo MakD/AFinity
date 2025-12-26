@@ -2,6 +2,7 @@ package com.makd.afinity.ui.player.utils
 
 import android.app.Activity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ComposableTarget
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
@@ -9,6 +10,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
+@ComposableTarget("androidx.compose.ui.UiComposable")
 @Composable
 fun PlayerSystemBarsController(
     isControlsVisible: Boolean = false
@@ -23,10 +25,12 @@ fun PlayerSystemBarsController(
 
             if (isControlsVisible) {
                 windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
-                windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                windowInsetsController.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
             } else {
                 windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-                windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                windowInsetsController.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
         }
     }
@@ -34,10 +38,12 @@ fun PlayerSystemBarsController(
         onDispose {
             activity?.let { act ->
                 val window = act.window
-                val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+                val windowInsetsController =
+                    WindowCompat.getInsetsController(window, window.decorView)
 
                 windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
-                windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                windowInsetsController.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
             }
         }
     }

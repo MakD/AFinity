@@ -25,15 +25,18 @@ fun GlobalUpdateDialog(
                 hasShownForCurrentUpdate = true
             }
         }
+
         is UpdateState.Downloaded -> {
             if (!hasShownForCurrentUpdate) {
                 showDialog = true
                 hasShownForCurrentUpdate = true
             }
         }
+
         UpdateState.Idle, UpdateState.UpToDate -> {
             hasShownForCurrentUpdate = false
         }
+
         else -> {
             // Keep current state for Checking, Downloading, Error
         }

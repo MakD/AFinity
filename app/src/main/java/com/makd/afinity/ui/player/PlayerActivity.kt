@@ -19,8 +19,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Icon
-import android.graphics.drawable.Icon
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,6 +43,7 @@ class PlayerActivity : ComponentActivity() {
 
     private val viewModel: PlayerViewModel by viewModels()
     private var pipCallback: (() -> Unit)? = null
+
     @Inject
     lateinit var preferencesRepository: PreferencesRepository
 
@@ -72,6 +71,7 @@ class PlayerActivity : ComponentActivity() {
                         setPictureInPictureParams(buildPipParams())
                     }
                 }
+
                 else -> {
                     Timber.w("PIP Receiver - Unknown action: ${intent?.action}")
                 }
@@ -103,8 +103,8 @@ class PlayerActivity : ComponentActivity() {
 
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    registerReceiver(pipReceiver, filter, Context.RECEIVER_EXPORTED)
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    registerReceiver(pipReceiver, filter, RECEIVER_EXPORTED)
+                } else {
                     @Suppress("UnspecifiedRegisterReceiverFlag")
                     registerReceiver(pipReceiver, filter)
                 }

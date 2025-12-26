@@ -75,11 +75,15 @@ class AppDataRepository @Inject constructor(
     private val _libraries = MutableStateFlow<List<AfinityCollection>>(emptyList())
     val libraries: StateFlow<List<AfinityCollection>> = _libraries.asStateFlow()
 
-    private val _separateMovieLibrarySections = MutableStateFlow<List<Pair<AfinityCollection, List<AfinityMovie>>>>(emptyList())
-    val separateMovieLibrarySections: StateFlow<List<Pair<AfinityCollection, List<AfinityMovie>>>> = _separateMovieLibrarySections.asStateFlow()
+    private val _separateMovieLibrarySections =
+        MutableStateFlow<List<Pair<AfinityCollection, List<AfinityMovie>>>>(emptyList())
+    val separateMovieLibrarySections: StateFlow<List<Pair<AfinityCollection, List<AfinityMovie>>>> =
+        _separateMovieLibrarySections.asStateFlow()
 
-    private val _separateTvLibrarySections = MutableStateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>>(emptyList())
-    val separateTvLibrarySections: StateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>> = _separateTvLibrarySections.asStateFlow()
+    private val _separateTvLibrarySections =
+        MutableStateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>>(emptyList())
+    val separateTvLibrarySections: StateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>> =
+        _separateTvLibrarySections.asStateFlow()
 
     private val _userProfileImageUrl = MutableStateFlow<String?>(null)
     val userProfileImageUrl: StateFlow<String?> = _userProfileImageUrl.asStateFlow()
@@ -238,8 +242,11 @@ class AppDataRepository @Inject constructor(
         try {
             val libraries = _libraries.value
             if (libraries.isNotEmpty()) {
-                Timber.d("Reloading home data...")
-                val (latestMovies, latestTvSeries, highestRated) = loadHomeSpecificData(libraries)
+                Timber.d("Reloading home data (preserving highest rated)...")
+                val (latestMovies, latestTvSeries, highestRated) = loadHomeSpecificData(
+                    libraries = libraries,
+                    existingHighestRated = _highestRated.value
+                )
                 _latestMovies.value = latestMovies
                 _latestTvSeries.value = latestTvSeries
                 _highestRated.value = highestRated
@@ -325,7 +332,8 @@ class AppDataRepository @Inject constructor(
     }
 
     private suspend fun loadHomeSpecificData(
-        libraries: List<AfinityCollection>
+        libraries: List<AfinityCollection>,
+        existingHighestRated: List<AfinityItem>? = null
     ): Triple<List<AfinityMovie>, List<AfinityShow>, List<AfinityItem>> {
         return try {
             val movieLibraries = libraries.filter { it.type == CollectionType.Movies }
@@ -435,24 +443,26 @@ class AppDataRepository @Inject constructor(
                 allLatestSeries.sortedByDescending { it.premiereDate }.take(15)
             }
 
-            val highRatedMovies = allMoviesIncludingWatched.filter {
-                (it.communityRating ?: 0f) > 6.5f
-            }
-            val highRatedShows = allSeriesIncludingWatched.filter {
-                (it.communityRating ?: 0f) > 6.5f
-            }
-
-            val highestRated = (highRatedMovies + highRatedShows)
-                .shuffled()
-                .take(10)
-                .sortedByDescending {
-                    when (it) {
-                        is AfinityMovie -> it.communityRating ?: 0f
-                        is AfinityShow -> it.communityRating ?: 0f
-                        else -> 0f
-                    }
-
+            val highestRated = existingHighestRated ?: run {
+                Timber.d("Generating fresh shuffled highest rated list")
+                val highRatedMovies = allMoviesIncludingWatched.filter {
+                    (it.communityRating ?: 0f) > 6.5f
                 }
+                val highRatedShows = allSeriesIncludingWatched.filter {
+                    (it.communityRating ?: 0f) > 6.5f
+                }
+
+                (highRatedMovies + highRatedShows)
+                    .shuffled()
+                    .take(10)
+                    .sortedByDescending {
+                        when (it) {
+                            is AfinityMovie -> it.communityRating ?: 0f
+                            is AfinityShow -> it.communityRating ?: 0f
+                            else -> 0f
+                        }
+                    }
+            }
 
             Triple(latestMovies, latestTvSeries, highestRated)
         } catch (e: Exception) {
@@ -533,7 +543,8 @@ class AppDataRepository @Inject constructor(
                     Timber.d("Loaded ${cachedMovies.size} movies for '$genre' from cache")
 
                     val currentTime = System.currentTimeMillis()
-                    val isFresh = genreCacheDao.isGenreCacheFresh(genre, GENRE_CACHE_TTL, currentTime)
+                    val isFresh =
+                        genreCacheDao.isGenreCacheFresh(genre, GENRE_CACHE_TTL, currentTime)
 
                     if (isFresh) {
                         Timber.d("Genre '$genre' cache is fresh (< 12 hours)")
@@ -687,7 +698,8 @@ class AppDataRepository @Inject constructor(
                     Timber.d("Loaded ${cachedShows.size} shows for '$genre' from cache")
 
                     val currentTime = System.currentTimeMillis()
-                    val isFresh = genreCacheDao.isShowGenreCacheFresh(genre, GENRE_CACHE_TTL, currentTime)
+                    val isFresh =
+                        genreCacheDao.isShowGenreCacheFresh(genre, GENRE_CACHE_TTL, currentTime)
 
                     if (isFresh) {
                         Timber.d("Show genre '$genre' cache is fresh (< 12 hours)")
@@ -777,14 +789,15 @@ class AppDataRepository @Inject constructor(
 
             if (studios.isNotEmpty()) {
                 val timestamp = System.currentTimeMillis()
-                val studioEntities: List<com.makd.afinity.data.database.entities.StudioCacheEntity> = studios.mapIndexed { index: Int, studio: AfinityStudio ->
-                    com.makd.afinity.data.database.entities.StudioCacheEntity(
-                        studioId = studio.id.toString(),
-                        studioData = typeConverters.fromAfinityStudio(studio) ?: "",
-                        position = index,
-                        cachedTimestamp = timestamp
-                    )
-                }
+                val studioEntities: List<com.makd.afinity.data.database.entities.StudioCacheEntity> =
+                    studios.mapIndexed { index: Int, studio: AfinityStudio ->
+                        com.makd.afinity.data.database.entities.StudioCacheEntity(
+                            studioId = studio.id.toString(),
+                            studioData = typeConverters.fromAfinityStudio(studio) ?: "",
+                            position = index,
+                            cachedTimestamp = timestamp
+                        )
+                    }
                 studioCacheDao.replaceStudios(studioEntities)
             }
 
@@ -807,6 +820,7 @@ class AppDataRepository @Inject constructor(
             }
         }
     }
+
     private fun filterItemsByPersonRole(
         items: List<AfinityItem>,
         personId: UUID,
@@ -824,6 +838,7 @@ class AppDataRepository @Inject constructor(
             }
         }
     }
+
     suspend fun getTopPeople(
         type: PersonKind,
         limit: Int = 100,
@@ -833,15 +848,24 @@ class AppDataRepository @Inject constructor(
             val cached = topPeopleDao.getCachedTopPeople(type.name)
             val currentTime = System.currentTimeMillis()
 
-            if (cached != null && topPeopleDao.isTopPeopleCacheFresh(type.name, PEOPLE_CACHE_TTL, currentTime)) {
-                val cachedData = json.decodeFromString<List<com.makd.afinity.data.models.CachedPersonWithCount>>(cached.peopleData)
+            if (cached != null && topPeopleDao.isTopPeopleCacheFresh(
+                    type.name,
+                    PEOPLE_CACHE_TTL,
+                    currentTime
+                )
+            ) {
+                val cachedData =
+                    json.decodeFromString<List<com.makd.afinity.data.models.CachedPersonWithCount>>(
+                        cached.peopleData
+                    )
                 val cachedPeople = cachedData.map { PersonWithCount.fromCached(it) }
                 Timber.d("Loaded ${cachedPeople.size} top ${type.name} from cache")
                 return cachedPeople
             }
 
             Timber.d("Fetching top ${type.name} from library (paginated)")
-            val peopleFrequency = mutableMapOf<String, Pair<com.makd.afinity.data.models.media.AfinityPerson, Int>>()
+            val peopleFrequency =
+                mutableMapOf<String, Pair<com.makd.afinity.data.models.media.AfinityPerson, Int>>()
             var startIndex = 0
             val pageSize = 500
 
@@ -898,6 +922,7 @@ class AppDataRepository @Inject constructor(
             return emptyList()
         }
     }
+
     suspend fun getPersonSection(
         personWithCount: PersonWithCount,
         sectionType: PersonSectionType
@@ -909,7 +934,12 @@ class AppDataRepository @Inject constructor(
             val cached = personSectionDao.getCachedSection(cacheKey)
             val currentTime = System.currentTimeMillis()
 
-            if (cached != null && personSectionDao.isSectionCacheFresh(cacheKey, PERSON_SECTION_CACHE_TTL, currentTime)) {
+            if (cached != null && personSectionDao.isSectionCacheFresh(
+                    cacheKey,
+                    PERSON_SECTION_CACHE_TTL,
+                    currentTime
+                )
+            ) {
                 val cachedPersonData = PersonWithCount.fromCached(
                     json.decodeFromString<CachedPersonWithCount>(cached.personData)
                 )
@@ -970,6 +1000,7 @@ class AppDataRepository @Inject constructor(
             return null
         }
     }
+
     suspend fun getRandomRecentlyWatchedMovie(
         excludedMovies: Set<UUID>
     ): AfinityMovie? {
@@ -977,20 +1008,21 @@ class AppDataRepository @Inject constructor(
             val now = System.currentTimeMillis()
             val cached = recentWatchedCache
 
-            val allRecentWatched = if (cached != null && now - cached.first < RECENT_WATCHED_CACHE_TTL) {
-                Timber.d("Using cached recently watched movies")
-                cached.second
-            } else {
-                Timber.d("Fetching recently watched movies from API")
-                val movies = jellyfinRepository.getMovies(
-                    sortBy = SortBy.DATE_PLAYED,
-                    sortDescending = true,
-                    limit = 10,
-                    isPlayed = true
-                )
-                recentWatchedCache = now to movies
-                movies
-            }
+            val allRecentWatched =
+                if (cached != null && now - cached.first < RECENT_WATCHED_CACHE_TTL) {
+                    Timber.d("Using cached recently watched movies")
+                    cached.second
+                } else {
+                    Timber.d("Fetching recently watched movies from API")
+                    val movies = jellyfinRepository.getMovies(
+                        sortBy = SortBy.DATE_PLAYED,
+                        sortDescending = true,
+                        limit = 10,
+                        isPlayed = true
+                    )
+                    recentWatchedCache = now to movies
+                    movies
+                }
 
             val recentWatched = allRecentWatched.filterNot { it.id in excludedMovies }
 
@@ -1013,6 +1045,7 @@ class AppDataRepository @Inject constructor(
             return null
         }
     }
+
     suspend fun getBecauseYouWatchedSections(
         count: Int = 2,
         renderedWatchedMovies: MutableSet<UUID>,
@@ -1036,11 +1069,13 @@ class AppDataRepository @Inject constructor(
                     .take(20)
 
                 if (similarMovies.size >= 5) {
-                    sections.add(MovieSection(
-                        referenceMovie = referenceMovie,
-                        recommendedItems = similarMovies,
-                        sectionType = MovieSectionType.BECAUSE_YOU_WATCHED
-                    ))
+                    sections.add(
+                        MovieSection(
+                            referenceMovie = referenceMovie,
+                            recommendedItems = similarMovies,
+                            sectionType = MovieSectionType.BECAUSE_YOU_WATCHED
+                        )
+                    )
 
                     similarMovies.forEach { renderedItemIds.add(it.id) }
                     Timber.d("Created 'Because you watched ${referenceMovie.name}' section (${similarMovies.size} items)")
@@ -1052,6 +1087,7 @@ class AppDataRepository @Inject constructor(
 
         return sections
     }
+
     suspend fun getActorFromRecentSections(
         count: Int = 1,
         renderedStarringWatchedMovies: MutableSet<UUID>,
@@ -1113,11 +1149,13 @@ class AppDataRepository @Inject constructor(
                     .take(20)
 
                 if (actorMovies.size >= 5) {
-                    sections.add(PersonFromMovieSection(
-                        person = selectedActor,
-                        referenceMovie = movieWithPeople,
-                        items = actorMovies
-                    ))
+                    sections.add(
+                        PersonFromMovieSection(
+                            person = selectedActor,
+                            referenceMovie = movieWithPeople,
+                            items = actorMovies
+                        )
+                    )
 
                     actorMovies.forEach { renderedItemIds.add(it.id) }
                     Timber.d("Created 'Starring ${selectedActor.name} because you watched ${randomMovie.name}' section (${actorMovies.size} items)")

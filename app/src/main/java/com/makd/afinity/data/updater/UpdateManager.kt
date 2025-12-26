@@ -39,7 +39,8 @@ class UpdateManager @Inject constructor(
 
     private var currentDownloadId: Long? = null
     private var currentRelease: GitHubRelease? = null
-    private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+    private val downloadManager =
+        context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     private var progressJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
@@ -151,8 +152,10 @@ class UpdateManager @Inject constructor(
                     val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
                     val status = cursor.getInt(statusIndex)
 
-                    val bytesDownloadedIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                    val totalBytesIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                    val bytesDownloadedIndex =
+                        cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                    val totalBytesIndex =
+                        cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
                     val bytesDownloaded = cursor.getLong(bytesDownloadedIndex)
                     val totalBytes = cursor.getLong(totalBytesIndex)
 
@@ -161,11 +164,13 @@ class UpdateManager @Inject constructor(
                     when (status) {
                         DownloadManager.STATUS_RUNNING -> {
                             if (totalBytes > 0) {
-                                val progress = ((bytesDownloaded * 100) / totalBytes).toInt().coerceIn(0, 99)
+                                val progress =
+                                    ((bytesDownloaded * 100) / totalBytes).toInt().coerceIn(0, 99)
                                 _updateState.value = UpdateState.Downloading(progress)
                                 Timber.d("Download progress: $progress%")
                             }
                         }
+
                         DownloadManager.STATUS_SUCCESSFUL -> {
                             Timber.d("Download successful, stopping progress tracking")
                             cursor.close()
@@ -176,6 +181,7 @@ class UpdateManager @Inject constructor(
                             }
                             return@launch
                         }
+
                         DownloadManager.STATUS_FAILED -> {
                             val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
                             val reason = cursor.getInt(reasonIndex)
@@ -242,7 +248,8 @@ class UpdateManager @Inject constructor(
                         val file = if (uriString.startsWith("file://")) {
                             File(Uri.parse(uriString).path ?: "")
                         } else {
-                            val localFileIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME)
+                            val localFileIndex =
+                                cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME)
                             if (localFileIndex >= 0) {
                                 val localFile = cursor.getString(localFileIndex)
                                 if (localFile != null) File(localFile) else null
@@ -262,6 +269,7 @@ class UpdateManager @Inject constructor(
                         _updateState.value = UpdateState.Error("Download URI is null")
                     }
                 }
+
                 DownloadManager.STATUS_FAILED -> {
                     val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
                     val reason = cursor.getInt(reasonIndex)
@@ -287,7 +295,8 @@ class UpdateManager @Inject constructor(
 
         if (apkAsset == null) return null
 
-        val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val downloadDir =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val baseFileName = apkAsset.name.removeSuffix(".apk")
 
         val allFiles = downloadDir.listFiles() ?: return null

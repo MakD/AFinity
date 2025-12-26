@@ -40,6 +40,11 @@ class JellyfinItemsPagingSource(
                 else -> null
             }
 
+            val filterIsLiked = when (filter) {
+                FilterType.WATCHLIST -> true
+                else -> null
+            }
+
             val items = if (nameStartsWith != null || studioName != null) {
                 val includeTypes = when (libraryType) {
                     CollectionType.TvShows -> listOf("SERIES")
@@ -61,6 +66,7 @@ class JellyfinItemsPagingSource(
                         else -> null
                     },
                     isPlayed = filterIsPlayed,
+                    isLiked = filterIsLiked,
                     nameStartsWith = nameStartsWith,
                     studios = if (studioName != null) listOf(studioName) else emptyList()
                 )
@@ -70,23 +76,36 @@ class JellyfinItemsPagingSource(
             } else {
                 when (libraryType) {
                     CollectionType.TvShows -> {
-                        mediaRepository.getShows(
-                            parentId = parentId,
-                            sortBy = sortBy,
-                            sortDescending = sortDescending,
-                            limit = PAGE_SIZE,
-                            startIndex = startIndex,
-                            isPlayed = filterIsPlayed
-                        ).let { shows ->
-                            if (filter == FilterType.FAVORITES) {
-                                shows.filter { it.favorite }
-                            } else {
-                                shows
-                            }
+                        if (filter == FilterType.FAVORITES || filter == FilterType.WATCHLIST) {
+                            val response = mediaRepository.getItems(
+                                parentId = parentId,
+                                sortBy = sortBy,
+                                sortDescending = sortDescending,
+                                limit = PAGE_SIZE,
+                                startIndex = startIndex,
+                                includeItemTypes = listOf("SERIES"),
+                                isFavorite = when (filter) {
+                                    FilterType.FAVORITES -> true
+                                    else -> null
+                                },
+                                isPlayed = filterIsPlayed,
+                                isLiked = filterIsLiked
+                            )
+                            response.items?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
+                        } else {
+                            mediaRepository.getShows(
+                                parentId = parentId,
+                                sortBy = sortBy,
+                                sortDescending = sortDescending,
+                                limit = PAGE_SIZE,
+                                startIndex = startIndex,
+                                isPlayed = filterIsPlayed
+                            )
                         }
                     }
+
                     CollectionType.Movies -> {
-                        if (filter == FilterType.FAVORITES) {
+                        if (filter == FilterType.FAVORITES || filter == FilterType.WATCHLIST) {
                             val response = mediaRepository.getItems(
                                 parentId = parentId,
                                 sortBy = sortBy,
@@ -94,8 +113,12 @@ class JellyfinItemsPagingSource(
                                 limit = PAGE_SIZE,
                                 startIndex = startIndex,
                                 includeItemTypes = listOf("MOVIE"),
-                                isFavorite = true,
-                                isPlayed = filterIsPlayed
+                                isFavorite = when (filter) {
+                                    FilterType.FAVORITES -> true
+                                    else -> null
+                                },
+                                isPlayed = filterIsPlayed,
+                                isLiked = filterIsLiked
                             )
                             response.items?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
                         } else {
@@ -109,6 +132,7 @@ class JellyfinItemsPagingSource(
                             )
                         }
                     }
+
                     else -> {
                         val includeTypes = when (libraryType) {
                             CollectionType.BoxSets -> listOf("BOXSET")
@@ -127,7 +151,8 @@ class JellyfinItemsPagingSource(
                                 FilterType.FAVORITES -> true
                                 else -> null
                             },
-                            isPlayed = filterIsPlayed
+                            isPlayed = filterIsPlayed,
+                            isLiked = filterIsLiked
                         )
                         response.items?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
                     }

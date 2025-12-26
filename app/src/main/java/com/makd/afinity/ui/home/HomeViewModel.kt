@@ -10,6 +10,7 @@ import com.makd.afinity.data.models.MovieSection
 import com.makd.afinity.data.models.PersonFromMovieSection
 import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -18,7 +19,6 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
-import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
@@ -42,7 +42,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.model.api.PersonKind.*
+import org.jellyfin.sdk.model.api.PersonKind.ACTOR
+import org.jellyfin.sdk.model.api.PersonKind.DIRECTOR
+import org.jellyfin.sdk.model.api.PersonKind.WRITER
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -320,7 +322,8 @@ class HomeViewModel @Inject constructor(
                 minAppearances = 5
             )
 
-            val availableDirectors = topDirectors.filterNot { it.person.name in renderedPeopleNames }
+            val availableDirectors =
+                topDirectors.filterNot { it.person.name in renderedPeopleNames }
             val maxDirectorSections = 8
             val selectedDirectors = availableDirectors.shuffled().take(maxDirectorSections)
 
@@ -342,7 +345,10 @@ class HomeViewModel @Inject constructor(
                                 Timber.d("Loaded 'Directed by ${section.person.name}' section (${section.items.size} items)")
                             }
                         } catch (e: Exception) {
-                            Timber.w(e, "Failed to load director section for ${director.person.name}")
+                            Timber.w(
+                                e,
+                                "Failed to load director section for ${director.person.name}"
+                            )
                         }
                     }
                 }.awaitAll()
@@ -485,6 +491,7 @@ class HomeViewModel @Inject constructor(
                                     person.id == selectedActor.id && person.type == ACTOR
                                 }
                             }
+
                             else -> false
                         }
                     }

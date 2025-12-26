@@ -128,7 +128,9 @@ private fun QualityOption(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                painter = if (isSelected) painterResource(id = R.drawable.ic_radio_button_checked) else painterResource(id = R.drawable.ic_radio_button_unchecked),
+                painter = if (isSelected) painterResource(id = R.drawable.ic_radio_button_checked) else painterResource(
+                    id = R.drawable.ic_radio_button_unchecked
+                ),
                 contentDescription = if (isSelected) "Selected" else "Not selected",
                 tint = if (isSelected) {
                     MaterialTheme.colorScheme.primary

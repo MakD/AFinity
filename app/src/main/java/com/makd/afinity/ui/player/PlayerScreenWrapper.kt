@@ -45,6 +45,7 @@ fun PlayerScreenWrapper(
                 CircularProgressIndicator()
             }
         }
+
         item != null -> {
             PlayerScreen(
                 item = item!!,
@@ -57,6 +58,7 @@ fun PlayerScreenWrapper(
                 modifier = modifier
             )
         }
+
         else -> {
             Box(
                 modifier = modifier

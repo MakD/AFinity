@@ -40,10 +40,12 @@ class PlaylistManager @Inject constructor(
                     Timber.d("Initializing episode queue for series: ${startingItem.seriesId}")
                     initializeEpisodeQueue(startingItem)
                 }
+
                 is AfinityMovie -> {
                     Timber.d("Initializing single item queue for movie")
                     initializeSingleItemQueue(startingItem)
                 }
+
                 else -> {
                     Timber.d("Initializing single item queue for other type: ${startingItem::class.simpleName}")
                     initializeSingleItemQueue(startingItem)
@@ -61,7 +63,11 @@ class PlaylistManager @Inject constructor(
     private suspend fun initializeEpisodeQueue(startingEpisode: AfinityEpisode): Boolean {
         return try {
             Timber.d("Getting seasons for series: ${startingEpisode.seriesId}")
-            val seasons = jellyfinRepository.getSeasons(startingEpisode.seriesId, SortBy.NAME, sortDescending = false)
+            val seasons = jellyfinRepository.getSeasons(
+                startingEpisode.seriesId,
+                SortBy.NAME,
+                sortDescending = false
+            )
 
             if (seasons.isEmpty()) {
                 Timber.w("No seasons found for series: ${startingEpisode.seriesId}")
@@ -76,25 +82,31 @@ class PlaylistManager @Inject constructor(
             for (season in seasons.sortedBy { it.indexNumber ?: 0 }) {
                 try {
                     Timber.d("Loading episodes for season ${season.indexNumber} (${season.id})")
-                    val episodes = jellyfinRepository.getEpisodes(season.id, startingEpisode.seriesId)
+                    val episodes =
+                        jellyfinRepository.getEpisodes(season.id, startingEpisode.seriesId)
                     Timber.d("Season ${season.indexNumber}: ${episodes.size} episodes")
 
                     if (episodes.isNotEmpty()) {
-                        val episodesWithSources = episodes.sortedBy { it.indexNumber ?: 0 }.mapNotNull { episode ->
-                            try {
-                                val fullEpisode = jellyfinRepository.getItemById(episode.id) as? AfinityEpisode
-                                if (fullEpisode != null && fullEpisode.sources.isNotEmpty()) {
-                                    Timber.d("Loaded episode with ${fullEpisode.sources.size} sources: ${fullEpisode.name}")
-                                    fullEpisode
-                                } else {
-                                    Timber.w("Episode ${episode.name} has no media sources")
+                        val episodesWithSources =
+                            episodes.sortedBy { it.indexNumber ?: 0 }.map { episode ->
+                                try {
+                                    val fullEpisode =
+                                        jellyfinRepository.getItemById(episode.id) as? AfinityEpisode
+                                    if (fullEpisode != null && fullEpisode.sources.isNotEmpty()) {
+                                        Timber.d("Loaded episode with ${fullEpisode.sources.size} sources: ${fullEpisode.name}")
+                                        fullEpisode
+                                    } else {
+                                        Timber.w("Episode ${episode.name} has no media sources")
+                                        episode
+                                    }
+                                } catch (e: Exception) {
+                                    Timber.w(
+                                        e,
+                                        "Failed to load full details for episode ${episode.name}"
+                                    )
                                     episode
                                 }
-                            } catch (e: Exception) {
-                                Timber.w(e, "Failed to load full details for episode ${episode.name}")
-                                episode
                             }
-                        }
                         allEpisodes.addAll(episodesWithSources)
                     }
                 } catch (e: Exception) {
@@ -111,7 +123,8 @@ class PlaylistManager @Inject constructor(
             val startingEpisodeWithSources = if (startingEpisode.sources.isEmpty()) {
                 try {
                     Timber.d("Starting episode has no sources, loading full details...")
-                    jellyfinRepository.getItemById(startingEpisode.id) as? AfinityEpisode ?: startingEpisode
+                    jellyfinRepository.getItemById(startingEpisode.id) as? AfinityEpisode
+                        ?: startingEpisode
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to load sources for starting episode")
                     startingEpisode

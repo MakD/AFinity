@@ -18,7 +18,8 @@ import javax.inject.Singleton
 class NetworkConnectivityMonitor @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     val isNetworkAvailable: Flow<Boolean> = callbackFlow {
         val callback = object : ConnectivityManager.NetworkCallback() {
@@ -40,8 +41,10 @@ class NetworkConnectivityMonitor @Inject constructor(
                 network: Network,
                 networkCapabilities: NetworkCapabilities
             ) {
-                val hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                val isValidated = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                val hasInternet =
+                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                val isValidated =
+                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
                 Timber.d("Network capabilities changed: hasInternet=$hasInternet, isValidated=$isValidated")
             }
         }

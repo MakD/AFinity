@@ -49,6 +49,7 @@ fun OptimizedAsyncImage(
                     height = with(density) { (targetHeight.toPx() * 1.2f).toInt() }
                 )
             }
+
             else -> Size.ORIGINAL
         }
     }

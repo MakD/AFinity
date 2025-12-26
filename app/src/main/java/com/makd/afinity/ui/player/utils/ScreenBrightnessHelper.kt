@@ -3,10 +3,12 @@ package com.makd.afinity.ui.player.utils
 import android.app.Activity
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ComposableTarget
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 
+@ComposableTarget("androidx.compose.ui.UiComposable")
 @Composable
 fun ScreenBrightnessController(brightness: Float) {
     val context = LocalContext.current

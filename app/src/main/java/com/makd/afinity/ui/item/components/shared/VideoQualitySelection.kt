@@ -56,13 +56,15 @@ private fun QualityChip(
             else MaterialTheme.colorScheme.outline
         )
     ) {
-        Text(text =
-            if (source.name.contains("K") || source.name.contains("p") ||
-                source.name.contains(source.codec, ignoreCase = true)) {
-                source.name
-            } else {
-                "${source.name} • ${source.quality} ${source.codec}"
-            }
+        Text(
+            text =
+                if (source.name.contains("K") || source.name.contains("p") ||
+                    source.name.contains(source.codec, ignoreCase = true)
+                ) {
+                    source.name
+                } else {
+                    "${source.name} • ${source.quality} ${source.codec}"
+                }
         )
     }
 }

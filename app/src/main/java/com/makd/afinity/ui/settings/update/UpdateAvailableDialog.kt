@@ -146,6 +146,7 @@ fun UpdateAvailableDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Install")
                     }
+
                     isDownloading -> {
                         CircularProgressIndicator(
                             modifier = Modifier.size(18.dp),
@@ -155,6 +156,7 @@ fun UpdateAvailableDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Downloading...")
                     }
+
                     else -> {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_download_arrow),

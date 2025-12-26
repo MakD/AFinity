@@ -90,27 +90,34 @@ class SettingsViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            preferencesRepository.getThemeModeFlow().collect { _uiState.value = _uiState.value.copy(themeMode = it) }
+            preferencesRepository.getThemeModeFlow()
+                .collect { _uiState.value = _uiState.value.copy(themeMode = it) }
         }
 
         viewModelScope.launch {
-            preferencesRepository.getDynamicColorsFlow().collect { _uiState.value = _uiState.value.copy(dynamicColors = it) }
+            preferencesRepository.getDynamicColorsFlow()
+                .collect { _uiState.value = _uiState.value.copy(dynamicColors = it) }
         }
 
         viewModelScope.launch {
-            preferencesRepository.getAutoPlayFlow().collect { _uiState.value = _uiState.value.copy(autoPlay = it) }
+            preferencesRepository.getAutoPlayFlow()
+                .collect { _uiState.value = _uiState.value.copy(autoPlay = it) }
         }
 
         viewModelScope.launch {
-            preferencesRepository.getSkipIntroEnabledFlow().collect { _uiState.value = _uiState.value.copy(skipIntroEnabled = it) }
+            preferencesRepository.getSkipIntroEnabledFlow()
+                .collect { _uiState.value = _uiState.value.copy(skipIntroEnabled = it) }
         }
 
         viewModelScope.launch {
-            preferencesRepository.getSkipOutroEnabledFlow().collect { _uiState.value = _uiState.value.copy(skipOutroEnabled = it) }
+            preferencesRepository.getSkipOutroEnabledFlow()
+                .collect { _uiState.value = _uiState.value.copy(skipOutroEnabled = it) }
         }
 
         viewModelScope.launch {
-            preferencesRepository.useExoPlayer.collect { _uiState.value = _uiState.value.copy(useExoPlayer = it) }
+            preferencesRepository.useExoPlayer.collect {
+                _uiState.value = _uiState.value.copy(useExoPlayer = it)
+            }
         }
 
         viewModelScope.launch {

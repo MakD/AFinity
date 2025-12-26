@@ -8,7 +8,9 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinitySeason
@@ -21,19 +23,16 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
-import com.makd.afinity.data.models.media.toAfinitySeason
 import com.makd.afinity.data.models.media.toAfinityShow
 import com.makd.afinity.data.paging.EpisodesPagingSource
-import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.models.download.DownloadInfo
-import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
-import com.makd.afinity.data.manager.OfflineModeManager
-import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.utils.IntentUtils
@@ -62,7 +61,8 @@ class ItemDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val itemId: UUID = UUID.fromString(
-        savedStateHandle.get<String>("itemId") ?: throw IllegalArgumentException("itemId is required")
+        savedStateHandle.get<String>("itemId")
+            ?: throw IllegalArgumentException("itemId is required")
     )
 
     private val _episodesPagingData = MutableStateFlow<Flow<PagingData<AfinityEpisode>>?>(null)
@@ -153,12 +153,16 @@ class ItemDetailViewModel @Inject constructor(
                 when (baseItemDto.type) {
                     org.jellyfin.sdk.model.api.BaseItemKind.MOVIE ->
                         baseItemDto.toAfinityMovie(jellyfinRepository, null)
+
                     org.jellyfin.sdk.model.api.BaseItemKind.SERIES ->
                         baseItemDto.toAfinityShow(jellyfinRepository)
+
                     org.jellyfin.sdk.model.api.BaseItemKind.EPISODE ->
                         baseItemDto.toAfinityEpisode(jellyfinRepository, null)
+
                     org.jellyfin.sdk.model.api.BaseItemKind.BOX_SET ->
                         baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
+
                     else -> null
                 }
             }
@@ -205,15 +209,18 @@ class ItemDetailViewModel @Inject constructor(
                         is AfinityShow -> {
                             viewModelScope.launch {
                                 try {
-                                    val nextEpisode = jellyfinRepository.getEpisodeToPlay(freshItem.id)
+                                    val nextEpisode =
+                                        jellyfinRepository.getEpisodeToPlay(freshItem.id)
                                     _uiState.value = _uiState.value.copy(nextEpisode = nextEpisode)
                                 } catch (e: Exception) {
                                     Timber.e(e, "Failed to load next episode")
                                 }
                             }
                         }
+
                         is AfinityMovie -> {
                         }
+
                         is AfinityEpisode -> {
                         }
                     }
@@ -237,28 +244,34 @@ class ItemDetailViewModel @Inject constructor(
                     Timber.d("Device is offline, loading item from database")
                     loadItemFromDatabase()
                 } else {
-                    jellyfinRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let { baseItemDto ->
-                        Timber.d("MediaSources count: ${baseItemDto.mediaSources?.size ?: 0}")
+                    jellyfinRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)
+                        ?.let { baseItemDto ->
+                            Timber.d("MediaSources count: ${baseItemDto.mediaSources?.size ?: 0}")
 
-                        when (baseItemDto.type) {
-                            org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
-                                baseItemDto.toAfinityMovie(jellyfinRepository, null)
+                            when (baseItemDto.type) {
+                                org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                                    baseItemDto.toAfinityMovie(jellyfinRepository, null)
+                                }
+
+                                org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                                    baseItemDto.toAfinityShow(jellyfinRepository)
+                                }
+
+                                org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                                    baseItemDto.toAfinityEpisode(jellyfinRepository, null)
+                                }
+
+                                org.jellyfin.sdk.model.api.BaseItemKind.BOX_SET -> {
+                                    baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
+                                }
+
+                                org.jellyfin.sdk.model.api.BaseItemKind.SEASON -> {
+                                    baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
+                                }
+
+                                else -> null
                             }
-                            org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
-                                baseItemDto.toAfinityShow(jellyfinRepository)
-                            }
-                            org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
-                                baseItemDto.toAfinityEpisode(jellyfinRepository, null)
-                            }
-                            org.jellyfin.sdk.model.api.BaseItemKind.BOX_SET -> {
-                                baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
-                            }
-                            org.jellyfin.sdk.model.api.BaseItemKind.SEASON -> {
-                                baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
-                            }
-                            else -> null
                         }
-                    }
                 }
 
                 if (item == null) {
@@ -285,11 +298,12 @@ class ItemDetailViewModel @Inject constructor(
                                 Timber.d("Next episode for show: ${nextEpisode?.name ?: "none"}")
                             }
                         }
+
                         is AfinitySeason -> {
                             if (item.episodes.isNotEmpty()) {
                                 Timber.d("Setting up ${item.episodes.size} episodes from database for season: ${item.name}")
                                 val pagingData = kotlinx.coroutines.flow.flowOf(
-                                    androidx.paging.PagingData.from(item.episodes.toList())
+                                    PagingData.from(item.episodes.toList())
                                 )
                                 _episodesPagingData.value = pagingData
                                 _uiState.value = _uiState.value.copy(
@@ -303,7 +317,7 @@ class ItemDetailViewModel @Inject constructor(
                             } else {
                                 Timber.d("No episodes cached for season, setting empty paging data")
                                 val emptyPagingData = kotlinx.coroutines.flow.flowOf(
-                                    androidx.paging.PagingData.empty<AfinityEpisode>()
+                                    PagingData.empty<AfinityEpisode>()
                                 )
                                 _episodesPagingData.value = emptyPagingData
                                 _uiState.value = _uiState.value.copy(
@@ -404,10 +418,12 @@ class ItemDetailViewModel @Inject constructor(
                         }
                     }
                 }
+
                 is AfinitySeason -> {
                     launch {
                         try {
-                            val episodeToPlay = jellyfinRepository.getEpisodeToPlayForSeason(item.id, item.seriesId)
+                            val episodeToPlay =
+                                jellyfinRepository.getEpisodeToPlayForSeason(item.id, item.seriesId)
                             _uiState.value = _uiState.value.copy(nextEpisode = episodeToPlay)
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to load episode to play for season")
@@ -420,12 +436,12 @@ class ItemDetailViewModel @Inject constructor(
                                 if (item.episodes.isNotEmpty()) {
                                     Timber.d("Using ${item.episodes.size} episodes from database for season: ${item.name}")
                                     _episodesPagingData.value = kotlinx.coroutines.flow.flowOf(
-                                        androidx.paging.PagingData.from(item.episodes.toList())
+                                        PagingData.from(item.episodes.toList())
                                     )
                                 } else {
                                     Timber.d("No episodes cached for season: ${item.name}, showing empty list")
                                     _episodesPagingData.value = kotlinx.coroutines.flow.flowOf(
-                                        androidx.paging.PagingData.empty()
+                                        PagingData.empty()
                                     )
                                 }
                             } else {
@@ -455,7 +471,8 @@ class ItemDetailViewModel @Inject constructor(
                         try {
                             val userId = getCurrentUserId()
                             if (userId != null) {
-                                val features = jellyfinRepository.getSpecialFeatures(item.id, userId)
+                                val features =
+                                    jellyfinRepository.getSpecialFeatures(item.id, userId)
                                 _uiState.value = _uiState.value.copy(specialFeatures = features)
                             }
                         } catch (e: Exception) {
@@ -463,6 +480,7 @@ class ItemDetailViewModel @Inject constructor(
                         }
                     }
                 }
+
                 is AfinityBoxSet -> {
                     launch {
                         try {
@@ -480,6 +498,7 @@ class ItemDetailViewModel @Inject constructor(
                         }
                     }
                 }
+
                 is AfinityMovie -> {
                     launch {
                         try {
@@ -501,6 +520,7 @@ class ItemDetailViewModel @Inject constructor(
                         }
                     }
                 }
+
                 is AfinityEpisode -> {
                     launch {
                         try {
@@ -531,10 +551,12 @@ class ItemDetailViewModel @Inject constructor(
     val isLoadingEpisode: StateFlow<Boolean> = _isLoadingEpisode.asStateFlow()
 
     private val _selectedEpisodeWatchlistStatus = MutableStateFlow(false)
-    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> = _selectedEpisodeWatchlistStatus.asStateFlow()
+    val selectedEpisodeWatchlistStatus: StateFlow<Boolean> =
+        _selectedEpisodeWatchlistStatus.asStateFlow()
 
     private val _selectedEpisodeDownloadInfo = MutableStateFlow<DownloadInfo?>(null)
-    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> = _selectedEpisodeDownloadInfo.asStateFlow()
+    val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> =
+        _selectedEpisodeDownloadInfo.asStateFlow()
 
     fun selectEpisode(episode: AfinityEpisode) {
         viewModelScope.launch {
@@ -711,11 +733,13 @@ class ItemDetailViewModel @Inject constructor(
                         played = !currentItem.played,
                         playbackPositionTicks = if (!currentItem.played) currentItem.runtimeTicks else 0
                     )
+
                     is AfinityShow -> currentItem.copy(played = !currentItem.played)
                     is AfinityEpisode -> currentItem.copy(
                         played = !currentItem.played,
                         playbackPositionTicks = if (!currentItem.played) currentItem.runtimeTicks else 0
                     )
+
                     is AfinityBoxSet -> currentItem.copy(played = !currentItem.played)
                     is AfinitySeason -> currentItem.copy(played = !currentItem.played)
                     else -> currentItem
@@ -808,7 +832,8 @@ class ItemDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val item = _selectedEpisode.value ?: _uiState.value.item ?: return@launch
-                val sources = item.sources.filter { it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE }
+                val sources =
+                    item.sources.filter { it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE }
 
                 if (sources.isEmpty()) {
                     Timber.w("No remote sources available for download for item: ${item.name}")

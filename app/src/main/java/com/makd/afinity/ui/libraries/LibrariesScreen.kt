@@ -105,7 +105,12 @@ fun LibrariesScreen(
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(rememberGridMinColumnSize()),
                     state = lazyGridState,
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 180.dp, bottom = 16.dp),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 180.dp,
+                        bottom = 16.dp
+                    ),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxSize()
@@ -171,9 +176,11 @@ private fun LibraryCard(
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     OptimizedAsyncImage(
-                        imageUrl = library.images.primaryImageUrl ?: library.images.backdropImageUrl,
+                        imageUrl = library.images.primaryImageUrl
+                            ?: library.images.backdropImageUrl,
                         contentDescription = library.name,
-                        blurHash = library.images.primaryBlurHash ?: library.images.backdropBlurHash,
+                        blurHash = library.images.primaryBlurHash
+                            ?: library.images.backdropBlurHash,
                         targetWidth = 160.dp,
                         targetHeight = 90.dp,
                         modifier = Modifier.fillMaxSize(),

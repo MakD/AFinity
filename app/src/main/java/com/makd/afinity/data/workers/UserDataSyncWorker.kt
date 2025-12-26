@@ -6,17 +6,15 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.makd.afinity.data.repository.DatabaseRepository
-import com.makd.afinity.data.repository.userdata.UserDataRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userApi
-import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
 import org.jellyfin.sdk.api.operations.ItemsApi
+import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
 import timber.log.Timber
-import java.util.UUID
 
 @HiltWorker
 class UserDataSyncWorker @AssistedInject constructor(
@@ -77,10 +75,12 @@ class UserDataSyncWorker @AssistedInject constructor(
             Timber.i("User data sync completed: $successCount succeeded, $failureCount failed out of ${unsyncedData.size} total")
 
             return@withContext if (successCount > 0 || failureCount == 0) {
-                Result.success(workDataOf(
-                    "synced_count" to successCount,
-                    "failed_count" to failureCount
-                ))
+                Result.success(
+                    workDataOf(
+                        "synced_count" to successCount,
+                        "failed_count" to failureCount
+                    )
+                )
             } else {
                 Result.retry()
             }

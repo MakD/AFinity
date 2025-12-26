@@ -8,8 +8,6 @@ import androidx.work.workDataOf
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.data.models.extensions.toAfinityMovie
-import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.di.DownloadClient
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -19,8 +17,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userApi
-import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
@@ -199,17 +195,21 @@ class ImageDownloadWorker @AssistedInject constructor(
                 updateItemWithLocalImages(item, downloadedImages, userId)
             }
 
-            return@withContext Result.success(workDataOf(
-                KEY_DOWNLOAD_ID to downloadIdString,
-                KEY_ITEM_ID to itemIdString,
-                KEY_SOURCE_ID to sourceId
-            ))
+            return@withContext Result.success(
+                workDataOf(
+                    KEY_DOWNLOAD_ID to downloadIdString,
+                    KEY_ITEM_ID to itemIdString,
+                    KEY_SOURCE_ID to sourceId
+                )
+            )
 
         } catch (e: Exception) {
             Timber.e(e, "Image download failed")
-            return@withContext Result.failure(workDataOf(
-                "error" to (e.message ?: "Unknown error")
-            ))
+            return@withContext Result.failure(
+                workDataOf(
+                    "error" to (e.message ?: "Unknown error")
+                )
+            )
         }
     }
 
@@ -289,10 +289,12 @@ class ImageDownloadWorker @AssistedInject constructor(
                     databaseRepository.insertMovie(item.copy(images = updatedImages))
                     Timber.i("Updated movie in database with ${downloadedImages.size} local image paths")
                 }
+
                 is com.makd.afinity.data.models.media.AfinityEpisode -> {
                     databaseRepository.insertEpisode(item.copy(images = updatedImages))
                     Timber.i("Updated episode in database with ${downloadedImages.size} local image paths")
                 }
+
                 else -> {
                     Timber.w("Unsupported item type for image update: ${item::class.simpleName}")
                 }

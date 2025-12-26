@@ -23,7 +23,8 @@ class PersonViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val personId: UUID = UUID.fromString(
-        savedStateHandle.get<String>("personId") ?: throw IllegalArgumentException("personId is required")
+        savedStateHandle.get<String>("personId")
+            ?: throw IllegalArgumentException("personId is required")
     )
 
     private val _uiState = MutableStateFlow(PersonUiState())

@@ -85,6 +85,7 @@ private data class ExternalLink(
     val url: String,
     val iconRes: Int
 )
+
 private fun getExternalLinks(item: AfinityItem): List<ExternalLink> {
     val links = mutableListOf<ExternalLink>()
 

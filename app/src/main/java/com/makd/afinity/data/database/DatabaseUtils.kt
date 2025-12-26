@@ -9,7 +9,10 @@ object DatabaseUtils {
         return if (dbFile.exists()) dbFile.length() else 0L
     }
 
-    fun getDatabaseSizeFormatted(context: Context, databaseName: String = "afinity_database"): String {
+    fun getDatabaseSizeFormatted(
+        context: Context,
+        databaseName: String = "afinity_database"
+    ): String {
         val sizeInBytes = getDatabaseSize(context, databaseName)
         return formatBytes(sizeInBytes)
     }

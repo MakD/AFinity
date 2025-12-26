@@ -26,7 +26,6 @@ import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 fun PersonSection(
     section: PersonSection,
     onItemClick: (AfinityMovie) -> Unit,
-    onPersonClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val cardWidth = rememberPortraitCardWidth()
@@ -107,7 +106,6 @@ fun MovieRecommendationSection(
 fun PersonFromMovieSection(
     section: PersonFromMovieSection,
     onItemClick: (AfinityMovie) -> Unit,
-    onPersonClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val cardWidth = rememberPortraitCardWidth()

@@ -18,13 +18,15 @@ object DatabaseMigrations {
 
     val MIGRATION_5_6 = object : Migration(5, 6) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("""
+            database.execSQL(
+                """
             CREATE TABLE IF NOT EXISTS watchlist (
                 itemId TEXT PRIMARY KEY NOT NULL,
                 itemType TEXT NOT NULL,
                 addedAt INTEGER NOT NULL
             )
-        """.trimIndent())
+        """.trimIndent()
+            )
         }
     }
 
@@ -45,7 +47,8 @@ object DatabaseMigrations {
 
     val MIGRATION_8_9 = object : Migration(8, 9) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("""
+            database.execSQL(
+                """
                 CREATE TABLE IF NOT EXISTS downloads (
                     id TEXT PRIMARY KEY NOT NULL,
                     itemId TEXT NOT NULL,
@@ -62,7 +65,8 @@ object DatabaseMigrations {
                     createdAt INTEGER NOT NULL,
                     updatedAt INTEGER NOT NULL
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
         }
     }
 
@@ -115,15 +119,18 @@ object DatabaseMigrations {
 
     val MIGRATION_16_17 = object : Migration(16, 17) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("""
+            database.execSQL(
+                """
                 CREATE TABLE IF NOT EXISTS genre_cache (
                     genreName TEXT PRIMARY KEY NOT NULL,
                     lastFetchedTimestamp INTEGER NOT NULL,
                     movieCount INTEGER NOT NULL DEFAULT 0
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
 
-            database.execSQL("""
+            database.execSQL(
+                """
                 CREATE TABLE IF NOT EXISTS genre_movie_cache (
                     genreName TEXT NOT NULL,
                     movieId TEXT NOT NULL,
@@ -132,21 +139,25 @@ object DatabaseMigrations {
                     cachedTimestamp INTEGER NOT NULL,
                     PRIMARY KEY (genreName, movieId)
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
         }
     }
 
     val MIGRATION_17_18 = object : Migration(17, 18) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("""
+            database.execSQL(
+                """
                 CREATE TABLE IF NOT EXISTS show_genre_cache (
                     genreName TEXT PRIMARY KEY NOT NULL,
                     lastFetchedTimestamp INTEGER NOT NULL,
                     showCount INTEGER NOT NULL DEFAULT 0
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
 
-            database.execSQL("""
+            database.execSQL(
+                """
                 CREATE TABLE IF NOT EXISTS genre_show_cache (
                     genreName TEXT NOT NULL,
                     showId TEXT NOT NULL,
@@ -155,20 +166,23 @@ object DatabaseMigrations {
                     cachedTimestamp INTEGER NOT NULL,
                     PRIMARY KEY (genreName, showId)
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
         }
     }
 
     val MIGRATION_18_19 = object : Migration(18, 19) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("""
+            database.execSQL(
+                """
                 CREATE TABLE IF NOT EXISTS studio_cache (
                     studioId TEXT PRIMARY KEY NOT NULL,
                     studioData TEXT NOT NULL,
                     position INTEGER NOT NULL,
                     cachedTimestamp INTEGER NOT NULL
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
         }
     }
 

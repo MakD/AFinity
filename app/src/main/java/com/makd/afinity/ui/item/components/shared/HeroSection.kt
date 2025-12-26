@@ -41,13 +41,15 @@ fun HeroSection(
     val heightMultiplier = if (isLandscape) 0.9f else 0.5f
 
     val backdropUrl = if (item is AfinitySeason) {
-        item.images.backdropImageUrl ?: item.images.showBackdropImageUrl ?: item.images.primaryImageUrl
+        item.images.backdropImageUrl ?: item.images.showBackdropImageUrl
+        ?: item.images.primaryImageUrl
     } else {
         item.images.backdropImageUrl ?: item.images.primaryImageUrl
     }
 
     val backdropBlur = if (item is AfinitySeason) {
-        item.images.backdropBlurHash ?: item.images.showBackdropBlurHash ?: item.images.primaryBlurHash
+        item.images.backdropBlurHash ?: item.images.showBackdropBlurHash
+        ?: item.images.primaryBlurHash
     } else {
         item.images.backdropBlurHash ?: item.images.primaryBlurHash
     }

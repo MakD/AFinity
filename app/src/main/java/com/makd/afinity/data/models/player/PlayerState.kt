@@ -52,6 +52,7 @@ sealed class PlayerEvent {
         val subtitleStreamIndex: Int? = null,
         val startPositionMs: Long = 0L
     ) : PlayerEvent()
+
     data class SkipSegment(val segment: AfinitySegment) : PlayerEvent()
 
     object OnSeekBarDragStart : PlayerEvent()

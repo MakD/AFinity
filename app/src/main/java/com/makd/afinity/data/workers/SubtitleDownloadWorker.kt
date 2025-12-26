@@ -80,6 +80,7 @@ class SubtitleDownloadWorker @AssistedInject constructor(
                 BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
                 BaseItemKind.EPISODE -> baseItemDto.toAfinityEpisode(baseUrl)
                     ?: return@withContext Result.failure(workDataOf("error" to "Failed to convert episode"))
+
                 else -> return@withContext Result.failure(
                     workDataOf("error" to "Unsupported item type: ${baseItemDto.type}")
                 )
@@ -90,7 +91,7 @@ class SubtitleDownloadWorker @AssistedInject constructor(
 
             val subtitleStreams = source.mediaStreams.filter { stream ->
                 stream.type == MediaStreamType.SUBTITLE &&
-                stream.isExternal == true
+                        stream.isExternal == true
             }
 
             source.mediaStreams.forEach { stream ->
@@ -121,17 +122,21 @@ class SubtitleDownloadWorker @AssistedInject constructor(
 
             Timber.i("Subtitle download completed for item: $itemId")
 
-            return@withContext Result.success(workDataOf(
-                KEY_DOWNLOAD_ID to downloadIdString,
-                KEY_ITEM_ID to itemIdString,
-                KEY_SOURCE_ID to sourceId
-            ))
+            return@withContext Result.success(
+                workDataOf(
+                    KEY_DOWNLOAD_ID to downloadIdString,
+                    KEY_ITEM_ID to itemIdString,
+                    KEY_SOURCE_ID to sourceId
+                )
+            )
 
         } catch (e: Exception) {
             Timber.e(e, "Subtitle download failed")
-            return@withContext Result.failure(workDataOf(
-                "error" to (e.message ?: "Unknown error")
-            ))
+            return@withContext Result.failure(
+                workDataOf(
+                    "error" to (e.message ?: "Unknown error")
+                )
+            )
         }
     }
 
@@ -158,7 +163,8 @@ class SubtitleDownloadWorker @AssistedInject constructor(
             return
         }
 
-        val subtitleUrl = "$baseUrl/Videos/$itemId/$mediaSourceId/Subtitles/${stream.index}/Stream.$extension?api_key=${apiClient.accessToken}"
+        val subtitleUrl =
+            "$baseUrl/Videos/$itemId/$mediaSourceId/Subtitles/${stream.index}/Stream.$extension?api_key=${apiClient.accessToken}"
 
         val request = Request.Builder()
             .url(subtitleUrl)

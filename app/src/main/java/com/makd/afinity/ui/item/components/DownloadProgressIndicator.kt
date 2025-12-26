@@ -46,6 +46,7 @@ fun DownloadProgressIndicator(
                     modifier = Modifier.size(28.dp)
                 )
             }
+
             DownloadStatus.DOWNLOADING -> {
                 Box(contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(
@@ -61,6 +62,7 @@ fun DownloadProgressIndicator(
                     )
                 }
             }
+
             DownloadStatus.QUEUED -> {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_hourglass_empty),
@@ -69,6 +71,7 @@ fun DownloadProgressIndicator(
                     modifier = Modifier.size(28.dp)
                 )
             }
+
             DownloadStatus.PAUSED -> {
                 Box(contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(
@@ -84,6 +87,7 @@ fun DownloadProgressIndicator(
                     )
                 }
             }
+
             DownloadStatus.COMPLETED -> {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_delete),

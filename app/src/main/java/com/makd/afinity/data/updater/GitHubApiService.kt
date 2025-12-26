@@ -20,7 +20,8 @@ class GitHubApiService @Inject constructor(
     }
 
     companion object {
-        private const val GITHUB_API_URL = "https://api.github.com/repos/MakD/AFinity/releases/latest"
+        private const val GITHUB_API_URL =
+            "https://api.github.com/repos/MakD/AFinity/releases/latest"
         private const val USER_AGENT = "AFinity-Android-App"
     }
 

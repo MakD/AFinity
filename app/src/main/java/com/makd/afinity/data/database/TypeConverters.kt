@@ -3,19 +3,15 @@ package com.makd.afinity.data.database
 import android.net.Uri
 import androidx.room.TypeConverter
 import com.makd.afinity.data.models.media.AfinityChapter
-import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityStudio
-import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PersonKind
@@ -252,8 +248,18 @@ class TypeConverters {
                 canDownload = serializable.canDownload,
                 runtimeTicks = serializable.runtimeTicks,
                 playbackPositionTicks = serializable.playbackPositionTicks,
-                premiereDate = serializable.premiereDate?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
-                dateCreated = serializable.dateCreated?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
+                premiereDate = serializable.premiereDate?.let {
+                    LocalDateTime.parse(
+                        it,
+                        DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                    )
+                },
+                dateCreated = serializable.dateCreated?.let {
+                    LocalDateTime.parse(
+                        it,
+                        DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                    )
+                },
                 people = toAfinityPersonList(serializable.peopleJson) ?: emptyList(),
                 genres = serializable.genres,
                 communityRating = serializable.communityRating,
@@ -262,7 +268,12 @@ class TypeConverters {
                 taglines = serializable.taglines,
                 status = serializable.status,
                 productionYear = serializable.productionYear,
-                endDate = serializable.endDate?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
+                endDate = serializable.endDate?.let {
+                    LocalDateTime.parse(
+                        it,
+                        DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                    )
+                },
                 trailer = serializable.trailer,
                 tagline = serializable.tagline,
                 unplayedItemCount = serializable.unplayedItemCount,
@@ -332,9 +343,24 @@ class TypeConverters {
                 canDownload = serializable.canDownload,
                 playbackPositionTicks = serializable.playbackPositionTicks,
                 runtimeTicks = serializable.runtimeTicks,
-                premiereDate = serializable.premiereDate?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
-                dateCreated = serializable.dateCreated?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
-                dateLastContentAdded = serializable.dateLastContentAdded?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) },
+                premiereDate = serializable.premiereDate?.let {
+                    LocalDateTime.parse(
+                        it,
+                        DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                    )
+                },
+                dateCreated = serializable.dateCreated?.let {
+                    LocalDateTime.parse(
+                        it,
+                        DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                    )
+                },
+                dateLastContentAdded = serializable.dateLastContentAdded?.let {
+                    LocalDateTime.parse(
+                        it,
+                        DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                    )
+                },
                 people = toAfinityPersonList(serializable.peopleJson) ?: emptyList(),
                 genres = serializable.genres,
                 communityRating = serializable.communityRating,

@@ -97,6 +97,7 @@ fun MediaItemCard(
                             )
                         }
                     }
+
                     item is AfinityShow -> {
                         val displayCount = item.unplayedItemCount ?: item.episodeCount
                         displayCount?.let { count ->
@@ -114,7 +115,10 @@ fun MediaItemCard(
                                             fontWeight = FontWeight.Bold
                                         ),
                                         color = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        modifier = Modifier.padding(
+                                            horizontal = 6.dp,
+                                            vertical = 2.dp
+                                        )
                                     )
                                 }
                             }

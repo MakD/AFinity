@@ -190,7 +190,10 @@ private fun GenreResultsContent(
                                 ) {
                                     Text(
                                         text = count.toString(),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.padding(
+                                            horizontal = 8.dp,
+                                            vertical = 2.dp
+                                        ),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontWeight = FontWeight.Medium
                                         ),
@@ -219,6 +222,7 @@ private fun GenreResultsContent(
                     )
                 }
             }
+
             1 -> {
                 if (shows.isEmpty()) {
                     EmptyStateMessage("No TV shows found in this genre")

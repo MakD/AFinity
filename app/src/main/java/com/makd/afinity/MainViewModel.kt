@@ -24,7 +24,8 @@ class MainViewModel @Inject constructor(
     private val offlineModeManager: OfflineModeManager
 ) : ViewModel() {
 
-    private val _authenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Loading)
+    private val _authenticationState =
+        MutableStateFlow<AuthenticationState>(AuthenticationState.Loading)
     val authenticationState: StateFlow<AuthenticationState> = _authenticationState.asStateFlow()
     val webSocketState = webSocketManager.connectionState
 

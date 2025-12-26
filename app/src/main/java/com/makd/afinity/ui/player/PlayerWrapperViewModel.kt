@@ -123,7 +123,10 @@ class PlayerWrapperViewModel @Inject constructor(
                             Timber.w("PlayerWrapperViewModel: Item not found via API")
                         }
                     } catch (e: Exception) {
-                        Timber.w(e, "PlayerWrapperViewModel: Could not load from API (likely offline)")
+                        Timber.w(
+                            e,
+                            "PlayerWrapperViewModel: Could not load from API (likely offline)"
+                        )
                     }
                 }
 
@@ -132,7 +135,7 @@ class PlayerWrapperViewModel @Inject constructor(
                 }
 
                 _item.value = loadedItem
-                Timber.d("PlayerWrapperViewModel: Set item value to: ${if (loadedItem != null) loadedItem.name else "null"}")
+                Timber.d("PlayerWrapperViewModel: Set item value to: ${loadedItem?.name ?: "null"}")
             } catch (e: Exception) {
                 Timber.e(e, "PlayerWrapperViewModel: Failed to load item: $itemId")
                 _item.value = null

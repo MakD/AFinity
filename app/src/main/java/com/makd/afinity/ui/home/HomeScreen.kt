@@ -81,7 +81,7 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.OptimizedAsyncImage
-import com.makd.afinity.ui.components.OptimizedHeroCarousel
+import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.MovieRecommendationSection
 import com.makd.afinity.ui.home.components.NextUpSection
@@ -192,7 +192,7 @@ fun HomeScreen(
                 ) {
                     if (showCarousel) {
                         item(key = "hero_carousel") {
-                            OptimizedHeroCarousel(
+                            HeroCarousel(
                                 items = uiState.heroCarouselItems,
                                 height = screenHeight * 0.65f,
                                 isScrolling = isScrolling,

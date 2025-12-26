@@ -13,10 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions

@@ -17,6 +17,7 @@ import timber.log.Timber
 class AfinityApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
     @Inject
     lateinit var updateScheduler: UpdateScheduler
 

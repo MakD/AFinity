@@ -740,7 +740,9 @@ private fun SettingsSwitchItem(
         icon = icon,
         title = title,
         subtitle = subtitle,
-        onClick = if (enabled) { { onCheckedChange(!checked) } } else null,
+        onClick = if (enabled) {
+            { onCheckedChange(!checked) }
+        } else null,
         modifier = modifier,
         trailing = {
             Switch(
@@ -751,7 +753,9 @@ private fun SettingsSwitchItem(
                     checkedThumbColor = MaterialTheme.colorScheme.primary,
                     checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
                     disabledCheckedThumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    disabledCheckedTrackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    disabledCheckedTrackColor = MaterialTheme.colorScheme.primaryContainer.copy(
+                        alpha = 0.5f
+                    )
                 )
             )
         }

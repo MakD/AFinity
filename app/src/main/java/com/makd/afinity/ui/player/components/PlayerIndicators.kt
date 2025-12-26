@@ -95,7 +95,9 @@ private fun SeekIndicator(
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(
-                    painter = if (direction > 0) painterResource(id = R.drawable.ic_fast_forward) else painterResource(id = R.drawable.ic_fast_rewind),
+                    painter = if (direction > 0) painterResource(id = R.drawable.ic_fast_forward) else painterResource(
+                        id = R.drawable.ic_fast_rewind
+                    ),
                     contentDescription = if (direction > 0) "Fast Forward" else "Rewind",
                     tint = Color.White,
                     modifier = Modifier.size(40.dp)

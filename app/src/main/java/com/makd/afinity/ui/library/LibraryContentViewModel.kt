@@ -23,6 +23,7 @@ import javax.inject.Inject
 enum class FilterType {
     ALL, WATCHED, UNWATCHED, WATCHLIST, FAVORITES
 }
+
 @HiltViewModel
 class LibraryContentViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
@@ -87,6 +88,7 @@ class LibraryContentViewModel @Inject constructor(
                 name.contains("TV", ignoreCase = true) ||
                         name.contains("Shows", ignoreCase = true) ||
                         name.contains("Series", ignoreCase = true) -> CollectionType.TvShows
+
                 name.contains("Movie", ignoreCase = true) -> CollectionType.Movies
                 else -> CollectionType.Mixed
             }
@@ -175,6 +177,8 @@ class LibraryContentViewModel @Inject constructor(
                     else -> letter
                 }
 
+                _uiState.value = _uiState.value.copy(selectedLetter = letter)
+
                 _pagingData.value = jellyfinRepository.getItemsPaging(
                     parentId = libraryId?.let { UUID.fromString(it) },
                     libraryType = type,
@@ -192,6 +196,11 @@ class LibraryContentViewModel @Inject constructor(
             }
         }
     }
+
+    fun clearLetterFilter() {
+        _uiState.value = _uiState.value.copy(selectedLetter = null)
+        loadItems()
+    }
 }
 
 data class LibraryContentUiState(
@@ -204,5 +213,6 @@ data class LibraryContentUiState(
     val currentSortBy: SortBy = SortBy.NAME,
     val currentSortDescending: Boolean = false,
     val currentFilter: FilterType = FilterType.ALL,
-    val isStudioMode: Boolean = false
+    val isStudioMode: Boolean = false,
+    val selectedLetter: String? = null
 )

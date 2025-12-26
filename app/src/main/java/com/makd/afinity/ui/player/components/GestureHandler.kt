@@ -110,7 +110,8 @@ fun GestureHandler(
                         if (dragStartPosition.y < exclusionVertical ||
                             dragStartPosition.y > screenHeight - exclusionVertical ||
                             dragStartPosition.x < exclusionHorizontal ||
-                            dragStartPosition.x > screenWidth - exclusionHorizontal) {
+                            dragStartPosition.x > screenWidth - exclusionHorizontal
+                        ) {
                             return@detectDragGestures
                         }
 
@@ -118,7 +119,10 @@ fun GestureHandler(
                         val horizontalDrag = dragAmount.x
                         val minimumDragDistance = 5f
 
-                        if (gestureType == null && (abs(verticalDrag) > minimumDragDistance || abs(horizontalDrag) > minimumDragDistance)) {
+                        if (gestureType == null && (abs(verticalDrag) > minimumDragDistance || abs(
+                                horizontalDrag
+                            ) > minimumDragDistance)
+                        ) {
                             gestureType = when {
                                 abs(verticalDrag) > abs(horizontalDrag) -> {
                                     when {
@@ -127,6 +131,7 @@ fun GestureHandler(
                                         else -> null
                                     }
                                 }
+
                                 abs(horizontalDrag) > abs(verticalDrag) -> GestureType.SEEK
                                 else -> null
                             }
@@ -138,11 +143,13 @@ fun GestureHandler(
                                 val gestureStrength = verticalDrag / distanceFull
                                 onBrightnessGesture(gestureStrength)
                             }
+
                             GestureType.VOLUME -> {
                                 val distanceFull = screenHeight * 0.3f
                                 val gestureStrength = verticalDrag / distanceFull
                                 onVolumeGesture(gestureStrength)
                             }
+
                             GestureType.SEEK -> {
                                 totalHorizontalDelta += horizontalDrag
                                 val seekActivationThreshold = 10f
@@ -159,6 +166,7 @@ fun GestureHandler(
                                     Timber.d("Seek gesture: strength=$seekStrength")
                                 }
                             }
+
                             null -> {
                             }
                         }

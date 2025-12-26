@@ -101,7 +101,8 @@ class PlaybackStateManager @Inject constructor(
         scope.launch {
             try {
                 currentItemId?.let { itemId ->
-                    val refreshedItem = mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
+                    val refreshedItem =
+                        mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
 
                     if (refreshedItem != null) {
                         Timber.d("Successfully updated UserData for played item: ${refreshedItem.name}")

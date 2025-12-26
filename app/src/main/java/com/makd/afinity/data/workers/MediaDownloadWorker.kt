@@ -121,6 +121,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                 BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
                 BaseItemKind.EPISODE -> baseItemDto.toAfinityEpisode(baseUrl)
                     ?: return@withContext Result.failure(workDataOf("error" to "Failed to convert episode"))
+
                 else -> return@withContext Result.failure(
                     workDataOf("error" to "Unsupported item type: ${baseItemDto.type}")
                 )
@@ -179,11 +180,13 @@ class MediaDownloadWorker @AssistedInject constructor(
                                 val progress = (downloadedBytes.toFloat() / totalBytes.toFloat())
                                 updateProgress(downloadId, progress, downloadedBytes, totalBytes)
 
-                                setProgressAsync(workDataOf(
-                                    PROGRESS_KEY to progress,
-                                    "downloadedBytes" to downloadedBytes,
-                                    "totalBytes" to totalBytes
-                                ))
+                                setProgressAsync(
+                                    workDataOf(
+                                        PROGRESS_KEY to progress,
+                                        "downloadedBytes" to downloadedBytes,
+                                        "totalBytes" to totalBytes
+                                    )
+                                )
                             }
                         }
                     }
@@ -215,12 +218,14 @@ class MediaDownloadWorker @AssistedInject constructor(
 
             Timber.i("Media download completed successfully for: $itemName")
 
-            return@withContext Result.success(workDataOf(
-                KEY_DOWNLOAD_ID to downloadIdString,
-                KEY_ITEM_ID to itemIdString,
-                KEY_SOURCE_ID to sourceId,
-                KEY_FILE_PATH to finalFile.absolutePath
-            ))
+            return@withContext Result.success(
+                workDataOf(
+                    KEY_DOWNLOAD_ID to downloadIdString,
+                    KEY_ITEM_ID to itemIdString,
+                    KEY_SOURCE_ID to sourceId,
+                    KEY_FILE_PATH to finalFile.absolutePath
+                )
+            )
 
         } catch (e: Exception) {
             Timber.e(e, "Media download failed")
@@ -236,9 +241,11 @@ class MediaDownloadWorker @AssistedInject constructor(
                 )
             }
 
-            return@withContext Result.failure(workDataOf(
-                "error" to (e.message ?: "Unknown error")
-            ))
+            return@withContext Result.failure(
+                workDataOf(
+                    "error" to (e.message ?: "Unknown error")
+                )
+            )
         }
     }
 
@@ -295,6 +302,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                     databaseRepository.insertMovie(movie)
                     Timber.d("Saved movie to database: ${movie.name}")
                 }
+
                 BaseItemKind.EPISODE -> {
                     val episode = baseItemDto.toAfinityEpisode(baseUrl)
                     if (episode != null) {
@@ -360,6 +368,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                         Timber.d("Saved episode to database: ${episode.name}")
                     }
                 }
+
                 else -> {
                     Timber.w("Unsupported item type for database save: ${baseItemDto.type}")
                 }
@@ -532,6 +541,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                         Timber.w(e, "Failed to download person images for movie")
                     }
                 }
+
                 is com.makd.afinity.data.models.media.AfinityEpisode -> {
                     databaseRepository.insertEpisode(item.copy(images = updatedImages))
                     Timber.i("Updated episode in database with local image paths")
@@ -707,7 +717,8 @@ class MediaDownloadWorker @AssistedInject constructor(
             val updatedPeople = movie.people.map { person ->
                 person.image.uri?.let { uri ->
                     Timber.d("Downloading image for person: ${person.name}")
-                    val localPath = downloadImage(uri.toString(), peopleImagesDir, person.id.toString())
+                    val localPath =
+                        downloadImage(uri.toString(), peopleImagesDir, person.id.toString())
                     if (localPath != null) {
                         Timber.i("✓ Downloaded image for ${person.name}")
                         person.copy(
@@ -730,7 +741,11 @@ class MediaDownloadWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun downloadImage(imageUrl: String, outputDir: File, baseName: String): android.net.Uri? {
+    private suspend fun downloadImage(
+        imageUrl: String,
+        outputDir: File,
+        baseName: String
+    ): android.net.Uri? {
         return try {
             Timber.d("Downloading image: $imageUrl")
 

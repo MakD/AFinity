@@ -79,6 +79,7 @@ class TrickplayDownloadWorker @AssistedInject constructor(
                 BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
                 BaseItemKind.EPISODE -> baseItemDto.toAfinityEpisode(baseUrl)
                     ?: return@withContext Result.failure(workDataOf("error" to "Failed to convert episode"))
+
                 else -> return@withContext Result.failure(
                     workDataOf("error" to "Unsupported item type: ${baseItemDto.type}")
                 )
@@ -121,17 +122,21 @@ class TrickplayDownloadWorker @AssistedInject constructor(
 
             Timber.i("Trickplay download completed for item: $itemId")
 
-            return@withContext Result.success(workDataOf(
-                KEY_DOWNLOAD_ID to downloadIdString,
-                KEY_ITEM_ID to itemIdString,
-                KEY_SOURCE_ID to sourceId
-            ))
+            return@withContext Result.success(
+                workDataOf(
+                    KEY_DOWNLOAD_ID to downloadIdString,
+                    KEY_ITEM_ID to itemIdString,
+                    KEY_SOURCE_ID to sourceId
+                )
+            )
 
         } catch (e: Exception) {
             Timber.e(e, "Trickplay download failed")
-            return@withContext Result.failure(workDataOf(
-                "error" to (e.message ?: "Unknown error")
-            ))
+            return@withContext Result.failure(
+                workDataOf(
+                    "error" to (e.message ?: "Unknown error")
+                )
+            )
         }
     }
 
@@ -147,13 +152,15 @@ class TrickplayDownloadWorker @AssistedInject constructor(
         val width = info.width
 
         val thumbnailsPerTile = info.tileWidth * info.tileHeight
-        val totalTiles = kotlin.math.ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile).toInt()
+        val totalTiles =
+            kotlin.math.ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile).toInt()
 
         Timber.d("Downloading trickplay: ${info.thumbnailCount} thumbnails across $totalTiles tiled images (${info.tileWidth}x${info.tileHeight} grid per tile)")
 
         for (tileIndex in 0 until totalTiles) {
             try {
-                val tileUrl = "$baseUrl/Videos/$itemId/Trickplay/$width/$tileIndex.jpg?api_key=${apiClient.accessToken}"
+                val tileUrl =
+                    "$baseUrl/Videos/$itemId/Trickplay/$width/$tileIndex.jpg?api_key=${apiClient.accessToken}"
                 val outputFile = File(resolutionDir, "$tileIndex.jpg")
 
                 Timber.d("Downloading trickplay tile to: ${outputFile.absolutePath}")

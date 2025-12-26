@@ -74,8 +74,10 @@ fun MainNavigation(
     offlineModeManager: OfflineModeManager
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
-    val watchlistRepository: WatchlistRepository = hiltViewModel<MainNavigationViewModel>().watchlistRepository
-    val watchlistCount by watchlistRepository.getWatchlistCountFlow().collectAsStateWithLifecycle(initialValue = 0)
+    val watchlistRepository: WatchlistRepository =
+        hiltViewModel<MainNavigationViewModel>().watchlistRepository
+    val watchlistCount by watchlistRepository.getWatchlistCountFlow()
+        .collectAsStateWithLifecycle(initialValue = 0)
     val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
     val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val navController = rememberNavController()
@@ -315,7 +317,8 @@ fun MainNavigation(
                         com.makd.afinity.ui.player.PlayerLauncher.launch(
                             context = navController.context,
                             itemId = item.id,
-                            mediaSourceId = selection?.mediaSourceId ?: item.sources.firstOrNull()?.id ?: "",
+                            mediaSourceId = selection?.mediaSourceId
+                                ?: item.sources.firstOrNull()?.id ?: "",
                             audioStreamIndex = selection?.audioStreamIndex,
                             subtitleStreamIndex = selection?.subtitleStreamIndex,
                             startPositionMs = selection?.startPositionMs ?: 0L

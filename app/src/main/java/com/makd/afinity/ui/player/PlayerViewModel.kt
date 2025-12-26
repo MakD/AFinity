@@ -296,19 +296,26 @@ class PlayerViewModel @Inject constructor(
                 is PlayerEvent.Pause -> player.pause()
                 is PlayerEvent.Seek -> player.seekTo(event.positionMs)
                 is PlayerEvent.SeekRelative -> {
-                    val newPos = (player.currentPosition + event.deltaMs).coerceIn(0, player.duration)
+                    val newPos =
+                        (player.currentPosition + event.deltaMs).coerceIn(0, player.duration)
                     player.seekTo(newPos)
                 }
+
                 is PlayerEvent.SetVolume -> volumeManager.setVolume(event.volume)
-                is PlayerEvent.SetBrightness -> { /* Handle at UI level */ }
+                is PlayerEvent.SetBrightness -> { /* Handle at UI level */
+                }
+
                 is PlayerEvent.SetPlaybackSpeed -> {
                     player.setPlaybackSpeed(event.speed)
                     updateUiState { it.copy(playbackSpeed = event.speed) }
                 }
+
                 is PlayerEvent.SwitchToTrack -> switchToTrack(event.trackType, event.index)
                 is PlayerEvent.ToggleControls -> toggleControls()
                 is PlayerEvent.ToggleLock -> onLockToggle()
-                is PlayerEvent.ToggleFullscreen -> { /* Handled at UI level */ }
+                is PlayerEvent.ToggleFullscreen -> { /* Handled at UI level */
+                }
+
                 is PlayerEvent.EnterPictureInPicture -> enterPictureInPicture()
                 is PlayerEvent.LoadMedia -> {
                     updateUiState { it.copy(isLoading = true) }
@@ -320,30 +327,48 @@ class PlayerViewModel @Inject constructor(
                         event.startPositionMs
                     )
                 }
+
                 is PlayerEvent.SkipSegment -> {
                     handlePlayerEvent(PlayerEvent.Seek(event.segment.endTicks))
                     updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
                 }
+
                 is PlayerEvent.Stop -> player.stop()
                 is PlayerEvent.OnSeekBarDragStart -> {
-                    updateUiState { it.copy(isSeeking = true, dragStartPosition = uiState.value.currentPosition) }
+                    updateUiState {
+                        it.copy(
+                            isSeeking = true,
+                            dragStartPosition = uiState.value.currentPosition
+                        )
+                    }
                     onSeekBarPreview(uiState.value.currentPosition, true)
                 }
+
                 is PlayerEvent.OnSeekBarValueChange -> {
                     updateUiState { it.copy(seekPosition = event.positionMs) }
                     onSeekBarPreview(event.positionMs, true)
                 }
+
                 is PlayerEvent.OnSeekBarDragFinished -> {
                     player.seekTo(uiState.value.seekPosition)
-                    updateUiState { it.copy(isSeeking = false, currentPosition = uiState.value.seekPosition, dragStartPosition = 0L) }
+                    updateUiState {
+                        it.copy(
+                            isSeeking = false,
+                            currentPosition = uiState.value.seekPosition,
+                            dragStartPosition = 0L
+                        )
+                    }
                     onSeekBarPreview(0, false)
                 }
+
                 is PlayerEvent.ToggleRemainingTime -> {
                     updateUiState { it.copy(showRemainingTime = !it.showRemainingTime) }
                 }
+
                 is PlayerEvent.SetVideoZoomMode -> {
                     applyZoomMode(event.mode)
                 }
+
                 is PlayerEvent.CycleVideoZoomMode -> {
                     cycleZoomMode()
                 }
@@ -356,6 +381,7 @@ class PlayerViewModel @Inject constructor(
             is ExoPlayer -> {
                 playerView?.resizeMode = mode.toExoPlayerResizeMode()
             }
+
             is MPVPlayer -> {
                 applyMPVZoomMode(mode)
             }
@@ -373,10 +399,12 @@ class PlayerViewModel @Inject constructor(
                 mpvPlayer.setOption("video-aspect-override", "-1")
                 mpvPlayer.setOption("panscan", "0.0")
             }
+
             VideoZoomMode.ZOOM -> {
                 mpvPlayer.setOption("video-aspect-override", "-1")
                 mpvPlayer.setOption("panscan", "1.0")
             }
+
             VideoZoomMode.STRETCH -> {
                 mpvPlayer.setOption("video-unscaled", "1")
                 mpvPlayer.setOption("panscan", "0.0")
@@ -432,7 +460,8 @@ class PlayerViewModel @Inject constructor(
 
             coroutineScope {
                 val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
-                val useLocalSource = mediaSource?.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                val useLocalSource =
+                    mediaSource?.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
 
                 val streamUrlDeferred = async(Dispatchers.IO) {
                     if (useLocalSource) {
@@ -461,7 +490,13 @@ class PlayerViewModel @Inject constructor(
                 val streamUrl = streamUrlDeferred.await()
                 if (streamUrl.isNullOrBlank()) {
                     Timber.e("Stream URL is null or empty")
-                    updateUiState { it.copy(isLoading = false, showError = true, errorMessage = "Failed to load stream.") }
+                    updateUiState {
+                        it.copy(
+                            isLoading = false,
+                            showError = true,
+                            errorMessage = "Failed to load stream."
+                        )
+                    }
                     return@coroutineScope
                 }
                 val externalSubtitles = if (useLocalSource) {
@@ -485,17 +520,23 @@ class PlayerViewModel @Inject constructor(
                                     else -> MimeTypes.TEXT_UNKNOWN
                                 }
 
-                                val language = subtitleFile.nameWithoutExtension.split("_").firstOrNull() ?: "unknown"
+                                val language =
+                                    subtitleFile.nameWithoutExtension.split("_").firstOrNull()
+                                        ?: "unknown"
 
-                                val subtitleConfig = MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse("file://${subtitleFile.absolutePath}"))
-                                    .setLabel(language)
-                                    .setMimeType(mimeType)
-                                    .setLanguage(language)
-                                    .build()
+                                val subtitleConfig =
+                                    MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse("file://${subtitleFile.absolutePath}"))
+                                        .setLabel(language)
+                                        .setMimeType(mimeType)
+                                        .setLanguage(language)
+                                        .build()
                                 Timber.d("PlayerViewModel: Built subtitle config - Label: $language, MimeType: $mimeType, URI: file://${subtitleFile.absolutePath}")
                                 subtitleConfig
                             } catch (e: Exception) {
-                                Timber.e(e, "Failed to build subtitle config for local file: ${subtitleFile.name}")
+                                Timber.e(
+                                    e,
+                                    "Failed to build subtitle config for local file: ${subtitleFile.name}"
+                                )
                                 null
                             }
                         } ?: emptyList()
@@ -510,14 +551,25 @@ class PlayerViewModel @Inject constructor(
                         }
                         ?.mapNotNull { stream ->
                             try {
-                                val subtitleUrl = "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
-                                MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(subtitleUrl))
-                                    .setLabel(stream.displayTitle ?: stream.language ?: "Track ${stream.index}")
+                                val subtitleUrl =
+                                    "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
+                                MediaItem.SubtitleConfiguration.Builder(
+                                    android.net.Uri.parse(
+                                        subtitleUrl
+                                    )
+                                )
+                                    .setLabel(
+                                        stream.displayTitle ?: stream.language
+                                        ?: "Track ${stream.index}"
+                                    )
                                     .setMimeType(MimeTypes.APPLICATION_SUBRIP)
                                     .setLanguage(stream.language ?: "eng")
                                     .build()
                             } catch (e: Exception) {
-                                Timber.e(e, "Failed to build subtitle config for stream ${stream.index}")
+                                Timber.e(
+                                    e,
+                                    "Failed to build subtitle config for stream ${stream.index}"
+                                )
                                 null
                             }
                         } ?: emptyList()
@@ -552,7 +604,13 @@ class PlayerViewModel @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load media")
-            updateUiState { it.copy(isLoading = false, showError = true, errorMessage = "An unexpected error occurred.") }
+            updateUiState {
+                it.copy(
+                    isLoading = false,
+                    showError = true,
+                    errorMessage = "An unexpected error occurred."
+                )
+            }
         }
         updateCurrentTrackSelections()
     }
@@ -573,9 +631,11 @@ class PlayerViewModel @Inject constructor(
             is com.makd.afinity.data.models.media.AfinityEpisode -> {
                 currentItem.trickplayInfo?.values?.firstOrNull()
             }
+
             is com.makd.afinity.data.models.media.AfinityMovie -> {
                 currentItem.trickplayInfo?.values?.firstOrNull()
             }
+
             else -> {
                 if (currentItem is com.makd.afinity.data.models.media.AfinitySources) {
                     currentItem.trickplayInfo?.values?.firstOrNull()
@@ -590,7 +650,9 @@ class PlayerViewModel @Inject constructor(
                 try {
                     withContext(Dispatchers.Default) {
                         val thumbnailsPerTile = info.tileWidth * info.tileHeight
-                        val maxTileIndex = kotlin.math.ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile).toInt()
+                        val maxTileIndex =
+                            kotlin.math.ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile)
+                                .toInt()
 
                         val individualThumbnails = mutableListOf<ImageBitmap>()
 
@@ -601,11 +663,18 @@ class PlayerViewModel @Inject constructor(
                                 tileIndex
                             )
                             if (imageData != null) {
-                                val tileBitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
+                                val tileBitmap =
+                                    BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
                                 for (offsetY in 0 until (info.height * info.tileHeight) step info.height) {
                                     for (offsetX in 0 until (info.width * info.tileWidth) step info.width) {
                                         try {
-                                            val thumbnail = Bitmap.createBitmap(tileBitmap, offsetX, offsetY, info.width, info.height)
+                                            val thumbnail = Bitmap.createBitmap(
+                                                tileBitmap,
+                                                offsetX,
+                                                offsetY,
+                                                info.width,
+                                                info.height
+                                            )
                                             individualThumbnails.add(thumbnail.asImageBitmap())
                                             if (individualThumbnails.size >= info.thumbnailCount) break
                                         } catch (e: Exception) {
@@ -613,7 +682,7 @@ class PlayerViewModel @Inject constructor(
                                         }
                                     }
                                     if (individualThumbnails.size >= info.thumbnailCount) break
-                                 }
+                                }
                             } else {
                                 Timber.d("Failed to load tile $tileIndex")
                                 break
@@ -859,6 +928,7 @@ class PlayerViewModel @Inject constructor(
     fun onSeekForward() {
         handlePlayerEvent(PlayerEvent.SeekRelative(10000L))
     }
+
     fun onNextEpisode() {
         viewModelScope.launch {
             playlistManager.getNextItem()?.let { nextItem ->
@@ -999,7 +1069,12 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun showControls() {
-        updateUiState { it.copy(showControls = true, showPlayButton = !uiState.value.isControlsLocked) }
+        updateUiState {
+            it.copy(
+                showControls = true,
+                showPlayButton = !uiState.value.isControlsLocked
+            )
+        }
         startControlsAutoHide()
     }
 
@@ -1071,7 +1146,7 @@ class PlayerViewModel @Inject constructor(
         val errorMessage: String? = null,
         val brightnessLevel: Float = 0.5f,
         val showTrickplayPreview: Boolean = false,
-        val trickplayPreviewImage: androidx.compose.ui.graphics.ImageBitmap? = null,
+        val trickplayPreviewImage: ImageBitmap? = null,
         val trickplayPreviewPosition: Long = 0L,
         val currentItem: AfinityItem? = null,
         val showSkipButton: Boolean = false,
