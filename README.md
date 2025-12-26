@@ -4,12 +4,15 @@
   <img src="https://raw.githubusercontent.com/MakD/AFinity/refs/heads/master/screenshots/Logo/GithubBanner.png" alt="AFinity Banner" width="100%">
 </p>
 
-[![Release](https://img.shields.io/github/v/release/MakD/AFinity?style=for-the-badge&color=4a90e2)](https://github.com/MakD/AFinity/releases)
-[![Stars](https://img.shields.io/github/stars/MakD/AFinity?style=for-the-badge&color=7b68ee)](https://github.com/MakD/AFinity/stargazers)
-[![Issues](https://img.shields.io/github/issues/MakD/AFinity?style=for-the-badge&color=e94b3c)](https://github.com/MakD/AFinity/issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/MakD/AFinity?style=for-the-badge&color=f39c12)](https://github.com/MakD/AFinity/pulls)
-[![Downloads](https://img.shields.io/github/downloads/MakD/AFinity/total?style=for-the-badge&color=27ae60)](https://github.com/MakD/AFinity/releases)
-[![License](https://img.shields.io/github/license/MakD/AFinity?style=for-the-badge&color=6c7b7f)](https://github.com/MakD/AFinity/blob/master/LICENSE.md)
+[![Release](https://img.shields.io/github/v/release/MakD/AFinity?style=for-the-badge&labelColor=4a90e2&color=black)](https://github.com/MakD/AFinity/releases)
+![GitHub commits since latest release](https://img.shields.io/github/commits-since/Makd/Afinity/latest?sort=date&style=for-the-badge&labelColor=465775&color=000000&cacheSeconds=3600)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/MakD/Afinity?style=for-the-badge&labelColor=05668D&color=black&cacheSeconds=600)
+[![Stars](https://img.shields.io/github/stars/MakD/AFinity?style=for-the-badge&labelColor=7b68ee&color=black)](https://github.com/MakD/AFinity/stargazers)
+[![Issues](https://img.shields.io/github/issues/MakD/AFinity?style=for-the-badge&labelColor=e94b3c&color=black)](https://github.com/MakD/AFinity/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/MakD/AFinity?style=for-the-badge&labelColor=f39c12&color=black)](https://github.com/MakD/AFinity/pulls)
+[![Downloads](https://img.shields.io/github/downloads/MakD/AFinity/total?style=for-the-badge&labelColor=27ae60&color=black)](https://github.com/MakD/AFinity/releases)
+[![License](https://img.shields.io/github/license/MakD/AFinity?style=for-the-badge&labelColor=665687&color=black)](https://github.com/MakD/AFinity/blob/master/LICENSE.md)
+<a href="https://discord.com/channels/1381737066366242896/1422939582533730325"><img alt="Discord" src="https://img.shields.io/badge/AFinity-%20Jellyfin%20Community?&logo=discord&logoColor=white&style=for-the-badge&label=Jellyfin%20Community&labelColor=5865F2&color=black"></a>
 
 A native Android client for Jellyfin servers built with Jetpack Compose and Material 3.
 
