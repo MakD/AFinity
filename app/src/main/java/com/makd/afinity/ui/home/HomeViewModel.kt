@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.model.api.PersonKind.*
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -272,9 +273,9 @@ class HomeViewModel @Inject constructor(
     private suspend fun loadAllActorSections() {
         try {
             val topActors = appDataRepository.getTopPeople(
-                type = org.jellyfin.sdk.model.api.PersonKind.ACTOR,
-                limit = 100,
-                minAppearances = 10
+                type = ACTOR,
+                limit = 75,
+                minAppearances = 5
             )
 
             val availableActors = topActors.filterNot { it.person.name in renderedPeopleNames }
@@ -314,9 +315,9 @@ class HomeViewModel @Inject constructor(
     private suspend fun loadAllDirectorSections() {
         try {
             val topDirectors = appDataRepository.getTopPeople(
-                type = org.jellyfin.sdk.model.api.PersonKind.DIRECTOR,
-                limit = 100,
-                minAppearances = 10
+                type = DIRECTOR,
+                limit = 75,
+                minAppearances = 5
             )
 
             val availableDirectors = topDirectors.filterNot { it.person.name in renderedPeopleNames }
@@ -356,9 +357,9 @@ class HomeViewModel @Inject constructor(
     private suspend fun loadAllWriterSections() {
         try {
             val topWriters = appDataRepository.getTopPeople(
-                type = org.jellyfin.sdk.model.api.PersonKind.WRITER,
-                limit = 100,
-                minAppearances = 10
+                type = WRITER,
+                limit = 50,
+                minAppearances = 3
             )
 
             val availableWriters = topWriters.filterNot { it.person.name in renderedPeopleNames }
@@ -459,7 +460,7 @@ class HomeViewModel @Inject constructor(
                 }
 
                 val availableActors = movieWithPeople.people
-                    .filter { it.type == org.jellyfin.sdk.model.api.PersonKind.ACTOR }
+                    .filter { it.type == ACTOR }
                     .filterNot { it.name in renderedActorNames }
 
                 if (availableActors.isEmpty()) {
@@ -481,7 +482,7 @@ class HomeViewModel @Inject constructor(
                         when (item) {
                             is AfinityMovie -> {
                                 item.people.any { person ->
-                                    person.id == selectedActor.id && person.type == org.jellyfin.sdk.model.api.PersonKind.ACTOR
+                                    person.id == selectedActor.id && person.type == ACTOR
                                 }
                             }
                             else -> false

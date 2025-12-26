@@ -92,6 +92,10 @@ class PlayerViewModel @Inject constructor(
 
     var onAutoplayNextEpisode: ((AfinityItem) -> Unit)? = null
     var enterPictureInPicture: (() -> Unit)? = null
+    private val screenAspectRatio: Float by lazy {
+        val metrics = context.resources.displayMetrics
+        metrics.widthPixels.toFloat() / metrics.heightPixels.toFloat()
+    }
     val playlistState = playlistManager.playlistState
 
     init {
@@ -372,6 +376,11 @@ class PlayerViewModel @Inject constructor(
             VideoZoomMode.ZOOM -> {
                 mpvPlayer.setOption("video-aspect-override", "-1")
                 mpvPlayer.setOption("panscan", "1.0")
+            }
+            VideoZoomMode.STRETCH -> {
+                mpvPlayer.setOption("video-unscaled", "1")
+                mpvPlayer.setOption("panscan", "0.0")
+                mpvPlayer.setOption("video-aspect-override", screenAspectRatio.toString())
             }
         }
     }

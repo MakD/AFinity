@@ -866,6 +866,12 @@ class AppDataRepository @Inject constructor(
                 startIndex += pageSize
 
                 Timber.d("Processed $startIndex movies for top ${type.name}...")
+
+                val qualifyingPeople = peopleFrequency.values.count { it.second >= minAppearances }
+                if (qualifyingPeople >= limit) {
+                    Timber.d("Early stop: Found $qualifyingPeople qualifying ${type.name} (target: $limit)")
+                    break
+                }
             }
 
             val topPeople = peopleFrequency.values

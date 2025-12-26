@@ -10,7 +10,8 @@ import com.makd.afinity.R
 
 enum class VideoZoomMode(val value: Int) {
     FIT(0),
-    ZOOM(1);
+    ZOOM(1),
+    STRETCH(2);
 
     companion object {
         fun fromInt(value: Int) = entries.firstOrNull { it.value == value } ?: FIT
@@ -21,6 +22,7 @@ enum class VideoZoomMode(val value: Int) {
         return when (this) {
             FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
             ZOOM -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            STRETCH -> AspectRatioFrameLayout.RESIZE_MODE_FILL
         }
     }
 
@@ -28,6 +30,7 @@ enum class VideoZoomMode(val value: Int) {
         return when (this) {
             FIT -> "Fit"
             ZOOM -> "Zoom"
+            STRETCH -> "Stretch"
         }
     }
 
@@ -35,7 +38,8 @@ enum class VideoZoomMode(val value: Int) {
     fun getIconPainter(): Painter {
         return when (this) {
             FIT -> painterResource(id = R.drawable.ic_fullscreen)
-            ZOOM -> painterResource(id = R.drawable.ic_fullscreen_exit)
+            ZOOM -> painterResource(id = R.drawable.ic_arrows_output)
+            STRETCH -> painterResource(id = R.drawable.ic_fullscreen_exit)
         }
     }
 
@@ -43,7 +47,8 @@ enum class VideoZoomMode(val value: Int) {
     fun toggle(): VideoZoomMode {
         return when (this) {
             FIT -> ZOOM
-            ZOOM -> FIT
+            ZOOM -> STRETCH
+            STRETCH -> FIT
         }
     }
 }

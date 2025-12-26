@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository.media
 
+import android.content.Context
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
@@ -21,7 +22,6 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.repository.FieldSets
-import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -38,7 +38,6 @@ import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.GenresApi
 import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.api.operations.LibraryApi
-import org.jellyfin.sdk.api.operations.MoviesApi
 import org.jellyfin.sdk.api.operations.StudiosApi
 import org.jellyfin.sdk.api.operations.TrickplayApi
 import org.jellyfin.sdk.api.operations.TvShowsApi
@@ -1026,9 +1025,11 @@ class JellyfinMediaRepository @Inject constructor(
                 },
                 fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                 enableImages = true,
+                imageTypeLimit = 1,
+                enableImageTypes = listOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY),
                 enableUserData = true,
                 recursive = true,
-                limit = 200
+                limit = 150
             )
             response.content?.items?.mapNotNull { baseItem ->
                 baseItem.toAfinityItem(getBaseUrl())
