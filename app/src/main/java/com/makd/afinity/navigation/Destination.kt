@@ -43,6 +43,7 @@ enum class Destination(
         const val GENRE_RESULTS_ROUTE = "genre_results/{genre}"
         const val SETTINGS_ROUTE = "settings"
         const val DOWNLOAD_SETTINGS_ROUTE = "download_settings"
+        const val PLAYER_OPTIONS_ROUTE = "player_options"
         const val LICENSES_ROUTE = "licenses"
 
         fun createPersonRoute(personId: String): String {
@@ -100,6 +101,10 @@ enum class Destination(
 
         fun createDownloadSettingsRoute(): String {
             return DOWNLOAD_SETTINGS_ROUTE
+        }
+
+        fun createPlayerOptionsRoute(): String {
+            return PLAYER_OPTIONS_ROUTE
         }
 
         fun createLicensesRoute(): String {

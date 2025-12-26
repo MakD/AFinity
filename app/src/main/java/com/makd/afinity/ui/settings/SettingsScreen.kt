@@ -70,6 +70,7 @@ fun SettingsScreen(
     onLogoutComplete: () -> Unit,
     onLicensesClick: () -> Unit,
     onDownloadClick: () -> Unit,
+    onPlayerOptionsClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -189,16 +190,7 @@ fun SettingsScreen(
 
                 item {
                     PlaybackSection(
-                        autoPlay = uiState.autoPlay,
-                        skipIntroEnabled = uiState.skipIntroEnabled,
-                        skipOutroEnabled = uiState.skipOutroEnabled,
-                        useExoPlayer = uiState.useExoPlayer,
-                        pipGestureEnabled = uiState.pipGestureEnabled,
-                        onAutoPlayToggle = viewModel::toggleAutoPlay,
-                        onSkipIntroToggle = viewModel::toggleSkipIntro,
-                        onSkipOutroToggle = viewModel::toggleSkipOutro,
-                        onUseExoPlayerToggle = viewModel::toggleUseExoPlayer,
-                        onPipGestureToggle = viewModel::togglePipGesture
+                        onPlayerOptionsClick = onPlayerOptionsClick
                     )
                 }
 
@@ -493,16 +485,7 @@ private fun AppearanceSection(
 
 @Composable
 private fun PlaybackSection(
-    autoPlay: Boolean,
-    skipIntroEnabled: Boolean,
-    skipOutroEnabled: Boolean,
-    useExoPlayer: Boolean,
-    pipGestureEnabled: Boolean,
-    onAutoPlayToggle: (Boolean) -> Unit,
-    onSkipIntroToggle: (Boolean) -> Unit,
-    onSkipOutroToggle: (Boolean) -> Unit,
-    onUseExoPlayerToggle: (Boolean) -> Unit,
-    onPipGestureToggle: (Boolean) -> Unit,
+    onPlayerOptionsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     SettingsSection(
@@ -510,63 +493,11 @@ private fun PlaybackSection(
         icon = painterResource(id = R.drawable.ic_play_circle),
         modifier = modifier
     ) {
-        SettingsSwitchItem(
+        SettingsItem(
             icon = painterResource(id = R.drawable.ic_video_settings),
-            title = "Use ExoPlayer",
-            subtitle = "Uses LibMPV when disabled",
-            checked = useExoPlayer,
-            onCheckedChange = onUseExoPlayerToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_pip),
-            title = "Picture-in-Picture Home Gesture",
-            subtitle = "Use home button or gesture to enter picture-in-picture while video is playing",
-            checked = pipGestureEnabled,
-            onCheckedChange = onPipGestureToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_play_arrow),
-            title = "Auto-play",
-            subtitle = "Automatically play next episode",
-            checked = autoPlay,
-            onCheckedChange = onAutoPlayToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_skip_next),
-            title = "Skip Intro",
-            subtitle = "Show the Skip Intro Button",
-            checked = skipIntroEnabled,
-            onCheckedChange = onSkipIntroToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_fast_forward),
-            title = "Skip Outro",
-            subtitle = "Show the Skip Outro Button",
-            checked = skipOutroEnabled,
-            onCheckedChange = onSkipOutroToggle
+            title = "Player Options",
+            subtitle = "Configure playback and player settings",
+            onClick = onPlayerOptionsClick
         )
     }
 }

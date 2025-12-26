@@ -59,6 +59,7 @@ import com.makd.afinity.ui.search.SearchScreen
 import com.makd.afinity.ui.settings.LicensesScreen
 import com.makd.afinity.ui.settings.SettingsScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
+import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
 import com.makd.afinity.ui.watchlist.WatchlistScreen
 import kotlinx.coroutines.launch
@@ -105,6 +106,7 @@ fun MainNavigation(
                 !route.startsWith("genre_results/") &&
                 route != "settings" &&
                 route != "download_settings" &&
+                route != "player_options" &&
                 route != "licenses"
     } ?: true
 
@@ -444,15 +446,29 @@ fun MainNavigation(
                     onDownloadClick = {
                         val route = Destination.createDownloadSettingsRoute()
                         navController.navigate(route)
+                    },
+                    onPlayerOptionsClick = {
+                        val route = Destination.createPlayerOptionsRoute()
+                        navController.navigate(route)
                     }
                 )
             }
+
             composable(Destination.DOWNLOAD_SETTINGS_ROUTE) {
                 DownloadSettingsScreen(
                     onBackClick = {
                         navController.popBackStack()
                     },
                     offlineModeManager = offlineModeManager,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            composable(Destination.PLAYER_OPTIONS_ROUTE) {
+                PlayerOptionsScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }
