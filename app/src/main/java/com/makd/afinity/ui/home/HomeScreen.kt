@@ -372,9 +372,12 @@ fun HomeScreen(
                                                             isLoading = uiState.genreLoadingStates[section.genreItem.name]
                                                                 ?: false,
                                                             onVisible = {
-                                                                viewModel.loadMoviesForGenre(
-                                                                    section.genreItem.name
-                                                                )
+                                                                // Only load if not already loaded
+                                                                if (uiState.genreMovies[section.genreItem.name] == null) {
+                                                                    viewModel.loadMoviesForGenre(
+                                                                        section.genreItem.name
+                                                                    )
+                                                                }
                                                             },
                                                             onItemClick = onItemClick
                                                         )
@@ -388,9 +391,11 @@ fun HomeScreen(
                                                             isLoading = uiState.genreLoadingStates[section.genreItem.name]
                                                                 ?: false,
                                                             onVisible = {
-                                                                viewModel.loadShowsForGenre(
-                                                                    section.genreItem.name
-                                                                )
+                                                                if (uiState.genreShows[section.genreItem.name] == null) {
+                                                                    viewModel.loadShowsForGenre(
+                                                                        section.genreItem.name
+                                                                    )
+                                                                }
                                                             },
                                                             onItemClick = onItemClick
                                                         )

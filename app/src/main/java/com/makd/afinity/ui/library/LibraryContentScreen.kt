@@ -187,7 +187,6 @@ fun LibraryContentScreen(
                             }
                         }
                     } else if (uiState.currentFilter != FilterType.ALL) {
-                        // Filter active with no results
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -200,7 +199,6 @@ fun LibraryContentScreen(
                             )
                         }
                     } else {
-                        // Truly empty library
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()

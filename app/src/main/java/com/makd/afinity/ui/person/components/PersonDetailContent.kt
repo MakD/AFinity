@@ -224,7 +224,7 @@ private fun PersonFilmographySection(
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
             items(
-                items = items.take(10),
+                items = items,
                 key = { item -> item.id }
             ) { item ->
                 FilmographyItemCard(

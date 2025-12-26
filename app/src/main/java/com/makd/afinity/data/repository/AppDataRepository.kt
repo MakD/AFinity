@@ -355,7 +355,7 @@ class AppDataRepository @Inject constructor(
                                 library to items
                             } catch (e: Exception) {
                                 Timber.w(e, "Failed to load latest from ${library.name}")
-                                library to emptyList<AfinityMovie>()
+                                library to emptyList()
                             }
                         }
                     }
@@ -370,7 +370,7 @@ class AppDataRepository @Inject constructor(
                                 library to items
                             } catch (e: Exception) {
                                 Timber.w(e, "Failed to load latest from ${library.name}")
-                                library to emptyList<AfinityShow>()
+                                library to emptyList()
                             }
                         }
                     }
@@ -391,7 +391,7 @@ class AppDataRepository @Inject constructor(
                                 )
                             } catch (e: Exception) {
                                 Timber.w(e, "Failed to load movies from ${library.name}")
-                                library to emptyList<AfinityMovie>()
+                                library to emptyList()
                             }
                         }
                     }
@@ -408,7 +408,7 @@ class AppDataRepository @Inject constructor(
                                 )
                             } catch (e: Exception) {
                                 Timber.w(e, "Failed to load shows from ${library.name}")
-                                library to emptyList<AfinityShow>()
+                                library to emptyList()
                             }
                         }
                     }
@@ -528,101 +528,105 @@ class AppDataRepository @Inject constructor(
             return
         }
 
-        try {
-            _genreLoadingStates.value += (genre to true)
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                _genreLoadingStates.value += (genre to true)
 
-            val cachedMovieEntities = genreCacheDao.getCachedMoviesForGenre(genre)
-            if (cachedMovieEntities.isNotEmpty()) {
-                val cachedMovies = cachedMovieEntities.mapNotNull { entity ->
-                    typeConverters.toAfinityMovie(entity.movieData)
-                }
-
-                if (cachedMovies.isNotEmpty()) {
-                    _genreMovies.value += (genre to cachedMovies)
-                    _genreLoadingStates.value += (genre to false)
-                    Timber.d("Loaded ${cachedMovies.size} movies for '$genre' from cache")
-
-                    val currentTime = System.currentTimeMillis()
-                    val isFresh =
-                        genreCacheDao.isGenreCacheFresh(genre, GENRE_CACHE_TTL, currentTime)
-
-                    if (isFresh) {
-                        Timber.d("Genre '$genre' cache is fresh (< 12 hours)")
-                        return
+                val cachedMovieEntities = genreCacheDao.getCachedMoviesForGenre(genre)
+                if (cachedMovieEntities.isNotEmpty()) {
+                    val cachedMovies = cachedMovieEntities.mapNotNull { entity ->
+                        typeConverters.toAfinityMovie(entity.movieData)
                     }
 
-                    Timber.d("Genre '$genre' cache is stale, refreshing in background...")
+                    if (cachedMovies.isNotEmpty()) {
+                        _genreMovies.value += (genre to cachedMovies)
+                        _genreLoadingStates.value += (genre to false)
+                        Timber.d("Loaded ${cachedMovies.size} movies for '$genre' from cache")
+
+                        val currentTime = System.currentTimeMillis()
+                        val isFresh =
+                            genreCacheDao.isGenreCacheFresh(genre, GENRE_CACHE_TTL, currentTime)
+
+                        if (isFresh) {
+                            Timber.d("Genre '$genre' cache is fresh (< 12 hours)")
+                            return@withContext
+                        }
+
+                        Timber.d("Genre '$genre' cache is stale, refreshing in background...")
+                    }
                 }
-            }
 
-            Timber.d("Fetching movies for genre: $genre from API")
-            val movies = jellyfinRepository.getMoviesByGenre(
-                genre = genre,
-                limit = limit,
-                shuffle = true
-            )
+                Timber.d("Fetching movies for genre: $genre from API")
+                val movies = jellyfinRepository.getMoviesByGenre(
+                    genre = genre,
+                    limit = limit,
+                    shuffle = true
+                )
 
-            if (movies.isNotEmpty()) {
-                val timestamp = System.currentTimeMillis()
-                val movieEntities = movies.mapIndexed { index, movie ->
-                    GenreMovieCacheEntity(
-                        genreName = genre,
-                        movieId = movie.id.toString(),
-                        movieData = typeConverters.fromAfinityMovie(movie) ?: "",
-                        position = index,
-                        cachedTimestamp = timestamp
-                    )
+                if (movies.isNotEmpty()) {
+                    val timestamp = System.currentTimeMillis()
+                    val movieEntities = movies.mapIndexed { index, movie ->
+                        GenreMovieCacheEntity(
+                            genreName = genre,
+                            movieId = movie.id.toString(),
+                            movieData = typeConverters.fromAfinityMovie(movie) ?: "",
+                            position = index,
+                            cachedTimestamp = timestamp
+                        )
+                    }
+                    genreCacheDao.cacheGenreWithMovies(genre, movieEntities, timestamp)
                 }
-                genreCacheDao.cacheGenreWithMovies(genre, movieEntities, timestamp)
-            }
 
-            _genreMovies.value += (genre to movies)
-            _genreLoadingStates.value += (genre to false)
+                _genreMovies.value += (genre to movies)
+                _genreLoadingStates.value += (genre to false)
 
-            Timber.d("Fetched and cached ${movies.size} movies for genre: $genre")
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load movies for genre: $genre")
-            _genreLoadingStates.value += (genre to false)
+                Timber.d("Fetched and cached ${movies.size} movies for genre: $genre")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load movies for genre: $genre")
+                _genreLoadingStates.value += (genre to false)
 
-            try {
-                val fallbackEntities = genreCacheDao.getCachedMoviesForGenre(genre)
-                val fallbackMovies = fallbackEntities.mapNotNull { entity ->
-                    typeConverters.toAfinityMovie(entity.movieData)
+                try {
+                    val fallbackEntities = genreCacheDao.getCachedMoviesForGenre(genre)
+                    val fallbackMovies = fallbackEntities.mapNotNull { entity ->
+                        typeConverters.toAfinityMovie(entity.movieData)
+                    }
+                    if (fallbackMovies.isNotEmpty()) {
+                        _genreMovies.value += (genre to fallbackMovies)
+                        Timber.d("Using stale cache as fallback for '$genre' (${fallbackMovies.size} movies)")
+                    }
+                } catch (cacheError: Exception) {
+                    Timber.e(cacheError, "Failed to load fallback cache for genre: $genre")
                 }
-                if (fallbackMovies.isNotEmpty()) {
-                    _genreMovies.value += (genre to fallbackMovies)
-                    Timber.d("Using stale cache as fallback for '$genre' (${fallbackMovies.size} movies)")
-                }
-            } catch (cacheError: Exception) {
-                Timber.e(cacheError, "Failed to load fallback cache for genre: $genre")
             }
         }
     }
 
     suspend fun loadCombinedGenres() {
-        try {
-            Timber.d("Loading and combining movie + show genres")
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                Timber.d("Loading and combining movie + show genres")
 
-            coroutineScope {
-                val movieGenresTask = async { loadGenres() }
-                val showGenresTask = async { loadShowGenres() }
+                coroutineScope {
+                    val movieGenresTask = async { loadGenres() }
+                    val showGenresTask = async { loadShowGenres() }
 
-                movieGenresTask.await()
-                showGenresTask.await()
+                    movieGenresTask.await()
+                    showGenresTask.await()
+                }
+
+                val movieGenreNames = genreCacheDao.getAllGenreNames()
+                val showGenreNames = genreCacheDao.getAllShowGenreNames()
+
+                val movieGenreItems = movieGenreNames.map { GenreItem(it, GenreType.MOVIE) }
+                val showGenreItems = showGenreNames.map { GenreItem(it, GenreType.SHOW) }
+
+                val combinedList = (movieGenreItems + showGenreItems).shuffled()
+
+                _combinedGenres.value = combinedList
+                Timber.d("Combined ${combinedList.size} genres (${movieGenreItems.size} movies, ${showGenreItems.size} shows) with random ordering")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load combined genres")
             }
-
-            val movieGenreNames = genreCacheDao.getAllGenreNames()
-            val showGenreNames = genreCacheDao.getAllShowGenreNames()
-
-            val movieGenreItems = movieGenreNames.map { GenreItem(it, GenreType.MOVIE) }
-            val showGenreItems = showGenreNames.map { GenreItem(it, GenreType.SHOW) }
-
-            val combinedList = (movieGenreItems + showGenreItems).shuffled()
-
-            _combinedGenres.value = combinedList
-            Timber.d("Combined ${combinedList.size} genres (${movieGenreItems.size} movies, ${showGenreItems.size} shows) with random ordering")
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load combined genres")
         }
     }
 
@@ -855,7 +859,7 @@ class AppDataRepository @Inject constructor(
                 )
             ) {
                 val cachedData =
-                    json.decodeFromString<List<com.makd.afinity.data.models.CachedPersonWithCount>>(
+                    json.decodeFromString<List<CachedPersonWithCount>>(
                         cached.peopleData
                     )
                 val cachedPeople = cachedData.map { PersonWithCount.fromCached(it) }
