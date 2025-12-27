@@ -1,7 +1,7 @@
 package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.models.common.SortBy
-import com.makd.afinity.data.models.player.VideoZoomMode
+import com.makd.afinity.data.models.player.SubtitlePreferences
 import kotlinx.coroutines.flow.Flow
 
 interface PreferencesRepository {
@@ -100,6 +100,10 @@ interface PreferencesRepository {
     suspend fun setOfflineMode(enabled: Boolean)
     suspend fun getOfflineMode(): Boolean
     fun getOfflineModeFlow(): Flow<Boolean>
+
+    suspend fun setSubtitlePreferences(preferences: SubtitlePreferences)
+    suspend fun getSubtitlePreferences(): SubtitlePreferences
+    fun getSubtitlePreferencesFlow(): Flow<SubtitlePreferences>
 
     suspend fun clearAllPreferences()
     suspend fun clearServerPreferences()

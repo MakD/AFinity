@@ -199,6 +199,35 @@ class SettingsViewModel @Inject constructor(
     fun toggleUseExoPlayer(enabled: Boolean) {
         viewModelScope.launch {
             try {
+                // Get current subtitle preferences to check for incompatible settings
+                val currentSubtitlePrefs = preferencesRepository.getSubtitlePreferences()
+
+                // Validate and reset incompatible outline styles
+                val updatedPrefs = when {
+                    // Switching TO ExoPlayer: Reset BACKGROUND_BOX (MPV-only)
+                    enabled && currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.BACKGROUND_BOX -> {
+                        Timber.d("Switching to ExoPlayer: Resetting BACKGROUND_BOX to NONE")
+                        currentSubtitlePrefs.copy(
+                            outlineStyle = com.makd.afinity.data.models.player.SubtitleOutlineStyle.NONE,
+                            outlineSize = 0f
+                        )
+                    }
+                    // Switching TO MPV: Reset RAISED/DEPRESSED (ExoPlayer-only)
+                    !enabled && (currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.RAISED ||
+                            currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.DEPRESSED) -> {
+                        Timber.d("Switching to MPV: Resetting ${currentSubtitlePrefs.outlineStyle} to NONE")
+                        currentSubtitlePrefs.copy(
+                            outlineStyle = com.makd.afinity.data.models.player.SubtitleOutlineStyle.NONE
+                        )
+                    }
+
+                    else -> null
+                }
+
+                // Save updated preferences if changes were needed
+                updatedPrefs?.let { preferencesRepository.setSubtitlePreferences(it) }
+
+                // Set the player preference
                 preferencesRepository.setUseExoPlayer(enabled)
                 Timber.d("Use ExoPlayer set to: $enabled")
             } catch (e: Exception) {
