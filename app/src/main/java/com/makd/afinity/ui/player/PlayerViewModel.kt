@@ -58,6 +58,7 @@ import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 @androidx.media3.common.util.UnstableApi
 @HiltViewModel
@@ -111,6 +112,7 @@ class PlayerViewModel @Inject constructor(
         startProgressReporting()
         initializeBrightness()
         initializeVideoZoomMode()
+        initializeLogoAutoHide()
     }
 
     private fun initializeBrightness() {
@@ -121,6 +123,13 @@ class PlayerViewModel @Inject constructor(
     private fun initializeVideoZoomMode() {
         viewModelScope.launch {
             updateUiState { it.copy(videoZoomMode = currentZoomMode) }
+        }
+    }
+
+    private fun initializeLogoAutoHide() {
+        viewModelScope.launch {
+            val logoAutoHide = preferencesRepository.getLogoAutoHide()
+            updateUiState { it.copy(logoAutoHide = logoAutoHide) }
         }
     }
 
@@ -578,7 +587,7 @@ class PlayerViewModel @Inject constructor(
                                         ?: "unknown"
 
                                 val subtitleConfig =
-                                    MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse("file://${subtitleFile.absolutePath}"))
+                                    MediaItem.SubtitleConfiguration.Builder("file://${subtitleFile.absolutePath}".toUri())
                                         .setLabel(language)
                                         .setMimeType(mimeType)
                                         .setLanguage(language)
@@ -607,9 +616,7 @@ class PlayerViewModel @Inject constructor(
                                 val subtitleUrl =
                                     "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
                                 MediaItem.SubtitleConfiguration.Builder(
-                                    android.net.Uri.parse(
-                                        subtitleUrl
-                                    )
+                                    subtitleUrl.toUri()
                                 )
                                     .setLabel(
                                         stream.displayTitle ?: stream.language
@@ -1215,6 +1222,7 @@ class PlayerViewModel @Inject constructor(
         val showRemainingTime: Boolean = false,
         val isInPictureInPictureMode: Boolean = false,
         val isControlsVisible: Boolean = true,
-        val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT
+        val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
+        val logoAutoHide: Boolean = false
     )
 }

@@ -143,6 +143,13 @@ fun PlayerOptionsScreen(
             }
 
             item {
+                PlayerUISection(
+                    logoAutoHide = uiState.logoAutoHide,
+                    onLogoAutoHideToggle = viewModel::toggleLogoAutoHide
+                )
+            }
+
+            item {
                 SubtitleCustomizationSection(
                     subtitlePrefs = subtitlePrefs,
                     useExoPlayer = uiState.useExoPlayer,
@@ -239,6 +246,27 @@ private fun PlaybackOptionsSection(
             subtitle = "Show the Skip Outro Button",
             checked = skipOutroEnabled,
             onCheckedChange = onSkipOutroToggle
+        )
+    }
+}
+
+@Composable
+private fun PlayerUISection(
+    logoAutoHide: Boolean,
+    onLogoAutoHideToggle: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    PlayerSettingsSection(
+        title = "Player UI",
+        icon = painterResource(id = R.drawable.ic_palette),
+        modifier = modifier
+    ) {
+        PlayerSettingsSwitchItem(
+            icon = painterResource(id = R.drawable.ic_visibility),
+            title = "Auto-hide Logo/Title",
+            subtitle = "Logo/title auto-hides with controls instead of always being visible",
+            checked = logoAutoHide,
+            onCheckedChange = onLogoAutoHideToggle
         )
     }
 }
@@ -366,7 +394,7 @@ private fun SubtitleCustomizationSection(
 ) {
     PlayerSettingsSection(
         title = "Subtitle Customization",
-        icon = painterResource(id = R.drawable.ic_settings),
+        icon = painterResource(id = R.drawable.ic_subtitle_format),
         modifier = modifier
     ) {
         SubtitlePreview(
@@ -404,7 +432,7 @@ private fun SubtitleCustomizationSection(
         )
 
         PlayerSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_settings),
+            icon = painterResource(id = R.drawable.ic_bold),
             title = "Bold",
             subtitle = "Make subtitle text bold",
             checked = subtitlePrefs.bold,
@@ -418,7 +446,7 @@ private fun SubtitleCustomizationSection(
             )
 
             PlayerSettingsSwitchItem(
-                icon = painterResource(id = R.drawable.ic_settings),
+                icon = painterResource(id = R.drawable.ic_italic),
                 title = "Italic",
                 subtitle = "Make subtitle text italic",
                 checked = subtitlePrefs.italic,
@@ -446,7 +474,8 @@ private fun SubtitleCustomizationSection(
             onValueChange = { selected ->
                 val style = SubtitleOutlineStyle.entries.first { it.displayName == selected }
                 onUpdate(subtitlePrefs.copy(outlineStyle = style))
-            }
+            },
+            icon = painterResource(id = R.drawable.ic_texture)
         )
 
         when (subtitlePrefs.outlineStyle) {
@@ -536,7 +565,8 @@ private fun SubtitleCustomizationSection(
                     val position =
                         SubtitleVerticalPosition.entries.first { it.displayName == selected }
                     onUpdate(subtitlePrefs.copy(verticalPosition = position))
-                }
+                },
+                icon = painterResource(id = R.drawable.ic_vertical)
             )
 
             HorizontalDivider(
@@ -552,7 +582,8 @@ private fun SubtitleCustomizationSection(
                     val alignment =
                         SubtitleHorizontalAlignment.entries.first { it.displayName == selected }
                     onUpdate(subtitlePrefs.copy(horizontalAlignment = alignment))
-                }
+                },
+                icon = painterResource(id = R.drawable.ic_horizontal)
             )
         }
 
@@ -616,7 +647,8 @@ private fun SubtitleDropdownItem(
     selectedValue: String,
     options: List<String>,
     onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    icon: Painter = painterResource(id = R.drawable.ic_settings)
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -629,7 +661,7 @@ private fun SubtitleDropdownItem(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Icon(
-            painter = painterResource(id = R.drawable.ic_settings),
+            painter = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(24.dp)

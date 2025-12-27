@@ -24,8 +24,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -60,7 +58,6 @@ import com.makd.afinity.R
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.settings.update.UpdateSection
-import com.makd.afinity.ui.theme.ThemeMode
 import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,6 +68,7 @@ fun SettingsScreen(
     onLicensesClick: () -> Unit,
     onDownloadClick: () -> Unit,
     onPlayerOptionsClick: () -> Unit,
+    onAppearanceOptionsClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -177,14 +175,7 @@ fun SettingsScreen(
 
                 item {
                     AppearanceSection(
-                        themeMode = uiState.themeMode,
-                        dynamicColors = uiState.dynamicColors,
-                        onThemeModeChange = viewModel::setThemeMode,
-                        onDynamicColorsToggle = viewModel::toggleDynamicColors,
-                        combineLibrarySections = combineLibrarySections,
-                        onCombineLibrarySectionsToggle = viewModel::toggleCombineLibrarySections,
-                        homeSortByDateAdded = homeSortByDateAdded,
-                        onHomeSortByDateAddedToggle = viewModel::toggleHomeSortByDateAdded
+                        onAppearanceOptionsClick = onAppearanceOptionsClick
                     )
                 }
 
@@ -378,107 +369,21 @@ private fun GeneralSection(
 
 @Composable
 private fun AppearanceSection(
-    themeMode: String,
-    dynamicColors: Boolean,
-    onThemeModeChange: (String) -> Unit,
-    onDynamicColorsToggle: (Boolean) -> Unit,
-    combineLibrarySections: Boolean,
-    onCombineLibrarySectionsToggle: (Boolean) -> Unit,
-    homeSortByDateAdded: Boolean,
-    onHomeSortByDateAddedToggle: (Boolean) -> Unit,
+    onAppearanceOptionsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var themeMenuExpanded by remember { mutableStateOf(false) }
-    val currentTheme = ThemeMode.fromString(themeMode)
-
-    SettingsSection(
-        title = "Appearance",
-        icon = painterResource(id = R.drawable.ic_palette),
-        modifier = modifier
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_dark_mode),
-            title = "Theme",
-            subtitle = currentTheme.displayName,
-            onClick = { themeMenuExpanded = true },
-            trailing = {
-                Box {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    DropdownMenu(
-                        expanded = themeMenuExpanded,
-                        onDismissRequest = { themeMenuExpanded = false }
-                    ) {
-                        ThemeMode.entries.forEach { mode ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = mode.displayName,
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                onClick = {
-                                    onThemeModeChange(mode.name)
-                                    themeMenuExpanded = false
-                                },
-                                leadingIcon = if (themeMode == mode.name) {
-                                    {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_check),
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                } else null
-                            )
-                        }
-                    }
-                }
-            }
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_colorize),
-            title = "Dynamic Colors",
-            subtitle = "Use colors from wallpaper",
-            checked = dynamicColors,
-            onCheckedChange = onDynamicColorsToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_view_module),
-            title = "Combine Library Sections",
-            subtitle = "Show one combined section for Movies and TV Shows",
-            checked = combineLibrarySections,
-            onCheckedChange = onCombineLibrarySectionsToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_calendar),
-            title = "Sort by Date Added",
-            subtitle = "Show newest content first on home screen",
-            checked = homeSortByDateAdded,
-            onCheckedChange = onHomeSortByDateAddedToggle
+            icon = painterResource(id = R.drawable.ic_palette),
+            title = "Appearance",
+            subtitle = "Configure theme, colors, and library layout",
+            onClick = onAppearanceOptionsClick
         )
     }
 }
@@ -488,14 +393,16 @@ private fun PlaybackSection(
     onPlayerOptionsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    SettingsSection(
-        title = "Playback",
-        icon = painterResource(id = R.drawable.ic_play_circle),
-        modifier = modifier
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_video_settings),
-            title = "Player Options",
+            icon = painterResource(id = R.drawable.ic_play_circle),
+            title = "Playback",
             subtitle = "Configure playback and player settings",
             onClick = onPlayerOptionsClick
         )

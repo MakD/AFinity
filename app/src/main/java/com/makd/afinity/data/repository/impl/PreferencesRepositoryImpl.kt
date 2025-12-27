@@ -80,6 +80,8 @@ class PreferencesRepositoryImpl @Inject constructor(
         val SUBTITLE_WINDOW_COLOR = intPreferencesKey("subtitle_window_color")
         val SUBTITLE_VERTICAL_POSITION = stringPreferencesKey("subtitle_vertical_position")
         val SUBTITLE_HORIZONTAL_ALIGNMENT = stringPreferencesKey("subtitle_horizontal_alignment")
+
+        val LOGO_AUTO_HIDE = booleanPreferencesKey("logo_auto_hide")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -546,6 +548,22 @@ class PreferencesRepositoryImpl @Inject constructor(
                 }
                     ?: SubtitleHorizontalAlignment.CENTER
             )
+        }
+    }
+
+    override suspend fun setLogoAutoHide(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.LOGO_AUTO_HIDE] = enabled
+        }
+    }
+
+    override suspend fun getLogoAutoHide(): Boolean {
+        return dataStore.data.first()[Keys.LOGO_AUTO_HIDE] ?: false
+    }
+
+    override fun getLogoAutoHideFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.LOGO_AUTO_HIDE] ?: false
         }
     }
 }

@@ -58,6 +58,7 @@ import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
 import com.makd.afinity.ui.settings.LicensesScreen
 import com.makd.afinity.ui.settings.SettingsScreen
+import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
@@ -107,6 +108,7 @@ fun MainNavigation(
                 route != "settings" &&
                 route != "download_settings" &&
                 route != "player_options" &&
+                route != "appearance_options" &&
                 route != "licenses"
     } ?: true
 
@@ -450,6 +452,10 @@ fun MainNavigation(
                     onPlayerOptionsClick = {
                         val route = Destination.createPlayerOptionsRoute()
                         navController.navigate(route)
+                    },
+                    onAppearanceOptionsClick = {
+                        val route = Destination.createAppearanceOptionsRoute()
+                        navController.navigate(route)
                     }
                 )
             }
@@ -470,6 +476,14 @@ fun MainNavigation(
                         navController.popBackStack()
                     },
                     modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            composable(Destination.APPEARANCE_OPTIONS_ROUTE) {
+                AppearanceOptionsScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
                 )
             }
 

@@ -105,6 +105,10 @@ interface PreferencesRepository {
     suspend fun getSubtitlePreferences(): SubtitlePreferences
     fun getSubtitlePreferencesFlow(): Flow<SubtitlePreferences>
 
+    suspend fun setLogoAutoHide(enabled: Boolean)
+    suspend fun getLogoAutoHide(): Boolean
+    fun getLogoAutoHideFlow(): Flow<Boolean>
+
     suspend fun clearAllPreferences()
     suspend fun clearServerPreferences()
     suspend fun clearUserPreferences()
