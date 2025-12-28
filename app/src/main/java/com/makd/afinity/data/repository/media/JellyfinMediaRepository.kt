@@ -21,6 +21,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.toAfinityExternalUrl
 import com.makd.afinity.data.repository.FieldSets
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -100,7 +101,10 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
-    private fun updateItemInCache(cache: MutableStateFlow<List<AfinityItem>>, updatedItem: AfinityItem) {
+    private fun updateItemInCache(
+        cache: MutableStateFlow<List<AfinityItem>>,
+        updatedItem: AfinityItem
+    ) {
         val currentList = cache.value.toMutableList()
         val existingIndex = currentList.indexOfFirst { it.id == updatedItem.id }
 
@@ -336,7 +340,7 @@ class JellyfinMediaRepository @Inject constructor(
         parentId: UUID?,
         limit: Int,
         fields: List<ItemFields>?
-        ): List<AfinityItem> = withContext(Dispatchers.IO) {
+    ): List<AfinityItem> = withContext(Dispatchers.IO) {
         return@withContext try {
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
@@ -344,7 +348,11 @@ class JellyfinMediaRepository @Inject constructor(
             val response = userLibraryApi.getLatestMedia(
                 userId = userId,
                 parentId = parentId,
-                includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES, BaseItemKind.EPISODE),
+                includeItemTypes = listOf(
+                    BaseItemKind.MOVIE,
+                    BaseItemKind.SERIES,
+                    BaseItemKind.EPISODE
+                ),
                 limit = limit,
                 isPlayed = false,
                 fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
@@ -441,9 +449,16 @@ class JellyfinMediaRepository @Inject constructor(
                 sortBy = listOf(sortBy.toJellyfinSortBy()),
                 sortOrder = if (sortDescending) listOf(SortOrder.DESCENDING) else listOf(SortOrder.ASCENDING),
                 includeItemTypes = includeItemTypes.mapNotNull {
-                    try { BaseItemKind.valueOf(it.uppercase()) } catch (e: Exception) { null }
+                    try {
+                        BaseItemKind.valueOf(it.uppercase())
+                    } catch (e: Exception) {
+                        null
+                    }
                 },
-                recursive = if (parentId == null) true else if (includeItemTypes.size == 1 && includeItemTypes.contains("SERIES")) true else if (searchTerm != null) true else null,
+                recursive = if (parentId == null) true else if (includeItemTypes.size == 1 && includeItemTypes.contains(
+                        "SERIES"
+                    )
+                ) true else if (searchTerm != null) true else null,
                 collapseBoxSetItems = if (includeItemTypes.size == 1 && includeItemTypes.contains("SERIES")) false else null,
                 genres = genres,
                 years = years,
@@ -455,7 +470,11 @@ class JellyfinMediaRepository @Inject constructor(
                 fields = fields ?: FieldSets.LIBRARY_GRID,
                 imageTypes = if (imageTypes.isNotEmpty()) {
                     imageTypes.mapNotNull {
-                        try { ImageType.valueOf(it.uppercase()) } catch (e: Exception) { null }
+                        try {
+                            ImageType.valueOf(it.uppercase())
+                        } catch (e: Exception) {
+                            null
+                        }
                     }
                 } else {
                     null
@@ -919,39 +938,40 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
-    override suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem> = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val userLibraryApi = UserLibraryApi(apiClient)
-            val response = userLibraryApi.getSpecialFeatures(
-                itemId = itemId,
-                userId = userId
-            )
+    override suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val userLibraryApi = UserLibraryApi(apiClient)
+                val response = userLibraryApi.getSpecialFeatures(
+                    itemId = itemId,
+                    userId = userId
+                )
 
-            Timber.d("Special features API response: ${response.content?.size ?: 0} items")
-            response.content?.forEach { item ->
-                Timber.d("Special feature: name=${item.name}, type=${item.type}, seriesId=${item.seriesId}, seasonId=${item.seasonId}")
-            }
+                Timber.d("Special features API response: ${response.content?.size ?: 0} items")
+                response.content?.forEach { item ->
+                    Timber.d("Special feature: name=${item.name}, type=${item.type}, seriesId=${item.seriesId}, seasonId=${item.seasonId}")
+                }
 
-            response.content?.mapNotNull { baseItem ->
-                val result = when (baseItem.type) {
-                    BaseItemKind.EPISODE -> baseItem.toAfinityEpisode(getBaseUrl())
-                    BaseItemKind.MOVIE -> baseItem.toAfinityMovie(getBaseUrl())
-                    BaseItemKind.VIDEO -> baseItem.toAfinityVideo(getBaseUrl())
-                    else -> {
-                        Timber.d("Unsupported special feature type: ${baseItem.type}")
-                        null
+                response.content?.mapNotNull { baseItem ->
+                    val result = when (baseItem.type) {
+                        BaseItemKind.EPISODE -> baseItem.toAfinityEpisode(getBaseUrl())
+                        BaseItemKind.MOVIE -> baseItem.toAfinityMovie(getBaseUrl())
+                        BaseItemKind.VIDEO -> baseItem.toAfinityVideo(getBaseUrl())
+                        else -> {
+                            Timber.d("Unsupported special feature type: ${baseItem.type}")
+                            null
+                        }
                     }
-                }
-                if (result == null) {
-                    Timber.d("Failed to convert special feature: ${baseItem.name} (${baseItem.type})")
-                }
-                result
-            } ?: emptyList()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get special features for item: $itemId")
-            emptyList()
+                    if (result == null) {
+                        Timber.d("Failed to convert special feature: ${baseItem.name} (${baseItem.type})")
+                    }
+                    result
+                } ?: emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get special features for item: $itemId")
+                emptyList()
+            }
         }
-    }
 
     override suspend fun searchItems(
         query: String,
@@ -968,7 +988,11 @@ class JellyfinMediaRepository @Inject constructor(
                 searchTerm = query,
                 limit = limit,
                 includeItemTypes = includeItemTypes.mapNotNull {
-                    try { BaseItemKind.valueOf(it.uppercase()) } catch (e: Exception) { null }
+                    try {
+                        BaseItemKind.valueOf(it.uppercase())
+                    } catch (e: Exception) {
+                        null
+                    }
                 },
                 fields = fields ?: FieldSets.SEARCH_RESULTS,
                 enableImages = true,
@@ -983,30 +1007,33 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
-    override suspend fun getPerson(personId: UUID): AfinityPersonDetail? = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val userId = getCurrentUserId() ?: return@withContext null
+    override suspend fun getPerson(personId: UUID): AfinityPersonDetail? =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val userId = getCurrentUserId() ?: return@withContext null
 
-            val userLibraryApi = UserLibraryApi(apiClient)
-            val response = userLibraryApi.getItem(
-                itemId = personId,
-                userId = userId
-            )
-
-            response.content?.let { baseItemDto ->
-                Timber.d("Person data received - Name: ${baseItemDto.name}, Overview length: ${baseItemDto.overview?.length ?: 0}")
-                AfinityPersonDetail(
-                    id = baseItemDto.id,
-                    name = baseItemDto.name.orEmpty(),
-                    overview = baseItemDto.overview.orEmpty(),
-                    images = baseItemDto.toAfinityImages(getBaseUrl())
+                val userLibraryApi = UserLibraryApi(apiClient)
+                val response = userLibraryApi.getItem(
+                    itemId = personId,
+                    userId = userId
                 )
+
+                response.content?.let { baseItemDto ->
+                    AfinityPersonDetail(
+                        id = baseItemDto.id,
+                        name = baseItemDto.name.orEmpty(),
+                        overview = baseItemDto.overview.orEmpty(),
+                        images = baseItemDto.toAfinityImages(getBaseUrl()),
+                        premiereDate = baseItemDto.premiereDate,
+                        productionLocations = baseItemDto.productionLocations ?: emptyList(),
+                        externalUrls = baseItemDto.externalUrls?.map { it.toAfinityExternalUrl() }
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get person details for ID: $personId")
+                null
             }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get person details for ID: $personId")
-            null
         }
-    }
 
     override suspend fun getPersonItems(
         personId: UUID,
@@ -1021,7 +1048,11 @@ class JellyfinMediaRepository @Inject constructor(
                 userId = userId,
                 personIds = listOf(personId),
                 includeItemTypes = includeItemTypes.mapNotNull {
-                    try { BaseItemKind.valueOf(it.uppercase()) } catch (e: Exception) { null }
+                    try {
+                        BaseItemKind.valueOf(it.uppercase())
+                    } catch (e: Exception) {
+                        null
+                    }
                 },
                 fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                 enableImages = true,
@@ -1159,7 +1190,11 @@ class JellyfinMediaRepository @Inject constructor(
                 enableImages = false,
                 enableTotalRecordCount = false,
                 includeItemTypes = includeItemTypes.mapNotNull {
-                    try { BaseItemKind.valueOf(it.uppercase()) } catch (e: Exception) { null }
+                    try {
+                        BaseItemKind.valueOf(it.uppercase())
+                    } catch (e: Exception) {
+                        null
+                    }
                 }
             )
 
@@ -1208,13 +1243,15 @@ class JellyfinMediaRepository @Inject constructor(
 
                     response.content?.items?.forEach { studioDto ->
                         val id: UUID = studioDto.id ?: return@forEach
-                        val name: String = studioDto.name?.takeIf { it.isNotBlank() } ?: return@forEach
+                        val name: String =
+                            studioDto.name?.takeIf { it.isNotBlank() } ?: return@forEach
                         val childCount: Int = studioDto.childCount ?: 0
 
                         val imageTags: Map<ImageType, String>? = studioDto.imageTags
-                        val thumbImageUrl: String? = imageTags?.get(ImageType.THUMB)?.let { tag: String ->
-                            "${getBaseUrl()}/Items/$id/Images/Thumb?tag=$tag"
-                        }
+                        val thumbImageUrl: String? =
+                            imageTags?.get(ImageType.THUMB)?.let { tag: String ->
+                                "${getBaseUrl()}/Items/$id/Images/Thumb?tag=$tag"
+                            }
 
                         allStudios.add(Triple(id, name, Pair(thumbImageUrl, childCount)))
                     }
@@ -1321,7 +1358,8 @@ class JellyfinMediaRepository @Inject constructor(
                                 enableUserData = false
                             )
 
-                            val childItemIds = childrenResponse.content?.items?.mapNotNull { it.id } ?: emptyList()
+                            val childItemIds =
+                                childrenResponse.content?.items?.mapNotNull { it.id } ?: emptyList()
 
                             BoxSetWithChildren(
                                 boxSetId = boxSetDto.id,

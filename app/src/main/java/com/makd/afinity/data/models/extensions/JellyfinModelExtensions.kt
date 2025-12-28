@@ -379,6 +379,9 @@ fun BaseItemDto.toAfinityPersonDetail(
         name = name.orEmpty(),
         overview = overview.orEmpty(),
         images = toAfinityImages(baseUrl),
+        premiereDate = premiereDate,
+        productionLocations = productionLocations ?: emptyList(),
+        externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
     )
 }
 
