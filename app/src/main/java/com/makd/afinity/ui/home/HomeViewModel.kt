@@ -606,7 +606,7 @@ class HomeViewModel @Inject constructor(
                 )?.toAfinityEpisode(jellyfinRepository, null)
 
                 if (fullEpisode != null) {
-                    _selectedEpisode.value = episode
+                    _selectedEpisode.value = fullEpisode
                 }
 
                 try {
