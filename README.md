@@ -146,7 +146,7 @@ For remote access, ensure your Jellyfin server is configured for external connec
 ### Player Enhancements
 
 - [X] Picture-in-picture mode
-- [ ] Advanced subtitle styling options
+- [X] Advanced subtitle styling options
 - [ ] Audio delay adjustment
 - [X] Playback speed controls
 
