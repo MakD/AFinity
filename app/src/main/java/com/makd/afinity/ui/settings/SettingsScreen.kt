@@ -24,8 +24,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -60,7 +58,6 @@ import com.makd.afinity.R
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.settings.update.UpdateSection
-import com.makd.afinity.ui.theme.ThemeMode
 import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +67,8 @@ fun SettingsScreen(
     onLogoutComplete: () -> Unit,
     onLicensesClick: () -> Unit,
     onDownloadClick: () -> Unit,
+    onPlayerOptionsClick: () -> Unit,
+    onAppearanceOptionsClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -176,29 +175,13 @@ fun SettingsScreen(
 
                 item {
                     AppearanceSection(
-                        themeMode = uiState.themeMode,
-                        dynamicColors = uiState.dynamicColors,
-                        onThemeModeChange = viewModel::setThemeMode,
-                        onDynamicColorsToggle = viewModel::toggleDynamicColors,
-                        combineLibrarySections = combineLibrarySections,
-                        onCombineLibrarySectionsToggle = viewModel::toggleCombineLibrarySections,
-                        homeSortByDateAdded = homeSortByDateAdded,
-                        onHomeSortByDateAddedToggle = viewModel::toggleHomeSortByDateAdded
+                        onAppearanceOptionsClick = onAppearanceOptionsClick
                     )
                 }
 
                 item {
                     PlaybackSection(
-                        autoPlay = uiState.autoPlay,
-                        skipIntroEnabled = uiState.skipIntroEnabled,
-                        skipOutroEnabled = uiState.skipOutroEnabled,
-                        useExoPlayer = uiState.useExoPlayer,
-                        pipGestureEnabled = uiState.pipGestureEnabled,
-                        onAutoPlayToggle = viewModel::toggleAutoPlay,
-                        onSkipIntroToggle = viewModel::toggleSkipIntro,
-                        onSkipOutroToggle = viewModel::toggleSkipOutro,
-                        onUseExoPlayerToggle = viewModel::toggleUseExoPlayer,
-                        onPipGestureToggle = viewModel::togglePipGesture
+                        onPlayerOptionsClick = onPlayerOptionsClick
                     )
                 }
 
@@ -386,187 +369,42 @@ private fun GeneralSection(
 
 @Composable
 private fun AppearanceSection(
-    themeMode: String,
-    dynamicColors: Boolean,
-    onThemeModeChange: (String) -> Unit,
-    onDynamicColorsToggle: (Boolean) -> Unit,
-    combineLibrarySections: Boolean,
-    onCombineLibrarySectionsToggle: (Boolean) -> Unit,
-    homeSortByDateAdded: Boolean,
-    onHomeSortByDateAddedToggle: (Boolean) -> Unit,
+    onAppearanceOptionsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var themeMenuExpanded by remember { mutableStateOf(false) }
-    val currentTheme = ThemeMode.fromString(themeMode)
-
-    SettingsSection(
-        title = "Appearance",
-        icon = painterResource(id = R.drawable.ic_palette),
-        modifier = modifier
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_dark_mode),
-            title = "Theme",
-            subtitle = currentTheme.displayName,
-            onClick = { themeMenuExpanded = true },
-            trailing = {
-                Box {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    DropdownMenu(
-                        expanded = themeMenuExpanded,
-                        onDismissRequest = { themeMenuExpanded = false }
-                    ) {
-                        ThemeMode.entries.forEach { mode ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = mode.displayName,
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                onClick = {
-                                    onThemeModeChange(mode.name)
-                                    themeMenuExpanded = false
-                                },
-                                leadingIcon = if (themeMode == mode.name) {
-                                    {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_check),
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                } else null
-                            )
-                        }
-                    }
-                }
-            }
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_colorize),
-            title = "Dynamic Colors",
-            subtitle = "Use colors from wallpaper",
-            checked = dynamicColors,
-            onCheckedChange = onDynamicColorsToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_view_module),
-            title = "Combine Library Sections",
-            subtitle = "Show one combined section for Movies and TV Shows",
-            checked = combineLibrarySections,
-            onCheckedChange = onCombineLibrarySectionsToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_calendar),
-            title = "Sort by Date Added",
-            subtitle = "Show newest content first on home screen",
-            checked = homeSortByDateAdded,
-            onCheckedChange = onHomeSortByDateAddedToggle
+            icon = painterResource(id = R.drawable.ic_palette),
+            title = "Appearance",
+            subtitle = "Configure theme, colors, and library layout",
+            onClick = onAppearanceOptionsClick
         )
     }
 }
 
 @Composable
 private fun PlaybackSection(
-    autoPlay: Boolean,
-    skipIntroEnabled: Boolean,
-    skipOutroEnabled: Boolean,
-    useExoPlayer: Boolean,
-    pipGestureEnabled: Boolean,
-    onAutoPlayToggle: (Boolean) -> Unit,
-    onSkipIntroToggle: (Boolean) -> Unit,
-    onSkipOutroToggle: (Boolean) -> Unit,
-    onUseExoPlayerToggle: (Boolean) -> Unit,
-    onPipGestureToggle: (Boolean) -> Unit,
+    onPlayerOptionsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    SettingsSection(
-        title = "Playback",
-        icon = painterResource(id = R.drawable.ic_play_circle),
-        modifier = modifier
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_video_settings),
-            title = "Use ExoPlayer",
-            subtitle = "Uses LibMPV when disabled",
-            checked = useExoPlayer,
-            onCheckedChange = onUseExoPlayerToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_pip),
-            title = "Picture-in-Picture Home Gesture",
-            subtitle = "Use home button or gesture to enter picture-in-picture while video is playing",
-            checked = pipGestureEnabled,
-            onCheckedChange = onPipGestureToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_play_arrow),
-            title = "Auto-play",
-            subtitle = "Automatically play next episode",
-            checked = autoPlay,
-            onCheckedChange = onAutoPlayToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_skip_next),
-            title = "Skip Intro",
-            subtitle = "Show the Skip Intro Button",
-            checked = skipIntroEnabled,
-            onCheckedChange = onSkipIntroToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_fast_forward),
-            title = "Skip Outro",
-            subtitle = "Show the Skip Outro Button",
-            checked = skipOutroEnabled,
-            onCheckedChange = onSkipOutroToggle
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_play_circle),
+            title = "Playback",
+            subtitle = "Configure playback and player settings",
+            onClick = onPlayerOptionsClick
         )
     }
 }

@@ -138,6 +138,12 @@ class SettingsViewModel @Inject constructor(
                 Timber.d("Network availability changed: $isAvailable")
             }
         }
+
+        viewModelScope.launch {
+            preferencesRepository.getLogoAutoHideFlow().collect {
+                _uiState.value = _uiState.value.copy(logoAutoHide = it)
+            }
+        }
     }
 
     fun setThemeMode(mode: String) {
@@ -199,6 +205,29 @@ class SettingsViewModel @Inject constructor(
     fun toggleUseExoPlayer(enabled: Boolean) {
         viewModelScope.launch {
             try {
+                val currentSubtitlePrefs = preferencesRepository.getSubtitlePreferences()
+
+                val updatedPrefs = when {
+                    enabled && currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.BACKGROUND_BOX -> {
+                        Timber.d("Switching to ExoPlayer: Resetting BACKGROUND_BOX to NONE")
+                        currentSubtitlePrefs.copy(
+                            outlineStyle = com.makd.afinity.data.models.player.SubtitleOutlineStyle.NONE,
+                            outlineSize = 0f
+                        )
+                    }
+                    !enabled && (currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.RAISED ||
+                            currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.DEPRESSED) -> {
+                        Timber.d("Switching to MPV: Resetting ${currentSubtitlePrefs.outlineStyle} to NONE")
+                        currentSubtitlePrefs.copy(
+                            outlineStyle = com.makd.afinity.data.models.player.SubtitleOutlineStyle.NONE
+                        )
+                    }
+
+                    else -> null
+                }
+
+                updatedPrefs?.let { preferencesRepository.setSubtitlePreferences(it) }
+
                 preferencesRepository.setUseExoPlayer(enabled)
                 Timber.d("Use ExoPlayer set to: $enabled")
             } catch (e: Exception) {
@@ -240,6 +269,17 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun toggleLogoAutoHide(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setLogoAutoHide(enabled)
+                Timber.d("Logo auto-hide set to: $enabled")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle logo auto-hide")
+            }
+        }
+    }
+
     fun logout(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
             try {
@@ -277,6 +317,7 @@ data class SettingsUiState(
     val skipIntroEnabled: Boolean = true,
     val skipOutroEnabled: Boolean = true,
     val useExoPlayer: Boolean = true,
+    val logoAutoHide: Boolean = false,
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,
     val error: String? = null

@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository.impl
 
+import android.graphics.Color
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -9,7 +10,10 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.makd.afinity.data.models.common.SortBy
-import com.makd.afinity.data.models.player.VideoZoomMode
+import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
+import com.makd.afinity.data.models.player.SubtitleOutlineStyle
+import com.makd.afinity.data.models.player.SubtitlePreferences
+import com.makd.afinity.data.models.player.SubtitleVerticalPosition
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.di.AppPreferences
 import kotlinx.coroutines.flow.Flow
@@ -64,6 +68,20 @@ class PreferencesRepositoryImpl @Inject constructor(
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
 
         val VIDEO_ZOOM_MODE = intPreferencesKey("video_zoom_mode")
+
+        val SUBTITLE_TEXT_COLOR = intPreferencesKey("subtitle_text_color")
+        val SUBTITLE_TEXT_SIZE = stringPreferencesKey("subtitle_text_size")
+        val SUBTITLE_BOLD = booleanPreferencesKey("subtitle_bold")
+        val SUBTITLE_ITALIC = booleanPreferencesKey("subtitle_italic")
+        val SUBTITLE_OUTLINE_STYLE = stringPreferencesKey("subtitle_outline_style")
+        val SUBTITLE_OUTLINE_COLOR = intPreferencesKey("subtitle_outline_color")
+        val SUBTITLE_OUTLINE_SIZE = stringPreferencesKey("subtitle_outline_size")
+        val SUBTITLE_BACKGROUND_COLOR = intPreferencesKey("subtitle_background_color")
+        val SUBTITLE_WINDOW_COLOR = intPreferencesKey("subtitle_window_color")
+        val SUBTITLE_VERTICAL_POSITION = stringPreferencesKey("subtitle_vertical_position")
+        val SUBTITLE_HORIZONTAL_ALIGNMENT = stringPreferencesKey("subtitle_horizontal_alignment")
+
+        val LOGO_AUTO_HIDE = booleanPreferencesKey("logo_auto_hide")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -450,5 +468,102 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun getLastUpdateCheck(): Long {
         return dataStore.data.first()[Keys.LAST_UPDATE_CHECK] ?: 0L
+    }
+
+    override suspend fun setSubtitlePreferences(preferences: SubtitlePreferences) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SUBTITLE_TEXT_COLOR] = preferences.textColor
+            prefs[Keys.SUBTITLE_TEXT_SIZE] = preferences.textSize.toString()
+            prefs[Keys.SUBTITLE_BOLD] = preferences.bold
+            prefs[Keys.SUBTITLE_ITALIC] = preferences.italic
+            prefs[Keys.SUBTITLE_OUTLINE_STYLE] = preferences.outlineStyle.name
+            prefs[Keys.SUBTITLE_OUTLINE_COLOR] = preferences.outlineColor
+            prefs[Keys.SUBTITLE_OUTLINE_SIZE] = preferences.outlineSize.toString()
+            prefs[Keys.SUBTITLE_BACKGROUND_COLOR] = preferences.backgroundColor
+            prefs[Keys.SUBTITLE_WINDOW_COLOR] = preferences.windowColor
+            prefs[Keys.SUBTITLE_VERTICAL_POSITION] = preferences.verticalPosition.name
+            prefs[Keys.SUBTITLE_HORIZONTAL_ALIGNMENT] = preferences.horizontalAlignment.name
+        }
+    }
+
+    override suspend fun getSubtitlePreferences(): SubtitlePreferences {
+        val prefs = dataStore.data.first()
+        return SubtitlePreferences(
+            textColor = prefs[Keys.SUBTITLE_TEXT_COLOR] ?: Color.WHITE,
+            textSize = prefs[Keys.SUBTITLE_TEXT_SIZE]?.toFloatOrNull() ?: 1.0f,
+            bold = prefs[Keys.SUBTITLE_BOLD] ?: false,
+            italic = prefs[Keys.SUBTITLE_ITALIC] ?: false,
+            outlineStyle = prefs[Keys.SUBTITLE_OUTLINE_STYLE]?.let {
+                SubtitleOutlineStyle.fromString(
+                    it
+                )
+            }
+                ?: SubtitleOutlineStyle.NONE,
+            outlineColor = prefs[Keys.SUBTITLE_OUTLINE_COLOR] ?: Color.BLACK,
+            outlineSize = prefs[Keys.SUBTITLE_OUTLINE_SIZE]?.toFloatOrNull() ?: 0f,
+            backgroundColor = prefs[Keys.SUBTITLE_BACKGROUND_COLOR] ?: Color.TRANSPARENT,
+            windowColor = prefs[Keys.SUBTITLE_WINDOW_COLOR] ?: Color.TRANSPARENT,
+            verticalPosition = prefs[Keys.SUBTITLE_VERTICAL_POSITION]?.let {
+                SubtitleVerticalPosition.fromString(
+                    it
+                )
+            }
+                ?: SubtitleVerticalPosition.BOTTOM,
+            horizontalAlignment = prefs[Keys.SUBTITLE_HORIZONTAL_ALIGNMENT]?.let {
+                SubtitleHorizontalAlignment.fromString(
+                    it
+                )
+            }
+                ?: SubtitleHorizontalAlignment.CENTER
+        )
+    }
+
+    override fun getSubtitlePreferencesFlow(): Flow<SubtitlePreferences> {
+        return dataStore.data.map { prefs ->
+            SubtitlePreferences(
+                textColor = prefs[Keys.SUBTITLE_TEXT_COLOR] ?: Color.WHITE,
+                textSize = prefs[Keys.SUBTITLE_TEXT_SIZE]?.toFloatOrNull() ?: 1.0f,
+                bold = prefs[Keys.SUBTITLE_BOLD] ?: false,
+                italic = prefs[Keys.SUBTITLE_ITALIC] ?: false,
+                outlineStyle = prefs[Keys.SUBTITLE_OUTLINE_STYLE]?.let {
+                    SubtitleOutlineStyle.fromString(
+                        it
+                    )
+                }
+                    ?: SubtitleOutlineStyle.NONE,
+                outlineColor = prefs[Keys.SUBTITLE_OUTLINE_COLOR] ?: Color.BLACK,
+                outlineSize = prefs[Keys.SUBTITLE_OUTLINE_SIZE]?.toFloatOrNull() ?: 0f,
+                backgroundColor = prefs[Keys.SUBTITLE_BACKGROUND_COLOR] ?: Color.TRANSPARENT,
+                windowColor = prefs[Keys.SUBTITLE_WINDOW_COLOR] ?: Color.TRANSPARENT,
+                verticalPosition = prefs[Keys.SUBTITLE_VERTICAL_POSITION]?.let {
+                    SubtitleVerticalPosition.fromString(
+                        it
+                    )
+                }
+                    ?: SubtitleVerticalPosition.BOTTOM,
+                horizontalAlignment = prefs[Keys.SUBTITLE_HORIZONTAL_ALIGNMENT]?.let {
+                    SubtitleHorizontalAlignment.fromString(
+                        it
+                    )
+                }
+                    ?: SubtitleHorizontalAlignment.CENTER
+            )
+        }
+    }
+
+    override suspend fun setLogoAutoHide(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.LOGO_AUTO_HIDE] = enabled
+        }
+    }
+
+    override suspend fun getLogoAutoHide(): Boolean {
+        return dataStore.data.first()[Keys.LOGO_AUTO_HIDE] ?: false
+    }
+
+    override fun getLogoAutoHideFlow(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.LOGO_AUTO_HIDE] ?: false
+        }
     }
 }

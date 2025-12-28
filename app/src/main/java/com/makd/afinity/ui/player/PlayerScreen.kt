@@ -18,10 +18,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.Player
+import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.CaptionStyleCompat
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
+import com.makd.afinity.data.models.player.SubtitlePreferences
+import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.components.ErrorIndicator
 import com.makd.afinity.ui.player.components.GestureHandler
 import com.makd.afinity.ui.player.components.MpvSurface
@@ -48,11 +54,24 @@ fun PlayerScreen(
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val preferencesRepository = remember {
+        dagger.hilt.android.EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            com.makd.afinity.di.PreferencesEntryPoint::class.java
+        ).preferencesRepository()
+    }
+    val subtitlePrefs by preferencesRepository.getSubtitlePreferencesFlow()
+        .collectAsStateWithLifecycle(
+            initialValue = SubtitlePreferences.DEFAULT
+        )
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(Unit) {
         onDispose {
-            Timber.d("PlayerScreen disposed")
+            Timber.d("PlayerScreen disposed - clearing playlist")
+            viewModel.clearPlaylist()
         }
     }
 
@@ -74,7 +93,7 @@ fun PlayerScreen(
         viewModel.initializePlaylist(item)
     }
 
-    LaunchedEffect(navController, item) {
+    LaunchedEffect(navController) {
         viewModel.setAutoplayCallback { nextItem ->
             try {
                 nextItem.sources.forEachIndexed { index, source ->
@@ -96,7 +115,6 @@ fun PlayerScreen(
                         startPositionMs = 0L
                     )
                 )
-                viewModel.initializePlaylist(nextItem)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load next item: ${nextItem.name}")
             }
@@ -170,7 +188,7 @@ fun PlayerScreen(
                     )
                 }
 
-                is com.makd.afinity.player.mpv.MPVPlayer -> {
+                is MPVPlayer -> {
                     MpvSurface(
                         modifier = Modifier.fillMaxSize(),
                         onSurfaceCreated = {
@@ -187,6 +205,7 @@ fun PlayerScreen(
         if (viewModel.player is androidx.media3.exoplayer.ExoPlayer) {
             ExoPlayerSubtitles(
                 player = viewModel.player as androidx.media3.exoplayer.ExoPlayer,
+                subtitlePrefs = subtitlePrefs,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -246,6 +265,7 @@ fun PlayerScreen(
 @Composable
 private fun ExoPlayerSubtitles(
     player: androidx.media3.exoplayer.ExoPlayer,
+    subtitlePrefs: SubtitlePreferences,
     modifier: Modifier = Modifier
 ) {
     var subtitleView: androidx.media3.ui.SubtitleView? by remember {
@@ -257,37 +277,35 @@ private fun ExoPlayerSubtitles(
             androidx.media3.ui.SubtitleView(context).apply {
                 setApplyEmbeddedStyles(false)
                 setApplyEmbeddedFontSizes(false)
-
-                /*val typeface = Typeface.createFromAsset(
-                    context.assets,
-                    "subfont.ttf"
-                )*/
-
-                val typeface = Typeface.SANS_SERIF
-
-                val customStyle = androidx.media3.ui.CaptionStyleCompat(
-                    android.graphics.Color.WHITE,
-                    android.graphics.Color.TRANSPARENT,
-                    android.graphics.Color.TRANSPARENT,
-                    androidx.media3.ui.CaptionStyleCompat.EDGE_TYPE_NONE,
-                    android.graphics.Color.TRANSPARENT,
-                    typeface
-                )
-                setStyle(customStyle)
-                setFractionalTextSize(
-                    androidx.media3.ui.SubtitleView.DEFAULT_TEXT_SIZE_FRACTION
-                )
-
                 subtitleView = this
             }
+        },
+        update = { view ->
+            val baseTypeface = Typeface.SANS_SERIF
+            val typeface = if (subtitlePrefs.bold) {
+                Typeface.create(baseTypeface, Typeface.BOLD)
+            } else {
+                baseTypeface
+            }
+
+            val customStyle = CaptionStyleCompat(
+                subtitlePrefs.textColor,
+                subtitlePrefs.backgroundColor,
+                subtitlePrefs.windowColor,
+                subtitlePrefs.outlineStyle.toExoPlayerEdgeType(),
+                subtitlePrefs.outlineColor,
+                typeface
+            )
+            view.setStyle(customStyle)
+            view.setFractionalTextSize(subtitlePrefs.toExoPlayerFractionalSize())
         },
         modifier = modifier
     )
 
     DisposableEffect(player) {
-        val listener = object : androidx.media3.common.Player.Listener {
+        val listener = object : Player.Listener {
             override fun onCues(
-                cueGroup: androidx.media3.common.text.CueGroup
+                cueGroup: CueGroup
             ) {
                 subtitleView?.setCues(cueGroup.cues)
             }

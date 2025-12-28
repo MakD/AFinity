@@ -90,7 +90,9 @@ object FieldSets {
 
     val PERSON_DETAIL = listOf(
         ItemFields.OVERVIEW,
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+        ItemFields.EXTERNAL_URLS,
+        ItemFields.PRODUCTION_LOCATIONS
     )
 
     val REFRESH_USER_DATA = listOf(

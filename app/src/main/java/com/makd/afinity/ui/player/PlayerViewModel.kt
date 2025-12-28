@@ -16,18 +16,25 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.ui.PlayerView
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
+import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.player.GestureConfig
 import com.makd.afinity.data.models.player.PlayerEvent
+import com.makd.afinity.data.models.player.SubtitleOutlineStyle
+import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.Trickplay
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
@@ -51,6 +58,7 @@ import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 @androidx.media3.common.util.UnstableApi
 @HiltViewModel
@@ -63,7 +71,7 @@ class PlayerViewModel @Inject constructor(
     private val segmentsRepository: SegmentsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val playlistManager: PlaylistManager,
-    private val downloadRepository: com.makd.afinity.data.repository.download.JellyfinDownloadRepository,
+    private val downloadRepository: JellyfinDownloadRepository,
     private val apiClient: ApiClient
 ) : ViewModel(), Player.Listener {
 
@@ -87,7 +95,7 @@ class PlayerViewModel @Inject constructor(
     private var currentItem: AfinityItem? = null
     private var currentTrickplay: Trickplay? = null
 
-    private var playerView: androidx.media3.ui.PlayerView? = null
+    private var playerView: PlayerView? = null
     private var currentZoomMode: VideoZoomMode = VideoZoomMode.FIT
 
     var onAutoplayNextEpisode: ((AfinityItem) -> Unit)? = null
@@ -104,6 +112,7 @@ class PlayerViewModel @Inject constructor(
         startProgressReporting()
         initializeBrightness()
         initializeVideoZoomMode()
+        initializeLogoAutoHide()
     }
 
     private fun initializeBrightness() {
@@ -114,6 +123,13 @@ class PlayerViewModel @Inject constructor(
     private fun initializeVideoZoomMode() {
         viewModelScope.launch {
             updateUiState { it.copy(videoZoomMode = currentZoomMode) }
+        }
+    }
+
+    private fun initializeLogoAutoHide() {
+        viewModelScope.launch {
+            val logoAutoHide = preferencesRepository.getLogoAutoHide()
+            updateUiState { it.copy(logoAutoHide = logoAutoHide) }
         }
     }
 
@@ -239,14 +255,60 @@ class PlayerViewModel @Inject constructor(
             .setHwDec("mediacodec")
             .build()
 
-        mpvPlayer.setOption("sub-ass-override", "force")
+        val subtitlePrefs = kotlinx.coroutines.runBlocking {
+            preferencesRepository.getSubtitlePreferences()
+        }
+
+        mpvPlayer.setOption("sub-ass-override", "strip")
         mpvPlayer.setOption("sub-use-margins", "yes")
-        mpvPlayer.setOption("sub-color", "#FFFFFF")
-        mpvPlayer.setOption("sub-border-size", "0")
-        mpvPlayer.setOption("sub-shadow-offset", "0")
-        mpvPlayer.setOption("sub-back-color", "#00000000")
-        mpvPlayer.setOption("sub-font-size", "55")
-        mpvPlayer.setOption("sub-bold", "no")
+        mpvPlayer.setOption("sub-color", SubtitlePreferences.colorToMpvHex(subtitlePrefs.textColor))
+        mpvPlayer.setOption("sub-font-size", subtitlePrefs.toMpvFontSize().toString())
+        mpvPlayer.setOption("sub-bold", if (subtitlePrefs.bold) "yes" else "no")
+        mpvPlayer.setOption("sub-italic", if (subtitlePrefs.italic) "yes" else "no")
+
+        when (subtitlePrefs.outlineStyle) {
+            SubtitleOutlineStyle.OUTLINE -> {
+                mpvPlayer.setOption("sub-border-style", "outline-and-shadow")
+                mpvPlayer.setOption("sub-border-size", subtitlePrefs.outlineSize.toString())
+                mpvPlayer.setOption(
+                    "sub-border-color",
+                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor)
+                )
+                mpvPlayer.setOption("sub-shadow-offset", "0")
+                mpvPlayer.setOption("sub-shadow-color", "#00000000")
+            }
+
+            SubtitleOutlineStyle.DROP_SHADOW -> {
+                mpvPlayer.setOption("sub-border-style", "outline-and-shadow")
+                mpvPlayer.setOption("sub-border-size", "0")
+                mpvPlayer.setOption("sub-border-color", "#00000000")
+                mpvPlayer.setOption("sub-shadow-offset", subtitlePrefs.outlineSize.toString())
+                mpvPlayer.setOption(
+                    "sub-shadow-color",
+                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor)
+                )
+            }
+
+            SubtitleOutlineStyle.BACKGROUND_BOX -> {
+                mpvPlayer.setOption("sub-border-style", "background-box")
+                mpvPlayer.setOption(
+                    "sub-back-color",
+                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.backgroundColor)
+                )
+                mpvPlayer.setOption("sub-spacing", "0.5")
+            }
+
+            else -> {
+                mpvPlayer.setOption("sub-border-style", "outline-and-shadow")
+                mpvPlayer.setOption("sub-border-size", "0")
+                mpvPlayer.setOption("sub-border-color", "#00000000")
+                mpvPlayer.setOption("sub-shadow-offset", "0")
+                mpvPlayer.setOption("sub-shadow-color", "#00000000")
+            }
+        }
+
+        mpvPlayer.setOption("sub-align-y", subtitlePrefs.verticalPosition.mpvValue)
+        mpvPlayer.setOption("sub-align-x", subtitlePrefs.horizontalAlignment.mpvValue)
 
         return mpvPlayer
     }
@@ -417,7 +479,7 @@ class PlayerViewModel @Inject constructor(
         applyZoomMode(currentZoomMode.toggle())
     }
 
-    fun setPlayerView(view: androidx.media3.ui.PlayerView) {
+    fun setPlayerView(view: PlayerView) {
         playerView = view
         applyZoomMode(currentZoomMode)
     }
@@ -461,7 +523,7 @@ class PlayerViewModel @Inject constructor(
             coroutineScope {
                 val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
                 val useLocalSource =
-                    mediaSource?.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                    mediaSource?.type == AfinitySourceType.LOCAL
 
                 val streamUrlDeferred = async(Dispatchers.IO) {
                     if (useLocalSource) {
@@ -525,7 +587,7 @@ class PlayerViewModel @Inject constructor(
                                         ?: "unknown"
 
                                 val subtitleConfig =
-                                    MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse("file://${subtitleFile.absolutePath}"))
+                                    MediaItem.SubtitleConfiguration.Builder("file://${subtitleFile.absolutePath}".toUri())
                                         .setLabel(language)
                                         .setMimeType(mimeType)
                                         .setLanguage(language)
@@ -554,9 +616,7 @@ class PlayerViewModel @Inject constructor(
                                 val subtitleUrl =
                                     "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
                                 MediaItem.SubtitleConfiguration.Builder(
-                                    android.net.Uri.parse(
-                                        subtitleUrl
-                                    )
+                                    subtitleUrl.toUri()
                                 )
                                     .setLabel(
                                         stream.displayTitle ?: stream.language
@@ -573,11 +633,6 @@ class PlayerViewModel @Inject constructor(
                                 null
                             }
                         } ?: emptyList()
-                }
-
-                Timber.d("PlayerViewModel: Total subtitles added to MediaItem: ${externalSubtitles.size}")
-                externalSubtitles.forEach { subtitle ->
-                    Timber.d("PlayerViewModel: Subtitle in MediaItem - Label: ${subtitle.label}, Language: ${subtitle.language}, URI: ${subtitle.uri}")
                 }
 
                 val mediaItem = MediaItem.Builder()
@@ -628,7 +683,7 @@ class PlayerViewModel @Inject constructor(
         val currentItem = uiState.value.currentItem ?: return
 
         val trickplayInfo = when (currentItem) {
-            is com.makd.afinity.data.models.media.AfinityEpisode -> {
+            is AfinityEpisode -> {
                 currentItem.trickplayInfo?.values?.firstOrNull()
             }
 
@@ -707,7 +762,7 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+    override fun onTracksChanged(tracks: Tracks) {
         super.onTracksChanged(tracks)
         updateCurrentTrackSelections()
     }
@@ -865,6 +920,10 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             playlistManager.initializePlaylist(item)
         }
+    }
+
+    fun clearPlaylist() {
+        playlistManager.clearQueue()
     }
 
     fun setAutoplayCallback(callback: (AfinityItem) -> Unit) {
@@ -1162,6 +1221,7 @@ class PlayerViewModel @Inject constructor(
         val showRemainingTime: Boolean = false,
         val isInPictureInPictureMode: Boolean = false,
         val isControlsVisible: Boolean = true,
-        val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT
+        val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
+        val logoAutoHide: Boolean = false
     )
 }

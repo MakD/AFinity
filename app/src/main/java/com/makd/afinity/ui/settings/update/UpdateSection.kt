@@ -47,10 +47,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.R
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.models.UpdateState
-import com.makd.afinity.R
 
 @Composable
 fun UpdateSection(
@@ -131,11 +131,6 @@ fun UpdateSection(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
-
             CheckForUpdatesButton(
                 updateState = updateState,
                 lastCheckTime = uiState.lastCheckTime,
@@ -150,11 +145,6 @@ fun UpdateSection(
             UpdateFrequencySelector(
                 currentFrequency = uiState.checkFrequency,
                 onFrequencySelected = { viewModel.setCheckFrequency(it) }
-            )
-
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             )
 
         }
