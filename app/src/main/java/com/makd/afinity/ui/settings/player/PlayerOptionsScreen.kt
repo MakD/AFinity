@@ -629,6 +629,7 @@ private fun SubtitleSliderItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        Spacer(modifier = Modifier.height(8.dp))
         Slider(
             value = value,
             onValueChange = onValueChange,
@@ -636,8 +637,17 @@ private fun SubtitleSliderItem(
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary
-            )
+            ),
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    modifier = Modifier.height(8.dp)
+                )
+            },
+            modifier = Modifier
+                .height(18.dp)
         )
+        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 
