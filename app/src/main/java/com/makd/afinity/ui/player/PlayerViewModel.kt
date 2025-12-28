@@ -635,11 +635,6 @@ class PlayerViewModel @Inject constructor(
                         } ?: emptyList()
                 }
 
-                Timber.d("PlayerViewModel: Total subtitles added to MediaItem: ${externalSubtitles.size}")
-                externalSubtitles.forEach { subtitle ->
-                    Timber.d("PlayerViewModel: Subtitle in MediaItem - Label: ${subtitle.label}, Language: ${subtitle.language}, URI: ${subtitle.uri}")
-                }
-
                 val mediaItem = MediaItem.Builder()
                     .setMediaId(item.id.toString())
                     .setUri(streamUrl)
@@ -925,6 +920,10 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             playlistManager.initializePlaylist(item)
         }
+    }
+
+    fun clearPlaylist() {
+        playlistManager.clearQueue()
     }
 
     fun setAutoplayCallback(callback: (AfinityItem) -> Unit) {

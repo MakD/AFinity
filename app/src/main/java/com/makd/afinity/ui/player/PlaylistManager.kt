@@ -5,9 +5,13 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.repository.JellyfinRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -87,26 +91,31 @@ class PlaylistManager @Inject constructor(
                     Timber.d("Season ${season.indexNumber}: ${episodes.size} episodes")
 
                     if (episodes.isNotEmpty()) {
-                        val episodesWithSources =
-                            episodes.sortedBy { it.indexNumber ?: 0 }.map { episode ->
-                                try {
-                                    val fullEpisode =
-                                        jellyfinRepository.getItemById(episode.id) as? AfinityEpisode
-                                    if (fullEpisode != null && fullEpisode.sources.isNotEmpty()) {
-                                        Timber.d("Loaded episode with ${fullEpisode.sources.size} sources: ${fullEpisode.name}")
-                                        fullEpisode
-                                    } else {
-                                        Timber.w("Episode ${episode.name} has no media sources")
-                                        episode
+                        val episodesWithSources = withContext(Dispatchers.IO) {
+                            coroutineScope {
+                                episodes.sortedBy { it.indexNumber ?: 0 }.map { episode ->
+                                    async {
+                                        try {
+                                            val fullEpisode =
+                                                jellyfinRepository.getItemById(episode.id) as? AfinityEpisode
+                                            if (fullEpisode != null && fullEpisode.sources.isNotEmpty()) {
+                                                Timber.d("Loaded episode with ${fullEpisode.sources.size} sources: ${fullEpisode.name}")
+                                                fullEpisode
+                                            } else {
+                                                Timber.w("Episode ${episode.name} has no media sources")
+                                                episode
+                                            }
+                                        } catch (e: Exception) {
+                                            Timber.w(
+                                                e,
+                                                "Failed to load full details for episode ${episode.name}"
+                                            )
+                                            episode
+                                        }
                                     }
-                                } catch (e: Exception) {
-                                    Timber.w(
-                                        e,
-                                        "Failed to load full details for episode ${episode.name}"
-                                    )
-                                    episode
-                                }
+                                }.map { it.await() }
                             }
+                        }
                         allEpisodes.addAll(episodesWithSources)
                     }
                 } catch (e: Exception) {

@@ -70,7 +70,8 @@ fun PlayerScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            Timber.d("PlayerScreen disposed")
+            Timber.d("PlayerScreen disposed - clearing playlist")
+            viewModel.clearPlaylist()
         }
     }
 
@@ -92,7 +93,7 @@ fun PlayerScreen(
         viewModel.initializePlaylist(item)
     }
 
-    LaunchedEffect(navController, item) {
+    LaunchedEffect(navController) {
         viewModel.setAutoplayCallback { nextItem ->
             try {
                 nextItem.sources.forEachIndexed { index, source ->
@@ -114,7 +115,6 @@ fun PlayerScreen(
                         startPositionMs = 0L
                     )
                 )
-                viewModel.initializePlaylist(nextItem)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load next item: ${nextItem.name}")
             }
