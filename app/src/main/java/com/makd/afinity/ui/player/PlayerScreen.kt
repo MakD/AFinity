@@ -36,6 +36,7 @@ import com.makd.afinity.ui.player.components.PlayerIndicators
 import com.makd.afinity.ui.player.components.TrickplayPreview
 import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
+import com.makd.afinity.ui.player.utils.RequiresBrightnessPermission
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
 import timber.log.Timber
 
@@ -256,7 +257,9 @@ fun PlayerScreen(
         )
     }
 
-    ScreenBrightnessController(brightness = uiState.brightnessLevel)
+    RequiresBrightnessPermission {
+        ScreenBrightnessController(brightness = uiState.brightnessLevel)
+    }
     KeepScreenOn(keepOn = uiState.isPlaying)
     PlayerSystemBarsController(isControlsVisible = uiState.showControls)
 }

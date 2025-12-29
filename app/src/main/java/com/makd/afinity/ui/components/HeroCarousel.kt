@@ -64,9 +64,6 @@ import kotlinx.coroutines.delay
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
 import mx.platacard.pagerindicator.PagerWormIndicator
 import timber.log.Timber
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-
 
 @Composable
 fun HeroCarousel(
@@ -81,14 +78,10 @@ fun HeroCarousel(
     val configuration = LocalConfiguration.current
     val isLandscape =
         configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-
     val infinitePageCount = Int.MAX_VALUE
     val middleStart = infinitePageCount / 2
     val adjustedStart = middleStart - (middleStart % items.size)
-
-    val currentPageIndex = rememberSaveable(items.size) {
-        mutableStateOf(adjustedStart)
-    }
+    val currentPageIndex = rememberSaveable(items.size) { mutableStateOf(adjustedStart) }
 
     if (isLandscape) {
         HeroCarouselLandscape(
@@ -130,7 +123,6 @@ fun HeroCarouselPortrait(
     onPageChanged: (Int) -> Unit
 ) {
     if (items.isEmpty()) return
-
     val infinitePageCount = Int.MAX_VALUE
     val pagerState = rememberPagerState(
         initialPage = initialPageIndex,
@@ -142,7 +134,6 @@ fun HeroCarouselPortrait(
     }
 
     val context = LocalContext.current
-
     LaunchedEffect(items.size, isScrolling, pagerState.settledPage) {
         if (items.size > 1) {
             while (!isScrolling) {
@@ -161,32 +152,25 @@ fun HeroCarouselPortrait(
         }
     }
 
-    val currentItem by remember {
-        derivedStateOf { items[pagerState.currentPage % items.size] }
-    }
+    val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
 
     LaunchedEffect(pagerState.currentPage) {
         val currentIndex = pagerState.currentPage % items.size
         val nextIndex = (currentIndex + 1) % items.size
         val prevIndex = (currentIndex - 1 + items.size) % items.size
-
         listOf(nextIndex, prevIndex).forEach { index ->
             val item = items[index]
             val imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
             if (imageUrl != null) {
-                val request = ImageRequest.Builder(context)
-                    .data(imageUrl)
-                    .build()
+                val request = ImageRequest.Builder(context).data(imageUrl).build()
                 context.imageLoader.enqueue(request)
             }
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height)
-    ) {
+    Box(modifier = modifier
+        .fillMaxWidth()
+        .height(height)) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
@@ -195,7 +179,6 @@ fun HeroCarouselPortrait(
         ) { page ->
             val actualIndex = page % items.size
             val item = items[actualIndex]
-
             OptimizedAsyncImage(
                 imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
                 contentDescription = item.name,
@@ -208,10 +191,7 @@ fun HeroCarouselPortrait(
                     .graphicsLayer { alpha = 0.99f }
                     .drawWithCache {
                         val gradient = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black,
-                                Color.Transparent
-                            ),
+                            colors = listOf(Color.Black, Color.Transparent),
                             startY = size.height * 0.75f,
                             endY = size.height
                         )
@@ -224,11 +204,9 @@ fun HeroCarouselPortrait(
             )
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-        ) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -241,10 +219,7 @@ fun HeroCarouselPortrait(
                     animationSpec = tween(durationMillis = 700),
                     label = "logo_crossfade"
                 ) { item ->
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         item.images.logo?.let { logoUri ->
                             OptimizedAsyncImage(
                                 imageUrl = item.images.logoImageUrlWithTransparency,
@@ -283,199 +258,8 @@ fun HeroCarouselPortrait(
                     .padding(bottom = 112.dp)
                     .fillMaxWidth()
             ) {
-                val item = currentItem
                 Spacer(modifier = Modifier.weight(1f))
-                when (item) {
-                    is AfinityMovie -> {
-                        item.communityRating?.let { rating ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                    contentDescription = "IMDB",
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Text(
-                                    text = String.format("%.1f", rating),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    is AfinityShow -> {
-                        item.communityRating?.let { rating ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                    contentDescription = "IMDB",
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Text(
-                                    text = String.format("%.1f", rating),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    is AfinityEpisode -> {
-                        item.communityRating?.let { rating ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                    contentDescription = "IMDB",
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Text(
-                                    text = String.format("%.1f", rating),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-
-                when (item) {
-                    is AfinityMovie -> {
-                        item.criticRating?.let { rtRating ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (rtRating > 60) {
-                                            R.drawable.ic_rotten_tomato_fresh
-                                        } else {
-                                            R.drawable.ic_rotten_tomato_rotten
-                                        }
-                                    ),
-                                    contentDescription = if (rtRating > 60) "Fresh" else "Rotten",
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Text(
-                                    text = "${rtRating.toInt()}%",
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-
-                when (item) {
-                    is AfinityMovie -> {
-                        item.premiereDate?.let { date ->
-                            Text(
-                                text = date.year.toString(),
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-
-                when (item) {
-                    is AfinityMovie -> {
-                        item.officialRating?.let { rating ->
-                            Text(
-                                text = rating,
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .background(
-                                        Color.White.copy(alpha = 0.2f),
-                                        RoundedCornerShape(4.dp)
-                                    )
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-
-                    is AfinityShow -> {
-                        item.officialRating?.let { rating ->
-                            Text(
-                                text = rating,
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .background(
-                                        Color.White.copy(alpha = 0.2f),
-                                        RoundedCornerShape(4.dp)
-                                    )
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                }
-
-                when (item) {
-                    is AfinityMovie -> {
-                        if (currentItem.runtimeTicks > 0) {
-                            val runtimeMillis = currentItem.runtimeTicks / 10_000L
-                            val endTime = LocalTime.now().plusNanos(runtimeMillis * 1_000_000L)
-                            val formatter = DateTimeFormatter.ofPattern("HH:mm")
-                            Text(
-                                text = "Ends at ${endTime.format(formatter)}",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    is AfinityShow -> {
-                        item.seasonCount?.let { count ->
-                            Text(
-                                text = if (count == 1) "1 Season" else "$count Seasons",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } ?: run {
-                            Text(
-                                text = "TV Series",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-
+                HeroMetadata(currentItem)
                 Spacer(modifier = Modifier.weight(1f))
             }
 
@@ -485,34 +269,19 @@ fun HeroCarouselPortrait(
                     .padding(bottom = 80.dp)
                     .fillMaxWidth()
             ) {
-                when (val item = currentItem) {
-                    is AfinityMovie -> {
-                        if (item.genres.isNotEmpty()) {
-                            Text(
-                                text = item.genres.take(3).joinToString(" • "),
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-
-                    is AfinityShow -> {
-                        if (item.genres.isNotEmpty()) {
-                            Text(
-                                text = item.genres.take(3).joinToString(" • "),
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
+                val genres = when (currentItem) {
+                    is AfinityMovie -> (currentItem as AfinityMovie).genres
+                    is AfinityShow -> (currentItem as AfinityShow).genres
+                    else -> emptyList()
+                }
+                if (genres.isNotEmpty()) {
+                    Text(
+                        text = genres.take(3).joinToString(" • "),
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
@@ -528,20 +297,15 @@ fun HeroCarouselPortrait(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .size(56.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                        shape = CircleShape
-                    )
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_info),
-
                     contentDescription = "More Information",
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(24.dp)
                 )
             }
-
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.align(Alignment.CenterEnd)
@@ -551,8 +315,8 @@ fun HeroCarouselPortrait(
                     modifier = Modifier
                         .size(56.dp)
                         .background(
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            shape = CircleShape
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            CircleShape
                         )
                 ) {
                     Icon(
@@ -562,15 +326,11 @@ fun HeroCarouselPortrait(
                         modifier = Modifier.size(24.dp)
                     )
                 }
-
                 IconButton(
                     onClick = { onWatchNowClick(currentItem) },
                     modifier = Modifier
                         .size(56.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
-                        )
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_play_arrow),
@@ -583,7 +343,7 @@ fun HeroCarouselPortrait(
         }
 
         if (items.size > 1) {
-            val currentPageFraction by remember {
+            val currentPageFractionState = remember {
                 derivedStateOf {
                     val currentPage = pagerState.currentPage % items.size
                     val pageOffset = pagerState.currentPageOffsetFraction
@@ -597,7 +357,7 @@ fun HeroCarouselPortrait(
 
             PagerWormIndicator(
                 pageCount = items.size,
-                currentPageFraction = remember { derivedStateOf { currentPageFraction } },
+                currentPageFraction = currentPageFractionState,
                 activeDotColor = MaterialTheme.colorScheme.primary,
                 dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 modifier = Modifier
@@ -626,7 +386,6 @@ private fun HeroCarouselLandscape(
     onPageChanged: (Int) -> Unit
 ) {
     if (items.isEmpty()) return
-
     val infinitePageCount = Int.MAX_VALUE
     val pagerState = rememberPagerState(
         initialPage = initialPageIndex,
@@ -658,34 +417,26 @@ private fun HeroCarouselLandscape(
         }
     }
 
-    val currentItem by remember {
-        derivedStateOf { items[pagerState.currentPage % items.size] }
-    }
-
+    val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
     val context = LocalContext.current
 
     LaunchedEffect(pagerState.currentPage) {
         val currentIndex = pagerState.currentPage % items.size
         val nextIndex = (currentIndex + 1) % items.size
         val prevIndex = (currentIndex - 1 + items.size) % items.size
-
         listOf(nextIndex, prevIndex).forEach { index ->
             val item = items[index]
             val imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
             if (imageUrl != null) {
-                val request = ImageRequest.Builder(context)
-                    .data(imageUrl)
-                    .build()
+                val request = ImageRequest.Builder(context).data(imageUrl).build()
                 context.imageLoader.enqueue(request)
             }
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(landscapeHeight)
-    ) {
+    Box(modifier = modifier
+        .fillMaxWidth()
+        .height(landscapeHeight)) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
@@ -694,7 +445,6 @@ private fun HeroCarouselLandscape(
         ) { page ->
             val actualIndex = page % items.size
             val item = items[actualIndex]
-
             OptimizedAsyncImage(
                 imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
                 contentDescription = item.name,
@@ -707,10 +457,7 @@ private fun HeroCarouselLandscape(
                     .graphicsLayer { alpha = 0.99f }
                     .drawWithCache {
                         val gradient = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black,
-                                Color.Transparent
-                            ),
+                            colors = listOf(Color.Black, Color.Transparent),
                             startY = size.height * 0.75f,
                             endY = size.height
                         )
@@ -723,11 +470,9 @@ private fun HeroCarouselLandscape(
             )
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 48.dp, bottom = 48.dp, top = 48.dp)
-        ) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(start = 48.dp, bottom = 48.dp, top = 48.dp)) {
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
@@ -765,9 +510,7 @@ private fun HeroCarouselLandscape(
                             } ?: run {
                                 Text(
                                     text = item.name,
-                                    style = MaterialTheme.typography.displayMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
+                                    style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
@@ -777,226 +520,47 @@ private fun HeroCarouselLandscape(
                     }
                 }
 
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(28.dp),
-                        contentAlignment = Alignment.CenterStart
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(28.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            when (val item = currentItem) {
-                                is AfinityMovie -> {
-                                    item.communityRating?.let { rating ->
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                                contentDescription = "IMDB",
-                                                tint = Color.Unspecified,
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                            Text(
-                                                text = String.format("%.1f", rating),
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontWeight = FontWeight.Medium
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-
-                                    item.criticRating?.let { rtRating ->
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(
-                                                    id = if (rtRating > 60) {
-                                                        R.drawable.ic_rotten_tomato_fresh
-                                                    } else {
-                                                        R.drawable.ic_rotten_tomato_rotten
-                                                    }
-                                                ),
-                                                contentDescription = if (rtRating > 60) "Fresh" else "Rotten",
-                                                tint = Color.Unspecified,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                            Text(
-                                                text = "${rtRating.toInt()}%",
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontWeight = FontWeight.Medium
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-
-                                    (currentItem as AfinityMovie).premiereDate?.let { date ->
-                                        Text(
-                                            text = date.year.toString(),
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-
-                                    item.officialRating?.let { rating ->
-                                        Text(
-                                            text = rating,
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier
-                                                .background(
-                                                    Color.White.copy(alpha = 0.2f),
-                                                    RoundedCornerShape(4.dp)
-                                                )
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-
-                                    if (currentItem.runtimeTicks > 0) {
-                                        val runtimeMillis = currentItem.runtimeTicks / 10_000L
-                                        val endTime =
-                                            LocalTime.now().plusNanos(runtimeMillis * 1_000_000L)
-                                        val formatter = DateTimeFormatter.ofPattern("HH:mm")
-                                        Text(
-                                            text = "Ends at ${endTime.format(formatter)}",
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                is AfinityShow -> {
-                                    val show = currentItem as AfinityShow
-
-                                    item.communityRating?.let { rating ->
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                                contentDescription = "IMDB",
-                                                tint = Color.Unspecified,
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                            Text(
-                                                text = String.format("%.1f", rating),
-                                                style = MaterialTheme.typography.bodyLarge.copy(
-                                                    fontWeight = FontWeight.Medium
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-
-                                    item.officialRating?.let { rating ->
-                                        Text(
-                                            text = rating,
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier
-                                                .background(
-                                                    Color.White.copy(alpha = 0.2f),
-                                                    RoundedCornerShape(4.dp)
-                                                )
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-
-                                    show.seasonCount?.let { count ->
-                                        Text(
-                                            text = if (count == 1) "1 Season" else "$count Seasons",
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    } ?: run {
-                                        Text(
-                                            text = "TV Series",
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(20.dp),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        when (currentItem) {
-                            is AfinityMovie -> {
-                                val movie = currentItem as AfinityMovie
-                                if (movie.genres.isNotEmpty()) {
-                                    Text(
-                                        text = movie.genres.take(3).joinToString(" • "),
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
-                            is AfinityShow -> {
-                                val show = currentItem as AfinityShow
-                                if (show.genres.isNotEmpty()) {
-                                    Text(
-                                        text = show.genres.take(3).joinToString(" • "),
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp),
-                        contentAlignment = Alignment.TopStart
-                    ) {
-                        currentItem.overview?.let { overview ->
-                            Text(
-                                text = overview,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                        HeroMetadata(currentItem)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(20.dp)) {
+                    val genres = when (currentItem) {
+                        is AfinityMovie -> (currentItem as AfinityMovie).genres
+                        is AfinityShow -> (currentItem as AfinityShow).genres
+                        else -> emptyList()
+                    }
+                    if (genres.isNotEmpty()) {
+                        Text(
+                            text = genres.take(3).joinToString(" • "),
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp)) {
+                    currentItem.overview?.let { overview ->
+                        Text(
+                            text = overview,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
         }
 
@@ -1008,16 +572,14 @@ private fun HeroCarouselLandscape(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 IconButton(
                     onClick = { onMoreInformationClick(currentItem) },
                     modifier = Modifier
                         .size(36.dp)
                         .background(
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            shape = CircleShape
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            CircleShape
                         )
                 ) {
                     Icon(
@@ -1027,14 +589,13 @@ private fun HeroCarouselLandscape(
                         modifier = Modifier.size(24.dp)
                     )
                 }
-
                 IconButton(
                     onClick = { onPlayTrailerClick(currentItem) },
                     modifier = Modifier
                         .size(36.dp)
                         .background(
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            shape = CircleShape
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            CircleShape
                         )
                 ) {
                     Icon(
@@ -1044,15 +605,11 @@ private fun HeroCarouselLandscape(
                         modifier = Modifier.size(24.dp)
                     )
                 }
-
                 IconButton(
                     onClick = { onWatchNowClick(currentItem) },
                     modifier = Modifier
                         .size(36.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
-                        )
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_play_arrow),
@@ -1064,7 +621,7 @@ private fun HeroCarouselLandscape(
             }
 
             if (items.size > 1) {
-                val currentPageFraction by remember {
+                val currentPageFractionState = remember {
                     derivedStateOf {
                         val currentPage = pagerState.currentPage % items.size
                         val pageOffset = pagerState.currentPageOffsetFraction
@@ -1081,7 +638,7 @@ private fun HeroCarouselLandscape(
 
                 PagerWormIndicator(
                     pageCount = items.size,
-                    currentPageFraction = remember { derivedStateOf { currentPageFraction } },
+                    currentPageFraction = currentPageFractionState,
                     activeDotColor = MaterialTheme.colorScheme.primary,
                     dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                     dotCount = 5,
@@ -1091,6 +648,93 @@ private fun HeroCarouselLandscape(
                     orientation = PagerIndicatorOrientation.Horizontal
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun HeroMetadata(item: AfinityItem) {
+    val communityRating = when (item) {
+        is AfinityMovie -> item.communityRating
+        is AfinityShow -> item.communityRating
+        is AfinityEpisode -> item.communityRating
+        else -> null
+    }
+
+    communityRating?.let { rating ->
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                contentDescription = "IMDB",
+                tint = Color.Unspecified,
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                text = String.format("%.1f", rating),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    if (item is AfinityMovie) {
+        item.criticRating?.let { rtRating ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    painter = painterResource(
+                        id = if (rtRating > 60) R.drawable.ic_rotten_tomato_fresh
+                        else R.drawable.ic_rotten_tomato_rotten
+                    ),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "${rtRating.toInt()}%",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        item.premiereDate?.let { date ->
+            Text(
+                text = date.year.toString(),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    val officialRating = when (item) {
+        is AfinityMovie -> item.officialRating
+        is AfinityShow -> item.officialRating
+        else -> null
+    }
+
+    officialRating?.let { rating ->
+        Text(
+            text = rating,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+    }
+
+    if (item is AfinityShow) {
+        item.seasonCount?.let { count ->
+            Text(
+                text = if (count == 1) "1 Season" else "$count Seasons",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import android.provider.Settings
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.AudioAttributes
@@ -58,7 +59,6 @@ import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
-import androidx.core.net.toUri
 
 @androidx.media3.common.util.UnstableApi
 @HiltViewModel
@@ -110,7 +110,6 @@ class PlayerViewModel @Inject constructor(
         initializePlayer()
         startPositionUpdateLoop()
         startProgressReporting()
-        initializeBrightness()
         initializeVideoZoomMode()
         initializeLogoAutoHide()
     }
@@ -1025,8 +1024,13 @@ class PlayerViewModel @Inject constructor(
     private var brightnessHideJob: Job? = null
 
     fun onScreenBrightnessGesture(delta: Float) {
-        val currentBrightness = _uiState.value.brightnessLevel
-        val newBrightness = (currentBrightness + delta * gestureConfig.brightnessStepSize)
+        var currentLevel = _uiState.value.brightnessLevel
+
+        if (currentLevel < 0f) {
+            currentLevel = getSystemBrightness()
+        }
+
+        val newBrightness = (currentLevel + delta * gestureConfig.brightnessStepSize)
             .coerceIn(0.0f, 1.0f)
 
         updateUiState {
@@ -1203,7 +1207,7 @@ class PlayerViewModel @Inject constructor(
         val showBuffering: Boolean = false,
         val showError: Boolean = false,
         val errorMessage: String? = null,
-        val brightnessLevel: Float = 0.5f,
+        val brightnessLevel: Float = -1.0f,
         val showTrickplayPreview: Boolean = false,
         val trickplayPreviewImage: ImageBitmap? = null,
         val trickplayPreviewPosition: Long = 0L,
