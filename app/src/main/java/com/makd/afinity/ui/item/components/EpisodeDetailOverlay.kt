@@ -190,7 +190,7 @@ fun EpisodeDetailOverlay(
                         )
                         Text(
                             text = String.format("%.1f", rating),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
