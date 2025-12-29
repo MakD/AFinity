@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -182,6 +183,29 @@ fun HomeScreen(
                 val statusBarHeight = WindowInsets.statusBars.getTop(density)
                 val showCarousel = !uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()
 
+                val continueWatchingItems = if (uiState.isOffline) {
+                    uiState.offlineContinueWatching
+                } else {
+                    uiState.continueWatching
+                }
+
+                val firstContentKey = when {
+                    continueWatchingItems.isNotEmpty() -> "continue_watching"
+                    !uiState.isOffline && uiState.isLoading && uiState.latestMedia.isNotEmpty() -> "cw_skeleton"
+                    uiState.downloadedMovies.isNotEmpty() -> "downloaded_movies"
+                    uiState.downloadedShows.isNotEmpty() -> "downloaded_shows"
+                    !uiState.isOffline && uiState.nextUp.isNotEmpty() -> "next_up"
+                    else -> null
+                }
+
+                fun getItemModifier(key: String): Modifier {
+                    return if (isLandscape && key == firstContentKey) {
+                        Modifier.fillMaxWidth().offset(y = (-70).dp)
+                    } else {
+                        Modifier.fillMaxWidth()
+                    }
+                }
+
                 LazyColumn(
                     state = lazyListState,
                     modifier = Modifier.fillMaxSize(),
@@ -205,209 +229,263 @@ fun HomeScreen(
                         }
                     }
 
-                    item(key = "content_wrapper") {
-                        Column(
-                            modifier = if (isLandscape) {
-                                Modifier
-                                    .fillMaxWidth()
-                                    .offset(y = (-70).dp)
-                            } else {
-                                Modifier.fillMaxWidth()
-                            }
-                        ) {
-                            val continueWatchingItems = if (uiState.isOffline) {
-                                uiState.offlineContinueWatching
-                            } else {
-                                uiState.continueWatching
-                            }
-
-                            if (continueWatchingItems.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                OptimizedContinueWatchingSection(
-                                    items = continueWatchingItems,
-                                    onItemClick = { item ->
-                                        if (item is AfinityEpisode) {
-                                            viewModel.selectEpisode(item)
-                                        } else {
-                                            onItemClick(item)
+                    if (continueWatchingItems.isNotEmpty()) {
+                        item(key = "continue_watching") {
+                            Box(modifier = getItemModifier("continue_watching")) {
+                                Column {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    OptimizedContinueWatchingSection(
+                                        items = continueWatchingItems,
+                                        onItemClick = { item ->
+                                            if (item is AfinityEpisode) {
+                                                viewModel.selectEpisode(item)
+                                            } else {
+                                                onItemClick(item)
+                                            }
                                         }
-                                    }
-                                )
-                            } else if (!uiState.isOffline && uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                ContinueWatchingSkeleton()
+                                    )
+                                }
                             }
-
-                            if (uiState.downloadedMovies.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                OptimizedLatestTvSeriesSection(
-                                    title = "Downloaded Movies",
-                                    items = uiState.downloadedMovies,
-                                    onItemClick = { item ->
-                                        onItemClick(item)
-                                    }
-                                )
+                        }
+                    } else if (!uiState.isOffline && uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                        item(key = "cw_skeleton") {
+                            Box(modifier = getItemModifier("cw_skeleton")) {
+                                Column {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    ContinueWatchingSkeleton()
+                                }
                             }
+                        }
+                    }
 
-                            if (uiState.downloadedShows.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                OptimizedLatestTvSeriesSection(
-                                    title = "Downloaded Shows",
-                                    items = uiState.downloadedShows,
-                                    onItemClick = { item ->
-                                        onItemClick(item)
-                                    }
-                                )
+                    if (uiState.downloadedMovies.isNotEmpty()) {
+                        item(key = "downloaded_movies") {
+                            Box(modifier = getItemModifier("downloaded_movies")) {
+                                Column {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    OptimizedLatestTvSeriesSection(
+                                        title = "Downloaded Movies",
+                                        items = uiState.downloadedMovies,
+                                        onItemClick = onItemClick
+                                    )
+                                }
                             }
+                        }
+                    }
 
-                            if (!uiState.isOffline && uiState.nextUp.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                NextUpSection(
-                                    episodes = uiState.nextUp,
-                                    onEpisodeClick = { episode ->
-                                        viewModel.selectEpisode(episode)
-                                    }
-                                )
+                    if (uiState.downloadedShows.isNotEmpty()) {
+                        item(key = "downloaded_shows") {
+                            Box(modifier = getItemModifier("downloaded_shows")) {
+                                Column {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    OptimizedLatestTvSeriesSection(
+                                        title = "Downloaded Shows",
+                                        items = uiState.downloadedShows,
+                                        onItemClick = onItemClick
+                                    )
+                                }
                             }
+                        }
+                    }
 
-                            if (!uiState.isOffline) {
-                                if (uiState.combineLibrarySections) {
-                                    if (uiState.latestMovies.isNotEmpty()) {
+                    if (!uiState.isOffline && uiState.nextUp.isNotEmpty()) {
+                        item(key = "next_up") {
+                            Box(modifier = getItemModifier("next_up")) {
+                                Column {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    NextUpSection(
+                                        episodes = uiState.nextUp,
+                                        onEpisodeClick = { episode ->
+                                            viewModel.selectEpisode(episode)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (!uiState.isOffline) {
+                        if (uiState.combineLibrarySections) {
+                            if (uiState.latestMovies.isNotEmpty()) {
+                                item(key = "latest_movies_combined") {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         OptimizedLatestMoviesSection(
                                             items = uiState.latestMovies,
                                             onItemClick = onItemClick
                                         )
-                                    } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                    }
+                                }
+                            } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                item(key = "movies_skeleton") {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         MoviesSectionSkeleton()
                                     }
-                                } else {
-                                    uiState.separateMovieLibrarySections.forEachIndexed { index, (library, movies) ->
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        OptimizedLatestMoviesSection(
-                                            title = library.name,
-                                            items = movies,
-                                            onItemClick = onItemClick
-                                        )
-                                    }
                                 }
                             }
+                        } else {
+                            items(
+                                items = uiState.separateMovieLibrarySections,
+                                key = { (library, _) -> "movie_lib_${library.id}" }
+                            ) { (library, movies) ->
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    OptimizedLatestMoviesSection(
+                                        title = library.name,
+                                        items = movies,
+                                        onItemClick = onItemClick
+                                    )
+                                }
+                            }
+                        }
+                    }
 
-                            if (!uiState.isOffline) {
-                                if (uiState.combineLibrarySections) {
-                                    if (uiState.latestTvSeries.isNotEmpty()) {
+                    if (!uiState.isOffline) {
+                        if (uiState.combineLibrarySections) {
+                            if (uiState.latestTvSeries.isNotEmpty()) {
+                                item(key = "latest_tv_combined") {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         OptimizedLatestTvSeriesSection(
                                             items = uiState.latestTvSeries,
                                             onItemClick = onItemClick
                                         )
-                                    } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                    }
+                                }
+                            } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                item(key = "tv_skeleton") {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         TvSeriesSectionSkeleton()
                                     }
-                                } else {
-                                    uiState.separateTvLibrarySections.forEachIndexed { index, (library, shows) ->
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        OptimizedLatestTvSeriesSection(
-                                            title = library.name,
-                                            items = shows,
-                                            onItemClick = onItemClick
-                                        )
-                                    }
                                 }
                             }
-
-                            if (!uiState.isOffline) {
-                                if (uiState.highestRated.isNotEmpty()) {
+                        } else {
+                            items(
+                                items = uiState.separateTvLibrarySections,
+                                key = { (library, _) -> "tv_lib_${library.id}" }
+                            ) { (library, shows) ->
+                                Column(modifier = Modifier.fillMaxWidth()) {
                                     Spacer(modifier = Modifier.height(24.dp))
-                                    HighestRatedSection(
-                                        items = uiState.highestRated,
+                                    OptimizedLatestTvSeriesSection(
+                                        title = library.name,
+                                        items = shows,
                                         onItemClick = onItemClick
                                     )
                                 }
+                            }
+                        }
+                    }
 
-                                if (uiState.studios.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    PopularStudiosSection(
-                                        studios = uiState.studios,
-                                        onStudioClick = { studio ->
-                                            viewModel.onStudioClick(studio, navController)
-                                        }
-                                    )
+                    if (!uiState.isOffline && uiState.highestRated.isNotEmpty()) {
+                        item(key = "highest_rated") {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                HighestRatedSection(
+                                    items = uiState.highestRated,
+                                    onItemClick = onItemClick
+                                )
+                            }
+                        }
+                    }
+
+                    if (!uiState.isOffline && uiState.studios.isNotEmpty()) {
+                        item(key = "popular_studios") {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                PopularStudiosSection(
+                                    studios = uiState.studios,
+                                    onStudioClick = { studio ->
+                                        viewModel.onStudioClick(studio, navController)
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    if (!uiState.isOffline && uiState.combinedSections.isNotEmpty()) {
+                        items(
+                            items = uiState.combinedSections,
+                            key = { section ->
+                                when (section) {
+                                    is HomeSection.Person -> "person_${section.section.hashCode()}"
+                                    is HomeSection.Movie -> "movie_rec_${section.section.hashCode()}"
+                                    is HomeSection.PersonFromMovie -> "person_movie_${section.section.hashCode()}"
+                                    is HomeSection.Genre -> "genre_${section.genreItem.name}_${section.genreItem.type}"
                                 }
+                            }
+                        ) { section ->
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                when (section) {
+                                    is HomeSection.Person -> {
+                                        PersonSection(
+                                            section = section.section,
+                                            onItemClick = { movie -> onItemClick(movie) }
+                                        )
+                                    }
 
-                                if (uiState.combinedSections.isNotEmpty()) {
-                                    uiState.combinedSections.forEach { section ->
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        when (section) {
-                                            is HomeSection.Person -> {
-                                                PersonSection(
-                                                    section = section.section,
-                                                    onItemClick = { movie -> onItemClick(movie) }
+                                    is HomeSection.Movie -> {
+                                        MovieRecommendationSection(
+                                            section = section.section,
+                                            onItemClick = { movie -> onItemClick(movie) }
+                                        )
+                                    }
+
+                                    is HomeSection.PersonFromMovie -> {
+                                        PersonFromMovieSection(
+                                            section = section.section,
+                                            onItemClick = { movie -> onItemClick(movie) }
+                                        )
+                                    }
+
+                                    is HomeSection.Genre -> {
+                                        when (section.genreItem.type) {
+                                            GenreType.MOVIE -> {
+                                                GenreSection(
+                                                    genre = section.genreItem.name,
+                                                    movies = uiState.genreMovies[section.genreItem.name]
+                                                        ?: emptyList(),
+                                                    isLoading = uiState.genreLoadingStates[section.genreItem.name]
+                                                        ?: false,
+                                                    onVisible = {
+                                                        if (uiState.genreMovies[section.genreItem.name] == null) {
+                                                            viewModel.loadMoviesForGenre(
+                                                                section.genreItem.name
+                                                            )
+                                                        }
+                                                    },
+                                                    onItemClick = onItemClick
                                                 )
                                             }
 
-                                            is HomeSection.Movie -> {
-                                                MovieRecommendationSection(
-                                                    section = section.section,
-                                                    onItemClick = { movie -> onItemClick(movie) }
+                                            GenreType.SHOW -> {
+                                                ShowGenreSection(
+                                                    genre = section.genreItem.name,
+                                                    shows = uiState.genreShows[section.genreItem.name]
+                                                        ?: emptyList(),
+                                                    isLoading = uiState.genreLoadingStates[section.genreItem.name]
+                                                        ?: false,
+                                                    onVisible = {
+                                                        if (uiState.genreShows[section.genreItem.name] == null) {
+                                                            viewModel.loadShowsForGenre(
+                                                                section.genreItem.name
+                                                            )
+                                                        }
+                                                    },
+                                                    onItemClick = onItemClick
                                                 )
-                                            }
-
-                                            is HomeSection.PersonFromMovie -> {
-                                                PersonFromMovieSection(
-                                                    section = section.section,
-                                                    onItemClick = { movie -> onItemClick(movie) }
-                                                )
-                                            }
-
-                                            is HomeSection.Genre -> {
-                                                when (section.genreItem.type) {
-                                                    GenreType.MOVIE -> {
-                                                        GenreSection(
-                                                            genre = section.genreItem.name,
-                                                            movies = uiState.genreMovies[section.genreItem.name]
-                                                                ?: emptyList(),
-                                                            isLoading = uiState.genreLoadingStates[section.genreItem.name]
-                                                                ?: false,
-                                                            onVisible = {
-                                                                if (uiState.genreMovies[section.genreItem.name] == null) {
-                                                                    viewModel.loadMoviesForGenre(
-                                                                        section.genreItem.name
-                                                                    )
-                                                                }
-                                                            },
-                                                            onItemClick = onItemClick
-                                                        )
-                                                    }
-
-                                                    GenreType.SHOW -> {
-                                                        ShowGenreSection(
-                                                            genre = section.genreItem.name,
-                                                            shows = uiState.genreShows[section.genreItem.name]
-                                                                ?: emptyList(),
-                                                            isLoading = uiState.genreLoadingStates[section.genreItem.name]
-                                                                ?: false,
-                                                            onVisible = {
-                                                                if (uiState.genreShows[section.genreItem.name] == null) {
-                                                                    viewModel.loadShowsForGenre(
-                                                                        section.genreItem.name
-                                                                    )
-                                                                }
-                                                            },
-                                                            onItemClick = onItemClick
-                                                        )
-                                                    }
-                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-
-                            Spacer(modifier = Modifier.height(32.dp))
                         }
+                    }
+
+                    item(key = "bottom_padding") {
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }
@@ -596,6 +674,23 @@ private fun HighestRatedCard(
     val density = LocalDensity.current
     val fontScale = density.fontScale
 
+    val baseFontSize = MaterialTheme.typography.bodySmall.fontSize
+    val metadataFontSize = remember(fontScale, baseFontSize) {
+        baseFontSize * if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
+    }
+
+    val imdbIconSize = remember(fontScale) {
+        if (fontScale > 1.3f) 14.dp
+        else if (fontScale > 1.15f) 16.dp
+        else 18.dp
+    }
+
+    val rtIconSize = remember(fontScale) {
+        if (fontScale > 1.3f) 10.dp
+        else if (fontScale > 1.15f) 11.dp
+        else 12.dp
+    }
+
     Column(
         modifier = Modifier.width(cardWidth)
     ) {
@@ -720,8 +815,7 @@ private fun HighestRatedCard(
                         Text(
                             text = year.toString(),
                             style = MaterialTheme.typography.bodySmall.copy(
-                                fontSize = MaterialTheme.typography.bodySmall.fontSize *
-                                        if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
+                                fontSize = metadataFontSize
                             ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -742,17 +836,12 @@ private fun HighestRatedCard(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
                                 contentDescription = "IMDB",
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(
-                                    if (fontScale > 1.3f) 14.dp
-                                    else if (fontScale > 1.15f) 16.dp
-                                    else 18.dp
-                                )
+                                modifier = Modifier.size(imdbIconSize)
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),
                                 style = MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = MaterialTheme.typography.bodySmall.fontSize *
-                                            if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
+                                    fontSize = metadataFontSize
                                 ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -777,17 +866,12 @@ private fun HighestRatedCard(
                                     ),
                                     contentDescription = "Rotten Tomatoes",
                                     tint = Color.Unspecified,
-                                    modifier = Modifier.size(
-                                        if (fontScale > 1.3f) 10.dp
-                                        else if (fontScale > 1.15f) 11.dp
-                                        else 12.dp
-                                    )
+                                    modifier = Modifier.size(rtIconSize)
                                 )
                                 Text(
                                     text = "${rtRating.toInt()}%",
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        fontSize = MaterialTheme.typography.bodySmall.fontSize *
-                                                if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
+                                        fontSize = metadataFontSize
                                     ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
