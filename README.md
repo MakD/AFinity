@@ -3,24 +3,32 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/MakD/AFinity/refs/heads/master/screenshots/Logo/GithubBanner.png" alt="AFinity Banner" width="100%">
 </p>
-
-[![Release](https://img.shields.io/github/v/release/MakD/AFinity?style=for-the-badge&labelColor=4a90e2&color=black)](https://github.com/MakD/AFinity/releases)
-![GitHub commits since latest release](https://img.shields.io/github/commits-since/Makd/Afinity/latest?sort=date&style=for-the-badge&labelColor=465775&color=000000&cacheSeconds=3600)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/w/MakD/Afinity?style=for-the-badge&labelColor=05668D&color=black&cacheSeconds=600)
-[![Stars](https://img.shields.io/github/stars/MakD/AFinity?style=for-the-badge&labelColor=7b68ee&color=black)](https://github.com/MakD/AFinity/stargazers)
-[![Issues](https://img.shields.io/github/issues/MakD/AFinity?style=for-the-badge&labelColor=e94b3c&color=black)](https://github.com/MakD/AFinity/issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/MakD/AFinity?style=for-the-badge&labelColor=f39c12&color=black)](https://github.com/MakD/AFinity/pulls)
-[![Downloads](https://img.shields.io/github/downloads/MakD/AFinity/total?style=for-the-badge&labelColor=27ae60&color=black)](https://github.com/MakD/AFinity/releases)
-[![License](https://img.shields.io/github/license/MakD/AFinity?style=for-the-badge&labelColor=665687&color=black)](https://github.com/MakD/AFinity/blob/master/LICENSE.md)
-<a href="https://discord.com/channels/1381737066366242896/1422939582533730325"><img alt="Discord" src="https://img.shields.io/badge/AFinity-%20Jellyfin%20Community?&logo=discord&logoColor=white&style=for-the-badge&label=Jellyfin%20Community&labelColor=5865F2&color=black"></a>
+  
+[![Release](https://img.shields.io/github/v/release/MakD/AFinity?style=for-the-badge&labelColor=000000&color=41A67E)](https://github.com/MakD/AFinity/releases)
+![GitHub commits since latest release](https://img.shields.io/github/commits-since/Makd/Afinity/latest?sort=date&style=for-the-badge&labelColor=000000&color=465775&cacheSeconds=3600)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/MakD/Afinity?style=for-the-badge&labelColor=000000&color=05668D&cacheSeconds=600)
+[![Stars](https://img.shields.io/github/stars/MakD/AFinity?style=for-the-badge&labelColor=000000&color=7b68ee)](https://github.com/MakD/AFinity/stargazers)
+[![Issues](https://img.shields.io/github/issues/MakD/AFinity?style=for-the-badge&labelColor=000000&color=e94b3c)](https://github.com/MakD/AFinity/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/MakD/AFinity?style=for-the-badge&labelColor=000000&color=f39c12)](https://github.com/MakD/AFinity/pulls)
+[![Downloads](https://img.shields.io/github/downloads/MakD/AFinity/total?style=for-the-badge&labelColor=000000&color=333446)](https://github.com/MakD/AFinity/releases)
+[![License](https://img.shields.io/github/license/MakD/AFinity?style=for-the-badge&labelColor=000000&color=665687)](https://github.com/MakD/AFinity/blob/master/LICENSE.md)
 
 A native Android client for Jellyfin servers built with Jetpack Compose and Material 3.
 
 ## Overview
 
+<p>
+<img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&labelColor=000000&logo=android&logoColor=white" alt="Android Platform"/> &nbsp;
+<img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white&labelColor=000000" alt="Language"/> &nbsp;
+<img src="https://img.shields.io/badge/Framework-Jetpack%20Compose-3899EC?style=for-the-badge&logo=jetpackcompose&logoColor=white&labelColor=000000" alt="Framework"/> &nbsp;
+<img src="https://img.shields.io/badge/Design-Material%203-7F8CAA?style=for-the-badge&logo=materialdesign&logoColor=white&labelColor=000000" alt="UI"/> &nbsp;
+</p>
+
 Afinity provides a clean, responsive interface for accessing your Jellyfin media library on Android devices. The app focuses on delivering smooth playback performance and an intuitive browsing experience.
 
 ## Reach out
+
+<a href="https://discord.com/channels/1381737066366242896/1422939582533730325"><img alt="Discord" src="https://img.shields.io/badge/AFinity-%20Jellyfin%20Community?&logo=discord&logoColor=white&style=for-the-badge&label=Jellyfin%20Community&labelColor=5865F2&color=black"></a>
 
 Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the discussion
 
