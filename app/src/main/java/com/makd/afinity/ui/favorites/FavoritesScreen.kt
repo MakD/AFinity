@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -49,6 +51,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.main.MainUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,7 +64,12 @@ fun FavoritesScreen(
     modifier: Modifier = Modifier,
     viewModel: FavoritesViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
+    val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
+    val selectedEpisodeWatchlistStatus by viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
+    val selectedEpisodeDownloadInfo by viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.loadFavorites()
@@ -130,6 +138,7 @@ fun FavoritesScreen(
                             uiState.shows.isNotEmpty() ||
                             uiState.seasons.isNotEmpty() ||
                             uiState.episodes.isNotEmpty() ||
+                            uiState.boxSets.isNotEmpty() ||
                             uiState.people.isNotEmpty()
 
                     if (!hasAnyFavorites) {
@@ -170,6 +179,19 @@ fun FavoritesScreen(
                                 }
                             }
 
+                            if (uiState.boxSets.isNotEmpty()) {
+                                item {
+                                    FavoriteSection(
+                                        title = "Box Sets (${uiState.boxSets.size})"
+                                    ) {
+                                        FavoriteBoxSetsRow(
+                                            boxSets = uiState.boxSets,
+                                            onItemClick = onItemClick
+                                        )
+                                    }
+                                }
+                            }
+
                             if (uiState.shows.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
@@ -203,7 +225,9 @@ fun FavoritesScreen(
                                     ) {
                                         FavoriteEpisodesRow(
                                             episodes = uiState.episodes,
-                                            onItemClick = onItemClick
+                                            onEpisodeClick = { episode ->
+                                                viewModel.selectEpisode(episode)
+                                            }
                                         )
                                     }
                                 }
@@ -226,6 +250,57 @@ fun FavoritesScreen(
                 }
             }
         }
+    }
+
+    selectedEpisode?.let { episode ->
+        EpisodeDetailOverlay(
+            episode = episode,
+            isLoading = isLoadingEpisode,
+            isInWatchlist = selectedEpisodeWatchlistStatus,
+            downloadInfo = selectedEpisodeDownloadInfo,
+            onDismiss = {
+                viewModel.clearSelectedEpisode()
+            },
+            onPlayClick = { episodeToPlay, selection ->
+                viewModel.clearSelectedEpisode()
+                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                    context = context,
+                    itemId = episodeToPlay.id,
+                    mediaSourceId = selection.mediaSourceId,
+                    audioStreamIndex = selection.audioStreamIndex,
+                    subtitleStreamIndex = selection.subtitleStreamIndex,
+                    startPositionMs = selection.startPositionMs
+                )
+            },
+            onToggleFavorite = {
+                viewModel.toggleEpisodeFavorite(episode)
+            },
+            onToggleWatchlist = {
+                viewModel.toggleEpisodeWatchlist(episode)
+            },
+            onToggleWatched = {
+                viewModel.toggleEpisodeWatched(episode)
+            },
+            onDownloadClick = {
+                viewModel.onDownloadClick()
+            },
+            onPauseDownload = {
+                viewModel.pauseDownload()
+            },
+            onResumeDownload = {
+                viewModel.resumeDownload()
+            },
+            onCancelDownload = {
+                viewModel.cancelDownload()
+            },
+            onGoToSeries = {
+                viewModel.clearSelectedEpisode()
+                episode.seriesId?.let { seriesId ->
+                    val route = Destination.createItemDetailRoute(seriesId.toString())
+                    navController.navigate(route)
+                }
+            }
+        )
     }
 }
 
@@ -287,6 +362,24 @@ private fun FavoriteShowsRow(
 }
 
 @Composable
+private fun FavoriteBoxSetsRow(
+    boxSets: List<AfinityBoxSet>,
+    onItemClick: (AfinityItem) -> Unit
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 0.dp)
+    ) {
+        items(boxSets) { boxSet ->
+            MediaItemCard(
+                item = boxSet,
+                onClick = { onItemClick(boxSet) }
+            )
+        }
+    }
+}
+
+@Composable
 private fun FavoriteSeasonsRow(
     seasons: List<AfinitySeason>,
     onItemClick: (AfinityItem) -> Unit
@@ -307,7 +400,7 @@ private fun FavoriteSeasonsRow(
 @Composable
 private fun FavoriteEpisodesRow(
     episodes: List<AfinityEpisode>,
-    onItemClick: (AfinityItem) -> Unit
+    onEpisodeClick: (AfinityEpisode) -> Unit
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -316,7 +409,7 @@ private fun FavoriteEpisodesRow(
         items(episodes) { episode ->
             ContinueWatchingCard(
                 item = episode,
-                onClick = { onItemClick(episode) }
+                onClick = { onEpisodeClick(episode) }
             )
         }
     }

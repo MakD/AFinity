@@ -4,6 +4,7 @@ import androidx.paging.PagingData
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -215,6 +216,8 @@ interface JellyfinRepository {
     suspend fun getFavoriteShows(): List<AfinityShow>
     suspend fun getFavoriteEpisodes(): List<AfinityEpisode>
     suspend fun getFavoriteSeasons(): List<AfinitySeason>
+    suspend fun getFavoriteBoxSets(): List<AfinityBoxSet>
+
 
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>
     fun getLatestMediaFlow(parentId: UUID? = null): Flow<List<AfinityItem>>

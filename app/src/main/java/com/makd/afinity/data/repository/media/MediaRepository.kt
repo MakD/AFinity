@@ -150,6 +150,10 @@ interface MediaRepository {
         fields: List<ItemFields>? = null
     ): List<AfinitySeason>
 
+    suspend fun getFavoriteBoxSets(
+        fields: List<ItemFields>? = null
+    ): List<AfinityBoxSet>
+
     suspend fun getGenres(
         parentId: UUID? = null,
         limit: Int? = null,

@@ -19,6 +19,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -30,6 +31,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.main.MainUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,7 +43,12 @@ fun WatchlistScreen(
     modifier: Modifier = Modifier,
     viewModel: WatchlistViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
+    val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
+    val selectedEpisodeWatchlistStatus by viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
+    val selectedEpisodeDownloadInfo by viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.loadWatchlist()
@@ -154,16 +161,69 @@ fun WatchlistScreen(
 
                     if (uiState.episodes.isNotEmpty()) {
                         item {
-                            WatchlistSection(
+                            WatchlistEpisodesSection(
                                 title = "Episodes",
-                                items = uiState.episodes,
-                                onItemClick = onItemClick
+                                episodes = uiState.episodes,
+                                onEpisodeClick = { episode ->
+                                    viewModel.selectEpisode(episode)
+                                }
                             )
                         }
                     }
                 }
             }
         }
+    }
+
+    selectedEpisode?.let { episode ->
+        EpisodeDetailOverlay(
+            episode = episode,
+            isLoading = isLoadingEpisode,
+            isInWatchlist = selectedEpisodeWatchlistStatus,
+            downloadInfo = selectedEpisodeDownloadInfo,
+            onDismiss = {
+                viewModel.clearSelectedEpisode()
+            },
+            onPlayClick = { episodeToPlay, selection ->
+                viewModel.clearSelectedEpisode()
+                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                    context = context,
+                    itemId = episodeToPlay.id,
+                    mediaSourceId = selection.mediaSourceId,
+                    audioStreamIndex = selection.audioStreamIndex,
+                    subtitleStreamIndex = selection.subtitleStreamIndex,
+                    startPositionMs = selection.startPositionMs
+                )
+            },
+            onToggleFavorite = {
+                viewModel.toggleEpisodeFavorite(episode)
+            },
+            onToggleWatchlist = {
+                viewModel.toggleEpisodeWatchlist(episode)
+            },
+            onToggleWatched = {
+                viewModel.toggleEpisodeWatched(episode)
+            },
+            onDownloadClick = {
+                viewModel.onDownloadClick()
+            },
+            onPauseDownload = {
+                viewModel.pauseDownload()
+            },
+            onResumeDownload = {
+                viewModel.resumeDownload()
+            },
+            onCancelDownload = {
+                viewModel.cancelDownload()
+            },
+            onGoToSeries = {
+                viewModel.clearSelectedEpisode()
+                episode.seriesId?.let { seriesId ->
+                    val route = Destination.createItemDetailRoute(seriesId.toString())
+                    navController.navigate(route)
+                }
+            }
+        )
     }
 }
 
@@ -189,21 +249,41 @@ private fun WatchlistSection(
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
             items(items) { item ->
-                when (item) {
-                    is AfinityEpisode -> {
-                        ContinueWatchingCard(
-                            item = item,
-                            onClick = { onItemClick(item) }
-                        )
-                    }
+                MediaItemCard(
+                    item = item,
+                    onClick = { onItemClick(item) }
+                )
+            }
+        }
+    }
+}
 
-                    else -> {
-                        MediaItemCard(
-                            item = item,
-                            onClick = { onItemClick(item) }
-                        )
-                    }
-                }
+@Composable
+private fun WatchlistEpisodesSection(
+    title: String,
+    episodes: List<AfinityEpisode>,
+    onEpisodeClick: (AfinityEpisode) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "$title (${episodes.size})",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp)
+        ) {
+            items(episodes) { episode ->
+                ContinueWatchingCard(
+                    item = episode,
+                    onClick = { onEpisodeClick(episode) }
+                )
             }
         }
     }

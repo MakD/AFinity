@@ -8,6 +8,7 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -92,8 +93,7 @@ class JellyfinRepositoryImpl @Inject constructor(
 
     override suspend fun authenticateByName(username: String, password: String): AuthenticationResult? {
         return try {
-            val result = authRepository.authenticateByName(username, password)
-            when (result) {
+            when (val result = authRepository.authenticateByName(username, password)) {
                 is AuthRepository.AuthResult.Success -> result.authResult
                 is AuthRepository.AuthResult.Error -> {
                     Timber.e("Authentication failed: ${result.message}")
@@ -108,8 +108,7 @@ class JellyfinRepositoryImpl @Inject constructor(
 
     override suspend fun authenticateWithQuickConnect(secret: String): AuthenticationResult? {
         return try {
-            val result = authRepository.authenticateWithQuickConnect(secret)
-            when (result) {
+            when (val result = authRepository.authenticateWithQuickConnect(secret)) {
                 is AuthRepository.AuthResult.Success -> result.authResult
                 is AuthRepository.AuthResult.Error -> {
                     Timber.e("QuickConnect authentication failed: ${result.message}")
@@ -348,9 +347,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         return try {
             val baseItemDto = mediaRepository.getItem(itemId)
 
-            baseItemDto?.let { dto ->
-                dto.toAfinityItem(this@JellyfinRepositoryImpl)
-            }
+            baseItemDto?.toAfinityItem(this@JellyfinRepositoryImpl)
         } catch (e: Exception) {
             Timber.e(e, "Failed to get item by ID: $itemId")
             null
@@ -680,6 +677,10 @@ class JellyfinRepositoryImpl @Inject constructor(
 
     override suspend fun getFavoriteSeasons(): List<AfinitySeason> {
         return mediaRepository.getFavoriteSeasons()
+    }
+
+    override suspend fun getFavoriteBoxSets(): List<AfinityBoxSet> {
+        return mediaRepository.getFavoriteBoxSets()
     }
 
     override suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode? {

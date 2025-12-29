@@ -1,11 +1,28 @@
 package com.makd.afinity.ui.item.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -25,6 +42,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
+import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -109,9 +127,11 @@ fun EpisodeDetailOverlay(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                var needsSeparator = false
+
                 episode.premiereDate?.let { date ->
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -129,9 +149,12 @@ fun EpisodeDetailOverlay(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    needsSeparator = true
                 }
 
                 if (episode.runtimeTicks > 0) {
+                    if (needsSeparator) MetadataDot()
+
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -149,9 +172,12 @@ fun EpisodeDetailOverlay(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    needsSeparator = true
                 }
 
                 episode.communityRating?.let { rating ->
+                    if (needsSeparator) MetadataDot()
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -167,6 +193,104 @@ fun EpisodeDetailOverlay(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+            }
+
+            if (episode.sources.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(
+                        8.dp,
+                        Alignment.CenterHorizontally
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val source = episode.sources.firstOrNull()
+
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                        ?.let { videoStream ->
+                            val resolution = when {
+                                (videoStream.height ?: 0) <= 2160 && (videoStream.width
+                                    ?: 0) <= 3840 &&
+                                        ((videoStream.height ?: 0) > 1080 || (videoStream.width
+                                            ?: 0) > 1920) -> "4K"
+
+                                (videoStream.height ?: 0) <= 1080 && (videoStream.width
+                                    ?: 0) <= 1920 &&
+                                        ((videoStream.height ?: 0) > 720 || (videoStream.width
+                                            ?: 0) > 1280) -> "HD"
+
+                                else -> "SD"
+                            }
+
+                            VideoMetadataChip(text = resolution)
+                        }
+
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.codec?.takeIf { it.isNotEmpty() }
+                        ?.let { codec ->
+                            VideoMetadataChip(text = codec.uppercase())
+                        }
+
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                        ?.let { videoStream ->
+                            if (videoStream.videoDoViTitle != null) {
+                                VideoMetadataChipWithIcon(
+                                    text = "Vision",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+                            } else {
+                                videoStream.videoRangeType?.let { rangeType ->
+                                    val hdrType = when (rangeType.name) {
+                                        "HDR10" -> "HDR10"
+                                        "HDR10Plus" -> "HDR10+"
+                                        "HLG" -> "HLG"
+                                        else -> null
+                                    }
+                                    hdrType?.let { VideoMetadataChip(text = it) }
+                                }
+                            }
+                        }
+
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.codec?.takeIf { it.isNotEmpty() }
+                        ?.let { codec ->
+                            when (codec.lowercase()) {
+                                "ac3" -> VideoMetadataChipWithIcon(
+                                    text = "Digital",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+
+                                "eac3" -> VideoMetadataChipWithIcon(
+                                    text = "Digital+",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+
+                                "truehd" -> VideoMetadataChipWithIcon(
+                                    text = "TrueHD",
+                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                )
+
+                                "dts" -> VideoMetadataChip(text = "DTS")
+                                else -> VideoMetadataChip(text = codec.uppercase())
+                            }
+                        }
+
+                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.channelLayout?.let { layout ->
+                        val channels = when {
+                            layout.contains("7.1") -> "7.1"
+                            layout.contains("5.1") -> "5.1"
+                            layout.contains("2.1") -> "2.1"
+                            layout.contains("2.0") || layout.contains("stereo") -> "2.0"
+                            else -> null
+                        }
+                        channels?.let { VideoMetadataChip(text = it) }
+                    }
+
+                    val hasSubtitles =
+                        source?.mediaStreams?.any { it.type == MediaStreamType.SUBTITLE } == true
+
+                    if (hasSubtitles) {
+                        VideoMetadataChip(text = "CC")
                     }
                 }
             }
@@ -252,5 +376,61 @@ fun EpisodeDetailOverlay(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun MetadataDot() {
+    Text(
+        text = "•",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+    )
+}
+
+@Composable
+private fun VideoMetadataChip(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium.copy(
+            fontWeight = FontWeight.SemiBold
+        ),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+        modifier = Modifier
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                RoundedCornerShape(4.dp)
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    )
+}
+
+@Composable
+private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                RoundedCornerShape(4.dp)
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier
+                .size(16.dp)
+                .padding(bottom = 1.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
+        )
     }
 }

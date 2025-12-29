@@ -80,17 +80,17 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
-import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.components.HeroCarousel
+import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.MovieRecommendationSection
 import com.makd.afinity.ui.home.components.NextUpSection
-import com.makd.afinity.ui.home.components.PersonFromMovieSection
-import com.makd.afinity.ui.home.components.PersonSection
-import com.makd.afinity.ui.home.components.ShowGenreSection
 import com.makd.afinity.ui.home.components.OptimizedContinueWatchingSection
 import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
 import com.makd.afinity.ui.home.components.OptimizedLatestTvSeriesSection
+import com.makd.afinity.ui.home.components.PersonFromMovieSection
+import com.makd.afinity.ui.home.components.PersonSection
+import com.makd.afinity.ui.home.components.ShowGenreSection
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -372,7 +372,6 @@ fun HomeScreen(
                                                             isLoading = uiState.genreLoadingStates[section.genreItem.name]
                                                                 ?: false,
                                                             onVisible = {
-                                                                // Only load if not already loaded
                                                                 if (uiState.genreMovies[section.genreItem.name] == null) {
                                                                     viewModel.loadMoviesForGenre(
                                                                         section.genreItem.name

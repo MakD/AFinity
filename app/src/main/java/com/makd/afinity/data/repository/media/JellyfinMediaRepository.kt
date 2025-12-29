@@ -904,6 +904,32 @@ class JellyfinMediaRepository @Inject constructor(
         }
     }
 
+    override suspend fun getFavoriteBoxSets(
+        fields: List<ItemFields>?
+    ): List<AfinityBoxSet> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val userId = getCurrentUserId() ?: return@withContext emptyList()
+            val itemsApi = ItemsApi(apiClient)
+
+            val response = itemsApi.getItems(
+                userId = userId,
+                includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                isFavorite = true,
+                recursive = true,
+                fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
+                enableImages = true,
+                enableUserData = true,
+                sortBy = listOf(ItemSortBy.SORT_NAME)
+            )
+            response.content?.items?.mapNotNull { baseItem ->
+                baseItem.toAfinityBoxSet(getBaseUrl())
+            } ?: emptyList()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get favorite box sets")
+            emptyList()
+        }
+    }
+
     override suspend fun getNextUp(
         seriesId: UUID?,
         limit: Int,
@@ -1057,7 +1083,7 @@ class JellyfinMediaRepository @Inject constructor(
                 fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                 enableImages = true,
                 imageTypeLimit = 1,
-                enableImageTypes = listOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY),
+                enableImageTypes = listOf(ImageType.PRIMARY),
                 enableUserData = true,
                 recursive = true,
                 limit = 150
