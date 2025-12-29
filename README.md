@@ -3,16 +3,15 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/MakD/AFinity/refs/heads/master/screenshots/Logo/GithubBanner.png" alt="AFinity Banner" width="100%">
 </p>
-
-[![Release](https://img.shields.io/github/v/release/MakD/AFinity?style=for-the-badge&labelColor=000000&color=4b18f8)](https://github.com/MakD/AFinity/releases)
+  
+[![Release](https://img.shields.io/github/v/release/MakD/AFinity?style=for-the-badge&labelColor=000000&color=41A67E)](https://github.com/MakD/AFinity/releases)
 ![GitHub commits since latest release](https://img.shields.io/github/commits-since/Makd/Afinity/latest?sort=date&style=for-the-badge&labelColor=000000&color=465775&cacheSeconds=3600)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/MakD/Afinity?style=for-the-badge&labelColor=000000&color=05668D&cacheSeconds=600)
 [![Stars](https://img.shields.io/github/stars/MakD/AFinity?style=for-the-badge&labelColor=000000&color=7b68ee)](https://github.com/MakD/AFinity/stargazers)
 [![Issues](https://img.shields.io/github/issues/MakD/AFinity?style=for-the-badge&labelColor=000000&color=e94b3c)](https://github.com/MakD/AFinity/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/MakD/AFinity?style=for-the-badge&labelColor=000000&color=f39c12)](https://github.com/MakD/AFinity/pulls)
-[![Downloads](https://img.shields.io/github/downloads/MakD/AFinity/total?style=for-the-badge&labelColor=000000&color=27ae60)](https://github.com/MakD/AFinity/releases)
+[![Downloads](https://img.shields.io/github/downloads/MakD/AFinity/total?style=for-the-badge&labelColor=000000&color=333446)](https://github.com/MakD/AFinity/releases)
 [![License](https://img.shields.io/github/license/MakD/AFinity?style=for-the-badge&labelColor=000000&color=665687)](https://github.com/MakD/AFinity/blob/master/LICENSE.md)
-
 
 A native Android client for Jellyfin servers built with Jetpack Compose and Material 3.
 
