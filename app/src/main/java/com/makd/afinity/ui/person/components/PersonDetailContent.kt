@@ -316,7 +316,7 @@ private fun PersonMetadataSection(
 
             if (person.productionLocations.isNotEmpty()) {
                 Text(
-                    text = "Birth Place: ${person.productionLocations.joinToString(", ")}",
+                    text = "Birth Place: ${person.productionLocations.first()}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
