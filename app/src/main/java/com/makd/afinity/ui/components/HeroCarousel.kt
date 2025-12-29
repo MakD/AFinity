@@ -47,6 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.imageLoader
+import coil3.request.ImageRequest
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -163,6 +165,23 @@ fun HeroCarouselPortrait(
         derivedStateOf { items[pagerState.currentPage % items.size] }
     }
 
+    LaunchedEffect(pagerState.currentPage) {
+        val currentIndex = pagerState.currentPage % items.size
+        val nextIndex = (currentIndex + 1) % items.size
+        val prevIndex = (currentIndex - 1 + items.size) % items.size
+
+        listOf(nextIndex, prevIndex).forEach { index ->
+            val item = items[index]
+            val imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
+            if (imageUrl != null) {
+                val request = ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .build()
+                context.imageLoader.enqueue(request)
+            }
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -171,6 +190,7 @@ fun HeroCarouselPortrait(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
+            beyondViewportPageCount = 1,
             key = { page -> "hero_page_${page % items.size}" }
         ) { page ->
             val actualIndex = page % items.size
@@ -642,6 +662,25 @@ private fun HeroCarouselLandscape(
         derivedStateOf { items[pagerState.currentPage % items.size] }
     }
 
+    val context = LocalContext.current
+
+    LaunchedEffect(pagerState.currentPage) {
+        val currentIndex = pagerState.currentPage % items.size
+        val nextIndex = (currentIndex + 1) % items.size
+        val prevIndex = (currentIndex - 1 + items.size) % items.size
+
+        listOf(nextIndex, prevIndex).forEach { index ->
+            val item = items[index]
+            val imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
+            if (imageUrl != null) {
+                val request = ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .build()
+                context.imageLoader.enqueue(request)
+            }
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -650,6 +689,7 @@ private fun HeroCarouselLandscape(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
+            beyondViewportPageCount = 1,
             key = { page -> "hero_page_${page % items.size}" }
         ) { page ->
             val actualIndex = page % items.size

@@ -36,17 +36,18 @@ fun OptimizedAsyncImage(
     filterQuality: androidx.compose.ui.graphics.FilterQuality = androidx.compose.ui.graphics.FilterQuality.Low,
     blurHash: String? = null,
     targetWidth: Dp? = null,
-    targetHeight: Dp? = null
+    targetHeight: Dp? = null,
+    scaleFactor: Float = 1.0f
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
 
-    val imageSize = remember(targetWidth, targetHeight, density) {
+    val imageSize = remember(targetWidth, targetHeight, density, scaleFactor) {
         when {
             targetWidth != null && targetHeight != null -> {
                 Size(
-                    width = with(density) { (targetWidth.toPx() * 1.2f).toInt() },
-                    height = with(density) { (targetHeight.toPx() * 1.2f).toInt() }
+                    width = with(density) { (targetWidth.toPx() * scaleFactor).toInt() },
+                    height = with(density) { (targetHeight.toPx() * scaleFactor).toInt() }
                 )
             }
 
