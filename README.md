@@ -5,8 +5,8 @@
 </p>
   
 [![Release](https://img.shields.io/github/v/release/MakD/AFinity?style=for-the-badge&labelColor=000000&color=41A67E)](https://github.com/MakD/AFinity/releases)
-![GitHub commits since latest release](https://img.shields.io/github/commits-since/Makd/Afinity/latest?sort=date&style=for-the-badge&labelColor=000000&color=465775&cacheSeconds=3600)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/w/MakD/Afinity?style=for-the-badge&labelColor=000000&color=05668D&cacheSeconds=600)
+![GitHub commits since latest release](https://img.shields.io/github/commits-since/Makd/Afinity/latest?sort=date&style=for-the-badge&labelColor=000000&color=465775)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/MakD/Afinity?style=for-the-badge&labelColor=000000&color=05668D)
 [![Stars](https://img.shields.io/github/stars/MakD/AFinity?style=for-the-badge&labelColor=000000&color=7b68ee)](https://github.com/MakD/AFinity/stargazers)
 [![Issues](https://img.shields.io/github/issues/MakD/AFinity?style=for-the-badge&labelColor=000000&color=e94b3c)](https://github.com/MakD/AFinity/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/MakD/AFinity?style=for-the-badge&labelColor=000000&color=f39c12)](https://github.com/MakD/AFinity/pulls)
