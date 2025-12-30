@@ -330,7 +330,9 @@ class MPVPlayer(
         handler.post {
             when (property) {
                 "time-pos" -> {
-                    currentPositionMs = value * 1000
+                    if (playbackState != STATE_BUFFERING) {
+                        currentPositionMs = value * 1000
+                    }
                 }
 
                 "duration" -> {
@@ -637,15 +639,29 @@ class MPVPlayer(
         isRepeatingCurrentItem: Boolean,
     ) {
         if (mediaItemIndex == currentMediaItemIndex) {
-            val seekTo =
-                if (positionMs != C.TIME_UNSET) positionMs / C.MILLIS_PER_SECOND else initialSeekTo
+
+            val seekToSeconds = if (positionMs != C.TIME_UNSET) {
+                positionMs / C.MILLIS_PER_SECOND
+            } else {
+                initialSeekTo
+            }
+
+            val targetMs = if (positionMs != C.TIME_UNSET) {
+                positionMs
+            } else {
+                initialSeekTo * 1000
+            }
+
             initialSeekTo = if (isPlayerReady) {
-                MPVLib.command(arrayOf("seek", "$seekTo", "absolute"))
-                Timber.d("MPV seeking to $seekTo seconds")
+                MPVLib.command(arrayOf("seek", "$seekToSeconds", "absolute"))
+
+                currentPositionMs = targetMs
+
+                Timber.d("MPV seeking to $seekToSeconds seconds")
                 0L
             } else {
-                Timber.d("MPV not ready, storing initial seek: $seekTo seconds")
-                seekTo
+                Timber.d("MPV not ready, storing initial seek: $seekToSeconds seconds")
+                seekToSeconds
             }
         } else {
             prepareMediaItem(mediaItemIndex)
