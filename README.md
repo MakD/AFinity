@@ -66,19 +66,19 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/home.png" width="30%">
+  <img src="screenshots/home.png" width="30%" alt="Home Page">
   &nbsp;
-  <img src="screenshots/movie_details.png" width="30%">
+  <img src="screenshots/movie_details.png" width="30%" alt="Movie Details Page">
   &nbsp;
-  <img src="screenshots/show_details.png" width="30%">
+  <img src="screenshots/show_details.png" width="30%" alt="Show Details Page">
   &nbsp;
-  <img src="screenshots/library.png" width="30%">
+  <img src="screenshots/library.png" width="30%" alt="Library Page">
   &nbsp;
-  <img src="screenshots/watchlist.png" width="30%">
+  <img src="screenshots/favorites.png" width="30%" alt="Favorite Page">
   &nbsp;
-  <img src="screenshots/person.png" width="30%">
+  <img src="screenshots/person.png" width="30%" alt="Person Detail Page">
   &nbsp;
-  <img src="screenshots/player.png" width="60%">
+  <img src="screenshots/player.png" width="60%" alt="Player Screen">
 </p>
 
 ## Installation
