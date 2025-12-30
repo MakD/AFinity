@@ -558,12 +558,12 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLogoAutoHide(): Boolean {
-        return dataStore.data.first()[Keys.LOGO_AUTO_HIDE] ?: false
+        return dataStore.data.first()[Keys.LOGO_AUTO_HIDE] ?: true
     }
 
     override fun getLogoAutoHideFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
-            preferences[Keys.LOGO_AUTO_HIDE] ?: false
+            preferences[Keys.LOGO_AUTO_HIDE] ?: true
         }
     }
 }
