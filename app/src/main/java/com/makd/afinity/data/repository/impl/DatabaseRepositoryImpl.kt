@@ -15,6 +15,8 @@ import com.makd.afinity.data.database.entities.AfinityEpisodeDto
 import com.makd.afinity.data.database.entities.AfinityMovieDto
 import com.makd.afinity.data.database.entities.AfinitySeasonDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
+import com.makd.afinity.data.database.entities.AfinitySourceDto
+import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.toAfinityEpisodeDto
 import com.makd.afinity.data.database.entities.toAfinityMediaStreamDto
 import com.makd.afinity.data.database.entities.toAfinityMovieDto
@@ -23,6 +25,7 @@ import com.makd.afinity.data.database.entities.toAfinitySegmentsDto
 import com.makd.afinity.data.database.entities.toAfinityShowDto
 import com.makd.afinity.data.database.entities.toAfinitySourceDto
 import com.makd.afinity.data.database.entities.toAfinityTrickplayInfoDto
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
@@ -34,9 +37,6 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
-import com.makd.afinity.data.database.entities.AfinitySourceDto
-import com.makd.afinity.data.database.entities.DownloadDto
-import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.toAfinityMediaStream
 import com.makd.afinity.data.models.media.toAfinitySegment
 import com.makd.afinity.data.models.media.toAfinitySource

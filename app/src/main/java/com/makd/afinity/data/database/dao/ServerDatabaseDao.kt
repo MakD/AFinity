@@ -16,8 +16,8 @@ import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.user.AfinityUserDataDto
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 @Dao
 abstract class ServerDatabaseDao {

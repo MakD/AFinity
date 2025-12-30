@@ -5,12 +5,12 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.makd.afinity.data.models.extensions.toAfinityEpisode
+import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.data.models.extensions.toAfinityMovie
-import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers

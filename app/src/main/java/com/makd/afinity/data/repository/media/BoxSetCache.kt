@@ -7,14 +7,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@Singleton
+ @Singleton
 class BoxSetCache @Inject constructor(
     private val cacheDao: BoxSetCacheDao
 ) {

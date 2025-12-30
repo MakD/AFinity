@@ -87,6 +87,7 @@ import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
 import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
+import com.makd.afinity.ui.player.PlayerLauncher
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
@@ -190,7 +191,7 @@ fun ItemDetailScreen(
                 onPlayClick = { episodeToPlay, selection ->
                     viewModel.clearSelectedEpisode()
 
-                    com.makd.afinity.ui.player.PlayerLauncher.launch(
+                    PlayerLauncher.launch(
                         context = context,
                         itemId = episodeToPlay.id,
                         mediaSourceId = selection.mediaSourceId,
@@ -555,7 +556,7 @@ private fun LandscapeItemDetailContent(
                                                                 0L
                                                             }
                                                         )
-                                                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                        PlayerLauncher.launch(
                                                             context = navController.context,
                                                             itemId = episode.id,
                                                             mediaSourceId = finalSelection.mediaSourceId,
@@ -630,7 +631,7 @@ private fun LandscapeItemDetailContent(
                                                                 0L
                                                             }
                                                         )
-                                                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                        PlayerLauncher.launch(
                                                             context = navController.context,
                                                             itemId = episode.id,
                                                             mediaSourceId = finalSelection.mediaSourceId,
@@ -668,7 +669,7 @@ private fun LandscapeItemDetailContent(
                                                     mediaSourceId = selectedMediaSource?.id
                                                         ?: selection.mediaSourceId
                                                 )
-                                                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                PlayerLauncher.launch(
                                                     context = navController.context,
                                                     itemId = item.id,
                                                     mediaSourceId = finalSelection.mediaSourceId,
@@ -786,7 +787,7 @@ private fun LandscapeItemDetailContent(
                                     } else {
                                         0L
                                     }
-                                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                PlayerLauncher.launch(
                                     context = navController.context,
                                     itemId = clickedEpisode.id,
                                     mediaSourceId = mediaSourceId,
@@ -1088,7 +1089,7 @@ private fun PortraitItemDetailContent(
                                                                 0L
                                                             }
                                                         )
-                                                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                        PlayerLauncher.launch(
                                                             context = navController.context,
                                                             itemId = episode.id,
                                                             mediaSourceId = finalSelection.mediaSourceId,
@@ -1164,7 +1165,7 @@ private fun PortraitItemDetailContent(
                                                                 0L
                                                             }
                                                         )
-                                                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                        PlayerLauncher.launch(
                                                             context = navController.context,
                                                             itemId = episode.id,
                                                             mediaSourceId = finalSelection.mediaSourceId,
@@ -1202,7 +1203,7 @@ private fun PortraitItemDetailContent(
                                                     mediaSourceId = selectedMediaSource?.id
                                                         ?: selection.mediaSourceId
                                                 )
-                                                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                PlayerLauncher.launch(
                                                     context = navController.context,
                                                     itemId = item.id,
                                                     mediaSourceId = finalSelection.mediaSourceId,
@@ -1361,7 +1362,7 @@ private fun PortraitItemDetailContent(
                                                         0L
                                                     }
                                                 )
-                                                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                PlayerLauncher.launch(
                                                     context = navController.context,
                                                     itemId = episode.id,
                                                     mediaSourceId = finalSelection.mediaSourceId,
@@ -1434,7 +1435,7 @@ private fun PortraitItemDetailContent(
                                                         0L
                                                     }
                                                 )
-                                                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                                PlayerLauncher.launch(
                                                     context = navController.context,
                                                     itemId = episode.id,
                                                     mediaSourceId = finalSelection.mediaSourceId,
@@ -1472,7 +1473,7 @@ private fun PortraitItemDetailContent(
                                             mediaSourceId = selectedMediaSource?.id
                                                 ?: selection.mediaSourceId
                                         )
-                                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                        PlayerLauncher.launch(
                                             context = navController.context,
                                             itemId = item.id,
                                             mediaSourceId = finalSelection.mediaSourceId,
@@ -1609,7 +1610,7 @@ private fun PortraitItemDetailContent(
                             } else {
                                 0L
                             }
-                            com.makd.afinity.ui.player.PlayerLauncher.launch(
+                            PlayerLauncher.launch(
                                 context = navController.context,
                                 itemId = clickedEpisode.id,
                                 mediaSourceId = mediaSourceId,

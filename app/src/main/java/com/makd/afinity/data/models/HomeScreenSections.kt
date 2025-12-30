@@ -1,6 +1,5 @@
 package com.makd.afinity.data.models
 
-import android.net.Uri
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage

@@ -1,5 +1,7 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMediaStream
@@ -10,8 +12,6 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
-import com.makd.afinity.data.database.entities.DownloadDto
-import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.models.server.ServerWithAddressAndUser
