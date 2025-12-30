@@ -304,8 +304,6 @@ fun EpisodeDetailOverlay(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),

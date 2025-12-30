@@ -182,10 +182,12 @@ fun MainNavigation(
 
                     },
                     label = {
-                        Text(
-                            text = destination.title,
-                            style = MaterialTheme.typography.labelSmall
-                        )
+                        if (selected) {
+                            Text(
+                                text = destination.title,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
                     }
                 )
             }
