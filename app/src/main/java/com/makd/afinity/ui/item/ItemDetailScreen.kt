@@ -10,11 +10,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -37,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -888,9 +890,11 @@ private fun PortraitItemDetailContent(
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)
     ) {
         item {
             HeroSection(
@@ -905,7 +909,7 @@ private fun PortraitItemDetailContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset(y = overlayOffset)
+                    .verticalLayoutOffset(overlayOffset)
                     .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -1748,3 +1752,13 @@ fun SeriesDetailContent(
         }
     }
 }
+
+fun Modifier.verticalLayoutOffset(yOffset: androidx.compose.ui.unit.Dp) =
+    this.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val yOffsetPx = yOffset.roundToPx()
+
+        layout(placeable.width, placeable.height + yOffsetPx) {
+            placeable.placeRelative(0, yOffsetPx)
+        }
+    }

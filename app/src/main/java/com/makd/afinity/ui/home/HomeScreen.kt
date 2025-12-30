@@ -56,12 +56,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -200,7 +202,9 @@ fun HomeScreen(
 
                 fun getItemModifier(key: String): Modifier {
                     return if (isLandscape && key == firstContentKey) {
-                        Modifier.fillMaxWidth().offset(y = (-70).dp)
+                        Modifier
+                            .fillMaxWidth()
+                            .verticalLayoutOffset((-70).dp)
                     } else {
                         Modifier.fillMaxWidth()
                     }
@@ -1218,5 +1222,14 @@ private fun StudioCard(
                 }
             }
         }
+    }
+}
+
+fun Modifier.verticalLayoutOffset(yOffset: Dp) = this.layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    val yOffsetPx = yOffset.roundToPx()
+
+    layout(placeable.width, placeable.height + yOffsetPx) {
+        placeable.placeRelative(0, yOffsetPx)
     }
 }
