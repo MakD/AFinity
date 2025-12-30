@@ -85,7 +85,7 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
 
 **Requirements**
 
-- Android 14+ (API level 35)
+- Android 15+ (API level 35)
 - Jellyfin server 10.8+
 
 **Download Options**
