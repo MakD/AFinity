@@ -8,16 +8,12 @@ import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
 import com.makd.afinity.data.models.CachedPersonWithCount
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
-import com.makd.afinity.data.models.MovieSection
-import com.makd.afinity.data.models.MovieSectionType
-import com.makd.afinity.data.models.PersonFromMovieSection
 import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.PersonSectionType
 import com.makd.afinity.data.models.PersonWithCount
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
-import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -218,21 +214,6 @@ class AppDataRepository @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to load initial app data")
             throw e
-        }
-    }
-
-    suspend fun refreshAllData() {
-        _isInitialDataLoaded.value = false
-        loadInitialData()
-    }
-
-    suspend fun refreshContinueWatching() {
-        try {
-            val freshData = jellyfinRepository.getContinueWatching(limit = 12)
-            _continueWatching.value = freshData
-            Timber.d("Continue watching data refreshed")
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to refresh continue watching")
         }
     }
 
@@ -1050,137 +1031,27 @@ class AppDataRepository @Inject constructor(
         }
     }
 
-    suspend fun getBecauseYouWatchedSections(
-        count: Int = 2,
-        renderedWatchedMovies: MutableSet<UUID>,
-        renderedItemIds: MutableSet<UUID>
-    ): List<MovieSection> {
-        val sections = mutableListOf<MovieSection>()
-
-        try {
-            repeat(count) {
-                val referenceMovie = getRandomRecentlyWatchedMovie(renderedWatchedMovies)
-                    ?: return@repeat
-
-                renderedWatchedMovies.add(referenceMovie.id)
-
-                val similarMovies = jellyfinRepository.getSimilarMovies(
-                    movieId = referenceMovie.id,
-                    limit = 32
-                )
-                    .filterNot { it.id in renderedItemIds }
-                    .shuffled()
-                    .take(20)
-
-                if (similarMovies.size >= 5) {
-                    sections.add(
-                        MovieSection(
-                            referenceMovie = referenceMovie,
-                            recommendedItems = similarMovies,
-                            sectionType = MovieSectionType.BECAUSE_YOU_WATCHED
-                        )
-                    )
-
-                    similarMovies.forEach { renderedItemIds.add(it.id) }
-                    Timber.d("Created 'Because you watched ${referenceMovie.name}' section (${similarMovies.size} items)")
-                }
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get 'Because you watched' sections")
-        }
-
-        return sections
-    }
-
-    suspend fun getActorFromRecentSections(
-        count: Int = 1,
-        renderedStarringWatchedMovies: MutableSet<UUID>,
-        renderedActorNames: MutableSet<String>,
-        renderedItemIds: MutableSet<UUID>
-    ): List<PersonFromMovieSection> {
-        val sections = mutableListOf<PersonFromMovieSection>()
-
-        try {
-            repeat(count) {
-                val randomMovie = getRandomRecentlyWatchedMovie(
-                    excludedMovies = renderedStarringWatchedMovies
-                )
-                if (randomMovie == null) {
-                    Timber.d("No recent watched movie available for actor section")
-                    return@repeat
-                }
-
-                renderedStarringWatchedMovies.add(randomMovie.id)
-
-                val movieItem = jellyfinRepository.getItem(
-                    itemId = randomMovie.id,
-                    fields = listOf(org.jellyfin.sdk.model.api.ItemFields.PEOPLE)
-                )
-
-                val movieWithPeople = movieItem?.toAfinityMovie(jellyfinRepository.getBaseUrl())
-                if (movieWithPeople == null) {
-                    Timber.d("Failed to fetch or convert movie '${randomMovie.name}'")
-                    return@repeat
-                }
-
-                val availableActors = movieWithPeople.people
-                    .filter { it.type == PersonKind.ACTOR }
-                    .filterNot { it.name in renderedActorNames }
-
-                if (availableActors.isEmpty()) {
-                    Timber.d("No available actors in '${randomMovie.name}' (${movieWithPeople.people.size} people total)")
-                    return@repeat
-                }
-
-                val selectedActor = availableActors.take(3).randomOrNull() ?: return@repeat
-                renderedActorNames.add(selectedActor.name)
-                Timber.d("Selected actor ${selectedActor.name} from '${randomMovie.name}'")
-
-                val allActorItems = jellyfinRepository.getPersonItems(
-                    personId = selectedActor.id,
-                    includeItemTypes = listOf("MOVIE"),
-                    fields = listOf(org.jellyfin.sdk.model.api.ItemFields.PEOPLE)
-                )
-
-                val actorMovies = filterItemsByPersonRole(
-                    items = allActorItems,
-                    personId = selectedActor.id,
-                    personType = PersonKind.ACTOR
-                )
-                    .filterIsInstance<AfinityMovie>()
-                    .filterNot { it.id == randomMovie.id || it.id in renderedItemIds }
-                    .shuffled()
-                    .take(20)
-
-                if (actorMovies.size >= 5) {
-                    sections.add(
-                        PersonFromMovieSection(
-                            person = selectedActor,
-                            referenceMovie = movieWithPeople,
-                            items = actorMovies
-                        )
-                    )
-
-                    actorMovies.forEach { renderedItemIds.add(it.id) }
-                    Timber.d("Created 'Starring ${selectedActor.name} because you watched ${randomMovie.name}' section (${actorMovies.size} items)")
-                } else {
-                    Timber.d("Insufficient items for ${selectedActor.name}: ${actorMovies.size} (need 5)")
-                }
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get actor from recent sections")
-        }
-
-        return sections
-    }
-
     private fun updateProgress(progress: Float, phase: String) {
         _loadingProgress.value = progress
         _loadingPhase.value = phase
     }
 
-    fun clearAllData() {
+    suspend fun clearAllData() {
         Timber.d("Clearing all cached app data")
+
+        try {
+            studioCacheDao.deleteAllStudios()
+            genreCacheDao.clearAllCache()
+            topPeopleDao.clearAllCache()
+            personSectionDao.clearAllCache()
+
+            Timber.d("Database caches cleared")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to clear database caches")
+        }
+
+        recentWatchedCache = null
+
         _latestMedia.value = emptyList()
         _heroCarouselItems.value = emptyList()
         _continueWatching.value = emptyList()
@@ -1201,4 +1072,5 @@ class AppDataRepository @Inject constructor(
         _separateMovieLibrarySections.value = emptyList()
         _separateTvLibrarySections.value = emptyList()
     }
+
 }

@@ -10,6 +10,7 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -215,6 +217,7 @@ class SettingsViewModel @Inject constructor(
                             outlineSize = 0f
                         )
                     }
+
                     !enabled && (currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.RAISED ||
                             currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.DEPRESSED) -> {
                         Timber.d("Switching to MPV: Resetting ${currentSubtitlePrefs.outlineStyle} to NONE")
@@ -284,10 +287,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoggingOut = true)
-                Timber.d("Initiating logout from Settings...")
-                appDataRepository.clearAllData()
-                authRepository.logout()
-                Timber.d("Logout successful")
+
+                withContext(NonCancellable) {
+                    appDataRepository.clearAllData()
+
+                    authRepository.logout()
+                }
+
                 onLogoutComplete()
             } catch (e: Exception) {
                 Timber.e(e, "Logout failed")
