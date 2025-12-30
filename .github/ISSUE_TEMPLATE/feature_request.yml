@@ -1,0 +1,119 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for Afinity
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest a new feature! Please fill out the information below to help us understand your request.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem description
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the solution you'd like
+      placeholder: A clear and concise description of what you want to happen
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any alternative solutions or features you've considered
+      placeholder: A clear and concise description of any alternative solutions or features you've considered
+  - type: dropdown
+    id: feature-area
+    attributes:
+      label: Feature area
+      description: Which area of the app does this feature relate to?
+      multiple: true
+      options:
+        - Player/Playback
+        - UI/Design
+        - Library browsing
+        - Search
+        - Downloads
+        - Authentication
+        - Settings
+        - Accessibility
+        - Performance
+        - Sync/Resume
+        - Subtitles/Audio
+        - Notifications
+        - Chromecast/Casting
+        - Multi-server support
+        - Multi-user profiles
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve my experience
+        - High - Significantly impacts my usage
+        - Critical - Blocking my ability to use the app
+    validations:
+      required: true
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups or examples
+      description: If applicable, add mockups, screenshots, or links to similar implementations in other apps
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: Describe how you would use this feature
+      placeholder: |
+        Example scenario:
+        1. I want to ...
+        2. So that I can ...
+        3. This would help me ...
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      placeholder: Add any other context, screenshots, or information about the feature request here
+  - type: markdown
+    attributes:
+      value: |
+        ## Device info (optional)
+        If this feature is device-specific or related to your setup, please provide details
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: Google Pixel 9 (optional)
+  - type: input
+    id: android
+    attributes:
+      label: Android version
+      placeholder: "15 (optional)"
+  - type: input
+    id: app
+    attributes:
+      label: Afinity version
+      placeholder: v1.0.0 (100) (optional)
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched for similar feature requests before creating this one
+          required: true
+        - label: This feature would benefit multiple users, not just myself
+          required: false
+        - label: I am willing to help test this feature if implemented
+          required: false

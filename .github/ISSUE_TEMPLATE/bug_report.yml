@@ -1,0 +1,139 @@
+name: Bug Report
+description: File a bug report
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe your issue
+      placeholder: A clear and concise description of what the issue is
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: A clear and concise description of what you expected to happen
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or screen recording
+      description: If applicable, add screenshots or screen recordings to help explain your problem
+  - type: dropdown
+    id: player
+    attributes:
+      label: Player
+      description: If the issue is related to the player, please select which player you're using
+      multiple: false
+      options:
+        - LibMPV (default)
+        - ExoPlayer
+        - Not player related
+  - type: dropdown
+    id: issue-area
+    attributes:
+      label: Issue area
+      description: Select the area where the issue occurs
+      multiple: true
+      options:
+        - Playback
+        - UI/Layout
+        - Login/Authentication
+        - Library browsing
+        - Search
+        - Downloads
+        - Subtitles
+        - Audio tracks
+        - Sync/Resume
+        - Settings
+        - Other
+  - type: textarea
+    id: media-info
+    attributes:
+      label: Media information (if applicable)
+      description: If the issue is related to specific media playback, please provide details
+      placeholder: |
+        Media Type: Movie/TV Show/Music
+        Container: MKV/MP4/AVI
+        Video Codec: H.264/H.265/AV1
+        Audio Codec: AAC/AC3/DTS
+        Resolution: 1080p/4K
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: If available, please paste relevant logs or crash reports
+      render: shell
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      placeholder: Add any other context about the problem here
+  - type: markdown
+    attributes:
+      value: |
+        ## Device info
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: Google Pixel 9
+    validations:
+      required: true
+  - type: input
+    id: android
+    attributes:
+      label: Android version
+      placeholder: "15"
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Afinity version
+      placeholder: v1.0.0 (100)
+    validations:
+      required: true
+  - type: input
+    id: jellyfin
+    attributes:
+      label: Jellyfin server version
+      placeholder: 10.9.11
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection type
+      description: How are you connecting to your Jellyfin server?
+      options:
+        - Local network
+        - Remote access (via internet)
+        - Both (issue occurs in both scenarios)
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched for similar issues before creating this one
+          required: true
+        - label: I am using the latest version of Afinity
+          required: true
+        - label: This issue is reproducible
+          required: false
