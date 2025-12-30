@@ -34,34 +34,14 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
 
 ## Features
 
-**Media Playback**
+| **Category** | **Details** |
+|------------|------------|
+| **Media Playback** | - Hardware-accelerated video playback with LibMPV<br>- Multiple audio and subtitle track support<br>- Resume functionality across sessions<br>- Trickplay navigation with thumbnail previews<br>- Media Segments Support (Intro/Outro Skipper) |
+| **Content Discovery** | - Library browsing by content type<br>- Search and filtering capabilities<br>- Favorites management<br>- Cast and crew information |
+| **Interface** | - Material 3 design with system theming<br>- Responsive layouts for different screen sizes<br>- Gesture-based player controls<br>- Dark and light theme support |
+| **Server Integration** | - Secure authentication<br>- Playback progress synchronization<br>- Multiple quality options<br>- Background library updates |
 
-- Hardware-accelerated video playback with LibMPV
-- Multiple audio and subtitle track support
-- Resume functionality across sessions
-- Trickplay navigation with thumbnail previews
-- Media Segments Support (Intro/Outro Skipper)
 
-**Content Discovery**
-
-- Library browsing by content type
-- Search and filtering capabilities
-- Favorites management
-- Cast and crew information
-
-**Interface**
-
-- Material 3 design with system theming
-- Responsive layouts for different screen sizes
-- Gesture-based player controls
-- Dark and light theme support
-
-**Server Integration**
-
-- Secure authentication
-- Playback progress synchronization
-- Multiple quality options
-- Background library updates
 
 ## Screenshots
 
