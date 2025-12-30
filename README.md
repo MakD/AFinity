@@ -78,7 +78,7 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
   &nbsp;
   <img src="screenshots/person.png" width="30%" alt="Person Detail Page">
   &nbsp;
-  <img src="screenshots/player.png" width="60%" alt="Player Screen">
+  <img src="screenshots/player.png" width="92%" alt="Player Screen">
 </p>
 
 ## Installation
