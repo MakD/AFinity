@@ -59,64 +59,68 @@ jobs:
 
           # Truncate release body if it exceeds Discord's 4096 character limit
           MAX_DESC_LENGTH=4000
-          RELEASE_BODY=$(printf '%s' "${{ env.RELEASE_BODY }}")
+          RELEASE_BODY="${{ env.RELEASE_BODY }}"
           RELEASE_URL="${{ env.RELEASE_URL }}"
 
           if [ ${#RELEASE_BODY} -gt $MAX_DESC_LENGTH ]; then
             echo "Release body is ${#RELEASE_BODY} characters, truncating to $MAX_DESC_LENGTH"
-            RELEASE_BODY=$(printf '%s' "${RELEASE_BODY:0:$MAX_DESC_LENGTH}... [Read full release notes]($RELEASE_URL)")
+            RELEASE_BODY="${RELEASE_BODY:0:$MAX_DESC_LENGTH}... [Read full release notes]($RELEASE_URL)"
           else
             echo "Release body is ${#RELEASE_BODY} characters (within limit)"
           fi
 
-          # Escape special characters for JSON
-          RELEASE_BODY_ESCAPED=$(echo "$RELEASE_BODY" | jq -Rs .)
-          ASSETS_ESCAPED=$(echo "$ASSETS" | jq -Rs .)
-          
-          # Create Discord embed JSON
-          DISCORD_PAYLOAD=$(cat <<EOF
-          {
-            "embeds": [{
-              "title": "🚀 New Release: ${{ env.RELEASE_NAME }}",
-              "description": $RELEASE_BODY_ESCAPED,
-              "url": "${{ env.RELEASE_URL }}",
-              "color": 3066993,
-              "fields": [
-                {
-                  "name": "📦 Version",
-                  "value": "\`${{ env.RELEASE_TAG }}\`",
-                  "inline": true
+          # Create Discord embed JSON using jq (proper escaping)
+          DISCORD_PAYLOAD=$(jq -n \
+            --arg title "🚀 New Release: ${{ env.RELEASE_NAME }}" \
+            --arg description "$RELEASE_BODY" \
+            --arg url "$RELEASE_URL" \
+            --arg tag "${{ env.RELEASE_TAG }}" \
+            --arg author "${{ env.RELEASE_AUTHOR }}" \
+            --arg avatar "${{ env.RELEASE_AUTHOR_AVATAR }}" \
+            --arg assets "$ASSETS" \
+            --arg timestamp "$TIMESTAMP" \
+            --arg repo "$REPO_NAME" \
+            --arg repo_url "$REPO_URL" \
+            '{
+              embeds: [{
+                title: $title,
+                description: $description,
+                url: $url,
+                color: 3066993,
+                fields: [
+                  {
+                    name: "📦 Version",
+                    value: ("`" + $tag + "`"),
+                    inline: true
+                  },
+                  {
+                    name: "👤 Author",
+                    value: ("[" + $author + "](https://github.com/" + $author + ")"),
+                    inline: true
+                  },
+                  {
+                    name: "📂 Repository",
+                    value: ("[" + $repo + "](" + $repo_url + ")"),
+                    inline: false
+                  },
+                  {
+                    name: "⬇️ Downloads",
+                    value: $assets,
+                    inline: false
+                  }
+                ],
+                author: {
+                  name: $author,
+                  icon_url: $avatar,
+                  url: ("https://github.com/" + $author)
                 },
-                {
-                  "name": "👤 Author",
-                  "value": "[${{ env.RELEASE_AUTHOR }}](https://github.com/${{ env.RELEASE_AUTHOR }})",
-                  "inline": true
-                },
-                {
-                  "name": "📂 Repository",
-                  "value": "[$REPO_NAME]($REPO_URL)",
-                  "inline": false
-                },
-                {
-                  "name": "⬇️ Downloads",
-                  "value": $ASSETS_ESCAPED,
-                  "inline": false
+                timestamp: $timestamp,
+                footer: {
+                  text: ("Released from " + $repo)
                 }
-              ],
-              "author": {
-                "name": "${{ env.RELEASE_AUTHOR }}",
-                "icon_url": "${{ env.RELEASE_AUTHOR_AVATAR }}",
-                "url": "https://github.com/${{ env.RELEASE_AUTHOR }}"
-              },
-              "timestamp": "$TIMESTAMP",
-              "footer": {
-                "text": "Released from $REPO_NAME"
-              }
-            }]
-          }
-          EOF
-          )
-          
+              }]
+            }') || { echo "Failed to create JSON payload"; exit 1; }
+
           # Send to Discord with error handling
           echo "Sending notification to Discord..."
           RESPONSE=$(curl -s -w "\n%{http_code}" -H "Content-Type: application/json" \
