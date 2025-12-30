@@ -61,6 +61,10 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
   <img src="screenshots/player.png" width="92%" alt="Player Screen">
 </p>
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=MakD/AFinity&type=date&legend=bottom-right)](https://www.star-history.com/#MakD/AFinity&type=date&legend=bottom-right)
+
 ## Installation
 
 **Requirements**
