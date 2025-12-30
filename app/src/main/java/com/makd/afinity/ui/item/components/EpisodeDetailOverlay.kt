@@ -306,72 +306,75 @@ fun EpisodeDetailOverlay(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Box(modifier = Modifier.weight(0.2f)) {
-                    PlaybackSelectionButton(
-                        item = episode,
-                        buttonText = if (episode.playbackPositionTicks > 0) "Resume" else "Play",
-                        buttonIcon = painterResource(id = R.drawable.ic_play_arrow),
-                        onPlayClick = { selection ->
-                            onPlayClick(episode, selection)
-                        }
-                    )
-                }
+                PlaybackSelectionButton(
+                    item = episode,
+                    buttonText = if (episode.playbackPositionTicks > 0) "Resume" else "Play",
+                    buttonIcon = painterResource(id = R.drawable.ic_play_arrow),
+                    onPlayClick = { selection ->
+                        onPlayClick(episode, selection)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                onGoToSeries?.let { goToSeries ->
-                    IconButton(onClick = goToSeries) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    onGoToSeries?.let { goToSeries ->
+                        IconButton(onClick = goToSeries) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_info),
+                                contentDescription = "Go to Series",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+                    IconButton(onClick = onToggleWatchlist) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_info),
-                            contentDescription = "Go to Series",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
+                                id = R.drawable.ic_bookmark
+                            ),
+                            contentDescription = "Watchlist",
+                            tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(28.dp)
                         )
                     }
-                }
-                IconButton(onClick = onToggleWatchlist) {
-                    Icon(
-                        painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
-                            id = R.drawable.ic_bookmark
-                        ),
-                        contentDescription = "Watchlist",
-                        tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(28.dp)
+
+                    IconButton(onClick = onToggleFavorite) {
+                        Icon(
+                            painter = if (episode.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
+                                id = R.drawable.ic_favorite
+                            ),
+                            contentDescription = "Favorite",
+                            tint = if (episode.favorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    IconButton(onClick = onToggleWatched) {
+                        Icon(
+                            painter = if (episode.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
+                                id = R.drawable.ic_circle_check_outline
+                            ),
+                            contentDescription = "Watched",
+                            tint = if (episode.played) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    DownloadProgressIndicator(
+                        downloadInfo = downloadInfo,
+                        onDownloadClick = onDownloadClick,
+                        onPauseClick = onPauseDownload,
+                        onResumeClick = onResumeDownload,
+                        onCancelClick = onCancelDownload
                     )
                 }
-
-                IconButton(onClick = onToggleFavorite) {
-                    Icon(
-                        painter = if (episode.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
-                            id = R.drawable.ic_favorite
-                        ),
-                        contentDescription = "Favorite",
-                        tint = if (episode.favorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-
-                IconButton(onClick = onToggleWatched) {
-                    Icon(
-                        painter = if (episode.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
-                            id = R.drawable.ic_circle_check_outline
-                        ),
-                        contentDescription = "Watched",
-                        tint = if (episode.played) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-
-                DownloadProgressIndicator(
-                    downloadInfo = downloadInfo,
-                    onDownloadClick = onDownloadClick,
-                    onPauseClick = onPauseDownload,
-                    onResumeClick = onResumeDownload,
-                    onCancelClick = onCancelDownload
-                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
