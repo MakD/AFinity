@@ -11,6 +11,7 @@
 [![Issues](https://img.shields.io/github/issues/MakD/AFinity?style=for-the-badge&labelColor=000000&color=e94b3c)](https://github.com/MakD/AFinity/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/MakD/AFinity?style=for-the-badge&labelColor=000000&color=f39c12)](https://github.com/MakD/AFinity/pulls)
 [![Downloads](https://img.shields.io/github/downloads/MakD/AFinity/total?style=for-the-badge&labelColor=000000&color=333446)](https://github.com/MakD/AFinity/releases)
+![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/Makd/AFinity/latest/total?sort=date&style=for-the-badge&logo=%20&logoColor=white&labelColor=black&color=A3D78A)
 [![License](https://img.shields.io/github/license/MakD/AFinity?style=for-the-badge&labelColor=000000&color=665687)](https://github.com/MakD/AFinity/blob/master/LICENSE.md)
 
 A native Android client for Jellyfin servers built with Jetpack Compose and Material 3.
