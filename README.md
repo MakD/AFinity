@@ -71,6 +71,9 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
   </picture>
 </a>
 
+## Stargazers over time
+[![Stargazers over time](https://starchart.cc/MakD/AFinity.svg?variant=adaptive&line=%233f9aae)](https://starchart.cc/MakD/AFinity)
+
 
 ## Installation
 
