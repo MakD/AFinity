@@ -23,6 +23,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
@@ -492,6 +493,8 @@ class PlayerViewModel @Inject constructor(
     ) {
         try {
             currentItem = item
+            val chapters = item.chapters
+            updateUiState { it.copy(chapters = chapters) }
 
             val audioStreams = item.sources.firstOrNull()?.mediaStreams?.filter {
                 it.type == MediaStreamType.AUDIO
@@ -1211,6 +1214,7 @@ class PlayerViewModel @Inject constructor(
         val showTrickplayPreview: Boolean = false,
         val trickplayPreviewImage: ImageBitmap? = null,
         val trickplayPreviewPosition: Long = 0L,
+        val chapters: List<AfinityChapter> = emptyList(),
         val currentItem: AfinityItem? = null,
         val showSkipButton: Boolean = false,
         val skipButtonText: String = "Skip",

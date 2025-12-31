@@ -40,13 +40,14 @@ fun TrickplayPreview(
         modifier = modifier
     ) {
         if (previewImage != null) {
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 val seekBarY = configuration.screenHeightDp.dp - 80.dp
 
-                val seekBarPadding = 16.dp
-                val seekBarWidth = screenWidth - (seekBarPadding * 2)
+                val startPadding = 16.dp + 8.dp
+                val timeTextWidth = 40.dp
+                val endPadding = 16.dp + timeTextWidth
+
+                val actualSliderWidth = screenWidth - startPadding - endPadding
 
                 val progress = if (durationMs > 0) {
                     (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
@@ -54,28 +55,26 @@ fun TrickplayPreview(
                     0f
                 }
 
-                val targetX = seekBarPadding + (seekBarWidth * progress)
+                val targetX = startPadding + (actualSliderWidth * progress)
 
                 val constrainedX = when {
-                    targetX - previewWidth / 2 < 0.dp -> previewWidth / 2
-                    targetX + previewWidth / 2 > screenWidth -> screenWidth - previewWidth / 2
-                    else -> targetX
-                } - previewWidth / 2
+                    targetX - previewWidth / 2 < 8.dp -> 8.dp
+                    targetX + previewWidth / 2 > screenWidth - 8.dp -> screenWidth - previewWidth - 8.dp
+                    else -> targetX - previewWidth / 2
+                }
 
                 Card(
                     modifier = Modifier
                         .offset(
                             x = constrainedX,
-                            y = seekBarY - previewHeight - 4.dp
+                            y = seekBarY - previewHeight - 8.dp
                         )
                         .size(previewWidth, previewHeight),
                     colors = CardDefaults.cardColors(
                         containerColor = Color.Black.copy(alpha = 0.9f)
                     ),
                     shape = RoundedCornerShape(8.dp),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 8.dp
-                    )
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
                     Image(
                         bitmap = previewImage,

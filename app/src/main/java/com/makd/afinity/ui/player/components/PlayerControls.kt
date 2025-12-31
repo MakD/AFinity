@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -43,14 +44,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.logoBlurHash
@@ -81,13 +85,12 @@ data class SubtitleStreamOption(
 @Composable
 fun PlayerControls(
     uiState: PlayerViewModel.PlayerUiState,
-    player: androidx.media3.common.Player,
+    player: Player,
     onPlayerEvent: (PlayerEvent) -> Unit,
     onBackClick: () -> Unit,
     onNextEpisode: () -> Unit = {},
     onPreviousEpisode: () -> Unit = {},
-    onPipToggle: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onPipToggle: () -> Unit = {}
 ) {
     var showAudioSelector by remember { mutableStateOf(false) }
     var showSubtitleSelector by remember { mutableStateOf(false) }
@@ -238,7 +241,9 @@ fun PlayerControls(
                                     Text(
                                         text = "S${
                                             seasonNumber.toString().padStart(2, '0')
-                                        }:E${episodeNumber.toString().padStart(2, '0')}: $episodeTitle",
+                                        }:E${
+                                            episodeNumber.toString().padStart(2, '0')
+                                        }: $episodeTitle",
                                         color = Color.White.copy(alpha = 0.8f),
                                         fontSize = 14.sp,
                                         maxLines = 1,
@@ -261,12 +266,12 @@ fun PlayerControls(
                 modifier = Modifier.fillMaxSize()
             ) {
                 TopControls(
+                    modifier = Modifier.align(Alignment.TopCenter),
                     uiState = uiState,
                     onPlayerEvent = onPlayerEvent,
                     onBackClick = onBackClick,
                     onLockToggle = { onPlayerEvent(PlayerEvent.ToggleLock) },
-                    onPipToggle = onPipToggle,
-                    modifier = Modifier.align(Alignment.TopCenter)
+                    onPipToggle = onPipToggle
                 )
 
                 if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
@@ -504,12 +509,12 @@ fun PlayerControls(
 @OptIn(UnstableApi::class)
 @Composable
 private fun TopControls(
+    modifier: Modifier = Modifier,
     uiState: PlayerViewModel.PlayerUiState,
     onPlayerEvent: (PlayerEvent) -> Unit,
     onBackClick: () -> Unit,
     onLockToggle: () -> Unit,
     onPipToggle: () -> Unit = { /* TODO */ },
-    modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
@@ -585,6 +590,7 @@ private fun TopControls(
 @OptIn(UnstableApi::class)
 @Composable
 private fun CenterPlayButton(
+    modifier: Modifier = Modifier,
     uiState: PlayerViewModel.PlayerUiState,
     isPlaying: Boolean,
     showPlayButton: Boolean,
@@ -593,8 +599,7 @@ private fun CenterPlayButton(
     onSeekBackward: () -> Unit,
     onSeekForward: () -> Unit,
     onNextEpisode: () -> Unit = {},
-    onPreviousEpisode: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onPreviousEpisode: () -> Unit = {}
 ) {
     AnimatedVisibility(
         visible = showPlayButton,
@@ -816,10 +821,53 @@ private fun SeekBar(
                 inactiveTrackColor = Color.White.copy(alpha = 0.3f)
             ),
             track = { sliderState ->
-                SliderDefaults.Track(
-                    sliderState = sliderState,
-                    modifier = Modifier.height(6.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(18.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SliderDefaults.Track(
+                        sliderState = sliderState,
+                        modifier = Modifier.height(6.dp),
+                        thumbTrackGapSize = 0.dp
+                    )
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp)
+                            .height(6.dp)
+                    ) {
+                        if (duration > 0) {
+                            val progress = (sliderState.value - sliderState.valueRange.start) /
+                                    (sliderState.valueRange.endInclusive - sliderState.valueRange.start)
+
+                            val activeWidthPx = size.width * progress
+
+                            clipRect(
+                                left = activeWidthPx,
+                                top = 0f,
+                                right = size.width,
+                                bottom = size.height
+                            ) {
+                                uiState.chapters.forEach { chapter ->
+                                    val fraction =
+                                        chapter.startPosition.toFloat() / duration.toFloat()
+                                    val x = size.width * fraction
+
+                                    drawCircle(
+                                        color = Color.White.copy(alpha = 0.8f),
+                                        radius = 2.dp.toPx(),
+                                        center = Offset(
+                                            x,
+                                            size.height / 2
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             },
             modifier = Modifier
                 .weight(1f)
@@ -827,23 +875,28 @@ private fun SeekBar(
                 .padding(start = 8.dp)
         )
 
-        Text(
-            text = if (uiState.showRemainingTime) {
-                "-${formatTime((duration - position).coerceAtLeast(0L))}"
-            } else {
-                "${formatTime(position)} / ${formatTime(duration)}"
-            },
-            color = Color.White,
-            fontSize = 12.sp,
+        Box(
             modifier = Modifier
-                .padding(end = 8.dp)
+                .width(40.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
                     onPlayerEvent(PlayerEvent.ToggleRemainingTime)
-                }
-        )
+                },
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Text(
+                text = if (uiState.showRemainingTime) {
+                    "-${formatTime((duration - position).coerceAtLeast(0L))}"
+                } else {
+                    formatTime(position)
+                },
+                color = Color.White,
+                fontSize = 12.sp,
+                maxLines = 1
+            )
+        }
     }
 }
 
