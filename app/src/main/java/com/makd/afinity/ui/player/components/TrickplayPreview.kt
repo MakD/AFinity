@@ -1,34 +1,35 @@
 package com.makd.afinity.ui.player.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.dp
-import com.makd.afinity.data.models.media.AfinityChapter
-
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.makd.afinity.data.models.media.AfinityChapter
 
 @Composable
 fun TrickplayPreview(
@@ -58,13 +59,7 @@ fun TrickplayPreview(
                 val endPadding = 68.dp
 
                 val actualSliderWidth = screenWidth - startPadding - endPadding
-
-                val progress = if (durationMs > 0) {
-                    (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
-                } else {
-                    0f
-                }
-
+                val progress = if (durationMs > 0) (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
                 val targetX = startPadding + (actualSliderWidth * progress)
 
                 val constrainedX = when {
@@ -73,41 +68,56 @@ fun TrickplayPreview(
                     else -> targetX - previewWidth / 2
                 }
 
-                Column(
+                Card(
                     modifier = Modifier
-                        .offset(x = constrainedX, y = seekBarY - previewHeight - 40.dp)
-                        .width(previewWidth),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .offset(x = constrainedX, y = seekBarY - previewHeight - 8.dp)
+                        .size(previewWidth, previewHeight),
+                    colors = CardDefaults.cardColors(containerColor = Color.Black),
+                    shape = RoundedCornerShape(8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
-                    Card(
-                        modifier = Modifier.size(previewWidth, previewHeight),
-                        colors = CardDefaults.cardColors(containerColor = Color.Black),
-                        shape = RoundedCornerShape(8.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
                         Image(
                             bitmap = previewImage,
-                            contentDescription = "Video preview",
+                            contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
-                    }
 
-                    val currentChapter = chapters.lastOrNull { it.startPosition <= positionMs }
-                    if (currentChapter != null && !currentChapter.name.isNullOrEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = currentChapter.name,
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                        val currentChapter = chapters.lastOrNull { it.startPosition <= positionMs }
+
+                        AnimatedContent(
+                            targetState = currentChapter?.name,
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(200)) togetherWith
+                                        fadeOut(animationSpec = tween(200)) using
+                                        SizeTransform(clip = false)
+                            },
                             modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                                .align(Alignment.BottomStart)
+                                .padding(8.dp),
+                            label = "ChapterNameAnimation"
+                        ) { chapterName ->
+                            if (!chapterName.isNullOrEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            color = Color.Black.copy(alpha = 0.75f),
+                                            shape = RoundedCornerShape(4.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = chapterName,
+                                        color = Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

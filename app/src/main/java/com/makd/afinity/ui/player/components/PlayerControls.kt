@@ -258,7 +258,7 @@ fun PlayerControls(
             }
         }
         AnimatedVisibility(
-            visible = (uiState.showControls || uiState.isSeeking) && !uiState.isInPictureInPictureMode,
+            visible = uiState.showControls && !uiState.isInPictureInPictureMode,
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300)),
         ) {
@@ -290,9 +290,6 @@ fun PlayerControls(
                         onPreviousEpisode = onPreviousEpisode,
                         modifier = Modifier.align(Alignment.Center)
                     )
-                }
-
-                if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
                     BottomControls(
                         uiState = uiState,
                         onPlayerEvent = onPlayerEvent,
@@ -301,6 +298,33 @@ fun PlayerControls(
                         onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
+                }
+            }
+        }
+        AnimatedVisibility(
+            visible = uiState.isSeeking && !uiState.showControls && !uiState.isInPictureInPictureMode,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
+                            )
+                        )
+                        .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp)
+                ) {
+                    SeekBar(
+                        uiState = uiState,
+                        onPlayerEvent = onPlayerEvent
+                    )
+                    Spacer(modifier = Modifier.height(48.dp))
                 }
             }
         }

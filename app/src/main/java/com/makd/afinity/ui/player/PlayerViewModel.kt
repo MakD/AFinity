@@ -398,7 +398,6 @@ class PlayerViewModel @Inject constructor(
 
                 is PlayerEvent.Stop -> player.stop()
                 is PlayerEvent.OnSeekBarDragStart -> {
-                    showControls()
                     updateUiState {
                         it.copy(
                             isSeeking = true,
