@@ -223,7 +223,6 @@ fun PlayerScreen(
             onPipToggle = {
                 viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture)
             },
-            modifier = Modifier.fillMaxSize()
         )
 
         TrickplayPreview(

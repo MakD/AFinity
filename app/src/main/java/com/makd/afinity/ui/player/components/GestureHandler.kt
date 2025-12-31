@@ -101,8 +101,19 @@ fun GestureHandler(
                         if (isSeeking) {
                             onSeekPreview(false)
                         }
+                        isSeeking = false
                         gestureType = null
                         Timber.d("Drag ended")
+                    },
+                    onDragCancel = {
+                        isDragging = false
+                        totalHorizontalDelta = 0f
+                        if (isSeeking) {
+                            onSeekPreview(false)
+                        }
+                        isSeeking = false
+                        gestureType = null
+                        Timber.d("Drag cancelled by system")
                     },
                     onDrag = { _, dragAmount ->
                         if (!isDragging) return@detectDragGestures

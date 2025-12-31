@@ -412,11 +412,15 @@ class PlayerViewModel @Inject constructor(
                 }
 
                 is PlayerEvent.OnSeekBarDragFinished -> {
-                    player.seekTo(uiState.value.seekPosition)
+                    val finalPos = uiState.value.seekPosition
+                    player.seekTo(finalPos)
                     updateUiState {
                         it.copy(
                             isSeeking = false,
-                            currentPosition = uiState.value.seekPosition,
+                            showTrickplayPreview = false,
+                            trickplayPreviewImage = null,
+                            trickplayPreviewPosition = 0L,
+                            currentPosition = finalPos,
                             dragStartPosition = 0L
                         )
                     }
