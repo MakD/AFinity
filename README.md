@@ -62,7 +62,7 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
   <img src="screenshots/player.png" width="92%" alt="Player Screen">
 </p>
 
-## Star History
+## Stargazers over time
 
 <a href="https://star-history.com/#MakD/AFinity&Date&legend=bottom-right">
   <picture>
@@ -71,10 +71,6 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
     <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=MakD/AFinity&type=Date&legend=bottom-right" />
   </picture>
 </a>
-
-## Stargazers over time
-[![Stargazers over time](https://starchart.cc/MakD/AFinity.svg?variant=adaptive&line=%233f9aae)](https://starchart.cc/MakD/AFinity)
-
 
 ## Installation
 
