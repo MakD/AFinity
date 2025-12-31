@@ -901,7 +901,7 @@ private fun SeekBar(
 
         Box(
             modifier = Modifier
-                .width(40.dp)
+                .width(50.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null

@@ -56,7 +56,7 @@ fun TrickplayPreview(
                 val seekBarY = configuration.screenHeightDp.dp - 80.dp
 
                 val startPadding = 24.dp
-                val endPadding = 68.dp
+                val endPadding = 78.dp
 
                 val actualSliderWidth = screenWidth - startPadding - endPadding
                 val progress = if (durationMs > 0) (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
