@@ -1029,6 +1029,42 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    fun onNextChapterOrEpisode() {
+        val chapters = uiState.value.chapters
+        if (chapters.isNotEmpty()) {
+            val currentPos = player.currentPosition
+            val nextChapter = chapters.find { it.startPosition > currentPos + 1000 }
+
+            if (nextChapter != null) {
+                handlePlayerEvent(PlayerEvent.Seek(nextChapter.startPosition))
+                return
+            }
+        }
+        onNextEpisode()
+    }
+
+    fun onPreviousChapterOrEpisode() {
+        val chapters = uiState.value.chapters
+        if (chapters.isNotEmpty()) {
+            val currentPos = player.currentPosition
+            val currentChapterIndex = chapters.indexOfLast { it.startPosition <= currentPos }
+
+            if (currentChapterIndex != -1) {
+                val currentChapter = chapters[currentChapterIndex]
+                val targetPosition = if (currentPos - currentChapter.startPosition > 3000) {
+                    currentChapter.startPosition
+                } else if (currentChapterIndex > 0) {
+                    chapters[currentChapterIndex - 1].startPosition
+                } else {
+                    0L
+                }
+                handlePlayerEvent(PlayerEvent.Seek(targetPosition))
+                return
+            }
+        }
+        onPreviousEpisode()
+    }
+
     private var brightnessHideJob: Job? = null
 
     fun onScreenBrightnessGesture(delta: Float) {

@@ -218,8 +218,8 @@ fun PlayerScreen(
             onBackClick = {
                 onBackPressed()
             },
-            onNextEpisode = viewModel::onNextEpisode,
-            onPreviousEpisode = viewModel::onPreviousEpisode,
+            onNextClick = viewModel::onNextChapterOrEpisode,
+            onPreviousClick = viewModel::onPreviousChapterOrEpisode,
             onPipToggle = {
                 viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture)
             },

@@ -59,6 +59,7 @@ import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.logoBlurHash
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.ui.components.OptimizedAsyncImage
@@ -88,8 +89,8 @@ fun PlayerControls(
     player: Player,
     onPlayerEvent: (PlayerEvent) -> Unit,
     onBackClick: () -> Unit,
-    onNextEpisode: () -> Unit = {},
-    onPreviousEpisode: () -> Unit = {},
+    onNextClick: () -> Unit = {},
+    onPreviousClick: () -> Unit = {},
     onPipToggle: () -> Unit = {}
 ) {
     var showAudioSelector by remember { mutableStateOf(false) }
@@ -286,8 +287,8 @@ fun PlayerControls(
                         },
                         onSeekBackward = { onPlayerEvent(PlayerEvent.SeekRelative(-10000L)) },
                         onSeekForward = { onPlayerEvent(PlayerEvent.SeekRelative(30000L)) },
-                        onNextEpisode = onNextEpisode,
-                        onPreviousEpisode = onPreviousEpisode,
+                        onNextClick = onNextClick,
+                        onPreviousClick = onPreviousClick,
                         modifier = Modifier.align(Alignment.Center)
                     )
                     BottomControls(
@@ -622,9 +623,13 @@ private fun CenterPlayButton(
     onPlayPauseClick: () -> Unit,
     onSeekBackward: () -> Unit,
     onSeekForward: () -> Unit,
-    onNextEpisode: () -> Unit = {},
-    onPreviousEpisode: () -> Unit = {}
+    onNextClick: () -> Unit,
+    onPreviousClick: () -> Unit
 ) {
+    val hasChapters = uiState.chapters.isNotEmpty()
+    val isEpisode = uiState.currentItem is AfinityEpisode
+    val showSkipButtons = isEpisode || hasChapters
+
     AnimatedVisibility(
         visible = showPlayButton,
         enter = scaleIn(animationSpec = tween(200)) + fadeIn(),
@@ -635,9 +640,9 @@ private fun CenterPlayButton(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (uiState.currentItem is com.makd.afinity.data.models.media.AfinityEpisode) {
+            if (showSkipButtons) {
                 IconButton(
-                    onClick = onPreviousEpisode,
+                    onClick = onPreviousClick,
                     modifier = Modifier.size(60.dp)
                 ) {
                     Icon(
@@ -663,8 +668,7 @@ private fun CenterPlayButton(
 
             IconButton(
                 onClick = onPlayPauseClick,
-                modifier = Modifier
-                    .size(60.dp)
+                modifier = Modifier.size(60.dp)
             ) {
                 if (isBuffering) {
                     CircularProgressIndicator(
@@ -674,9 +678,8 @@ private fun CenterPlayButton(
                     )
                 } else {
                     Icon(
-                        painter = if (isPlaying) painterResource(id = R.drawable.ic_player_pause_filled) else painterResource(
-                            id = R.drawable.ic_player_play_filled
-                        ),
+                        painter = if (isPlaying) painterResource(id = R.drawable.ic_player_pause_filled)
+                        else painterResource(id = R.drawable.ic_player_play_filled),
                         contentDescription = if (isPlaying) "Pause" else "Play",
                         tint = Color.White,
                         modifier = Modifier.size(40.dp)
@@ -696,9 +699,9 @@ private fun CenterPlayButton(
                 )
             }
 
-            if (uiState.currentItem is com.makd.afinity.data.models.media.AfinityEpisode) {
+            if (showSkipButtons) {
                 IconButton(
-                    onClick = onNextEpisode,
+                    onClick = onNextClick,
                     modifier = Modifier.size(60.dp)
                 ) {
                     Icon(
@@ -854,12 +857,12 @@ private fun SeekBar(
                     SliderDefaults.Track(
                         sliderState = sliderState,
                         modifier = Modifier.height(6.dp),
-                        thumbTrackGapSize = 0.dp
+                        thumbTrackGapSize = 6.dp
                     )
                     Canvas(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 10.dp)
+                            .padding(horizontal = 6.dp)
                             .height(6.dp)
                     ) {
                         if (duration > 0) {
@@ -867,9 +870,10 @@ private fun SeekBar(
                                     (sliderState.valueRange.endInclusive - sliderState.valueRange.start)
 
                             val activeWidthPx = size.width * progress
+                            val gapSafetyOffset = 10.dp.toPx()
 
                             clipRect(
-                                left = activeWidthPx,
+                                left = (activeWidthPx + gapSafetyOffset).coerceAtMost(size.width),
                                 top = 0f,
                                 right = size.width,
                                 bottom = size.height

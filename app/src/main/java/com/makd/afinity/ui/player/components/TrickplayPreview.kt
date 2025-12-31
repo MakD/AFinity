@@ -93,6 +93,7 @@ fun TrickplayPreview(
                                         fadeOut(animationSpec = tween(200)) using
                                         SizeTransform(clip = false)
                             },
+                            contentAlignment = Alignment.CenterStart,
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
                                 .padding(8.dp),
