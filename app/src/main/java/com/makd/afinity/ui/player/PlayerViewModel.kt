@@ -358,6 +358,7 @@ class PlayerViewModel @Inject constructor(
                 is PlayerEvent.Pause -> player.pause()
                 is PlayerEvent.Seek -> player.seekTo(event.positionMs)
                 is PlayerEvent.SeekRelative -> {
+                    showControls()
                     val newPos =
                         (player.currentPosition + event.deltaMs).coerceIn(0, player.duration)
                     player.seekTo(newPos)
@@ -397,6 +398,7 @@ class PlayerViewModel @Inject constructor(
 
                 is PlayerEvent.Stop -> player.stop()
                 is PlayerEvent.OnSeekBarDragStart -> {
+                    showControls()
                     updateUiState {
                         it.copy(
                             isSeeking = true,
@@ -1158,10 +1160,10 @@ class PlayerViewModel @Inject constructor(
         controlsHideJob?.cancel()
         controlsHideJob = viewModelScope.launch {
             delay(3000)
-            if (uiState.value.isPlaying && _uiState.value.showControls) {
+            if (uiState.value.isPlaying && uiState.value.showControls && !uiState.value.isSeeking) {
                 hideControls()
-            } else {
-                Timber.d("NOT hiding controls - isPlaying: ${uiState.value.isPlaying}, showControls: ${_uiState.value.showControls}")
+            } else if (uiState.value.isSeeking) {
+                startControlsAutoHide()
             }
         }
     }

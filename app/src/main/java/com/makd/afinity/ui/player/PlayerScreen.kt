@@ -230,6 +230,7 @@ fun PlayerScreen(
             previewImage = uiState.trickplayPreviewImage,
             positionMs = uiState.trickplayPreviewPosition,
             durationMs = uiState.duration,
+            chapters = uiState.chapters,
             modifier = Modifier.fillMaxSize()
         )
 

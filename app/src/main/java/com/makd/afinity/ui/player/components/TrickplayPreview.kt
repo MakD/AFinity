@@ -19,6 +19,16 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.data.models.media.AfinityChapter
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun TrickplayPreview(
@@ -26,6 +36,7 @@ fun TrickplayPreview(
     previewImage: ImageBitmap?,
     positionMs: Long,
     durationMs: Long,
+    chapters: List<AfinityChapter>,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -43,9 +54,8 @@ fun TrickplayPreview(
             Box(modifier = Modifier.fillMaxSize()) {
                 val seekBarY = configuration.screenHeightDp.dp - 80.dp
 
-                val startPadding = 16.dp + 8.dp
-                val timeTextWidth = 40.dp
-                val endPadding = 16.dp + timeTextWidth
+                val startPadding = 24.dp
+                val endPadding = 68.dp
 
                 val actualSliderWidth = screenWidth - startPadding - endPadding
 
@@ -63,27 +73,42 @@ fun TrickplayPreview(
                     else -> targetX - previewWidth / 2
                 }
 
-                Card(
+                Column(
                     modifier = Modifier
-                        .offset(
-                            x = constrainedX,
-                            y = seekBarY - previewHeight - 8.dp
-                        )
-                        .size(previewWidth, previewHeight),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.Black.copy(alpha = 0.9f)
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                        .offset(x = constrainedX, y = seekBarY - previewHeight - 40.dp)
+                        .width(previewWidth),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Image(
-                        bitmap = previewImage,
-                        contentDescription = "Video preview",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
-                    )
+                    Card(
+                        modifier = Modifier.size(previewWidth, previewHeight),
+                        colors = CardDefaults.cardColors(containerColor = Color.Black),
+                        shape = RoundedCornerShape(8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Image(
+                            bitmap = previewImage,
+                            contentDescription = "Video preview",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    val currentChapter = chapters.lastOrNull { it.startPosition <= positionMs }
+                    if (currentChapter != null && !currentChapter.name.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = currentChapter.name,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
         }

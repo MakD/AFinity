@@ -258,7 +258,7 @@ fun PlayerControls(
             }
         }
         AnimatedVisibility(
-            visible = uiState.showControls && !uiState.isInPictureInPictureMode,
+            visible = (uiState.showControls || uiState.isSeeking) && !uiState.isInPictureInPictureMode,
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300)),
         ) {
