@@ -652,7 +652,7 @@ private fun HighestRatedSection(
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(22.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp)
+            contentPadding = PaddingValues(start = 4.dp, end = 24.dp)
         ) {
             itemsIndexed(
                 items = uniqueItems,

@@ -218,6 +218,13 @@ class AppDataRepository @Inject constructor(
     }
 
     suspend fun reloadHomeData() {
+        if (_isInitialDataLoaded.value && _libraries.value.isEmpty()) {
+            Timber.d("Libraries empty (Offline Start detected). Forcing full initial load...")
+            _isInitialDataLoaded.value = false
+            loadInitialData()
+            return
+        }
+
         if (!_isInitialDataLoaded.value) return
 
         try {

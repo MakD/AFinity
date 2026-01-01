@@ -201,11 +201,15 @@ class HomeViewModel @Inject constructor(
             offlineModeManager.isOffline.collect { isOffline ->
                 Timber.d("Offline mode changed: $isOffline")
                 _uiState.value = _uiState.value.copy(isOffline = isOffline)
+
                 if (isOffline) {
                     loadDownloadedContent()
+                } else {
+                    refresh()
                 }
             }
         }
+
 
         viewModelScope.launch {
             loadNewHomescreenSections()
@@ -895,6 +899,16 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
+    fun refresh() {
+        viewModelScope.launch {
+            appDataRepository.reloadHomeData()
+            loadStudios()
+            loadCombinedGenres()
+            loadNewHomescreenSections()
+        }
+    }
+
 }
 
 sealed interface HomeSection {
