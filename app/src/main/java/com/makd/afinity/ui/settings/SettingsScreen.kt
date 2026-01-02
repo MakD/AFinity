@@ -69,6 +69,7 @@ fun SettingsScreen(
     onDownloadClick: () -> Unit,
     onPlayerOptionsClick: () -> Unit,
     onAppearanceOptionsClick: () -> Unit,
+    onJellyseerrClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -182,6 +183,12 @@ fun SettingsScreen(
                 item {
                     PlaybackSection(
                         onPlayerOptionsClick = onPlayerOptionsClick
+                    )
+                }
+
+                item {
+                    JellyseerrSection(
+                        onJellyseerrClick = onJellyseerrClick
                     )
                 }
 
@@ -405,6 +412,27 @@ private fun PlaybackSection(
             title = "Playback",
             subtitle = "Configure playback and player settings",
             onClick = onPlayerOptionsClick
+        )
+    }
+}
+
+@Composable
+private fun JellyseerrSection(
+    onJellyseerrClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_request_seerr_dark),
+            title = "Jellyseerr",
+            subtitle = "Connect to Jellyseerr to request content",
+            onClick = onJellyseerrClick
         )
     }
 }

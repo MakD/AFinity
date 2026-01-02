@@ -31,6 +31,12 @@ enum class Destination(
         title = "Watchlist",
         selectedIconRes = R.drawable.ic_bookmarks_filled,
         unselectedIconRes = R.drawable.ic_bookmarks
+    ),
+    REQUESTS(
+        route = "requests",
+        title = "Requests",
+        selectedIconRes = R.drawable.ic_request_filled,
+        unselectedIconRes = R.drawable.ic_request
     );
 
     companion object {
@@ -46,6 +52,8 @@ enum class Destination(
         const val PLAYER_OPTIONS_ROUTE = "player_options"
         const val APPEARANCE_OPTIONS_ROUTE = "appearance_options"
         const val LICENSES_ROUTE = "licenses"
+        const val JELLYSEERR_LOGIN_ROUTE = "jellyseerr_login"
+        const val JELLYSEERR_SETTINGS_ROUTE = "jellyseerr_settings"
 
         fun createPersonRoute(personId: String): String {
             return "person/$personId"
@@ -114,6 +122,14 @@ enum class Destination(
 
         fun createLicensesRoute(): String {
             return LICENSES_ROUTE
+        }
+
+        fun createJellyseerrLoginRoute(): String {
+            return JELLYSEERR_LOGIN_ROUTE
+        }
+
+        fun createJellyseerrSettingsRoute(): String {
+            return JELLYSEERR_SETTINGS_ROUTE
         }
     }
 }

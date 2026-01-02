@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
@@ -29,7 +30,8 @@ class SettingsViewModel @Inject constructor(
     private val appDataRepository: AppDataRepository,
     private val serverRepository: ServerRepository,
     private val offlineModeManager: OfflineModeManager,
-    private val networkConnectivityMonitor: NetworkConnectivityMonitor
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val jellyseerrRepository: JellyseerrRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -292,6 +294,13 @@ class SettingsViewModel @Inject constructor(
                     appDataRepository.clearAllData()
 
                     authRepository.logout()
+
+                    try {
+                        jellyseerrRepository.logout()
+                        Timber.d("Jellyseerr logout successful during AFinity logout")
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to logout from Jellyseerr during AFinity logout")
+                    }
                 }
 
                 onLogoutComplete()

@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +24,7 @@ class MainNavigationViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val jellyfinRepository: JellyfinRepository,
     val watchlistRepository: WatchlistRepository,
+    val jellyseerrRepository: JellyseerrRepository,
     private val offlineModeManager: OfflineModeManager
 ) : ViewModel() {
 
