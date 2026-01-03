@@ -4,17 +4,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.jellyseerr.MediaType
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -22,11 +26,14 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val mediaRepository: MediaRepository,
-    private val jellyfinRepository: JellyfinRepository
+    private val jellyfinRepository: JellyfinRepository,
+    private val jellyseerrRepository: JellyseerrRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+
+    val isJellyseerrAuthenticated = jellyseerrRepository.isAuthenticated
 
     fun loadLibraries() {
         viewModelScope.launch {
@@ -65,11 +72,18 @@ class SearchViewModel @Inject constructor(
             viewModelScope.launch {
                 kotlinx.coroutines.delay(500)
                 if (_uiState.value.searchQuery == query) {
-                    performSearch()
+                    if (_uiState.value.isJellyseerrSearchMode) {
+                        performJellyseerrSearch()
+                    } else {
+                        performSearch()
+                    }
                 }
             }
         } else if (query.isEmpty()) {
-            _uiState.value = _uiState.value.copy(searchResults = emptyList())
+            _uiState.value = _uiState.value.copy(
+                searchResults = emptyList(),
+                jellyseerrSearchResults = emptyList()
+            )
         }
     }
 
@@ -151,8 +165,159 @@ class SearchViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             searchQuery = "",
             searchResults = emptyList(),
-            isSearching = false
+            isSearching = false,
+            jellyseerrSearchResults = emptyList(),
+            isJellyseerrSearching = false
         )
+    }
+
+    fun selectJellyseerrSearchMode() {
+        _uiState.update {
+            it.copy(
+                isJellyseerrSearchMode = true,
+                selectedLibrary = null
+            )
+        }
+
+        if (_uiState.value.searchQuery.isNotEmpty()) {
+            performJellyseerrSearch()
+        }
+    }
+
+    fun selectJellyfinSearchMode() {
+        _uiState.update {
+            it.copy(
+                isJellyseerrSearchMode = false,
+                jellyseerrSearchResults = emptyList()
+            )
+        }
+
+        if (_uiState.value.searchQuery.isNotEmpty()) {
+            performSearch()
+        }
+    }
+
+    fun performJellyseerrSearch() {
+        val query = _uiState.value.searchQuery.trim()
+        if (query.isEmpty()) return
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isJellyseerrSearching = true) }
+
+                Timber.d("Performing Jellyseerr search for: '$query'")
+
+                jellyseerrRepository.findMediaByName(query).fold(
+                    onSuccess = { results ->
+                        _uiState.update {
+                            it.copy(
+                                jellyseerrSearchResults = results,
+                                isJellyseerrSearching = false
+                            )
+                        }
+                        Timber.d("Jellyseerr search completed: ${results.size} results")
+                    },
+                    onFailure = { error ->
+                        _uiState.update {
+                            it.copy(
+                                jellyseerrSearchResults = emptyList(),
+                                isJellyseerrSearching = false
+                            )
+                        }
+                        Timber.e(error, "Jellyseerr search failed")
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        jellyseerrSearchResults = emptyList(),
+                        isJellyseerrSearching = false
+                    )
+                }
+                Timber.e(e, "Error during Jellyseerr search")
+            }
+        }
+    }
+
+    fun showRequestDialog(
+        tmdbId: Int,
+        mediaType: MediaType,
+        title: String,
+        posterUrl: String?,
+        availableSeasons: Int = 0,
+        existingStatus: com.makd.afinity.data.models.jellyseerr.MediaStatus? = null
+    ) {
+        _uiState.update {
+            it.copy(
+                showRequestDialog = true,
+                pendingRequest = PendingRequestSearch(tmdbId, mediaType, title, posterUrl, availableSeasons, existingStatus),
+                selectedSeasons = if (mediaType == MediaType.TV && availableSeasons > 0) (1..availableSeasons).toList() else emptyList()
+            )
+        }
+    }
+
+    fun confirmRequest() {
+        val pending = _uiState.value.pendingRequest ?: return
+        val seasons = if (pending.mediaType == MediaType.TV) {
+            _uiState.value.selectedSeasons.takeIf { it.isNotEmpty() }
+        } else null
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isCreatingRequest = true) }
+
+                jellyseerrRepository.createRequest(pending.tmdbId, pending.mediaType, seasons).fold(
+                    onSuccess = { newRequest ->
+                        val updatedResults = _uiState.value.jellyseerrSearchResults.map { item ->
+                            if (item.id == pending.tmdbId) {
+                                val updatedMediaInfo = newRequest.media.copy(
+                                    requests = listOfNotNull(newRequest)
+                                )
+                                item.copy(mediaInfo = updatedMediaInfo)
+                            } else {
+                                item
+                            }
+                        }
+
+                        _uiState.update {
+                            it.copy(
+                                isCreatingRequest = false,
+                                showRequestDialog = false,
+                                pendingRequest = null,
+                                selectedSeasons = emptyList(),
+                                jellyseerrSearchResults = updatedResults
+                            )
+                        }
+                        Timber.d("Request created successfully: ${newRequest.id}")
+                    },
+                    onFailure = { error ->
+                        _uiState.update {
+                            it.copy(isCreatingRequest = false)
+                        }
+                        Timber.e(error, "Failed to create request")
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(isCreatingRequest = false)
+                }
+                Timber.e(e, "Error creating request")
+            }
+        }
+    }
+
+    fun dismissRequestDialog() {
+        _uiState.update {
+            it.copy(
+                showRequestDialog = false,
+                pendingRequest = null,
+                selectedSeasons = emptyList()
+            )
+        }
+    }
+
+    fun setSelectedSeasons(seasons: List<Int>) {
+        _uiState.update { it.copy(selectedSeasons = seasons) }
     }
 }
 
@@ -162,5 +327,23 @@ data class SearchUiState(
     val isSearching: Boolean = false,
     val libraries: List<AfinityCollection> = emptyList(),
     val selectedLibrary: AfinityCollection? = null,
-    val genres: List<String> = emptyList()
+    val genres: List<String> = emptyList(),
+
+    val isJellyseerrSearchMode: Boolean = false,
+    val jellyseerrSearchResults: List<SearchResultItem> = emptyList(),
+    val isJellyseerrSearching: Boolean = false,
+
+    val showRequestDialog: Boolean = false,
+    val pendingRequest: PendingRequestSearch? = null,
+    val selectedSeasons: List<Int> = emptyList(),
+    val isCreatingRequest: Boolean = false
+)
+
+data class PendingRequestSearch(
+    val tmdbId: Int,
+    val mediaType: MediaType,
+    val title: String,
+    val posterUrl: String?,
+    val availableSeasons: Int = 0,
+    val existingStatus: com.makd.afinity.data.models.jellyseerr.MediaStatus? = null
 )
