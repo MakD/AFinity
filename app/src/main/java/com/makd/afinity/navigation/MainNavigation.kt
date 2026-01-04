@@ -51,7 +51,6 @@ import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
-import com.makd.afinity.ui.jellyseerr.JellyseerrLoginScreen
 import com.makd.afinity.ui.libraries.LibrariesScreen
 import com.makd.afinity.ui.library.LibraryContentScreen
 import com.makd.afinity.ui.main.MainViewModel
@@ -116,8 +115,7 @@ fun MainNavigation(
                 route != "download_settings" &&
                 route != "player_options" &&
                 route != "appearance_options" &&
-                route != "licenses" &&
-                route != "jellyseerr_login"
+                route != "licenses"
     } ?: true
 
     val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
@@ -412,23 +410,17 @@ fun MainNavigation(
 
             composable(Destination.REQUESTS.route) {
                 RequestsScreen(
-                    mainUiState = mainUiState,
-                    onJellyseerrLoginClick = {
-                        val route = Destination.createJellyseerrLoginRoute()
-                        navController.navigate(route)
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            composable(Destination.JELLYSEERR_LOGIN_ROUTE) {
-                JellyseerrLoginScreen(
-                    onLoginSuccess = {
-                        navController.popBackStack()
-                    },
                     onBackClick = {
                         navController.popBackStack()
                     },
+                    onSearchClick = {
+                        navController.navigate(Destination.SEARCH_ROUTE)
+                    },
+                    onProfileClick = {
+                        val route = Destination.createSettingsRoute()
+                        navController.navigate(route)
+                    },
+                    mainUiState = mainUiState,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -492,10 +484,6 @@ fun MainNavigation(
                     },
                     onAppearanceOptionsClick = {
                         val route = Destination.createAppearanceOptionsRoute()
-                        navController.navigate(route)
-                    },
-                    onJellyseerrClick = {
-                        val route = Destination.createJellyseerrLoginRoute()
                         navController.navigate(route)
                     }
                 )

@@ -68,6 +68,9 @@ interface JellyseerrApiService {
         @Query("language") language: String = "en"
     ): Response<JellyseerrSearchResult>
 
+    @GET("api/v1/movie/{movieId}")
+    suspend fun getMovieDetails(@Path("movieId") movieId: Int): Response<TvDetails>
+
     @GET("api/v1/tv/{tvId}")
     suspend fun getTvDetails(@Path("tvId") tvId: Int): Response<TvDetails>
 

@@ -24,7 +24,19 @@ data class MediaInfo(
     @SerialName("createdAt")
     val createdAt: String? = null,
     @SerialName("updatedAt")
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    @SerialName("title")
+    val title: String? = null,
+    @SerialName("name")
+    val name: String? = null,
+    @SerialName("posterPath")
+    val posterPath: String? = null,
+    @SerialName("backdropPath")
+    val backdropPath: String? = null,
+    @SerialName("releaseDate")
+    val releaseDate: String? = null,
+    @SerialName("firstAirDate")
+    val firstAirDate: String? = null
 ) {
     fun getAvailableSeasons(): List<Int> {
         return seasons?.filter { season ->
@@ -34,6 +46,21 @@ data class MediaInfo(
 
     fun isSeasonAvailable(seasonNumber: Int): Boolean {
         return seasons?.any { it.seasonNumber == seasonNumber && it.status == 5 } ?: false
+    }
+
+    fun getDisplayTitle(): String = title ?: name ?: "Unknown"
+
+    fun getReleaseYear(): String? {
+        val date = releaseDate ?: firstAirDate
+        return date?.take(4)
+    }
+
+    fun getPosterUrl(baseUrl: String = "https://image.tmdb.org/t/p/w500"): String? {
+        return posterPath?.let { "$baseUrl$it" }
+    }
+
+    fun getBackdropUrl(baseUrl: String = "https://image.tmdb.org/t/p/w1280"): String? {
+        return backdropPath?.let { "$baseUrl$it" }
     }
 }
 

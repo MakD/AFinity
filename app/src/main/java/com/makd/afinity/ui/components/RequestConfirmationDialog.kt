@@ -37,7 +37,8 @@ fun RequestConfirmationDialog(
 ) {
     val alreadyRequested = existingStatus != null && (
         mediaType == MediaType.MOVIE ||
-        existingStatus == com.makd.afinity.data.models.jellyseerr.MediaStatus.AVAILABLE
+        existingStatus == com.makd.afinity.data.models.jellyseerr.MediaStatus.AVAILABLE ||
+        existingStatus == com.makd.afinity.data.models.jellyseerr.MediaStatus.PROCESSING
     )
     AlertDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },

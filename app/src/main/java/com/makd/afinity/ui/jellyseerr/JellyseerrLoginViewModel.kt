@@ -73,7 +73,17 @@ class JellyseerrLoginViewModel @Inject constructor(
     }
 
     fun setUseJellyfinAuth(useJellyfin: Boolean) {
-        _uiState.update { it.copy(useJellyfinAuth = useJellyfin) }
+        if (_uiState.value.useJellyfinAuth == useJellyfin) return
+
+        _uiState.update {
+            it.copy(
+                useJellyfinAuth = useJellyfin,
+                email = "",
+                password = "",
+                emailError = null,
+                passwordError = null
+            )
+        }
     }
 
     fun login() {
@@ -170,8 +180,16 @@ class JellyseerrLoginViewModel @Inject constructor(
             message.contains("401") -> "Invalid email or password"
             message.contains("403") -> "Access forbidden. Check your permissions."
             message.contains("404") -> "Server not found. Check your server URL."
-            message.contains("network", ignoreCase = true) -> "Network error. Check your connection."
-            message.contains("timeout", ignoreCase = true) -> "Connection timeout. Please try again."
+            message.contains(
+                "network",
+                ignoreCase = true
+            ) -> "Network error. Check your connection."
+
+            message.contains(
+                "timeout",
+                ignoreCase = true
+            ) -> "Connection timeout. Please try again."
+
             else -> message
         }
     }

@@ -56,6 +56,9 @@ class SettingsViewModel @Inject constructor(
         manual || !networkAvailable
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val isJellyseerrAuthenticated: StateFlow<Boolean> = jellyseerrRepository.isAuthenticated
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     init {
         loadSettings()
     }
@@ -309,6 +312,20 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isLoggingOut = false,
                     error = "Logout failed: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun logoutFromJellyseerr() {
+        viewModelScope.launch {
+            try {
+                jellyseerrRepository.logout()
+                Timber.d("Jellyseerr logout successful")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to logout from Jellyseerr")
+                _uiState.value = _uiState.value.copy(
+                    error = "Failed to logout from Jellyseerr: ${e.message}"
                 )
             }
         }

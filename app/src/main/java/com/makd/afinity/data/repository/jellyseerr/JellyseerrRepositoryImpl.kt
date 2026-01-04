@@ -19,6 +19,9 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -256,15 +259,52 @@ class JellyseerrRepositoryImpl @Inject constructor(
 
                         if (response.isSuccessful && response.body() != null) {
                             val requests = response.body()!!.results
+                            val enrichedRequests = coroutineScope {
+                                requests.map { request ->
+                                    async {
+                                        try {
+                                            val tmdbId = request.media.tmdbId
+                                            if (tmdbId != null) {
+                                                val detailsResponse = when (request.media.mediaType.lowercase()) {
+                                                    "movie" -> apiService.get().getMovieDetails(tmdbId)
+                                                    "tv" -> apiService.get().getTvDetails(tmdbId)
+                                                    else -> null
+                                                }
+
+                                                if (detailsResponse?.isSuccessful == true && detailsResponse.body() != null) {
+                                                    val details = detailsResponse.body()!!
+                                                    request.copy(
+                                                        media = request.media.copy(
+                                                            title = details.title,
+                                                            name = details.name,
+                                                            posterPath = details.posterPath,
+                                                            backdropPath = details.backdropPath,
+                                                            releaseDate = details.releaseDate,
+                                                            firstAirDate = details.firstAirDate
+                                                        )
+                                                    )
+                                                } else {
+                                                    request
+                                                }
+                                            } else {
+                                                request
+                                            }
+                                        } catch (e: Exception) {
+                                            Timber.w(e, "Failed to enrich request ${request.id} with media details")
+                                            request
+                                        }
+                                    }
+                                }.awaitAll()
+                            }
 
                             if (page == 1) {
                                 val expiryTime = System.currentTimeMillis() - CACHE_VALIDITY_MS
                                 jellyseerrDao.deleteExpiredRequests(expiryTime)
                             }
 
-                            requests.forEach { cacheRequest(it) }
+                            enrichedRequests.forEach { cacheRequest(it) }
 
-                            return@withContext Result.success(requests)
+                            return@withContext Result.success(enrichedRequests)
                         }
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to fetch from network, falling back to cache")

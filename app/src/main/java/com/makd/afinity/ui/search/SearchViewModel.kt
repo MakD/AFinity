@@ -35,6 +35,11 @@ class SearchViewModel @Inject constructor(
 
     val isJellyseerrAuthenticated = jellyseerrRepository.isAuthenticated
 
+    init {
+        loadLibraries()
+        loadGenres()
+    }
+
     fun loadLibraries() {
         viewModelScope.launch {
             try {
@@ -247,12 +252,65 @@ class SearchViewModel @Inject constructor(
         availableSeasons: Int = 0,
         existingStatus: com.makd.afinity.data.models.jellyseerr.MediaStatus? = null
     ) {
-        _uiState.update {
-            it.copy(
-                showRequestDialog = true,
-                pendingRequest = PendingRequestSearch(tmdbId, mediaType, title, posterUrl, availableSeasons, existingStatus),
-                selectedSeasons = if (mediaType == MediaType.TV && availableSeasons > 0) (1..availableSeasons).toList() else emptyList()
-            )
+        viewModelScope.launch {
+            try {
+                if (mediaType == MediaType.TV) {
+                    _uiState.update { it.copy(isFetchingTvDetails = true) }
+
+                    jellyseerrRepository.getTvDetails(tmdbId).fold(
+                        onSuccess = { tvDetails ->
+                            _uiState.update { it.copy(isFetchingTvDetails = false) }
+
+                            val seasonCount = tvDetails.getSeasonCount()
+                            val alreadyAvailableSeasons = tvDetails.mediaInfo?.getAvailableSeasons() ?: emptyList()
+
+                            val selectableSeasons = (1..seasonCount).filter { it !in alreadyAvailableSeasons }
+
+                            _uiState.update {
+                                it.copy(
+                                    showRequestDialog = true,
+                                    pendingRequest = PendingRequestSearch(tmdbId, mediaType, title, posterUrl, seasonCount, existingStatus),
+                                    selectedSeasons = selectableSeasons,
+                                    disabledSeasons = alreadyAvailableSeasons
+                                )
+                            }
+                        },
+                        onFailure = { error ->
+                            _uiState.update { it.copy(isFetchingTvDetails = false) }
+                            Timber.w(error, "Failed to fetch TV details, using fallback season count")
+
+                            _uiState.update {
+                                it.copy(
+                                    showRequestDialog = true,
+                                    pendingRequest = PendingRequestSearch(tmdbId, mediaType, title, posterUrl, availableSeasons, existingStatus),
+                                    selectedSeasons = if (availableSeasons > 0) (1..availableSeasons).toList() else emptyList(),
+                                    disabledSeasons = emptyList()
+                                )
+                            }
+                        }
+                    )
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            showRequestDialog = true,
+                            pendingRequest = PendingRequestSearch(tmdbId, mediaType, title, posterUrl, 0, existingStatus),
+                            selectedSeasons = emptyList(),
+                            disabledSeasons = emptyList()
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error showing request dialog")
+                _uiState.update {
+                    it.copy(
+                        showRequestDialog = true,
+                        pendingRequest = PendingRequestSearch(tmdbId, mediaType, title, posterUrl, availableSeasons, existingStatus),
+                        selectedSeasons = if (mediaType == MediaType.TV && availableSeasons > 0) (1..availableSeasons).toList() else emptyList(),
+                        disabledSeasons = emptyList(),
+                        isFetchingTvDetails = false
+                    )
+                }
+            }
         }
     }
 
@@ -336,7 +394,9 @@ data class SearchUiState(
     val showRequestDialog: Boolean = false,
     val pendingRequest: PendingRequestSearch? = null,
     val selectedSeasons: List<Int> = emptyList(),
-    val isCreatingRequest: Boolean = false
+    val disabledSeasons: List<Int> = emptyList(),
+    val isCreatingRequest: Boolean = false,
+    val isFetchingTvDetails: Boolean = false
 )
 
 data class PendingRequestSearch(

@@ -69,7 +69,6 @@ fun SettingsScreen(
     onDownloadClick: () -> Unit,
     onPlayerOptionsClick: () -> Unit,
     onAppearanceOptionsClick: () -> Unit,
-    onJellyseerrClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -80,7 +79,12 @@ fun SettingsScreen(
     val manualOfflineMode by viewModel.manualOfflineMode.collectAsStateWithLifecycle()
     val effectiveOfflineMode by viewModel.effectiveOfflineMode.collectAsStateWithLifecycle()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
+    val isJellyseerrAuthenticated by viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
+
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showJellyseerrLogoutDialog by remember { mutableStateOf(false) }
+    var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
+    val jellyseerrSheetState = androidx.compose.material3.rememberModalBottomSheetState()
 
     if (showLogoutDialog) {
         LogoutConfirmationDialog(
@@ -91,6 +95,25 @@ fun SettingsScreen(
             onDismiss = {
                 showLogoutDialog = false
             }
+        )
+    }
+
+    if (showJellyseerrLogoutDialog) {
+        JellyseerrLogoutConfirmationDialog(
+            onConfirm = {
+                showJellyseerrLogoutDialog = false
+                viewModel.logoutFromJellyseerr()
+            },
+            onDismiss = {
+                showJellyseerrLogoutDialog = false
+            }
+        )
+    }
+
+    if (showJellyseerrBottomSheet) {
+        JellyseerrBottomSheet(
+            onDismiss = { showJellyseerrBottomSheet = false },
+            sheetState = jellyseerrSheetState
         )
     }
 
@@ -167,7 +190,15 @@ fun SettingsScreen(
                         manualOfflineMode = manualOfflineMode,
                         effectiveOfflineMode = effectiveOfflineMode,
                         isNetworkAvailable = isNetworkAvailable,
+                        isJellyseerrAuthenticated = isJellyseerrAuthenticated,
                         onOfflineModeToggle = viewModel::toggleOfflineMode,
+                        onJellyseerrToggle = { enabled ->
+                            if (enabled) {
+                                showJellyseerrBottomSheet = true
+                            } else {
+                                showJellyseerrLogoutDialog = true
+                            }
+                        },
                         onDownloadClick = onDownloadClick,
                         onLogoutClick = { showLogoutDialog = true },
                         isLoggingOut = uiState.isLoggingOut
@@ -183,12 +214,6 @@ fun SettingsScreen(
                 item {
                     PlaybackSection(
                         onPlayerOptionsClick = onPlayerOptionsClick
-                    )
-                }
-
-                item {
-                    JellyseerrSection(
-                        onJellyseerrClick = onJellyseerrClick
                     )
                 }
 
@@ -299,16 +324,24 @@ private fun GeneralSection(
     manualOfflineMode: Boolean,
     effectiveOfflineMode: Boolean,
     isNetworkAvailable: Boolean,
+    isJellyseerrAuthenticated: Boolean,
     onOfflineModeToggle: (Boolean) -> Unit,
+    onJellyseerrToggle: (Boolean) -> Unit,
     onDownloadClick: () -> Unit,
     onLogoutClick: () -> Unit,
     isLoggingOut: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val subtitle = when {
+    val offlineSubtitle = when {
         !isNetworkAvailable -> "Offline (No network connection)"
         manualOfflineMode -> "Manually enabled"
         else -> "Manually enable offline mode"
+    }
+
+    val jellyseerrSubtitle = if (isJellyseerrAuthenticated) {
+        "Connected - Tap to logout"
+    } else {
+        "Connect to request content"
     }
 
     SettingsSection(
@@ -319,10 +352,23 @@ private fun GeneralSection(
         SettingsSwitchItem(
             icon = painterResource(id = R.drawable.ic_cloud_off),
             title = "Offline Mode",
-            subtitle = subtitle,
+            subtitle = offlineSubtitle,
             checked = effectiveOfflineMode,
             onCheckedChange = onOfflineModeToggle,
             enabled = isNetworkAvailable
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+
+        SettingsSwitchItem(
+            icon = painterResource(id = R.drawable.ic_request_seerr_dark),
+            title = "Jellyseerr",
+            subtitle = jellyseerrSubtitle,
+            checked = isJellyseerrAuthenticated,
+            onCheckedChange = onJellyseerrToggle
         )
 
         HorizontalDivider(
@@ -417,24 +463,52 @@ private fun PlaybackSection(
 }
 
 @Composable
-private fun JellyseerrSection(
-    onJellyseerrClick: () -> Unit,
-    modifier: Modifier = Modifier
+private fun JellyseerrLogoutConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_request_seerr_dark),
-            title = "Jellyseerr",
-            subtitle = "Connect to Jellyseerr to request content",
-            onClick = onJellyseerrClick
-        )
-    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_request_seerr_dark),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(32.dp)
+            )
+        },
+        title = {
+            Text(
+                text = "Logout from Jellyseerr",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold
+                )
+            )
+        },
+        text = {
+            Text(
+                text = "Are you sure you want to logout from Jellyseerr? You will need to login again to request content.",
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
+                Text("Logout")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        shape = RoundedCornerShape(24.dp)
+    )
 }
 
 @Composable

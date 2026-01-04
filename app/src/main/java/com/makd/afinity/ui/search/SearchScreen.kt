@@ -85,12 +85,6 @@ fun SearchScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    LaunchedEffect(Unit) {
-        delay(300)
-        viewModel.loadGenres()
-        viewModel.loadLibraries()
-    }
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -204,6 +198,7 @@ fun SearchScreen(
                 availableSeasons = uiState.pendingRequest!!.availableSeasons,
                 selectedSeasons = uiState.selectedSeasons,
                 onSeasonsChange = { viewModel.setSelectedSeasons(it) },
+                disabledSeasons = uiState.disabledSeasons,
                 existingStatus = uiState.pendingRequest!!.existingStatus,
                 isLoading = uiState.isCreatingRequest,
                 onConfirm = { viewModel.confirmRequest() },
@@ -738,37 +733,39 @@ private fun JellyseerrSearchResultItem(
                 }
             }
 
-            if (item.hasExistingRequest()) {
-                val status = item.getDisplayStatus()
-                if (status != null) {
-                    Surface(
-                        modifier = Modifier.align(Alignment.CenterVertically),
-                        shape = RoundedCornerShape(16.dp),
-                        color = when (status) {
-                            MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
-                            MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
-                            MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
-                            MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.secondary
-                            MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
-                            MediaStatus.DELETED -> MaterialTheme.colorScheme.error
-                        }
-                    ) {
-                        Text(
-                            text = MediaStatus.getDisplayName(status),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = when (status) {
-                                MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
-                                MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
-                                MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
-                                MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.onSecondary
-                                MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
-                                MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
-                            }
-                        )
+            val status = item.getDisplayStatus()
+            val canRequest = !item.hasExistingRequest() || status == MediaStatus.PARTIALLY_AVAILABLE
+
+            if (item.hasExistingRequest() && status != null && status != MediaStatus.PARTIALLY_AVAILABLE) {
+                Surface(
+                    modifier = Modifier.align(Alignment.CenterVertically),
+                    shape = RoundedCornerShape(16.dp),
+                    color = when (status) {
+                        MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
+                        MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
+                        MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
+                        MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.secondary
+                        MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
+                        MediaStatus.DELETED -> MaterialTheme.colorScheme.error
                     }
+                ) {
+                    Text(
+                        text = MediaStatus.getDisplayName(status),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = when (status) {
+                            MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
+                            MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
+                            MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
+                            MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.onSecondary
+                            MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
+                            MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
+                        }
+                    )
                 }
-            } else {
+            }
+
+            if (canRequest) {
                 IconButton(
                     onClick = onRequestClick,
                     modifier = Modifier.align(Alignment.CenterVertically)

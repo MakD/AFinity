@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.repository.JellyseerrRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,9 +26,27 @@ class RequestsViewModel @Inject constructor(
 
     val isAuthenticated = jellyseerrRepository.isAuthenticated
 
+    private val _currentUser = MutableStateFlow<com.makd.afinity.data.models.jellyseerr.JellyseerrUser?>(null)
+    val currentUser: StateFlow<com.makd.afinity.data.models.jellyseerr.JellyseerrUser?> = _currentUser.asStateFlow()
+
     init {
         loadRequests()
         loadDiscoverContent()
+        loadCurrentUser()
+    }
+
+    private fun loadCurrentUser() {
+        viewModelScope.launch {
+            jellyseerrRepository.getCurrentUser().fold(
+                onSuccess = { user ->
+                    _currentUser.value = user
+                    Timber.d("Loaded current user: ${user.displayName}, isAdmin: ${user.permissions}")
+                },
+                onFailure = { error ->
+                    Timber.e(error, "Failed to load current user")
+                }
+            )
+        }
     }
 
     fun loadRequests() {
@@ -111,7 +130,18 @@ class RequestsViewModel @Inject constructor(
                             it.copy(
                                 isProcessingRequest = false,
                                 requests = it.requests.map { request ->
-                                    if (request.id == requestId) updatedRequest else request
+                                    if (request.id == requestId) {
+                                        updatedRequest.copy(
+                                            media = updatedRequest.media.copy(
+                                                title = request.media.title,
+                                                name = request.media.name,
+                                                posterPath = request.media.posterPath,
+                                                backdropPath = request.media.backdropPath,
+                                                releaseDate = request.media.releaseDate,
+                                                firstAirDate = request.media.firstAirDate
+                                            )
+                                        )
+                                    } else request
                                 }
                             )
                         }
@@ -150,7 +180,18 @@ class RequestsViewModel @Inject constructor(
                             it.copy(
                                 isProcessingRequest = false,
                                 requests = it.requests.map { request ->
-                                    if (request.id == requestId) updatedRequest else request
+                                    if (request.id == requestId) {
+                                        updatedRequest.copy(
+                                            media = updatedRequest.media.copy(
+                                                title = request.media.title,
+                                                name = request.media.name,
+                                                posterPath = request.media.posterPath,
+                                                backdropPath = request.media.backdropPath,
+                                                releaseDate = request.media.releaseDate,
+                                                firstAirDate = request.media.firstAirDate
+                                            )
+                                        )
+                                    } else request
                                 }
                             )
                         }
@@ -295,11 +336,17 @@ class RequestsViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isLoadingDiscover = true) }
 
-                val trendingResult = jellyseerrRepository.getTrending()
-                val popularMoviesResult = jellyseerrRepository.getDiscoverMovies()
-                val popularTvResult = jellyseerrRepository.getDiscoverTv()
-                val upcomingMoviesResult = jellyseerrRepository.getUpcomingMovies()
-                val upcomingTvResult = jellyseerrRepository.getUpcomingTv()
+                val trendingDeferred = async { jellyseerrRepository.getTrending() }
+                val popularMoviesDeferred = async { jellyseerrRepository.getDiscoverMovies() }
+                val popularTvDeferred = async { jellyseerrRepository.getDiscoverTv() }
+                val upcomingMoviesDeferred = async { jellyseerrRepository.getUpcomingMovies() }
+                val upcomingTvDeferred = async { jellyseerrRepository.getUpcomingTv() }
+
+                val trendingResult = trendingDeferred.await()
+                val popularMoviesResult = popularMoviesDeferred.await()
+                val popularTvResult = popularTvDeferred.await()
+                val upcomingMoviesResult = upcomingMoviesDeferred.await()
+                val upcomingTvResult = upcomingTvDeferred.await()
 
                 _uiState.update {
                     it.copy(

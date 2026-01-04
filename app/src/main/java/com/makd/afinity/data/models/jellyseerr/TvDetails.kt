@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 data class TvDetails(
     @SerialName("id")
     val id: Int,
+    @SerialName("title")
+    val title: String? = null,
     @SerialName("name")
     val name: String? = null,
     @SerialName("overview")
@@ -15,6 +17,8 @@ data class TvDetails(
     val posterPath: String? = null,
     @SerialName("backdropPath")
     val backdropPath: String? = null,
+    @SerialName("releaseDate")
+    val releaseDate: String? = null,
     @SerialName("numberOfSeason")
     val numberOfSeason: Int? = null,
     @SerialName("numberOfEpisodes")
