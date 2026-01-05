@@ -26,7 +26,7 @@ A native Android client for Jellyfin servers built with Jetpack Compose and Mate
 <img src="https://img.shields.io/badge/Jellyfin%20Server-10.10.x-AA5CC3?style=for-the-badge&logo=jellyfin&logoColor=white&labelColor=000000" alt="Server Version"/>
 </p>
 
-Afinity provides a clean, responsive interface for accessing your Jellyfin media library on Android devices. The app focuses on delivering smooth playback performance and an intuitive browsing experience.
+Afinity provides a clean, responsive interface for accessing your Jellyfin media library on Android devices. Browse and stream your content with smooth playback performance, discover new media through personalized recommendations, and request movies and TV shows directly through Seerr integration.
 
 ## Reach out
 
@@ -40,6 +40,7 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
 |------------|------------|
 | **Media Playback** | - Hardware-accelerated video playback with LibMPV<br>- Multiple audio and subtitle track support<br>- Resume functionality across sessions<br>- Trickplay navigation with thumbnail previews<br>- Media Segments Support (Intro/Outro Skipper) |
 | **Content Discovery** | - Library browsing by content type<br>- Search and filtering capabilities<br>- Favorites management<br>- Cast and crew information |
+| **Seerr Integration** | - Request movies and TV shows directly from the app<br>- Browse trending, popular, and upcoming content<br>- Search integration with request filter<br>- Track request status (Pending, Approved, Available)<br>- Approve / Reject incoming requests (admin only) |
 | **Interface** | - Material 3 design with system theming<br>- Responsive layouts for different screen sizes<br>- Gesture-based player controls<br>- Dark and light theme support |
 | **Server Integration** | - Secure authentication<br>- Playback progress synchronization<br>- Multiple quality options<br>- Background library updates |
 
@@ -96,6 +97,17 @@ cd AFinity
 
 For remote access, ensure your Jellyfin server is configured for external connections.
 
+### Jellyseerr Setup (Optional)
+1. Open Settings > General
+2. Enable Jellyseerr toggle
+3. Enter your Jellyseerr server URL
+4. Choose authentication method:
+   - **Jellyfin**: Use your Jellyfin credentials
+   - **Local**: Use your Jellyseerr email and password
+5. Tap "Connect"
+
+Once connected, the Requests tab will appear in the bottom navigation.
+
 ## Technical Details
 
 - **Language**: Kotlin
@@ -107,6 +119,8 @@ For remote access, ensure your Jellyfin server is configured for external connec
 - **Networking**: Retrofit + Jellyfin SDK
 - **Images**: Coil with BlurHash
 - **Storage**: Room
+- **Tink** - Encryption library for secure credential storage
+- **Jetpack DataStore** - Modern data storage solution
 
 ## Development
 
@@ -132,7 +146,7 @@ For remote access, ensure your Jellyfin server is configured for external connec
 - [X] Download management for offline viewing
 - [ ] Adaptive streaming with quality selection (transcoding support)
 - [ ] Chromecast support
-- [ ] Enhanced accessibility features
+- [X] Enhanced accessibility features
 - [ ] Multi-user profile switching
 - [ ] Multi-server support
 
@@ -162,6 +176,7 @@ For remote access, ensure your Jellyfin server is configured for external connec
 - [Jellyfin](https://jellyfin.org/) - Open source media server
 - [MPV](https://mpv.io/) - Media player engine
 - [libmpv-android](https://github.com/jarnedemeulemeester/libmpv-android) by Jarne Demeulemeester - Android MPV integration
+- [Seerr](https://github.com/seerr-team/seerr) - Open-source media request and discovery manager for Jellyfin, Plex, and Emby.
 
 ## Privacy
 
