@@ -28,4 +28,16 @@ interface SecurePreferencesRepository {
     suspend fun getApiKey(): String?
 
     suspend fun clearAllSecureData()
+
+    suspend fun saveJellyseerrServerUrl(url: String)
+    suspend fun getJellyseerrServerUrl(): String?
+    suspend fun saveJellyseerrCookie(cookie: String)
+    suspend fun getJellyseerrCookie(): String?
+    suspend fun saveJellyseerrUsername(username: String)
+    suspend fun getJellyseerrUsername(): String?
+    suspend fun clearJellyseerrAuthData()
+    suspend fun hasValidJellyseerrAuth(): Boolean
+
+    fun getCachedJellyseerrServerUrl(): String?
+    fun getCachedJellyseerrCookie(): String?
 }

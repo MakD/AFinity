@@ -45,6 +45,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.ui.favorites.FavoritesScreen
@@ -54,6 +55,7 @@ import com.makd.afinity.ui.libraries.LibrariesScreen
 import com.makd.afinity.ui.library.LibraryContentScreen
 import com.makd.afinity.ui.main.MainViewModel
 import com.makd.afinity.ui.person.PersonScreen
+import com.makd.afinity.ui.requests.RequestsScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
 import com.makd.afinity.ui.settings.LicensesScreen
@@ -80,6 +82,10 @@ fun MainNavigation(
         hiltViewModel<MainNavigationViewModel>().watchlistRepository
     val watchlistCount by watchlistRepository.getWatchlistCountFlow()
         .collectAsStateWithLifecycle(initialValue = 0)
+    val jellyseerrRepository: JellyseerrRepository =
+        hiltViewModel<MainNavigationViewModel>().jellyseerrRepository
+    val isJellyseerrAuthenticated by jellyseerrRepository.isAuthenticated
+        .collectAsStateWithLifecycle()
     val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
     val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val navController = rememberNavController()
@@ -150,6 +156,10 @@ fun MainNavigation(
                 }
 
                 if (destination == Destination.WATCHLIST && watchlistCount == 0) {
+                    return@forEach
+                }
+
+                if (destination == Destination.REQUESTS && !isJellyseerrAuthenticated) {
                     return@forEach
                 }
 
@@ -395,6 +405,23 @@ fun MainNavigation(
                     modifier = Modifier.fillMaxSize(),
                     mainUiState = mainUiState,
                     navController = navController
+                )
+            }
+
+            composable(Destination.REQUESTS.route) {
+                RequestsScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onSearchClick = {
+                        navController.navigate(Destination.SEARCH_ROUTE)
+                    },
+                    onProfileClick = {
+                        val route = Destination.createSettingsRoute()
+                        navController.navigate(route)
+                    },
+                    mainUiState = mainUiState,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 

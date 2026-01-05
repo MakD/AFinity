@@ -3,6 +3,8 @@ package com.makd.afinity.di
 import android.content.Context
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.core.AppConstants
+import com.makd.afinity.data.network.JellyseerrApiService
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -11,6 +13,8 @@ import dagger.hilt.components.SingletonComponent
 import okhttp3.Cache
 import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
@@ -20,6 +24,8 @@ import org.jellyfin.sdk.api.okhttp.OkHttpFactory
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
+import retrofit2.Retrofit
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import timber.log.Timber
 import java.io.File
 import java.util.concurrent.Executors
@@ -30,6 +36,10 @@ import javax.inject.Singleton
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class DownloadClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class JellyseerrClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -172,5 +182,105 @@ object NetworkModule {
     @Singleton
     fun provideApiClient(jellyfin: Jellyfin): ApiClient {
         return jellyfin.createApi()
+    }
+
+    private fun normalizeJellyseerrUrl(raw: String?): String {
+        if (raw.isNullOrBlank()) {
+            throw IllegalStateException("Jellyseerr server URL not configured")
+        }
+
+        var base = raw.trim()
+
+        if (!base.startsWith("http://") && !base.startsWith("https://")) {
+            base = "http://$base"
+        }
+
+        if (!base.endsWith("/")) {
+            base += "/"
+        }
+
+        return base
+    }
+
+    @Provides
+    @Singleton
+    @JellyseerrClient
+    fun provideJellyseerrOkHttpClient(
+        baseOkHttpClient: OkHttpClient,
+        securePreferencesRepository: SecurePreferencesRepository
+    ): OkHttpClient {
+        return baseOkHttpClient.newBuilder()
+            .addInterceptor { chain ->
+                val originalRequest = chain.request()
+
+                val savedUrl = securePreferencesRepository.getCachedJellyseerrServerUrl()
+                val currentBaseUrl = try {
+                    if (!savedUrl.isNullOrBlank()) {
+                        normalizeJellyseerrUrl(savedUrl)
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+
+                if (currentBaseUrl == null) {
+                    throw IllegalStateException("Jellyseerr server URL not configured. Please configure the server URL first.")
+                }
+
+                val newUrl = currentBaseUrl.toHttpUrlOrNull()?.newBuilder()
+                    ?.addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
+                    ?.apply {
+                        for (i in 0 until originalRequest.url.querySize) {
+                            addQueryParameter(
+                                originalRequest.url.queryParameterName(i),
+                                originalRequest.url.queryParameterValue(i)
+                            )
+                        }
+                    }
+                    ?.build()
+                    ?: throw IllegalStateException("Failed to build Jellyseerr URL")
+
+                val newRequest = originalRequest.newBuilder()
+                    .url(newUrl)
+                    .apply {
+                        val cookie = securePreferencesRepository.getCachedJellyseerrCookie()
+                        cookie?.let {
+                            addHeader("Cookie", it)
+                        }
+                        addHeader("Content-Type", "application/json")
+                    }
+                    .build()
+
+                chain.proceed(newRequest)
+            }
+            .build()
+    }
+
+    private val jellyseerrJson = kotlinx.serialization.json.Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        encodeDefaults = true
+    }
+
+    @Provides
+    @Singleton
+    fun provideJellyseerrRetrofit(
+        @JellyseerrClient okHttpClient: OkHttpClient
+    ): Retrofit {
+        val contentType = "application/json".toMediaType()
+        val baseUrl = "http://placeholder.jellyseerr/"
+
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(jellyseerrJson.asConverterFactory(contentType))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideJellyseerrApiService(retrofit: Retrofit): JellyseerrApiService {
+        return retrofit.create(JellyseerrApiService::class.java)
     }
 }

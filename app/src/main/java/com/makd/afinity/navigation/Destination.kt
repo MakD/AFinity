@@ -31,6 +31,12 @@ enum class Destination(
         title = "Watchlist",
         selectedIconRes = R.drawable.ic_bookmarks_filled,
         unselectedIconRes = R.drawable.ic_bookmarks
+    ),
+    REQUESTS(
+        route = "requests",
+        title = "Requests",
+        selectedIconRes = R.drawable.ic_plus_filled,
+        unselectedIconRes = R.drawable.ic_plus
     );
 
     companion object {
