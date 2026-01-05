@@ -99,6 +99,12 @@ fun JellyseerrBottomSheet(
                 onValueChange = viewModel::updateServerUrl,
                 label = { Text("Server URL") },
                 placeholder = { Text("https://jellyseerr.example.com") },
+                leadingIcon = {
+                    Icon(
+                        painterResource(id = R.drawable.ic_link_rotated),
+                        contentDescription = null
+                    )
+                },
                 supportingText = uiState.serverUrlError?.let { { Text(it) } },
                 isError = uiState.serverUrlError != null,
                 enabled = !uiState.isLoading,
@@ -162,6 +168,12 @@ fun JellyseerrBottomSheet(
                 placeholder = {
                     Text(if (uiState.useJellyfinAuth) "username" else "user@example.com")
                 },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_user),
+                        contentDescription = null
+                    )
+                },
                 supportingText = uiState.emailError?.let { { Text(it) } },
                 isError = uiState.emailError != null,
                 enabled = !uiState.isLoading,
@@ -190,6 +202,12 @@ fun JellyseerrBottomSheet(
                 onValueChange = viewModel::updatePassword,
                 label = {
                     Text(if (uiState.useJellyfinAuth) "Jellyfin Password" else "Seerr Password")
+                },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_lock_filled),
+                        contentDescription = null
+                    )
                 },
                 supportingText = uiState.passwordError?.let { { Text(it) } },
                 isError = uiState.passwordError != null,
