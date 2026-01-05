@@ -35,8 +35,8 @@ enum class Destination(
     REQUESTS(
         route = "requests",
         title = "Requests",
-        selectedIconRes = R.drawable.ic_request_filled,
-        unselectedIconRes = R.drawable.ic_request
+        selectedIconRes = R.drawable.ic_plus_filled,
+        unselectedIconRes = R.drawable.ic_plus
     );
 
     companion object {

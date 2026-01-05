@@ -315,7 +315,7 @@ private fun ErrorView(
             modifier = Modifier.padding(32.dp)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_error),
+                painter = painterResource(id = R.drawable.ic_exclamation_circle),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.height(48.dp)

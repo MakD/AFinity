@@ -57,7 +57,7 @@ fun DiscoverContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_error),
+                    painter = painterResource(id = R.drawable.ic_exclamation_circle),
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
