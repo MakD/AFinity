@@ -20,6 +20,8 @@ import org.jellyfin.sdk.api.operations.SessionApi
 import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.ClientCapabilitiesDto
+import org.jellyfin.sdk.model.api.GeneralCommandType
+import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -377,9 +379,23 @@ class JellyfinAuthRepository @Inject constructor(
         try {
             val sessionApi = SessionApi(apiClient)
             val capabilities = ClientCapabilitiesDto(
-                playableMediaTypes = emptyList(),
-                supportedCommands = emptyList(),
-                supportsMediaControl = false,
+                playableMediaTypes = listOf(MediaType.VIDEO),
+                supportedCommands = listOf(
+                    GeneralCommandType.VOLUME_UP,
+                    GeneralCommandType.VOLUME_DOWN,
+                    GeneralCommandType.TOGGLE_MUTE,
+                    GeneralCommandType.SET_AUDIO_STREAM_INDEX,
+                    GeneralCommandType.SET_SUBTITLE_STREAM_INDEX,
+                    GeneralCommandType.MUTE,
+                    GeneralCommandType.UNMUTE,
+                    GeneralCommandType.SET_VOLUME,
+                    GeneralCommandType.DISPLAY_MESSAGE,
+                    GeneralCommandType.PLAY,
+                    GeneralCommandType.PLAY_STATE,
+                    GeneralCommandType.PLAY_NEXT,
+                    GeneralCommandType.PLAY_MEDIA_SOURCE,
+                ),
+                supportsMediaControl = true,
                 supportsPersistentIdentifier = true,
                 deviceProfile = null,
                 appStoreUrl = null,
