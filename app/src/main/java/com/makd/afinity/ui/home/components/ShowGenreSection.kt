@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +38,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 
 @Composable
@@ -58,7 +60,7 @@ fun ShowGenreSection(
     }
 
     val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = cardWidth / CardDimensions.ASPECT_RATIO_PORTRAIT
+    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
@@ -97,9 +99,13 @@ private fun ShowGenreSkeletonRow(
     cardWidth: Dp,
     height: Dp
 ) {
-    LazyRow(modifier = Modifier.height(height)) {
-        items(5) {
-            Column(modifier = Modifier.padding(end = 12.dp)) {
+    LazyRow(
+        modifier = Modifier.height(height),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 0.dp)
+    ) {
+        items(6) {
+            Column(modifier = Modifier.width(cardWidth)) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()

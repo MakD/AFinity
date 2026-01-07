@@ -39,6 +39,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 
 @Composable
@@ -60,7 +61,7 @@ fun GenreSection(
     }
 
     val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = cardWidth / CardDimensions.ASPECT_RATIO_PORTRAIT
+    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
 
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
