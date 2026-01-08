@@ -175,7 +175,9 @@ class PlayerActivity : ComponentActivity() {
 
         if (pipGestureEnabled &&
             viewModel.player.isPlaying &&
-            !viewModel.uiState.value.isControlsLocked
+            !viewModel.uiState.value.isControlsLocked &&
+            !isFinishing &&
+            !isDestroyed
         ) {
             enterPictureInPicture()
         }
@@ -241,7 +243,7 @@ class PlayerActivity : ComponentActivity() {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            builder.setAutoEnterEnabled(viewModel.player.isPlaying)
+            builder.setAutoEnterEnabled(false)
         }
 
         return builder.build()
