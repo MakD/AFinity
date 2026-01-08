@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -67,14 +69,10 @@ fun PlayerScreen(
         .collectAsStateWithLifecycle(
             initialValue = SubtitlePreferences.DEFAULT
         )
+    var seekOriginTime by remember { mutableLongStateOf(0L) }
+    var dragStartVolume by remember { mutableStateOf(-1) }
+    var dragStartBrightness by remember { mutableFloatStateOf(-1f) }
     val lifecycleOwner = LocalLifecycleOwner.current
-
-    DisposableEffect(Unit) {
-        onDispose {
-            Timber.d("PlayerScreen disposed - clearing playlist")
-            viewModel.clearPlaylist()
-        }
-    }
 
     LaunchedEffect(item.id, mediaSourceId) {
         Timber.d("Loading media: ${item.name}")
@@ -138,38 +136,54 @@ fun PlayerScreen(
             .background(Color.Black)
     ) {
         GestureHandler(
-            onSingleTap = {
-                Timber.d("GESTURE: Single tap detected!")
-                viewModel.onSingleTap()
-            },
+            onSingleTap = { viewModel.onSingleTap() },
             onDoubleTap = { isForward ->
-                Timber.d("GESTURE: Double tap detected! Forward: $isForward")
+                if (!uiState.isControlsLocked) viewModel.onDoubleTapSeek(isForward)
+            },
+            onVolumeGesture = { percent, isActive ->
                 if (!uiState.isControlsLocked) {
-                    viewModel.onDoubleTapSeek(isForward)
+                    if (!isActive) {
+                        dragStartVolume = -1
+                    } else {
+                        if (dragStartVolume == -1) {
+                            dragStartVolume = uiState.volumeLevel
+                        }
+
+                        val addedVolume = (percent * 50).toInt()
+                        val targetVolume = (dragStartVolume + addedVolume).coerceIn(0, 100)
+
+                        viewModel.handlePlayerEvent(PlayerEvent.SetVolume(targetVolume))
+                    }
                 }
             },
-            onBrightnessGesture = { delta ->
+            onBrightnessGesture = { percent, isActive ->
                 if (!uiState.isControlsLocked) {
-                    viewModel.onScreenBrightnessGesture(delta)
-                }
-            },
-            onVolumeGesture = { delta ->
-                if (!uiState.isControlsLocked) {
-                    viewModel.onVolumeGesture(delta)
-                }
-            },
-            onSeekGesture = { delta ->
-                if (!uiState.isControlsLocked) {
-                    viewModel.onSeekGestureChange(delta)
+                    if (!isActive) {
+                        dragStartBrightness = -1f
+                    } else {
+                        if (dragStartBrightness == -1f) {
+                            dragStartBrightness = uiState.brightnessLevel
+                        }
+                        val targetBrightness = (dragStartBrightness + percent).coerceIn(0f, 1f)
+                        viewModel.onScreenBrightnessGesture(targetBrightness, isAbsolute = true)
+                    }
                 }
             },
             onSeekPreview = { isActive ->
                 if (!uiState.isControlsLocked) {
                     if (isActive) {
+                        seekOriginTime = viewModel.player.currentPosition
                         viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragStart)
                     } else {
                         viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragFinished)
                     }
+                }
+            },
+            onSeekGesture = { delta ->
+                if (!uiState.isControlsLocked) {
+                    val timeShiftMs = (delta * uiState.duration).toLong()
+                    val targetTime = (seekOriginTime + timeShiftMs).coerceIn(0L, uiState.duration)
+                    viewModel.updateTrickplayPreview(targetTime)
                 }
             },
             modifier = Modifier.fillMaxSize()

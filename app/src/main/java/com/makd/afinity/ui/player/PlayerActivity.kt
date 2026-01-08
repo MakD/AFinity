@@ -173,8 +173,7 @@ class PlayerActivity : ComponentActivity() {
         super.onUserLeaveHint()
         val pipGestureEnabled = runBlocking { preferencesRepository.getPipGestureEnabled() }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S &&
-            pipGestureEnabled &&
+        if (pipGestureEnabled &&
             viewModel.player.isPlaying &&
             !viewModel.uiState.value.isControlsLocked
         ) {

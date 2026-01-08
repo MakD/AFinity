@@ -101,6 +101,7 @@ class PlayerViewModel @Inject constructor(
 
     var onAutoplayNextEpisode: ((AfinityItem) -> Unit)? = null
     var enterPictureInPicture: (() -> Unit)? = null
+    var updatePipParams: (() -> Unit)? = null
     private val screenAspectRatio: Float by lazy {
         val metrics = context.resources.displayMetrics
         metrics.widthPixels.toFloat() / metrics.heightPixels.toFloat()
@@ -322,6 +323,7 @@ class PlayerViewModel @Inject constructor(
             updateUiState { it.copy(isLoading = false) }
         }
         updatePlayerState()
+        updatePipParams?.invoke()
     }
 
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -364,7 +366,22 @@ class PlayerViewModel @Inject constructor(
                     player.seekTo(newPos)
                 }
 
-                is PlayerEvent.SetVolume -> volumeManager.setVolume(event.volume)
+                is PlayerEvent.SetVolume -> {
+                    volumeManager.setVolume(event.volume)
+
+                    updateUiState {
+                        it.copy(
+                            showVolumeIndicator = true,
+                            volumeLevel = event.volume
+                        )
+                    }
+
+                    volumeHideJob?.cancel()
+                    volumeHideJob = viewModelScope.launch {
+                        delay(2000)
+                        updateUiState { it.copy(showVolumeIndicator = false) }
+                    }
+                }
                 is PlayerEvent.SetBrightness -> { /* Handle at UI level */
                 }
 
@@ -401,10 +418,9 @@ class PlayerViewModel @Inject constructor(
                     updateUiState {
                         it.copy(
                             isSeeking = true,
-                            dragStartPosition = uiState.value.currentPosition
                         )
                     }
-                    onSeekBarPreview(uiState.value.currentPosition, true)
+                    onSeekBarPreview(player.currentPosition, true)
                 }
 
                 is PlayerEvent.OnSeekBarValueChange -> {
@@ -421,8 +437,7 @@ class PlayerViewModel @Inject constructor(
                             showTrickplayPreview = false,
                             trickplayPreviewImage = null,
                             trickplayPreviewPosition = 0L,
-                            currentPosition = finalPos,
-                            dragStartPosition = 0L
+                            currentPosition = finalPos
                         )
                     }
                     onSeekBarPreview(0, false)
@@ -1067,15 +1082,15 @@ class PlayerViewModel @Inject constructor(
 
     private var brightnessHideJob: Job? = null
 
-    fun onScreenBrightnessGesture(delta: Float) {
+    fun onScreenBrightnessGesture(value: Float, isAbsolute: Boolean = false) {
         var currentLevel = _uiState.value.brightnessLevel
+        if (currentLevel < 0f) currentLevel = getSystemBrightness()
 
-        if (currentLevel < 0f) {
-            currentLevel = getSystemBrightness()
+        val newBrightness = if (isAbsolute) {
+            value.coerceIn(0.0f, 1.0f)
+        } else {
+            (currentLevel + value * gestureConfig.brightnessStepSize).coerceIn(0.0f, 1.0f)
         }
-
-        val newBrightness = (currentLevel + delta * gestureConfig.brightnessStepSize)
-            .coerceIn(0.0f, 1.0f)
 
         updateUiState {
             it.copy(
@@ -1115,19 +1130,14 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun onSeekGestureChange(delta: Float) {
+    fun updateTrickplayPreview(targetTime: Long) {
         val duration = uiState.value.duration
         if (duration <= 0) return
-
-        val startPosition = uiState.value.dragStartPosition
-        val maxSeekMs = 1200000L
-        val seekDelta = (delta * maxSeekMs).toLong()
-        val newPosition = (startPosition + seekDelta).coerceIn(0L, duration)
-
-        handlePlayerEvent(PlayerEvent.OnSeekBarValueChange(newPosition))
+        val safeTime = targetTime.coerceIn(0L, duration)
+        handlePlayerEvent(PlayerEvent.OnSeekBarValueChange(safeTime))
     }
 
-    fun onSeekBarPreview(position: Long, isActive: Boolean) {
+    private fun onSeekBarPreview(position: Long, isActive: Boolean) {
         if (!isActive) {
             updateUiState {
                 it.copy(
@@ -1140,8 +1150,10 @@ class PlayerViewModel @Inject constructor(
         }
 
         currentTrickplay?.let { trickplay ->
-            val index = (position / trickplay.interval).toInt()
-                .coerceIn(0, trickplay.images.size - 1)
+            if (trickplay.images.isEmpty() || trickplay.interval <= 0) return
+
+            val rawIndex = (position / trickplay.interval).toInt()
+            val index = rawIndex.coerceIn(0, trickplay.images.size - 1)
 
             updateUiState {
                 it.copy(
@@ -1206,6 +1218,7 @@ class PlayerViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
 
+        clearPlaylist()
         stopPlayback()
 
         progressReportingJob?.cancel()
