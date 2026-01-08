@@ -134,6 +134,8 @@ fun PlayerOptionsScreen(
                     skipOutroEnabled = uiState.skipOutroEnabled,
                     useExoPlayer = uiState.useExoPlayer,
                     pipGestureEnabled = uiState.pipGestureEnabled,
+                    pipBackgroundPlay = uiState.pipBackgroundPlay,
+                    onPipBackgroundPlayToggle = viewModel::togglePipBackgroundPlay,
                     onAutoPlayToggle = viewModel::toggleAutoPlay,
                     onSkipIntroToggle = viewModel::toggleSkipIntro,
                     onSkipOutroToggle = viewModel::toggleSkipOutro,
@@ -176,11 +178,13 @@ private fun PlaybackOptionsSection(
     skipOutroEnabled: Boolean,
     useExoPlayer: Boolean,
     pipGestureEnabled: Boolean,
+    pipBackgroundPlay: Boolean,
     onAutoPlayToggle: (Boolean) -> Unit,
     onSkipIntroToggle: (Boolean) -> Unit,
     onSkipOutroToggle: (Boolean) -> Unit,
     onUseExoPlayerToggle: (Boolean) -> Unit,
     onPipGestureToggle: (Boolean) -> Unit,
+    onPipBackgroundPlayToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     PlayerSettingsSection(
@@ -207,6 +211,19 @@ private fun PlaybackOptionsSection(
             subtitle = "Use home button or gesture to enter picture-in-picture while video is playing",
             checked = pipGestureEnabled,
             onCheckedChange = onPipGestureToggle
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+
+        PlayerSettingsSwitchItem(
+            icon = painterResource(id = R.drawable.ic_headphones),
+            title = "Background Play in PiP",
+            subtitle = "Continue playing audio when screen is turned off while in Picture-in-Picture mode",
+            checked = pipBackgroundPlay,
+            onCheckedChange = onPipBackgroundPlayToggle
         )
 
         HorizontalDivider(

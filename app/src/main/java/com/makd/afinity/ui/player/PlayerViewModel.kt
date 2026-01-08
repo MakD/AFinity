@@ -106,7 +106,6 @@ class PlayerViewModel @Inject constructor(
         val metrics = context.resources.displayMetrics
         metrics.widthPixels.toFloat() / metrics.heightPixels.toFloat()
     }
-    val playlistState = playlistManager.playlistState
 
     init {
         initializePlayer()
@@ -114,11 +113,7 @@ class PlayerViewModel @Inject constructor(
         startProgressReporting()
         initializeVideoZoomMode()
         initializeLogoAutoHide()
-    }
-
-    private fun initializeBrightness() {
-        val systemBrightness = getSystemBrightness()
-        _uiState.value = _uiState.value.copy(brightnessLevel = systemBrightness)
+        initializeBackgroundPlay()
     }
 
     private fun initializeVideoZoomMode() {
@@ -131,6 +126,14 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             val logoAutoHide = preferencesRepository.getLogoAutoHide()
             updateUiState { it.copy(logoAutoHide = logoAutoHide) }
+        }
+    }
+
+    private fun initializeBackgroundPlay() {
+        viewModelScope.launch {
+            preferencesRepository.getPipBackgroundPlayFlow().collect { enabled ->
+                updateUiState { it.copy(pipBackgroundPlay = enabled) }
+            }
         }
     }
 
@@ -694,15 +697,6 @@ class PlayerViewModel @Inject constructor(
         updateCurrentTrackSelections()
     }
 
-    private fun getMimeType(codec: String): String {
-        return when (codec.lowercase()) {
-            "subrip", "srt" -> MimeTypes.APPLICATION_SUBRIP
-            "webvtt", "vtt" -> MimeTypes.APPLICATION_SUBRIP
-            "ass", "ssa" -> MimeTypes.TEXT_SSA
-            else -> MimeTypes.TEXT_UNKNOWN
-        }
-    }
-
     private fun loadTrickplayData() {
         val currentItem = uiState.value.currentItem ?: return
 
@@ -936,10 +930,6 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun onSkipSegment(segment: AfinitySegment) {
-        handlePlayerEvent(PlayerEvent.SkipSegment(segment))
-    }
-
     fun initializePlaylist(item: AfinityItem) {
         viewModelScope.launch {
             playlistManager.initializePlaylist(item)
@@ -972,44 +962,8 @@ class PlayerViewModel @Inject constructor(
         handlePlayerEvent(PlayerEvent.SeekRelative(delta))
     }
 
-    fun onPlayPauseClick() {
-        if (player.isPlaying) {
-            handlePlayerEvent(PlayerEvent.Pause)
-        } else {
-            handlePlayerEvent(PlayerEvent.Play)
-        }
-    }
-
-    fun onSeekBarDrag(position: Long) {
-        handlePlayerEvent(PlayerEvent.Seek(position))
-    }
-
-    fun onFullscreenToggle() {
-        handlePlayerEvent(PlayerEvent.ToggleFullscreen)
-    }
-
-    fun onAudioTrackSelect(index: Int) {
-        switchToTrack(C.TRACK_TYPE_AUDIO, index)
-    }
-
-    fun onSubtitleTrackSelect(index: Int) {
-        switchToTrack(C.TRACK_TYPE_TEXT, index)
-    }
-
-    fun onPlaybackSpeedChange(speed: Float) {
-        handlePlayerEvent(PlayerEvent.SetPlaybackSpeed(speed))
-    }
-
     private fun onLockToggle() {
         updateUiState { it.copy(isControlsLocked = !it.isControlsLocked) }
-    }
-
-    fun onSeekBackward() {
-        handlePlayerEvent(PlayerEvent.SeekRelative(-10000L))
-    }
-
-    fun onSeekForward() {
-        handlePlayerEvent(PlayerEvent.SeekRelative(10000L))
     }
 
     fun onNextEpisode() {
@@ -1109,28 +1063,6 @@ class PlayerViewModel @Inject constructor(
     }
 
     private var volumeHideJob: Job? = null
-
-    fun onVolumeGesture(delta: Float) {
-        val currentVolume = volumeManager.getCurrentVolume()
-
-        val volumeChange = (delta * gestureConfig.volumeStepSize).toInt()
-        val newVolume = (currentVolume + volumeChange).coerceIn(0, 100)
-
-        volumeManager.setVolume(newVolume)
-
-        updateUiState {
-            it.copy(
-                showVolumeIndicator = true,
-                volumeLevel = newVolume
-            )
-        }
-
-        volumeHideJob?.cancel()
-        volumeHideJob = viewModelScope.launch {
-            delay(2000)
-            updateUiState { it.copy(showVolumeIndicator = false) }
-        }
-    }
 
     fun updateTrickplayPreview(targetTime: Long) {
         val duration = uiState.value.duration
@@ -1284,6 +1216,7 @@ class PlayerViewModel @Inject constructor(
         val dragStartPosition: Long = 0L,
         val showRemainingTime: Boolean = false,
         val isInPictureInPictureMode: Boolean = false,
+        val pipBackgroundPlay: Boolean = true,
         val isControlsVisible: Boolean = true,
         val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
         val logoAutoHide: Boolean = false

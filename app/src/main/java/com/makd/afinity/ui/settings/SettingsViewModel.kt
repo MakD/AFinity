@@ -134,6 +134,12 @@ class SettingsViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getPipBackgroundPlayFlow().collect {
+                _uiState.value = _uiState.value.copy(pipBackgroundPlay = it)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getOfflineModeFlow().collect {
                 _manualOfflineMode.value = it
             }
@@ -205,6 +211,17 @@ class SettingsViewModel @Inject constructor(
                 Timber.d("PIP gesture set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle PIP gesture")
+            }
+        }
+    }
+
+    fun togglePipBackgroundPlay(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setPipBackgroundPlay(enabled)
+                Timber.d("PIP background play set to: $enabled")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle PIP background play")
             }
         }
     }
@@ -346,6 +363,7 @@ data class SettingsUiState(
     val dynamicColors: Boolean = true,
     val autoPlay: Boolean = true,
     val pipGestureEnabled: Boolean = false,
+    val pipBackgroundPlay: Boolean = true,
     val skipIntroEnabled: Boolean = true,
     val skipOutroEnabled: Boolean = true,
     val useExoPlayer: Boolean = true,

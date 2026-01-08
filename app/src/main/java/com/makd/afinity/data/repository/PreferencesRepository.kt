@@ -56,6 +56,10 @@ interface PreferencesRepository {
     suspend fun getPipGestureEnabled(): Boolean
     fun getPipGestureEnabledFlow(): Flow<Boolean>
 
+    suspend fun setPipBackgroundPlay(enabled: Boolean)
+    suspend fun getPipBackgroundPlay(): Boolean
+    fun getPipBackgroundPlayFlow(): Flow<Boolean>
+
     suspend fun setGridLayout(enabled: Boolean)
     suspend fun getGridLayout(): Boolean
 

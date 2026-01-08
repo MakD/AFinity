@@ -10,7 +10,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.os.Process
 import android.util.Rational
@@ -31,7 +30,6 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -277,8 +275,16 @@ class PlayerActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
 
+        val powerManager = getSystemService(POWER_SERVICE) as android.os.PowerManager
+        val isScreenOn = powerManager.isInteractive
+
+        val allowBackground = viewModel.uiState.value.pipBackgroundPlay
+
         if (isInPictureInPictureMode) {
             wasPip = true
+            if (!isScreenOn && !allowBackground) {
+                viewModel.onPause()
+            }
         } else if (wasPip) {
             viewModel.stopPlayback()
             finish()
