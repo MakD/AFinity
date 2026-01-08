@@ -49,6 +49,7 @@ class PlayerActivity : ComponentActivity() {
 
     private var wasPip: Boolean = false
     private var wasZoom: Boolean = false
+    private var isResumed: Boolean = false
 
     companion object {
         private const val ACTION_PLAY_PAUSE = "com.makd.afinity.action.PLAY_PAUSE"
@@ -67,7 +68,7 @@ class PlayerActivity : ComponentActivity() {
                     } else {
                         viewModel.handlePlayerEvent(PlayerEvent.Play)
                     }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPictureInPictureMode) {
+                    if (isInPictureInPictureMode) {
                         setPictureInPictureParams(buildPipParams())
                     }
                 }
@@ -96,22 +97,15 @@ class PlayerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val filter = IntentFilter().apply {
-                addAction(ACTION_PLAY_PAUSE)
-            }
+        val filter = IntentFilter().apply {
+            addAction(ACTION_PLAY_PAUSE)
+        }
 
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    registerReceiver(pipReceiver, filter, RECEIVER_EXPORTED)
-                } else {
-                    @Suppress("UnspecifiedRegisterReceiverFlag")
-                    registerReceiver(pipReceiver, filter)
-                }
-                Timber.d("PIP receiver registered successfully")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to register PIP receiver")
-            }
+        try {
+            registerReceiver(pipReceiver, filter, RECEIVER_EXPORTED)
+            Timber.d("PIP receiver registered successfully")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to register PIP receiver")
         }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -139,6 +133,11 @@ class PlayerActivity : ComponentActivity() {
             LaunchedEffect(Unit) {
                 viewModel.enterPictureInPicture = {
                     enterPictureInPicture()
+                }
+                viewModel.updatePipParams = {
+                    if (isPipSupported) {
+                        setPictureInPictureParams(buildPipParams())
+                    }
                 }
             }
 
@@ -169,21 +168,7 @@ class PlayerActivity : ComponentActivity() {
             WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
     }
 
-    override fun onUserLeaveHint() {
-        super.onUserLeaveHint()
-        val pipGestureEnabled = runBlocking { preferencesRepository.getPipGestureEnabled() }
-
-        if (pipGestureEnabled &&
-            viewModel.player.isPlaying &&
-            !viewModel.uiState.value.isControlsLocked &&
-            !isFinishing &&
-            !isDestroyed
-        ) {
-            enterPictureInPicture()
-        }
-    }
-
-    private fun enterPictureInPicture() {
+    fun enterPictureInPicture() {
         if (!isPipSupported) {
             return
         }
@@ -196,10 +181,11 @@ class PlayerActivity : ComponentActivity() {
     }
 
     private fun buildPipParams(): PictureInPictureParams {
-        val displayAspectRatio = Rational(
-            resources.displayMetrics.widthPixels,
-            resources.displayMetrics.heightPixels
-        )
+        val playerView = viewModel.getPlayerView()
+        val viewWidth = playerView?.width ?: resources.displayMetrics.widthPixels
+        val viewHeight = playerView?.height ?: resources.displayMetrics.heightPixels
+
+        val displayAspectRatio = Rational(viewWidth, viewHeight)
 
         val videoSize = viewModel.player.videoSize
         val aspectRatio = if (videoSize.width > 0 && videoSize.height > 0) {
@@ -212,41 +198,33 @@ class PlayerActivity : ComponentActivity() {
         }
 
         val sourceRectHint = if (displayAspectRatio < aspectRatio) {
-            val space = ((resources.displayMetrics.heightPixels -
-                    (resources.displayMetrics.widthPixels.toFloat() / aspectRatio.toFloat())) / 2).toInt()
+            val space = ((viewHeight -
+                    (viewWidth.toFloat() / aspectRatio.toFloat())) / 2).toInt()
             android.graphics.Rect(
                 0,
                 space,
-                resources.displayMetrics.widthPixels,
-                (resources.displayMetrics.widthPixels.toFloat() / aspectRatio.toFloat()).toInt() + space
+                viewWidth,
+                (viewWidth.toFloat() / aspectRatio.toFloat()).toInt() + space
             )
         } else {
-            val space = ((resources.displayMetrics.widthPixels -
-                    (resources.displayMetrics.heightPixels.toFloat() * aspectRatio.toFloat())) / 2).toInt()
+            val space = ((viewWidth -
+                    (viewHeight.toFloat() * aspectRatio.toFloat())) / 2).toInt()
             android.graphics.Rect(
                 space,
                 0,
-                (resources.displayMetrics.heightPixels.toFloat() * aspectRatio.toFloat()).toInt() + space,
-                resources.displayMetrics.heightPixels
+                (viewHeight.toFloat() * aspectRatio.toFloat()).toInt() + space,
+                viewHeight
             )
         }
 
-        val builder = PictureInPictureParams.Builder()
+        val actions = buildPipActions()
+
+        return PictureInPictureParams.Builder()
             .setAspectRatio(aspectRatio)
             .setSourceRectHint(sourceRectHint)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val actions = buildPipActions()
-            if (actions.isNotEmpty()) {
-                builder.setActions(actions)
-            }
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            builder.setAutoEnterEnabled(false)
-        }
-
-        return builder.build()
+            .setActions(actions)
+            .setAutoEnterEnabled(viewModel.player.isPlaying)
+            .build()
     }
 
     override fun onPictureInPictureModeChanged(
@@ -257,15 +235,19 @@ class PlayerActivity : ComponentActivity() {
 
         viewModel.onPipModeChanged(isInPictureInPictureMode)
 
-        if (isInPictureInPictureMode) {
-            Timber.d("Entered PIP mode - keeping playback active")
-        } else {
-            Timber.d("Exited PIP mode - restoring full screen")
+        if (!isInPictureInPictureMode) {
+            window.decorView.postDelayed({
+                if (!isResumed) {
+                    viewModel.stopPlayback()
+                    finish()
+                }
+            }, 100)
         }
     }
 
     override fun onResume() {
         super.onResume()
+        isResumed = true
         hideSystemUI()
 
         if (wasPip) {
@@ -277,33 +259,48 @@ class PlayerActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+        isResumed = false
 
         if (isInPictureInPictureMode) {
             wasPip = true
-        } else {
-            viewModel.onPause()
+        }
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+
+        if (isPipSupported) {
+            setPictureInPictureParams(buildPipParams())
         }
     }
 
     override fun onStop() {
         super.onStop()
-        if (wasPip) {
+
+        if (isInPictureInPictureMode) {
+            wasPip = true
+        } else if (wasPip) {
+            viewModel.stopPlayback()
             finish()
+        } else {
+            viewModel.onPause()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                unregisterReceiver(pipReceiver)
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to unregister PIP receiver")
-            }
+
+        if (!isInPictureInPictureMode) {
+            viewModel.stopPlayback()
+        }
+
+        try {
+            unregisterReceiver(pipReceiver)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to unregister PIP receiver")
         }
     }
 
-    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
     private fun buildPipActions(): List<RemoteAction> {
         val actions = mutableListOf<RemoteAction>()
 

@@ -504,6 +504,8 @@ class PlayerViewModel @Inject constructor(
         applyZoomMode(currentZoomMode)
     }
 
+    fun getPlayerView(): PlayerView? = playerView
+
     private suspend fun loadMedia(
         item: AfinityItem,
         mediaSourceId: String,
