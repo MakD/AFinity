@@ -6,6 +6,7 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.repository.JellyseerrRepository
+import com.makd.afinity.util.BackdropTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,8 @@ class RequestsViewModel @Inject constructor(
 
     private val _currentUser = MutableStateFlow<com.makd.afinity.data.models.jellyseerr.JellyseerrUser?>(null)
     val currentUser: StateFlow<com.makd.afinity.data.models.jellyseerr.JellyseerrUser?> = _currentUser.asStateFlow()
+    private val _backdropTracker = BackdropTracker()
+    val backdropTracker: BackdropTracker get() = _backdropTracker
 
     init {
         loadRequests()
@@ -334,6 +337,8 @@ class RequestsViewModel @Inject constructor(
     fun loadDiscoverContent() {
         viewModelScope.launch {
             try {
+                _backdropTracker.reset()
+
                 _uiState.update { it.copy(isLoadingDiscover = true) }
 
                 val trendingDeferred = async { jellyseerrRepository.getTrending() }
@@ -341,12 +346,24 @@ class RequestsViewModel @Inject constructor(
                 val popularTvDeferred = async { jellyseerrRepository.getDiscoverTv() }
                 val upcomingMoviesDeferred = async { jellyseerrRepository.getUpcomingMovies() }
                 val upcomingTvDeferred = async { jellyseerrRepository.getUpcomingTv() }
+                val movieGenresDeferred = async { jellyseerrRepository.getMovieGenreSlider() }
+                val tvGenresDeferred = async { jellyseerrRepository.getTvGenreSlider() }
 
                 val trendingResult = trendingDeferred.await()
                 val popularMoviesResult = popularMoviesDeferred.await()
                 val popularTvResult = popularTvDeferred.await()
                 val upcomingMoviesResult = upcomingMoviesDeferred.await()
                 val upcomingTvResult = upcomingTvDeferred.await()
+                val movieGenresResult = movieGenresDeferred.await()
+                val tvGenresResult = tvGenresDeferred.await()
+
+                movieGenresResult.onFailure { error ->
+                    Timber.e(error, "Failed to load movie genres")
+                }
+
+                tvGenresResult.onFailure { error ->
+                    Timber.e(error, "Failed to load TV genres")
+                }
 
                 _uiState.update {
                     it.copy(
@@ -355,11 +372,13 @@ class RequestsViewModel @Inject constructor(
                         popularTv = popularTvResult.getOrNull()?.results ?: emptyList(),
                         upcomingMovies = upcomingMoviesResult.getOrNull()?.results ?: emptyList(),
                         upcomingTv = upcomingTvResult.getOrNull()?.results ?: emptyList(),
+                        movieGenres = movieGenresResult.getOrNull() ?: emptyList(),
+                        tvGenres = tvGenresResult.getOrNull() ?: emptyList(),
                         isLoadingDiscover = false
                     )
                 }
 
-                Timber.d("Loaded discover content: ${trendingResult.getOrNull()?.results?.size ?: 0} trending items")
+                Timber.d("Loaded discover content: ${trendingResult.getOrNull()?.results?.size ?: 0} trending items, ${movieGenresResult.getOrNull()?.size ?: 0} movie genres, ${tvGenresResult.getOrNull()?.size ?: 0} TV genres")
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoadingDiscover = false) }
                 Timber.e(e, "Error loading discover content")
@@ -533,6 +552,10 @@ data class RequestsUiState(
     val popularTv: List<SearchResultItem> = emptyList(),
     val upcomingMovies: List<SearchResultItem> = emptyList(),
     val upcomingTv: List<SearchResultItem> = emptyList(),
+    val studios: List<com.makd.afinity.data.models.jellyseerr.Studio> = com.makd.afinity.data.models.jellyseerr.Studio.getPopularStudios(),
+    val networks: List<com.makd.afinity.data.models.jellyseerr.Network> = com.makd.afinity.data.models.jellyseerr.Network.getPopularNetworks(),
+    val movieGenres: List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem> = emptyList(),
+    val tvGenres: List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem> = emptyList(),
     val isLoadingDiscover: Boolean = false,
 
     val showRequestDialog: Boolean = false,

@@ -52,6 +52,7 @@ enum class Destination(
         const val PLAYER_OPTIONS_ROUTE = "player_options"
         const val APPEARANCE_OPTIONS_ROUTE = "appearance_options"
         const val LICENSES_ROUTE = "licenses"
+        const val FILTERED_MEDIA_ROUTE = "filtered_media/{filterType}/{filterId}/{filterName}"
 
         fun createPersonRoute(personId: String): String {
             return "person/$personId"
@@ -120,6 +121,10 @@ enum class Destination(
 
         fun createLicensesRoute(): String {
             return LICENSES_ROUTE
+        }
+
+        fun createFilteredMediaRoute(filterType: String, filterId: Int, filterName: String): String {
+            return "filtered_media/$filterType/$filterId/${filterName.replace("/", "%2F")}"
         }
     }
 }

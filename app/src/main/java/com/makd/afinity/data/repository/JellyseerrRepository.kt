@@ -53,8 +53,14 @@ interface JellyseerrRepository {
     ): Result<List<SearchResultItem>>
 
     suspend fun getTrending(page: Int = 1): Result<JellyseerrSearchResult>
-    suspend fun getDiscoverMovies(page: Int = 1, sortBy: String = "popularity.desc"): Result<JellyseerrSearchResult>
-    suspend fun getDiscoverTv(page: Int = 1, sortBy: String = "popularity.desc"): Result<JellyseerrSearchResult>
+    suspend fun getDiscoverMovies(page: Int = 1, sortBy: String = "popularity.desc", studio: Int? = null): Result<JellyseerrSearchResult>
+    suspend fun getDiscoverTv(page: Int = 1, sortBy: String = "popularity.desc", network: Int? = null): Result<JellyseerrSearchResult>
     suspend fun getUpcomingMovies(page: Int = 1): Result<JellyseerrSearchResult>
     suspend fun getUpcomingTv(page: Int = 1): Result<JellyseerrSearchResult>
+    suspend fun getMoviesByStudio(studioId: Int, page: Int = 1): Result<JellyseerrSearchResult>
+    suspend fun getTvByNetwork(networkId: Int, page: Int = 1): Result<JellyseerrSearchResult>
+    suspend fun getMovieGenreSlider(): Result<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>>
+    suspend fun getTvGenreSlider(): Result<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>>
+    suspend fun getMoviesByGenre(genreId: Int, page: Int = 1): Result<JellyseerrSearchResult>
+    suspend fun getTvByGenre(genreId: Int, page: Int = 1): Result<JellyseerrSearchResult>
 }

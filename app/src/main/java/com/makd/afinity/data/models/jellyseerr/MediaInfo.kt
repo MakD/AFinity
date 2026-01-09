@@ -36,7 +36,9 @@ data class MediaInfo(
     @SerialName("releaseDate")
     val releaseDate: String? = null,
     @SerialName("firstAirDate")
-    val firstAirDate: String? = null
+    val firstAirDate: String? = null,
+    @SerialName("jellyfinMediaId")
+    val jellyfinMediaId: String? = null
 ) {
     fun getAvailableSeasons(): List<Int> {
         return seasons?.filter { season ->
@@ -61,6 +63,24 @@ data class MediaInfo(
 
     fun getBackdropUrl(baseUrl: String = "https://image.tmdb.org/t/p/w1280"): String? {
         return backdropPath?.let { "$baseUrl$it" }
+    }
+
+    fun isFullyAvailable(): Boolean {
+        return status == 5 && jellyfinMediaId != null
+    }
+
+    fun isPartiallyAvailable(): Boolean {
+        return status == 4
+    }
+
+    fun getJellyfinItemId(): String? {
+        return jellyfinMediaId?.let { id ->
+            if (id.length == 32 && !id.contains("-")) {
+                "${id.substring(0, 8)}-${id.substring(8, 12)}-${id.substring(12, 16)}-${id.substring(16, 20)}-${id.substring(20)}"
+            } else {
+                id
+            }
+        }
     }
 }
 

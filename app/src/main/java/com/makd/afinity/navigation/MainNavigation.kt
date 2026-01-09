@@ -55,6 +55,9 @@ import com.makd.afinity.ui.libraries.LibrariesScreen
 import com.makd.afinity.ui.library.LibraryContentScreen
 import com.makd.afinity.ui.main.MainViewModel
 import com.makd.afinity.ui.person.PersonScreen
+import com.makd.afinity.ui.requests.FilterParams
+import com.makd.afinity.ui.requests.FilterType
+import com.makd.afinity.ui.requests.FilteredMediaScreen
 import com.makd.afinity.ui.requests.RequestsScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
@@ -111,6 +114,7 @@ fun MainNavigation(
                 !route.startsWith("person/") &&
                 route != "search" &&
                 !route.startsWith("genre_results/") &&
+                !route.startsWith("filtered_media/") &&
                 route != "settings" &&
                 route != "download_settings" &&
                 route != "player_options" &&
@@ -421,6 +425,54 @@ fun MainNavigation(
                         navController.navigate(route)
                     },
                     mainUiState = mainUiState,
+                    onNavigateToFilteredMedia = { filterParams ->
+                        val route = Destination.createFilteredMediaRoute(
+                            filterType = filterParams.type.name,
+                            filterId = filterParams.id,
+                            filterName = filterParams.name
+                        )
+                        navController.navigate(route)
+                    },
+                    onItemClick = { jellyfinItemId ->
+                        val route = Destination.createItemDetailRoute(jellyfinItemId)
+                        navController.navigate(route)
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            composable(
+                route = Destination.FILTERED_MEDIA_ROUTE,
+                arguments = listOf(
+                    navArgument("filterType") { type = NavType.StringType },
+                    navArgument("filterId") { type = NavType.IntType },
+                    navArgument("filterName") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val filterTypeString = backStackEntry.arguments?.getString("filterType") ?: return@composable
+                val filterId = backStackEntry.arguments?.getInt("filterId") ?: return@composable
+                val filterName = backStackEntry.arguments?.getString("filterName") ?: return@composable
+
+                val filterType = FilterType.valueOf(filterTypeString)
+                val filterParams = FilterParams(filterType, filterId, filterName)
+
+                FilteredMediaScreen(
+                    filterParams = filterParams,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onSearchClick = {
+                        navController.navigate(Destination.SEARCH_ROUTE)
+                    },
+                    onProfileClick = {
+                        val route = Destination.createSettingsRoute()
+                        navController.navigate(route)
+                    },
+                    mainUiState = mainUiState,
+                    onItemClick = { jellyfinItemId ->
+                        val route = Destination.createItemDetailRoute(jellyfinItemId)
+                        navController.navigate(route)
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }

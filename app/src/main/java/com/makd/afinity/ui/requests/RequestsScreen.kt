@@ -41,7 +41,9 @@ fun RequestsScreen(
     onProfileClick: () -> Unit,
     mainUiState: MainUiState,
     modifier: Modifier = Modifier,
-    viewModel: RequestsViewModel = hiltViewModel()
+    viewModel: RequestsViewModel = hiltViewModel(),
+    onNavigateToFilteredMedia: (FilterParams) -> Unit = {},
+    onItemClick: (jellyfinItemId: String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle(initialValue = false)
@@ -114,18 +116,33 @@ fun RequestsScreen(
                             item {
                                 DiscoverSection(
                                     title = "Trending Now",
-                                    items = uiState.trendingItems,
+                                    items = uiState.trendingItems.take(15),
                                     onItemClick = { item ->
-                                        item.getMediaType()?.let { mediaType ->
-                                            viewModel.showRequestDialog(
-                                                tmdbId = item.id,
-                                                mediaType = mediaType,
-                                                title = item.getDisplayTitle(),
-                                                posterUrl = item.getPosterUrl(),
-                                                availableSeasons = 0,
-                                                existingStatus = item.getDisplayStatus()
-                                            )
+                                        if (item.mediaInfo?.isFullyAvailable() == true) {
+                                            item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
+                                                onItemClick(jellyfinId)
+                                            }
+                                        } else {
+                                            item.getMediaType()?.let { mediaType ->
+                                                viewModel.showRequestDialog(
+                                                    tmdbId = item.id,
+                                                    mediaType = mediaType,
+                                                    title = item.getDisplayTitle(),
+                                                    posterUrl = item.getPosterUrl(),
+                                                    availableSeasons = 0,
+                                                    existingStatus = item.getDisplayStatus()
+                                                )
+                                            }
                                         }
+                                    },
+                                    onViewAllClick = {
+                                        onNavigateToFilteredMedia(
+                                            FilterParams(
+                                                type = FilterType.TRENDING,
+                                                id = 0,
+                                                name = "Trending Now"
+                                            )
+                                        )
                                     }
                                 )
                             }
@@ -135,18 +152,104 @@ fun RequestsScreen(
                             item {
                                 DiscoverSection(
                                     title = "Popular Movies",
-                                    items = uiState.popularMovies,
+                                    items = uiState.popularMovies.take(15),
                                     onItemClick = { item ->
-                                        item.getMediaType()?.let { mediaType ->
-                                            viewModel.showRequestDialog(
-                                                tmdbId = item.id,
-                                                mediaType = mediaType,
-                                                title = item.getDisplayTitle(),
-                                                posterUrl = item.getPosterUrl(),
-                                                availableSeasons = 0,
-                                                existingStatus = item.getDisplayStatus()
-                                            )
+                                        if (item.mediaInfo?.isFullyAvailable() == true) {
+                                            item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
+                                                onItemClick(jellyfinId)
+                                            }
+                                        } else {
+                                            item.getMediaType()?.let { mediaType ->
+                                                viewModel.showRequestDialog(
+                                                    tmdbId = item.id,
+                                                    mediaType = mediaType,
+                                                    title = item.getDisplayTitle(),
+                                                    posterUrl = item.getPosterUrl(),
+                                                    availableSeasons = 0,
+                                                    existingStatus = item.getDisplayStatus()
+                                                )
+                                            }
                                         }
+                                    },
+                                    onViewAllClick = {
+                                        onNavigateToFilteredMedia(
+                                            FilterParams(
+                                                type = FilterType.POPULAR_MOVIES,
+                                                id = 0,
+                                                name = "Popular Movies"
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                        }
+
+                        if (uiState.movieGenres.isNotEmpty()) {
+                            item {
+                                MovieGenresSection(
+                                    genres = uiState.movieGenres,
+                                    onGenreClick = { genre ->
+                                        onNavigateToFilteredMedia(
+                                            FilterParams(
+                                                type = FilterType.GENRE_MOVIE,
+                                                id = genre.id,
+                                                name = genre.name
+                                            )
+                                        )
+                                    },
+                                    backdropTracker = viewModel.backdropTracker
+                                )
+                            }
+                        }
+
+                        if (uiState.upcomingMovies.isNotEmpty()) {
+                            item {
+                                DiscoverSection(
+                                    title = "Upcoming Movies",
+                                    items = uiState.upcomingMovies.take(15),
+                                    onItemClick = { item ->
+                                        if (item.mediaInfo?.isFullyAvailable() == true) {
+                                            item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
+                                                onItemClick(jellyfinId)
+                                            }
+                                        } else {
+                                            item.getMediaType()?.let { mediaType ->
+                                                viewModel.showRequestDialog(
+                                                    tmdbId = item.id,
+                                                    mediaType = mediaType,
+                                                    title = item.getDisplayTitle(),
+                                                    posterUrl = item.getPosterUrl(),
+                                                    availableSeasons = 0,
+                                                    existingStatus = item.getDisplayStatus()
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onViewAllClick = {
+                                        onNavigateToFilteredMedia(
+                                            FilterParams(
+                                                type = FilterType.UPCOMING_MOVIES,
+                                                id = 0,
+                                                name = "Upcoming Movies"
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                        }
+
+                        if (uiState.studios.isNotEmpty()) {
+                            item {
+                                StudiosSection(
+                                    studios = uiState.studios,
+                                    onStudioClick = { studio ->
+                                        onNavigateToFilteredMedia(
+                                            FilterParams(
+                                                type = FilterType.STUDIO,
+                                                id = studio.id,
+                                                name = studio.name
+                                            )
+                                        )
                                     }
                                 )
                             }
@@ -156,40 +259,52 @@ fun RequestsScreen(
                             item {
                                 DiscoverSection(
                                     title = "Popular TV Shows",
-                                    items = uiState.popularTv,
+                                    items = uiState.popularTv.take(15),
                                     onItemClick = { item ->
-                                        item.getMediaType()?.let { mediaType ->
-                                            viewModel.showRequestDialog(
-                                                tmdbId = item.id,
-                                                mediaType = mediaType,
-                                                title = item.getDisplayTitle(),
-                                                posterUrl = item.getPosterUrl(),
-                                                availableSeasons = 0,
-                                                existingStatus = item.getDisplayStatus()
-                                            )
+                                        if (item.mediaInfo?.isFullyAvailable() == true) {
+                                            item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
+                                                onItemClick(jellyfinId)
+                                            }
+                                        } else {
+                                            item.getMediaType()?.let { mediaType ->
+                                                viewModel.showRequestDialog(
+                                                    tmdbId = item.id,
+                                                    mediaType = mediaType,
+                                                    title = item.getDisplayTitle(),
+                                                    posterUrl = item.getPosterUrl(),
+                                                    availableSeasons = 0,
+                                                    existingStatus = item.getDisplayStatus()
+                                                )
+                                            }
                                         }
+                                    },
+                                    onViewAllClick = {
+                                        onNavigateToFilteredMedia(
+                                            FilterParams(
+                                                type = FilterType.POPULAR_TV,
+                                                id = 0,
+                                                name = "Popular TV Shows"
+                                            )
+                                        )
                                     }
                                 )
                             }
                         }
 
-                        if (uiState.upcomingMovies.isNotEmpty()) {
+                        if (uiState.tvGenres.isNotEmpty()) {
                             item {
-                                DiscoverSection(
-                                    title = "Upcoming Movies",
-                                    items = uiState.upcomingMovies,
-                                    onItemClick = { item ->
-                                        item.getMediaType()?.let { mediaType ->
-                                            viewModel.showRequestDialog(
-                                                tmdbId = item.id,
-                                                mediaType = mediaType,
-                                                title = item.getDisplayTitle(),
-                                                posterUrl = item.getPosterUrl(),
-                                                availableSeasons = 0,
-                                                existingStatus = item.getDisplayStatus()
+                                TvGenresSection(
+                                    genres = uiState.tvGenres,
+                                    onGenreClick = { genre ->
+                                        onNavigateToFilteredMedia(
+                                            FilterParams(
+                                                type = FilterType.GENRE_TV,
+                                                id = genre.id,
+                                                name = genre.name
                                             )
-                                        }
-                                    }
+                                        )
+                                    },
+                                    backdropTracker = viewModel.backdropTracker
                                 )
                             }
                         }
@@ -198,18 +313,50 @@ fun RequestsScreen(
                             item {
                                 DiscoverSection(
                                     title = "Upcoming TV Shows",
-                                    items = uiState.upcomingTv,
+                                    items = uiState.upcomingTv.take(15),
                                     onItemClick = { item ->
-                                        item.getMediaType()?.let { mediaType ->
-                                            viewModel.showRequestDialog(
-                                                tmdbId = item.id,
-                                                mediaType = mediaType,
-                                                title = item.getDisplayTitle(),
-                                                posterUrl = item.getPosterUrl(),
-                                                availableSeasons = 0,
-                                                existingStatus = item.getDisplayStatus()
-                                            )
+                                        if (item.mediaInfo?.isFullyAvailable() == true) {
+                                            item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
+                                                onItemClick(jellyfinId)
+                                            }
+                                        } else {
+                                            item.getMediaType()?.let { mediaType ->
+                                                viewModel.showRequestDialog(
+                                                    tmdbId = item.id,
+                                                    mediaType = mediaType,
+                                                    title = item.getDisplayTitle(),
+                                                    posterUrl = item.getPosterUrl(),
+                                                    availableSeasons = 0,
+                                                    existingStatus = item.getDisplayStatus()
+                                                )
+                                            }
                                         }
+                                    },
+                                    onViewAllClick = {
+                                        onNavigateToFilteredMedia(
+                                            FilterParams(
+                                                type = FilterType.UPCOMING_TV,
+                                                id = 0,
+                                                name = "Upcoming TV Shows"
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                        }
+
+                        if (uiState.networks.isNotEmpty()) {
+                            item {
+                                NetworksSection(
+                                    networks = uiState.networks,
+                                    onNetworkClick = { network ->
+                                        onNavigateToFilteredMedia(
+                                            FilterParams(
+                                                type = FilterType.NETWORK,
+                                                id = network.id,
+                                                name = network.name
+                                            )
+                                        )
                                     }
                                 )
                             }

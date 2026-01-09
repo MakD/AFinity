@@ -497,14 +497,14 @@ class JellyseerrRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getDiscoverMovies(page: Int, sortBy: String): Result<JellyseerrSearchResult> {
+    override suspend fun getDiscoverMovies(page: Int, sortBy: String, studio: Int?): Result<JellyseerrSearchResult> {
         return withContext(Dispatchers.IO) {
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val response = apiService.get().getDiscoverMovies(page, sortBy = sortBy)
+                val response = apiService.get().getDiscoverMovies(page, sortBy = sortBy, studio = studio)
 
                 if (response.isSuccessful && response.body() != null) {
                     Result.success(response.body()!!)
@@ -518,14 +518,14 @@ class JellyseerrRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getDiscoverTv(page: Int, sortBy: String): Result<JellyseerrSearchResult> {
+    override suspend fun getDiscoverTv(page: Int, sortBy: String, network: Int?): Result<JellyseerrSearchResult> {
         return withContext(Dispatchers.IO) {
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val response = apiService.get().getDiscoverTv(page, sortBy = sortBy)
+                val response = apiService.get().getDiscoverTv(page, sortBy = sortBy, network = network)
 
                 if (response.isSuccessful && response.body() != null) {
                     Result.success(response.body()!!)
@@ -644,5 +644,97 @@ class JellyseerrRepositoryImpl @Inject constructor(
             updatedAt = dateFormat.format(Date(updatedAt)),
             seasons = null
         )
+    }
+
+    override suspend fun getMoviesByStudio(studioId: Int, page: Int): Result<JellyseerrSearchResult> {
+        return getDiscoverMovies(page = page, studio = studioId)
+    }
+
+    override suspend fun getTvByNetwork(networkId: Int, page: Int): Result<JellyseerrSearchResult> {
+        return getDiscoverTv(page = page, network = networkId)
+    }
+
+    override suspend fun getMovieGenreSlider(): Result<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getMovieGenreSlider()
+
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Failed to get movie genres: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get movie genre slider")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getTvGenreSlider(): Result<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getTvGenreSlider()
+
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Failed to get TV genres: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get TV genre slider")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getMoviesByGenre(genreId: Int, page: Int): Result<JellyseerrSearchResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getMoviesByGenre(genreId, page)
+
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Failed to get movies by genre: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get movies by genre")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getTvByGenre(genreId: Int, page: Int): Result<JellyseerrSearchResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getTvByGenre(genreId, page)
+
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Failed to get TV by genre: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get TV by genre")
+                Result.failure(e)
+            }
+        }
     }
 }

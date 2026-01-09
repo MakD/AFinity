@@ -84,14 +84,16 @@ interface JellyseerrApiService {
     suspend fun getDiscoverMovies(
         @Query("page") page: Int = 1,
         @Query("language") language: String = "en",
-        @Query("sortBy") sortBy: String = "popularity.desc"
+        @Query("sortBy") sortBy: String = "popularity.desc",
+        @Query("studio") studio: Int? = null
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/tv")
     suspend fun getDiscoverTv(
         @Query("page") page: Int = 1,
         @Query("language") language: String = "en",
-        @Query("sortBy") sortBy: String = "popularity.desc"
+        @Query("sortBy") sortBy: String = "popularity.desc",
+        @Query("network") network: Int? = null
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/movies/upcoming")
@@ -102,6 +104,40 @@ interface JellyseerrApiService {
 
     @GET("api/v1/discover/tv/upcoming")
     suspend fun getUpcomingTv(
+        @Query("page") page: Int = 1,
+        @Query("language") language: String = "en"
+    ): Response<JellyseerrSearchResult>
+
+    @GET("api/v1/genres/movie")
+    suspend fun getMovieGenres(
+        @Query("language") language: String = "en"
+    ): Response<List<com.makd.afinity.data.models.jellyseerr.Genre>>
+
+    @GET("api/v1/genres/tv")
+    suspend fun getTvGenres(
+        @Query("language") language: String = "en"
+    ): Response<List<com.makd.afinity.data.models.jellyseerr.Genre>>
+
+    @GET("api/v1/discover/genreslider/movie")
+    suspend fun getMovieGenreSlider(
+        @Query("language") language: String = "en"
+    ): Response<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>>
+
+    @GET("api/v1/discover/genreslider/tv")
+    suspend fun getTvGenreSlider(
+        @Query("language") language: String = "en"
+    ): Response<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>>
+
+    @GET("api/v1/discover/movies/genre/{genreId}")
+    suspend fun getMoviesByGenre(
+        @Path("genreId") genreId: Int,
+        @Query("page") page: Int = 1,
+        @Query("language") language: String = "en"
+    ): Response<JellyseerrSearchResult>
+
+    @GET("api/v1/discover/tv/genre/{genreId}")
+    suspend fun getTvByGenre(
+        @Path("genreId") genreId: Int,
         @Query("page") page: Int = 1,
         @Query("language") language: String = "en"
     ): Response<JellyseerrSearchResult>
