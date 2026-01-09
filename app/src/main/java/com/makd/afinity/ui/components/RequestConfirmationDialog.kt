@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 
 @Composable
@@ -29,7 +30,7 @@ fun RequestConfirmationDialog(
     selectedSeasons: List<Int>,
     onSeasonsChange: (List<Int>) -> Unit,
     disabledSeasons: List<Int> = emptyList(),
-    existingStatus: com.makd.afinity.data.models.jellyseerr.MediaStatus? = null,
+    existingStatus: MediaStatus? = null,
     isLoading: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
@@ -37,8 +38,8 @@ fun RequestConfirmationDialog(
 ) {
     val alreadyRequested = existingStatus != null && (
         mediaType == MediaType.MOVIE ||
-        existingStatus == com.makd.afinity.data.models.jellyseerr.MediaStatus.AVAILABLE ||
-        existingStatus == com.makd.afinity.data.models.jellyseerr.MediaStatus.PROCESSING
+        existingStatus == MediaStatus.AVAILABLE ||
+        existingStatus == MediaStatus.PROCESSING
     )
     AlertDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
@@ -76,7 +77,7 @@ fun RequestConfirmationDialog(
 
                 if (alreadyRequested && existingStatus != null) {
                     Text(
-                        text = "This ${mediaType.toApiString()} is already ${com.makd.afinity.data.models.jellyseerr.MediaStatus.getDisplayName(existingStatus)}",
+                        text = "This ${mediaType.toApiString()} is already ${MediaStatus.getDisplayName(existingStatus)}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.tertiary,
                         fontWeight = FontWeight.Medium

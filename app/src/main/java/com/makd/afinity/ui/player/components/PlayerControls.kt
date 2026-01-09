@@ -207,7 +207,7 @@ fun PlayerControls(
                             }
                         }
 
-                        if (currentItem is com.makd.afinity.data.models.media.AfinityEpisode) {
+                        if (currentItem is AfinityEpisode) {
                             val seasonNumber = currentItem.parentIndexNumber
                             val episodeNumber = currentItem.indexNumber
                             val episodeTitle = currentItem.name

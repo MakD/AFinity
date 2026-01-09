@@ -2,9 +2,14 @@ package com.makd.afinity.ui.requests
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
+import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
+import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
+import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.BackdropTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,8 +32,8 @@ class RequestsViewModel @Inject constructor(
 
     val isAuthenticated = jellyseerrRepository.isAuthenticated
 
-    private val _currentUser = MutableStateFlow<com.makd.afinity.data.models.jellyseerr.JellyseerrUser?>(null)
-    val currentUser: StateFlow<com.makd.afinity.data.models.jellyseerr.JellyseerrUser?> = _currentUser.asStateFlow()
+    private val _currentUser = MutableStateFlow<JellyseerrUser?>(null)
+    val currentUser: StateFlow<JellyseerrUser?> = _currentUser.asStateFlow()
     private val _backdropTracker = BackdropTracker()
     val backdropTracker: BackdropTracker get() = _backdropTracker
 
@@ -392,7 +397,7 @@ class RequestsViewModel @Inject constructor(
         title: String,
         posterUrl: String?,
         availableSeasons: Int = 0,
-        existingStatus: com.makd.afinity.data.models.jellyseerr.MediaStatus? = null
+        existingStatus: MediaStatus? = null
     ) {
         viewModelScope.launch {
             try {
@@ -552,10 +557,10 @@ data class RequestsUiState(
     val popularTv: List<SearchResultItem> = emptyList(),
     val upcomingMovies: List<SearchResultItem> = emptyList(),
     val upcomingTv: List<SearchResultItem> = emptyList(),
-    val studios: List<com.makd.afinity.data.models.jellyseerr.Studio> = com.makd.afinity.data.models.jellyseerr.Studio.getPopularStudios(),
-    val networks: List<com.makd.afinity.data.models.jellyseerr.Network> = com.makd.afinity.data.models.jellyseerr.Network.getPopularNetworks(),
-    val movieGenres: List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem> = emptyList(),
-    val tvGenres: List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem> = emptyList(),
+    val studios: List<Studio> = Studio.getPopularStudios(),
+    val networks: List<Network> = Network.getPopularNetworks(),
+    val movieGenres: List<GenreSliderItem> = emptyList(),
+    val tvGenres: List<GenreSliderItem> = emptyList(),
     val isLoadingDiscover: Boolean = false,
 
     val showRequestDialog: Boolean = false,
@@ -571,5 +576,5 @@ data class PendingRequest(
     val title: String,
     val posterUrl: String?,
     val availableSeasons: Int = 0,
-    val existingStatus: com.makd.afinity.data.models.jellyseerr.MediaStatus? = null
+    val existingStatus: MediaStatus? = null
 )

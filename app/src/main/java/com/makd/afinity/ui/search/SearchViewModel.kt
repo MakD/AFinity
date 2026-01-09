@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
+import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.media.AfinityCollection
@@ -250,7 +251,7 @@ class SearchViewModel @Inject constructor(
         title: String,
         posterUrl: String?,
         availableSeasons: Int = 0,
-        existingStatus: com.makd.afinity.data.models.jellyseerr.MediaStatus? = null
+        existingStatus: MediaStatus? = null
     ) {
         viewModelScope.launch {
             try {
@@ -405,5 +406,5 @@ data class PendingRequestSearch(
     val title: String,
     val posterUrl: String?,
     val availableSeasons: Int = 0,
-    val existingStatus: com.makd.afinity.data.models.jellyseerr.MediaStatus? = null
+    val existingStatus: MediaStatus? = null
 )

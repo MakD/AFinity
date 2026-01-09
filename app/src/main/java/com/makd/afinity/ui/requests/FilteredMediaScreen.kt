@@ -21,9 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -49,7 +48,6 @@ data class FilterParams(
 @Composable
 fun FilteredMediaScreen(
     filterParams: FilterParams,
-    onBackClick: () -> Unit,
     onSearchClick: () -> Unit,
     onProfileClick: () -> Unit,
     mainUiState: MainUiState,

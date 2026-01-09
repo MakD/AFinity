@@ -15,17 +15,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
+import com.makd.afinity.data.models.jellyseerr.Network
+import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
+import com.makd.afinity.util.BackdropTracker
 
 @Composable
 fun StudioCard(
-    studio: com.makd.afinity.data.models.jellyseerr.Studio,
+    studio: Studio,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -40,7 +46,7 @@ fun StudioCard(
                 .fillMaxWidth()
                 .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = Color(0xFF1C1C1C)
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
@@ -66,7 +72,7 @@ fun StudioCard(
 
 @Composable
 fun NetworkCard(
-    network: com.makd.afinity.data.models.jellyseerr.Network,
+    network: Network,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -81,7 +87,7 @@ fun NetworkCard(
                 .fillMaxWidth()
                 .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = Color(0xFF1C1C1C)
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
@@ -107,10 +113,10 @@ fun NetworkCard(
 
 @Composable
 fun GenreCard(
-    genre: com.makd.afinity.data.models.jellyseerr.GenreSliderItem,
+    genre: GenreSliderItem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    backdropTracker: com.makd.afinity.util.BackdropTracker? = null,
+    backdropTracker: BackdropTracker? = null,
     isMovie: Boolean = true
 ) {
     val cardWidth = rememberLandscapeCardWidth()
@@ -148,10 +154,10 @@ fun GenreCard(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                            Brush.verticalGradient(
                                 colors = listOf(
-                                    androidx.compose.ui.graphics.Color.Transparent,
-                                    androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.7f)
                                 ),
                                 startY = 0f,
                                 endY = Float.POSITIVE_INFINITY
@@ -161,10 +167,10 @@ fun GenreCard(
 
                 Text(
                     text = genre.name,
-                    style = MaterialTheme.typography.displaySmall.copy(
+                    style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = androidx.compose.ui.graphics.Color.White,
+                    color = Color.White,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .align(Alignment.Center)

@@ -414,9 +414,6 @@ fun MainNavigation(
 
             composable(Destination.REQUESTS.route) {
                 RequestsScreen(
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
                     onSearchClick = {
                         navController.navigate(Destination.SEARCH_ROUTE)
                     },
@@ -458,9 +455,6 @@ fun MainNavigation(
 
                 FilteredMediaScreen(
                     filterParams = filterParams,
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
                     onSearchClick = {
                         navController.navigate(Destination.SEARCH_ROUTE)
                     },

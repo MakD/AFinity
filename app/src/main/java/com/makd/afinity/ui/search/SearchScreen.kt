@@ -37,7 +37,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -68,7 +67,6 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.theme.rememberGridMinColumnSize
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +81,7 @@ fun SearchScreen(
     val isJellyseerrAuthenticated by viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val focusManager = LocalFocusManager.current
+    LocalFocusManager.current
 
     Column(
         modifier = modifier
@@ -371,7 +369,7 @@ private fun SearchResultsContent(
     results: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit
 ) {
-    val keyboardController = LocalSoftwareKeyboardController.current
+    LocalSoftwareKeyboardController.current
     LazyColumn(
         modifier = Modifier
             .fillMaxSize(),
@@ -705,7 +703,7 @@ private fun JellyseerrSearchResultItem(
 
                     item.releaseDate?.let { releaseDate ->
                         if (releaseDate.length >= 4) {
-                            val year = releaseDate.substring(0, 4)
+                            val year = releaseDate.take(4)
                             Text(
                                 text = "•",
                                 style = MaterialTheme.typography.bodyMedium,

@@ -7,8 +7,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.google.crypto.tink.Aead
-import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext

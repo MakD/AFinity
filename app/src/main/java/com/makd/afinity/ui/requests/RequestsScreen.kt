@@ -36,7 +36,6 @@ import com.makd.afinity.ui.settings.JellyseerrBottomSheet
 
 @Composable
 fun RequestsScreen(
-    onBackClick: () -> Unit,
     onSearchClick: () -> Unit,
     onProfileClick: () -> Unit,
     mainUiState: MainUiState,

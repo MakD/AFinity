@@ -1,25 +1,39 @@
 package com.makd.afinity.ui.requests
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R.drawable
+import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
+import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.calculateCardHeight
 import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 import com.makd.afinity.ui.theme.rememberPortraitCardWidth
+import com.makd.afinity.util.BackdropTracker
 
 @Composable
 fun MyRequestsSection(
@@ -78,16 +92,17 @@ fun DiscoverSection(
     val cardWidth = rememberPortraitCardWidth()
     val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+    val headerBottomPadding = if (onViewAllClick != null) 4.dp else 16.dp
 
     Column(
         modifier = modifier.padding(horizontal = 14.dp)
     ) {
-        androidx.compose.foundation.layout.Row(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = headerBottomPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
             Text(
                 text = title,
@@ -98,13 +113,21 @@ fun DiscoverSection(
             )
 
             if (onViewAllClick != null) {
-                androidx.compose.material3.TextButton(
-                    onClick = onViewAllClick
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onViewAllClick
+                        ),
+                    contentAlignment = Alignment.TopEnd
                 ) {
-                    Text(
-                        text = "View All",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
+                    Icon(
+                        painter = painterResource(id = drawable.ic_chevron_right),
+                        contentDescription = "View All",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
@@ -130,8 +153,8 @@ fun DiscoverSection(
 
 @Composable
 fun StudiosSection(
-    studios: List<com.makd.afinity.data.models.jellyseerr.Studio>,
-    onStudioClick: (com.makd.afinity.data.models.jellyseerr.Studio) -> Unit,
+    studios: List<Studio>,
+    onStudioClick: (Studio) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val cardWidth = rememberLandscapeCardWidth()
@@ -170,8 +193,8 @@ fun StudiosSection(
 
 @Composable
 fun NetworksSection(
-    networks: List<com.makd.afinity.data.models.jellyseerr.Network>,
-    onNetworkClick: (com.makd.afinity.data.models.jellyseerr.Network) -> Unit,
+    networks: List<Network>,
+    onNetworkClick: (Network) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val cardWidth = rememberLandscapeCardWidth()
@@ -209,10 +232,10 @@ fun NetworksSection(
 
 @Composable
 fun MovieGenresSection(
-    genres: List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>,
-    onGenreClick: (com.makd.afinity.data.models.jellyseerr.GenreSliderItem) -> Unit,
+    genres: List<GenreSliderItem>,
+    onGenreClick: (GenreSliderItem) -> Unit,
     modifier: Modifier = Modifier,
-    backdropTracker: com.makd.afinity.util.BackdropTracker? = null
+    backdropTracker: BackdropTracker? = null
 ) {
     val cardWidth = rememberLandscapeCardWidth()
     val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
@@ -252,10 +275,10 @@ fun MovieGenresSection(
 
 @Composable
 fun TvGenresSection(
-    genres: List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>,
-    onGenreClick: (com.makd.afinity.data.models.jellyseerr.GenreSliderItem) -> Unit,
+    genres: List<GenreSliderItem>,
+    onGenreClick: (GenreSliderItem) -> Unit,
     modifier: Modifier = Modifier,
-    backdropTracker: com.makd.afinity.util.BackdropTracker? = null
+    backdropTracker: BackdropTracker? = null
 ) {
     val cardWidth = rememberLandscapeCardWidth()
     val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
