@@ -40,7 +40,21 @@ data class MediaDetails(
     @SerialName("inProduction")
     val inProduction: Boolean? = null,
     @SerialName("mediaInfo")
-    val mediaInfo: MediaInfo? = null
+    val mediaInfo: MediaInfo? = null,
+    @SerialName("tagline")
+    val tagline: String? = null,
+    @SerialName("runtime")
+    val runtime: Int? = null,
+    @SerialName("originalLanguage")
+    val originalLanguage: String? = null,
+    @SerialName("genres")
+    val genres: List<Genre>? = null,
+    @SerialName("credits")
+    val credits: Credits? = null,
+    @SerialName("releases")
+    val releases: Releases? = null,
+    @SerialName("ratingsCombined")
+    val ratingsCombined: RatingsCombined? = null
 ) {
     fun getSeasonCount(): Int {
         return seasons?.filter { (it.seasonNumber ?: 0) > 0 }?.size ?: numberOfSeason ?: 0
@@ -72,4 +86,73 @@ data class MediaDetails(
             else -> status ?: "Unknown"
         }
     }
+
+    fun getDirector(): String? {
+        return credits?.crew?.firstOrNull { it.job == "Director" }?.name
+    }
+
+    fun getGenreNames(): List<String> {
+        return genres?.map { it.name } ?: emptyList()
+    }
+
+    fun getCertification(countryCode: String = "US"): String? {
+        return releases?.results?.firstOrNull { it.iso_3166_1 == countryCode }
+            ?.release_dates?.firstOrNull()?.certification
+    }
 }
+
+@Serializable
+data class Credits(
+    @SerialName("cast")
+    val cast: List<CastMember>? = null,
+    @SerialName("crew")
+    val crew: List<CrewMember>? = null
+)
+
+@Serializable
+data class CastMember(
+    @SerialName("id")
+    val id: Int,
+    @SerialName("name")
+    val name: String,
+    @SerialName("character")
+    val character: String? = null,
+    @SerialName("profilePath")
+    val profilePath: String? = null
+)
+
+@Serializable
+data class CrewMember(
+    @SerialName("id")
+    val id: Int,
+    @SerialName("name")
+    val name: String,
+    @SerialName("job")
+    val job: String,
+    @SerialName("department")
+    val department: String? = null
+)
+
+@Serializable
+data class Releases(
+    @SerialName("results")
+    val results: List<ReleaseResult>? = null
+)
+
+@Serializable
+data class ReleaseResult(
+    @SerialName("iso_3166_1")
+    val iso_3166_1: String,
+    @SerialName("release_dates")
+    val release_dates: List<ReleaseDate>? = null
+)
+
+@Serializable
+data class ReleaseDate(
+    @SerialName("certification")
+    val certification: String? = null,
+    @SerialName("release_date")
+    val release_date: String? = null,
+    @SerialName("type")
+    val type: Int? = null
+)

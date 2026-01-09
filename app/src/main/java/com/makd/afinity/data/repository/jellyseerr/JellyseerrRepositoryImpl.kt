@@ -616,6 +616,42 @@ class JellyseerrRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getMovieDetails(movieId: Int): Result<MediaDetails> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getMovieDetails(movieId)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val details = response.body()!!
+
+                    val ratingsResponse = try {
+                        apiService.get().getMovieRatingsCombined(movieId)
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to fetch ratings for movie $movieId")
+                        null
+                    }
+
+                    val ratings = if (ratingsResponse?.isSuccessful == true) {
+                        ratingsResponse.body()
+                    } else null
+
+                    val enrichedDetails = details.copy(ratingsCombined = ratings)
+
+                    Result.success(enrichedDetails)
+                } else {
+                    Result.failure(Exception("Failed to get movie details: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get movie details for ID: $movieId")
+                Result.failure(e)
+            }
+        }
+    }
+
     override suspend fun getTvDetails(tvId: Int): Result<MediaDetails> {
         return withContext(Dispatchers.IO) {
             try {
@@ -626,7 +662,22 @@ class JellyseerrRepositoryImpl @Inject constructor(
                 val response = apiService.get().getTvDetails(tvId)
 
                 if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
+                    val details = response.body()!!
+
+                    val ratingsResponse = try {
+                        apiService.get().getTvRatingsCombined(tvId)
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to fetch ratings for TV show $tvId")
+                        null
+                    }
+
+                    val ratings = if (ratingsResponse?.isSuccessful == true) {
+                        ratingsResponse.body()
+                    } else null
+
+                    val enrichedDetails = details.copy(ratingsCombined = ratings)
+
+                    Result.success(enrichedDetails)
                 } else {
                     Result.failure(Exception("Failed to get TV details: ${response.message()}"))
                 }

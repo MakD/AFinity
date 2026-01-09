@@ -8,12 +8,12 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Network
+import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.BackdropTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -417,91 +417,90 @@ class RequestsViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                if (mediaType == MediaType.TV) {
-                    _uiState.update { it.copy(isFetchingTvDetails = true) }
+                _uiState.update { it.copy(isFetchingTvDetails = true) }
 
-                    jellyseerrRepository.getTvDetails(tmdbId).fold(
-                        onSuccess = { tvDetails ->
-                            _uiState.update { it.copy(isFetchingTvDetails = false) }
-
-                            val seasonCount = tvDetails.getSeasonCount()
-                            val alreadyAvailableSeasons =
-                                tvDetails.mediaInfo?.getAvailableSeasons() ?: emptyList()
-
-                            val selectableSeasons =
-                                (1..seasonCount).filter { it !in alreadyAvailableSeasons }
-
-                            _uiState.update {
-                                it.copy(
-                                    showRequestDialog = true,
-                                    pendingRequest = PendingRequest(
-                                        tmdbId,
-                                        mediaType,
-                                        title,
-                                        posterUrl,
-                                        seasonCount,
-                                        existingStatus
-                                    ),
-                                    selectedSeasons = selectableSeasons,
-                                    disabledSeasons = alreadyAvailableSeasons
-                                )
-                            }
-                        },
-                        onFailure = { error ->
-                            _uiState.update { it.copy(isFetchingTvDetails = false) }
-                            Timber.w(
-                                error,
-                                "Failed to fetch TV details, using fallback season count"
-                            )
-
-                            _uiState.update {
-                                it.copy(
-                                    showRequestDialog = true,
-                                    pendingRequest = PendingRequest(
-                                        tmdbId,
-                                        mediaType,
-                                        title,
-                                        posterUrl,
-                                        availableSeasons,
-                                        existingStatus
-                                    ),
-                                    selectedSeasons = if (availableSeasons > 0) (1..availableSeasons).toList() else emptyList(),
-                                    disabledSeasons = emptyList()
-                                )
-                            }
-                        }
-                    )
+                val detailsResult = if (mediaType == MediaType.TV) {
+                    jellyseerrRepository.getTvDetails(tmdbId)
                 } else {
-                    _uiState.update {
-                        it.copy(
-                            showRequestDialog = true,
-                            pendingRequest = PendingRequest(
-                                tmdbId,
-                                mediaType,
-                                title,
-                                posterUrl,
-                                0,
-                                existingStatus
-                            ),
-                            selectedSeasons = emptyList(),
-                            disabledSeasons = emptyList()
-                        )
-                    }
+                    jellyseerrRepository.getMovieDetails(tmdbId)
                 }
+
+                detailsResult.fold(
+                    onSuccess = { details ->
+                        _uiState.update { it.copy(isFetchingTvDetails = false) }
+
+                        val seasonCount = if (mediaType == MediaType.TV) details.getSeasonCount() else 0
+                        val alreadyAvailableSeasons = details.mediaInfo?.getAvailableSeasons() ?: emptyList()
+                        val selectableSeasons = if (mediaType == MediaType.TV) {
+                            (1..seasonCount).filter { it !in alreadyAvailableSeasons }
+                        } else emptyList()
+
+                        _uiState.update {
+                            it.copy(
+                                showRequestDialog = true,
+                                pendingRequest = PendingRequest(
+                                    tmdbId = tmdbId,
+                                    mediaType = mediaType,
+                                    title = details.title ?: details.name ?: title,
+                                    posterUrl = details.getPosterUrl(),
+                                    availableSeasons = seasonCount,
+                                    existingStatus = existingStatus,
+                                    backdropUrl = details.getBackdropUrl(),
+                                    tagline = details.tagline,
+                                    overview = details.overview,
+                                    releaseDate = details.releaseDate ?: details.firstAirDate,
+                                    runtime = details.runtime,
+                                    voteAverage = details.voteAverage,
+                                    certification = details.getCertification(),
+                                    originalLanguage = details.originalLanguage,
+                                    director = details.getDirector(),
+                                    genres = details.getGenreNames(),
+                                    ratingsCombined = details.ratingsCombined
+                                ),
+                                selectedSeasons = selectableSeasons,
+                                disabledSeasons = alreadyAvailableSeasons
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update { it.copy(isFetchingTvDetails = false) }
+                        Timber.w(error, "Failed to fetch details, using fallback")
+
+                        _uiState.update {
+                            it.copy(
+                                showRequestDialog = true,
+                                pendingRequest = PendingRequest(
+                                    tmdbId = tmdbId,
+                                    mediaType = mediaType,
+                                    title = title,
+                                    posterUrl = posterUrl,
+                                    availableSeasons = availableSeasons,
+                                    existingStatus = existingStatus
+                                ),
+                                selectedSeasons = if (mediaType == MediaType.TV && availableSeasons > 0) {
+                                    (1..availableSeasons).toList()
+                                } else emptyList(),
+                                disabledSeasons = emptyList()
+                            )
+                        }
+                    }
+                )
             } catch (e: Exception) {
                 Timber.e(e, "Error showing request dialog")
                 _uiState.update {
                     it.copy(
                         showRequestDialog = true,
                         pendingRequest = PendingRequest(
-                            tmdbId,
-                            mediaType,
-                            title,
-                            posterUrl,
-                            availableSeasons,
-                            existingStatus
+                            tmdbId = tmdbId,
+                            mediaType = mediaType,
+                            title = title,
+                            posterUrl = posterUrl,
+                            availableSeasons = availableSeasons,
+                            existingStatus = existingStatus
                         ),
-                        selectedSeasons = if (mediaType == MediaType.TV && availableSeasons > 0) (1..availableSeasons).toList() else emptyList(),
+                        selectedSeasons = if (mediaType == MediaType.TV && availableSeasons > 0) {
+                            (1..availableSeasons).toList()
+                        } else emptyList(),
                         disabledSeasons = emptyList(),
                         isFetchingTvDetails = false
                     )
@@ -625,5 +624,16 @@ data class PendingRequest(
     val title: String,
     val posterUrl: String?,
     val availableSeasons: Int = 0,
-    val existingStatus: MediaStatus? = null
+    val existingStatus: MediaStatus? = null,
+    val backdropUrl: String? = null,
+    val tagline: String? = null,
+    val overview: String? = null,
+    val releaseDate: String? = null,
+    val runtime: Int? = null,
+    val voteAverage: Double? = null,
+    val certification: String? = null,
+    val originalLanguage: String? = null,
+    val director: String? = null,
+    val genres: List<String> = emptyList(),
+    val ratingsCombined: RatingsCombined? = null
 )

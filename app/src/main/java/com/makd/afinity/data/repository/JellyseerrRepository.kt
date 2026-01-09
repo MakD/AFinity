@@ -46,6 +46,8 @@ interface JellyseerrRepository {
 
     suspend fun searchMedia(query: String, page: Int = 1): Result<JellyseerrSearchResult>
 
+    suspend fun getMovieDetails(movieId: Int): Result<MediaDetails>
+
     suspend fun getTvDetails(tvId: Int): Result<MediaDetails>
 
     suspend fun findMediaByName(

@@ -200,7 +200,18 @@ fun SearchScreen(
                 existingStatus = uiState.pendingRequest!!.existingStatus,
                 isLoading = uiState.isCreatingRequest,
                 onConfirm = { viewModel.confirmRequest() },
-                onDismiss = { viewModel.dismissRequestDialog() }
+                onDismiss = { viewModel.dismissRequestDialog() },
+                mediaBackdropUrl = uiState.pendingRequest!!.backdropUrl,
+                mediaTagline = uiState.pendingRequest!!.tagline,
+                mediaOverview = uiState.pendingRequest!!.overview,
+                releaseDate = uiState.pendingRequest!!.releaseDate,
+                runtime = uiState.pendingRequest!!.runtime,
+                voteAverage = uiState.pendingRequest!!.voteAverage,
+                certification = uiState.pendingRequest!!.certification,
+                originalLanguage = uiState.pendingRequest!!.originalLanguage,
+                director = uiState.pendingRequest!!.director,
+                genres = uiState.pendingRequest!!.genres,
+                ratingsCombined = uiState.pendingRequest!!.ratingsCombined
             )
         }
     }

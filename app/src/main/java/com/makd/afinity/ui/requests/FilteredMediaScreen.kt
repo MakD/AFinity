@@ -170,7 +170,18 @@ fun FilteredMediaScreen(
             existingStatus = requestsUiState.pendingRequest!!.existingStatus,
             isLoading = requestsUiState.isCreatingRequest,
             onConfirm = { requestsViewModel.confirmRequest() },
-            onDismiss = { requestsViewModel.dismissRequestDialog() }
+            onDismiss = { requestsViewModel.dismissRequestDialog() },
+            mediaBackdropUrl = requestsUiState.pendingRequest!!.backdropUrl,
+            mediaTagline = requestsUiState.pendingRequest!!.tagline,
+            mediaOverview = requestsUiState.pendingRequest!!.overview,
+            releaseDate = requestsUiState.pendingRequest!!.releaseDate,
+            runtime = requestsUiState.pendingRequest!!.runtime,
+            voteAverage = requestsUiState.pendingRequest!!.voteAverage,
+            certification = requestsUiState.pendingRequest!!.certification,
+            originalLanguage = requestsUiState.pendingRequest!!.originalLanguage,
+            director = requestsUiState.pendingRequest!!.director,
+            genres = requestsUiState.pendingRequest!!.genres,
+            ratingsCombined = requestsUiState.pendingRequest!!.ratingsCombined
         )
     }
 }
