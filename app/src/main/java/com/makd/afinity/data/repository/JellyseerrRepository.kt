@@ -5,7 +5,7 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
-import com.makd.afinity.data.models.jellyseerr.TvDetails
+import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import kotlinx.coroutines.flow.StateFlow
 
 interface JellyseerrRepository {
@@ -31,7 +31,8 @@ interface JellyseerrRepository {
     ): Result<JellyseerrRequest>
 
     suspend fun getRequests(
-        page: Int = 1,
+        take: Int = 20,
+        skip: Int = 0,
         filter: String? = null
     ): Result<List<JellyseerrRequest>>
 
@@ -45,18 +46,19 @@ interface JellyseerrRepository {
 
     suspend fun searchMedia(query: String, page: Int = 1): Result<JellyseerrSearchResult>
 
-    suspend fun getTvDetails(tvId: Int): Result<TvDetails>
+    suspend fun getTvDetails(tvId: Int): Result<MediaDetails>
 
     suspend fun findMediaByName(
         name: String,
         mediaType: MediaType? = null
     ): Result<List<SearchResultItem>>
 
-    suspend fun getTrending(page: Int = 1): Result<JellyseerrSearchResult>
-    suspend fun getDiscoverMovies(page: Int = 1, sortBy: String = "popularity.desc", studio: Int? = null): Result<JellyseerrSearchResult>
-    suspend fun getDiscoverTv(page: Int = 1, sortBy: String = "popularity.desc", network: Int? = null): Result<JellyseerrSearchResult>
-    suspend fun getUpcomingMovies(page: Int = 1): Result<JellyseerrSearchResult>
-    suspend fun getUpcomingTv(page: Int = 1): Result<JellyseerrSearchResult>
+    suspend fun getTrending(page: Int = 1, limit: Int? = null): Result<JellyseerrSearchResult>
+    suspend fun getDiscoverMovies(page: Int = 1, sortBy: String = "popularity.desc", studio: Int? = null, limit: Int? = null): Result<JellyseerrSearchResult>
+    suspend fun getDiscoverTv(page: Int = 1, sortBy: String = "popularity.desc", network: Int? = null, limit: Int? = null): Result<JellyseerrSearchResult>
+    suspend fun getUpcomingMovies(page: Int = 1, limit: Int? = null): Result<JellyseerrSearchResult>
+    suspend fun getUpcomingTv(page: Int = 1, limit: Int? = null): Result<JellyseerrSearchResult>
+
     suspend fun getMoviesByStudio(studioId: Int, page: Int = 1): Result<JellyseerrSearchResult>
     suspend fun getTvByNetwork(networkId: Int, page: Int = 1): Result<JellyseerrSearchResult>
     suspend fun getMovieGenreSlider(): Result<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>>

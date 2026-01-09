@@ -14,6 +14,7 @@ import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.BackdropTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -340,54 +341,69 @@ class RequestsViewModel @Inject constructor(
     }
 
     fun loadDiscoverContent() {
+        _backdropTracker.reset()
+        _uiState.update { it.copy(isLoadingDiscover = true) }
+
         viewModelScope.launch {
-            try {
-                _backdropTracker.reset()
+            coroutineScope {
 
-                _uiState.update { it.copy(isLoadingDiscover = true) }
-
-                val trendingDeferred = async { jellyseerrRepository.getTrending() }
-                val popularMoviesDeferred = async { jellyseerrRepository.getDiscoverMovies() }
-                val popularTvDeferred = async { jellyseerrRepository.getDiscoverTv() }
-                val upcomingMoviesDeferred = async { jellyseerrRepository.getUpcomingMovies() }
-                val upcomingTvDeferred = async { jellyseerrRepository.getUpcomingTv() }
-                val movieGenresDeferred = async { jellyseerrRepository.getMovieGenreSlider() }
-                val tvGenresDeferred = async { jellyseerrRepository.getTvGenreSlider() }
-
-                val trendingResult = trendingDeferred.await()
-                val popularMoviesResult = popularMoviesDeferred.await()
-                val popularTvResult = popularTvDeferred.await()
-                val upcomingMoviesResult = upcomingMoviesDeferred.await()
-                val upcomingTvResult = upcomingTvDeferred.await()
-                val movieGenresResult = movieGenresDeferred.await()
-                val tvGenresResult = tvGenresDeferred.await()
-
-                movieGenresResult.onFailure { error ->
-                    Timber.e(error, "Failed to load movie genres")
+                launch {
+                    jellyseerrRepository.getTrending(limit = 10).onSuccess { response ->
+                        _uiState.update { it.copy(trendingItems = response.results) }
+                    }.onFailure { error ->
+                        Timber.e(error, "Failed to load trending")
+                    }
                 }
 
-                tvGenresResult.onFailure { error ->
-                    Timber.e(error, "Failed to load TV genres")
+                launch {
+                    jellyseerrRepository.getDiscoverMovies().onSuccess { response ->
+                        _uiState.update { it.copy(popularMovies = response.results) }
+                    }.onFailure {
+                        Timber.e(it, "Failed to load popular movies")
+                    }
                 }
 
-                _uiState.update {
-                    it.copy(
-                        trendingItems = trendingResult.getOrNull()?.results ?: emptyList(),
-                        popularMovies = popularMoviesResult.getOrNull()?.results ?: emptyList(),
-                        popularTv = popularTvResult.getOrNull()?.results ?: emptyList(),
-                        upcomingMovies = upcomingMoviesResult.getOrNull()?.results ?: emptyList(),
-                        upcomingTv = upcomingTvResult.getOrNull()?.results ?: emptyList(),
-                        movieGenres = movieGenresResult.getOrNull() ?: emptyList(),
-                        tvGenres = tvGenresResult.getOrNull() ?: emptyList(),
-                        isLoadingDiscover = false
-                    )
+                launch {
+                    jellyseerrRepository.getDiscoverTv().onSuccess { response ->
+                        _uiState.update { it.copy(popularTv = response.results) }
+                    }.onFailure {
+                        Timber.e(it, "Failed to load popular tv")
+                    }
                 }
 
-                Timber.d("Loaded discover content: ${trendingResult.getOrNull()?.results?.size ?: 0} trending items, ${movieGenresResult.getOrNull()?.size ?: 0} movie genres, ${tvGenresResult.getOrNull()?.size ?: 0} TV genres")
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoadingDiscover = false) }
-                Timber.e(e, "Error loading discover content")
+                launch {
+                    jellyseerrRepository.getUpcomingMovies().onSuccess { response ->
+                        _uiState.update { it.copy(upcomingMovies = response.results) }
+                    }.onFailure {
+                        Timber.e(it, "Failed to load upcoming movies")
+                    }
+                }
+
+                launch {
+                    jellyseerrRepository.getUpcomingTv().onSuccess { response ->
+                        _uiState.update { it.copy(upcomingTv = response.results) }
+                    }.onFailure {
+                        Timber.e(it, "Failed to load upcoming tv")
+                    }
+                }
+
+                launch {
+                    jellyseerrRepository.getMovieGenreSlider().onSuccess { genres ->
+                        _uiState.update { it.copy(movieGenres = genres) }
+                    }.onFailure {
+                        Timber.e(it, "Failed to load movie genres")
+                    }
+                }
+
+                launch {
+                    jellyseerrRepository.getTvGenreSlider().onSuccess { genres ->
+                        _uiState.update { it.copy(tvGenres = genres) }
+                    }.onFailure {
+                        Timber.e(it, "Failed to load tv genres")
+                    }
+                }
             }
+            _uiState.update { it.copy(isLoadingDiscover = false) }
         }
     }
 
@@ -409,14 +425,23 @@ class RequestsViewModel @Inject constructor(
                             _uiState.update { it.copy(isFetchingTvDetails = false) }
 
                             val seasonCount = tvDetails.getSeasonCount()
-                            val alreadyAvailableSeasons = tvDetails.mediaInfo?.getAvailableSeasons() ?: emptyList()
+                            val alreadyAvailableSeasons =
+                                tvDetails.mediaInfo?.getAvailableSeasons() ?: emptyList()
 
-                            val selectableSeasons = (1..seasonCount).filter { it !in alreadyAvailableSeasons }
+                            val selectableSeasons =
+                                (1..seasonCount).filter { it !in alreadyAvailableSeasons }
 
                             _uiState.update {
                                 it.copy(
                                     showRequestDialog = true,
-                                    pendingRequest = PendingRequest(tmdbId, mediaType, title, posterUrl, seasonCount, existingStatus),
+                                    pendingRequest = PendingRequest(
+                                        tmdbId,
+                                        mediaType,
+                                        title,
+                                        posterUrl,
+                                        seasonCount,
+                                        existingStatus
+                                    ),
                                     selectedSeasons = selectableSeasons,
                                     disabledSeasons = alreadyAvailableSeasons
                                 )
@@ -424,12 +449,22 @@ class RequestsViewModel @Inject constructor(
                         },
                         onFailure = { error ->
                             _uiState.update { it.copy(isFetchingTvDetails = false) }
-                            Timber.w(error, "Failed to fetch TV details, using fallback season count")
+                            Timber.w(
+                                error,
+                                "Failed to fetch TV details, using fallback season count"
+                            )
 
                             _uiState.update {
                                 it.copy(
                                     showRequestDialog = true,
-                                    pendingRequest = PendingRequest(tmdbId, mediaType, title, posterUrl, availableSeasons, existingStatus),
+                                    pendingRequest = PendingRequest(
+                                        tmdbId,
+                                        mediaType,
+                                        title,
+                                        posterUrl,
+                                        availableSeasons,
+                                        existingStatus
+                                    ),
                                     selectedSeasons = if (availableSeasons > 0) (1..availableSeasons).toList() else emptyList(),
                                     disabledSeasons = emptyList()
                                 )
@@ -440,7 +475,14 @@ class RequestsViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             showRequestDialog = true,
-                            pendingRequest = PendingRequest(tmdbId, mediaType, title, posterUrl, 0, existingStatus),
+                            pendingRequest = PendingRequest(
+                                tmdbId,
+                                mediaType,
+                                title,
+                                posterUrl,
+                                0,
+                                existingStatus
+                            ),
                             selectedSeasons = emptyList(),
                             disabledSeasons = emptyList()
                         )
@@ -451,7 +493,14 @@ class RequestsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         showRequestDialog = true,
-                        pendingRequest = PendingRequest(tmdbId, mediaType, title, posterUrl, availableSeasons, existingStatus),
+                        pendingRequest = PendingRequest(
+                            tmdbId,
+                            mediaType,
+                            title,
+                            posterUrl,
+                            availableSeasons,
+                            existingStatus
+                        ),
                         selectedSeasons = if (mediaType == MediaType.TV && availableSeasons > 0) (1..availableSeasons).toList() else emptyList(),
                         disabledSeasons = emptyList(),
                         isFetchingTvDetails = false

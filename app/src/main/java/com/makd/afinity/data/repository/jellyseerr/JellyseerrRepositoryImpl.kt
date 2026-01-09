@@ -11,7 +11,7 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LoginRequest
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
-import com.makd.afinity.data.models.jellyseerr.TvDetails
+import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -233,8 +233,9 @@ class JellyseerrRepositoryImpl @Inject constructor(
                         null
                     }
 
-                    val errorMsg = "Failed to create request: ${response.code()} - ${response.message()}" +
-                        if (errorBody != null) "\nError details: $errorBody" else ""
+                    val errorMsg =
+                        "Failed to create request: ${response.code()} - ${response.message()}" +
+                                if (errorBody != null) "\nError details: $errorBody" else ""
                     Timber.e(errorMsg)
                     Result.failure(Exception(errorMsg))
                 }
@@ -245,31 +246,40 @@ class JellyseerrRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getRequests(page: Int, filter: String?): Result<List<JellyseerrRequest>> {
+    override suspend fun getRequests(
+        take: Int,
+        skip: Int,
+        filter: String?
+    ): Result<List<JellyseerrRequest>> {
         return withContext(Dispatchers.IO) {
             try {
                 if (networkConnectivityMonitor.isCurrentlyConnected()) {
                     try {
-                        val skip = (page - 1) * 20
                         val response = apiService.get().getRequests(
-                            take = 20,
+                            take = take,
                             skip = skip,
                             filter = filter
                         )
 
                         if (response.isSuccessful && response.body() != null) {
                             val requests = response.body()!!.results
+
                             val enrichedRequests = coroutineScope {
                                 requests.map { request ->
                                     async {
                                         try {
                                             val tmdbId = request.media.tmdbId
                                             if (tmdbId != null) {
-                                                val detailsResponse = when (request.media.mediaType.lowercase()) {
-                                                    "movie" -> apiService.get().getMovieDetails(tmdbId)
-                                                    "tv" -> apiService.get().getTvDetails(tmdbId)
-                                                    else -> null
-                                                }
+                                                val detailsResponse =
+                                                    when (request.media.mediaType.lowercase()) {
+                                                        "movie" -> apiService.get()
+                                                            .getMovieDetails(tmdbId)
+
+                                                        "tv" -> apiService.get()
+                                                            .getTvDetails(tmdbId)
+
+                                                        else -> null
+                                                    }
 
                                                 if (detailsResponse?.isSuccessful == true && detailsResponse.body() != null) {
                                                     val details = detailsResponse.body()!!
@@ -290,14 +300,17 @@ class JellyseerrRepositoryImpl @Inject constructor(
                                                 request
                                             }
                                         } catch (e: Exception) {
-                                            Timber.w(e, "Failed to enrich request ${request.id} with media details")
+                                            Timber.w(
+                                                e,
+                                                "Failed to enrich request ${request.id} with media details"
+                                            )
                                             request
                                         }
                                     }
                                 }.awaitAll()
                             }
 
-                            if (page == 1) {
+                            if (skip == 0 && take >= 20) {
                                 val expiryTime = System.currentTimeMillis() - CACHE_VALIDITY_MS
                                 jellyseerrDao.deleteExpiredRequests(expiryTime)
                             }
@@ -313,7 +326,6 @@ class JellyseerrRepositoryImpl @Inject constructor(
 
                 val cachedRequests = jellyseerrDao.getAllRequests()
                 var cachedList: List<JellyseerrRequestEntity> = emptyList()
-                cachedRequests.collect { cachedList = it }
 
                 if (cachedList.isNotEmpty()) {
                     val requests = cachedList.map { it.toJellyseerrRequest() }
@@ -324,6 +336,155 @@ class JellyseerrRepositoryImpl @Inject constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get Jellyseerr requests")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getTrending(page: Int, limit: Int?): Result<JellyseerrSearchResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getTrending(page)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val originalBody = response.body()!!
+
+                    val finalBody = if (limit != null) {
+                        originalBody.copy(results = originalBody.results.take(limit))
+                    } else {
+                        originalBody
+                    }
+
+                    Result.success(finalBody)
+                } else {
+                    Result.failure(Exception("Failed to get trending: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get trending content")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getDiscoverMovies(
+        page: Int,
+        sortBy: String,
+        studio: Int?,
+        limit: Int?
+    ): Result<JellyseerrSearchResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response =
+                    apiService.get().getDiscoverMovies(page, sortBy = sortBy, studio = studio)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val originalBody = response.body()!!
+                    val finalBody = if (limit != null) {
+                        originalBody.copy(results = originalBody.results.take(limit))
+                    } else {
+                        originalBody
+                    }
+                    Result.success(finalBody)
+                } else {
+                    Result.failure(Exception("Failed to get discover movies: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get discover movies")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getDiscoverTv(
+        page: Int,
+        sortBy: String,
+        network: Int?,
+        limit: Int?
+    ): Result<JellyseerrSearchResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response =
+                    apiService.get().getDiscoverTv(page, sortBy = sortBy, network = network)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val originalBody = response.body()!!
+                    val finalBody = if (limit != null) {
+                        originalBody.copy(results = originalBody.results.take(limit))
+                    } else {
+                        originalBody
+                    }
+                    Result.success(finalBody)
+                } else {
+                    Result.failure(Exception("Failed to get discover TV: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get discover TV")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getUpcomingMovies(page: Int, limit: Int?): Result<JellyseerrSearchResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getUpcomingMovies(page)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val originalBody = response.body()!!
+                    val finalBody = if (limit != null) {
+                        originalBody.copy(results = originalBody.results.take(limit))
+                    } else {
+                        originalBody
+                    }
+                    Result.success(finalBody)
+                } else {
+                    Result.failure(Exception("Failed to get upcoming movies: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get upcoming movies")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getUpcomingTv(page: Int, limit: Int?): Result<JellyseerrSearchResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getUpcomingTv(page)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val originalBody = response.body()!!
+                    val finalBody = if (limit != null) {
+                        originalBody.copy(results = originalBody.results.take(limit))
+                    } else {
+                        originalBody
+                    }
+                    Result.success(finalBody)
+                } else {
+                    Result.failure(Exception("Failed to get upcoming TV: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get upcoming TV")
                 Result.failure(e)
             }
         }
@@ -455,7 +616,7 @@ class JellyseerrRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTvDetails(tvId: Int): Result<TvDetails> {
+    override suspend fun getTvDetails(tvId: Int): Result<MediaDetails> {
         return withContext(Dispatchers.IO) {
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
@@ -471,111 +632,6 @@ class JellyseerrRepositoryImpl @Inject constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get TV show details for ID: $tvId")
-                Result.failure(e)
-            }
-        }
-    }
-
-    override suspend fun getTrending(page: Int): Result<JellyseerrSearchResult> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-
-                val response = apiService.get().getTrending(page)
-
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Failed to get trending: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get trending content")
-                Result.failure(e)
-            }
-        }
-    }
-
-    override suspend fun getDiscoverMovies(page: Int, sortBy: String, studio: Int?): Result<JellyseerrSearchResult> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-
-                val response = apiService.get().getDiscoverMovies(page, sortBy = sortBy, studio = studio)
-
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Failed to get discover movies: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get discover movies")
-                Result.failure(e)
-            }
-        }
-    }
-
-    override suspend fun getDiscoverTv(page: Int, sortBy: String, network: Int?): Result<JellyseerrSearchResult> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-
-                val response = apiService.get().getDiscoverTv(page, sortBy = sortBy, network = network)
-
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Failed to get discover TV: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get discover TV")
-                Result.failure(e)
-            }
-        }
-    }
-
-    override suspend fun getUpcomingMovies(page: Int): Result<JellyseerrSearchResult> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-
-                val response = apiService.get().getUpcomingMovies(page)
-
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Failed to get upcoming movies: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get upcoming movies")
-                Result.failure(e)
-            }
-        }
-    }
-
-    override suspend fun getUpcomingTv(page: Int): Result<JellyseerrSearchResult> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
-                    return@withContext Result.failure(Exception("No network connection"))
-                }
-
-                val response = apiService.get().getUpcomingTv(page)
-
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Failed to get upcoming TV: ${response.message()}"))
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get upcoming TV")
                 Result.failure(e)
             }
         }
@@ -646,7 +702,10 @@ class JellyseerrRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getMoviesByStudio(studioId: Int, page: Int): Result<JellyseerrSearchResult> {
+    override suspend fun getMoviesByStudio(
+        studioId: Int,
+        page: Int
+    ): Result<JellyseerrSearchResult> {
         return getDiscoverMovies(page = page, studio = studioId)
     }
 

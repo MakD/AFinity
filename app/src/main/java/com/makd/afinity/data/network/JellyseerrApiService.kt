@@ -8,7 +8,7 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LoginRequest
 import com.makd.afinity.data.models.jellyseerr.LoginResponse
 import com.makd.afinity.data.models.jellyseerr.RequestsResponse
-import com.makd.afinity.data.models.jellyseerr.TvDetails
+import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -69,10 +69,10 @@ interface JellyseerrApiService {
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/movie/{movieId}")
-    suspend fun getMovieDetails(@Path("movieId") movieId: Int): Response<TvDetails>
+    suspend fun getMovieDetails(@Path("movieId") movieId: Int): Response<MediaDetails>
 
     @GET("api/v1/tv/{tvId}")
-    suspend fun getTvDetails(@Path("tvId") tvId: Int): Response<TvDetails>
+    suspend fun getTvDetails(@Path("tvId") tvId: Int): Response<MediaDetails>
 
     @GET("api/v1/discover/trending")
     suspend fun getTrending(
