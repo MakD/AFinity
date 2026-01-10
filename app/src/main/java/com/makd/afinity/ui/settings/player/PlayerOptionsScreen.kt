@@ -70,6 +70,7 @@ import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.SubtitleVerticalPosition
+import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.ui.settings.SettingsViewModel
 import kotlinx.coroutines.launch
 
@@ -147,7 +148,9 @@ fun PlayerOptionsScreen(
             item {
                 PlayerUISection(
                     logoAutoHide = uiState.logoAutoHide,
-                    onLogoAutoHideToggle = viewModel::toggleLogoAutoHide
+                    onLogoAutoHideToggle = viewModel::toggleLogoAutoHide,
+                    defaultVideoZoomMode = uiState.defaultVideoZoomMode,
+                    onVideoZoomModeChange = viewModel::setDefaultVideoZoomMode
                 )
             }
 
@@ -271,6 +274,8 @@ private fun PlaybackOptionsSection(
 private fun PlayerUISection(
     logoAutoHide: Boolean,
     onLogoAutoHideToggle: (Boolean) -> Unit,
+    defaultVideoZoomMode: VideoZoomMode,
+    onVideoZoomModeChange: (VideoZoomMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
     PlayerSettingsSection(
@@ -284,6 +289,16 @@ private fun PlayerUISection(
             subtitle = "Logo/title auto-hides with controls instead of always being visible",
             checked = logoAutoHide,
             onCheckedChange = onLogoAutoHideToggle
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+
+        VideoZoomModeDropdownItem(
+            selectedMode = defaultVideoZoomMode,
+            onModeSelected = onVideoZoomModeChange
         )
     }
 }
@@ -1106,6 +1121,88 @@ private fun SubtitlePreview(
                     ),
                     color = Color(subtitlePrefs.textColor)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VideoZoomModeDropdownItem(
+    selectedMode: VideoZoomMode,
+    onModeSelected: (VideoZoomMode) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val modes = listOf(VideoZoomMode.FIT, VideoZoomMode.ZOOM, VideoZoomMode.STRETCH)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { expanded = true }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_fullscreen),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp)
+        )
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = "Default Video Mode",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = selectedMode.getDisplayName(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Box {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                modes.forEach { mode ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = mode.getDisplayName(),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        },
+                        onClick = {
+                            onModeSelected(mode)
+                            expanded = false
+                        },
+                        leadingIcon = if (selectedMode == mode) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        } else null
+                    )
+                }
             }
         }
     }

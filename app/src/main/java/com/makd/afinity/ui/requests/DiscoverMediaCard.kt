@@ -149,13 +149,13 @@ fun DiscoverMediaCard(
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_imdb_logo),
-                            contentDescription = "IMDB",
+                            painter = painterResource(id = R.drawable.ic_tmdb_short),
+                            contentDescription = "TMDB",
                             tint = Color.Unspecified,
                             modifier = Modifier.size(
-                                if (fontScale > 1.3f) 14.dp
-                                else if (fontScale > 1.15f) 16.dp
-                                else 18.dp
+                                if (fontScale > 1.3f) 12.dp
+                                else if (fontScale > 1.15f) 14.dp
+                                else 16.dp
                             )
                         )
                         Text(

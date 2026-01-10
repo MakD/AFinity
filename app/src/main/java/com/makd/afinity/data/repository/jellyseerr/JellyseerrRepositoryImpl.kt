@@ -665,15 +665,24 @@ class JellyseerrRepositoryImpl @Inject constructor(
                     val details = response.body()!!
 
                     val ratingsResponse = try {
-                        apiService.get().getTvRatingsCombined(tvId)
+                        apiService.get().getTvRatings(tvId)
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to fetch ratings for TV show $tvId")
                         null
                     }
 
-                    val ratings = if (ratingsResponse?.isSuccessful == true) {
-                        ratingsResponse.body()
-                    } else null
+                    val ratings = if (ratingsResponse?.isSuccessful == true && ratingsResponse.body() != null) {
+                        val rtRating = ratingsResponse.body()!!
+                        com.makd.afinity.data.models.jellyseerr.RatingsCombined(
+                            rt = rtRating,
+                            imdb = null
+                        )
+                    } else {
+                        Timber.w("TV ratings response unsuccessful or null for tvId $tvId: ${ratingsResponse?.code()} - ${ratingsResponse?.message()}")
+                        null
+                    }
+
+                    Timber.d("TV show $tvId ratings: RT Critic=${ratings?.rt?.criticsScore}, RT Audience=${ratings?.rt?.audienceScore}")
 
                     val enrichedDetails = details.copy(ratingsCombined = ratings)
 

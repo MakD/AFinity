@@ -73,7 +73,7 @@ data class SearchResultItem(
 
     fun getRating(): String? {
         return voteAverage?.let {
-            if (it > 0) String.format("%.1f", it) else null
+            if (it > 0) "${(it * 10).toInt()}%" else null
         }
     }
 

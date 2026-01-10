@@ -10,10 +10,12 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.SubtitleVerticalPosition
+import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.di.AppPreferences
 import kotlinx.coroutines.flow.Flow
@@ -68,6 +70,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
 
         val VIDEO_ZOOM_MODE = intPreferencesKey("video_zoom_mode")
+        val EPISODE_LAYOUT = stringPreferencesKey("episode_layout")
 
         val SUBTITLE_TEXT_COLOR = intPreferencesKey("subtitle_text_color")
         val SUBTITLE_TEXT_SIZE = stringPreferencesKey("subtitle_text_size")
@@ -580,6 +583,46 @@ class PreferencesRepositoryImpl @Inject constructor(
     override fun getLogoAutoHideFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
             preferences[Keys.LOGO_AUTO_HIDE] ?: true
+        }
+    }
+
+    override suspend fun setDefaultVideoZoomMode(mode: VideoZoomMode) {
+        dataStore.edit { preferences ->
+            preferences[Keys.VIDEO_ZOOM_MODE] = mode.value
+        }
+    }
+
+    override suspend fun getDefaultVideoZoomMode(): VideoZoomMode {
+        return dataStore.data.first()[Keys.VIDEO_ZOOM_MODE]?.let {
+            VideoZoomMode.fromInt(it)
+        } ?: VideoZoomMode.FIT
+    }
+
+    override fun getDefaultVideoZoomModeFlow(): Flow<VideoZoomMode> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.VIDEO_ZOOM_MODE]?.let {
+                VideoZoomMode.fromInt(it)
+            } ?: VideoZoomMode.FIT
+        }
+    }
+
+    override suspend fun setEpisodeLayout(layout: EpisodeLayout) {
+        dataStore.edit { preferences ->
+            preferences[Keys.EPISODE_LAYOUT] = layout.value
+        }
+    }
+
+    override suspend fun getEpisodeLayout(): EpisodeLayout {
+        return dataStore.data.first()[Keys.EPISODE_LAYOUT]?.let {
+            EpisodeLayout.fromValue(it)
+        } ?: EpisodeLayout.HORIZONTAL
+    }
+
+    override fun getEpisodeLayoutFlow(): Flow<EpisodeLayout> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.EPISODE_LAYOUT]?.let {
+                EpisodeLayout.fromValue(it)
+            } ?: EpisodeLayout.HORIZONTAL
         }
     }
 }

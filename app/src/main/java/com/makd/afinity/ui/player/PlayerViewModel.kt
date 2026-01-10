@@ -118,7 +118,16 @@ class PlayerViewModel @Inject constructor(
 
     private fun initializeVideoZoomMode() {
         viewModelScope.launch {
-            updateUiState { it.copy(videoZoomMode = currentZoomMode) }
+            try {
+                currentZoomMode = preferencesRepository.getDefaultVideoZoomMode()
+                updateUiState { it.copy(videoZoomMode = currentZoomMode) }
+                applyZoomMode(currentZoomMode)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load default video zoom mode, using FIT")
+                currentZoomMode = VideoZoomMode.FIT
+                updateUiState { it.copy(videoZoomMode = currentZoomMode) }
+                applyZoomMode(VideoZoomMode.FIT)
+            }
         }
     }
 

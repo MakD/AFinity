@@ -10,6 +10,7 @@ import com.makd.afinity.data.models.jellyseerr.LoginResponse
 import com.makd.afinity.data.models.jellyseerr.RequestsResponse
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
+import com.makd.afinity.data.models.jellyseerr.RottenTomatoesRating
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -78,8 +79,8 @@ interface JellyseerrApiService {
     @GET("api/v1/movie/{movieId}/ratingscombined")
     suspend fun getMovieRatingsCombined(@Path("movieId") movieId: Int): Response<RatingsCombined>
 
-    @GET("api/v1/tv/{tvId}/ratingscombined")
-    suspend fun getTvRatingsCombined(@Path("tvId") tvId: Int): Response<RatingsCombined>
+    @GET("api/v1/tv/{tvId}/ratings")
+    suspend fun getTvRatings(@Path("tvId") tvId: Int): Response<RottenTomatoesRating>
 
     @GET("api/v1/discover/trending")
     suspend fun getTrending(

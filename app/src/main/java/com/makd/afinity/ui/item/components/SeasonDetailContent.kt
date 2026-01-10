@@ -9,22 +9,29 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.PagingData
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.ui.components.ContinueWatchingCard
+import com.makd.afinity.ui.components.EpisodeListCard
 import com.makd.afinity.ui.item.components.shared.CastSection
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
@@ -40,8 +47,12 @@ fun SeasonDetailContent(
     specialFeatures: List<AfinityItem>,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
-    navController: androidx.navigation.NavController
+    navController: androidx.navigation.NavController,
+    preferencesRepository: PreferencesRepository
 ) {
+    val episodeLayout by preferencesRepository.getEpisodeLayoutFlow()
+        .collectAsState(initial = EpisodeLayout.HORIZONTAL)
+
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -54,7 +65,8 @@ fun SeasonDetailContent(
         episodesPagingData?.let { pagingData ->
             EpisodesSection(
                 episodesPagingData = pagingData,
-                onEpisodeClick = onEpisodeClick
+                onEpisodeClick = onEpisodeClick,
+                layout = episodeLayout
             )
         }
 
@@ -77,12 +89,10 @@ fun SeasonDetailContent(
 @Composable
 private fun EpisodesSection(
     episodesPagingData: Flow<PagingData<AfinityEpisode>>,
-    onEpisodeClick: (AfinityEpisode) -> Unit
+    onEpisodeClick: (AfinityEpisode) -> Unit,
+    layout: EpisodeLayout
 ) {
     val lazyEpisodeItems = episodesPagingData.collectAsLazyPagingItems()
-    val cardWidth = rememberLandscapeCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -95,22 +105,18 @@ private fun EpisodesSection(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
-        ) {
-            items(
-                count = lazyEpisodeItems.itemCount,
-                key = { index -> lazyEpisodeItems[index]?.id ?: index }
-            ) { index ->
-                lazyEpisodeItems[index]?.let { episode ->
-                    ContinueWatchingCard(
-                        item = episode,
-                        onClick = { onEpisodeClick(episode) },
-                        modifier = Modifier.width(cardWidth)
-                    )
-                }
+        when (layout) {
+            EpisodeLayout.HORIZONTAL -> {
+                HorizontalEpisodesList(
+                    lazyEpisodeItems = lazyEpisodeItems,
+                    onEpisodeClick = onEpisodeClick
+                )
+            }
+            EpisodeLayout.VERTICAL -> {
+                VerticalEpisodesList(
+                    lazyEpisodeItems = lazyEpisodeItems,
+                    onEpisodeClick = onEpisodeClick
+                )
             }
         }
 
@@ -122,6 +128,54 @@ private fun EpisodesSection(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(32.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun HorizontalEpisodesList(
+    lazyEpisodeItems: LazyPagingItems<AfinityEpisode>,
+    onEpisodeClick: (AfinityEpisode) -> Unit
+) {
+    val cardWidth = rememberLandscapeCardWidth()
+    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+
+    LazyRow(
+        modifier = Modifier.height(fixedRowHeight),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 0.dp)
+    ) {
+        items(
+            count = lazyEpisodeItems.itemCount,
+            key = { index -> lazyEpisodeItems[index]?.id ?: index }
+        ) { index ->
+            lazyEpisodeItems[index]?.let { episode ->
+                ContinueWatchingCard(
+                    item = episode,
+                    onClick = { onEpisodeClick(episode) },
+                    modifier = Modifier.width(cardWidth)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VerticalEpisodesList(
+    lazyEpisodeItems: LazyPagingItems<AfinityEpisode>,
+    onEpisodeClick: (AfinityEpisode) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        repeat(lazyEpisodeItems.itemCount) { index ->
+            lazyEpisodeItems[index]?.let { episode ->
+                EpisodeListCard(
+                    item = episode,
+                    onClick = { onEpisodeClick(episode) }
+                )
             }
         }
     }

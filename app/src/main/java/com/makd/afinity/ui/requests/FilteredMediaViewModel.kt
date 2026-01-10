@@ -47,16 +47,27 @@ class FilteredMediaViewModel @Inject constructor(
 
     private fun loadPage() {
         val params = currentFilterParams ?: return
+        _uiState.update { it.copy(isLoading = true, error = null) }
 
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isLoading = true, error = null) }
-
                 val result = when (params.type) {
-                    FilterType.GENRE_MOVIE -> jellyseerrRepository.getMoviesByGenre(params.id, currentPage)
+                    FilterType.GENRE_MOVIE -> jellyseerrRepository.getMoviesByGenre(
+                        params.id,
+                        currentPage
+                    )
+
                     FilterType.GENRE_TV -> jellyseerrRepository.getTvByGenre(params.id, currentPage)
-                    FilterType.STUDIO -> jellyseerrRepository.getMoviesByStudio(params.id, currentPage)
-                    FilterType.NETWORK -> jellyseerrRepository.getTvByNetwork(params.id, currentPage)
+                    FilterType.STUDIO -> jellyseerrRepository.getMoviesByStudio(
+                        params.id,
+                        currentPage
+                    )
+
+                    FilterType.NETWORK -> jellyseerrRepository.getTvByNetwork(
+                        params.id,
+                        currentPage
+                    )
+
                     FilterType.TRENDING -> jellyseerrRepository.getTrending(currentPage)
                     FilterType.POPULAR_MOVIES -> jellyseerrRepository.getDiscoverMovies(currentPage)
                     FilterType.UPCOMING_MOVIES -> jellyseerrRepository.getUpcomingMovies(currentPage)
@@ -70,14 +81,17 @@ class FilteredMediaViewModel @Inject constructor(
                         val hasReachedEnd = newItems.isEmpty() || newItems.size < 20
 
                         _uiState.update { state ->
+                            val combinedList =
+                                if (currentPage == 1) newItems else state.items + newItems
+                            val uniqueList = combinedList.distinctBy { it.id }
+
                             state.copy(
-                                items = if (currentPage == 1) newItems else state.items + newItems,
+                                items = uniqueList,
                                 isLoading = false,
                                 hasReachedEnd = hasReachedEnd
                             )
                         }
-
-                        Timber.d("Loaded page $currentPage with ${newItems.size} items for ${params.name}")
+                        Timber.d("Loaded page $currentPage...")
                     },
                     onFailure = { error ->
                         _uiState.update {

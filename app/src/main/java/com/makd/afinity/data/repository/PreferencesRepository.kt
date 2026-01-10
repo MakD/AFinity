@@ -1,7 +1,9 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.player.SubtitlePreferences
+import com.makd.afinity.data.models.player.VideoZoomMode
 import kotlinx.coroutines.flow.Flow
 
 interface PreferencesRepository {
@@ -112,6 +114,14 @@ interface PreferencesRepository {
     suspend fun setLogoAutoHide(enabled: Boolean)
     suspend fun getLogoAutoHide(): Boolean
     fun getLogoAutoHideFlow(): Flow<Boolean>
+
+    suspend fun setDefaultVideoZoomMode(mode: VideoZoomMode)
+    suspend fun getDefaultVideoZoomMode(): VideoZoomMode
+    fun getDefaultVideoZoomModeFlow(): Flow<VideoZoomMode>
+
+    suspend fun setEpisodeLayout(layout: EpisodeLayout)
+    suspend fun getEpisodeLayout(): EpisodeLayout
+    fun getEpisodeLayoutFlow(): Flow<EpisodeLayout>
 
     suspend fun clearAllPreferences()
     suspend fun clearServerPreferences()

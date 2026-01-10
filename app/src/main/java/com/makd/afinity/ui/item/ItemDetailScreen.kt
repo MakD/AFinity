@@ -48,10 +48,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel as hiltNavigationViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.paging.PagingData
 import com.makd.afinity.R
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -90,6 +92,7 @@ import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
 import com.makd.afinity.ui.player.PlayerLauncher
+import com.makd.afinity.util.rememberPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
@@ -335,6 +338,7 @@ private fun LandscapeItemDetailContent(
     viewModel: ItemDetailViewModel,
     context: android.content.Context
 ) {
+    val preferencesRepository = rememberPreferencesRepository()
     val density = androidx.compose.ui.platform.LocalDensity.current
     val statusBarHeight = WindowInsets.statusBars.getTop(density)
     val displayCutoutLeft =
@@ -814,7 +818,8 @@ private fun LandscapeItemDetailContent(
                                 viewModel.selectEpisode(episode)
                             },
                             onSpecialFeatureClick = onSpecialFeatureClick,
-                            navController = navController
+                            navController = navController,
+                            preferencesRepository = preferencesRepository
                         )
 
                         is AfinityMovie -> MovieDetailContent(
@@ -888,6 +893,7 @@ private fun PortraitItemDetailContent(
     viewModel: ItemDetailViewModel,
     context: android.content.Context
 ) {
+    val preferencesRepository = rememberPreferencesRepository()
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -1639,7 +1645,8 @@ private fun PortraitItemDetailContent(
                             viewModel.selectEpisode(episode)
                         },
                         onSpecialFeatureClick = onSpecialFeatureClick,
-                        navController = navController
+                        navController = navController,
+                        preferencesRepository = preferencesRepository
                     )
 
                     is AfinityMovie -> MovieDetailContent(

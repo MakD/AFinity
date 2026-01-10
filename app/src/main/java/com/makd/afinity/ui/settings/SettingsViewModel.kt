@@ -3,6 +3,8 @@ package com.makd.afinity.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
@@ -42,6 +44,13 @@ class SettingsViewModel @Inject constructor(
 
     private val _homeSortByDateAdded = MutableStateFlow(true)
     val homeSortByDateAdded: StateFlow<Boolean> = _homeSortByDateAdded.asStateFlow()
+
+    val episodeLayout: StateFlow<EpisodeLayout> = preferencesRepository.getEpisodeLayoutFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = EpisodeLayout.HORIZONTAL
+        )
 
     private val _manualOfflineMode = MutableStateFlow(false)
     val manualOfflineMode: StateFlow<Boolean> = _manualOfflineMode.asStateFlow()
@@ -155,6 +164,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.getLogoAutoHideFlow().collect {
                 _uiState.value = _uiState.value.copy(logoAutoHide = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getDefaultVideoZoomModeFlow().collect { mode ->
+                _uiState.value = _uiState.value.copy(defaultVideoZoomMode = mode)
             }
         }
     }
@@ -305,6 +320,28 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setDefaultVideoZoomMode(mode: VideoZoomMode) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setDefaultVideoZoomMode(mode)
+                Timber.d("Default video zoom mode set to: ${mode.getDisplayName()}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set default video zoom mode")
+            }
+        }
+    }
+
+    fun setEpisodeLayout(layout: EpisodeLayout) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setEpisodeLayout(layout)
+                Timber.d("Episode layout set to: ${layout.getDisplayName()}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set episode layout")
+            }
+        }
+    }
+
     fun logout(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
             try {
@@ -368,6 +405,7 @@ data class SettingsUiState(
     val skipOutroEnabled: Boolean = true,
     val useExoPlayer: Boolean = true,
     val logoAutoHide: Boolean = false,
+    val defaultVideoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,
     val error: String? = null

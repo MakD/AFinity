@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.makd.afinity.R
+import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.ui.settings.SettingsViewModel
 import com.makd.afinity.ui.theme.ThemeMode
 
@@ -58,6 +59,7 @@ fun AppearanceOptionsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val combineLibrarySections by viewModel.combineLibrarySections.collectAsState()
     val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsState()
+    val episodeLayout by viewModel.episodeLayout.collectAsState()
 
     Scaffold(
         topBar = {
@@ -105,8 +107,10 @@ fun AppearanceOptionsScreen(
                 LibrarySection(
                     combineLibrarySections = combineLibrarySections,
                     homeSortByDateAdded = homeSortByDateAdded,
+                    episodeLayout = episodeLayout,
                     onCombineLibrarySectionsToggle = viewModel::toggleCombineLibrarySections,
-                    onHomeSortByDateAddedToggle = viewModel::toggleHomeSortByDateAdded
+                    onHomeSortByDateAddedToggle = viewModel::toggleHomeSortByDateAdded,
+                    onEpisodeLayoutChange = viewModel::setEpisodeLayout
                 )
             }
         }
@@ -194,8 +198,10 @@ private fun ThemeSection(
 private fun LibrarySection(
     combineLibrarySections: Boolean,
     homeSortByDateAdded: Boolean,
+    episodeLayout: EpisodeLayout,
     onCombineLibrarySectionsToggle: (Boolean) -> Unit,
     onHomeSortByDateAddedToggle: (Boolean) -> Unit,
+    onEpisodeLayoutChange: (EpisodeLayout) -> Unit,
     modifier: Modifier = Modifier
 ) {
     AppearanceSettingsSection(
@@ -222,6 +228,16 @@ private fun LibrarySection(
             subtitle = "Show newest content first on home screen",
             checked = homeSortByDateAdded,
             onCheckedChange = onHomeSortByDateAddedToggle
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+
+        EpisodeLayoutDropdownItem(
+            selectedLayout = episodeLayout,
+            onLayoutSelected = onEpisodeLayoutChange
         )
     }
 }
@@ -385,4 +401,60 @@ private fun AppearanceSettingsSwitchItem(
             )
         )
     }
+}
+
+@Composable
+private fun EpisodeLayoutDropdownItem(
+    selectedLayout: EpisodeLayout,
+    onLayoutSelected: (EpisodeLayout) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val layouts = listOf(EpisodeLayout.HORIZONTAL, EpisodeLayout.VERTICAL)
+
+    AppearanceSettingsItem(
+        icon = painterResource(id = R.drawable.ic_view_module),
+        title = "Episode Layout",
+        subtitle = selectedLayout.getDisplayName(),
+        onClick = { expanded = true },
+        trailing = {
+            Box {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    layouts.forEach { layout ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = layout.getDisplayName(),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            },
+                            onClick = {
+                                onLayoutSelected(layout)
+                                expanded = false
+                            },
+                            leadingIcon = if (selectedLayout == layout) {
+                                {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_check),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            } else null
+                        )
+                    }
+                }
+            }
+        }
+    )
 }
