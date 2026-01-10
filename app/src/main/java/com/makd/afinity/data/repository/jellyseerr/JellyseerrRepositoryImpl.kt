@@ -48,7 +48,7 @@ class JellyseerrRepositoryImpl @Inject constructor(
     override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
     companion object {
-        private const val CACHE_VALIDITY_MS = 6 * 60 * 60 * 1000L
+        private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
     }
 
     init {
