@@ -267,7 +267,6 @@ fun FavoritesScreen(
     selectedEpisode?.let { episode ->
         EpisodeDetailOverlay(
             episode = episode,
-            isLoading = isLoadingEpisode,
             isInWatchlist = selectedEpisodeWatchlistStatus,
             downloadInfo = selectedEpisodeDownloadInfo,
             onDismiss = {

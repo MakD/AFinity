@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,8 +31,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
@@ -51,9 +52,8 @@ import java.util.Locale
 @Composable
 fun EpisodeDetailOverlay(
     episode: AfinityEpisode,
-    isLoading: Boolean,
     isInWatchlist: Boolean,
-    downloadInfo: com.makd.afinity.data.models.download.DownloadInfo?,
+    downloadInfo: DownloadInfo?,
     onDismiss: () -> Unit,
     onPlayClick: (AfinityEpisode, PlaybackSelection) -> Unit,
     onToggleFavorite: () -> Unit,
@@ -301,7 +301,9 @@ fun EpisodeDetailOverlay(
                     text = episode.overview,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -375,8 +377,6 @@ fun EpisodeDetailOverlay(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
