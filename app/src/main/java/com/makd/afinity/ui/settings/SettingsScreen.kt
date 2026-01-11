@@ -547,7 +547,7 @@ private fun AboutSection(
         )
 
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_description),
+            icon = painterResource(id = R.drawable.ic_source_code),
             title = "Open Source Licenses",
             subtitle = "View licenses for open source libraries",
             onClick = onLicensesClick

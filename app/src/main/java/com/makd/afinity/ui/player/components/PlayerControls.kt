@@ -91,11 +91,15 @@ fun PlayerControls(
     onBackClick: () -> Unit,
     onNextClick: () -> Unit = {},
     onPreviousClick: () -> Unit = {},
-    onPipToggle: () -> Unit = {}
+    onPipToggle: () -> Unit = {},
+    playlistQueue: List<com.makd.afinity.data.models.media.AfinityItem> = emptyList(),
+    currentPlaylistIndex: Int = -1,
+    onJumpToEpisode: (java.util.UUID) -> Unit = {}
 ) {
     var showAudioSelector by remember { mutableStateOf(false) }
     var showSubtitleSelector by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
+    var showEpisodeSwitcher by remember { mutableStateOf(false) }
 
     val currentItem = uiState.currentItem
 
@@ -297,6 +301,8 @@ fun PlayerControls(
                         onSpeedToggle = { showSpeedDialog = !showSpeedDialog },
                         onAudioToggle = { showAudioSelector = !showAudioSelector },
                         onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
+                        onEpisodeSwitcherToggle = { showEpisodeSwitcher = !showEpisodeSwitcher },
+                        showEpisodeSwitcherButton = currentItem is AfinityEpisode && playlistQueue.size > 1,
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
                 }
@@ -529,6 +535,18 @@ fun PlayerControls(
             onDismiss = { showSpeedDialog = false }
         )
     }
+
+    if (showEpisodeSwitcher && playlistQueue.isNotEmpty()) {
+        EpisodeSwitcher(
+            episodes = playlistQueue,
+            currentIndex = currentPlaylistIndex,
+            onEpisodeClick = { episodeId ->
+                onJumpToEpisode(episodeId)
+                showEpisodeSwitcher = false
+            },
+            onDismiss = { showEpisodeSwitcher = false }
+        )
+    }
 }
 
 @OptIn(UnstableApi::class)
@@ -587,7 +605,7 @@ private fun TopControls(
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
-                        painter = painterResource(id = if (uiState.isControlsLocked) R.drawable.ic_unlock else R.drawable.ic_lock),
+                        painter = painterResource(id = if (uiState.isControlsLocked) R.drawable.ic_unlock_player else R.drawable.ic_lock_player),
                         contentDescription = if (uiState.isControlsLocked) "Unlock" else "Lock",
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
@@ -724,6 +742,8 @@ private fun BottomControls(
     onSpeedToggle: () -> Unit,
     onAudioToggle: () -> Unit,
     onSubtitleToggle: () -> Unit,
+    onEpisodeSwitcherToggle: () -> Unit = {},
+    showEpisodeSwitcherButton: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -759,6 +779,20 @@ private fun BottomControls(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    if (showEpisodeSwitcherButton) {
+                        IconButton(
+                            onClick = onEpisodeSwitcherToggle,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_episodes_list),
+                                contentDescription = "Episodes",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
                     IconButton(
                         onClick = onSpeedToggle,
                         modifier = Modifier.size(40.dp)
@@ -788,7 +822,7 @@ private fun BottomControls(
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_cc),
+                            painter = painterResource(id = R.drawable.ic_subtitles),
                             contentDescription = "Subtitles",
                             tint = if (uiState.subtitleStreamIndex != null) MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)

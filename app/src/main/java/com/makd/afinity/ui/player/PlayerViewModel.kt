@@ -35,6 +35,7 @@ import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.Trickplay
 import com.makd.afinity.data.models.player.VideoZoomMode
+import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -69,6 +70,7 @@ class PlayerViewModel @Inject constructor(
     private val playbackRepository: PlaybackRepository,
     private val playbackStateManager: PlaybackStateManager,
     private val mediaRepository: MediaRepository,
+    private val jellyfinRepository: JellyfinRepository,
     private val segmentsRepository: SegmentsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val playlistManager: PlaylistManager,
@@ -85,6 +87,8 @@ class PlayerViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
+
+    val playlistState: StateFlow<PlaylistState> = playlistManager.playlistState
 
     val gestureConfig = GestureConfig()
 
@@ -526,14 +530,45 @@ class PlayerViewModel @Inject constructor(
         startPositionMs: Long
     ) {
         try {
-            currentItem = item
-            val chapters = item.chapters
+            val fullItem: AfinityItem = if (item.sources.isEmpty()) {
+                Timber.d("Item ${item.name} has no sources, fetching full details...")
+                try {
+                    jellyfinRepository.getItemById(item.id) ?: item
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to fetch full item details")
+                    item
+                }
+            } else {
+                item
+            }
+
+            currentItem = fullItem as AfinityItem?
+
+            val chapters = fullItem.chapters
             updateUiState { it.copy(chapters = chapters) }
 
-            val audioStreams = item.sources.firstOrNull()?.mediaStreams?.filter {
+            // ----------------------------------------------------------------
+            // 2. RESOLVE MEDIA SOURCE (UPDATED)
+            // ----------------------------------------------------------------
+            // If mediaSourceId was passed as empty (from jumpToEpisode), pick the default one.
+            val mediaSource = fullItem.sources.firstOrNull {
+                if (mediaSourceId.isBlank()) true else it.id == mediaSourceId
+            } ?: fullItem.sources.firstOrNull()
+
+            val actualMediaSourceId = mediaSource?.id
+
+            if (actualMediaSourceId == null) {
+                Timber.e("No media source found for item: ${fullItem.name}")
+                updateUiState {
+                    it.copy(isLoading = false, showError = true, errorMessage = "No media sources available.")
+                }
+                return
+            }
+
+            val audioStreams = mediaSource.mediaStreams.filter {
                 it.type == MediaStreamType.AUDIO
             }
-            val audioPosition = if (audioStreamIndex != null && audioStreams != null) {
+            val audioPosition = if (audioStreamIndex != null) {
                 audioStreams.indexOfFirst { it.index == audioStreamIndex }
                     .takeIf { it >= 0 }
             } else {
@@ -542,7 +577,7 @@ class PlayerViewModel @Inject constructor(
 
             updateUiState {
                 it.copy(
-                    currentItem = item,
+                    currentItem = fullItem,
                     audioStreamIndex = audioPosition,
                     subtitleStreamIndex = subtitleStreamIndex
                 )
@@ -551,23 +586,21 @@ class PlayerViewModel @Inject constructor(
 
             playbackStateManager.trackPlaybackSession(
                 sessionId = currentSessionId!!,
-                itemId = item.id,
-                mediaSourceId = mediaSourceId
+                itemId = fullItem.id,
+                mediaSourceId = actualMediaSourceId
             )
-            playbackStateManager.trackCurrentItem(item.id)
+            playbackStateManager.trackCurrentItem(fullItem.id)
 
             coroutineScope {
-                val mediaSource = item.sources.firstOrNull { it.id == mediaSourceId }
-                val useLocalSource =
-                    mediaSource?.type == AfinitySourceType.LOCAL
+                val useLocalSource = mediaSource.type == AfinitySourceType.LOCAL
 
                 val streamUrlDeferred = async(Dispatchers.IO) {
                     if (useLocalSource) {
-                        mediaSource?.path?.let { "file://$it" }
+                        mediaSource.path?.let { "file://$it" }
                     } else {
                         playbackRepository.getStreamUrl(
-                            itemId = item.id,
-                            mediaSourceId = mediaSourceId,
+                            itemId = fullItem.id,
+                            mediaSourceId = actualMediaSourceId,
                             audioStreamIndex = audioStreamIndex,
                             subtitleStreamIndex = null,
                             videoStreamIndex = null,
@@ -577,11 +610,11 @@ class PlayerViewModel @Inject constructor(
                     }
                 }
 
-                val segmentsJob = launch(Dispatchers.IO) { loadSegments(item.id) }
+                val segmentsJob = launch(Dispatchers.IO) { loadSegments(fullItem.id) }
                 val trickplayJob = launch(Dispatchers.IO) { loadTrickplayData() }
                 val reportStartJob = launch(Dispatchers.IO) {
                     if (!useLocalSource) {
-                        reportPlaybackStart(item)
+                        reportPlaybackStart(fullItem)
                     }
                 }
 
@@ -597,17 +630,14 @@ class PlayerViewModel @Inject constructor(
                     }
                     return@coroutineScope
                 }
+
+                // ... (Subtitle logic remains mostly the same, just ensure it uses fullItem.id) ...
+
                 val externalSubtitles = if (useLocalSource) {
-                    val itemDir = downloadRepository.getItemDownloadDirectory(item.id)
+                    val itemDir = downloadRepository.getItemDownloadDirectory(fullItem.id)
                     val subtitlesDir = java.io.File(itemDir, "subtitles")
-                    Timber.d("PlayerViewModel: Looking for local subtitles in: ${subtitlesDir.absolutePath}")
-                    Timber.d("PlayerViewModel: Subtitles directory exists: ${subtitlesDir.exists()}")
                     if (subtitlesDir.exists()) {
                         val files = subtitlesDir.listFiles()
-                        Timber.d("PlayerViewModel: Found ${files?.size ?: 0} subtitle files")
-                        files?.forEach { file ->
-                            Timber.d("PlayerViewModel: Subtitle file: ${file.name}")
-                        }
                         files?.mapNotNull { subtitleFile ->
                             try {
                                 val extension = subtitleFile.extension
@@ -618,65 +648,46 @@ class PlayerViewModel @Inject constructor(
                                     else -> MimeTypes.TEXT_UNKNOWN
                                 }
 
-                                val language =
-                                    subtitleFile.nameWithoutExtension.split("_").firstOrNull()
-                                        ?: "unknown"
+                                val language = subtitleFile.nameWithoutExtension.split("_").firstOrNull() ?: "unknown"
 
-                                val subtitleConfig =
-                                    MediaItem.SubtitleConfiguration.Builder("file://${subtitleFile.absolutePath}".toUri())
-                                        .setLabel(language)
-                                        .setMimeType(mimeType)
-                                        .setLanguage(language)
-                                        .build()
-                                Timber.d("PlayerViewModel: Built subtitle config - Label: $language, MimeType: $mimeType, URI: file://${subtitleFile.absolutePath}")
-                                subtitleConfig
+                                MediaItem.SubtitleConfiguration.Builder("file://${subtitleFile.absolutePath}".toUri())
+                                    .setLabel(language)
+                                    .setMimeType(mimeType)
+                                    .setLanguage(language)
+                                    .build()
                             } catch (e: Exception) {
-                                Timber.e(
-                                    e,
-                                    "Failed to build subtitle config for local file: ${subtitleFile.name}"
-                                )
                                 null
                             }
                         } ?: emptyList()
                     } else {
-                        Timber.w("PlayerViewModel: Subtitles directory does not exist")
                         emptyList()
                     }
                 } else {
-                    mediaSource?.mediaStreams
-                        ?.filter { stream ->
+                    mediaSource.mediaStreams
+                        .filter { stream ->
                             stream.type == MediaStreamType.SUBTITLE && stream.isExternal
                         }
-                        ?.mapNotNull { stream ->
+                        .mapNotNull { stream ->
                             try {
                                 val subtitleUrl =
-                                    "${apiClient.baseUrl}/Videos/${item.id}/${mediaSourceId}/Subtitles/${stream.index}/Stream.srt"
-                                MediaItem.SubtitleConfiguration.Builder(
-                                    subtitleUrl.toUri()
-                                )
-                                    .setLabel(
-                                        stream.displayTitle ?: stream.language
-                                        ?: "Track ${stream.index}"
-                                    )
+                                    "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.srt"
+                                MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
+                                    .setLabel(stream.displayTitle ?: stream.language ?: "Track ${stream.index}")
                                     .setMimeType(MimeTypes.APPLICATION_SUBRIP)
                                     .setLanguage(stream.language ?: "eng")
                                     .build()
                             } catch (e: Exception) {
-                                Timber.e(
-                                    e,
-                                    "Failed to build subtitle config for stream ${stream.index}"
-                                )
                                 null
                             }
-                        } ?: emptyList()
+                        }
                 }
 
                 val mediaItem = MediaItem.Builder()
-                    .setMediaId(item.id.toString())
+                    .setMediaId(fullItem.id.toString())
                     .setUri(streamUrl)
                     .setMediaMetadata(
                         MediaMetadata.Builder()
-                            .setTitle(item.name)
+                            .setTitle(fullItem.name)
                             .build()
                     )
                     .setSubtitleConfigurations(externalSubtitles)
@@ -987,7 +998,7 @@ class PlayerViewModel @Inject constructor(
                         startPositionMs = 0L
                     )
                 )
-                initializePlaylist(nextItem)
+                playlistManager.next()
             }
         }
     }
@@ -1004,7 +1015,23 @@ class PlayerViewModel @Inject constructor(
                         startPositionMs = 0L
                     )
                 )
-                initializePlaylist(prevItem)
+                playlistManager.previous()
+            }
+        }
+    }
+
+    fun jumpToEpisode(episodeId: UUID) {
+        viewModelScope.launch {
+            playlistManager.jumpToItem(episodeId)?.let { targetItem ->
+                handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = targetItem,
+                        mediaSourceId = targetItem.sources.firstOrNull()?.id ?: "",
+                        audioStreamIndex = null,
+                        subtitleStreamIndex = null,
+                        startPositionMs = 0L
+                    )
+                )
             }
         }
     }

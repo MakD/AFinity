@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.CaptionStyleCompat
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
@@ -57,6 +58,9 @@ fun PlayerScreen(
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val playlistState by viewModel.playlistState.collectAsStateWithLifecycle(
+        initialValue = PlaylistState()
+    )
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val preferencesRepository = remember {
@@ -189,8 +193,8 @@ fun PlayerScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             when (val player = viewModel.player) {
-                is androidx.media3.exoplayer.ExoPlayer -> {
-                    androidx.compose.ui.viewinterop.AndroidView(
+                is ExoPlayer -> {
+                    AndroidView(
                         factory = { context ->
                             androidx.media3.ui.PlayerView(context).apply {
                                 useController = false
@@ -217,9 +221,9 @@ fun PlayerScreen(
             }
         }
 
-        if (viewModel.player is androidx.media3.exoplayer.ExoPlayer) {
+        if (viewModel.player is ExoPlayer) {
             ExoPlayerSubtitles(
-                player = viewModel.player as androidx.media3.exoplayer.ExoPlayer,
+                player = viewModel.player as ExoPlayer,
                 subtitlePrefs = subtitlePrefs,
                 modifier = Modifier.fillMaxSize()
             )
@@ -237,6 +241,9 @@ fun PlayerScreen(
             onPipToggle = {
                 viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture)
             },
+            playlistQueue = playlistState.queue,
+            currentPlaylistIndex = playlistState.currentIndex,
+            onJumpToEpisode = viewModel::jumpToEpisode
         )
 
         TrickplayPreview(
@@ -281,7 +288,7 @@ fun PlayerScreen(
 @OptIn(UnstableApi::class)
 @Composable
 private fun ExoPlayerSubtitles(
-    player: androidx.media3.exoplayer.ExoPlayer,
+    player: ExoPlayer,
     subtitlePrefs: SubtitlePreferences,
     modifier: Modifier = Modifier
 ) {

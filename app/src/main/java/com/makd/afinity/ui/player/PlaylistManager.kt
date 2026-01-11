@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.repository.JellyfinRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,39 +35,38 @@ class PlaylistManager @Inject constructor(
 
     private var currentQueue: MutableList<AfinityItem> = mutableListOf()
     private var currentIndex: Int = -1
+    private var currentSeriesId: UUID? = null
 
     suspend fun initializePlaylist(startingItem: AfinityItem): Boolean {
-        Timber.d("Initializing playlist for: ${startingItem.name} (type: ${startingItem::class.simpleName})")
+        if (startingItem is AfinityEpisode && currentSeriesId == startingItem.seriesId && currentQueue.isNotEmpty()) {
+            val existingIndex = currentQueue.indexOfFirst { it.id == startingItem.id }
+            if (existingIndex != -1) {
+                currentIndex = existingIndex
+                updatePlaylistState()
+                return true
+            }
+        }
 
         return try {
             val result = when (startingItem) {
                 is AfinityEpisode -> {
-                    Timber.d("Initializing episode queue for series: ${startingItem.seriesId}")
+                    currentSeriesId = startingItem.seriesId
                     initializeEpisodeQueue(startingItem)
                 }
-
-                is AfinityMovie -> {
-                    Timber.d("Initializing single item queue for movie")
-                    initializeSingleItemQueue(startingItem)
-                }
-
                 else -> {
-                    Timber.d("Initializing single item queue for other type: ${startingItem::class.simpleName}")
+                    currentSeriesId = null
                     initializeSingleItemQueue(startingItem)
                 }
             }
-
-            Timber.d("Playlist initialization result: $result, queue size: ${currentQueue.size}, current index: $currentIndex")
             result
         } catch (e: Exception) {
-            Timber.e(e, "Failed to initialize playlist for: ${startingItem.name}")
+            Timber.e(e, "Failed to initialize playlist")
             false
         }
     }
 
     private suspend fun initializeEpisodeQueue(startingEpisode: AfinityEpisode): Boolean {
         return try {
-            Timber.d("Getting seasons for series: ${startingEpisode.seriesId}")
             val seasons = jellyfinRepository.getSeasons(
                 startingEpisode.seriesId,
                 SortBy.NAME,
@@ -74,95 +74,53 @@ class PlaylistManager @Inject constructor(
             )
 
             if (seasons.isEmpty()) {
-                Timber.w("No seasons found for series: ${startingEpisode.seriesId}")
-                setQueue(listOf(startingEpisode as AfinityItem), 0)
+                setQueue(listOf(startingEpisode), 0)
                 return true
             }
-
-            Timber.d("Found ${seasons.size} seasons for series")
 
             val allEpisodes = mutableListOf<AfinityEpisode>()
 
             for (season in seasons.sortedBy { it.indexNumber ?: 0 }) {
                 try {
-                    Timber.d("Loading episodes for season ${season.indexNumber} (${season.id})")
-                    val episodes =
-                        jellyfinRepository.getEpisodes(season.id, startingEpisode.seriesId)
-                    Timber.d("Season ${season.indexNumber}: ${episodes.size} episodes")
+                    val episodes = jellyfinRepository.getEpisodes(season.id, startingEpisode.seriesId)
 
                     if (episodes.isNotEmpty()) {
-                        val episodesWithSources = withContext(Dispatchers.IO) {
-                            coroutineScope {
-                                episodes.sortedBy { it.indexNumber ?: 0 }.map { episode ->
-                                    async {
-                                        try {
-                                            val fullEpisode =
-                                                jellyfinRepository.getItemById(episode.id) as? AfinityEpisode
-                                            if (fullEpisode != null && fullEpisode.sources.isNotEmpty()) {
-                                                Timber.d("Loaded episode with ${fullEpisode.sources.size} sources: ${fullEpisode.name}")
-                                                fullEpisode
-                                            } else {
-                                                Timber.w("Episode ${episode.name} has no media sources")
-                                                episode
-                                            }
-                                        } catch (e: Exception) {
-                                            Timber.w(
-                                                e,
-                                                "Failed to load full details for episode ${episode.name}"
-                                            )
-                                            episode
-                                        }
-                                    }
-                                }.map { it.await() }
-                            }
-                        }
-                        allEpisodes.addAll(episodesWithSources)
+                        allEpisodes.addAll(episodes.sortedBy { it.indexNumber ?: 0 })
                     }
+
+                    if (allEpisodes.isNotEmpty()) {
+                    setQueue(allEpisodes.map { it as AfinityItem }, allEpisodes.indexOfFirst { it.id == startingEpisode.id }.coerceAtLeast(0))
+                    }
+
                 } catch (e: Exception) {
-                    Timber.w(e, "Failed to load episodes for season ${season.id}")
+                    Timber.w("Failed to load episodes for season ${season.indexNumber}")
                 }
             }
 
             if (allEpisodes.isEmpty()) {
-                Timber.w("No episodes found for series, using single episode")
-                setQueue(listOf(startingEpisode as AfinityItem), 0)
+                setQueue(listOf(startingEpisode), 0)
                 return true
             }
 
-            val startingEpisodeWithSources = if (startingEpisode.sources.isEmpty()) {
-                try {
-                    Timber.d("Starting episode has no sources, loading full details...")
-                    jellyfinRepository.getItemById(startingEpisode.id) as? AfinityEpisode
-                        ?: startingEpisode
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to load sources for starting episode")
-                    startingEpisode
-                }
-            } else {
-                startingEpisode
-            }
+            val startIndex = allEpisodes.indexOfFirst { it.id == startingEpisode.id }
 
-            val startIndex = allEpisodes.indexOfFirst { it.id == startingEpisodeWithSources.id }
             if (startIndex == -1) {
-                Timber.w("Starting episode not found in queue, adding it")
-                allEpisodes.add(0, startingEpisodeWithSources)
+                allEpisodes.add(0, startingEpisode)
                 setQueue(allEpisodes.map { it as AfinityItem }, 0)
             } else {
-                allEpisodes[startIndex] = startingEpisodeWithSources
+                allEpisodes[startIndex] = startingEpisode
                 setQueue(allEpisodes.map { it as AfinityItem }, startIndex)
             }
 
-            Timber.d("Episode queue initialized: ${allEpisodes.size} episodes, starting at index $currentIndex")
             true
-
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize episode queue")
-            setQueue(listOf(startingEpisode as AfinityItem), 0)
+            setQueue(listOf(startingEpisode), 0)
             true
         }
     }
 
-    private suspend fun initializeSingleItemQueue(item: AfinityItem): Boolean {
+    private fun initializeSingleItemQueue(item: AfinityItem): Boolean {
         Timber.d("Initializing single item queue for: ${item.name}")
         setQueue(listOf(item), 0)
         return true
