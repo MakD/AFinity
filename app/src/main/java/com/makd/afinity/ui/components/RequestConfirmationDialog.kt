@@ -81,7 +81,7 @@ fun RequestConfirmationDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
         title = {
             Text(
-                text = "Request on Jellyseerr",
+                text = "Request on Seerr",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -405,7 +405,7 @@ fun RequestConfirmationDialog(
                 if (!alreadyRequested) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Request this ${mediaType.toApiString()} on Jellyseerr?",
+                        text = "Request this ${mediaType.toApiString()} on Seerr?",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium

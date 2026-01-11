@@ -255,7 +255,7 @@ internal fun SeasonCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_circle_check),
+                            painter = painterResource(id = R.drawable.ic_check),
                             contentDescription = "Watched",
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)

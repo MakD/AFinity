@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -121,6 +122,16 @@ private fun ShowGenreSkeletonRow(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .shimmerEffect()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .width(cardWidth * 0.8f)
+                            .height(14.dp)
+                            .padding(horizontal = 4.dp)
                             .shimmerEffect()
                     )
                 }

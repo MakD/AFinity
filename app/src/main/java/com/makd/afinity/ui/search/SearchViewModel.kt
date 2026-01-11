@@ -211,9 +211,6 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isJellyseerrSearching = true) }
-
-                Timber.d("Performing Jellyseerr search for: '$query'")
-
                 jellyseerrRepository.findMediaByName(query).fold(
                     onSuccess = { results ->
                         _uiState.update {

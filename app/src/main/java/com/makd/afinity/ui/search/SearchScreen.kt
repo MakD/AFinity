@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -430,7 +431,7 @@ private fun LibraryFilterChip(
         leadingIcon = if (isSelected && showCheckIcon) {
             {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_circle_check),
+                    painter = painterResource(id = R.drawable.ic_check),
                     contentDescription = null,
                     modifier = Modifier.size(16.dp)
                 )
@@ -505,19 +506,44 @@ private fun SearchResultItem(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Card(
+            Box(
                 modifier = Modifier
                     .width(80.dp)
-                    .height(120.dp),
-                shape = RoundedCornerShape(8.dp)
+                    .height(120.dp)
             ) {
-                OptimizedAsyncImage(
-                    imageUrl = item.images.primaryImageUrl,
-                    contentDescription = item.name,
-                    blurHash = item.images.primaryBlurHash,
+                Card(
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    OptimizedAsyncImage(
+                        imageUrl = item.images.primaryImageUrl,
+                        contentDescription = item.name,
+                        blurHash = item.images.primaryBlurHash,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                if (item.played) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(24.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primary,
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_check),
+                            contentDescription = "Watched",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
 
             Column(

@@ -354,7 +354,6 @@ class SettingsViewModel @Inject constructor(
 
                     try {
                         jellyseerrRepository.logout()
-                        Timber.d("Jellyseerr logout successful during AFinity logout")
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to logout from Jellyseerr during AFinity logout")
                     }

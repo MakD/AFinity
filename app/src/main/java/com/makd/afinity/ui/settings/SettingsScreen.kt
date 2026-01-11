@@ -365,7 +365,7 @@ private fun GeneralSection(
 
         SettingsSwitchItem(
             icon = painterResource(id = R.drawable.ic_request_seerr_dark),
-            title = "Jellyseerr",
+            title = "Seerr",
             subtitle = jellyseerrSubtitle,
             checked = isJellyseerrAuthenticated,
             onCheckedChange = onJellyseerrToggle
@@ -479,7 +479,7 @@ private fun JellyseerrLogoutConfirmationDialog(
         },
         title = {
             Text(
-                text = "Logout from Jellyseerr",
+                text = "Logout from Seerr",
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold
                 )
@@ -487,7 +487,7 @@ private fun JellyseerrLogoutConfirmationDialog(
         },
         text = {
             Text(
-                text = "Are you sure you want to logout from Jellyseerr? You will need to login again to request content.",
+                text = "Are you sure you want to logout from Seerr? You will need to login again to request content.",
                 style = MaterialTheme.typography.bodyLarge
             )
         },

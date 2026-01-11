@@ -186,7 +186,7 @@ object NetworkModule {
 
     private fun normalizeJellyseerrUrl(raw: String?): String {
         if (raw.isNullOrBlank()) {
-            throw IllegalStateException("Jellyseerr server URL not configured")
+            throw IllegalStateException("Seerr server URL not configured")
         }
 
         var base = raw.trim()
