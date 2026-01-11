@@ -27,6 +27,9 @@ import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.CaptionStyleCompat
+import androidx.media3.ui.PlayerView
+import androidx.media3.ui.SubtitleView
+import androidx.navigation.NavController
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SubtitlePreferences
@@ -43,7 +46,6 @@ import com.makd.afinity.ui.player.utils.RequiresBrightnessPermission
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
 import timber.log.Timber
 
-
 @UnstableApi
 @Composable
 fun PlayerScreen(
@@ -53,7 +55,7 @@ fun PlayerScreen(
     subtitleStreamIndex: Int? = null,
     startPositionMs: Long = 0L,
     onBackPressed: () -> Unit,
-    navController: androidx.navigation.NavController? = null,
+    navController: NavController? = null,
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
@@ -76,7 +78,7 @@ fun PlayerScreen(
     var seekOriginTime by remember { mutableLongStateOf(0L) }
     var dragStartVolume by remember { mutableStateOf(-1) }
     var dragStartBrightness by remember { mutableFloatStateOf(-1f) }
-    val lifecycleOwner = LocalLifecycleOwner.current
+    LocalLifecycleOwner.current
 
     LaunchedEffect(item.id, mediaSourceId) {
         Timber.d("Loading media: ${item.name}")
@@ -128,8 +130,6 @@ fun PlayerScreen(
 
     BackHandler {
         if (!hasNavigatedBack) {
-            hasNavigatedBack = true
-            Timber.d("Back button pressed - calling onBackPressed")
             viewModel.stopPlayback()
             onBackPressed()
         }
@@ -194,17 +194,19 @@ fun PlayerScreen(
         ) {
             when (val player = viewModel.player) {
                 is ExoPlayer -> {
-                    AndroidView(
-                        factory = { context ->
-                            androidx.media3.ui.PlayerView(context).apply {
-                                useController = false
-                                subtitleView?.visibility = android.view.View.GONE
-                                this.player = player
-                                viewModel.setPlayerView(this)
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AndroidView(
+                            factory = { ctx ->
+                                PlayerView(ctx).apply {
+                                    useController = false
+                                    subtitleView?.visibility = android.view.View.GONE
+                                    this.player = player
+                                    viewModel.setPlayerView(this)
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
 
                 is MPVPlayer -> {
@@ -292,13 +294,12 @@ private fun ExoPlayerSubtitles(
     subtitlePrefs: SubtitlePreferences,
     modifier: Modifier = Modifier
 ) {
-    var subtitleView: androidx.media3.ui.SubtitleView? by remember {
+    var subtitleView: SubtitleView? by remember {
         mutableStateOf(null)
     }
-
     AndroidView(
-        factory = { context ->
-            androidx.media3.ui.SubtitleView(context).apply {
+        factory = { ctx ->
+            SubtitleView(ctx).apply {
                 setApplyEmbeddedStyles(false)
                 setApplyEmbeddedFontSizes(false)
                 subtitleView = this

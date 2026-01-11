@@ -3,16 +3,10 @@ package com.makd.afinity.ui.player
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.repository.JellyfinRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -92,7 +86,7 @@ class PlaylistManager @Inject constructor(
                     setQueue(allEpisodes.map { it as AfinityItem }, allEpisodes.indexOfFirst { it.id == startingEpisode.id }.coerceAtLeast(0))
                     }
 
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     Timber.w("Failed to load episodes for season ${season.indexNumber}")
                 }
             }
@@ -134,12 +128,6 @@ class PlaylistManager @Inject constructor(
         updatePlaylistState()
 
         Timber.d("Queue set with ${queue.size} items, starting at index $currentIndex")
-    }
-
-    fun addToQueue(item: AfinityItem) {
-        currentQueue.add(item)
-        updatePlaylistState()
-        Timber.d("Added ${item.name} to queue")
     }
 
     fun next(): AfinityItem? {
@@ -205,14 +193,6 @@ class PlaylistManager @Inject constructor(
         return targetItem
     }
 
-    fun getQueueInfo(): String {
-        return if (currentQueue.isNotEmpty() && currentIndex >= 0) {
-            "${currentIndex + 1} of ${currentQueue.size}"
-        } else {
-            "Empty queue"
-        }
-    }
-
     fun clearQueue() {
         currentQueue.clear()
         currentIndex = -1
@@ -222,10 +202,6 @@ class PlaylistManager @Inject constructor(
 
     fun isEmpty(): Boolean {
         return currentQueue.isEmpty()
-    }
-
-    fun getAllItems(): List<AfinityItem> {
-        return currentQueue.toList()
     }
 
     private fun updatePlaylistState() {

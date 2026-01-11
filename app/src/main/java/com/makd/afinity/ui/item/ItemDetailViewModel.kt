@@ -32,7 +32,6 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
-import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.utils.IntentUtils
@@ -49,10 +48,9 @@ import javax.inject.Inject
 @HiltViewModel
 class ItemDetailViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
-    private val playbackStateManager: PlaybackStateManager,
+    playbackStateManager: PlaybackStateManager,
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
-    private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
     private val databaseRepository: DatabaseRepository,
     private val offlineModeManager: OfflineModeManager,
@@ -184,53 +182,6 @@ class ItemDetailViewModel @Inject constructor(
         return cached.playbackPositionTicks != server.playbackPositionTicks ||
                 cached.played != server.played ||
                 cached.favorite != server.favorite
-    }
-
-    fun refreshManually() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-
-            try {
-                loadItem()
-            } finally {
-                // Let loadItem handle the loading state
-            }
-        }
-    }
-
-    fun refreshFromCache() {
-        viewModelScope.launch {
-            try {
-                val freshItem = jellyfinRepository.getItemById(itemId)
-                if (freshItem != null) {
-                    _uiState.value = _uiState.value.copy(item = freshItem)
-
-                    when (freshItem) {
-                        is AfinityShow -> {
-                            viewModelScope.launch {
-                                try {
-                                    val nextEpisode =
-                                        jellyfinRepository.getEpisodeToPlay(freshItem.id)
-                                    _uiState.value = _uiState.value.copy(nextEpisode = nextEpisode)
-                                } catch (e: Exception) {
-                                    Timber.e(e, "Failed to load next episode")
-                                }
-                            }
-                        }
-
-                        is AfinityMovie -> {
-                        }
-
-                        is AfinityEpisode -> {
-                        }
-                    }
-
-                    Timber.d("ItemDetail refreshed from cache: ${freshItem.name}")
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to refresh item from cache")
-            }
-        }
     }
 
     fun loadItem() {
@@ -820,14 +771,6 @@ class ItemDetailViewModel @Inject constructor(
         return jellyfinRepository.getBaseUrl()
     }
 
-    suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode? {
-        return jellyfinRepository.getEpisodeToPlay(seriesId)
-    }
-
-    suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode? {
-        return jellyfinRepository.getEpisodeToPlayForSeason(seasonId, seriesId)
-    }
-
     fun onDownloadClick() {
         viewModelScope.launch {
             try {
@@ -878,11 +821,6 @@ class ItemDetailViewModel @Inject constructor(
 
     fun dismissQualityDialog() {
         _uiState.value = _uiState.value.copy(showQualityDialog = false)
-    }
-
-    fun isItemDownloaded(): Boolean {
-        val item = _uiState.value.item ?: return false
-        return item.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }
     }
 
     fun pauseDownload() {

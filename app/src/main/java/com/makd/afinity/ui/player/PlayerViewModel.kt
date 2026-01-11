@@ -398,6 +398,7 @@ class PlayerViewModel @Inject constructor(
                         updateUiState { it.copy(showVolumeIndicator = false) }
                     }
                 }
+
                 is PlayerEvent.SetBrightness -> { /* Handle at UI level */
                 }
 
@@ -425,8 +426,19 @@ class PlayerViewModel @Inject constructor(
                 }
 
                 is PlayerEvent.SkipSegment -> {
-                    handlePlayerEvent(PlayerEvent.Seek(event.segment.endTicks))
                     updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+                    if (event.segment.type == AfinitySegmentType.OUTRO) {
+                        viewModelScope.launch {
+                            val nextItem = playlistManager.getNextItem()
+                            if (nextItem != null) {
+                                onNextEpisode()
+                            } else {
+                                handlePlayerEvent(PlayerEvent.Seek(event.segment.endTicks))
+                            }
+                        }
+                    } else {
+                        handlePlayerEvent(PlayerEvent.Seek(event.segment.endTicks))
+                    }
                 }
 
                 is PlayerEvent.Stop -> player.stop()
@@ -546,11 +558,6 @@ class PlayerViewModel @Inject constructor(
 
             val chapters = fullItem.chapters
             updateUiState { it.copy(chapters = chapters) }
-
-            // ----------------------------------------------------------------
-            // 2. RESOLVE MEDIA SOURCE (UPDATED)
-            // ----------------------------------------------------------------
-            // If mediaSourceId was passed as empty (from jumpToEpisode), pick the default one.
             val mediaSource = fullItem.sources.firstOrNull {
                 if (mediaSourceId.isBlank()) true else it.id == mediaSourceId
             } ?: fullItem.sources.firstOrNull()
@@ -560,7 +567,11 @@ class PlayerViewModel @Inject constructor(
             if (actualMediaSourceId == null) {
                 Timber.e("No media source found for item: ${fullItem.name}")
                 updateUiState {
-                    it.copy(isLoading = false, showError = true, errorMessage = "No media sources available.")
+                    it.copy(
+                        isLoading = false,
+                        showError = true,
+                        errorMessage = "No media sources available."
+                    )
                 }
                 return
             }
@@ -631,8 +642,6 @@ class PlayerViewModel @Inject constructor(
                     return@coroutineScope
                 }
 
-                // ... (Subtitle logic remains mostly the same, just ensure it uses fullItem.id) ...
-
                 val externalSubtitles = if (useLocalSource) {
                     val itemDir = downloadRepository.getItemDownloadDirectory(fullItem.id)
                     val subtitlesDir = java.io.File(itemDir, "subtitles")
@@ -648,14 +657,16 @@ class PlayerViewModel @Inject constructor(
                                     else -> MimeTypes.TEXT_UNKNOWN
                                 }
 
-                                val language = subtitleFile.nameWithoutExtension.split("_").firstOrNull() ?: "unknown"
+                                val language =
+                                    subtitleFile.nameWithoutExtension.split("_").firstOrNull()
+                                        ?: "unknown"
 
                                 MediaItem.SubtitleConfiguration.Builder("file://${subtitleFile.absolutePath}".toUri())
                                     .setLabel(language)
                                     .setMimeType(mimeType)
                                     .setLanguage(language)
                                     .build()
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 null
                             }
                         } ?: emptyList()
@@ -672,11 +683,14 @@ class PlayerViewModel @Inject constructor(
                                 val subtitleUrl =
                                     "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.srt"
                                 MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
-                                    .setLabel(stream.displayTitle ?: stream.language ?: "Track ${stream.index}")
+                                    .setLabel(
+                                        stream.displayTitle ?: stream.language
+                                        ?: "Track ${stream.index}"
+                                    )
                                     .setMimeType(MimeTypes.APPLICATION_SUBRIP)
                                     .setLanguage(stream.language ?: "eng")
                                     .build()
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 null
                             }
                         }
@@ -770,7 +784,7 @@ class PlayerViewModel @Inject constructor(
                                             )
                                             individualThumbnails.add(thumbnail.asImageBitmap())
                                             if (individualThumbnails.size >= info.thumbnailCount) break
-                                        } catch (e: Exception) {
+                                        } catch (_: Exception) {
                                             Timber.w("Failed to crop thumbnail at offset ($offsetX, $offsetY)")
                                         }
                                     }
