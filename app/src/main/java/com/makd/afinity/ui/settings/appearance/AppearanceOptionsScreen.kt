@@ -129,8 +129,6 @@ private fun ThemeSection(
     val currentTheme = ThemeMode.fromString(themeMode)
 
     AppearanceSettingsSection(
-        title = "Theme",
-        icon = painterResource(id = R.drawable.ic_dark_mode),
         modifier = modifier
     ) {
         AppearanceSettingsItem(
@@ -205,8 +203,6 @@ private fun LibrarySection(
     modifier: Modifier = Modifier
 ) {
     AppearanceSettingsSection(
-        title = "Library",
-        icon = painterResource(id = R.drawable.ic_view_module),
         modifier = modifier
     ) {
         AppearanceSettingsSwitchItem(
@@ -244,8 +240,8 @@ private fun LibrarySection(
 
 @Composable
 private fun AppearanceSettingsSection(
-    title: String,
-    icon: Painter,
+    title: String? = null,
+    icon: Painter? = null,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
@@ -261,29 +257,31 @@ private fun AppearanceSettingsSection(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    painter = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            if (title != null && icon != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        painter = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+            }
 
             content()
         }

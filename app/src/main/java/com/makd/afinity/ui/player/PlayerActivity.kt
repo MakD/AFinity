@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.os.Process
 import android.util.Rational
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -35,18 +37,16 @@ import java.util.UUID
 import javax.inject.Inject
 
 
-@androidx.media3.common.util.UnstableApi
+@UnstableApi
 @AndroidEntryPoint
 class PlayerActivity : ComponentActivity() {
 
     private val viewModel: PlayerViewModel by viewModels()
-    private var pipCallback: (() -> Unit)? = null
 
     @Inject
     lateinit var preferencesRepository: PreferencesRepository
 
     private var wasPip: Boolean = false
-    private var wasZoom: Boolean = false
     private var isResumed: Boolean = false
 
     companion object {
@@ -320,9 +320,9 @@ class PlayerActivity : ComponentActivity() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val playPauseIcon = if (viewModel.player.isPlaying) {
-            android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_pause)
+            Icon.createWithResource(this, R.drawable.ic_player_pause_filled)
         } else {
-            android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_play)
+            Icon.createWithResource(this, R.drawable.ic_player_play_filled)
         }
         val playPauseAction = RemoteAction(
             playPauseIcon,

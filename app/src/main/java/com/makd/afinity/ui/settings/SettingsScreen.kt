@@ -147,7 +147,7 @@ fun SettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_arrow_left),
+                            painter = painterResource(id = R.drawable.ic_chevron_left),
                             contentDescription = "Back"
                         )
                     }
@@ -433,7 +433,7 @@ private fun AppearanceSection(
         )
     ) {
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_palette),
+            icon = painterResource(id = R.drawable.ic_color_swatch),
             title = "Appearance",
             subtitle = "Configure theme, colors, and library layout",
             onClick = onAppearanceOptionsClick
@@ -454,8 +454,8 @@ private fun PlaybackSection(
         )
     ) {
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_play_circle),
-            title = "Playback",
+            icon = painterResource(id = R.drawable.ic_playback_settings),
+            title = "Player Options",
             subtitle = "Configure playback and player settings",
             onClick = onPlayerOptionsClick
         )

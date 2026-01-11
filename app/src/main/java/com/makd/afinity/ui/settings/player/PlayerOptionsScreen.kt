@@ -71,7 +71,9 @@ import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.SubtitleVerticalPosition
 import com.makd.afinity.data.models.player.VideoZoomMode
+import com.makd.afinity.di.PreferencesEntryPoint
 import com.makd.afinity.ui.settings.SettingsViewModel
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -86,9 +88,9 @@ fun PlayerOptionsScreen(
 
     val context = LocalContext.current
     val preferencesRepository = remember {
-        dagger.hilt.android.EntryPointAccessors.fromApplication(
+        EntryPointAccessors.fromApplication(
             context.applicationContext,
-            com.makd.afinity.di.PreferencesEntryPoint::class.java
+            PreferencesEntryPoint::class.java
         ).preferencesRepository()
     }
     val subtitlePrefs by preferencesRepository.getSubtitlePreferencesFlow()
@@ -110,7 +112,7 @@ fun PlayerOptionsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_arrow_left),
+                            painter = painterResource(id = R.drawable.ic_chevron_left),
                             contentDescription = "Back"
                         )
                     }
@@ -192,8 +194,6 @@ private fun PlaybackOptionsSection(
     modifier: Modifier = Modifier
 ) {
     PlayerSettingsSection(
-        title = "Playback",
-        icon = painterResource(id = R.drawable.ic_play_circle),
         modifier = modifier
     ) {
         PlayerSettingsSwitchItem(
@@ -212,7 +212,7 @@ private fun PlaybackOptionsSection(
         PlayerSettingsSwitchItem(
             icon = painterResource(id = R.drawable.ic_pip),
             title = "Picture-in-Picture Home Gesture",
-            subtitle = "Use home button or gesture to enter picture-in-picture while video is playing",
+            subtitle = "Use home button or gesture to enter picture-in-picture",
             checked = pipGestureEnabled,
             onCheckedChange = onPipGestureToggle
         )
@@ -280,14 +280,12 @@ private fun PlayerUISection(
     modifier: Modifier = Modifier
 ) {
     PlayerSettingsSection(
-        title = "Player UI",
-        icon = painterResource(id = R.drawable.ic_palette),
         modifier = modifier
     ) {
         PlayerSettingsSwitchItem(
             icon = painterResource(id = R.drawable.ic_visibility),
             title = "Auto-hide Logo/Title",
-            subtitle = "Logo/title auto-hides with controls instead of always being visible",
+            subtitle = "Logo/title auto-hides with controls",
             checked = logoAutoHide,
             onCheckedChange = onLogoAutoHideToggle
         )
@@ -306,8 +304,8 @@ private fun PlayerUISection(
 
 @Composable
 private fun PlayerSettingsSection(
-    title: String,
-    icon: Painter,
+    title: String? = null,
+    icon: Painter? = null,
     modifier: Modifier = Modifier,
     content: @Composable (ColumnScope.() -> Unit)
 ) {
@@ -323,29 +321,31 @@ private fun PlayerSettingsSection(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    painter = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            if (title != null && icon != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        painter = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+            }
 
             content()
         }

@@ -38,6 +38,7 @@ paging = "3.3.6"
 tinkAndroid = "1.20.0"
 work = "2.11.0"
 hilt-work = "1.3.0"
+ui = "1.10.0"
 
 [libraries]
 aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibrariesCore" }
@@ -98,6 +99,7 @@ libmpv = { group = "dev.jdtech.mpv", name = "libmpv", version.ref = "libmpv" }
 androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tinkAndroid" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 
 [plugins]
 aboutlibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutlibrariesCore" }
