@@ -137,7 +137,7 @@ fun LibrariesScreen(
         AfinityTopAppBar(
             title = {
                 Text(
-                    text = "Your Libraries",
+                    text = "Libraries",
                     style = MaterialTheme.typography.headlineLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
