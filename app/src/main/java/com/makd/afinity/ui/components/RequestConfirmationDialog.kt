@@ -41,6 +41,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
+import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -197,7 +198,7 @@ fun RequestConfirmationDialog(
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Text(
-                                        text = String.format("%.1f", score),
+                                        text = String.format(Locale.US, "%.1f", score),
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontWeight = FontWeight.SemiBold
                                         ),

@@ -23,6 +23,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -51,7 +52,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.main.MainUiState
-import com.makd.afinity.ui.theme.rememberGridMinColumnSize
+import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 import kotlin.math.min
 
 @Composable
@@ -61,7 +62,8 @@ fun LibrariesScreen(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavController,
-    viewModel: LibrariesViewModel = hiltViewModel()
+    viewModel: LibrariesViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyGridState = rememberLazyGridState()
@@ -104,7 +106,7 @@ fun LibrariesScreen(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(rememberGridMinColumnSize()),
+                    columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
                     state = lazyGridState,
                     contentPadding = PaddingValues(
                         start = 16.dp,
@@ -298,36 +300,6 @@ private fun getLibraryIcon(type: CollectionType): Painter {
         CollectionType.BoxSets -> painterResource(id = R.drawable.ic_collections_bookmark)
         CollectionType.Mixed -> painterResource(id = R.drawable.ic_mixed)
         CollectionType.Unknown -> painterResource(id = R.drawable.ic_folder)
-    }
-}
-
-private fun getLibraryColor(type: CollectionType): Color {
-    return when (type) {
-        CollectionType.Movies -> Color(0xFF1976D2)
-        CollectionType.TvShows -> Color(0xFF388E3C)
-        CollectionType.Music -> Color(0xFF7B1FA2)
-        CollectionType.Books -> Color(0xFFD32F2F)
-        CollectionType.HomeVideos -> Color(0xFFF57C00)
-        CollectionType.Playlists -> Color(0xFF455A64)
-        CollectionType.LiveTv -> Color(0xFFE91E63)
-        CollectionType.BoxSets -> Color(0xFF5D4037)
-        CollectionType.Mixed -> Color(0xFF424242)
-        CollectionType.Unknown -> Color(0xFF616161)
-    }
-}
-
-private fun getLibraryTypeDisplayName(type: CollectionType): String {
-    return when (type) {
-        CollectionType.Movies -> "Movies"
-        CollectionType.TvShows -> "TV Shows"
-        CollectionType.Music -> "Music"
-        CollectionType.Books -> "Books"
-        CollectionType.HomeVideos -> "Home Videos"
-        CollectionType.Playlists -> "Playlists"
-        CollectionType.LiveTv -> "Live TV"
-        CollectionType.BoxSets -> "Collections"
-        CollectionType.Mixed -> "Mixed"
-        CollectionType.Unknown -> "Library"
     }
 }
 

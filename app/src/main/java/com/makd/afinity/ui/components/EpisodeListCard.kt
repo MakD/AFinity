@@ -1,6 +1,8 @@
 package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +24,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +33,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -38,23 +42,27 @@ import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun EpisodeListCard(
     item: AfinityEpisode,
     onClick: () -> Unit,
+    thumbnailWidth: Dp,
     modifier: Modifier = Modifier
 ) {
-    val thumbnailWidth = rememberLandscapeCardWidth()
+    val interactionSource = remember { MutableInteractionSource() }
 
     Card(
-        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
@@ -63,7 +71,7 @@ fun EpisodeListCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -126,11 +134,37 @@ fun EpisodeListCard(
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = "S${item.parentIndexNumber}:E${item.indexNumber}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "S${item.parentIndexNumber}:E${item.indexNumber}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    item.communityRating?.let { rating ->
+                        MetadataDot()
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                contentDescription = "IMDB",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = String.format(Locale.US, "%.1f", rating),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
 
                 Text(
                     text = item.name ?: "Unknown Episode",
@@ -151,31 +185,16 @@ fun EpisodeListCard(
                         Text(
                             text = "${minutes}min",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
 
                     item.premiereDate?.let { date ->
-                        MetadataDot()
+                        if (item.runtimeTicks != null) MetadataDot()
                         Text(
                             text = formatDate(date),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    item.communityRating?.let { rating ->
-                        MetadataDot()
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_imdb_logo),
-                            contentDescription = "IMDB",
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = String.format("%.1f", rating),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }

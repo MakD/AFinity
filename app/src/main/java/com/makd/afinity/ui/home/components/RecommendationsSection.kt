@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -19,17 +20,17 @@ import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.calculateCardHeight
-import com.makd.afinity.ui.theme.rememberPortraitCardWidth
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 @Composable
 fun PersonSection(
     section: PersonSection,
     onItemClick: (AfinityMovie) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val cardWidth = widthSizeClass.portraitWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(
@@ -55,7 +56,8 @@ fun PersonSection(
             ) { movie ->
                 MediaItemCard(
                     item = movie,
-                    onClick = { onItemClick(movie) }
+                    onClick = { onItemClick(movie) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -66,10 +68,11 @@ fun PersonSection(
 fun MovieRecommendationSection(
     section: MovieSection,
     onItemClick: (AfinityMovie) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val cardWidth = widthSizeClass.portraitWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(
@@ -95,7 +98,8 @@ fun MovieRecommendationSection(
             ) { movie ->
                 MediaItemCard(
                     item = movie,
-                    onClick = { onItemClick(movie) }
+                    onClick = { onItemClick(movie) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -106,10 +110,11 @@ fun MovieRecommendationSection(
 fun PersonFromMovieSection(
     section: PersonFromMovieSection,
     onItemClick: (AfinityMovie) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val cardWidth = widthSizeClass.portraitWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(
@@ -135,7 +140,8 @@ fun PersonFromMovieSection(
             ) { movie ->
                 MediaItemCard(
                     item = movie,
-                    onClick = { onItemClick(movie) }
+                    onClick = { onItemClick(movie) },
+                    cardWidth = cardWidth
                 )
             }
         }

@@ -1,7 +1,6 @@
 package com.makd.afinity.ui.person.components
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -23,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,8 +42,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -53,6 +55,7 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,8 +65,11 @@ fun PersonDetailContent(
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
     onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
+    val cardWidth = widthSizeClass.portraitWidth
+
     LazyColumn(
         modifier = modifier.fillMaxSize()
     ) {
@@ -102,7 +108,8 @@ fun PersonDetailContent(
                     PersonFilmographySection(
                         title = "Movies",
                         items = movies,
-                        onItemClick = onItemClick
+                        onItemClick = onItemClick,
+                        cardWidth = cardWidth
                     )
                 }
 
@@ -110,7 +117,8 @@ fun PersonDetailContent(
                     PersonFilmographySection(
                         title = "TV Shows",
                         items = shows,
-                        onItemClick = onItemClick
+                        onItemClick = onItemClick,
+                        cardWidth = cardWidth
                     )
                 }
             }
@@ -245,6 +253,7 @@ private fun PersonFilmographySection(
     title: String,
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
+    cardWidth: Dp,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -269,7 +278,8 @@ private fun PersonFilmographySection(
             ) { item ->
                 FilmographyItemCard(
                     item = item,
-                    onClick = { onItemClick(item) }
+                    onClick = { onItemClick(item) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -280,12 +290,14 @@ private fun PersonFilmographySection(
 private fun FilmographyItemCard(
     item: AfinityItem,
     onClick: () -> Unit,
+    cardWidth: Dp,
     modifier: Modifier = Modifier
 ) {
     MediaItemCard(
         item = item,
         onClick = onClick,
-        modifier = modifier
+        modifier = modifier,
+        cardWidth = cardWidth
     )
 }
 
@@ -362,7 +374,7 @@ private fun PersonExternalLinksSection(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                         onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                             context.startActivity(intent)
                         }
                     )

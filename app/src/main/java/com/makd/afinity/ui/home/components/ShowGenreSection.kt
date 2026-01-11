@@ -23,6 +23,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,8 +39,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.calculateCardHeight
-import com.makd.afinity.ui.theme.rememberPortraitCardWidth
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 @Composable
 fun ShowGenreSection(
@@ -48,6 +48,7 @@ fun ShowGenreSection(
     isLoading: Boolean,
     onVisible: () -> Unit,
     onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
     var hasBeenVisible by remember { mutableStateOf(false) }
@@ -59,8 +60,8 @@ fun ShowGenreSection(
         }
     }
 
-    val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val cardWidth = widthSizeClass.portraitWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
@@ -86,7 +87,8 @@ fun ShowGenreSection(
                     key = { "show_genre_${genre}_${it.id}" }) { show ->
                     MediaItemCard(
                         item = show,
-                        onClick = { onItemClick(show) }
+                        onClick = { onItemClick(show) },
+                        cardWidth = cardWidth
                     )
                 }
             }

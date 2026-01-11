@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,15 +46,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.hilt.navigation.compose.hiltViewModel as hiltNavigationViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.paging.PagingData
 import com.makd.afinity.R
-import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -102,7 +102,8 @@ fun ItemDetailScreen(
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: ItemDetailViewModel = hiltViewModel()
+    viewModel: ItemDetailViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
@@ -166,13 +167,6 @@ fun ItemDetailScreen(
                     episodesPagingData = uiState.episodesPagingData,
                     downloadInfo = uiState.downloadInfo,
                     onPlayClick = { item, selection -> onPlayClick(item, selection) },
-                    onSeasonClick = { season ->
-                        val route = Destination.createEpisodeListRoute(
-                            season.id.toString(),
-                            season.name
-                        )
-                        navController.navigate(route)
-                    },
                     onBoxSetItemClick = { item ->
                         val route = Destination.createItemDetailRoute(item.id.toString())
                         navController.navigate(route)
@@ -182,7 +176,8 @@ fun ItemDetailScreen(
                         navController.navigate(route)
                     },
                     navController = navController,
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    widthSizeClass = widthSizeClass
                 )
             }
         }
@@ -262,11 +257,11 @@ private fun ItemDetailContent(
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     downloadInfo: com.makd.afinity.data.models.download.DownloadInfo?,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
-    onSeasonClick: (AfinitySeason) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
-    viewModel: ItemDetailViewModel
+    viewModel: ItemDetailViewModel,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -286,12 +281,12 @@ private fun ItemDetailContent(
             episodesPagingData = episodesPagingData,
             downloadInfo = downloadInfo,
             onPlayClick = onPlayClick,
-            onSeasonClick = onSeasonClick,
             onBoxSetItemClick = onBoxSetItemClick,
             onSpecialFeatureClick = onSpecialFeatureClick,
             navController = navController,
             viewModel = viewModel,
-            context = context
+            context = context,
+            widthSizeClass = widthSizeClass
         )
     } else {
         PortraitItemDetailContent(
@@ -307,12 +302,12 @@ private fun ItemDetailContent(
             episodesPagingData = episodesPagingData,
             downloadInfo = downloadInfo,
             onPlayClick = onPlayClick,
-            onSeasonClick = onSeasonClick,
             onBoxSetItemClick = onBoxSetItemClick,
             onSpecialFeatureClick = onSpecialFeatureClick,
             navController = navController,
             viewModel = viewModel,
-            context = context
+            context = context,
+            widthSizeClass = widthSizeClass
         )
     }
 }
@@ -331,12 +326,12 @@ private fun LandscapeItemDetailContent(
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     downloadInfo: com.makd.afinity.data.models.download.DownloadInfo?,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
-    onSeasonClick: (AfinitySeason) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
     viewModel: ItemDetailViewModel,
-    context: android.content.Context
+    context: android.content.Context,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val preferencesRepository = rememberPreferencesRepository()
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -780,7 +775,6 @@ private fun LandscapeItemDetailContent(
                             nextEpisode = nextEpisode,
                             specialFeatures = specialFeatures,
                             containingBoxSets = containingBoxSets,
-                            onSeasonClick = onSeasonClick,
                             onEpisodeClick = { clickedEpisode ->
                                 if (clickedEpisode.sources.isEmpty()) {
                                     Timber.w("Episode ${clickedEpisode.name} has no media sources")
@@ -807,7 +801,8 @@ private fun LandscapeItemDetailContent(
                                     Destination.createItemDetailRoute(specialFeature.id.toString())
                                 navController.navigate(route)
                             },
-                            navController = navController
+                            navController = navController,
+                            widthSizeClass = widthSizeClass
                         )
 
                         is AfinitySeason -> SeasonDetailContent(
@@ -819,7 +814,8 @@ private fun LandscapeItemDetailContent(
                             },
                             onSpecialFeatureClick = onSpecialFeatureClick,
                             navController = navController,
-                            preferencesRepository = preferencesRepository
+                            preferencesRepository = preferencesRepository,
+                            widthSizeClass = widthSizeClass
                         )
 
                         is AfinityMovie -> MovieDetailContent(
@@ -831,13 +827,15 @@ private fun LandscapeItemDetailContent(
                             onPlayClick = { movie, selection ->
                                 onPlayClick(movie, selection)
                             },
-                            navController = navController
+                            navController = navController,
+                            widthSizeClass = widthSizeClass
                         )
 
                         is AfinityBoxSet -> BoxSetDetailContent(
                             item = item,
                             boxSetItems = boxSetItems,
-                            onItemClick = onBoxSetItemClick
+                            onItemClick = onBoxSetItemClick,
+                            widthSizeClass = widthSizeClass
                         )
 
                         else -> {
@@ -851,7 +849,8 @@ private fun LandscapeItemDetailContent(
                                 onPersonClick = { personId ->
                                     val route = Destination.createPersonRoute(personId.toString())
                                     navController.navigate(route)
-                                }
+                                },
+                                widthSizeClass = widthSizeClass
                             )
                         }
                     }
@@ -863,7 +862,8 @@ private fun LandscapeItemDetailContent(
                                 val route =
                                     Destination.createItemDetailRoute(similarItem.id.toString())
                                 navController.navigate(route)
-                            }
+                            },
+                            widthSizeClass = widthSizeClass
                         )
                     }
                 }
@@ -886,12 +886,12 @@ private fun PortraitItemDetailContent(
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     downloadInfo: com.makd.afinity.data.models.download.DownloadInfo?,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
-    onSeasonClick: (AfinitySeason) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
     viewModel: ItemDetailViewModel,
-    context: android.content.Context
+    context: android.content.Context,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val preferencesRepository = rememberPreferencesRepository()
     val configuration = LocalConfiguration.current
@@ -1030,285 +1030,6 @@ private fun PortraitItemDetailContent(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (item !is AfinityBoxSet && item.canPlay) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f, fill = false)
-                                    .widthIn(max = 200.dp)
-                            ) {
-                                when (item) {
-                                    is AfinityShow -> {
-
-                                        when {
-                                            nextEpisode == null -> {
-                                                Button(
-                                                    onClick = { },
-                                                    enabled = false,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(56.dp),
-                                                    shape = RoundedCornerShape(28.dp)
-                                                ) {
-                                                    CircularProgressIndicator(
-                                                        modifier = Modifier.size(16.dp),
-                                                        strokeWidth = 2.dp
-                                                    )
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Text("Loading...")
-                                                }
-                                            }
-
-                                            else -> {
-                                                val episode = nextEpisode!!
-                                                val (buttonText, buttonIcon) = when {
-                                                    episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                        "Rewatch" to painterResource(id = R.drawable.ic_replay)
-                                                    }
-
-                                                    episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                        "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
-                                                    }
-
-                                                    else -> {
-                                                        "Play" to painterResource(id = R.drawable.ic_play_arrow)
-                                                    }
-                                                }
-
-                                                PlaybackSelectionButton(
-                                                    item = episode,
-                                                    buttonText = buttonText,
-                                                    buttonIcon = buttonIcon,
-                                                    onPlayClick = { selection ->
-                                                        if (episode.sources.isEmpty()) {
-                                                            Timber.w("Episode ${episode.name} has no media sources")
-                                                            return@PlaybackSelectionButton
-                                                        }
-
-                                                        val mediaSourceId = selectedMediaSource?.id
-                                                            ?: episode.sources.firstOrNull {
-                                                                it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                                                            }?.id
-                                                            ?: episode.sources.firstOrNull()?.id
-                                                            ?: ""
-
-                                                        val finalSelection = selection.copy(
-                                                            mediaSourceId = mediaSourceId,
-                                                            startPositionMs = if (episode.playbackPositionTicks > 0) {
-                                                                episode.playbackPositionTicks / 10000
-                                                            } else {
-                                                                0L
-                                                            }
-                                                        )
-                                                        PlayerLauncher.launch(
-                                                            context = navController.context,
-                                                            itemId = episode.id,
-                                                            mediaSourceId = finalSelection.mediaSourceId,
-                                                            audioStreamIndex = finalSelection.audioStreamIndex,
-                                                            subtitleStreamIndex = finalSelection.subtitleStreamIndex,
-                                                            startPositionMs = finalSelection.startPositionMs
-                                                        )
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    is AfinitySeason -> {
-
-                                        when {
-                                            nextEpisode == null -> {
-                                                Button(
-                                                    onClick = { },
-                                                    enabled = false,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(56.dp),
-                                                    shape = RoundedCornerShape(28.dp)
-                                                ) {
-                                                    CircularProgressIndicator(
-                                                        modifier = Modifier.size(16.dp),
-                                                        strokeWidth = 2.dp
-                                                    )
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Text("Loading...")
-                                                }
-                                            }
-
-                                            else -> {
-                                                val episode = nextEpisode!!
-                                                val (buttonText, buttonIcon) = when {
-                                                    episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                        "Rewatch" to painterResource(id = R.drawable.ic_replay)
-                                                    }
-
-                                                    episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                        "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
-                                                    }
-
-                                                    else -> {
-                                                        "Play" to painterResource(id = R.drawable.ic_play_arrow)
-                                                    }
-                                                }
-
-                                                PlaybackSelectionButton(
-                                                    item = episode,
-                                                    buttonText = buttonText,
-                                                    buttonIcon = buttonIcon,
-                                                    onPlayClick = { selection ->
-                                                        if (episode.sources.isEmpty()) {
-                                                            Timber.w("Episode ${episode.name} has no media sources")
-                                                            return@PlaybackSelectionButton
-                                                        }
-
-                                                        val mediaSourceId = selectedMediaSource?.id
-                                                            ?: episode.sources.firstOrNull {
-                                                                it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                                                            }?.id
-                                                            ?: episode.sources.firstOrNull()?.id
-                                                            ?: ""
-
-                                                        val finalSelection = selection.copy(
-                                                            mediaSourceId = mediaSourceId,
-                                                            startPositionMs = if (episode.playbackPositionTicks > 0) {
-                                                                episode.playbackPositionTicks / 10000
-                                                            } else {
-                                                                0L
-                                                            }
-                                                        )
-                                                        PlayerLauncher.launch(
-                                                            context = navController.context,
-                                                            itemId = episode.id,
-                                                            mediaSourceId = finalSelection.mediaSourceId,
-                                                            audioStreamIndex = finalSelection.audioStreamIndex,
-                                                            subtitleStreamIndex = finalSelection.subtitleStreamIndex,
-                                                            startPositionMs = finalSelection.startPositionMs
-                                                        )
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    else -> {
-                                        val (buttonText, buttonIcon) = when {
-                                            item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
-                                                "Rewatch" to painterResource(id = R.drawable.ic_replay)
-                                            }
-
-                                            item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
-                                                "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
-                                            }
-
-                                            else -> {
-                                                "Watch Now" to painterResource(id = R.drawable.ic_play_arrow)
-                                            }
-                                        }
-
-                                        PlaybackSelectionButton(
-                                            item = item,
-                                            buttonText = buttonText,
-                                            buttonIcon = buttonIcon,
-                                            onPlayClick = { selection ->
-                                                val finalSelection = selection.copy(
-                                                    mediaSourceId = selectedMediaSource?.id
-                                                        ?: selection.mediaSourceId
-                                                )
-                                                PlayerLauncher.launch(
-                                                    context = navController.context,
-                                                    itemId = item.id,
-                                                    mediaSourceId = finalSelection.mediaSourceId,
-                                                    audioStreamIndex = finalSelection.audioStreamIndex,
-                                                    subtitleStreamIndex = finalSelection.subtitleStreamIndex,
-                                                    startPositionMs = finalSelection.startPositionMs
-                                                )
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            val hasTrailer = when (item) {
-                                is AfinityMovie -> item.trailer != null
-                                is AfinityShow -> item.trailer != null
-                                is AfinityVideo -> item.trailer != null
-                                else -> false
-                            }
-
-                            IconButton(
-                                onClick = {
-                                    if (hasTrailer) {
-                                        viewModel.onPlayTrailerClick(context, item)
-                                    }
-                                },
-                                enabled = hasTrailer
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_video),
-                                    contentDescription = "Play Trailer",
-                                    tint = if (hasTrailer) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                    },
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                            IconButton(
-                                onClick = { viewModel.toggleWatchlist() }
-                            ) {
-                                Icon(
-                                    painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
-                                        id = R.drawable.ic_bookmark
-                                    ),
-                                    contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
-                                    tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-
-                            IconButton(
-                                onClick = { viewModel.toggleFavorite() }
-                            ) {
-                                Icon(
-                                    painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
-                                        id = R.drawable.ic_favorite
-                                    ),
-                                    contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
-                                    tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-
-                            IconButton(
-                                onClick = { viewModel.toggleWatched() }
-                            ) {
-                                Icon(
-                                    painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
-                                        id = R.drawable.ic_circle_check_outline
-                                    ),
-                                    contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
-                                    tint = if (item.played) {
-                                        Color.Green
-                                    } else {
-                                        MaterialTheme.colorScheme.onBackground
-                                    },
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-
-                            DownloadProgressIndicator(
-                                downloadInfo = downloadInfo,
-                                onDownloadClick = { viewModel.onDownloadClick() },
-                                onPauseClick = { viewModel.pauseDownload() },
-                                onResumeClick = { viewModel.resumeDownload() },
-                                onCancelClick = { viewModel.cancelDownload() },
-                                isLandscape = true
-                            )
-                        }
                     }
                 } else {
                     if (item !is AfinityBoxSet && item.canPlay) {
@@ -1359,10 +1080,13 @@ private fun PortraitItemDetailContent(
                                                     Timber.w("Episode ${episode.name} has no media sources")
                                                     return@PlaybackSelectionButton
                                                 }
+
                                                 val mediaSourceId = selectedMediaSource?.id
                                                     ?: episode.sources.firstOrNull {
                                                         it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                                                    }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+                                                    }?.id
+                                                    ?: episode.sources.firstOrNull()?.id
+                                                    ?: ""
 
                                                 val finalSelection = selection.copy(
                                                     mediaSourceId = mediaSourceId,
@@ -1432,10 +1156,13 @@ private fun PortraitItemDetailContent(
                                                     Timber.w("Episode ${episode.name} has no media sources")
                                                     return@PlaybackSelectionButton
                                                 }
+
                                                 val mediaSourceId = selectedMediaSource?.id
                                                     ?: episode.sources.firstOrNull {
                                                         it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-                                                    }?.id ?: episode.sources.firstOrNull()?.id ?: ""
+                                                    }?.id
+                                                    ?: episode.sources.firstOrNull()?.id
+                                                    ?: ""
 
                                                 val finalSelection = selection.copy(
                                                     mediaSourceId = mediaSourceId,
@@ -1608,7 +1335,6 @@ private fun PortraitItemDetailContent(
                         nextEpisode = nextEpisode,
                         specialFeatures = specialFeatures,
                         containingBoxSets = containingBoxSets,
-                        onSeasonClick = onSeasonClick,
                         onEpisodeClick = { clickedEpisode ->
                             if (clickedEpisode.sources.isEmpty()) {
                                 Timber.w("Episode ${clickedEpisode.name} has no media sources")
@@ -1634,7 +1360,8 @@ private fun PortraitItemDetailContent(
                                 Destination.createItemDetailRoute(specialFeature.id.toString())
                             navController.navigate(route)
                         },
-                        navController = navController
+                        navController = navController,
+                        widthSizeClass = widthSizeClass
                     )
 
                     is AfinitySeason -> SeasonDetailContent(
@@ -1646,7 +1373,8 @@ private fun PortraitItemDetailContent(
                         },
                         onSpecialFeatureClick = onSpecialFeatureClick,
                         navController = navController,
-                        preferencesRepository = preferencesRepository
+                        preferencesRepository = preferencesRepository,
+                        widthSizeClass = widthSizeClass
                     )
 
                     is AfinityMovie -> MovieDetailContent(
@@ -1658,13 +1386,15 @@ private fun PortraitItemDetailContent(
                         onPlayClick = { movie, selection ->
                             onPlayClick(movie, selection)
                         },
-                        navController = navController
+                        navController = navController,
+                        widthSizeClass = widthSizeClass
                     )
 
                     is AfinityBoxSet -> BoxSetDetailContent(
                         item = item,
                         boxSetItems = boxSetItems,
-                        onItemClick = onBoxSetItemClick
+                        onItemClick = onBoxSetItemClick,
+                        widthSizeClass = widthSizeClass
                     )
 
                     else -> {
@@ -1678,7 +1408,8 @@ private fun PortraitItemDetailContent(
                             onPersonClick = { personId ->
                                 val route = Destination.createPersonRoute(personId.toString())
                                 navController.navigate(route)
-                            }
+                            },
+                            widthSizeClass = widthSizeClass
                         )
                     }
                 }
@@ -1689,7 +1420,8 @@ private fun PortraitItemDetailContent(
                         onItemClick = { similarItem ->
                             val route = Destination.createItemDetailRoute(similarItem.id.toString())
                             navController.navigate(route)
-                        }
+                        },
+                        widthSizeClass = widthSizeClass
                     )
                 }
             }
@@ -1704,10 +1436,10 @@ fun SeriesDetailContent(
     nextEpisode: AfinityEpisode?,
     specialFeatures: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
-    onSeasonClick: (AfinitySeason) -> Unit,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
-    navController: NavController
+    navController: NavController,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -1719,7 +1451,8 @@ fun SeriesDetailContent(
         if (nextEpisode != null) {
             NextUpSection(
                 episode = nextEpisode,
-                onEpisodeClick = onEpisodeClick
+                onEpisodeClick = onEpisodeClick,
+                widthSizeClass = widthSizeClass
             )
         }
 
@@ -1731,7 +1464,8 @@ fun SeriesDetailContent(
 
         SpecialFeaturesSection(
             specialFeatures = specialFeatures,
-            onItemClick = onSpecialFeatureClick
+            onItemClick = onSpecialFeatureClick,
+            widthSizeClass = widthSizeClass
         )
 
         CastSection(
@@ -1739,7 +1473,8 @@ fun SeriesDetailContent(
             onPersonClick = { personId ->
                 val route = Destination.createPersonRoute(personId.toString())
                 navController.navigate(route)
-            }
+            },
+            widthSizeClass = widthSizeClass
         )
 
         InCollectionsSection(
@@ -1747,20 +1482,21 @@ fun SeriesDetailContent(
             onBoxSetClick = { boxSet ->
                 val route = Destination.createItemDetailRoute(boxSet.id.toString())
                 navController.navigate(route)
-            }
+            },
+            widthSizeClass = widthSizeClass
         )
 
         if (seasons.isNotEmpty()) {
             SeasonsSection(
                 seasons = seasons,
-                onSeasonClick = onSeasonClick,
-                navController = navController
+                navController = navController,
+                widthSizeClass = widthSizeClass
             )
         }
     }
 }
 
-fun Modifier.verticalLayoutOffset(yOffset: androidx.compose.ui.unit.Dp) =
+fun Modifier.verticalLayoutOffset(yOffset: Dp) =
     this.layout { measurable, constraints ->
         val placeable = measurable.measure(constraints)
         val yOffsetPx = yOffset.roundToPx()

@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,18 +77,19 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.OptimizedAsyncImage
-import com.makd.afinity.ui.theme.rememberGridMinColumnSize
+import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 import timber.log.Timber
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryContentScreen(
-    onBackClick: () -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavController,
-    viewModel: LibraryContentViewModel = hiltViewModel()
+    viewModel: LibraryContentViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pagingDataFlow by viewModel.pagingData.collectAsStateWithLifecycle()
@@ -116,11 +118,8 @@ fun LibraryContentScreen(
         ) {
             LibraryContentTopBar(
                 title = uiState.libraryName,
-                onBackClick = onBackClick,
                 backgroundOpacity = 1f,
                 userProfileImageUrl = uiState.userProfileImageUrl,
-                itemCount = lazyPagingItems.itemCount,
-                onSortClick = { showSortDialog = true },
                 onProfileClick = onProfileClick,
                 navController = navController
             )
@@ -213,8 +212,7 @@ fun LibraryContentScreen(
                 else -> {
                     Row(modifier = Modifier.fillMaxSize()) {
                         LazyVerticalGrid(
-                            //columns = GridCells.Adaptive(160.dp),
-                            columns = GridCells.Adaptive(rememberGridMinColumnSize()),
+                            columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
                             state = gridState,
                             contentPadding = PaddingValues(
                                 start = 16.dp,
@@ -323,12 +321,9 @@ fun LibraryContentScreen(
 @Composable
 private fun LibraryContentTopBar(
     title: String,
-    onBackClick: () -> Unit,
     backgroundOpacity: Float = 0f,
     navController: NavController,
     userProfileImageUrl: String? = null,
-    itemCount: Int,
-    onSortClick: () -> Unit,
     onProfileClick: () -> Unit
 ) {
     TopAppBar(
@@ -547,7 +542,7 @@ private fun MediaItemGridCard(
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
-                                text = String.format("%.1f", rating),
+                                text = String.format(Locale.US, "%.1f", rating),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -606,7 +601,7 @@ private fun MediaItemGridCard(
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
-                                text = String.format("%.1f", rating),
+                                text = String.format(Locale.US, "%.1f", rating),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

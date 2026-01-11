@@ -29,6 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -41,16 +42,15 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 import java.util.Locale
 
 @Composable
 fun ContinueWatchingCard(
     item: AfinityItem,
     onClick: () -> Unit,
+    cardWidth: Dp,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
 
     Column(
         modifier = modifier.width(cardWidth)

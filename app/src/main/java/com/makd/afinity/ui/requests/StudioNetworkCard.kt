@@ -21,21 +21,21 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 import com.makd.afinity.util.BackdropTracker
 
 @Composable
 fun StudioCard(
     studio: Studio,
     onClick: () -> Unit,
+    cardWidth: Dp,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
 
     Column(
         modifier = modifier.width(cardWidth)
@@ -74,9 +74,9 @@ fun StudioCard(
 fun NetworkCard(
     network: Network,
     onClick: () -> Unit,
+    cardWidth: Dp,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
 
     Column(
         modifier = modifier.width(cardWidth)
@@ -115,11 +115,11 @@ fun NetworkCard(
 fun GenreCard(
     genre: GenreSliderItem,
     onClick: () -> Unit,
+    cardWidth: Dp,
     modifier: Modifier = Modifier,
     backdropTracker: BackdropTracker? = null,
     isMovie: Boolean = true
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
 
     Column(
         modifier = modifier.width(cardWidth)

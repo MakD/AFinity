@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +40,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +49,8 @@ fun GenreResultsScreen(
     onBackClick: () -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: GenreResultsViewModel = hiltViewModel()
+    viewModel: GenreResultsViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -114,7 +117,8 @@ fun GenreResultsScreen(
                 GenreResultsContent(
                     movies = uiState.movies,
                     shows = uiState.shows,
-                    onItemClick = onItemClick
+                    onItemClick = onItemClick,
+                    widthSizeClass = widthSizeClass
                 )
             }
         }
@@ -125,7 +129,8 @@ fun GenreResultsScreen(
 private fun GenreResultsContent(
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Movies", "TV Shows")
@@ -218,7 +223,8 @@ private fun GenreResultsContent(
                 } else {
                     ItemGrid(
                         items = movies,
-                        onItemClick = onItemClick
+                        onItemClick = onItemClick,
+                        widthSizeClass = widthSizeClass
                     )
                 }
             }
@@ -229,7 +235,8 @@ private fun GenreResultsContent(
                 } else {
                     ItemGrid(
                         items = shows,
-                        onItemClick = onItemClick
+                        onItemClick = onItemClick,
+                        widthSizeClass = widthSizeClass
                     )
                 }
             }
@@ -240,10 +247,11 @@ private fun GenreResultsContent(
 @Composable
 private fun ItemGrid(
     items: List<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
+        columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -252,7 +260,11 @@ private fun ItemGrid(
         items(items) { item ->
             MediaItemCard(
                 item = item,
-                onClick = { onItemClick(item) }
+                onClick = {
+                    onItemClick(item)
+                },
+                cardWidth = widthSizeClass.gridMinSize,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

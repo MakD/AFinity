@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.makd.afinity.R
@@ -52,7 +54,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.rememberPortraitCardWidth
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import org.jellyfin.sdk.model.api.PersonKind
 
 @Composable
@@ -174,8 +176,8 @@ internal fun WriterSection(item: AfinityItem) {
 @Composable
 internal fun SeasonsSection(
     seasons: List<AfinitySeason>,
-    onSeasonClick: (AfinitySeason) -> Unit,
-    navController: NavController
+    navController: NavController,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -188,6 +190,8 @@ internal fun SeasonsSection(
             color = MaterialTheme.colorScheme.onBackground
         )
 
+        val cardWidth = widthSizeClass.portraitWidth
+
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp)
@@ -198,7 +202,8 @@ internal fun SeasonsSection(
                     onClick = {
                         val route = Destination.createItemDetailRoute(season.id.toString())
                         navController.navigate(route)
-                    }
+                    },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -209,9 +214,9 @@ internal fun SeasonsSection(
 @Composable
 internal fun SeasonCard(
     season: AfinitySeason,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    cardWidth: Dp
 ) {
-    val cardWidth = rememberPortraitCardWidth()
 
     Column(
         modifier = Modifier.width(cardWidth)

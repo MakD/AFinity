@@ -22,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,10 +30,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,16 +54,19 @@ import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.main.MainUiState
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
+    modifier: Modifier = Modifier,
     mainUiState: MainUiState,
     onItemClick: (AfinityItem) -> Unit = {},
     onPersonClick: (String) -> Unit = {},
     navController: NavController,
-    modifier: Modifier = Modifier,
-    viewModel: FavoritesViewModel = hiltViewModel()
+    viewModel: FavoritesViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -74,6 +78,9 @@ fun FavoritesScreen(
     LaunchedEffect(Unit) {
         viewModel.loadFavorites()
     }
+
+    val portraitWidth = widthSizeClass.portraitWidth
+    val landscapeWidth = widthSizeClass.landscapeWidth
 
     Scaffold(
         topBar = {
@@ -173,7 +180,8 @@ fun FavoritesScreen(
                                     ) {
                                         FavoriteMoviesRow(
                                             movies = uiState.movies,
-                                            onItemClick = onItemClick
+                                            onItemClick = onItemClick,
+                                            cardWidth = portraitWidth
                                         )
                                     }
                                 }
@@ -186,7 +194,8 @@ fun FavoritesScreen(
                                     ) {
                                         FavoriteBoxSetsRow(
                                             boxSets = uiState.boxSets,
-                                            onItemClick = onItemClick
+                                            onItemClick = onItemClick,
+                                            cardWidth = portraitWidth
                                         )
                                     }
                                 }
@@ -199,7 +208,8 @@ fun FavoritesScreen(
                                     ) {
                                         FavoriteShowsRow(
                                             shows = uiState.shows,
-                                            onItemClick = onItemClick
+                                            onItemClick = onItemClick,
+                                            cardWidth = portraitWidth
                                         )
                                     }
                                 }
@@ -212,7 +222,8 @@ fun FavoritesScreen(
                                     ) {
                                         FavoriteSeasonsRow(
                                             seasons = uiState.seasons,
-                                            onItemClick = onItemClick
+                                            onItemClick = onItemClick,
+                                            cardWidth = portraitWidth
                                         )
                                     }
                                 }
@@ -227,7 +238,8 @@ fun FavoritesScreen(
                                             episodes = uiState.episodes,
                                             onEpisodeClick = { episode ->
                                                 viewModel.selectEpisode(episode)
-                                            }
+                                            },
+                                            cardWidth = landscapeWidth
                                         )
                                     }
                                 }
@@ -328,7 +340,8 @@ private fun FavoriteSection(
 @Composable
 private fun FavoriteMoviesRow(
     movies: List<AfinityMovie>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    cardWidth: Dp
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -337,7 +350,8 @@ private fun FavoriteMoviesRow(
         items(movies) { movie ->
             MediaItemCard(
                 item = movie,
-                onClick = { onItemClick(movie) }
+                onClick = { onItemClick(movie) },
+                cardWidth = cardWidth
             )
         }
     }
@@ -346,7 +360,8 @@ private fun FavoriteMoviesRow(
 @Composable
 private fun FavoriteShowsRow(
     shows: List<AfinityShow>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    cardWidth: Dp
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -355,7 +370,8 @@ private fun FavoriteShowsRow(
         items(shows) { show ->
             MediaItemCard(
                 item = show,
-                onClick = { onItemClick(show) }
+                onClick = { onItemClick(show) },
+                cardWidth = cardWidth
             )
         }
     }
@@ -364,7 +380,8 @@ private fun FavoriteShowsRow(
 @Composable
 private fun FavoriteBoxSetsRow(
     boxSets: List<AfinityBoxSet>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    cardWidth: Dp
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -373,7 +390,8 @@ private fun FavoriteBoxSetsRow(
         items(boxSets) { boxSet ->
             MediaItemCard(
                 item = boxSet,
-                onClick = { onItemClick(boxSet) }
+                onClick = { onItemClick(boxSet) },
+                cardWidth = cardWidth
             )
         }
     }
@@ -382,7 +400,8 @@ private fun FavoriteBoxSetsRow(
 @Composable
 private fun FavoriteSeasonsRow(
     seasons: List<AfinitySeason>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    cardWidth: Dp
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -391,7 +410,8 @@ private fun FavoriteSeasonsRow(
         items(seasons) { season ->
             MediaItemCard(
                 item = season,
-                onClick = { onItemClick(season) }
+                onClick = { onItemClick(season) },
+                cardWidth = cardWidth
             )
         }
     }
@@ -400,7 +420,8 @@ private fun FavoriteSeasonsRow(
 @Composable
 private fun FavoriteEpisodesRow(
     episodes: List<AfinityEpisode>,
-    onEpisodeClick: (AfinityEpisode) -> Unit
+    onEpisodeClick: (AfinityEpisode) -> Unit,
+    cardWidth: Dp
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -409,7 +430,8 @@ private fun FavoriteEpisodesRow(
         items(episodes) { episode ->
             ContinueWatchingCard(
                 item = episode,
-                onClick = { onEpisodeClick(episode) }
+                onClick = { onEpisodeClick(episode) },
+                cardWidth = cardWidth
             )
         }
     }
@@ -420,8 +442,6 @@ private fun FavoritePeopleRow(
     people: List<AfinityPersonDetail>,
     onPersonClick: (String) -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val itemWidth = (configuration.screenWidthDp.dp / 2) - (14.dp * 2)
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(horizontal = 0.dp)

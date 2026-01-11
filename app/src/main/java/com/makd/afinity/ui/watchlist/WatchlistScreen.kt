@@ -14,6 +14,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,6 +35,8 @@ import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.main.MainUiState
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +45,8 @@ fun WatchlistScreen(
     onItemClick: (AfinityItem) -> Unit = {},
     navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: WatchlistViewModel = hiltViewModel()
+    viewModel: WatchlistViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -53,6 +58,9 @@ fun WatchlistScreen(
     LaunchedEffect(Unit) {
         viewModel.loadWatchlist()
     }
+
+    val portraitWidth = widthSizeClass.portraitWidth
+    val landscapeWidth = widthSizeClass.landscapeWidth
 
     Scaffold(
         topBar = {
@@ -134,7 +142,8 @@ fun WatchlistScreen(
                             WatchlistSection(
                                 title = "Movies",
                                 items = uiState.movies,
-                                onItemClick = onItemClick
+                                onItemClick = onItemClick,
+                                cardWidth = portraitWidth
                             )
                         }
                     }
@@ -144,7 +153,8 @@ fun WatchlistScreen(
                             WatchlistSection(
                                 title = "TV Shows",
                                 items = uiState.shows,
-                                onItemClick = onItemClick
+                                onItemClick = onItemClick,
+                                cardWidth = portraitWidth
                             )
                         }
                     }
@@ -154,7 +164,8 @@ fun WatchlistScreen(
                             WatchlistSection(
                                 title = "Seasons",
                                 items = uiState.seasons,
-                                onItemClick = onItemClick
+                                onItemClick = onItemClick,
+                                cardWidth = portraitWidth
                             )
                         }
                     }
@@ -166,7 +177,8 @@ fun WatchlistScreen(
                                 episodes = uiState.episodes,
                                 onEpisodeClick = { episode ->
                                     viewModel.selectEpisode(episode)
-                                }
+                                },
+                                cardWidth = landscapeWidth
                             )
                         }
                     }
@@ -231,7 +243,8 @@ fun WatchlistScreen(
 private fun WatchlistSection(
     title: String,
     items: List<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    cardWidth: Dp
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -251,7 +264,8 @@ private fun WatchlistSection(
             items(items) { item ->
                 MediaItemCard(
                     item = item,
-                    onClick = { onItemClick(item) }
+                    onClick = { onItemClick(item) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -262,7 +276,8 @@ private fun WatchlistSection(
 private fun WatchlistEpisodesSection(
     title: String,
     episodes: List<AfinityEpisode>,
-    onEpisodeClick: (AfinityEpisode) -> Unit
+    onEpisodeClick: (AfinityEpisode) -> Unit,
+    cardWidth: Dp
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -282,7 +297,8 @@ private fun WatchlistEpisodesSection(
             items(episodes) { episode ->
                 ContinueWatchingCard(
                     item = episode,
-                    onClick = { onEpisodeClick(episode) }
+                    onClick = { onEpisodeClick(episode) },
+                    cardWidth = cardWidth
                 )
             }
         }

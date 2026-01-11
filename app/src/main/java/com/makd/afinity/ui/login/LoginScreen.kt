@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -42,6 +43,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -88,7 +90,8 @@ enum class LoginMethod {
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: LoginViewModel = hiltViewModel()
+    viewModel: LoginViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val loginState by viewModel.loginState.collectAsStateWithLifecycle(
         initialValue = LoginState(
@@ -113,111 +116,117 @@ fun LoginScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
-
-        Text(
-            text = "AFinity",
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Text(
-            text = "Connect to your Jellyfin server",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        AnimatedVisibility(
-            visible = loginState.uiState.error != null,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+        Column(
+            modifier = Modifier
+                .widthIn(max = 600.dp)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
+            Spacer(modifier = Modifier.height(48.dp))
+
+            Text(
+                text = "AFinity",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold
                 ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Text(
+                text = "Connect to your Jellyfin server",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            AnimatedVisibility(
+                visible = loginState.uiState.error != null,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
                 ) {
-                    Icon(
-                        painterResource(id = R.drawable.ic_info),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                    Text(
-                        text = loginState.uiState.error ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(start = 8.dp)
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painterResource(id = R.drawable.ic_info),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            text = loginState.uiState.error ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+            }
+
+            ServerConnectionSection(
+                serverUrl = loginState.serverUrl,
+                discoveredServers = loginState.uiState.discoveredServers,
+                isConnecting = loginState.uiState.isConnecting,
+                isDiscovering = loginState.uiState.isDiscovering,
+                isConnectedToServer = loginState.uiState.isConnectedToServer,
+                onUrlChange = viewModel::setServerUrl,
+                onConnectToServer = viewModel::connectToServer,
+                onServerSelect = { server ->
+                    val serverUrl = if (server.id.contains(":")) {
+                        "http://${server.id}"
+                    } else {
+                        "http://${server.id}:8096"
+                    }
+                    viewModel.setServerUrl(serverUrl)
+                    viewModel.connectToServer()
+                },
+                onDiscoverServers = viewModel::discoverServers
+            )
+
+            AnimatedVisibility(
+                visible = loginState.uiState.isConnectedToServer,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    LoginMethodSection(
+                        selectedMethod = selectedLoginMethod,
+                        onMethodChanged = { selectedLoginMethod = it },
+                        uiState = loginState.uiState,
+                        publicUsers = loginState.publicUsers,
+                        serverUrl = loginState.serverUrl,
+                        onUsernameChange = viewModel::updateUsername,
+                        onPasswordChange = viewModel::updatePassword,
+                        onUserSelect = viewModel::selectUser,
+                        onPasswordLogin = viewModel::login,
+                        onQuickConnectStart = viewModel::startQuickConnect,
+                        onQuickConnectCancel = viewModel::cancelQuickConnect
                     )
                 }
             }
+            Spacer(modifier = Modifier.weight(1f))
         }
-
-        ServerConnectionSection(
-            serverUrl = loginState.serverUrl,
-            discoveredServers = loginState.uiState.discoveredServers,
-            isConnecting = loginState.uiState.isConnecting,
-            isDiscovering = loginState.uiState.isDiscovering,
-            isConnectedToServer = loginState.uiState.isConnectedToServer,
-            onUrlChange = viewModel::setServerUrl,
-            onConnectToServer = viewModel::connectToServer,
-            onServerSelect = { server ->
-                val serverUrl = if (server.id.contains(":")) {
-                    "http://${server.id}"
-                } else {
-                    "http://${server.id}:8096"
-                }
-                viewModel.setServerUrl(serverUrl)
-                viewModel.connectToServer()
-            },
-            onDiscoverServers = viewModel::discoverServers
-        )
-
-        AnimatedVisibility(
-            visible = loginState.uiState.isConnectedToServer,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            Column {
-                Spacer(modifier = Modifier.height(24.dp))
-
-                LoginMethodSection(
-                    selectedMethod = selectedLoginMethod,
-                    onMethodChanged = { selectedLoginMethod = it },
-                    uiState = loginState.uiState,
-                    publicUsers = loginState.publicUsers,
-                    serverUrl = loginState.serverUrl,
-                    onUsernameChange = viewModel::updateUsername,
-                    onPasswordChange = viewModel::updatePassword,
-                    onUserSelect = viewModel::selectUser,
-                    onPasswordLogin = viewModel::login,
-                    onQuickConnectStart = viewModel::startQuickConnect,
-                    onQuickConnectCancel = viewModel::cancelQuickConnect
-                )
-            }
-        }
-        Spacer(modifier = Modifier.weight(1f))
     }
 }
 

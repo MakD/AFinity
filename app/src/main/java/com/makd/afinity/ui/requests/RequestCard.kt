@@ -30,13 +30,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
 
 @Composable
 fun RequestCard(
@@ -45,9 +45,9 @@ fun RequestCard(
     onClick: () -> Unit,
     onApprove: () -> Unit,
     onDecline: () -> Unit,
+    cardWidth: Dp,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
     val isPending = request.status == RequestStatus.PENDING.value
 
     Column(

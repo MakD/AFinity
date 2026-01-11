@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +43,8 @@ fun RequestsScreen(
     modifier: Modifier = Modifier,
     viewModel: RequestsViewModel = hiltViewModel(),
     onNavigateToFilteredMedia: (FilterParams) -> Unit = {},
-    onItemClick: (jellyfinItemId: String) -> Unit = {}
+    onItemClick: (jellyfinItemId: String) -> Unit = {},
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle(initialValue = false)
@@ -106,7 +108,8 @@ fun RequestsScreen(
                                     isAdmin = currentUser?.isAdmin() == true,
                                     onRequestClick = { /* TODO: Navigate to request details */ },
                                     onApprove = { requestId -> viewModel.approveRequest(requestId) },
-                                    onDecline = { requestId -> viewModel.declineRequest(requestId) }
+                                    onDecline = { requestId -> viewModel.declineRequest(requestId) },
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -142,7 +145,8 @@ fun RequestsScreen(
                                                 name = "Trending Now"
                                             )
                                         )
-                                    }
+                                    },
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -178,7 +182,8 @@ fun RequestsScreen(
                                                 name = "Popular Movies"
                                             )
                                         )
-                                    }
+                                    },
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -196,7 +201,8 @@ fun RequestsScreen(
                                             )
                                         )
                                     },
-                                    backdropTracker = viewModel.backdropTracker
+                                    backdropTracker = viewModel.backdropTracker,
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -232,7 +238,8 @@ fun RequestsScreen(
                                                 name = "Upcoming Movies"
                                             )
                                         )
-                                    }
+                                    },
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -249,7 +256,8 @@ fun RequestsScreen(
                                                 name = studio.name
                                             )
                                         )
-                                    }
+                                    },
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -285,7 +293,8 @@ fun RequestsScreen(
                                                 name = "Popular TV Shows"
                                             )
                                         )
-                                    }
+                                    },
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -303,7 +312,8 @@ fun RequestsScreen(
                                             )
                                         )
                                     },
-                                    backdropTracker = viewModel.backdropTracker
+                                    backdropTracker = viewModel.backdropTracker,
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -339,7 +349,8 @@ fun RequestsScreen(
                                                 name = "Upcoming TV Shows"
                                             )
                                         )
-                                    }
+                                    },
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -356,7 +367,8 @@ fun RequestsScreen(
                                                 name = network.name
                                             )
                                         )
-                                    }
+                                    },
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }

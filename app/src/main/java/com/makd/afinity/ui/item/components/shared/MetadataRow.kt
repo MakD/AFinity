@@ -31,6 +31,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import org.jellyfin.sdk.model.api.MediaStreamType
+import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -220,7 +221,7 @@ fun MetadataRow(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = String.format("%.1f", imdbRating),
+                            text = String.format(Locale.US, "%.1f", imdbRating),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.SemiBold
                             ),
@@ -513,7 +514,7 @@ fun MetadataRow(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = String.format("%.1f", imdbRating),
+                            text = String.format(Locale.US, "%.1f", imdbRating),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.SemiBold
                             ),

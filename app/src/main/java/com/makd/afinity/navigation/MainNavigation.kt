@@ -1,38 +1,20 @@
 package com.makd.afinity.navigation
 
-import android.content.res.Configuration
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -43,11 +25,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.updater.UpdateManager
+import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
@@ -55,6 +37,7 @@ import com.makd.afinity.ui.libraries.LibrariesScreen
 import com.makd.afinity.ui.library.LibraryContentScreen
 import com.makd.afinity.ui.main.MainViewModel
 import com.makd.afinity.ui.person.PersonScreen
+import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.requests.FilterParams
 import com.makd.afinity.ui.requests.FilterType
 import com.makd.afinity.ui.requests.FilteredMediaScreen
@@ -78,7 +61,8 @@ fun MainNavigation(
     mainViewModel: MainViewModel = hiltViewModel(),
     viewModel: MainNavigationViewModel = hiltViewModel(),
     updateManager: UpdateManager,
-    offlineModeManager: OfflineModeManager
+    offlineModeManager: OfflineModeManager,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val watchlistRepository: WatchlistRepository =
@@ -97,9 +81,9 @@ fun MainNavigation(
     val coroutineScope = rememberCoroutineScope()
 
     if (appLoadingState.isLoading) {
-        AppSplashScreen(
+        AfinitySplashScreen(
+            statusText = appLoadingState.loadingPhase.ifEmpty { "Loading..." },
             progress = appLoadingState.loadingProgress,
-            phase = appLoadingState.loadingPhase,
             modifier = modifier
         )
         return
@@ -132,8 +116,7 @@ fun MainNavigation(
         }
     }
 
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val useNavRail = widthSizeClass != WindowWidthSizeClass.Compact
 
     LaunchedEffect(isOffline) {
         if (isOffline) {
@@ -152,7 +135,7 @@ fun MainNavigation(
     }
 
     NavigationSuiteScaffold(
-        layoutType = if (isLandscape) NavigationSuiteType.NavigationRail else NavigationSuiteType.NavigationBar,
+        layoutType = if (useNavRail) NavigationSuiteType.NavigationRail else NavigationSuiteType.NavigationBar,
         navigationSuiteItems = {
             Destination.entries.forEach { destination ->
                 if (isOffline && destination != Destination.HOME) {
@@ -236,7 +219,7 @@ fun MainNavigation(
                                     return@launch
                                 }
 
-                                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                                PlayerLauncher.launch(
                                     context = navController.context,
                                     itemId = playableItem.id,
                                     mediaSourceId = playableItem.sources.firstOrNull()?.id ?: "",
@@ -255,7 +238,8 @@ fun MainNavigation(
                     },
                     navController = navController,
                     mainUiState = mainUiState,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -274,7 +258,8 @@ fun MainNavigation(
                     },
                     navController = navController,
                     mainUiState = mainUiState,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -286,9 +271,6 @@ fun MainNavigation(
                 )
             ) {
                 LibraryContentScreen(
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
                     onItemClick = { item ->
                         val route = Destination.createItemDetailRoute(item.id.toString())
                         navController.navigate(route)
@@ -298,7 +280,8 @@ fun MainNavigation(
                         navController.navigate(route)
                     },
                     navController = navController,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -309,9 +292,6 @@ fun MainNavigation(
                 )
             ) {
                 LibraryContentScreen(
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
                     onItemClick = { item ->
                         val route = Destination.createItemDetailRoute(item.id.toString())
                         navController.navigate(route)
@@ -321,7 +301,8 @@ fun MainNavigation(
                         navController.navigate(route)
                     },
                     navController = navController,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -334,7 +315,7 @@ fun MainNavigation(
                 ItemDetailScreen(
                     navController = navController,
                     onPlayClick = { item, selection ->
-                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                        PlayerLauncher.launch(
                             context = navController.context,
                             itemId = item.id,
                             mediaSourceId = selection?.mediaSourceId
@@ -344,7 +325,8 @@ fun MainNavigation(
                             startPositionMs = selection?.startPositionMs ?: 0L
                         )
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -358,7 +340,7 @@ fun MainNavigation(
                 ItemDetailScreen(
                     onPlayClick = { item, selection ->
                         if (selection != null) {
-                            com.makd.afinity.ui.player.PlayerLauncher.launch(
+                            PlayerLauncher.launch(
                                 context = navController.context,
                                 itemId = item.id,
                                 mediaSourceId = selection.mediaSourceId,
@@ -368,7 +350,8 @@ fun MainNavigation(
                             )
                         }
                     },
-                    navController = navController
+                    navController = navController,
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -380,7 +363,8 @@ fun MainNavigation(
             ) {
                 PersonScreen(
                     navController = navController,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -396,7 +380,8 @@ fun MainNavigation(
                     },
                     modifier = Modifier.fillMaxSize(),
                     mainUiState = mainUiState,
-                    navController = navController
+                    navController = navController,
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -408,7 +393,8 @@ fun MainNavigation(
                     },
                     modifier = Modifier.fillMaxSize(),
                     mainUiState = mainUiState,
-                    navController = navController
+                    navController = navController,
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -434,7 +420,8 @@ fun MainNavigation(
                         val route = Destination.createItemDetailRoute(jellyfinItemId)
                         navController.navigate(route)
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -446,9 +433,11 @@ fun MainNavigation(
                     navArgument("filterName") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val filterTypeString = backStackEntry.arguments?.getString("filterType") ?: return@composable
+                val filterTypeString =
+                    backStackEntry.arguments?.getString("filterType") ?: return@composable
                 val filterId = backStackEntry.arguments?.getInt("filterId") ?: return@composable
-                val filterName = backStackEntry.arguments?.getString("filterName") ?: return@composable
+                val filterName =
+                    backStackEntry.arguments?.getString("filterName") ?: return@composable
 
                 val filterType = FilterType.valueOf(filterTypeString)
                 val filterParams = FilterParams(filterType, filterId, filterName)
@@ -467,7 +456,8 @@ fun MainNavigation(
                         val route = Destination.createItemDetailRoute(jellyfinItemId)
                         navController.navigate(route)
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -484,7 +474,8 @@ fun MainNavigation(
                         val route = Destination.createGenreResultsRoute(genre)
                         navController.navigate(route)
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -503,7 +494,8 @@ fun MainNavigation(
                         val route = Destination.createItemDetailRoute(item.id.toString())
                         navController.navigate(route)
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
 
@@ -572,73 +564,4 @@ fun MainNavigation(
         }
     }
     GlobalUpdateDialog(updateManager = updateManager)
-}
-
-@Composable
-private fun AppSplashScreen(
-    progress: Float,
-    phase: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_launcher_monochrome),
-            contentDescription = "App Logo",
-            modifier = Modifier
-                .size(240.dp)
-                .align(Alignment.Center)
-                .offset(y = (-32).dp),
-            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-        )
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 100.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "AFinity",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Text(
-                text = "Powered By Jellyfin",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Text(
-                text = phase.ifEmpty { "Loading..." },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .width(240.dp)
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-            )
-
-            Text(
-                text = "${(progress * 100).toInt()}%",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-            )
-        }
-    }
 }

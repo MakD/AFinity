@@ -45,6 +45,7 @@ import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -189,7 +190,7 @@ fun EpisodeDetailOverlay(
                             modifier = Modifier.size(22.dp)
                         )
                         Text(
-                            text = String.format("%.1f", rating),
+                            text = String.format(Locale.US, "%.1f", rating),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

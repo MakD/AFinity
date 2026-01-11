@@ -73,6 +73,7 @@ import com.makd.afinity.data.models.player.SubtitleVerticalPosition
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.ui.settings.SettingsViewModel
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -656,7 +657,7 @@ private fun SubtitleSliderItem(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = String.format("%.1f", value),
+                text = String.format(Locale.US, "%.1f", value),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -771,11 +772,11 @@ private fun SubtitleDropdownItem(
 
 @Composable
 private fun ColorPickerItem(
+    modifier: Modifier = Modifier,
     title: String,
     color: Int,
     onColorChange: (Int) -> Unit,
-    subtitle: String? = null,
-    modifier: Modifier = Modifier
+    subtitle: String? = null
 ) {
     var showDialog by remember { mutableStateOf(false) }
 

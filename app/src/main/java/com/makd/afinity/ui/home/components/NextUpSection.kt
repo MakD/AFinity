@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -16,18 +17,19 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.calculateCardHeight
-import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 
 @Composable
 fun NextUpSection(
     episodes: List<AfinityEpisode>,
     onEpisodeClick: (AfinityEpisode) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
@@ -51,7 +53,8 @@ fun NextUpSection(
             ) { episode ->
                 ContinueWatchingCard(
                     item = episode,
-                    onClick = { onEpisodeClick(episode) }
+                    onClick = { onEpisodeClick(episode) },
+                    cardWidth = cardWidth
                 )
             }
         }

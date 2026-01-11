@@ -13,6 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,6 +27,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
+import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 enum class FilterType {
     GENRE_MOVIE,
@@ -54,7 +57,8 @@ fun FilteredMediaScreen(
     onItemClick: (jellyfinItemId: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: FilteredMediaViewModel = hiltViewModel(),
-    requestsViewModel: RequestsViewModel = hiltViewModel()
+    requestsViewModel: RequestsViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val requestsUiState by requestsViewModel.uiState.collectAsStateWithLifecycle()
@@ -62,6 +66,8 @@ fun FilteredMediaScreen(
     LaunchedEffect(filterParams) {
         viewModel.loadContent(filterParams)
     }
+
+    val cardWidth = widthSizeClass.portraitWidth
 
     Scaffold(
         topBar = {
@@ -84,21 +90,30 @@ fun FilteredMediaScreen(
     ) { innerPadding ->
         when {
             uiState.isLoading && uiState.items.isEmpty() -> {
-                LoadingView(modifier = Modifier.fillMaxSize().padding(innerPadding))
+                LoadingView(modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding))
             }
+
             uiState.error != null && uiState.items.isEmpty() -> {
                 ErrorView(
                     message = uiState.error!!,
                     onRetry = { viewModel.loadContent(filterParams) },
-                    modifier = Modifier.fillMaxSize().padding(innerPadding)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 )
             }
+
             uiState.items.isEmpty() -> {
-                EmptyView(modifier = Modifier.fillMaxSize().padding(innerPadding))
+                EmptyView(modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding))
             }
+
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 120.dp),
+                    columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
@@ -137,7 +152,8 @@ fun FilteredMediaScreen(
                                         )
                                     }
                                 }
-                            }
+                            },
+                            cardWidth = cardWidth
                         )
                     }
 

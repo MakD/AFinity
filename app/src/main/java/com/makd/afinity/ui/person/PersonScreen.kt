@@ -9,6 +9,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -23,7 +24,8 @@ import com.makd.afinity.ui.person.components.PersonDetailContent
 fun PersonScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: PersonViewModel = hiltViewModel()
+    viewModel: PersonViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -72,7 +74,8 @@ fun PersonScreen(
                     shows = uiState.shows,
                     onItemClick = { item ->
                         navController.navigate("item_detail/${item.id}")
-                    }
+                    },
+                    widthSizeClass = widthSizeClass
                 )
             }
         }

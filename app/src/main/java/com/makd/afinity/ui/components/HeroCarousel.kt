@@ -64,6 +64,7 @@ import kotlinx.coroutines.delay
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
 import mx.platacard.pagerindicator.PagerWormIndicator
 import timber.log.Timber
+import java.util.Locale
 
 @Composable
 fun HeroCarousel(
@@ -168,9 +169,11 @@ fun HeroCarouselPortrait(
         }
     }
 
-    Box(modifier = modifier
-        .fillMaxWidth()
-        .height(height)) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height)
+    ) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
@@ -204,9 +207,11 @@ fun HeroCarouselPortrait(
             )
         }
 
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+        ) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -434,9 +439,11 @@ private fun HeroCarouselLandscape(
         }
     }
 
-    Box(modifier = modifier
-        .fillMaxWidth()
-        .height(landscapeHeight)) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(landscapeHeight)
+    ) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
@@ -470,183 +477,198 @@ private fun HeroCarouselLandscape(
             )
         }
 
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(start = 48.dp, bottom = 48.dp, top = 48.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 48.dp, bottom = 48.dp, top = 48.dp, end = 48.dp)
+        ) {
+
             Column(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .fillMaxWidth(0.45f),
+                    .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp),
-                    contentAlignment = Alignment.CenterStart
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(0.75f),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Crossfade(
-                        targetState = currentItem,
-                        animationSpec = tween(durationMillis = 700),
-                        label = "logo_crossfade"
-                    ) { item ->
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            item.images.logo?.let { logoUri ->
-                                OptimizedAsyncImage(
-                                    imageUrl = item.images.logoImageUrlWithTransparency,
-                                    contentDescription = "${item.name} logo",
-                                    blurHash = item.images.logoBlurHash,
-                                    targetWidth = (LocalConfiguration.current.screenWidthDp * 0.4f).dp,
-                                    targetHeight = 100.dp,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .wrapContentHeight(),
-                                    contentScale = ContentScale.Fit,
-                                    alignment = Alignment.CenterStart
-                                )
-                            } ?: run {
-                                Text(
-                                    text = item.name,
-                                    style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.5f)
+                            .height(100.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Crossfade(
+                            targetState = currentItem,
+                            animationSpec = tween(durationMillis = 700),
+                            label = "logo_crossfade"
+                        ) { item ->
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                item.images.logo?.let { logoUri ->
+                                    OptimizedAsyncImage(
+                                        imageUrl = item.images.logoImageUrlWithTransparency,
+                                        contentDescription = "${item.name} logo",
+                                        blurHash = item.images.logoBlurHash,
+                                        targetWidth = (LocalConfiguration.current.screenWidthDp * 0.4f).dp,
+                                        targetHeight = 100.dp,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .wrapContentHeight(),
+                                        contentScale = ContentScale.Fit,
+                                        alignment = Alignment.CenterStart
+                                    )
+                                } ?: run {
+                                    Text(
+                                        text = item.name,
+                                        style = MaterialTheme.typography.displayMedium.copy(
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(28.dp)) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(28.dp)
                     ) {
-                        HeroMetadata(currentItem)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            HeroMetadata(currentItem)
+                        }
                     }
-                }
 
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(20.dp)) {
-                    val genres = when (currentItem) {
-                        is AfinityMovie -> (currentItem as AfinityMovie).genres
-                        is AfinityShow -> (currentItem as AfinityShow).genres
-                        else -> emptyList()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(20.dp)
+                    ) {
+                        val genres = when (currentItem) {
+                            is AfinityMovie -> (currentItem as AfinityMovie).genres
+                            is AfinityShow -> (currentItem as AfinityShow).genres
+                            else -> emptyList()
+                        }
+                        if (genres.isNotEmpty()) {
+                            Text(
+                                text = genres.take(3).joinToString(" • "),
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                    if (genres.isNotEmpty()) {
-                        Text(
-                            text = genres.take(3).joinToString(" • "),
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
 
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)) {
-                    currentItem.overview?.let { overview ->
-                        Text(
-                            text = overview,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(bottom = 64.dp, start = 48.dp, end = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                IconButton(
-                    onClick = { onMoreInformationClick(currentItem) },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            CircleShape
-                        )
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_info),
-                        contentDescription = "More Information",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                IconButton(
-                    onClick = { onPlayTrailerClick(currentItem) },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            CircleShape
-                        )
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_video),
-                        contentDescription = "Play Trailer",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                IconButton(
-                    onClick = { onWatchNowClick(currentItem) },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_play_arrow),
-                        contentDescription = "Watch Now",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
-            if (items.size > 1) {
-                val currentPageFractionState = remember {
-                    derivedStateOf {
-                        val currentPage = pagerState.currentPage % items.size
-                        val pageOffset = pagerState.currentPageOffsetFraction
-                        when {
-                            pageOffset > 0.5f && currentPage == items.size - 1 -> 0f
-                            pageOffset < -0.5f && currentPage == 0 -> (items.size - 1).toFloat()
-                            else -> (currentPage + pageOffset).coerceIn(
-                                0f,
-                                (items.size - 1).toFloat()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp)
+                    ) {
+                        currentItem.overview?.let { overview ->
+                            Text(
+                                text = overview,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
                 }
 
-                PagerWormIndicator(
-                    pageCount = items.size,
-                    currentPageFraction = currentPageFractionState,
-                    activeDotColor = MaterialTheme.colorScheme.primary,
-                    dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                    dotCount = 5,
-                    activeDotSize = 8.dp,
-                    minDotSize = 4.dp,
-                    space = 5.dp,
-                    orientation = PagerIndicatorOrientation.Horizontal
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                        IconButton(
+                            onClick = { onMoreInformationClick(currentItem) },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_info),
+                                contentDescription = "More Information",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = { onPlayTrailerClick(currentItem) },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_video),
+                                contentDescription = "Play Trailer",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = { onWatchNowClick(currentItem) },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_play_arrow),
+                                contentDescription = "Watch Now",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
+                    if (items.size > 1) {
+                        val currentPageFractionState = remember {
+                            derivedStateOf {
+                                val currentPage = pagerState.currentPage % items.size
+                                val pageOffset = pagerState.currentPageOffsetFraction
+                                when {
+                                    pageOffset > 0.5f && currentPage == items.size - 1 -> 0f
+                                    pageOffset < -0.5f && currentPage == 0 -> (items.size - 1).toFloat()
+                                    else -> (currentPage + pageOffset).coerceIn(
+                                        0f,
+                                        (items.size - 1).toFloat()
+                                    )
+                                }
+                            }
+                        }
+
+                        PagerWormIndicator(
+                            pageCount = items.size,
+                            currentPageFraction = currentPageFractionState,
+                            activeDotColor = MaterialTheme.colorScheme.primary,
+                            dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            dotCount = 5,
+                            activeDotSize = 8.dp,
+                            minDotSize = 4.dp,
+                            space = 5.dp,
+                            orientation = PagerIndicatorOrientation.Horizontal
+                        )
+                    }
+                }
             }
         }
     }
@@ -673,7 +695,7 @@ private fun HeroMetadata(item: AfinityItem) {
                 modifier = Modifier.size(24.dp)
             )
             Text(
-                text = String.format("%.1f", rating),
+                text = String.format(Locale.US, "%.1f", rating),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

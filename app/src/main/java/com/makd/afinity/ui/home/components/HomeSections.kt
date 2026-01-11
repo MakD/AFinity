@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -17,19 +18,20 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.calculateCardHeight
-import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
-import com.makd.afinity.ui.theme.rememberPortraitCardWidth
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 @Composable
 fun OptimizedContinueWatchingSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
@@ -55,7 +57,8 @@ fun OptimizedContinueWatchingSection(
             ) { item ->
                 ContinueWatchingCard(
                     item = item,
-                    onClick = { onItemClick(item) }
+                    onClick = { onItemClick(item) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -66,12 +69,14 @@ fun OptimizedContinueWatchingSection(
 fun OptimizedLatestMoviesSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     title: String = "Latest Movies"
 ) {
-    val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val cardWidth = widthSizeClass.portraitWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
@@ -97,7 +102,8 @@ fun OptimizedLatestMoviesSection(
             ) { item ->
                 MediaItemCard(
                     item = item,
-                    onClick = { onItemClick(item) }
+                    onClick = { onItemClick(item) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -108,12 +114,14 @@ fun OptimizedLatestMoviesSection(
 fun OptimizedLatestTvSeriesSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     title: String = "Latest TV Series"
 ) {
-    val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val cardWidth = widthSizeClass.portraitWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+
     Column(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
@@ -139,7 +147,8 @@ fun OptimizedLatestTvSeriesSection(
             ) { item ->
                 MediaItemCard(
                     item = item,
-                    onClick = { onItemClick(item) }
+                    onClick = { onItemClick(item) },
+                    cardWidth = cardWidth
                 )
             }
         }

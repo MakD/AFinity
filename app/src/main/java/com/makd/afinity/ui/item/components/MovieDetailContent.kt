@@ -18,6 +18,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityChapter
@@ -38,6 +40,8 @@ import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.InCollectionsSection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import java.util.Locale
 import java.util.UUID
 
 @Composable
@@ -48,7 +52,8 @@ fun MovieDetailContent(
     containingBoxSets: List<AfinityBoxSet>,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onPlayClick: (AfinityMovie, PlaybackSelection) -> Unit,
-    navController: androidx.navigation.NavController
+    navController: androidx.navigation.NavController,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -81,13 +86,15 @@ fun MovieDetailContent(
                             startPositionMs = startPositionMs
                         )
                     )
-                }
+                },
+                widthSizeClass = widthSizeClass
             )
         }
 
         SpecialFeaturesSection(
             specialFeatures = specialFeatures,
-            onItemClick = onSpecialFeatureClick
+            onItemClick = onSpecialFeatureClick,
+            widthSizeClass = widthSizeClass
         )
 
         InCollectionsSection(
@@ -95,7 +102,8 @@ fun MovieDetailContent(
             onBoxSetClick = { boxSet ->
                 val route = Destination.createItemDetailRoute(boxSet.id.toString())
                 navController.navigate(route)
-            }
+            },
+            widthSizeClass = widthSizeClass
         )
 
         CastSection(
@@ -103,7 +111,8 @@ fun MovieDetailContent(
             onPersonClick = { personId ->
                 val route = Destination.createPersonRoute(personId.toString())
                 navController.navigate(route)
-            }
+            },
+            widthSizeClass = widthSizeClass
         )
     }
 }
@@ -114,7 +123,10 @@ internal fun ChaptersSection(
     itemId: UUID,
     baseUrl: String,
     onChapterClick: (Long) -> Unit,
+    widthSizeClass: WindowWidthSizeClass
 ) {
+    val cardWidth = widthSizeClass.landscapeWidth
+
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -136,7 +148,8 @@ internal fun ChaptersSection(
                     index = index,
                     itemId = itemId,
                     baseUrl = baseUrl,
-                    onClick = { onChapterClick(chapter.startPosition) }
+                    onClick = { onChapterClick(chapter.startPosition) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -149,10 +162,11 @@ internal fun ChapterCard(
     index: Int,
     itemId: UUID,
     baseUrl: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    cardWidth: Dp
 ) {
     Column(
-        modifier = Modifier.width(200.dp),
+        modifier = Modifier.width(cardWidth),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Card(
@@ -171,8 +185,8 @@ internal fun ChapterCard(
                 OptimizedAsyncImage(
                     imageUrl = chapter.getChapterImageUrl(baseUrl, itemId),
                     contentDescription = chapter.name ?: "Chapter ${index + 1}",
-                    targetWidth = 200.dp,
-                    targetHeight = 112.dp,
+                    targetWidth = cardWidth,
+                    targetHeight = cardWidth * 9f / 16f,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -215,8 +229,8 @@ internal fun formatTime(positionMs: Long): String {
     val seconds = totalSeconds % 60
 
     return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
+        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
     } else {
-        String.format("%d:%02d", minutes, seconds)
+        String.format(Locale.US, "%d:%02d", minutes, seconds)
     }
 }

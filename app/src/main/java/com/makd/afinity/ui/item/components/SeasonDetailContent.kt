@@ -9,17 +9,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.PagingData
@@ -36,8 +37,7 @@ import com.makd.afinity.ui.item.components.shared.CastSection
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.calculateCardHeight
-import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -48,7 +48,8 @@ fun SeasonDetailContent(
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: androidx.navigation.NavController,
-    preferencesRepository: PreferencesRepository
+    preferencesRepository: PreferencesRepository,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val episodeLayout by preferencesRepository.getEpisodeLayoutFlow()
         .collectAsState(initial = EpisodeLayout.HORIZONTAL)
@@ -66,13 +67,15 @@ fun SeasonDetailContent(
             EpisodesSection(
                 episodesPagingData = pagingData,
                 onEpisodeClick = onEpisodeClick,
-                layout = episodeLayout
+                layout = episodeLayout,
+                widthSizeClass = widthSizeClass
             )
         }
 
         SpecialFeaturesSection(
             specialFeatures = specialFeatures,
-            onItemClick = onSpecialFeatureClick
+            onItemClick = onSpecialFeatureClick,
+            widthSizeClass = widthSizeClass
         )
 
         CastSection(
@@ -81,7 +84,8 @@ fun SeasonDetailContent(
                 val route =
                     com.makd.afinity.navigation.Destination.createPersonRoute(personId.toString())
                 navController.navigate(route)
-            }
+            },
+            widthSizeClass = widthSizeClass
         )
     }
 }
@@ -90,9 +94,12 @@ fun SeasonDetailContent(
 private fun EpisodesSection(
     episodesPagingData: Flow<PagingData<AfinityEpisode>>,
     onEpisodeClick: (AfinityEpisode) -> Unit,
-    layout: EpisodeLayout
+    layout: EpisodeLayout,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val lazyEpisodeItems = episodesPagingData.collectAsLazyPagingItems()
+
+    val cardWidth = widthSizeClass.landscapeWidth
 
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -109,13 +116,16 @@ private fun EpisodesSection(
             EpisodeLayout.HORIZONTAL -> {
                 HorizontalEpisodesList(
                     lazyEpisodeItems = lazyEpisodeItems,
-                    onEpisodeClick = onEpisodeClick
+                    onEpisodeClick = onEpisodeClick,
+                    cardWidth = cardWidth
                 )
             }
+
             EpisodeLayout.VERTICAL -> {
                 VerticalEpisodesList(
                     lazyEpisodeItems = lazyEpisodeItems,
-                    onEpisodeClick = onEpisodeClick
+                    onEpisodeClick = onEpisodeClick,
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -136,10 +146,11 @@ private fun EpisodesSection(
 @Composable
 private fun HorizontalEpisodesList(
     lazyEpisodeItems: LazyPagingItems<AfinityEpisode>,
-    onEpisodeClick: (AfinityEpisode) -> Unit
+    onEpisodeClick: (AfinityEpisode) -> Unit,
+    cardWidth: Dp
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     LazyRow(
@@ -155,7 +166,8 @@ private fun HorizontalEpisodesList(
                 ContinueWatchingCard(
                     item = episode,
                     onClick = { onEpisodeClick(episode) },
-                    modifier = Modifier.width(cardWidth)
+                    modifier = Modifier.width(cardWidth),
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -165,16 +177,16 @@ private fun HorizontalEpisodesList(
 @Composable
 private fun VerticalEpisodesList(
     lazyEpisodeItems: LazyPagingItems<AfinityEpisode>,
-    onEpisodeClick: (AfinityEpisode) -> Unit
+    onEpisodeClick: (AfinityEpisode) -> Unit,
+    cardWidth: Dp
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    Column {
         repeat(lazyEpisodeItems.itemCount) { index ->
             lazyEpisodeItems[index]?.let { episode ->
                 EpisodeListCard(
                     item = episode,
-                    onClick = { onEpisodeClick(episode) }
+                    onClick = { onEpisodeClick(episode) },
+                    thumbnailWidth = cardWidth
                 )
             }
         }

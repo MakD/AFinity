@@ -41,6 +41,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -98,9 +99,8 @@ import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.calculateCardHeight
-import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
-import com.makd.afinity.ui.theme.rememberPortraitCardWidth
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -113,7 +113,8 @@ fun HomeScreen(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavController,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -246,7 +247,8 @@ fun HomeScreen(
                                             } else {
                                                 onItemClick(item)
                                             }
-                                        }
+                                        },
+                                        widthSizeClass = widthSizeClass
                                     )
                                 }
                             }
@@ -256,7 +258,7 @@ fun HomeScreen(
                             Box(modifier = getItemModifier("cw_skeleton")) {
                                 Column {
                                     Spacer(modifier = Modifier.height(24.dp))
-                                    ContinueWatchingSkeleton()
+                                    ContinueWatchingSkeleton(widthSizeClass)
                                 }
                             }
                         }
@@ -270,7 +272,8 @@ fun HomeScreen(
                                     OptimizedLatestTvSeriesSection(
                                         title = "Downloaded Movies",
                                         items = uiState.downloadedMovies,
-                                        onItemClick = onItemClick
+                                        onItemClick = onItemClick,
+                                        widthSizeClass = widthSizeClass
                                     )
                                 }
                             }
@@ -285,7 +288,8 @@ fun HomeScreen(
                                     OptimizedLatestTvSeriesSection(
                                         title = "Downloaded Shows",
                                         items = uiState.downloadedShows,
-                                        onItemClick = onItemClick
+                                        onItemClick = onItemClick,
+                                        widthSizeClass = widthSizeClass
                                     )
                                 }
                             }
@@ -301,7 +305,8 @@ fun HomeScreen(
                                         episodes = uiState.nextUp,
                                         onEpisodeClick = { episode ->
                                             viewModel.selectEpisode(episode)
-                                        }
+                                        },
+                                        widthSizeClass = widthSizeClass
                                     )
                                 }
                             }
@@ -316,7 +321,8 @@ fun HomeScreen(
                                         Spacer(modifier = Modifier.height(24.dp))
                                         OptimizedLatestMoviesSection(
                                             items = uiState.latestMovies,
-                                            onItemClick = onItemClick
+                                            onItemClick = onItemClick,
+                                            widthSizeClass = widthSizeClass
                                         )
                                     }
                                 }
@@ -324,7 +330,7 @@ fun HomeScreen(
                                 item(key = "movies_skeleton") {
                                     Column(modifier = Modifier.fillMaxWidth()) {
                                         Spacer(modifier = Modifier.height(24.dp))
-                                        MoviesSectionSkeleton()
+                                        MoviesSectionSkeleton(widthSizeClass)
                                     }
                                 }
                             }
@@ -338,7 +344,8 @@ fun HomeScreen(
                                     OptimizedLatestMoviesSection(
                                         title = library.name,
                                         items = movies,
-                                        onItemClick = onItemClick
+                                        onItemClick = onItemClick,
+                                        widthSizeClass = widthSizeClass
                                     )
                                 }
                             }
@@ -353,7 +360,8 @@ fun HomeScreen(
                                         Spacer(modifier = Modifier.height(24.dp))
                                         OptimizedLatestTvSeriesSection(
                                             items = uiState.latestTvSeries,
-                                            onItemClick = onItemClick
+                                            onItemClick = onItemClick,
+                                            widthSizeClass = widthSizeClass
                                         )
                                     }
                                 }
@@ -361,7 +369,7 @@ fun HomeScreen(
                                 item(key = "tv_skeleton") {
                                     Column(modifier = Modifier.fillMaxWidth()) {
                                         Spacer(modifier = Modifier.height(24.dp))
-                                        TvSeriesSectionSkeleton()
+                                        TvSeriesSectionSkeleton(widthSizeClass)
                                     }
                                 }
                             }
@@ -375,7 +383,8 @@ fun HomeScreen(
                                     OptimizedLatestTvSeriesSection(
                                         title = library.name,
                                         items = shows,
-                                        onItemClick = onItemClick
+                                        onItemClick = onItemClick,
+                                        widthSizeClass = widthSizeClass
                                     )
                                 }
                             }
@@ -388,7 +397,8 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.height(24.dp))
                                 HighestRatedSection(
                                     items = uiState.highestRated,
-                                    onItemClick = onItemClick
+                                    onItemClick = onItemClick,
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -402,7 +412,8 @@ fun HomeScreen(
                                     studios = uiState.studios,
                                     onStudioClick = { studio ->
                                         viewModel.onStudioClick(studio, navController)
-                                    }
+                                    },
+                                    widthSizeClass = widthSizeClass
                                 )
                             }
                         }
@@ -426,21 +437,24 @@ fun HomeScreen(
                                     is HomeSection.Person -> {
                                         PersonSection(
                                             section = section.section,
-                                            onItemClick = { movie -> onItemClick(movie) }
+                                            onItemClick = { movie -> onItemClick(movie) },
+                                            widthSizeClass = widthSizeClass
                                         )
                                     }
 
                                     is HomeSection.Movie -> {
                                         MovieRecommendationSection(
                                             section = section.section,
-                                            onItemClick = { movie -> onItemClick(movie) }
+                                            onItemClick = { movie -> onItemClick(movie) },
+                                            widthSizeClass = widthSizeClass
                                         )
                                     }
 
                                     is HomeSection.PersonFromMovie -> {
                                         PersonFromMovieSection(
                                             section = section.section,
-                                            onItemClick = { movie -> onItemClick(movie) }
+                                            onItemClick = { movie -> onItemClick(movie) },
+                                            widthSizeClass = widthSizeClass
                                         )
                                     }
 
@@ -460,7 +474,8 @@ fun HomeScreen(
                                                             )
                                                         }
                                                     },
-                                                    onItemClick = onItemClick
+                                                    onItemClick = onItemClick,
+                                                    widthSizeClass = widthSizeClass
                                                 )
                                             }
 
@@ -478,7 +493,8 @@ fun HomeScreen(
                                                             )
                                                         }
                                                     },
-                                                    onItemClick = onItemClick
+                                                    onItemClick = onItemClick,
+                                                    widthSizeClass = widthSizeClass
                                                 )
                                             }
                                         }
@@ -630,11 +646,13 @@ fun HomeScreen(
 @Composable
 private fun HighestRatedSection(
     items: List<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass
 ) {
-    val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val cardWidth = widthSizeClass.portraitWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
     ) {
@@ -661,7 +679,8 @@ private fun HighestRatedSection(
                 HighestRatedCard(
                     item = item,
                     ranking = index + 1,
-                    onClick = { onItemClick(item) }
+                    onClick = { onItemClick(item) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -672,9 +691,9 @@ private fun HighestRatedSection(
 private fun HighestRatedCard(
     item: AfinityItem,
     ranking: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    cardWidth: Dp
 ) {
-    val cardWidth = rememberPortraitCardWidth()
     val density = LocalDensity.current
     val fontScale = density.fontScale
 
@@ -900,7 +919,9 @@ private fun HighestRatedCard(
 }
 
 @Composable
-private fun ContinueWatchingSkeleton() {
+private fun ContinueWatchingSkeleton(widthSizeClass: WindowWidthSizeClass) {
+    val cardWidth = widthSizeClass.portraitWidth
+
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
     ) {
@@ -919,8 +940,6 @@ private fun ContinueWatchingSkeleton() {
             contentPadding = PaddingValues(horizontal = 4.dp)
         ) {
             items(5) {
-                val cardWidth = rememberPortraitCardWidth()
-
                 Column(modifier = Modifier.width(cardWidth)) {
                     Card(
                         modifier = Modifier
@@ -956,8 +975,8 @@ private fun ContinueWatchingSkeleton() {
 }
 
 @Composable
-private fun MoviesSectionSkeleton() {
-    val cardWidth = rememberPortraitCardWidth()
+private fun MoviesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
+    val cardWidth = widthSizeClass.portraitWidth
 
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -1030,8 +1049,8 @@ private fun MoviesSectionSkeleton() {
 }
 
 @Composable
-private fun TvSeriesSectionSkeleton() {
-    val cardWidth = rememberPortraitCardWidth()
+private fun TvSeriesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
+    val cardWidth = widthSizeClass.portraitWidth
 
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -1138,10 +1157,12 @@ private fun Modifier.shimmerEffect(): Modifier = composed {
 @Composable
 private fun PopularStudiosSection(
     studios: List<AfinityStudio>,
-    onStudioClick: (AfinityStudio) -> Unit
+    onStudioClick: (AfinityStudio) -> Unit,
+    widthSizeClass: WindowWidthSizeClass
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp
 
     Column(
@@ -1167,7 +1188,8 @@ private fun PopularStudiosSection(
             ) { _, studio ->
                 StudioCard(
                     studio = studio,
-                    onClick = { onStudioClick(studio) }
+                    onClick = { onStudioClick(studio) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -1177,10 +1199,9 @@ private fun PopularStudiosSection(
 @Composable
 private fun StudioCard(
     studio: AfinityStudio,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    cardWidth: Dp
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
-
     Column(
         modifier = Modifier.width(cardWidth)
     ) {

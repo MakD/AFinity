@@ -16,27 +16,28 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.components.OptimizedAsyncImage
-import timber.log.Timber
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 
 @Composable
 fun SpecialFeaturesSection(
     specialFeatures: List<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass
 ) {
-    Timber.d("SpecialFeaturesSection: ${specialFeatures.size} features")
+    val cardWidth = widthSizeClass.landscapeWidth
 
     if (specialFeatures.isNotEmpty()) {
         Column(
@@ -57,7 +58,8 @@ fun SpecialFeaturesSection(
                 items(specialFeatures) { feature ->
                     SpecialFeatureCard(
                         feature = feature,
-                        onClick = { onItemClick(feature) }
+                        onClick = { onItemClick(feature) },
+                        cardWidth = cardWidth
                     )
                 }
             }
@@ -68,12 +70,9 @@ fun SpecialFeaturesSection(
 @Composable
 private fun SpecialFeatureCard(
     feature: AfinityItem,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    cardWidth: Dp
 ) {
-    val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val cardWidth = (configuration.screenWidthDp.dp - 56.dp) / 2.3f
-
     Column(
         modifier = Modifier.width(cardWidth)
     ) {

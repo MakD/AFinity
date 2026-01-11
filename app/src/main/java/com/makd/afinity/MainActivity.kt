@@ -4,28 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -37,6 +26,7 @@ import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.navigation.MainNavigation
+import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.login.LoginScreen
 import com.makd.afinity.ui.theme.AFinityTheme
 import com.makd.afinity.ui.theme.ThemeMode
@@ -66,6 +56,8 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
+            @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+            val windowSize = calculateWindowSizeClass(this)
             val themeMode by preferencesRepository.getThemeModeFlow()
                 .collectAsState(initial = "SYSTEM")
             val dynamicColors by preferencesRepository.getDynamicColorsFlow()
@@ -92,7 +84,8 @@ class MainActivity : ComponentActivity() {
                 MainContent(
                     modifier = Modifier.fillMaxSize(),
                     updateManager = updateManager,
-                    offlineModeManager = offlineModeManager
+                    offlineModeManager = offlineModeManager,
+                    widthSizeClass = windowSize.widthSizeClass
                 )
             }
         }
@@ -110,13 +103,15 @@ private fun MainContent(
     modifier: Modifier = Modifier,
     viewModel: MainViewModel = hiltViewModel(),
     updateManager: UpdateManager,
-    offlineModeManager: OfflineModeManager
+    offlineModeManager: OfflineModeManager,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val authState by viewModel.authenticationState.collectAsStateWithLifecycle()
 
     when (authState) {
         AuthenticationState.Loading -> {
-            CustomAuthSplashScreen(
+            AfinitySplashScreen(
+                statusText = "Authenticating...",
                 modifier = modifier
             )
         }
@@ -125,7 +120,8 @@ private fun MainContent(
             MainNavigation(
                 modifier = modifier,
                 updateManager = updateManager,
-                offlineModeManager = offlineModeManager
+                offlineModeManager = offlineModeManager,
+                widthSizeClass = widthSizeClass
             )
         }
 
@@ -136,61 +132,10 @@ private fun MainContent(
                 LoginScreen(
                     onLoginSuccess = {
                     },
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(innerPadding),
+                    widthSizeClass = widthSizeClass
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun CustomAuthSplashScreen(
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_launcher_monochrome),
-            contentDescription = "App Logo",
-            modifier = Modifier
-                .size(240.dp)
-                .align(Alignment.Center)
-                .offset(y = (-32).dp),
-            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-        )
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 100.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "AFinity",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Text(
-                text = "Powered By Jellyfin",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Text(
-                text = "Authenticating...",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

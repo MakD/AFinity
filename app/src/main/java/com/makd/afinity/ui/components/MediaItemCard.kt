@@ -31,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -40,17 +41,17 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.rememberPortraitCardWidth
+import java.util.Locale
 
 @Composable
 fun MediaItemCard(
     item: AfinityItem,
     onClick: () -> Unit,
+    cardWidth: Dp,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
     val fontScale = density.fontScale
-    val cardWidth = rememberPortraitCardWidth()
 
     Column(
         modifier = modifier.width(cardWidth)
@@ -184,7 +185,7 @@ fun MediaItemCard(
                             )
                         )
                         Text(
-                            text = String.format("%.1f", rating),
+                            text = String.format(Locale.US, "%.1f", rating),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = MaterialTheme.typography.bodySmall.fontSize *
                                         if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f

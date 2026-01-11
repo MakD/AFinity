@@ -28,22 +28,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.rememberPortraitCardWidth
 
 @Composable
 fun DiscoverMediaCard(
     item: SearchResultItem,
     onClick: () -> Unit,
+    cardWidth: Dp,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
     val fontScale = density.fontScale
-    val cardWidth = rememberPortraitCardWidth()
 
     Column(
         modifier = modifier.width(cardWidth)

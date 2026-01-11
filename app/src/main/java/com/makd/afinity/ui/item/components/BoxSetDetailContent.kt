@@ -7,20 +7,26 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 @Composable
 fun BoxSetDetailContent(
     item: AfinityBoxSet,
     boxSetItems: List<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass
 ) {
+    val cardWidth = widthSizeClass.portraitWidth
+
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -36,7 +42,8 @@ fun BoxSetDetailContent(
 
         BoxSetItemsSection(
             items = boxSetItems,
-            onItemClick = onItemClick
+            onItemClick = onItemClick,
+            cardWidth = cardWidth
         )
     }
 }
@@ -44,7 +51,8 @@ fun BoxSetDetailContent(
 @Composable
 internal fun BoxSetItemsSection(
     items: List<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit
+    onItemClick: (AfinityItem) -> Unit,
+    cardWidth: Dp
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -64,7 +72,8 @@ internal fun BoxSetItemsSection(
             items(items) { item ->
                 MediaItemCard(
                     item = item,
-                    onClick = { onItemClick(item) }
+                    onClick = { onItemClick(item) },
+                    cardWidth = cardWidth
                 )
             }
         }

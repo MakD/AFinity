@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -23,6 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
@@ -31,13 +33,15 @@ import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import org.jellyfin.sdk.model.api.PersonKind
 import java.util.UUID
 
 @Composable
 fun CastSection(
     item: AfinityItem,
-    onPersonClick: (UUID) -> Unit = {}
+    onPersonClick: (UUID) -> Unit = {},
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val cast = when (item) {
         is AfinityMovie -> item.people.filter { it.type == PersonKind.ACTOR }
@@ -45,6 +49,8 @@ fun CastSection(
         is AfinitySeason -> item.people.filter { it.type == PersonKind.ACTOR }
         else -> emptyList()
     }
+
+    val cardWidth = widthSizeClass.portraitWidth
 
     if (cast.isNotEmpty()) {
         Column(
@@ -65,7 +71,8 @@ fun CastSection(
                 items(cast.take(10)) { person ->
                     CastMemberCard(
                         person = person,
-                        onPersonClick = onPersonClick
+                        onPersonClick = onPersonClick,
+                        cardWidth = cardWidth
                     )
                 }
             }
@@ -76,11 +83,12 @@ fun CastSection(
 @Composable
 private fun CastMemberCard(
     person: AfinityPerson,
-    onPersonClick: (UUID) -> Unit = {}
+    onPersonClick: (UUID) -> Unit = {},
+    cardWidth: Dp
 ) {
     Column(
         modifier = Modifier
-            .width(100.dp)
+            .width(cardWidth)
             .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
@@ -94,10 +102,10 @@ private fun CastMemberCard(
             imageUrl = person.image.uri?.toString(),
             contentDescription = person.name,
             blurHash = person.image.blurHash,
-            targetWidth = 100.dp,
-            targetHeight = 100.dp,
+            targetWidth = cardWidth,
+            targetHeight = cardWidth,
             modifier = Modifier
-                .size(100.dp)
+                .size(cardWidth)
                 .clip(CircleShape),
             contentScale = ContentScale.Crop,
             placeholder = painterResource(id = R.drawable.ic_person_placeholder),

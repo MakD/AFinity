@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -30,9 +31,8 @@ import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.calculateCardHeight
-import com.makd.afinity.ui.theme.rememberLandscapeCardWidth
-import com.makd.afinity.ui.theme.rememberPortraitCardWidth
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.util.BackdropTracker
 
 @Composable
@@ -42,10 +42,11 @@ fun MyRequestsSection(
     onRequestClick: (JellyseerrRequest) -> Unit,
     onApprove: (Int) -> Unit,
     onDecline: (Int) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(
@@ -74,7 +75,8 @@ fun MyRequestsSection(
                     isAdmin = isAdmin,
                     onClick = { onRequestClick(request) },
                     onApprove = { onApprove(request.id) },
-                    onDecline = { onDecline(request.id) }
+                    onDecline = { onDecline(request.id) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -86,11 +88,12 @@ fun DiscoverSection(
     title: String,
     items: List<SearchResultItem>,
     onItemClick: (SearchResultItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     onViewAllClick: (() -> Unit)? = null
 ) {
-    val cardWidth = rememberPortraitCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val cardWidth = widthSizeClass.portraitWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
     val headerBottomPadding = if (onViewAllClick != null) 4.dp else 16.dp
 
@@ -144,7 +147,8 @@ fun DiscoverSection(
             ) { item ->
                 DiscoverMediaCard(
                     item = item,
-                    onClick = { onItemClick(item) }
+                    onClick = { onItemClick(item) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -155,10 +159,11 @@ fun DiscoverSection(
 fun StudiosSection(
     studios: List<Studio>,
     onStudioClick: (Studio) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 10.dp
 
     Column(
@@ -184,7 +189,8 @@ fun StudiosSection(
             ) { studio ->
                 StudioCard(
                     studio = studio,
-                    onClick = { onStudioClick(studio) }
+                    onClick = { onStudioClick(studio) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -195,10 +201,11 @@ fun StudiosSection(
 fun NetworksSection(
     networks: List<Network>,
     onNetworkClick: (Network) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
     Column(
         modifier = modifier.padding(horizontal = 14.dp)
@@ -223,7 +230,8 @@ fun NetworksSection(
             ) { network ->
                 NetworkCard(
                     network = network,
-                    onClick = { onNetworkClick(network) }
+                    onClick = { onNetworkClick(network) },
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -234,11 +242,12 @@ fun NetworksSection(
 fun MovieGenresSection(
     genres: List<GenreSliderItem>,
     onGenreClick: (GenreSliderItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     backdropTracker: BackdropTracker? = null
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 10.dp
 
     Column(
@@ -266,7 +275,8 @@ fun MovieGenresSection(
                     genre = genre,
                     onClick = { onGenreClick(genre) },
                     backdropTracker = backdropTracker,
-                    isMovie = true
+                    isMovie = true,
+                    cardWidth = cardWidth
                 )
             }
         }
@@ -277,11 +287,12 @@ fun MovieGenresSection(
 fun TvGenresSection(
     genres: List<GenreSliderItem>,
     onGenreClick: (GenreSliderItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     backdropTracker: BackdropTracker? = null
 ) {
-    val cardWidth = rememberLandscapeCardWidth()
-    val cardHeight = calculateCardHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 10.dp
 
     Column(
@@ -309,7 +320,8 @@ fun TvGenresSection(
                     genre = genre,
                     onClick = { onGenreClick(genre) },
                     backdropTracker = backdropTracker,
-                    isMovie = false
+                    isMovie = false,
+                    cardWidth = cardWidth
                 )
             }
         }

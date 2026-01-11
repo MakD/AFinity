@@ -36,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -66,7 +67,8 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.OptimizedAsyncImage
 import com.makd.afinity.ui.components.RequestConfirmationDialog
-import com.makd.afinity.ui.theme.rememberGridMinColumnSize
+import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +77,8 @@ fun SearchScreen(
     onItemClick: (AfinityItem) -> Unit,
     onGenreClick: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: SearchViewModel = hiltViewModel()
+    viewModel: SearchViewModel = hiltViewModel(),
+    widthSizeClass: WindowWidthSizeClass
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isJellyseerrAuthenticated by viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
@@ -124,7 +127,8 @@ fun SearchScreen(
                 uiState.searchQuery.isEmpty() && !uiState.isSearching && !uiState.isJellyseerrSearching -> {
                     SearchHomeContent(
                         genres = uiState.genres,
-                        onGenreClick = onGenreClick
+                        onGenreClick = onGenreClick,
+                        widthSizeClass = widthSizeClass
                     )
                 }
 
@@ -342,7 +346,8 @@ private fun HorizontalLibraryFilters(
 @Composable
 private fun SearchHomeContent(
     genres: List<String>,
-    onGenreClick: (String) -> Unit
+    onGenreClick: (String) -> Unit,
+    widthSizeClass: WindowWidthSizeClass
 ) {
     Column(
         modifier = Modifier
@@ -359,7 +364,7 @@ private fun SearchHomeContent(
         )
 
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(rememberGridMinColumnSize()),
+            columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -579,7 +584,7 @@ private fun SearchResultItem(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = String.format("%.1f", rating),
+                            text = String.format(Locale.US, "%.1f", rating),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
