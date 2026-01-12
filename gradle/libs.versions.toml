@@ -5,6 +5,7 @@ agp = "8.13.2"
 blurhash = "0.3.0"
 coilCompose = "3.3.0"
 composePagerIndicator = "0.0.8"
+lottieCompose = "6.7.1"
 material3WindowSizeClass = "1.4.0"
 richtext = "0.20.0"
 coreSplashscreen = "1.2.0"
@@ -61,6 +62,7 @@ coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version
 coil-svg = { group = "io.coil-kt.coil3", name = "coil-svg", version.ref = "coilCompose" }
 coil-gif = { group = "io.coil-kt.coil3", name = "coil-gif", version.ref = "coilCompose" }
 coil-network-cache-control = { group = "io.coil-kt.coil3", name = "coil-network-cache-control", version.ref = "coilCompose" }
+lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
 richtext-ui = { group = "com.halilibo.compose-richtext", name = "richtext-ui", version.ref = "richtext" }
 richtext-ui-material3 = { group = "com.halilibo.compose-richtext", name = "richtext-ui-material3", version.ref = "richtext" }
 richtext-commonmark = { group = "com.halilibo.compose-richtext", name = "richtext-commonmark", version.ref = "richtext" }

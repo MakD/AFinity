@@ -540,6 +540,7 @@ fun PlayerControls(
         EpisodeSwitcher(
             episodes = playlistQueue,
             currentIndex = currentPlaylistIndex,
+            isPlaying = uiState.isPlaying,
             onEpisodeClick = { episodeId ->
                 onJumpToEpisode(episodeId)
                 showEpisodeSwitcher = false

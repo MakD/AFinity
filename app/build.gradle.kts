@@ -168,6 +168,7 @@ dependencies {
     implementation(libs.jellyfin.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.libmpv)
+    implementation(libs.lottie.compose)
     implementation(libs.media3.ffmpeg.decoder)
     implementation(libs.timber)
     implementation(libs.richtext.ui)

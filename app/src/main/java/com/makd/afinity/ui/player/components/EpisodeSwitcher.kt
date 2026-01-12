@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -34,17 +36,27 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.airbnb.lottie.LottieProperty
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.airbnb.lottie.compose.rememberLottieDynamicProperties
+import com.airbnb.lottie.compose.rememberLottieDynamicProperty
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -57,21 +69,24 @@ import java.util.UUID
 fun EpisodeSwitcher(
     episodes: List<AfinityItem>,
     currentIndex: Int,
+    isPlaying: Boolean,
     onEpisodeClick: (UUID) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val listState = rememberLazyListState()
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = (currentIndex - 1).coerceAtLeast(0)
+    )
     LaunchedEffect(currentIndex) {
         if (currentIndex >= 0) {
-            listState.scrollToItem((currentIndex - 2).coerceAtLeast(0))
+            listState.animateScrollToItem((currentIndex - 1).coerceAtLeast(0))
         }
     }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.6f))
+            .background(Color.Black.copy(alpha = 0.5f))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -86,15 +101,16 @@ fun EpisodeSwitcher(
             Surface(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .widthIn(min = 360.dp, max = 420.dp)
+                    .widthIn(min = 380.dp, max = 450.dp)
+                    .padding(16.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) { /* Consume clicks */ },
-                shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 6.dp,
-                shadowElevation = 16.dp
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 1.dp,
+                shadowElevation = 8.dp
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize()
@@ -102,60 +118,68 @@ fun EpisodeSwitcher(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 24.dp, start = 20.dp, end = 12.dp, bottom = 12.dp),
+                            .padding(top = 24.dp, start = 24.dp, end = 16.dp, bottom = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
                             Text(
                                 text = "Up Next",
-                                style = MaterialTheme.typography.headlineSmall,
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            if (episodes.isNotEmpty()) {
-                                val currentSeason =
-                                    (episodes.getOrNull(currentIndex) as? AfinityEpisode)?.parentIndexNumber
-                                if (currentSeason != null) {
-                                    Text(
-                                        text = "Season $currentSeason",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
+
+                            val currentSeason =
+                                (episodes.getOrNull(currentIndex) as? AfinityEpisode)?.parentIndexNumber
+                            if (currentSeason != null) {
+                                Text(
+                                    text = "Season $currentSeason",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
                         }
 
                         IconButton(
                             onClick = onDismiss,
-                            modifier = Modifier.background(
-                                MaterialTheme.colorScheme.surfaceContainerHighest,
-                                shape = RoundedCornerShape(12.dp)
-                            )
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+                                    CircleShape
+                                )
+                                .size(32.dp)
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_close),
                                 contentDescription = "Close",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
 
                     HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-                        modifier = Modifier.padding(horizontal = 20.dp)
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
                     )
                     LazyColumn(
                         state = listState,
-                        contentPadding = PaddingValues(vertical = 16.dp),
+                        contentPadding = PaddingValues(
+                            top = 16.dp,
+                            bottom = 24.dp,
+                            start = 12.dp,
+                            end = 12.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         itemsIndexed(episodes) { index, item ->
-                            ModernEpisodeRowItem(
+                            ModernEpisodeCard(
                                 episode = item,
                                 isCurrentlyPlaying = index == currentIndex,
+                                isPlaying = isPlaying,
                                 onClick = { onEpisodeClick(item.id) }
                             )
                         }
@@ -167,28 +191,38 @@ fun EpisodeSwitcher(
 }
 
 @Composable
-private fun ModernEpisodeRowItem(
+private fun ModernEpisodeCard(
     episode: AfinityItem,
     isCurrentlyPlaying: Boolean,
+    isPlaying: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val backgroundColor = if (isCurrentlyPlaying) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
     } else {
         Color.Transparent
     }
+
+    val borderColor = if (isCurrentlyPlaying) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    } else {
+        Color.Transparent
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
             .background(backgroundColor)
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .width(130.dp)
+                .width(140.dp)
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest)
@@ -201,6 +235,38 @@ private fun ModernEpisodeRowItem(
                 blurHash = episode.images?.primaryBlurHash
             )
 
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
+                            startY = 50f
+                        )
+                    )
+            )
+
+            if (episode.played) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(20.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary,
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_check),
+                        contentDescription = "Watched",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+            }
+
             if (episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0) {
                 val progress =
                     episode.playbackPositionTicks.toFloat() / episode.runtimeTicks.toFloat()
@@ -209,43 +275,58 @@ private fun ModernEpisodeRowItem(
                         progress = { progress },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(2.dp)
+                            .height(3.dp)
                             .align(Alignment.BottomCenter),
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color.Black.copy(alpha = 0.5f)
+                        trackColor = Color.White.copy(alpha = 0.2f),
+                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Butt
                     )
                 }
             }
 
             if (episode.runtimeTicks > 0) {
-                Surface(
-                    color = Color.Black.copy(alpha = 0.7f),
-                    shape = RoundedCornerShape(topStart = 6.dp),
-                    modifier = Modifier.align(Alignment.BottomEnd)
-                ) {
-                    Text(
-                        text = formatRuntime(episode.runtimeTicks),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
+                Text(
+                    text = formatRuntime(episode.runtimeTicks),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
+                )
             }
 
             if (isCurrentlyPlaying) {
+                val composition by rememberLottieComposition(
+                    LottieCompositionSpec.Asset("anim_equalizer.lottie")
+                )
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f)),
+                        .background(Color.Black.copy(alpha = 0.3f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_player_play_filled),
-                        contentDescription = "Playing",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp)
+                    val dynamicProperties = rememberLottieDynamicProperties(
+                        rememberLottieDynamicProperty(
+                            property = LottieProperty.COLOR,
+                            value = MaterialTheme.colorScheme.primary.toArgb(),
+                            keyPath = arrayOf("**")
+                        ),
+                        rememberLottieDynamicProperty(
+                            property = LottieProperty.STROKE_COLOR,
+                            value = MaterialTheme.colorScheme.primary.toArgb(),
+                            keyPath = arrayOf("**")
+                        )
+                    )
+
+                    LottieAnimation(
+                        composition = composition,
+                        iterations = LottieConstants.IterateForever,
+                        isPlaying = isPlaying,
+                        dynamicProperties = dynamicProperties,
+                        modifier = Modifier.size(120.dp)
                     )
                 }
             }
@@ -259,23 +340,25 @@ private fun ModernEpisodeRowItem(
         ) {
             if (episode is AfinityEpisode) {
                 Text(
-                    text = "Episode ${episode.indexNumber ?: 0}",
-                    style = MaterialTheme.typography.labelMedium,
+                    text = "Season ${episode.parentIndexNumber ?: 1} : Episode ${episode.indexNumber ?: 0}",
+                    style = MaterialTheme.typography.labelSmall,
                     color = if (isCurrentlyPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             Text(
                 text = episode.name,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.titleMedium,
                 color = if (isCurrentlyPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                fontSize = 15.sp,
                 fontWeight = if (isCurrentlyPlaying) FontWeight.Bold else FontWeight.SemiBold,
-                lineHeight = 18.sp
+                lineHeight = 20.sp
             )
 
             if (episode is AfinityEpisode && !episode.overview.isNullOrBlank()) {
@@ -284,26 +367,19 @@ private fun ModernEpisodeRowItem(
                     text = episode.overview,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp
                 )
             }
-        }
-
-        if (isCurrentlyPlaying) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .height(24.dp)
-                    .width(4.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.primary)
-            )
         }
     }
 }
 
 private fun formatRuntime(ticks: Long): String {
-    val minutes = (ticks / 600000000).toInt()
-    return "${minutes}m"
+    val totalSeconds = ticks / 10000000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return if (minutes > 0) "${minutes}m" else "${seconds}s"
 }
