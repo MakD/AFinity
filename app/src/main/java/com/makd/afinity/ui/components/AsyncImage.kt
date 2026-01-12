@@ -1,7 +1,6 @@
 package com.makd.afinity.ui.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,14 +15,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
-import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Size
 import com.vanniktech.blurhash.BlurHash
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 @Composable
@@ -57,30 +53,27 @@ fun AsyncImage(
                     height = with(density) { (targetHeight.toPx() * scaleFactor).toInt() }
                 )
             }
-
             else -> Size.ORIGINAL
         }
     }
 
-    val blurHashPlaceholder = produceState<Painter?>(initialValue = null, key1 = blurHash) {
+    val blurHashPlaceholder = remember(blurHash) {
         if (blurHash != null) {
-            value = withContext(Dispatchers.Default) {
-                try {
-                    val bitmap = BlurHash.decode(
-                        blurHash = blurHash,
-                        width = 20,
-                        height = 20
-                    )
-                    bitmap?.asImageBitmap()?.let { BitmapPainter(it) }
-                } catch (e: Exception) {
-                    Timber.w("Failed to decode blur hash: ${e.message}")
-                    null
-                }
+            try {
+                val bitmap = BlurHash.decode(
+                    blurHash = blurHash,
+                    width = 20,
+                    height = 20
+                )
+                bitmap?.asImageBitmap()?.let { BitmapPainter(it) }
+            } catch (e: Exception) {
+                Timber.w("Failed to decode blur hash: ${e.message}")
+                null
             }
         } else {
-            value = null
+            null
         }
-    }.value
+    }
 
     AsyncImage(
         model = ImageRequest.Builder(context)
@@ -102,7 +95,6 @@ fun AsyncImage(
                     onError?.invoke()
                 }
             )
-            .fetcherFactory(OkHttpNetworkFetcherFactory())
             .build(),
         contentDescription = contentDescription,
         modifier = modifier,

@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.model.api.BaseItemKind
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -147,16 +148,16 @@ class ItemDetailViewModel @Inject constructor(
         try {
             val serverItem = jellyfinRepository.getItem(itemId)?.let { baseItemDto ->
                 when (baseItemDto.type) {
-                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE ->
+                    BaseItemKind.MOVIE ->
                         baseItemDto.toAfinityMovie(jellyfinRepository, null)
 
-                    org.jellyfin.sdk.model.api.BaseItemKind.SERIES ->
+                    BaseItemKind.SERIES ->
                         baseItemDto.toAfinityShow(jellyfinRepository)
 
-                    org.jellyfin.sdk.model.api.BaseItemKind.EPISODE ->
+                    BaseItemKind.EPISODE ->
                         baseItemDto.toAfinityEpisode(jellyfinRepository, null)
 
-                    org.jellyfin.sdk.model.api.BaseItemKind.BOX_SET ->
+                    BaseItemKind.BOX_SET ->
                         baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
 
                     else -> null
@@ -198,23 +199,23 @@ class ItemDetailViewModel @Inject constructor(
                             Timber.d("MediaSources count: ${baseItemDto.mediaSources?.size ?: 0}")
 
                             when (baseItemDto.type) {
-                                org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                                BaseItemKind.MOVIE -> {
                                     baseItemDto.toAfinityMovie(jellyfinRepository, null)
                                 }
 
-                                org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                                BaseItemKind.SERIES -> {
                                     baseItemDto.toAfinityShow(jellyfinRepository)
                                 }
 
-                                org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                                BaseItemKind.EPISODE -> {
                                     baseItemDto.toAfinityEpisode(jellyfinRepository, null)
                                 }
 
-                                org.jellyfin.sdk.model.api.BaseItemKind.BOX_SET -> {
+                                BaseItemKind.BOX_SET -> {
                                     baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
                                 }
 
-                                org.jellyfin.sdk.model.api.BaseItemKind.SEASON -> {
+                                BaseItemKind.SEASON -> {
                                     baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
                                 }
 
@@ -345,9 +346,7 @@ class ItemDetailViewModel @Inject constructor(
                     }
                     launch {
                         try {
-                            val seasons = if (item is AfinityShow && item.seasons.isNotEmpty()) {
-                                item.seasons
-                            } else {
+                            val seasons = item.seasons.ifEmpty {
                                 jellyfinRepository.getSeasons(item.id)
                             }
                             _uiState.value = _uiState.value.copy(seasons = seasons)
@@ -381,7 +380,7 @@ class ItemDetailViewModel @Inject constructor(
                     launch {
                         try {
                             val isCurrentlyOffline = offlineModeManager.isCurrentlyOffline()
-                            if (isCurrentlyOffline && item is AfinitySeason) {
+                            if (isCurrentlyOffline) {
                                 if (item.episodes.isNotEmpty()) {
                                     Timber.d("Using ${item.episodes.size} episodes from database for season: ${item.name}")
                                     _episodesPagingData.value = kotlinx.coroutines.flow.flowOf(
