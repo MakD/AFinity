@@ -1,6 +1,6 @@
 package com.makd.afinity.data.models.extensions
 
-import android.net.Uri
+import androidx.core.net.toUri
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityChapter
@@ -388,7 +388,7 @@ fun BaseItemDto.toAfinityPersonDetail(
 fun BaseItemDto.toAfinityImages(
     baseUrl: String,
 ): AfinityImages {
-    val baseUri = Uri.parse(baseUrl)
+    val baseUri = baseUrl.toUri()
 
     return AfinityImages(
         primary = imageTags?.get(ImageType.PRIMARY)?.let { tag ->
@@ -433,6 +433,10 @@ fun BaseItemDto.toAfinityImages(
                 .appendQueryParameter("tag", tag)
                 .build()
         },
+        primaryImageBlurHash = imageBlurHashes?.get(ImageType.PRIMARY)?.values?.firstOrNull(),
+        backdropImageBlurHash = imageBlurHashes?.get(ImageType.BACKDROP)?.values?.firstOrNull(),
+        thumbImageBlurHash = imageBlurHashes?.get(ImageType.THUMB)?.values?.firstOrNull(),
+        logoImageBlurHash = imageBlurHashes?.get(ImageType.LOGO)?.values?.firstOrNull()
     )
 }
 
@@ -487,7 +491,7 @@ fun BaseItemDto.toAfinityVideo(
 fun BaseItemPerson.toAfinityPerson(
     baseUrl: String,
 ): AfinityPerson {
-    val baseUri = Uri.parse(baseUrl)
+    val baseUri = baseUrl.toUri()
 
     val personImage = AfinityPersonImage(
         uri = primaryImageTag?.let { tag ->

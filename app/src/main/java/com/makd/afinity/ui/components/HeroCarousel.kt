@@ -27,7 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -52,7 +52,6 @@ import coil3.request.ImageRequest
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
-import com.makd.afinity.data.models.extensions.logoBlurHash
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -82,7 +81,9 @@ fun HeroCarousel(
     val infinitePageCount = Int.MAX_VALUE
     val middleStart = infinitePageCount / 2
     val adjustedStart = middleStart - (middleStart % items.size)
-    val currentPageIndex = rememberSaveable(items.size) { mutableStateOf(adjustedStart) }
+    val currentPageIndex = rememberSaveable(items.size) {
+        mutableIntStateOf(adjustedStart)
+    }
 
     if (isLandscape) {
         HeroCarouselLandscape(
@@ -93,8 +94,8 @@ fun HeroCarousel(
             onMoreInformationClick = onMoreInformationClick,
             modifier = modifier,
             isScrolling = isScrolling,
-            initialPageIndex = currentPageIndex.value,
-            onPageChanged = { currentPageIndex.value = it }
+            initialPageIndex = currentPageIndex.intValue,
+            onPageChanged = { currentPageIndex.intValue = it }
         )
     } else {
         HeroCarouselPortrait(
@@ -105,8 +106,8 @@ fun HeroCarousel(
             onMoreInformationClick = onMoreInformationClick,
             modifier = modifier,
             isScrolling = isScrolling,
-            initialPageIndex = currentPageIndex.value,
-            onPageChanged = { currentPageIndex.value = it }
+            initialPageIndex = currentPageIndex.intValue,
+            onPageChanged = { currentPageIndex.intValue = it }
         )
     }
 }
@@ -139,15 +140,13 @@ fun HeroCarouselPortrait(
         if (items.size > 1) {
             while (!isScrolling) {
                 delay(5000)
-                if (!isScrolling) {
-                    try {
-                        pagerState.animateScrollToPage(
-                            page = pagerState.currentPage + 1,
-                            animationSpec = tween(durationMillis = 800)
-                        )
-                    } catch (e: Exception) {
-                        Timber.w("Hero carousel animation interrupted: ${e.message}")
-                    }
+                try {
+                    pagerState.animateScrollToPage(
+                        page = pagerState.currentPage + 1,
+                        animationSpec = tween(durationMillis = 800)
+                    )
+                } catch (e: Exception) {
+                    Timber.w("Hero carousel animation interrupted: ${e.message}")
                 }
             }
         }
@@ -229,7 +228,7 @@ fun HeroCarouselPortrait(
                             AsyncImage(
                                 imageUrl = item.images.logoImageUrlWithTransparency,
                                 contentDescription = "${item.name} logo",
-                                blurHash = item.images.logoBlurHash,
+                                blurHash = null,
                                 targetWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp,
                                 targetHeight = 120.dp,
                                 modifier = Modifier
@@ -408,15 +407,13 @@ private fun HeroCarouselLandscape(
         if (items.size > 1) {
             while (!isScrolling) {
                 delay(5000)
-                if (!isScrolling) {
-                    try {
-                        pagerState.animateScrollToPage(
-                            page = pagerState.currentPage + 1,
-                            animationSpec = tween(durationMillis = 800)
-                        )
-                    } catch (e: Exception) {
-                        Timber.w("Hero carousel animation interrupted: ${e.message}")
-                    }
+                try {
+                    pagerState.animateScrollToPage(
+                        page = pagerState.currentPage + 1,
+                        animationSpec = tween(durationMillis = 800)
+                    )
+                } catch (e: Exception) {
+                    Timber.w("Hero carousel animation interrupted: ${e.message}")
                 }
             }
         }
@@ -513,7 +510,7 @@ private fun HeroCarouselLandscape(
                                     AsyncImage(
                                         imageUrl = item.images.logoImageUrlWithTransparency,
                                         contentDescription = "${item.name} logo",
-                                        blurHash = item.images.logoBlurHash,
+                                        blurHash = null,
                                         targetWidth = (LocalConfiguration.current.screenWidthDp * 0.4f).dp,
                                         targetHeight = 100.dp,
                                         modifier = Modifier

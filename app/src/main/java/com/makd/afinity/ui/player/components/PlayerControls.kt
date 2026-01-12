@@ -57,14 +57,15 @@ import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
-import com.makd.afinity.data.models.extensions.logoBlurHash
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMediaStream
+import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.player.PlayerViewModel
 import org.jellyfin.sdk.model.api.MediaStreamType
+import java.util.Locale
 import kotlin.math.abs
 
 data class AudioStreamOption(
@@ -188,7 +189,7 @@ fun PlayerControls(
                     ) {
                         val currentItem = uiState.currentItem
 
-                        if (currentItem is com.makd.afinity.data.models.media.AfinityMovie) {
+                        if (currentItem is AfinityMovie) {
                             if (currentItem.images?.logo != null) {
                                 AsyncImage(
                                     imageUrl = currentItem.images.logoImageUrlWithTransparency.toString(),
@@ -197,7 +198,7 @@ fun PlayerControls(
                                         .height(60.dp)
                                         .widthIn(max = 200.dp),
                                     contentScale = ContentScale.Fit,
-                                    blurHash = currentItem.images.logoBlurHash
+                                    blurHash = null
                                 )
                             } else {
                                 Text(
@@ -738,6 +739,7 @@ private fun CenterPlayButton(
 @OptIn(UnstableApi::class)
 @Composable
 private fun BottomControls(
+    modifier: Modifier = Modifier,
     uiState: PlayerViewModel.PlayerUiState,
     onPlayerEvent: (PlayerEvent) -> Unit,
     onSpeedToggle: () -> Unit,
@@ -745,7 +747,6 @@ private fun BottomControls(
     onSubtitleToggle: () -> Unit,
     onEpisodeSwitcherToggle: () -> Unit = {},
     showEpisodeSwitcherButton: Boolean = false,
-    modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
@@ -970,8 +971,8 @@ private fun formatTime(timeMs: Long): String {
     val seconds = totalSeconds % 60
 
     return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
+        String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
     } else {
-        String.format("%d:%02d", minutes, seconds)
+        String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
     }
 }

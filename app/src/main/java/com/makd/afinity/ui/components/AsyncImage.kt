@@ -57,13 +57,23 @@ fun AsyncImage(
         }
     }
 
-    val blurHashPlaceholder = remember(blurHash) {
-        if (blurHash != null) {
+    val blurHashPlaceholder = remember(blurHash, targetWidth, targetHeight) {
+        if (!blurHash.isNullOrBlank()) {
             try {
+                val ratio = if (targetWidth != null && targetHeight != null && targetHeight.value > 0f) {
+                    targetWidth.value / targetHeight.value
+                } else {
+                    1f
+                }
+
+                val baseSize = 32
+                val decodeWidth = if (ratio > 1) baseSize else (baseSize * ratio).toInt()
+                val decodeHeight = if (ratio < 1) baseSize else (baseSize / ratio).toInt()
+
                 val bitmap = BlurHash.decode(
                     blurHash = blurHash,
-                    width = 20,
-                    height = 20
+                    width = decodeWidth.coerceAtLeast(25),
+                    height = decodeHeight.coerceAtLeast(25)
                 )
                 bitmap?.asImageBitmap()?.let { BitmapPainter(it) }
             } catch (e: Exception) {
