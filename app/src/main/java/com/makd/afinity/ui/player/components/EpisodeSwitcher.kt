@@ -63,6 +63,7 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.components.OptimizedAsyncImage
+import java.util.Locale
 import java.util.UUID
 
 @Composable
@@ -176,7 +177,7 @@ fun EpisodeSwitcher(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         itemsIndexed(episodes) { index, item ->
-                            ModernEpisodeCard(
+                            EpisodeSwitcherCard(
                                 episode = item,
                                 isCurrentlyPlaying = index == currentIndex,
                                 isPlaying = isPlaying,
@@ -191,7 +192,7 @@ fun EpisodeSwitcher(
 }
 
 @Composable
-private fun ModernEpisodeCard(
+private fun EpisodeSwitcherCard(
     episode: AfinityItem,
     isCurrentlyPlaying: Boolean,
     isPlaying: Boolean,
@@ -278,23 +279,28 @@ private fun ModernEpisodeCard(
                             .height(3.dp)
                             .align(Alignment.BottomCenter),
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color.White.copy(alpha = 0.2f),
-                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Butt
+                        trackColor = Color.White.copy(alpha = 0.2f)
                     )
                 }
             }
 
             if (episode.runtimeTicks > 0) {
-                Text(
-                    text = formatRuntime(episode.runtimeTicks),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
+                Surface(
+                    color = Color.Black.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(4.dp),
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(6.dp)
-                )
+                ) {
+                    Text(
+                        text = formatRuntime(episode.runtimeTicks),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
 
             if (isCurrentlyPlaying) {
@@ -339,13 +345,45 @@ private fun ModernEpisodeCard(
             verticalArrangement = Arrangement.Center
         ) {
             if (episode is AfinityEpisode) {
-                Text(
-                    text = "Season ${episode.parentIndexNumber ?: 1} : Episode ${episode.indexNumber ?: 0}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isCurrentlyPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "Season ${episode.parentIndexNumber ?: 1} : Episode ${episode.indexNumber ?: 0}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isCurrentlyPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
+                    )
+                    val rating = (episode  as? AfinityEpisode)?.communityRating
+
+                    if (rating != null && rating > 0) {
+                        Text(
+                            text = "•",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                contentDescription = "IMDB",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = String.format(Locale.US, "%.1f", rating),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(2.dp))
