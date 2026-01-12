@@ -190,12 +190,15 @@ fun ItemDetailScreen(
                 onPlayClick = { episodeToPlay, selection ->
                     viewModel.clearSelectedEpisode()
 
+                    val seasonId = (uiState.item as? AfinitySeason)?.id
+
                     PlayerLauncher.launch(
                         context = context,
                         itemId = episodeToPlay.id,
                         mediaSourceId = selection.mediaSourceId,
                         audioStreamIndex = selection.audioStreamIndex,
                         subtitleStreamIndex = selection.subtitleStreamIndex,
+                        seasonId = seasonId,
                         startPositionMs = selection.startPositionMs
                     )
                 },
@@ -637,7 +640,8 @@ private fun LandscapeItemDetailContent(
                                                             mediaSourceId = finalSelection.mediaSourceId,
                                                             audioStreamIndex = finalSelection.audioStreamIndex,
                                                             subtitleStreamIndex = finalSelection.subtitleStreamIndex,
-                                                            startPositionMs = finalSelection.startPositionMs
+                                                            startPositionMs = finalSelection.startPositionMs,
+                                                            seasonId = item.id
                                                         )
                                                     }
                                                 )
@@ -1177,7 +1181,8 @@ private fun PortraitItemDetailContent(
                                                     mediaSourceId = finalSelection.mediaSourceId,
                                                     audioStreamIndex = finalSelection.audioStreamIndex,
                                                     subtitleStreamIndex = finalSelection.subtitleStreamIndex,
-                                                    startPositionMs = finalSelection.startPositionMs
+                                                    startPositionMs = finalSelection.startPositionMs,
+                                                    seasonId = item.id
                                                 )
                                             }
                                         )

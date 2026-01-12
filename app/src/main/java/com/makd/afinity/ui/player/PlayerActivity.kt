@@ -119,8 +119,9 @@ class PlayerActivity : ComponentActivity() {
         val audioStreamIndex = intent.getIntExtra("audioStreamIndex", -1).takeIf { it != -1 }
         val subtitleStreamIndex = intent.getIntExtra("subtitleStreamIndex", -1).takeIf { it != -1 }
         val startPositionMs = intent.getLongExtra("startPositionMs", 0L)
+        val seasonId = intent.getStringExtra("seasonId")?.let { UUID.fromString(it) }
 
-        Timber.d("PlayerActivity: Starting playback for item $itemId")
+        Timber.d("PlayerActivity: Starting playback for item $itemId, seasonId=$seasonId")
 
         setContent {
             val themeMode by preferencesRepository.getThemeModeFlow()
@@ -149,6 +150,7 @@ class PlayerActivity : ComponentActivity() {
                     audioStreamIndex = audioStreamIndex,
                     subtitleStreamIndex = subtitleStreamIndex,
                     startPositionMs = startPositionMs,
+                    seasonId = seasonId,
                     onBackPressed = { finish() },
                     modifier = Modifier.fillMaxSize()
                 )

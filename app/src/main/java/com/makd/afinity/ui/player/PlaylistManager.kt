@@ -31,7 +31,7 @@ class PlaylistManager @Inject constructor(
     private var currentIndex: Int = -1
     private var currentSeriesId: UUID? = null
 
-    suspend fun initializePlaylist(startingItem: AfinityItem): Boolean {
+    suspend fun initializePlaylist(startingItem: AfinityItem, seasonId: UUID? = null): Boolean {
         if (startingItem is AfinityEpisode && currentSeriesId == startingItem.seriesId && currentQueue.isNotEmpty()) {
             val existingIndex = currentQueue.indexOfFirst { it.id == startingItem.id }
             if (existingIndex != -1) {
@@ -45,8 +45,9 @@ class PlaylistManager @Inject constructor(
             val result = when (startingItem) {
                 is AfinityEpisode -> {
                     currentSeriesId = startingItem.seriesId
-                    initializeEpisodeQueue(startingItem)
+                    initializeEpisodeQueue(startingItem, seasonId)
                 }
+
                 else -> {
                     currentSeriesId = null
                     initializeSingleItemQueue(startingItem)
@@ -59,8 +60,35 @@ class PlaylistManager @Inject constructor(
         }
     }
 
-    private suspend fun initializeEpisodeQueue(startingEpisode: AfinityEpisode): Boolean {
+    private suspend fun initializeEpisodeQueue(
+        startingEpisode: AfinityEpisode,
+        seasonId: UUID? = null
+    ): Boolean {
         return try {
+            if (seasonId != null) {
+                Timber.d("Loading episodes for season $seasonId only")
+                val episodes = jellyfinRepository.getEpisodes(seasonId, startingEpisode.seriesId)
+
+                if (episodes.isEmpty()) {
+                    setQueue(listOf(startingEpisode), 0)
+                    return true
+                }
+
+                val sortedEpisodes = episodes.sortedBy { it.indexNumber ?: 0 }.toMutableList()
+                val startIndex = sortedEpisodes.indexOfFirst { it.id == startingEpisode.id }
+
+                if (startIndex == -1) {
+                    sortedEpisodes.add(0, startingEpisode)
+                    setQueue(sortedEpisodes.map { it as AfinityItem }, 0)
+                } else {
+                    sortedEpisodes[startIndex] = startingEpisode
+                    setQueue(sortedEpisodes.map { it as AfinityItem }, startIndex)
+                }
+
+                return true
+            }
+
+            Timber.d("Loading episodes for entire series")
             val seasons = jellyfinRepository.getSeasons(
                 startingEpisode.seriesId,
                 SortBy.NAME,
@@ -76,14 +104,19 @@ class PlaylistManager @Inject constructor(
 
             for (season in seasons.sortedBy { it.indexNumber ?: 0 }) {
                 try {
-                    val episodes = jellyfinRepository.getEpisodes(season.id, startingEpisode.seriesId)
+                    val episodes =
+                        jellyfinRepository.getEpisodes(season.id, startingEpisode.seriesId)
 
                     if (episodes.isNotEmpty()) {
                         allEpisodes.addAll(episodes.sortedBy { it.indexNumber ?: 0 })
                     }
 
                     if (allEpisodes.isNotEmpty()) {
-                    setQueue(allEpisodes.map { it as AfinityItem }, allEpisodes.indexOfFirst { it.id == startingEpisode.id }.coerceAtLeast(0))
+                        setQueue(
+                            allEpisodes.map { it as AfinityItem },
+                            allEpisodes.indexOfFirst { it.id == startingEpisode.id }
+                                .coerceAtLeast(0)
+                        )
                     }
 
                 } catch (_: Exception) {

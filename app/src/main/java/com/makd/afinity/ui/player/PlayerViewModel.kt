@@ -545,7 +545,7 @@ class PlayerViewModel @Inject constructor(
             val fullItem: AfinityItem = if (item.sources.isEmpty()) {
                 Timber.d("Item ${item.name} has no sources, fetching full details...")
                 try {
-                    jellyfinRepository.getItemById(item.id) ?: item
+                    (jellyfinRepository.getItemById(item.id) as? AfinityItem) ?: item
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to fetch full item details")
                     item
@@ -554,7 +554,7 @@ class PlayerViewModel @Inject constructor(
                 item
             }
 
-            currentItem = fullItem as AfinityItem?
+            currentItem = fullItem
 
             val chapters = fullItem.chapters
             updateUiState { it.copy(chapters = chapters) }
@@ -964,9 +964,9 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun initializePlaylist(item: AfinityItem) {
+    fun initializePlaylist(item: AfinityItem, seasonId: UUID? = null) {
         viewModelScope.launch {
-            playlistManager.initializePlaylist(item)
+            playlistManager.initializePlaylist(item, seasonId)
         }
     }
 
@@ -1003,15 +1003,7 @@ class PlayerViewModel @Inject constructor(
     fun onNextEpisode() {
         viewModelScope.launch {
             playlistManager.getNextItem()?.let { nextItem ->
-                handlePlayerEvent(
-                    PlayerEvent.LoadMedia(
-                        item = nextItem,
-                        mediaSourceId = nextItem.sources.firstOrNull()?.id ?: "",
-                        audioStreamIndex = null,
-                        subtitleStreamIndex = null,
-                        startPositionMs = 0L
-                    )
-                )
+                playQueueItem(nextItem)
                 playlistManager.next()
             }
         }
@@ -1020,15 +1012,7 @@ class PlayerViewModel @Inject constructor(
     fun onPreviousEpisode() {
         viewModelScope.launch {
             playlistManager.getPreviousItem()?.let { prevItem ->
-                handlePlayerEvent(
-                    PlayerEvent.LoadMedia(
-                        item = prevItem,
-                        mediaSourceId = prevItem.sources.firstOrNull()?.id ?: "",
-                        audioStreamIndex = null,
-                        subtitleStreamIndex = null,
-                        startPositionMs = 0L
-                    )
-                )
+                playQueueItem(prevItem)
                 playlistManager.previous()
             }
         }
@@ -1037,15 +1021,7 @@ class PlayerViewModel @Inject constructor(
     fun jumpToEpisode(episodeId: UUID) {
         viewModelScope.launch {
             playlistManager.jumpToItem(episodeId)?.let { targetItem ->
-                handlePlayerEvent(
-                    PlayerEvent.LoadMedia(
-                        item = targetItem,
-                        mediaSourceId = targetItem.sources.firstOrNull()?.id ?: "",
-                        audioStreamIndex = null,
-                        subtitleStreamIndex = null,
-                        startPositionMs = 0L
-                    )
-                )
+                playQueueItem(targetItem)
             }
         }
     }
@@ -1084,6 +1060,18 @@ class PlayerViewModel @Inject constructor(
             }
         }
         onPreviousEpisode()
+    }
+
+    private fun playQueueItem(item: AfinityItem) {
+        handlePlayerEvent(
+            PlayerEvent.LoadMedia(
+                item = item,
+                mediaSourceId = item.sources.firstOrNull()?.id ?: "",
+                audioStreamIndex = null,
+                subtitleStreamIndex = null,
+                startPositionMs = 0L
+            )
+        )
     }
 
     private var brightnessHideJob: Job? = null

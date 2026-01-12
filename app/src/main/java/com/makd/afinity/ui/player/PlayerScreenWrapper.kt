@@ -22,6 +22,7 @@ fun PlayerScreenWrapper(
     audioStreamIndex: Int? = null,
     subtitleStreamIndex: Int? = null,
     startPositionMs: Long = 0L,
+    seasonId: UUID? = null,
     navController: androidx.navigation.NavController? = null,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier,
@@ -53,6 +54,7 @@ fun PlayerScreenWrapper(
                 audioStreamIndex = audioStreamIndex,
                 subtitleStreamIndex = subtitleStreamIndex,
                 startPositionMs = startPositionMs,
+                seasonId = seasonId,
                 navController = navController,
                 onBackPressed = onBackPressed,
                 modifier = modifier

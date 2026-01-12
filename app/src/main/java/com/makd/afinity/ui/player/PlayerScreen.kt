@@ -45,6 +45,7 @@ import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import com.makd.afinity.ui.player.utils.RequiresBrightnessPermission
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
 import timber.log.Timber
+import java.util.UUID
 
 @UnstableApi
 @Composable
@@ -54,6 +55,7 @@ fun PlayerScreen(
     audioStreamIndex: Int? = null,
     subtitleStreamIndex: Int? = null,
     startPositionMs: Long = 0L,
+    seasonId: UUID? = null,
     onBackPressed: () -> Unit,
     navController: NavController? = null,
     modifier: Modifier = Modifier,
@@ -93,9 +95,9 @@ fun PlayerScreen(
         )
     }
 
-    LaunchedEffect(item) {
-        Timber.d("Initializing playlist for item: ${item.name} (${item.id})")
-        viewModel.initializePlaylist(item)
+    LaunchedEffect(item, seasonId) {
+        Timber.d("Initializing playlist for item: ${item.name} (${item.id}), seasonId=$seasonId")
+        viewModel.initializePlaylist(item, seasonId)
     }
 
     LaunchedEffect(navController) {
@@ -130,6 +132,7 @@ fun PlayerScreen(
 
     BackHandler {
         if (!hasNavigatedBack) {
+            hasNavigatedBack = true
             viewModel.stopPlayback()
             onBackPressed()
         }
