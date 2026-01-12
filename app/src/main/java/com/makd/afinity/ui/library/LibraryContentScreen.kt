@@ -76,7 +76,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 import timber.log.Timber
 import java.util.Locale
@@ -393,7 +393,7 @@ private fun LibraryContentTopBar(
                     contentAlignment = Alignment.Center
                 ) {
                     if (userProfileImageUrl != null) {
-                        OptimizedAsyncImage(
+                        AsyncImage(
                             imageUrl = userProfileImageUrl,
                             contentDescription = "Profile",
                             targetWidth = 48.dp,
@@ -439,7 +439,7 @@ private fun MediaItemGridCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Box {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = item.images.primaryImageUrl,
                     contentDescription = item.name,
                     blurHash = item.images.primaryBlurHash,

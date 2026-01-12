@@ -62,7 +62,7 @@ import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.player.PlayerEvent
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.player.PlayerViewModel
 import org.jellyfin.sdk.model.api.MediaStreamType
 import kotlin.math.abs
@@ -190,7 +190,7 @@ fun PlayerControls(
 
                         if (currentItem is com.makd.afinity.data.models.media.AfinityMovie) {
                             if (currentItem.images?.logo != null) {
-                                OptimizedAsyncImage(
+                                AsyncImage(
                                     imageUrl = currentItem.images.logoImageUrlWithTransparency.toString(),
                                     contentDescription = "Logo",
                                     modifier = Modifier
@@ -226,7 +226,7 @@ fun PlayerControls(
                                         val logoUrl = currentItem.seriesLogo.toString().let { url ->
                                             if (url.contains("?")) "$url&format=png" else "$url?format=png"
                                         }
-                                        OptimizedAsyncImage(
+                                        AsyncImage(
                                             imageUrl = logoUrl,
                                             contentDescription = "Series Logo",
                                             modifier = Modifier

@@ -51,7 +51,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
@@ -470,7 +470,7 @@ private fun FavoritePersonCard(
             shape = CircleShape,
             modifier = Modifier.size(64.dp)
         ) {
-            OptimizedAsyncImage(
+            AsyncImage(
                 imageUrl = person.images.primaryImageUrl,
                 blurHash = person.images.primaryBlurHash,
                 contentDescription = person.name,

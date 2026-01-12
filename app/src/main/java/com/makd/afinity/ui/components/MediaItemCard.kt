@@ -67,7 +67,7 @@ fun MediaItemCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = item.images.primaryImageUrl ?: item.images.backdropImageUrl,
                     contentDescription = item.name,
                     blurHash = item.images.primaryBlurHash ?: item.images.backdropBlurHash,

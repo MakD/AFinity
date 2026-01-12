@@ -81,7 +81,7 @@ fun EpisodeListCard(
                     .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)
                     .clip(MaterialTheme.shapes.medium)
             ) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = item.images.thumbImageUrl
                         ?: item.images.backdropImageUrl
                         ?: item.images.primaryImageUrl,

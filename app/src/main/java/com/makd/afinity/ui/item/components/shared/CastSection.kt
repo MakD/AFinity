@@ -32,7 +32,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import org.jellyfin.sdk.model.api.PersonKind
 import java.util.UUID
@@ -98,7 +98,7 @@ private fun CastMemberCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        OptimizedAsyncImage(
+        AsyncImage(
             imageUrl = person.image.uri?.toString(),
             contentDescription = person.name,
             blurHash = person.image.blurHash,

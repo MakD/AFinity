@@ -50,7 +50,7 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 import kotlin.math.min
@@ -181,7 +181,7 @@ private fun LibraryCard(
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    OptimizedAsyncImage(
+                    AsyncImage(
                         imageUrl = library.images.primaryImageUrl
                             ?: library.images.backdropImageUrl,
                         contentDescription = library.name,

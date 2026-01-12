@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.Dp
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.Studio
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.util.BackdropTracker
 
@@ -54,7 +54,7 @@ fun StudioCard(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = studio.getImageUrl(),
                     contentDescription = studio.name,
                     blurHash = null,
@@ -95,7 +95,7 @@ fun NetworkCard(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = network.getImageUrl(),
                     contentDescription = network.name,
                     blurHash = null,
@@ -139,7 +139,7 @@ fun GenreCard(
                 contentAlignment = Alignment.Center
             ) {
                 genre.getDuotoneBackdropUrl(backdropTracker, isMovie)?.let { backdropUrl ->
-                    OptimizedAsyncImage(
+                    AsyncImage(
                         imageUrl = backdropUrl,
                         contentDescription = genre.name,
                         blurHash = null,

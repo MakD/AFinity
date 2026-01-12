@@ -182,7 +182,7 @@ fun HeroCarouselPortrait(
         ) { page ->
             val actualIndex = page % items.size
             val item = items[actualIndex]
-            OptimizedAsyncImage(
+            AsyncImage(
                 imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
                 contentDescription = item.name,
                 blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
@@ -226,7 +226,7 @@ fun HeroCarouselPortrait(
                 ) { item ->
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         item.images.logo?.let { logoUri ->
-                            OptimizedAsyncImage(
+                            AsyncImage(
                                 imageUrl = item.images.logoImageUrlWithTransparency,
                                 contentDescription = "${item.name} logo",
                                 blurHash = item.images.logoBlurHash,
@@ -452,7 +452,7 @@ private fun HeroCarouselLandscape(
         ) { page ->
             val actualIndex = page % items.size
             val item = items[actualIndex]
-            OptimizedAsyncImage(
+            AsyncImage(
                 imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl,
                 contentDescription = item.name,
                 blurHash = item.images.backdropBlurHash ?: item.images.primaryBlurHash,
@@ -510,7 +510,7 @@ private fun HeroCarouselLandscape(
                                 contentAlignment = Alignment.CenterStart
                             ) {
                                 item.images.logo?.let { logoUri ->
-                                    OptimizedAsyncImage(
+                                    AsyncImage(
                                         imageUrl = item.images.logoImageUrlWithTransparency,
                                         contentDescription = "${item.name} logo",
                                         blurHash = item.images.logoBlurHash,

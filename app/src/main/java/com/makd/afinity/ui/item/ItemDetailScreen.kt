@@ -67,7 +67,7 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.navigation.Destination
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.BoxSetDetailContent
 import com.makd.afinity.ui.item.components.DirectorSection
 import com.makd.afinity.ui.item.components.DownloadProgressIndicator
@@ -92,6 +92,7 @@ import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
 import com.makd.afinity.ui.player.PlayerLauncher
+import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.util.rememberPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -363,7 +364,7 @@ private fun LandscapeItemDetailContent(
             }
 
             if (backdropUrl != null) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = backdropUrl,
                     contentDescription = "${item.name} backdrop",
                     targetWidth = 1920.dp,
@@ -424,7 +425,7 @@ private fun LandscapeItemDetailContent(
                         }
 
                         if (logoToDisplay != null) {
-                            OptimizedAsyncImage(
+                            AsyncImage(
                                 imageUrl = logoUrlToDisplay,
                                 contentDescription = "$logoNameToDisplay logo",
                                 targetWidth = 300.dp,
@@ -707,7 +708,10 @@ private fun LandscapeItemDetailContent(
                                 IconButton(
                                     onClick = {
                                         if (hasTrailer) {
-                                            viewModel.onPlayTrailerClick(context, item)
+                                            val trailerUrl = viewModel.getTrailerUrl(item)
+                                            if (trailerUrl != null) {
+                                                IntentUtils.openYouTubeUrl(context, trailerUrl)
+                                            }
                                         }
                                     },
                                     enabled = hasTrailer
@@ -998,7 +1002,7 @@ private fun PortraitItemDetailContent(
                     val logoContentAlignment =
                         if (isLandscape) Alignment.CenterStart else Alignment.Center
 
-                    OptimizedAsyncImage(
+                    AsyncImage(
                         imageUrl = logoUrlToDisplay,
                         contentDescription = "$logoNameToDisplay logo",
                         targetWidth = 240.dp,
@@ -1288,7 +1292,10 @@ private fun PortraitItemDetailContent(
                             IconButton(
                                 onClick = {
                                     if (hasTrailer) {
-                                        viewModel.onPlayTrailerClick(context, item)
+                                        val trailerUrl = viewModel.getTrailerUrl(item)
+                                        if (trailerUrl != null) {
+                                            IntentUtils.openYouTubeUrl(context, trailerUrl)
+                                        }
                                     }
                                 },
                                 enabled = hasTrailer

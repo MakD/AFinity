@@ -35,7 +35,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
@@ -65,7 +65,7 @@ fun RequestCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 val backdropUrl = request.media.getBackdropUrl() ?: request.media.getPosterUrl()
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = backdropUrl,
                     contentDescription = request.media.getDisplayTitle(),
                     blurHash = null,
@@ -84,7 +84,7 @@ fun RequestCard(
                 )
 
                 request.media.getPosterUrl()?.let { posterUrl ->
-                    OptimizedAsyncImage(
+                    AsyncImage(
                         imageUrl = posterUrl,
                         contentDescription = request.media.getDisplayTitle(),
                         blurHash = null,

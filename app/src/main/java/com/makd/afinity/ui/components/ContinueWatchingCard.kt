@@ -66,7 +66,7 @@ fun ContinueWatchingCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = item.images.thumbImageUrl ?: item.images.backdropImageUrl
                     ?: item.images.primaryImageUrl,
                     contentDescription = item.name,

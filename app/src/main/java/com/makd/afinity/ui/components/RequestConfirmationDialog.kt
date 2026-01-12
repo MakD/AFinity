@@ -112,7 +112,7 @@ fun RequestConfirmationDialog(
                             .height(200.dp)
                             .clip(RoundedCornerShape(12.dp))
                     ) {
-                        OptimizedAsyncImage(
+                        AsyncImage(
                             imageUrl = headerImageUrl,
                             contentDescription = mediaTitle,
                             blurHash = null,

@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.Dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
 
 @Composable
@@ -59,7 +59,7 @@ fun DiscoverMediaCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = item.getPosterUrl(),
                     contentDescription = item.getDisplayTitle(),
                     blurHash = null,

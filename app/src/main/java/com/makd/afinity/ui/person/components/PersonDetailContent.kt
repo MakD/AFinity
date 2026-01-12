@@ -54,7 +54,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.MediaItemCard
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
 
@@ -139,7 +139,7 @@ private fun PersonHeroSection(
             .fillMaxWidth()
             .height(screenHeight * 0.6f)
     ) {
-        OptimizedAsyncImage(
+        AsyncImage(
             imageUrl = person.images.primaryImageUrl,
             contentDescription = "${person.name} image",
             blurHash = person.images.primaryBlurHash,

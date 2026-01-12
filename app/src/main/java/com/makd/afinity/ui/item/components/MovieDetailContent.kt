@@ -34,7 +34,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.getChapterImageUrl
 import com.makd.afinity.navigation.Destination
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.shared.CastSection
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
 import com.makd.afinity.ui.item.components.shared.InCollectionsSection
@@ -182,7 +182,7 @@ internal fun ChapterCard(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = chapter.getChapterImageUrl(baseUrl, itemId),
                     contentDescription = chapter.name ?: "Chapter ${index + 1}",
                     targetWidth = cardWidth,

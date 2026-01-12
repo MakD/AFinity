@@ -1,10 +1,13 @@
 package com.makd.afinity.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.DefaultAlpha
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
@@ -13,14 +16,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Size
+import com.vanniktech.blurhash.BlurHash
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 @Composable
-fun OptimizedAsyncImage(
+fun AsyncImage(
     imageUrl: String?,
     contentDescription: String?,
     modifier: Modifier = Modifier,
@@ -29,11 +36,11 @@ fun OptimizedAsyncImage(
     onLoading: ((Boolean) -> Unit)? = null,
     onSuccess: (() -> Unit)? = null,
     onError: (() -> Unit)? = null,
-    alignment: androidx.compose.ui.Alignment = androidx.compose.ui.Alignment.Center,
+    alignment: Alignment = Alignment.Center,
     contentScale: ContentScale = ContentScale.Crop,
     alpha: Float = DefaultAlpha,
     colorFilter: ColorFilter? = null,
-    filterQuality: androidx.compose.ui.graphics.FilterQuality = androidx.compose.ui.graphics.FilterQuality.Low,
+    filterQuality: FilterQuality = FilterQuality.Low,
     blurHash: String? = null,
     targetWidth: Dp? = null,
     targetHeight: Dp? = null,
@@ -55,21 +62,25 @@ fun OptimizedAsyncImage(
         }
     }
 
-    val blurHashPlaceholder = remember(blurHash) {
-        blurHash?.let { hash ->
-            try {
-                val bitmap = com.vanniktech.blurhash.BlurHash.decode(
-                    blurHash = hash,
-                    width = 20,
-                    height = 20
-                )
-                bitmap?.let { BitmapPainter(it.asImageBitmap()) }
-            } catch (e: Exception) {
-                Timber.w("Failed to decode blur hash: ${e.message}")
-                null
+    val blurHashPlaceholder = produceState<Painter?>(initialValue = null, key1 = blurHash) {
+        if (blurHash != null) {
+            value = withContext(Dispatchers.Default) {
+                try {
+                    val bitmap = BlurHash.decode(
+                        blurHash = blurHash,
+                        width = 20,
+                        height = 20
+                    )
+                    bitmap?.asImageBitmap()?.let { BitmapPainter(it) }
+                } catch (e: Exception) {
+                    Timber.w("Failed to decode blur hash: ${e.message}")
+                    null
+                }
             }
+        } else {
+            value = null
         }
-    }
+    }.value
 
     AsyncImage(
         model = ImageRequest.Builder(context)
@@ -91,6 +102,7 @@ fun OptimizedAsyncImage(
                     onError?.invoke()
                 }
             )
+            .fetcherFactory(OkHttpNetworkFetcherFactory())
             .build(),
         contentDescription = contentDescription,
         modifier = modifier,

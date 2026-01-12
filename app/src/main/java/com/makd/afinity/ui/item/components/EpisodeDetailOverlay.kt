@@ -40,7 +40,7 @@ import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -113,7 +113,7 @@ fun EpisodeDetailOverlay(
                 episode.images.primaryBlurHash ?: episode.images.thumbBlurHash
             }
 
-            OptimizedAsyncImage(
+            AsyncImage(
                 imageUrl = imageUrl,
                 contentDescription = episode.name,
                 blurHash = blurHash,

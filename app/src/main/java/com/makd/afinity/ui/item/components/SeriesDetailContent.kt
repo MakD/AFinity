@@ -52,7 +52,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import org.jellyfin.sdk.model.api.PersonKind
@@ -232,7 +232,7 @@ internal fun SeasonCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = season.images.primaryImageUrl,
                     contentDescription = season.name,
                     blurHash = season.images.primaryBlurHash,

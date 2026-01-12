@@ -85,7 +85,7 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.HeroCarousel
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.MovieRecommendationSection
 import com.makd.afinity.ui.home.components.NextUpSection
@@ -732,7 +732,7 @@ private fun HighestRatedCard(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    OptimizedAsyncImage(
+                    AsyncImage(
                         imageUrl = item.images.primaryImageUrl ?: item.images.backdropImageUrl,
                         contentDescription = item.name,
                         blurHash = item.images.primaryBlurHash ?: item.images.backdropBlurHash,
@@ -1216,7 +1216,7 @@ private fun StudioCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 studio.primaryImageUrl?.let { imageUrl ->
-                    OptimizedAsyncImage(
+                    AsyncImage(
                         imageUrl = imageUrl,
                         contentDescription = studio.name,
                         blurHash = null,

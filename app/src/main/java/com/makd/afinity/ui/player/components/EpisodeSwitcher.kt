@@ -62,7 +62,7 @@ import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import java.util.Locale
 import java.util.UUID
 
@@ -228,7 +228,7 @@ private fun EpisodeSwitcherCard(
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
-            OptimizedAsyncImage(
+            AsyncImage(
                 imageUrl = episode.images?.primaryImageUrl.toString(),
                 contentDescription = episode.name,
                 modifier = Modifier.fillMaxSize(),

@@ -56,7 +56,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.core.AppConstants
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.settings.update.UpdateSection
 import timber.log.Timber
 
@@ -266,7 +266,7 @@ private fun ProfileHeader(
                 contentAlignment = Alignment.Center
             ) {
                 if (userProfileImageUrl != null) {
-                    OptimizedAsyncImage(
+                    AsyncImage(
                         imageUrl = userProfileImageUrl,
                         contentDescription = "Profile Picture",
                         targetWidth = 64.dp,

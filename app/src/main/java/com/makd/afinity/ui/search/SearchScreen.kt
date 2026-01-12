@@ -66,7 +66,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 import java.util.Locale
@@ -515,7 +515,7 @@ private fun SearchResultItem(
                     modifier = Modifier.fillMaxSize(),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    OptimizedAsyncImage(
+                    AsyncImage(
                         imageUrl = item.images.primaryImageUrl,
                         contentDescription = item.name,
                         blurHash = item.images.primaryBlurHash,
@@ -708,7 +708,7 @@ private fun JellyseerrSearchResultItem(
                     .height(120.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = item.getPosterUrl(),
                     contentDescription = item.getDisplayTitle(),
                     blurHash = null,

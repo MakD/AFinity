@@ -122,7 +122,7 @@ fun AfinityTopAppBar(
                             contentAlignment = Alignment.Center
                         ) {
                             if (userProfileImageUrl != null) {
-                                OptimizedAsyncImage(
+                                AsyncImage(
                                     imageUrl = userProfileImageUrl,
                                     contentDescription = "Profile",
                                     targetWidth = 48.dp,

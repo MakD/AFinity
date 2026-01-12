@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 
 @Composable
@@ -87,7 +87,7 @@ private fun SpecialFeatureCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                OptimizedAsyncImage(
+                AsyncImage(
                     imageUrl = feature.images.primaryImageUrl,
                     contentDescription = feature.name,
                     blurHash = feature.images.primaryBlurHash,

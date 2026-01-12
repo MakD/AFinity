@@ -26,7 +26,7 @@ import com.makd.afinity.data.models.extensions.showBackdropBlurHash
 import com.makd.afinity.data.models.extensions.showBackdropImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
-import com.makd.afinity.ui.components.OptimizedAsyncImage
+import com.makd.afinity.ui.components.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +59,7 @@ fun HeroSection(
             .fillMaxWidth()
             .height(screenHeight * heightMultiplier)
     ) {
-        OptimizedAsyncImage(
+        AsyncImage(
             imageUrl = backdropUrl,
             contentDescription = null,
             blurHash = backdropBlur,
