@@ -56,6 +56,7 @@ fun PlayerScreen(
     subtitleStreamIndex: Int? = null,
     startPositionMs: Long = 0L,
     seasonId: UUID? = null,
+    shuffle: Boolean = false,
     onBackPressed: () -> Unit,
     navController: NavController? = null,
     modifier: Modifier = Modifier,
@@ -95,9 +96,9 @@ fun PlayerScreen(
         )
     }
 
-    LaunchedEffect(item, seasonId) {
-        Timber.d("Initializing playlist for item: ${item.name} (${item.id}), seasonId=$seasonId")
-        viewModel.initializePlaylist(item, seasonId)
+    LaunchedEffect(item, seasonId, shuffle) {
+        Timber.d("Initializing playlist for item: ${item.name} (${item.id}), seasonId=$seasonId, shuffle=$shuffle")
+        viewModel.initializePlaylist(item, seasonId, shuffle)
     }
 
     LaunchedEffect(navController) {

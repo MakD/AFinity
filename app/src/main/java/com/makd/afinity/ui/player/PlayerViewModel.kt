@@ -964,9 +964,12 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun initializePlaylist(item: AfinityItem, seasonId: UUID? = null) {
+    fun initializePlaylist(item: AfinityItem, seasonId: UUID? = null, shuffle: Boolean = false) {
         viewModelScope.launch {
             playlistManager.initializePlaylist(item, seasonId)
+            if (shuffle) {
+                playlistManager.shuffleQueue()
+            }
         }
     }
 

@@ -724,6 +724,39 @@ private fun LandscapeItemDetailContent(
                                 )
                             }
 
+                            if (item is AfinityShow || item is AfinitySeason) {
+                                IconButton(
+                                    onClick = {
+                                        val episode = when (item) {
+                                            is AfinityShow -> nextEpisode
+                                            is AfinitySeason -> nextEpisode
+                                            else -> null
+                                        }
+
+                                        episode?.let { ep ->
+                                            val mediaSourceId = ep.sources.firstOrNull()?.id ?: return@IconButton
+                                            PlayerLauncher.launch(
+                                                context = context,
+                                                itemId = ep.id,
+                                                mediaSourceId = mediaSourceId,
+                                                audioStreamIndex = null,
+                                                subtitleStreamIndex = null,
+                                                startPositionMs = 0L,
+                                                seasonId = if (item is AfinitySeason) item.id else null,
+                                                shuffle = true
+                                            )
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_arrows_shuffle),
+                                        contentDescription = "Shuffle Play",
+                                        tint = MaterialTheme.colorScheme.onBackground,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                            }
+
                             IconButton(
                                 onClick = { viewModel.toggleFavorite() }
                             ) {
@@ -1270,6 +1303,43 @@ private fun PortraitItemDetailContent(
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
                                 )
+                            }
+                        }
+
+                        if (item is AfinityShow || item is AfinitySeason) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        val episode = when (item) {
+                                            is AfinityShow -> nextEpisode
+                                            is AfinitySeason -> nextEpisode
+                                            else -> null
+                                        }
+
+                                        episode?.let { ep ->
+                                            val mediaSourceId = ep.sources.firstOrNull()?.id ?: return@IconButton
+                                            PlayerLauncher.launch(
+                                                context = context,
+                                                itemId = ep.id,
+                                                mediaSourceId = mediaSourceId,
+                                                audioStreamIndex = null,
+                                                subtitleStreamIndex = null,
+                                                startPositionMs = 0L,
+                                                seasonId = if (item is AfinitySeason) item.id else null,
+                                                shuffle = true
+                                            )
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_arrows_shuffle),
+                                        contentDescription = "Shuffle Play",
+                                        tint = MaterialTheme.colorScheme.onBackground,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
                             }
                         }
 

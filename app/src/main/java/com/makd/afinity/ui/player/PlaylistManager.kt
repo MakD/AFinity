@@ -237,6 +237,49 @@ class PlaylistManager @Inject constructor(
         return currentQueue.isEmpty()
     }
 
+    fun shuffleQueue() {
+        if (currentQueue.size <= 1) {
+            Timber.d("Queue has ${currentQueue.size} items, no shuffle needed")
+            return
+        }
+
+        val resumableIndex = currentQueue.indexOfFirst { item ->
+            item.playbackPositionTicks > 0 && item.playbackPositionTicks < item.runtimeTicks
+        }
+
+        val unwatchedIndex = if (resumableIndex == -1) {
+            currentQueue.indexOfFirst { item ->
+                !item.played && item.playbackPositionTicks == 0L
+            }
+        } else {
+            -1
+        }
+
+        val priorityIndex = if (resumableIndex != -1) resumableIndex else unwatchedIndex
+
+        if (priorityIndex != -1) {
+            val priorityEpisode = currentQueue[priorityIndex]
+            val remainingEpisodes = currentQueue.toMutableList().apply {
+                removeAt(priorityIndex)
+                shuffle()
+            }
+
+            currentQueue.clear()
+            currentQueue.add(priorityEpisode)
+            currentQueue.addAll(remainingEpisodes)
+            currentIndex = 0
+
+            Timber.d("Queue shuffled with priority episode: ${priorityEpisode.name} (${currentQueue.size} total items)")
+        } else {
+            currentQueue.shuffle()
+            currentIndex = 0
+
+            Timber.d("Queue pure shuffled (${currentQueue.size} items)")
+        }
+
+        updatePlaylistState()
+    }
+
     private fun updatePlaylistState() {
         _playlistState.value = PlaylistState(
             queue = currentQueue.toList(),

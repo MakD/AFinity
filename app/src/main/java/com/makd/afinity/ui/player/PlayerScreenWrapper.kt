@@ -23,6 +23,7 @@ fun PlayerScreenWrapper(
     subtitleStreamIndex: Int? = null,
     startPositionMs: Long = 0L,
     seasonId: UUID? = null,
+    shuffle: Boolean = false,
     navController: androidx.navigation.NavController? = null,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier,
@@ -55,6 +56,7 @@ fun PlayerScreenWrapper(
                 subtitleStreamIndex = subtitleStreamIndex,
                 startPositionMs = startPositionMs,
                 seasonId = seasonId,
+                shuffle = shuffle,
                 navController = navController,
                 onBackPressed = onBackPressed,
                 modifier = modifier

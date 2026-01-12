@@ -120,8 +120,9 @@ class PlayerActivity : ComponentActivity() {
         val subtitleStreamIndex = intent.getIntExtra("subtitleStreamIndex", -1).takeIf { it != -1 }
         val startPositionMs = intent.getLongExtra("startPositionMs", 0L)
         val seasonId = intent.getStringExtra("seasonId")?.let { UUID.fromString(it) }
+        val shuffle = intent.getBooleanExtra("shuffle", false)
 
-        Timber.d("PlayerActivity: Starting playback for item $itemId, seasonId=$seasonId")
+        Timber.d("PlayerActivity: Starting playback for item $itemId, seasonId=$seasonId, shuffle=$shuffle")
 
         setContent {
             val themeMode by preferencesRepository.getThemeModeFlow()
@@ -151,6 +152,7 @@ class PlayerActivity : ComponentActivity() {
                     subtitleStreamIndex = subtitleStreamIndex,
                     startPositionMs = startPositionMs,
                     seasonId = seasonId,
+                    shuffle = shuffle,
                     onBackPressed = { finish() },
                     modifier = Modifier.fillMaxSize()
                 )

@@ -14,9 +14,10 @@ object PlayerLauncher {
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         startPositionMs: Long = 0L,
-        seasonId: UUID? = null
+        seasonId: UUID? = null,
+        shuffle: Boolean = false
     ) {
-        Timber.d("PlayerLauncher: Launching player for item $itemId, seasonId=$seasonId")
+        Timber.d("PlayerLauncher: Launching player for item $itemId, seasonId=$seasonId, shuffle=$shuffle")
 
         val intent = Intent(context, PlayerActivity::class.java).apply {
             putExtra("itemId", itemId.toString())
@@ -25,6 +26,7 @@ object PlayerLauncher {
             subtitleStreamIndex?.let { putExtra("subtitleStreamIndex", it) }
             putExtra("startPositionMs", startPositionMs)
             seasonId?.let { putExtra("seasonId", it.toString()) }
+            putExtra("shuffle", shuffle)
 
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
