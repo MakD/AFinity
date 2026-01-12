@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -23,12 +23,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -36,16 +40,25 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.svg.SvgDecoder
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RequestConfirmationDialog(
+    modifier: Modifier = Modifier,
     mediaTitle: String,
     mediaPosterUrl: String?,
     mediaType: MediaType,
@@ -57,7 +70,6 @@ fun RequestConfirmationDialog(
     isLoading: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
     mediaBackdropUrl: String? = null,
     mediaTagline: String? = null,
     mediaOverview: String? = null,
@@ -116,9 +128,9 @@ fun RequestConfirmationDialog(
                                     Brush.verticalGradient(
                                         colors = listOf(
                                             Color.Transparent,
-                                            Color.Black.copy(alpha = 0.7f)
+                                            Color.Black.copy(alpha = 0.8f)
                                         ),
-                                        startY = 0f,
+                                        startY = 100f,
                                         endY = Float.POSITIVE_INFINITY
                                     )
                                 )
@@ -174,152 +186,114 @@ fun RequestConfirmationDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    data class MetaItem(
+                        val icon: Int = 0,
+                        val text: String,
+                        val contentDesc: String? = null,
+                        val tint: Color = Color.Unspecified,
+                        val flagUrl: String? = null
+                    )
 
-                    if ((ratingsCombined != null && (ratingsCombined.imdb != null || ratingsCombined.rt != null)) || (voteAverage != null && voteAverage > 0)) {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(
-                                8.dp,
-                                Alignment.CenterHorizontally
-                            ),
-                            verticalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxWidth()
+                    val metadataItems =
+                        remember(ratingsCombined, voteAverage, originalLanguage, certification) {
+                            buildList {
+                                ratingsCombined?.imdb?.criticsScore?.let { score ->
+                                    add(
+                                        MetaItem(
+                                            R.drawable.ic_imdb_logo,
+                                            String.format(Locale.US, "%.1f", score),
+                                            "IMDb"
+                                        )
+                                    )
+                                }
+
+                                ratingsCombined?.rt?.criticsScore?.let { score ->
+                                    val icon =
+                                        if (score >= 60) R.drawable.ic_rotten_tomato_fresh else R.drawable.ic_rotten_tomato_rotten
+                                    add(MetaItem(icon, "$score%", "RT Critic"))
+                                }
+
+                                ratingsCombined?.rt?.audienceScore?.let { score ->
+                                    val icon =
+                                        if (score >= 60) R.drawable.ic_rt_fresh_popcorn else R.drawable.ic_rt_stale_popcorn
+                                    add(MetaItem(icon, "$score%", "RT Audience"))
+                                }
+
+                                voteAverage?.let { rating ->
+                                    if (rating > 0) {
+                                        add(
+                                            MetaItem(
+                                                R.drawable.ic_tmdb,
+                                                "${(rating * 10).toInt()}%",
+                                                "TMDB"
+                                            )
+                                        )
+                                    }
+                                }
+
+                                originalLanguage?.takeIf { it.isNotBlank() }?.let { lang ->
+                                    add(
+                                        MetaItem(
+                                            icon = R.drawable.ic_language,
+                                            text = lang.uppercase(),
+                                            flagUrl = getAutoFlagUrl(lang),
+                                            contentDesc = "Language"
+                                        )
+                                    )
+                                }
+
+                                certification?.takeIf { it.isNotBlank() }?.let { cert ->
+                                    add(MetaItem(text = cert))
+                                }
+                            }
+                        }
+
+                    if (metadataItems.isNotEmpty()) {
+                        SeparatedFlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            separator = { MetadataDot() }
                         ) {
-                            var needsSeparator = false
-
-                            ratingsCombined?.imdb?.criticsScore?.let { score ->
+                            metadataItems.forEach { item ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                        contentDescription = "IMDb",
-                                        tint = Color.Unspecified,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(
-                                        text = String.format(Locale.US, "%.1f", score),
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.SemiBold
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                                    )
-                                }
-                                needsSeparator = true
-                            }
-
-                            ratingsCombined?.rt?.criticsScore?.let { score ->
-                                if (needsSeparator) MetadataDot()
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    val icon = when {
-                                        ratingsCombined.rt.criticsRating == "Certified Fresh" -> R.drawable.ic_rotten_tomato_fresh
-                                        score >= 60 -> R.drawable.ic_rotten_tomato_fresh
-                                        else -> R.drawable.ic_rotten_tomato_rotten
-                                    }
-                                    Icon(
-                                        painter = painterResource(id = icon),
-                                        contentDescription = "RT Critic",
-                                        tint = Color.Unspecified,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Text(
-                                        text = "$score%",
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.SemiBold
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                                    )
-                                }
-                                needsSeparator = true
-                            }
-
-                            ratingsCombined?.rt?.audienceScore?.let { score ->
-                                if (needsSeparator) MetadataDot()
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    val icon = if (score >= 60) {
-                                        R.drawable.ic_rt_fresh_popcorn
-                                    } else {
-                                        R.drawable.ic_rt_stale_popcorn
-                                    }
-                                    Icon(
-                                        painter = painterResource(id = icon),
-                                        contentDescription = "RT Audience",
-                                        tint = Color.Unspecified,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Text(
-                                        text = "$score%",
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.SemiBold
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                                    )
-                                }
-                                needsSeparator = true
-                            }
-
-                            voteAverage?.let { rating ->
-                                if (rating > 0) {
-                                    if (needsSeparator) MetadataDot()
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
+                                    if (item.icon != 0) {
+                                        val itemTint = if (item.contentDesc == "Language") MaterialTheme.colorScheme.onSurface else item.tint
                                         Icon(
-                                            painter = painterResource(id = R.drawable.ic_tmdb),
-                                            contentDescription = "TMDB",
-                                            tint = Color.Unspecified,
+                                            painter = painterResource(id = item.icon),
+                                            contentDescription = null,
+                                            tint = itemTint,
                                             modifier = Modifier.size(14.dp)
                                         )
-                                        Text(
-                                            text = "${(rating * 10).toInt()}%",
-                                            style = MaterialTheme.typography.bodyMedium.copy(
-                                                fontWeight = FontWeight.SemiBold
+                                    }
+
+                                    if (item.flagUrl != null) {
+                                        CircleFlagIcon(url = item.flagUrl)
+                                    } else if (item.icon == 0) {
+                                        androidx.compose.material3.Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            border = androidx.compose.foundation.BorderStroke(
+                                                width = 1.dp,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                             ),
+                                            color = Color.Transparent
+                                        ) {
+                                            Text(
+                                                text = item.text,
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    } else {
+                                        Text(
+                                            text = item.text,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
                                         )
                                     }
-                                    needsSeparator = true
                                 }
-                            }
-                            originalLanguage?.takeIf { it.isNotBlank() }?.let { lang ->
-                                if (needsSeparator) MetadataDot()
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_language),
-                                        contentDescription = "TMDB",
-                                        tint = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Text(
-                                        text = lang.uppercase(),
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.SemiBold
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                                    )
-                                    needsSeparator = true
-                                }
-                            }
-                            certification?.takeIf { it.isNotBlank() }?.let { cert ->
-                                if (needsSeparator) MetadataDot()
-                                Text(
-                                    text = cert,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.SemiBold
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                                )
-                                needsSeparator = true
                             }
                         }
                     }
@@ -347,13 +321,14 @@ fun RequestConfirmationDialog(
                         Text(
                             text = buildAnnotatedString {
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("Director: ")
+                                    append(
+                                        "Director: "
+                                    )
                                 }
                                 append(dir)
                             },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-                            modifier = Modifier.align(Alignment.Start)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
                         )
                     }
 
@@ -363,7 +338,9 @@ fun RequestConfirmationDialog(
                             Text(
                                 text = buildAnnotatedString {
                                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append("Release Date: ")
+                                        append(
+                                            "Release Date: "
+                                        )
                                     }
                                     append(formattedDate)
                                 },
@@ -378,7 +355,9 @@ fun RequestConfirmationDialog(
                             Text(
                                 text = buildAnnotatedString {
                                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append("Runtime: ")
+                                        append(
+                                            "Runtime: "
+                                        )
                                     }
                                     append(formatRuntime(minutes))
                                 },
@@ -392,7 +371,9 @@ fun RequestConfirmationDialog(
                         Text(
                             text = buildAnnotatedString {
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("Genre: ")
+                                    append(
+                                        "Genre: "
+                                    )
                                 }
                                 append(genres.joinToString(", "))
                             },
@@ -464,37 +445,179 @@ private fun MetadataDot() {
     }
 }
 
-private fun formatReleaseDate(dateString: String): String {
-    return try {
-        val parts = dateString.split("-")
-        if (parts.size >= 3) {
-            val year = parts[0]
-            val month = parts[1].toIntOrNull()
-            val day = parts[2].take(2)
-            val monthName = when (month) {
-                1 -> "Jan"
-                2 -> "Feb"
-                3 -> "Mar"
-                4 -> "Apr"
-                5 -> "May"
-                6 -> "Jun"
-                7 -> "Jul"
-                8 -> "Aug"
-                9 -> "Sep"
-                10 -> "Oct"
-                11 -> "Nov"
-                12 -> "Dec"
-                else -> null
-            }
-            if (monthName != null) {
-                "$day $monthName $year"
-            } else {
-                "$day $year"
-            }
-        } else {
-            dateString
+@Composable
+private fun CircleFlagIcon(
+    url: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val model = remember(url) {
+        ImageRequest.Builder(context)
+            .data(url)
+            .decoderFactory(SvgDecoder.Factory())
+            .crossfade(true)
+            .build()
+    }
+
+    AsyncImage(
+        model = model,
+        contentDescription = "Flag",
+        modifier = modifier
+            .size(14.dp)
+            .clip(CircleShape),
+        contentScale = ContentScale.Crop
+    )
+}
+
+@Composable
+fun SeparatedFlowRow(
+    modifier: Modifier = Modifier,
+    itemSpacing: Dp = 4.dp,
+    separator: @Composable () -> Unit,
+    content: @Composable () -> Unit
+) {
+    SubcomposeLayout(modifier = modifier) { constraints ->
+        val itemMeasurables = subcompose("content", content)
+        val itemPlaceables = itemMeasurables.map { it.measure(constraints.copy(minWidth = 0)) }
+
+        if (itemPlaceables.isEmpty()) {
+            return@SubcomposeLayout layout(0, 0) {}
         }
-    } catch (e: Exception) {
+
+        val separatorMeasurables = subcompose("separator_ref") { separator() }
+        val separatorPlaceableRef =
+            separatorMeasurables.firstOrNull()?.measure(constraints.copy(minWidth = 0))
+        val separatorWidth = separatorPlaceableRef?.width ?: 0
+        val spacingPx = itemSpacing.roundToPx()
+
+        val sequences = mutableListOf<List<Placeable>>()
+        var currentSequence = mutableListOf<Placeable>()
+        var currentWidth = 0
+
+        itemPlaceables.forEach { placeable ->
+            val addedWidth = if (currentSequence.isEmpty()) {
+                placeable.width
+            } else {
+                separatorWidth + (spacingPx * 2) + placeable.width
+            }
+
+            if (currentWidth + addedWidth <= constraints.maxWidth) {
+                currentSequence.add(placeable)
+                currentWidth += addedWidth
+            } else {
+                if (currentSequence.isNotEmpty()) sequences.add(currentSequence)
+                currentSequence = mutableListOf(placeable)
+                currentWidth = placeable.width
+            }
+        }
+        if (currentSequence.isNotEmpty()) sequences.add(currentSequence)
+
+        val totalSeparatorsNeeded = itemPlaceables.size - sequences.size
+        val separatorList = subcompose("separators_real") {
+            repeat(totalSeparatorsNeeded) { separator() }
+        }.map { it.measure(constraints.copy(minWidth = 0)) }
+
+        var separatorIndex = 0
+
+        val verticalGap = 8.dp.roundToPx()
+        val totalHeight = sequences.sumOf { line -> line.maxOf { it.height } } +
+                ((sequences.size - 1) * verticalGap)
+
+        layout(constraints.maxWidth, totalHeight) {
+            var yOffset = 0
+            sequences.forEach { line ->
+                var xOffset = 0
+                val lineHeight = line.maxOf { it.height }
+
+                val lineWidth =
+                    line.sumOf { it.width } + ((line.size - 1) * (separatorWidth + spacingPx * 2))
+                xOffset = (constraints.maxWidth - lineWidth) / 2
+
+                line.forEachIndexed { index, placeable ->
+                    placeable.placeRelative(xOffset, yOffset + (lineHeight - placeable.height) / 2)
+                    xOffset += placeable.width
+
+                    if (index < line.lastIndex) {
+                        xOffset += spacingPx
+
+                        val sep = separatorList.getOrNull(separatorIndex++)
+                        sep?.placeRelative(xOffset, yOffset + (lineHeight - sep.height) / 2)
+
+                        xOffset += separatorWidth + spacingPx
+                    }
+                }
+                yOffset += lineHeight + verticalGap
+            }
+        }
+    }
+}
+
+private fun getAutoFlagUrl(langCode: String): String? {
+    if (langCode.isBlank()) return null
+
+    val manualMapping = when (langCode.lowercase()) {
+        "en" -> "us"
+        "hi" -> "in"
+        "ja" -> "jp"
+        "ko" -> "kr"
+        "zh" -> "cn"
+        "es" -> "es"
+        "fr" -> "fr"
+        "it" -> "it"
+        "de" -> "de"
+        "ru" -> "ru"
+        "pt" -> "br"
+        "tr" -> "tr"
+        "th" -> "th"
+        "id" -> "id"
+        "tl" -> "ph"
+        "vi" -> "vn"
+        "pl" -> "pl"
+        "uk" -> "ua"
+        "ta" -> "in"
+        "te" -> "in"
+        "ml" -> "in"
+        "kn" -> "in"
+        "pa" -> "in"
+        "mr" -> "in"
+        "bn" -> "in"
+        "sv" -> "se"
+        "da" -> "dk"
+        "no" -> "no"
+        "fi" -> "fi"
+        "is" -> "is"
+        "nl" -> "nl"
+        "cs" -> "cz"
+        "hu" -> "hu"
+        "el" -> "gr"
+        "he" -> "il"
+        "ar" -> "sa"
+        "fa" -> "ir"
+        else -> null
+    }
+
+    val countryCode = manualMapping ?: run {
+        val locale = Locale.forLanguageTag(langCode)
+        locale.country.ifBlank {
+            Locale.getAvailableLocales()
+                .firstOrNull { it.language == langCode && it.country.isNotBlank() }
+                ?.country
+        }
+    }
+
+    return if (!countryCode.isNullOrBlank()) {
+        "https://hatscripts.github.io/circle-flags/flags/${countryCode.lowercase()}.svg"
+    } else {
+        null
+    }
+}
+
+private fun formatReleaseDate(dateString: String): String {
+    if (dateString.isBlank()) return ""
+    return try {
+        val date = LocalDate.parse(dateString)
+        date.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.US))
+    } catch (e: DateTimeParseException) {
         dateString
     }
 }
