@@ -117,17 +117,17 @@ private fun ShowGenreSkeletonRow(
                             .fillMaxSize()
                             .shimmerEffect()
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .width(cardWidth * 0.8f)
-                            .height(14.dp)
-                            .padding(horizontal = 4.dp)
-                            .shimmerEffect()
-                    )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .width(cardWidth * 0.8f)
+                        .height(14.dp)
+                        .padding(horizontal = 4.dp)
+                        .shimmerEffect()
+                )
             }
         }
     }
