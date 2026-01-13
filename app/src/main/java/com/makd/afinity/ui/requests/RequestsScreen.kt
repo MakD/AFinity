@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -80,6 +81,17 @@ fun RequestsScreen(
             )
         } else {
             when {
+                uiState.isLoadingDiscover && uiState.trendingItems.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
                 uiState.error != null && uiState.requests.isEmpty() && uiState.trendingItems.isEmpty() -> {
                     ErrorView(
                         message = uiState.error ?: "Unknown error",
@@ -243,8 +255,7 @@ fun RequestsScreen(
                                 )
                             }
                         }
-
-                        if (uiState.studios.isNotEmpty()) {
+                        if (!uiState.isLoadingDiscover && uiState.studios.isNotEmpty()) {
                             item {
                                 StudiosSection(
                                     studios = uiState.studios,
@@ -354,8 +365,7 @@ fun RequestsScreen(
                                 )
                             }
                         }
-
-                        if (uiState.networks.isNotEmpty()) {
+                        if (!uiState.isLoadingDiscover && uiState.networks.isNotEmpty()) {
                             item {
                                 NetworksSection(
                                     networks = uiState.networks,
@@ -379,7 +389,8 @@ fun RequestsScreen(
                             uiState.popularTv.isEmpty() &&
                             uiState.upcomingMovies.isEmpty() &&
                             uiState.upcomingTv.isEmpty() &&
-                            !uiState.isLoading
+                            !uiState.isLoading &&
+                            !uiState.isLoadingDiscover
                         ) {
                             item {
                                 EmptyStateView(

@@ -14,6 +14,7 @@ import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.BackdropTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +29,12 @@ class RequestsViewModel @Inject constructor(
     private val jellyseerrRepository: JellyseerrRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(RequestsUiState())
+    private val _uiState = MutableStateFlow(
+        RequestsUiState(
+            isLoading = true,
+            isLoadingDiscover = true
+        )
+    )
     val uiState: StateFlow<RequestsUiState> = _uiState.asStateFlow()
 
     val isAuthenticated = jellyseerrRepository.isAuthenticated
@@ -39,9 +45,9 @@ class RequestsViewModel @Inject constructor(
     val backdropTracker: BackdropTracker get() = _backdropTracker
 
     init {
+        loadCurrentUser()
         loadRequests()
         loadDiscoverContent()
-        loadCurrentUser()
     }
 
     private fun loadCurrentUser() {
@@ -345,65 +351,41 @@ class RequestsViewModel @Inject constructor(
         _uiState.update { it.copy(isLoadingDiscover = true) }
 
         viewModelScope.launch {
-            coroutineScope {
+            try {
+                coroutineScope {
+                    val trendingDeferred = async { jellyseerrRepository.getTrending(limit = 10) }
+                    val moviesDeferred = async { jellyseerrRepository.getDiscoverMovies() }
+                    val tvDeferred = async { jellyseerrRepository.getDiscoverTv() }
+                    val upcomingMoviesDeferred = async { jellyseerrRepository.getUpcomingMovies() }
+                    val upcomingTvDeferred = async { jellyseerrRepository.getUpcomingTv() }
+                    val movieGenresDeferred = async { jellyseerrRepository.getMovieGenreSlider() }
+                    val tvGenresDeferred = async { jellyseerrRepository.getTvGenreSlider() }
 
-                launch {
-                    jellyseerrRepository.getTrending(limit = 10).onSuccess { response ->
-                        _uiState.update { it.copy(trendingItems = response.results) }
-                    }.onFailure { error ->
-                        Timber.e(error, "Failed to load trending")
+                    val trending = trendingDeferred.await().getOrNull()?.results ?: emptyList()
+                    val movies = moviesDeferred.await().getOrNull()?.results ?: emptyList()
+                    val tv = tvDeferred.await().getOrNull()?.results ?: emptyList()
+                    val upcomingMovies = upcomingMoviesDeferred.await().getOrNull()?.results ?: emptyList()
+                    val upcomingTv = upcomingTvDeferred.await().getOrNull()?.results ?: emptyList()
+                    val movieGenres = movieGenresDeferred.await().getOrNull() ?: emptyList()
+                    val tvGenres = tvGenresDeferred.await().getOrNull() ?: emptyList()
+
+                    _uiState.update {
+                        it.copy(
+                            trendingItems = trending,
+                            popularMovies = movies,
+                            popularTv = tv,
+                            upcomingMovies = upcomingMovies,
+                            upcomingTv = upcomingTv,
+                            movieGenres = movieGenres,
+                            tvGenres = tvGenres,
+                            isLoadingDiscover = false
+                        )
                     }
                 }
-
-                launch {
-                    jellyseerrRepository.getDiscoverMovies().onSuccess { response ->
-                        _uiState.update { it.copy(popularMovies = response.results) }
-                    }.onFailure {
-                        Timber.e(it, "Failed to load popular movies")
-                    }
-                }
-
-                launch {
-                    jellyseerrRepository.getDiscoverTv().onSuccess { response ->
-                        _uiState.update { it.copy(popularTv = response.results) }
-                    }.onFailure {
-                        Timber.e(it, "Failed to load popular tv")
-                    }
-                }
-
-                launch {
-                    jellyseerrRepository.getUpcomingMovies().onSuccess { response ->
-                        _uiState.update { it.copy(upcomingMovies = response.results) }
-                    }.onFailure {
-                        Timber.e(it, "Failed to load upcoming movies")
-                    }
-                }
-
-                launch {
-                    jellyseerrRepository.getUpcomingTv().onSuccess { response ->
-                        _uiState.update { it.copy(upcomingTv = response.results) }
-                    }.onFailure {
-                        Timber.e(it, "Failed to load upcoming tv")
-                    }
-                }
-
-                launch {
-                    jellyseerrRepository.getMovieGenreSlider().onSuccess { genres ->
-                        _uiState.update { it.copy(movieGenres = genres) }
-                    }.onFailure {
-                        Timber.e(it, "Failed to load movie genres")
-                    }
-                }
-
-                launch {
-                    jellyseerrRepository.getTvGenreSlider().onSuccess { genres ->
-                        _uiState.update { it.copy(tvGenres = genres) }
-                    }.onFailure {
-                        Timber.e(it, "Failed to load tv genres")
-                    }
-                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load discover content")
+                _uiState.update { it.copy(isLoadingDiscover = false) }
             }
-            _uiState.update { it.copy(isLoadingDiscover = false) }
         }
     }
 
