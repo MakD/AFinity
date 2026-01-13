@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
 import java.util.UUID
@@ -36,6 +37,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.hours
+import androidx.core.net.toUri
+import com.makd.afinity.data.models.media.AfinityPerson
+import com.makd.afinity.data.models.media.AfinityPersonImage
 
 @Singleton
 class AppDataRepository @Inject constructor(
@@ -140,47 +144,33 @@ class AppDataRepository @Inject constructor(
 
         try {
             coroutineScope {
-                updateProgress(0.1f, "Getting latest content...")
-                val latestMediaTask = async { loadLatestMedia() }
+                updateProgress(0.1f, "Connecting to server...")
 
-                val heroCarouselTask = async { loadHeroCarousel() }
-                updateProgress(0.25f, "Loading your watchlist...")
-                val continueWatchingTask = async { loadContinueWatching() }
+                val latestMediaDeferred = async { loadLatestMedia() }
+                val heroCarouselDeferred = async { loadHeroCarousel() }
+                val continueWatchingDeferred = async { loadContinueWatching() }
+                val nextUpDeferred = async { loadNextUp() }
+                val librariesDeferred = async { loadLibraries() }
+                val userProfileDeferred = async { loadUserProfileImage() }
 
-                updateProgress(0.35f, "Finding next episodes...")
-                val nextUpTask = async { loadNextUp() }
+                updateProgress(0.3f, "Fetching content...")
 
-                updateProgress(0.4f, "Organizing libraries...")
-                val librariesTask = async { loadLibraries() }
-
-                updateProgress(0.55f, "Loading user profile...")
-                val userProfileTask = async { loadUserProfileImage() }
-
-                val latestMedia = latestMediaTask.await()
-                _latestMedia.value = latestMedia
-                val heroItems = heroCarouselTask.await()
-                _heroCarouselItems.value = heroItems
-                updateProgress(0.65f, "Latest content loaded...")
-
-                val continueWatching = continueWatchingTask.await()
-                _continueWatching.value = continueWatching
-                updateProgress(0.75f, "Watchlist loaded...")
-
-                val nextUp = nextUpTask.await()
-                _nextUp.value = nextUp
-                updateProgress(0.8f, "Next episodes loaded...")
-
-                val libraries = librariesTask.await()
+                val libraries = librariesDeferred.await()
                 _libraries.value = libraries
-                updateProgress(0.85f, "Libraries organized...")
 
-                val userProfileImageUrl = userProfileTask.await()
-                _userProfileImageUrl.value = userProfileImageUrl
+                val homeDataDeferred = async { loadHomeSpecificData(libraries) }
 
-                updateProgress(0.9f, "Loading movies and shows...")
-                val homeDataTask = async { loadHomeSpecificData(libraries) }
+                updateProgress(0.5f, "Processing libraries...")
 
-                val (latestMovies, latestTvSeries, highestRated) = homeDataTask.await()
+                _latestMedia.value = latestMediaDeferred.await()
+                _heroCarouselItems.value = heroCarouselDeferred.await()
+                _continueWatching.value = continueWatchingDeferred.await()
+                _nextUp.value = nextUpDeferred.await()
+                _userProfileImageUrl.value = userProfileDeferred.await()
+
+                updateProgress(0.8f, "Finalizing home screen...")
+
+                val (latestMovies, latestTvSeries, highestRated) = homeDataDeferred.await()
                 _latestMovies.value = latestMovies
                 _latestTvSeries.value = latestTvSeries
                 _highestRated.value = highestRated
@@ -188,32 +178,38 @@ class AppDataRepository @Inject constructor(
                 updateProgress(1f, "Ready!")
                 _isInitialDataLoaded.value = true
 
-                launch {
-                    jellyfinRepository.getContinueWatchingFlow().collect { liveData ->
-                        _continueWatching.value = liveData
-                    }
-                }
+                startLiveDataCollectors()
 
-                launch {
-                    jellyfinRepository.getLatestMediaFlow().collect { liveData ->
-                        val filteredData = liveData.filter { item ->
-                            item is AfinityMovie || item is AfinityShow
-                        }
-                        _latestMedia.value = filteredData
-                    }
-                }
-
-                launch {
-                    jellyfinRepository.getNextUpFlow().collect { liveData ->
-                        _nextUp.value = liveData
-                    }
-                }
-
-                Timber.d("All initial data loaded successfully")
+                Timber.d("All initial data loaded successfully in parallel")
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load initial app data")
             throw e
+        }
+    }
+
+    private fun startLiveDataCollectors() {
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
+
+        scope.launch {
+            jellyfinRepository.getContinueWatchingFlow().collect { liveData ->
+                _continueWatching.value = liveData
+            }
+        }
+
+        scope.launch {
+            jellyfinRepository.getLatestMediaFlow().collect { liveData ->
+                val filteredData = liveData.filter { item ->
+                    item is AfinityMovie || item is AfinityShow
+                }
+                _latestMedia.value = filteredData
+            }
+        }
+
+        scope.launch {
+            jellyfinRepository.getNextUpFlow().collect { liveData ->
+                _nextUp.value = liveData
+            }
         }
     }
 
@@ -259,10 +255,7 @@ class AppDataRepository @Inject constructor(
 
     private suspend fun loadHeroCarousel(): List<AfinityItem> {
         return try {
-            Timber.d("Loading random hero carousel items")
-
             val baseUrl = jellyfinRepository.getBaseUrl()
-
             val randomHeroItems = jellyfinRepository.getItems(
                 includeItemTypes = listOf("MOVIE", "SERIES"),
                 sortBy = SortBy.RANDOM,
@@ -329,80 +322,76 @@ class AppDataRepository @Inject constructor(
 
             val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
 
-            Timber.d("Loading home data with useJellyfinDefault=$useJellyfinDefault")
-
-            val (movieResults, showResults) = if (useJellyfinDefault) {
-                coroutineScope {
-                    val movieTasks = movieLibraries.map { library ->
-                        async {
-                            try {
-                                val items = jellyfinRepository.getLatestMedia(
-                                    parentId = library.id,
-                                    limit = 30
-                                ).filterIsInstance<AfinityMovie>()
-                                library to items
-                            } catch (e: Exception) {
-                                Timber.w(e, "Failed to load latest from ${library.name}")
-                                library to emptyList()
+            val (movieResults, showResults) = coroutineScope {
+                val moviesDeferred = async {
+                    if (useJellyfinDefault) {
+                        movieLibraries.map { library ->
+                            async {
+                                try {
+                                    val items = jellyfinRepository.getLatestMedia(
+                                        parentId = library.id,
+                                        limit = 30
+                                    ).filterIsInstance<AfinityMovie>()
+                                    library to items
+                                } catch (e: Exception) {
+                                    library to emptyList()
+                                }
                             }
-                        }
-                    }
-
-                    val showTasks = tvLibraries.map { library ->
-                        async {
-                            try {
-                                val items = jellyfinRepository.getLatestMedia(
-                                    parentId = library.id,
-                                    limit = 30
-                                ).filterIsInstance<AfinityShow>()
-                                library to items
-                            } catch (e: Exception) {
-                                Timber.w(e, "Failed to load latest from ${library.name}")
-                                library to emptyList()
+                        }.awaitAll()
+                    } else {
+                        movieLibraries.map { library ->
+                            async {
+                                try {
+                                    library to jellyfinRepository.getMovies(
+                                        parentId = library.id,
+                                        sortBy = SortBy.RELEASE_DATE,
+                                        sortDescending = true,
+                                        limit = 30,
+                                        isPlayed = false
+                                    )
+                                } catch (e: Exception) {
+                                    library to emptyList()
+                                }
                             }
-                        }
+                        }.awaitAll()
                     }
-
-                    Pair(movieTasks.awaitAll(), showTasks.awaitAll())
                 }
-            } else {
-                coroutineScope {
-                    val movieTasks = movieLibraries.map { library ->
-                        async {
-                            try {
-                                library to jellyfinRepository.getMovies(
-                                    parentId = library.id,
-                                    sortBy = SortBy.RELEASE_DATE,
-                                    sortDescending = true,
-                                    limit = 30,
-                                    isPlayed = false
-                                )
-                            } catch (e: Exception) {
-                                Timber.w(e, "Failed to load movies from ${library.name}")
-                                library to emptyList()
-                            }
-                        }
-                    }
 
-                    val showTasks = tvLibraries.map { library ->
-                        async {
-                            try {
-                                library to jellyfinRepository.getShows(
-                                    parentId = library.id,
-                                    sortBy = SortBy.RELEASE_DATE,
-                                    sortDescending = true,
-                                    limit = 30,
-                                    isPlayed = false
-                                )
-                            } catch (e: Exception) {
-                                Timber.w(e, "Failed to load shows from ${library.name}")
-                                library to emptyList()
+                val showsDeferred = async {
+                    if (useJellyfinDefault) {
+                        tvLibraries.map { library ->
+                            async {
+                                try {
+                                    val items = jellyfinRepository.getLatestMedia(
+                                        parentId = library.id,
+                                        limit = 30
+                                    ).filterIsInstance<AfinityShow>()
+                                    library to items
+                                } catch (e: Exception) {
+                                    library to emptyList()
+                                }
                             }
-                        }
+                        }.awaitAll()
+                    } else {
+                        tvLibraries.map { library ->
+                            async {
+                                try {
+                                    library to jellyfinRepository.getShows(
+                                        parentId = library.id,
+                                        sortBy = SortBy.RELEASE_DATE,
+                                        sortDescending = true,
+                                        limit = 30,
+                                        isPlayed = false
+                                    )
+                                } catch (e: Exception) {
+                                    library to emptyList()
+                                }
+                            }
+                        }.awaitAll()
                     }
-
-                    Pair(movieTasks.awaitAll(), showTasks.awaitAll())
                 }
+
+                Pair(moviesDeferred.await(), showsDeferred.await())
             }
 
             _separateMovieLibrarySections.value = movieResults
@@ -432,7 +421,6 @@ class AppDataRepository @Inject constructor(
             }
 
             val highestRated = existingHighestRated ?: run {
-                Timber.d("Generating fresh shuffled highest rated list")
                 val highRatedMovies = allMoviesIncludingWatched.filter {
                     (it.communityRating ?: 0f) > 6.5f
                 }
@@ -461,22 +449,13 @@ class AppDataRepository @Inject constructor(
 
     private suspend fun loadGenres() {
         try {
-            Timber.d("Loading genres with cache-first strategy")
-
             val cachedGenreNames = genreCacheDao.getAllGenreNames()
             if (cachedGenreNames.isNotEmpty()) {
-                Timber.d("Loaded ${cachedGenreNames.size} genres from cache")
-
                 val currentTime = System.currentTimeMillis()
                 val oldestTimestamp = genreCacheDao.getOldestCacheTimestamp() ?: 0
                 val isFresh = (currentTime - oldestTimestamp) < GENRE_CACHE_TTL
 
-                if (isFresh) {
-                    Timber.d("Genre cache is fresh, skipping API call")
-                    return
-                }
-
-                Timber.d("Genre cache is stale, refreshing in background...")
+                if (isFresh) return
             }
 
             val genres = jellyfinRepository.getGenres(
@@ -494,27 +473,13 @@ class AppDataRepository @Inject constructor(
                 )
             }
             genreCacheDao.insertGenreCaches(genreEntities)
-
-            Timber.d("Fetched and cached ${genres.size} genres from API")
         } catch (e: Exception) {
             Timber.e(e, "Failed to load genres")
-
-            try {
-                val fallbackGenres = genreCacheDao.getAllGenreNames()
-                if (fallbackGenres.isNotEmpty()) {
-                    Timber.d("Using stale cache as fallback (${fallbackGenres.size} genres)")
-                }
-            } catch (cacheError: Exception) {
-                Timber.e(cacheError, "Failed to load fallback cache")
-            }
         }
     }
 
     suspend fun loadMoviesForGenre(genre: String, limit: Int = 20) {
-        if (_genreMovies.value.containsKey(genre)) {
-            Timber.d("Genre '$genre' already in memory, skipping")
-            return
-        }
+        if (_genreMovies.value.containsKey(genre)) return
 
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             try {
@@ -529,22 +494,15 @@ class AppDataRepository @Inject constructor(
                     if (cachedMovies.isNotEmpty()) {
                         _genreMovies.value += (genre to cachedMovies)
                         _genreLoadingStates.value += (genre to false)
-                        Timber.d("Loaded ${cachedMovies.size} movies for '$genre' from cache")
 
                         val currentTime = System.currentTimeMillis()
                         val isFresh =
                             genreCacheDao.isGenreCacheFresh(genre, GENRE_CACHE_TTL, currentTime)
 
-                        if (isFresh) {
-                            Timber.d("Genre '$genre' cache is fresh (< 12 hours)")
-                            return@withContext
-                        }
-
-                        Timber.d("Genre '$genre' cache is stale, refreshing in background...")
+                        if (isFresh) return@withContext
                     }
                 }
 
-                Timber.d("Fetching movies for genre: $genre from API")
                 val movies = jellyfinRepository.getMoviesByGenre(
                     genre = genre,
                     limit = limit,
@@ -567,8 +525,6 @@ class AppDataRepository @Inject constructor(
 
                 _genreMovies.value += (genre to movies)
                 _genreLoadingStates.value += (genre to false)
-
-                Timber.d("Fetched and cached ${movies.size} movies for genre: $genre")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load movies for genre: $genre")
                 _genreLoadingStates.value += (genre to false)
@@ -580,10 +536,8 @@ class AppDataRepository @Inject constructor(
                     }
                     if (fallbackMovies.isNotEmpty()) {
                         _genreMovies.value += (genre to fallbackMovies)
-                        Timber.d("Using stale cache as fallback for '$genre' (${fallbackMovies.size} movies)")
                     }
-                } catch (cacheError: Exception) {
-                    Timber.e(cacheError, "Failed to load fallback cache for genre: $genre")
+                } catch (cacheError: Exception) { /* Ignore */
                 }
             }
         }
@@ -592,12 +546,9 @@ class AppDataRepository @Inject constructor(
     suspend fun loadCombinedGenres() {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                Timber.d("Loading and combining movie + show genres")
-
                 coroutineScope {
                     val movieGenresTask = async { loadGenres() }
                     val showGenresTask = async { loadShowGenres() }
-
                     movieGenresTask.await()
                     showGenresTask.await()
                 }
@@ -609,9 +560,7 @@ class AppDataRepository @Inject constructor(
                 val showGenreItems = showGenreNames.map { GenreItem(it, GenreType.SHOW) }
 
                 val combinedList = (movieGenreItems + showGenreItems).shuffled()
-
                 _combinedGenres.value = combinedList
-                Timber.d("Combined ${combinedList.size} genres (${movieGenreItems.size} movies, ${showGenreItems.size} shows) with random ordering")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load combined genres")
             }
@@ -620,22 +569,12 @@ class AppDataRepository @Inject constructor(
 
     private suspend fun loadShowGenres() {
         try {
-            Timber.d("Loading show genres with cache-first strategy")
-
             val cachedGenreNames = genreCacheDao.getAllShowGenreNames()
             if (cachedGenreNames.isNotEmpty()) {
-                Timber.d("Loaded ${cachedGenreNames.size} show genres from cache")
-
                 val currentTime = System.currentTimeMillis()
                 val oldestTimestamp = genreCacheDao.getOldestShowCacheTimestamp() ?: 0
                 val isFresh = (currentTime - oldestTimestamp) < GENRE_CACHE_TTL
-
-                if (isFresh) {
-                    Timber.d("Show genre cache is fresh, skipping API call")
-                    return
-                }
-
-                Timber.d("Show genre cache is stale, refreshing in background...")
+                if (isFresh) return
             }
 
             val genres = jellyfinRepository.getGenres(
@@ -653,27 +592,13 @@ class AppDataRepository @Inject constructor(
                 )
             }
             genreCacheDao.insertShowGenreCaches(genreEntities)
-
-            Timber.d("Fetched and cached ${genres.size} show genres from API")
         } catch (e: Exception) {
             Timber.e(e, "Failed to load show genres")
-
-            try {
-                val fallbackGenres = genreCacheDao.getAllShowGenreNames()
-                if (fallbackGenres.isNotEmpty()) {
-                    Timber.d("Using stale cache as fallback (${fallbackGenres.size} show genres)")
-                }
-            } catch (cacheError: Exception) {
-                Timber.e(cacheError, "Failed to load fallback cache")
-            }
         }
     }
 
     suspend fun loadShowsForGenre(genre: String, limit: Int = 20) {
-        if (_genreShows.value.containsKey(genre)) {
-            Timber.d("Show genre '$genre' already in memory, skipping")
-            return
-        }
+        if (_genreShows.value.containsKey(genre)) return
 
         try {
             _genreLoadingStates.value += (genre to true)
@@ -687,22 +612,14 @@ class AppDataRepository @Inject constructor(
                 if (cachedShows.isNotEmpty()) {
                     _genreShows.value += (genre to cachedShows)
                     _genreLoadingStates.value += (genre to false)
-                    Timber.d("Loaded ${cachedShows.size} shows for '$genre' from cache")
 
                     val currentTime = System.currentTimeMillis()
                     val isFresh =
                         genreCacheDao.isShowGenreCacheFresh(genre, GENRE_CACHE_TTL, currentTime)
-
-                    if (isFresh) {
-                        Timber.d("Show genre '$genre' cache is fresh (< 12 hours)")
-                        return
-                    }
-
-                    Timber.d("Show genre '$genre' cache is stale, refreshing in background...")
+                    if (isFresh) return
                 }
             }
 
-            Timber.d("Fetching shows for genre: $genre from API")
             val shows = jellyfinRepository.getShowsByGenre(
                 genre = genre,
                 limit = limit,
@@ -725,31 +642,14 @@ class AppDataRepository @Inject constructor(
 
             _genreShows.value += (genre to shows)
             _genreLoadingStates.value += (genre to false)
-
-            Timber.d("Fetched and cached ${shows.size} shows for genre: $genre")
         } catch (e: Exception) {
             Timber.e(e, "Failed to load shows for genre: $genre")
             _genreLoadingStates.value += (genre to false)
-
-            try {
-                val fallbackEntities = genreCacheDao.getCachedShowsForGenre(genre)
-                val fallbackShows = fallbackEntities.mapNotNull { entity ->
-                    typeConverters.toAfinityShow(entity.showData)
-                }
-                if (fallbackShows.isNotEmpty()) {
-                    _genreShows.value += (genre to fallbackShows)
-                    Timber.d("Using stale cache as fallback for '$genre' (${fallbackShows.size} shows)")
-                }
-            } catch (cacheError: Exception) {
-                Timber.e(cacheError, "Failed to load fallback cache for show genre: $genre")
-            }
         }
     }
 
     suspend fun loadStudios() {
         try {
-            Timber.d("Loading studios with cache-first strategy")
-
             val cachedStudios = studioCacheDao.getAllCachedStudios()
             if (cachedStudios.isNotEmpty()) {
                 val studios = cachedStudios.mapNotNull { entity ->
@@ -758,21 +658,12 @@ class AppDataRepository @Inject constructor(
 
                 if (studios.isNotEmpty()) {
                     _studios.value = studios
-                    Timber.d("Loaded ${studios.size} studios from cache")
-
                     val currentTime = System.currentTimeMillis()
                     val isFresh = studioCacheDao.isStudioCacheFresh(GENRE_CACHE_TTL, currentTime)
-
-                    if (isFresh) {
-                        Timber.d("Studio cache is fresh (< 12 hours)")
-                        return
-                    }
-
-                    Timber.d("Studio cache is stale, refreshing in background...")
+                    if (isFresh) return
                 }
             }
 
-            Timber.d("Fetching studios from API")
             val studios: List<AfinityStudio> = jellyfinRepository.getStudios(
                 parentId = null,
                 limit = 15,
@@ -781,35 +672,20 @@ class AppDataRepository @Inject constructor(
 
             if (studios.isNotEmpty()) {
                 val timestamp = System.currentTimeMillis()
-                val studioEntities: List<com.makd.afinity.data.database.entities.StudioCacheEntity> =
-                    studios.mapIndexed { index: Int, studio: AfinityStudio ->
-                        com.makd.afinity.data.database.entities.StudioCacheEntity(
-                            studioId = studio.id.toString(),
-                            studioData = typeConverters.fromAfinityStudio(studio) ?: "",
-                            position = index,
-                            cachedTimestamp = timestamp
-                        )
-                    }
+                val studioEntities = studios.mapIndexed { index: Int, studio: AfinityStudio ->
+                    com.makd.afinity.data.database.entities.StudioCacheEntity(
+                        studioId = studio.id.toString(),
+                        studioData = typeConverters.fromAfinityStudio(studio) ?: "",
+                        position = index,
+                        cachedTimestamp = timestamp
+                    )
+                }
                 studioCacheDao.replaceStudios(studioEntities)
             }
 
             _studios.value = studios
-            Timber.d("Fetched and cached ${studios.size} studios")
         } catch (e: Exception) {
             Timber.e(e, "Failed to load studios")
-
-            try {
-                val fallbackEntities = studioCacheDao.getAllCachedStudios()
-                val fallbackStudios = fallbackEntities.mapNotNull { entity ->
-                    typeConverters.toAfinityStudio(entity.studioData)
-                }
-                if (fallbackStudios.isNotEmpty()) {
-                    _studios.value = fallbackStudios
-                    Timber.d("Using stale cache as fallback (${fallbackStudios.size} studios)")
-                }
-            } catch (cacheError: Exception) {
-                Timber.e(cacheError, "Failed to load fallback cache for studios")
-            }
         }
     }
 
@@ -847,68 +723,75 @@ class AppDataRepository @Inject constructor(
                 )
             ) {
                 val cachedData =
-                    json.decodeFromString<List<CachedPersonWithCount>>(
-                        cached.peopleData
-                    )
-                val cachedPeople = cachedData.map { PersonWithCount.fromCached(it) }
-                Timber.d("Loaded ${cachedPeople.size} top ${type.name} from cache")
-                return cachedPeople
+                    json.decodeFromString<List<CachedPersonWithCount>>(cached.peopleData)
+                return cachedData.map { PersonWithCount.fromCached(it) }
             }
 
-            Timber.d("Fetching top ${type.name} from library (paginated)")
-            val peopleFrequency =
-                mutableMapOf<String, Pair<com.makd.afinity.data.models.media.AfinityPerson, Int>>()
-            var startIndex = 0
-            val pageSize = 500
+            Timber.d("Fetching top ${type.name}...")
+            val baseUrl = jellyfinRepository.getBaseUrl()
 
-            while (true) {
-                val movies = jellyfinRepository.getMoviesWithPeople(
-                    startIndex = startIndex,
-                    limit = pageSize
-                )
+            val scanLimit = 150
+            val peopleFrequency = mutableMapOf<String, Pair<AfinityPerson, Int>>()
 
-                if (movies.isEmpty()) break
-                movies.forEach { movie: AfinityMovie ->
-                    movie.people
-                        .filter { person -> person.type == type }
-                        .forEach { person: com.makd.afinity.data.models.media.AfinityPerson ->
-                            val key = person.name
-                            val current = peopleFrequency[key]
-                            peopleFrequency[key] = person to ((current?.second ?: 0) + 1)
+            val moviesResponse = jellyfinRepository.getItems(
+                includeItemTypes = listOf("Movie"),
+                fields = listOf(ItemFields.PEOPLE),
+                limit = scanLimit,
+                sortBy = SortBy.DATE_ADDED,
+                sortDescending = true
+            )
+
+            val movies = moviesResponse.items ?: emptyList()
+
+            movies.forEach { movieItem ->
+                movieItem.people?.filter { it.type == type }?.forEach { personDto ->
+                    val key = personDto.name ?: return@forEach
+
+                    if (!peopleFrequency.containsKey(key)) {
+                        val id = personDto.id
+                        val primaryTag = personDto.primaryImageTag
+
+                        val imageUri = primaryTag?.let { tag ->
+                            baseUrl.toUri().buildUpon()
+                                .appendEncodedPath("Items/$id/Images/Primary")
+                                .appendQueryParameter("tag", tag)
+                                .build()
                         }
-                }
 
-                if (movies.size < pageSize) break
-                startIndex += pageSize
-
-                Timber.d("Processed $startIndex movies for top ${type.name}...")
-
-                val qualifyingPeople = peopleFrequency.values.count { it.second >= minAppearances }
-                if (qualifyingPeople >= limit) {
-                    Timber.d("Early stop: Found $qualifyingPeople qualifying ${type.name} (target: $limit)")
-                    break
+                        val afinityPerson = AfinityPerson(
+                            id = id,
+                            name = key,
+                            type = type,
+                            role = personDto.role ?: type.name,
+                            image = AfinityPersonImage(imageUri, null)
+                        )
+                        peopleFrequency[key] = afinityPerson to 1
+                    } else {
+                        val current = peopleFrequency[key]!!
+                        peopleFrequency[key] = current.first to (current.second + 1)
+                    }
                 }
             }
 
-            val topPeople = peopleFrequency.values
-                .filter { it.second >= minAppearances }
+            val mappedPeople = peopleFrequency.values
+                .filter { it.second >= 2 }
                 .sortedByDescending { it.second }
                 .take(limit)
                 .map { PersonWithCount(it.first, it.second) }
 
-            Timber.d("Found ${topPeople.size} top ${type.name} (min $minAppearances appearances)")
+            Timber.d("Scan complete: Found ${mappedPeople.size} ${type.name}s")
 
-            if (topPeople.isNotEmpty()) {
-                val cachedData = topPeople.map { it.toCached() }
+            if (mappedPeople.isNotEmpty()) {
+                val cachedData = mappedPeople.map { it.toCached() }
                 val entity = TopPeopleCacheEntity(
                     personType = type.name,
                     peopleData = json.encodeToString(cachedData),
-                    cachedTimestamp = currentTime
+                    cachedTimestamp = System.currentTimeMillis()
                 )
                 topPeopleDao.insertTopPeople(entity)
             }
 
-            return topPeople
+            return mappedPeople
         } catch (e: Exception) {
             Timber.e(e, "Failed to get top ${type.name}")
             return emptyList()
@@ -937,7 +820,6 @@ class AppDataRepository @Inject constructor(
                 )
                 val cachedItems = json.decodeFromString<List<String>>(cached.itemsData)
                     .mapNotNull { typeConverters.toAfinityMovie(it) }
-                Timber.d("Loaded ${sectionType.name} section for ${person.name} from cache (${cachedItems.size} items)")
                 return PersonSection(
                     person = cachedPersonData.person,
                     appearanceCount = cachedPersonData.appearanceCount,
@@ -949,7 +831,7 @@ class AppDataRepository @Inject constructor(
             val allPersonItems = jellyfinRepository.getPersonItems(
                 personId = person.id,
                 includeItemTypes = listOf("MOVIE", "SERIES"),
-                fields = listOf(org.jellyfin.sdk.model.api.ItemFields.PEOPLE)
+                fields = listOf(ItemFields.PEOPLE)
             )
 
             val filteredItems = filterItemsByPersonRole(
@@ -958,10 +840,7 @@ class AppDataRepository @Inject constructor(
                 personType = sectionType.toPersonKind()
             )
 
-            if (filteredItems.size < 5) {
-                Timber.d("Insufficient items for ${person.name} as ${sectionType.name}: ${filteredItems.size}")
-                return null
-            }
+            if (filteredItems.size < 5) return null
 
             val selectedItems = filteredItems
                 .filterIsInstance<AfinityMovie>()
@@ -985,7 +864,6 @@ class AppDataRepository @Inject constructor(
             )
             personSectionDao.insertSection(entity)
 
-            Timber.d("Created ${sectionType.name} section for ${person.name} (${selectedItems.size} items)")
             return section
         } catch (e: Exception) {
             Timber.e(e, "Failed to get person section for ${personWithCount.person.name}")
@@ -1002,10 +880,8 @@ class AppDataRepository @Inject constructor(
 
             val allRecentWatched =
                 if (cached != null && now - cached.first < RECENT_WATCHED_CACHE_TTL) {
-                    Timber.d("Using cached recently watched movies")
                     cached.second
                 } else {
-                    Timber.d("Fetching recently watched movies from API")
                     val movies = jellyfinRepository.getMovies(
                         sortBy = SortBy.DATE_PLAYED,
                         sortDescending = true,
@@ -1018,13 +894,9 @@ class AppDataRepository @Inject constructor(
 
             val recentWatched = allRecentWatched.filterNot { it.id in excludedMovies }
 
-            if (recentWatched.isEmpty()) {
-                Timber.d("No recent watched movies found (excluded=${excludedMovies.size})")
-                return null
-            }
+            if (recentWatched.isEmpty()) return null
 
             val random = Random.nextFloat()
-
             return if (random < 0.7f && recentWatched.size >= 5) {
                 recentWatched.take(5).random()
             } else if (recentWatched.size > 5) {
@@ -1051,14 +923,11 @@ class AppDataRepository @Inject constructor(
             genreCacheDao.clearAllCache()
             topPeopleDao.clearAllCache()
             personSectionDao.clearAllCache()
-
-            Timber.d("Database caches cleared")
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear database caches")
         }
 
         recentWatchedCache = null
-
         _latestMedia.value = emptyList()
         _heroCarouselItems.value = emptyList()
         _continueWatching.value = emptyList()
@@ -1079,5 +948,4 @@ class AppDataRepository @Inject constructor(
         _separateMovieLibrarySections.value = emptyList()
         _separateTvLibrarySections.value = emptyList()
     }
-
 }

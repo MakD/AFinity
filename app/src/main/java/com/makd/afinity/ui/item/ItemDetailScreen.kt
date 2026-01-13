@@ -117,6 +117,16 @@ fun ItemDetailScreen(
         modifier = modifier.fillMaxSize()
     ) {
         when {
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+        when {
             uiState.error != null -> {
                 Column(
                     modifier = Modifier

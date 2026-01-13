@@ -22,6 +22,7 @@ import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.ItemFilter
 import java.util.UUID
 
 interface JellyfinRepository {
@@ -99,7 +100,8 @@ interface JellyfinRepository {
         nameStartsWith: String? = null,
         fields: List<ItemFields>? = null,
         imageTypes: List<String> = emptyList(),
-        hasOverview: Boolean? = null
+        hasOverview: Boolean? = null,
+        filters: List<ItemFilter> = emptyList()
     ): BaseItemDtoQueryResult
 
     suspend fun getItem(

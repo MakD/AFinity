@@ -65,6 +65,8 @@ class HomeViewModel @Inject constructor(
 
     private val loadedRecommendationSections = mutableListOf<HomeSection>()
 
+    private var cachedShuffledGenres: List<HomeSection.Genre> = emptyList()
+
     private val recommendationMutex = Mutex()
 
     private val renderedPeopleNames = mutableSetOf<String>()
@@ -157,7 +159,7 @@ class HomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             appDataRepository.combinedGenres.collect { combinedGenres ->
-                combinedGenreSections(combinedGenres)
+                updateCombinedSections(genres = combinedGenres)
             }
         }
 
@@ -209,26 +211,38 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
-
-
-        viewModelScope.launch {
-            loadNewHomescreenSections()
-        }
     }
 
-    private fun combinedGenreSections(genreItems: List<GenreItem>) {
-        val allSections = mutableListOf<HomeSection>()
-
-        allSections.addAll(loadedRecommendationSections)
-
-        genreItems.forEach { genreItem ->
-            allSections.add(HomeSection.Genre(genreItem))
+    private fun updateCombinedSections(genres: List<GenreItem>) {
+        if (cachedShuffledGenres.isEmpty() && genres.isNotEmpty()) {
+            cachedShuffledGenres = genres.map { HomeSection.Genre(it) }.shuffled()
+        } else if (genres.isNotEmpty() && cachedShuffledGenres.size != genres.size) {
+            cachedShuffledGenres = genres.map { HomeSection.Genre(it) }.shuffled()
         }
 
-        val shuffledSections = allSections.shuffled()
-        _uiState.value = _uiState.value.copy(combinedSections = shuffledSections)
+        if (cachedShuffledGenres.isEmpty() && loadedRecommendationSections.isEmpty()) return
 
-        Timber.d("Combined ${loadedRecommendationSections.size} recommendation sections + ${genreItems.size} genres = ${shuffledSections.size} total sections (shuffled)")
+        val finalLayout = mutableListOf<HomeSection>()
+        val genreIterator = cachedShuffledGenres.iterator()
+        val recIterator = loadedRecommendationSections.iterator()
+
+        var counter = 0
+
+        while (genreIterator.hasNext()) {
+            finalLayout.add(genreIterator.next())
+            counter++
+
+            if (counter % 2 == 0 && recIterator.hasNext()) {
+                finalLayout.add(recIterator.next())
+            }
+        }
+
+        while (recIterator.hasNext()) {
+            finalLayout.add(recIterator.next())
+        }
+
+        _uiState.value = _uiState.value.copy(combinedSections = finalLayout)
+        Timber.d("Updated home layout with ${finalLayout.size} sections (Stable Interleave)")
     }
 
     private suspend fun loadNewHomescreenSections() {
@@ -262,9 +276,7 @@ class HomeViewModel @Inject constructor(
 
                     withContext(Dispatchers.Main) {
                         appDataRepository.combinedGenres.value.let { genres ->
-                            if (genres.isNotEmpty()) {
-                                combinedGenreSections(genres)
-                            }
+                            updateCombinedSections(genres)
                         }
                     }
                 } catch (e: Exception) {
@@ -722,18 +734,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onHeroItemClick(item: AfinityItem) {
-        Timber.d("Hero item clicked: ${item.name}")
-    }
-
-    fun onMoreInformationClick(item: AfinityItem) {
-        Timber.d("More information clicked: ${item.name}")
-    }
-
-    fun onWatchNowClick(item: AfinityItem) {
-        Timber.d("Watch now clicked: ${item.name}")
-    }
-
     fun onPlayTrailerClick(context: Context, item: AfinityItem) {
         Timber.d("Play trailer clicked: ${item.name}")
         val trailerUrl = when (item) {
@@ -743,22 +743,6 @@ class HomeViewModel @Inject constructor(
             else -> null
         }
         IntentUtils.openYouTubeUrl(context, trailerUrl)
-    }
-
-    fun onContinueWatchingItemClick(item: AfinityItem) {
-        Timber.d("Continue watching item clicked: ${item.name}")
-    }
-
-    fun onLatestMovieItemClick(movie: AfinityMovie) {
-        Timber.d("Latest movie item clicked: ${movie.name}")
-    }
-
-    fun onLatestTvSeriesItemClick(series: AfinityShow) {
-        Timber.d("Latest TV series item clicked: ${series.name}")
-    }
-
-    fun onHighestRatedItemClick(item: AfinityItem) {
-        Timber.d("Highest rated item clicked: ${item.name}")
     }
 
     private fun loadCombinedGenres() {
@@ -772,6 +756,8 @@ class HomeViewModel @Inject constructor(
     }
 
     fun loadMoviesForGenre(genre: String) {
+        if (_uiState.value.genreLoadingStates[genre] == true) return
+
         viewModelScope.launch {
             try {
                 appDataRepository.loadMoviesForGenre(genre)
@@ -782,6 +768,8 @@ class HomeViewModel @Inject constructor(
     }
 
     fun loadShowsForGenre(genre: String) {
+        if (_uiState.value.genreLoadingStates[genre] == true) return
+
         viewModelScope.launch {
             try {
                 appDataRepository.loadShowsForGenre(genre)

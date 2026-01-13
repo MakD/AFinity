@@ -30,12 +30,18 @@ import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.library.FilterType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.api.client.exception.ApiClientException
+import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.ItemFilter
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -317,7 +323,8 @@ class JellyfinRepositoryImpl @Inject constructor(
         nameStartsWith: String?,
         fields: List<ItemFields>?,
         imageTypes: List<String>,
-        hasOverview: Boolean?
+        hasOverview: Boolean?,
+        filters: List<ItemFilter>
     ): BaseItemDtoQueryResult {
         return try {
             mediaRepository.getItems(
