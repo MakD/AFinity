@@ -15,6 +15,8 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,21 +58,27 @@ class WatchlistViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-                val movies = watchlistRepository.getWatchlistMovies()
-                val shows = watchlistRepository.getWatchlistShows()
-                val seasons = watchlistRepository.getWatchlistSeasons()
-                val episodes = watchlistRepository.getWatchlistEpisodes()
+                coroutineScope {
+                    val moviesDeferred = async { watchlistRepository.getWatchlistMovies() }
+                    val showsDeferred = async { watchlistRepository.getWatchlistShows() }
+                    val seasonsDeferred = async { watchlistRepository.getWatchlistSeasons() }
+                    val episodesDeferred = async { watchlistRepository.getWatchlistEpisodes() }
 
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    movies = movies.sortedBy { it.name },
-                    shows = shows.sortedBy { it.name },
-                    seasons = seasons.sortedBy { it.name },
-                    episodes = episodes.sortedBy { it.name },
-                    error = null,
-                )
 
-                Timber.d("Loaded watchlist: ${movies.size} movies, ${shows.size} shows, ${seasons.size} seasons, ${episodes.size} episodes")
+                    val movies = moviesDeferred.await()
+                    val shows = showsDeferred.await()
+                    val seasons = seasonsDeferred.await()
+                    val episodes = episodesDeferred.await()
+
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        movies = movies.sortedBy { it.name },
+                        shows = shows.sortedBy { it.name },
+                        seasons = seasons.sortedBy { it.name },
+                        episodes = episodes.sortedBy { it.name },
+                        error = null,
+                    )
+                }
 
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load watchlist")

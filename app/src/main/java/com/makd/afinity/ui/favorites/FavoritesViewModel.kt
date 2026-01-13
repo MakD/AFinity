@@ -17,6 +17,8 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,24 +61,30 @@ class FavoritesViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-                val movies = jellyfinRepository.getFavoriteMovies()
-                val shows = jellyfinRepository.getFavoriteShows()
-                val seasons = jellyfinRepository.getFavoriteSeasons()
-                val episodes = jellyfinRepository.getFavoriteEpisodes()
-                val boxSets = jellyfinRepository.getFavoriteBoxSets()
+                coroutineScope {
+                    val moviesDeferred = async { jellyfinRepository.getFavoriteMovies() }
+                    val showsDeferred = async { jellyfinRepository.getFavoriteShows() }
+                    val seasonsDeferred = async { jellyfinRepository.getFavoriteSeasons() }
+                    val episodesDeferred = async { jellyfinRepository.getFavoriteEpisodes() }
+                    val boxSetsDeferred = async { jellyfinRepository.getFavoriteBoxSets() }
 
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    movies = movies.sortedBy { it.name },
-                    shows = shows.sortedBy { it.name },
-                    seasons = seasons.sortedBy { it.name },
-                    episodes = episodes.sortedBy { it.name },
-                    boxSets = boxSets.sortedBy { it.name },
-                    people = emptyList(),
-                    error = null
-                )
+                    val movies = moviesDeferred.await()
+                    val shows = showsDeferred.await()
+                    val seasons = seasonsDeferred.await()
+                    val episodes = episodesDeferred.await()
+                    val boxSets = boxSetsDeferred.await()
 
-                Timber.d("Loaded favorites: ${movies.size} movies, ${shows.size} shows, ${episodes.size} episodes, ${boxSets.size} box sets")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        movies = movies.sortedBy { it.name },
+                        shows = shows.sortedBy { it.name },
+                        seasons = seasons.sortedBy { it.name },
+                        episodes = episodes.sortedBy { it.name },
+                        boxSets = boxSets.sortedBy { it.name },
+                        people = emptyList(),
+                        error = null
+                    )
+                }
 
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load favorites")
@@ -90,10 +98,6 @@ class FavoritesViewModel @Inject constructor(
 
     fun onItemClick(item: AfinityItem) {
         Timber.d("Favorite item clicked: ${item.name} (${item.id})")
-    }
-
-    fun onPersonClick(personId: String) {
-        Timber.d("Favorite person clicked: $personId")
     }
 
     fun selectEpisode(episode: AfinityEpisode) {
