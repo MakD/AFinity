@@ -16,6 +16,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import timber.log.Timber
 import kotlin.math.abs
 
 private enum class GestureType {
@@ -80,22 +81,33 @@ fun GestureHandler(
                         ) {
                             return@detectDragGestures
                         }
+
+                        isDragging = true
+                        totalHorizontalDelta = 0f
+                        totalVerticalDelta = 0f
+                        gestureType = null
+                        isSeeking = false
+                        Timber.d("Drag started")
                     },
                     onDragEnd = {
+                        isDragging = false
                         if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(0f, false)
-                        if (gestureType == GestureType.BRIGHTNESS) currentOnBrightnessGesture(
-                            0f,
-                            false
-                        )
+                        if (gestureType == GestureType.BRIGHTNESS) currentOnBrightnessGesture(0f, false)
                         if (isSeeking) currentOnSeekPreview(false)
+
+                        gestureType = null
+                        isSeeking = false
+                        Timber.d("Drag ended")
                     },
                     onDragCancel = {
+                        isDragging = false
                         if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(0f, false)
-                        if (gestureType == GestureType.BRIGHTNESS) currentOnBrightnessGesture(
-                            0f,
-                            false
-                        )
+                        if (gestureType == GestureType.BRIGHTNESS) currentOnBrightnessGesture(0f, false)
                         if (isSeeking) currentOnSeekPreview(false)
+
+                        gestureType = null
+                        isSeeking = false
+                        Timber.d("Drag cancelled")
                     },
                     onDrag = { change, dragAmount ->
                         if (!isDragging) return@detectDragGestures
@@ -115,17 +127,11 @@ fun GestureHandler(
                                             else -> null
                                         }
                                     }
-
                                     else -> GestureType.SEEK
                                 }
-                                if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(
-                                    0f,
-                                    true
-                                )
-                                if (gestureType == GestureType.BRIGHTNESS) currentOnBrightnessGesture(
-                                    0f,
-                                    true
-                                )
+
+                                if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(0f, true)
+                                if (gestureType == GestureType.BRIGHTNESS) currentOnBrightnessGesture(0f, true)
                             }
                         }
 
@@ -150,14 +156,14 @@ fun GestureHandler(
 
                                 if (abs(totalHorizontalDelta) > seekActivationThreshold) {
                                     if (!isSeeking) {
+                                        isSeeking = true
                                         currentOnSeekPreview(true)
                                     }
                                     val normalizedDelta = totalHorizontalDelta / screenWidth
                                     currentOnSeekGesture(normalizedDelta)
                                 }
                             }
-
-                            null -> {}
+                            null -> { }
                         }
                     }
                 )
