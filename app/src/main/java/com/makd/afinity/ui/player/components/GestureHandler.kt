@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -42,8 +43,8 @@ fun GestureHandler(
     val exclusionHorizontal = with(density) { 32.dp.toPx() }
     val exclusionVertical = with(density) { 48.dp.toPx() }
 
-    val leftZoneWidth = screenWidth * 0.3f
-    val rightZoneStart = screenWidth * 0.7f
+    val leftZoneWidth = screenWidth * 0.35f
+    val rightZoneStart = screenWidth * 0.65f
 
     val currentOnSingleTap by rememberUpdatedState(onSingleTap)
     val currentOnDoubleTap by rememberUpdatedState(onDoubleTap)
@@ -54,9 +55,11 @@ fun GestureHandler(
 
     var isDragging by remember { mutableStateOf(false) }
     var gestureType by remember { mutableStateOf<GestureType?>(null) }
+
+    var dragStartOffset by remember { mutableStateOf(Offset.Zero) }
+
     var totalHorizontalDelta by remember { mutableFloatStateOf(0f) }
     var totalVerticalDelta by remember { mutableFloatStateOf(0f) }
-
     var isSeeking by remember { mutableStateOf(false) }
 
     Box(
@@ -83,11 +86,12 @@ fun GestureHandler(
                         }
 
                         isDragging = true
+                        dragStartOffset = offset
                         totalHorizontalDelta = 0f
                         totalVerticalDelta = 0f
                         gestureType = null
                         isSeeking = false
-                        Timber.d("Drag started")
+                        Timber.d("Drag started at $offset")
                     },
                     onDragEnd = {
                         isDragging = false
@@ -116,14 +120,14 @@ fun GestureHandler(
                         val horizontalDrag = dragAmount.x
 
                         if (gestureType == null) {
-                            val minimumDragDistance = 10f
+                            val minimumDragDistance = 20f
+
                             if (abs(verticalDrag) > minimumDragDistance || abs(horizontalDrag) > minimumDragDistance) {
                                 gestureType = when {
                                     abs(verticalDrag) > abs(horizontalDrag) -> {
-                                        val startX = change.position.x - dragAmount.x
                                         when {
-                                            startX < leftZoneWidth -> GestureType.BRIGHTNESS
-                                            startX > rightZoneStart -> GestureType.VOLUME
+                                            dragStartOffset.x < leftZoneWidth -> GestureType.BRIGHTNESS
+                                            dragStartOffset.x > rightZoneStart -> GestureType.VOLUME
                                             else -> null
                                         }
                                     }
