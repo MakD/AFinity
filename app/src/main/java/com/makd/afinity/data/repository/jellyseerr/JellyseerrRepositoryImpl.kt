@@ -22,9 +22,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -46,6 +52,9 @@ class JellyseerrRepositoryImpl @Inject constructor(
 
     private val _isAuthenticated = MutableStateFlow(false)
     override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
+    private val _requestEvents = MutableSharedFlow<com.makd.afinity.data.repository.RequestEvent>()
+    override val requestEvents: SharedFlow<com.makd.afinity.data.repository.RequestEvent> = _requestEvents.asSharedFlow()
 
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
@@ -220,10 +229,23 @@ class JellyseerrRepositoryImpl @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val request = response.body()!!
 
-                    cacheRequest(request)
+                    val latestRequest = try {
+                        val fetchResponse = apiService.get().getRequestById(request.id)
+                        if (fetchResponse.isSuccessful && fetchResponse.body() != null) {
+                            fetchResponse.body()!!
+                        } else {
+                            request
+                        }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to fetch latest request status, using original")
+                        request
+                    }
 
-                    Timber.d("Request created successfully: ${request.id}")
-                    Result.success(request)
+                    cacheRequest(latestRequest)
+                    _requestEvents.emit(com.makd.afinity.data.repository.RequestEvent(latestRequest))
+
+                    Timber.d("Request created successfully: ${latestRequest.id} with status ${latestRequest.status}")
+                    Result.success(latestRequest)
                 } else {
                     Timber.e("Request body: tmdbId=${requestBody.tmdbId}, mediaType=${requestBody.mediaType}, seasons=${requestBody.seasons}, is4k=${requestBody.is4k}")
 
@@ -324,8 +346,7 @@ class JellyseerrRepositoryImpl @Inject constructor(
                     }
                 }
 
-                val cachedRequests = jellyseerrDao.getAllRequests()
-                var cachedList: List<JellyseerrRequestEntity> = emptyList()
+                val cachedList = jellyseerrDao.getAllRequests().first()
 
                 if (cachedList.isNotEmpty()) {
                     val requests = cachedList.map { it.toJellyseerrRequest() }
@@ -338,6 +359,12 @@ class JellyseerrRepositoryImpl @Inject constructor(
                 Timber.e(e, "Failed to get Jellyseerr requests")
                 Result.failure(e)
             }
+        }
+    }
+
+    override fun observeRequests(): Flow<List<JellyseerrRequest>> {
+        return jellyseerrDao.getAllRequests().map { entities ->
+            entities.map { it.toJellyseerrRequest() }
         }
     }
 
@@ -719,8 +746,8 @@ class JellyseerrRepositoryImpl @Inject constructor(
             mediaType = media.mediaType,
             tmdbId = media.tmdbId,
             tvdbId = media.tvdbId,
-            title = "Unknown",
-            posterPath = null,
+            title = media.title ?: media.name ?: "Unknown",
+            posterPath = media.posterPath,
             requestedAt = try {
                 dateFormat.parse(createdAt)?.time ?: System.currentTimeMillis()
             } catch (e: Exception) {
@@ -732,7 +759,13 @@ class JellyseerrRepositoryImpl @Inject constructor(
                 System.currentTimeMillis()
             },
             requestedByName = requestedBy.displayName,
-            requestedByAvatar = requestedBy.avatar
+            requestedByAvatar = requestedBy.avatar,
+            mediaTitle = media.title,
+            mediaName = media.name,
+            mediaBackdropPath = media.backdropPath,
+            mediaReleaseDate = media.releaseDate,
+            mediaFirstAirDate = media.firstAirDate,
+            mediaStatus = media.status
         )
     }
 
@@ -747,8 +780,14 @@ class JellyseerrRepositoryImpl @Inject constructor(
                 mediaType = mediaType,
                 tmdbId = tmdbId,
                 tvdbId = tvdbId,
-                status = status,
-                mediaAddedAt = null
+                status = mediaStatus,
+                mediaAddedAt = null,
+                title = mediaTitle,
+                name = mediaName,
+                posterPath = posterPath,
+                backdropPath = mediaBackdropPath,
+                releaseDate = mediaReleaseDate,
+                firstAirDate = mediaFirstAirDate
             ),
             requestedBy = com.makd.afinity.data.models.jellyseerr.RequestUser(
                 id = 0,

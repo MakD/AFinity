@@ -46,6 +46,8 @@ class RequestsViewModel @Inject constructor(
 
     init {
         loadCurrentUser()
+        observeRequests()
+        observeRequestEvents()
         loadRequests()
         loadDiscoverContent()
     }
@@ -64,20 +66,58 @@ class RequestsViewModel @Inject constructor(
         }
     }
 
+    private fun observeRequests() {
+        viewModelScope.launch {
+            jellyseerrRepository.observeRequests().collect { requests ->
+                _uiState.update {
+                    it.copy(
+                        requests = requests,
+                        isLoading = false
+                    )
+                }
+                Timber.d("Database updated with ${requests.size} requests")
+            }
+        }
+    }
+
+    private fun observeRequestEvents() {
+        viewModelScope.launch {
+            jellyseerrRepository.requestEvents.collect { event ->
+                val updatedRequest = event.request
+                val updatedMediaInfo = updatedRequest.media.copy(
+                    requests = listOfNotNull(updatedRequest)
+                )
+
+                val updateItemStatus: (SearchResultItem) -> SearchResultItem = { item ->
+                    if (item.id == updatedRequest.media.tmdbId) {
+                        item.copy(mediaInfo = updatedMediaInfo)
+                    } else {
+                        item
+                    }
+                }
+
+                _uiState.update {
+                    it.copy(
+                        trendingItems = it.trendingItems.map(updateItemStatus),
+                        popularMovies = it.popularMovies.map(updateItemStatus),
+                        popularTv = it.popularTv.map(updateItemStatus),
+                        upcomingMovies = it.upcomingMovies.map(updateItemStatus),
+                        upcomingTv = it.upcomingTv.map(updateItemStatus)
+                    )
+                }
+                Timber.d("Updated discover items for tmdbId ${updatedRequest.media.tmdbId} with new request status")
+            }
+        }
+    }
+
     fun loadRequests() {
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
                 jellyseerrRepository.getRequests().fold(
-                    onSuccess = { requests ->
-                        _uiState.update {
-                            it.copy(
-                                requests = requests,
-                                isLoading = false
-                            )
-                        }
-                        Timber.d("Loaded ${requests.size} requests")
+                    onSuccess = {
+                        Timber.d("Requests refreshed from network and cached to database")
                     },
                     onFailure = { error ->
                         _uiState.update {

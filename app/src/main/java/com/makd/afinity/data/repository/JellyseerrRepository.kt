@@ -6,7 +6,13 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+
+data class RequestEvent(
+    val request: JellyseerrRequest
+)
 
 interface JellyseerrRepository {
 
@@ -19,6 +25,7 @@ interface JellyseerrRepository {
     suspend fun getCurrentUser(): Result<JellyseerrUser>
     suspend fun isLoggedIn(): Boolean
     val isAuthenticated: StateFlow<Boolean>
+    val requestEvents: SharedFlow<RequestEvent>
 
     suspend fun setServerUrl(url: String)
     suspend fun getServerUrl(): String?
@@ -35,6 +42,8 @@ interface JellyseerrRepository {
         skip: Int = 0,
         filter: String? = null
     ): Result<List<JellyseerrRequest>>
+
+    fun observeRequests(): Flow<List<JellyseerrRequest>>
 
     suspend fun getRequestById(requestId: Int): Result<JellyseerrRequest>
 

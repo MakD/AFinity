@@ -17,5 +17,11 @@ data class JellyseerrRequestEntity(
     val updatedAt: Long,
     val requestedByName: String?,
     val requestedByAvatar: String?,
-    val cachedAt: Long = System.currentTimeMillis()
+    val cachedAt: Long = System.currentTimeMillis(),
+    val mediaTitle: String? = null,
+    val mediaName: String? = null,
+    val mediaBackdropPath: String? = null,
+    val mediaReleaseDate: String? = null,
+    val mediaFirstAirDate: String? = null,
+    val mediaStatus: Int? = null
 )

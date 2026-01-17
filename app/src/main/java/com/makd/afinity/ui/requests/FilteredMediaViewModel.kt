@@ -24,6 +24,27 @@ class FilteredMediaViewModel @Inject constructor(
     private var currentFilterParams: FilterParams? = null
     private var currentPage = 1
 
+    init {
+        viewModelScope.launch {
+            jellyseerrRepository.requestEvents.collect { event ->
+                val updatedRequest = event.request
+
+                _uiState.update { state ->
+                    state.copy(
+                        items = state.items.map { item ->
+                            if (item.id == updatedRequest.media.tmdbId) {
+                                item.copy(mediaInfo = updatedRequest.media)
+                            } else {
+                                item
+                            }
+                        }
+                    )
+                }
+                Timber.d("Updated media item ${updatedRequest.media.tmdbId} with new request status")
+            }
+        }
+    }
+
     fun loadContent(filterParams: FilterParams) {
         if (currentFilterParams == filterParams && _uiState.value.items.isNotEmpty()) {
             return

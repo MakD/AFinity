@@ -186,6 +186,17 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_21_22 = object : Migration(21, 22) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN mediaTitle TEXT")
+            database.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN mediaName TEXT")
+            database.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN mediaBackdropPath TEXT")
+            database.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN mediaReleaseDate TEXT")
+            database.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN mediaFirstAirDate TEXT")
+            database.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN mediaStatus INTEGER")
+        }
+    }
+
     val ALL_MIGRATIONS = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -202,6 +213,7 @@ object DatabaseMigrations {
         MIGRATION_15_16,
         MIGRATION_16_17,
         MIGRATION_17_18,
-        MIGRATION_18_19
+        MIGRATION_18_19,
+        MIGRATION_21_22
     )
 }
