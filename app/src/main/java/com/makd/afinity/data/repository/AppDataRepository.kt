@@ -336,12 +336,10 @@ class AppDataRepository @Inject constructor(
     }
 
     private suspend fun loadUserProfileImage(): String? {
-        return try {
+        val url = try {
             jellyfinRepository.getUserProfileImageUrl()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get user profile image URL")
-            null
-        }
+        } catch (e: Exception) { null }
+        return url
     }
 
     fun saveUserProfileImageUrl(url: String?) {

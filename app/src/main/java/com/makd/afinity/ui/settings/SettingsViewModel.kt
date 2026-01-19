@@ -81,8 +81,6 @@ class SettingsViewModel @Inject constructor(
             ) { user, profileImageUrl, server ->
                 Triple(user, profileImageUrl, server)
             }.collect { (user, profileImageUrl, server) ->
-                Timber.d("SettingsViewModel - User: ${user?.name ?: "NULL"} (${user?.id}), ProfileImageUrl: ${profileImageUrl?.take(50)}")
-                Timber.d("SettingsViewModel - Server name: ${server?.name ?: "NULL"}, Server ID: ${server?.id ?: "NULL"}")
                 _uiState.value = _uiState.value.copy(
                     currentUser = user,
                     userProfileImageUrl = profileImageUrl,

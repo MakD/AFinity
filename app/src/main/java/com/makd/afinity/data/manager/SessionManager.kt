@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
+import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -101,6 +102,11 @@ class SessionManager @Inject constructor(
                 )
             }
 
+            if (user != null) {
+                (authRepository as? JellyfinAuthRepository)?.setSessionActive(user)
+                Timber.d("Synced AuthRepository with user: ${user.name}")
+            }
+
             val session = Session(
                 serverId = serverId,
                 userId = userId,
@@ -137,7 +143,7 @@ class SessionManager @Inject constructor(
                 IllegalStateException("No authentication token found")
             )
 
-        return startSession(server.address, serverId, lastUserId, token)
+        return startSession(server.address, serverId, lastUserId, token, caller = "switchServer")
     }
 
     suspend fun switchUser(serverId: String, userId: UUID): Result<Unit> {
@@ -150,7 +156,7 @@ class SessionManager @Inject constructor(
                 IllegalStateException("No token found for user $userId on server $serverId")
             )
 
-        return startSession(current.serverUrl, serverId, userId, token)
+        return startSession(current.serverUrl, serverId, userId, token, caller = "switchUser")
     }
 
     private suspend fun restoreLastSession() {
@@ -218,8 +224,7 @@ class SessionManager @Inject constructor(
 
         _currentSession.value = null
         _connectionState.value = ConnectionState.Disconnected
-
-        authRepository.logout()
+        authRepository.clearAllAuthData()
 
         Timber.d("Logged out successfully (token kept for re-login)")
     }

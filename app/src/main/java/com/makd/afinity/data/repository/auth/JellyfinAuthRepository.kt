@@ -385,7 +385,6 @@ class JellyfinAuthRepository @Inject constructor(
     }
 
     fun setSessionActive(user: User) {
-        Timber.d("Setting session active for user: ${user.name}")
         _currentUser.value = user
         _isAuthenticated.value = true
     }

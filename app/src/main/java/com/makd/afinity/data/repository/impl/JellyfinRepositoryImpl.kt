@@ -173,7 +173,7 @@ class JellyfinRepositoryImpl @Inject constructor(
 
     override suspend fun getUserProfileImageUrl(): String? {
         return try {
-            val currentUser = getCurrentUser()
+            val currentUser = authRepository.currentUser.value
             val serverUrl = getBaseUrl()
 
             currentUser?.primaryImageTag?.let { imageTag ->

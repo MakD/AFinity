@@ -144,7 +144,6 @@ class SessionSwitcherViewModel @Inject constructor(
                 }
 
                 val user = databaseRepository.getUser(userId)
-
                 if (user != null) {
                     (authRepository as? JellyfinAuthRepository)?.setSessionActive(user)
                 }
@@ -158,14 +157,8 @@ class SessionSwitcherViewModel @Inject constructor(
                 )
 
                 result.onSuccess {
-                    if (user != null) {
-                        val profileImageUrl = user.primaryImageTag?.let { tag ->
-                            "${server.address}/Users/${userId}/Images/Primary?tag=$tag"
-                        }
-                        appDataRepository.saveUserProfileImageUrl(profileImageUrl)
-                    }
-
                     Timber.d("Successfully switched to session: $serverId / $userId")
+                    loadSavedSessions()
                     _state.value = _state.value.copy(
                         isSwitching = false,
                         switchSuccess = true
