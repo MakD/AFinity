@@ -344,6 +344,10 @@ class AppDataRepository @Inject constructor(
         }
     }
 
+    fun saveUserProfileImageUrl(url: String?) {
+        _userProfileImageUrl.value = url
+    }
+
     private suspend fun loadHomeSpecificData(
         libraries: List<AfinityCollection>,
         existingHighestRated: List<AfinityItem>? = null

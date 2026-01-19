@@ -309,6 +309,15 @@ class LoginViewModel @Inject constructor(
                     )
 
                     if (result.isSuccess) {
+                        securePreferencesRepository.saveAuthenticationData(
+                            accessToken = token,
+                            userId = user.id,
+                            serverId = user.serverId,
+                            serverUrl = serverUrl,
+                            username = user.name
+                        )
+                        Timber.d("Updated active session persistence for: ${user.name}")
+
                         (authRepository as? JellyfinAuthRepository)?.setSessionActive(user)
 
                         _uiState.value = _uiState.value.copy(

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.manager.Session
 import com.makd.afinity.data.models.server.Server
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
@@ -44,7 +45,8 @@ class SessionSwitcherViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val appDataRepository: AppDataRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SessionSwitcherState())
@@ -87,7 +89,9 @@ class SessionSwitcherViewModel @Inject constructor(
                             serverId = server.id,
                             userId = token.userId,
                             username = token.username,
-                            userAvatar = user?.primaryImageTag,
+                            userAvatar = user?.primaryImageTag?.let { tag ->
+                                "${server.address}/Users/${user.id}/Images/Primary?tag=$tag"
+                            },
                             isCurrent = currentSession?.serverId == server.id &&
                                     currentSession.userId == token.userId
                         )
@@ -139,6 +143,12 @@ class SessionSwitcherViewModel @Inject constructor(
                     return@launch
                 }
 
+                val user = databaseRepository.getUser(userId)
+
+                if (user != null) {
+                    (authRepository as? JellyfinAuthRepository)?.setSessionActive(user)
+                }
+
                 val result = sessionManager.startSession(
                     serverUrl = server.address,
                     serverId = serverId,
@@ -148,9 +158,11 @@ class SessionSwitcherViewModel @Inject constructor(
                 )
 
                 result.onSuccess {
-                    val user = databaseRepository.getUser(userId)
                     if (user != null) {
-                        (authRepository as? JellyfinAuthRepository)?.setSessionActive(user)
+                        val profileImageUrl = user.primaryImageTag?.let { tag ->
+                            "${server.address}/Users/${userId}/Images/Primary?tag=$tag"
+                        }
+                        appDataRepository.saveUserProfileImageUrl(profileImageUrl)
                     }
 
                     Timber.d("Successfully switched to session: $serverId / $userId")

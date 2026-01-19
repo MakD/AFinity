@@ -74,20 +74,22 @@ class SessionManager @Inject constructor(
         try {
             Timber.d("=== SessionManager.startSession START ===")
             Timber.d("CALLER: $caller")
-            Timber.d("Server ID: $serverId")
-            Timber.d("User ID: $userId")
-            Timber.d("Server URL: $serverUrl")
-            Timber.d("Token (first 10 chars): ${accessToken.take(10)}...")
 
             val user = databaseRepository.getUser(userId)
             val server = databaseRepository.getServer(serverId)
 
-            val apiClient = getOrCreateApiClient(serverId, serverUrl)
-            Timber.d("SessionManager ApiClient BEFORE update - baseUrl: ${apiClient.baseUrl}, hasToken: ${!apiClient.accessToken.isNullOrBlank()}")
+            serverRepository.setBaseUrl(serverUrl)
 
+            val apiClient = getOrCreateApiClient(serverId, serverUrl)
             apiClient.update(baseUrl = serverUrl, accessToken = accessToken)
 
-            Timber.d("SessionManager ApiClient AFTER update - baseUrl: ${apiClient.baseUrl}, hasToken: ${!apiClient.accessToken.isNullOrBlank()}")
+            securePrefsRepository.saveAuthenticationData(
+                accessToken = accessToken,
+                userId = userId,
+                serverId = serverId,
+                serverUrl = serverUrl,
+                username = user?.name ?: "User"
+            )
 
             if (user != null) {
                 securePrefsRepository.saveServerUserToken(
