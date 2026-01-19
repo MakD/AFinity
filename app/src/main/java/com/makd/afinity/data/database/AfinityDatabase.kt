@@ -91,10 +91,10 @@ import com.makd.afinity.data.models.user.User
         JellyseerrRequestEntity::class,
         JellyseerrConfigEntity::class,
     ],
-    version = 22,
+    version = 23,
     exportSchema = false
 )
-@TypeConverters(com.makd.afinity.data.database.TypeConverters::class)
+@TypeConverters(AfinityTypeConverters::class)
 abstract class AfinityDatabase : RoomDatabase() {
 
     abstract fun serverDao(): ServerDao
@@ -133,7 +133,6 @@ abstract class AfinityDatabase : RoomDatabase() {
                     "afinity_database"
                 )
                     .addMigrations(*DatabaseMigrations.ALL_MIGRATIONS)
-                    .fallbackToDestructiveMigration() // Remove this in production
                     .build()
                 INSTANCE = instance
                 instance

@@ -1,10 +1,15 @@
 package com.makd.afinity.data.repository
 
+import androidx.core.net.toUri
 import com.makd.afinity.data.database.AfinityDatabase
+import com.makd.afinity.data.database.AfinityTypeConverters
 import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
 import com.makd.afinity.data.database.entities.GenreShowCacheEntity
 import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
 import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
+import com.makd.afinity.data.manager.SessionManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import com.makd.afinity.data.models.CachedPersonWithCount
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
@@ -18,8 +23,11 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPerson
+import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -37,15 +45,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.hours
-import androidx.core.net.toUri
-import com.makd.afinity.data.models.media.AfinityPerson
-import com.makd.afinity.data.models.media.AfinityPersonImage
 
 @Singleton
 class AppDataRepository @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val preferencesRepository: PreferencesRepository,
-    private val database: AfinityDatabase
+    private val database: AfinityDatabase,
+    private val sessionManager: SessionManager
 ) {
     private val GENRE_CACHE_TTL = 12.hours.inWholeMilliseconds
     private val PERSON_SECTION_CACHE_TTL = 48.hours.inWholeMilliseconds
@@ -56,7 +62,7 @@ class AppDataRepository @Inject constructor(
     private val studioCacheDao = database.studioCacheDao()
     private val topPeopleDao = database.topPeopleDao()
     private val personSectionDao = database.personSectionDao()
-    private val typeConverters = com.makd.afinity.data.database.TypeConverters()
+    private val afinityTypeConverters = AfinityTypeConverters()
     private val json = Json { ignoreUnknownKeys = true }
 
     private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
@@ -129,6 +135,32 @@ class AppDataRepository @Inject constructor(
     private val _loadingPhase = MutableStateFlow("")
     val loadingPhase: StateFlow<String> = _loadingPhase.asStateFlow()
 
+    private var currentSessionId: String? = null
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    init {
+        scope.launch {
+            sessionManager.currentSession.collect { session ->
+                val newSessionId = session?.let { "${it.serverId}_${it.userId}" }
+
+                if (currentSessionId != null && newSessionId != currentSessionId && newSessionId != null) {
+                    Timber.d("Session changed from $currentSessionId to $newSessionId - clearing and reloading data")
+                    clearAllData()
+
+                    kotlinx.coroutines.delay(300)
+
+                    try {
+                        loadInitialData()
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to reload data after session switch")
+                    }
+                }
+
+                currentSessionId = newSessionId
+            }
+        }
+    }
+
     fun skipInitialDataLoad() {
         Timber.d("Skipping initial data load for offline mode")
         _loadingProgress.value = 1f
@@ -189,7 +221,7 @@ class AppDataRepository @Inject constructor(
     }
 
     private fun startLiveDataCollectors() {
-        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
+        val scope = CoroutineScope(Dispatchers.IO)
 
         scope.launch {
             jellyfinRepository.getContinueWatchingFlow().collect { liveData ->
@@ -481,14 +513,14 @@ class AppDataRepository @Inject constructor(
     suspend fun loadMoviesForGenre(genre: String, limit: Int = 20) {
         if (_genreMovies.value.containsKey(genre)) return
 
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        kotlinx.coroutines.withContext(Dispatchers.IO) {
             try {
                 _genreLoadingStates.value += (genre to true)
 
                 val cachedMovieEntities = genreCacheDao.getCachedMoviesForGenre(genre)
                 if (cachedMovieEntities.isNotEmpty()) {
                     val cachedMovies = cachedMovieEntities.mapNotNull { entity ->
-                        typeConverters.toAfinityMovie(entity.movieData)
+                        afinityTypeConverters.toAfinityMovie(entity.movieData)
                     }
 
                     if (cachedMovies.isNotEmpty()) {
@@ -515,7 +547,7 @@ class AppDataRepository @Inject constructor(
                         GenreMovieCacheEntity(
                             genreName = genre,
                             movieId = movie.id.toString(),
-                            movieData = typeConverters.fromAfinityMovie(movie) ?: "",
+                            movieData = afinityTypeConverters.fromAfinityMovie(movie) ?: "",
                             position = index,
                             cachedTimestamp = timestamp
                         )
@@ -532,7 +564,7 @@ class AppDataRepository @Inject constructor(
                 try {
                     val fallbackEntities = genreCacheDao.getCachedMoviesForGenre(genre)
                     val fallbackMovies = fallbackEntities.mapNotNull { entity ->
-                        typeConverters.toAfinityMovie(entity.movieData)
+                        afinityTypeConverters.toAfinityMovie(entity.movieData)
                     }
                     if (fallbackMovies.isNotEmpty()) {
                         _genreMovies.value += (genre to fallbackMovies)
@@ -544,7 +576,7 @@ class AppDataRepository @Inject constructor(
     }
 
     suspend fun loadCombinedGenres() {
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        kotlinx.coroutines.withContext(Dispatchers.IO) {
             try {
                 coroutineScope {
                     val movieGenresTask = async { loadGenres() }
@@ -606,7 +638,7 @@ class AppDataRepository @Inject constructor(
             val cachedShowEntities = genreCacheDao.getCachedShowsForGenre(genre)
             if (cachedShowEntities.isNotEmpty()) {
                 val cachedShows = cachedShowEntities.mapNotNull { entity ->
-                    typeConverters.toAfinityShow(entity.showData)
+                    afinityTypeConverters.toAfinityShow(entity.showData)
                 }
 
                 if (cachedShows.isNotEmpty()) {
@@ -632,7 +664,7 @@ class AppDataRepository @Inject constructor(
                     GenreShowCacheEntity(
                         genreName = genre,
                         showId = show.id.toString(),
-                        showData = typeConverters.fromAfinityShow(show) ?: "",
+                        showData = afinityTypeConverters.fromAfinityShow(show) ?: "",
                         position = index,
                         cachedTimestamp = timestamp
                     )
@@ -653,7 +685,7 @@ class AppDataRepository @Inject constructor(
             val cachedStudios = studioCacheDao.getAllCachedStudios()
             if (cachedStudios.isNotEmpty()) {
                 val studios = cachedStudios.mapNotNull { entity ->
-                    typeConverters.toAfinityStudio(entity.studioData)
+                    afinityTypeConverters.toAfinityStudio(entity.studioData)
                 }
 
                 if (studios.isNotEmpty()) {
@@ -675,7 +707,7 @@ class AppDataRepository @Inject constructor(
                 val studioEntities = studios.mapIndexed { index: Int, studio: AfinityStudio ->
                     com.makd.afinity.data.database.entities.StudioCacheEntity(
                         studioId = studio.id.toString(),
-                        studioData = typeConverters.fromAfinityStudio(studio) ?: "",
+                        studioData = afinityTypeConverters.fromAfinityStudio(studio) ?: "",
                         position = index,
                         cachedTimestamp = timestamp
                     )
@@ -819,7 +851,7 @@ class AppDataRepository @Inject constructor(
                     json.decodeFromString<CachedPersonWithCount>(cached.personData)
                 )
                 val cachedItems = json.decodeFromString<List<String>>(cached.itemsData)
-                    .mapNotNull { typeConverters.toAfinityMovie(it) }
+                    .mapNotNull { afinityTypeConverters.toAfinityMovie(it) }
                 return PersonSection(
                     person = cachedPersonData.person,
                     appearanceCount = cachedPersonData.appearanceCount,
@@ -854,7 +886,7 @@ class AppDataRepository @Inject constructor(
                 sectionType = sectionType
             )
 
-            val movieJsonStrings = selectedItems.mapNotNull { typeConverters.fromAfinityMovie(it) }
+            val movieJsonStrings = selectedItems.mapNotNull { afinityTypeConverters.fromAfinityMovie(it) }
             val entity = PersonSectionCacheEntity(
                 cacheKey = cacheKey,
                 personData = json.encodeToString(personWithCount.toCached()),

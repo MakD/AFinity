@@ -64,7 +64,7 @@ class UserDataSyncWorker @AssistedInject constructor(
 
                     databaseRepository.markUserDataSynced(userId, userData.itemId)
                     successCount++
-                    Timber.i("✓ Successfully synced user data for item ${userData.itemId}")
+                    Timber.i("Successfully synced user data for item ${userData.itemId}")
 
                 } catch (e: Exception) {
                     failureCount++

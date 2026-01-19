@@ -91,7 +91,7 @@ class ImageDownloadWorker @AssistedInject constructor(
                         )
                         if (localUri != null) {
                             downloadedImages["primary"] = localUri
-                            Timber.i("✓ Primary image downloaded successfully")
+                            Timber.i("Primary image downloaded successfully")
                         }
                     }
                 } catch (e: Exception) {
@@ -113,7 +113,7 @@ class ImageDownloadWorker @AssistedInject constructor(
                         )
                         if (localUri != null) {
                             downloadedImages["backdrop"] = localUri
-                            Timber.i("✓ Backdrop image downloaded successfully")
+                            Timber.i("Backdrop image downloaded successfully")
                         }
                     }
                 } catch (e: Exception) {
@@ -135,7 +135,7 @@ class ImageDownloadWorker @AssistedInject constructor(
                         )
                         if (localUri != null) {
                             downloadedImages["logo"] = localUri
-                            Timber.i("✓ Logo image downloaded successfully")
+                            Timber.i("Logo image downloaded successfully")
                         }
                     }
                 } catch (e: Exception) {
@@ -157,7 +157,7 @@ class ImageDownloadWorker @AssistedInject constructor(
                         )
                         if (localUri != null) {
                             downloadedImages["thumb"] = localUri
-                            Timber.i("✓ Thumb image downloaded successfully")
+                            Timber.i("Thumb image downloaded successfully")
                         }
                     }
                 } catch (e: Exception) {
@@ -180,7 +180,7 @@ class ImageDownloadWorker @AssistedInject constructor(
                             )
                             if (localUri != null) {
                                 downloadedImages["series_logo"] = localUri
-                                Timber.i("✓ Series logo image downloaded successfully")
+                                Timber.i("Series logo image downloaded successfully")
                             }
                         }
                     } catch (e: Exception) {

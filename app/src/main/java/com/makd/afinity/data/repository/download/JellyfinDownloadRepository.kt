@@ -9,10 +9,14 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.toDownloadInfo
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
+import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -25,8 +29,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
@@ -38,7 +40,7 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinDownloadRepository @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val apiClient: ApiClient,
+    private val sessionManager: SessionManager,
     private val mediaRepository: MediaRepository,
     private val databaseRepository: DatabaseRepository,
     private val preferencesRepository: PreferencesRepository,
@@ -59,14 +61,8 @@ class JellyfinDownloadRepository @Inject constructor(
             if (!it.exists()) it.mkdirs()
         }
 
-    private suspend fun getCurrentUserId(): UUID? = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val response = apiClient.userApi.getCurrentUser()
-            response.content?.id
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get current user ID")
-            null
-        }
+    private suspend fun getCurrentUserId(): UUID? {
+        return sessionManager.currentSession.value?.userId
     }
 
     override suspend fun startDownload(itemId: UUID, sourceId: String): Result<UUID> = withContext(Dispatchers.IO) {
@@ -82,10 +78,10 @@ class JellyfinDownloadRepository @Inject constructor(
                 }
             }
 
-            val userId = getCurrentUserId()
+            getCurrentUserId()
                 ?: return@withContext Result.failure(Exception("User not authenticated"))
 
-            val baseUrl = apiClient.baseUrl ?: ""
+            val baseUrl = sessionManager.currentSession.value?.serverUrl ?: ""
             val baseItemDto = mediaRepository.getItem(
                 itemId = itemId,
                 fields = listOf(
@@ -113,8 +109,8 @@ class JellyfinDownloadRepository @Inject constructor(
                 itemId = itemId,
                 itemName = item.name,
                 itemType = when (item) {
-                    is com.makd.afinity.data.models.media.AfinityMovie -> "Movie"
-                    is com.makd.afinity.data.models.media.AfinityEpisode -> "Episode"
+                    is AfinityMovie -> "Movie"
+                    is AfinityEpisode -> "Episode"
                     else -> "Unknown"
                 },
                 sourceId = sourceId,
@@ -275,7 +271,7 @@ class JellyfinDownloadRepository @Inject constructor(
             }
 
             val sources = databaseRepository.getSources(download.itemId)
-            sources.filter { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }
+            sources.filter { it.type == AfinitySourceType.LOCAL }
                 .forEach { databaseRepository.deleteSource(it.id) }
 
             databaseRepository.deleteDownload(downloadId)

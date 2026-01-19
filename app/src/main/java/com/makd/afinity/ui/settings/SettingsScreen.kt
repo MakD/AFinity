@@ -39,6 +39,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -69,6 +70,7 @@ fun SettingsScreen(
     onDownloadClick: () -> Unit,
     onPlayerOptionsClick: () -> Unit,
     onAppearanceOptionsClick: () -> Unit,
+    onServerManagementClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -84,7 +86,9 @@ fun SettingsScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showJellyseerrLogoutDialog by remember { mutableStateOf(false) }
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
+    var showSessionSwitcherSheet by remember { mutableStateOf(false) }
     val jellyseerrSheetState = androidx.compose.material3.rememberModalBottomSheetState()
+    val sessionSwitcherSheetState = androidx.compose.material3.rememberModalBottomSheetState()
 
     if (showLogoutDialog) {
         LogoutConfirmationDialog(
@@ -114,6 +118,13 @@ fun SettingsScreen(
         JellyseerrBottomSheet(
             onDismiss = { showJellyseerrBottomSheet = false },
             sheetState = jellyseerrSheetState
+        )
+    }
+
+    if (showSessionSwitcherSheet) {
+        SessionSwitcherBottomSheet(
+            onDismiss = { showSessionSwitcherSheet = false },
+            sheetState = sessionSwitcherSheetState
         )
     }
 
@@ -176,12 +187,18 @@ fun SettingsScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
+                item(key = "profile_${uiState.currentUser?.id}_${uiState.serverName}") {
                     ProfileHeader(
                         userName = uiState.currentUser?.name ?: "Unknown User",
                         serverName = uiState.serverName,
                         serverUrl = uiState.serverUrl,
                         userProfileImageUrl = uiState.userProfileImageUrl
+                    )
+                }
+
+                item {
+                    AccountSection(
+                        onSwitchSessionClick = { showSessionSwitcherSheet = true }
                     )
                 }
 
@@ -222,6 +239,12 @@ fun SettingsScreen(
                 }
 
                 item {
+                    ServerManagementSection(
+                        onServerManagementClick = onServerManagementClick
+                    )
+                }
+
+                item {
                     AboutSection(
                         appVersion = AppConstants.VERSION_NAME,
                         onLicensesClick = onLicensesClick
@@ -244,6 +267,8 @@ private fun ProfileHeader(
     userProfileImageUrl: String?,
     modifier: Modifier = Modifier
 ) {
+    Timber.d("ProfileHeader recomposing: userName=$userName, serverName=$serverName, serverUrl=$serverUrl, profileImageUrl=${userProfileImageUrl?.take(50)}")
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -458,6 +483,48 @@ private fun PlaybackSection(
             title = "Player Options",
             subtitle = "Configure playback and player settings",
             onClick = onPlayerOptionsClick
+        )
+    }
+}
+
+@Composable
+private fun ServerManagementSection(
+    onServerManagementClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_server),
+            title = "Manage Servers",
+            subtitle = "Add, edit, and manage multiple Jellyfin servers",
+            onClick = onServerManagementClick
+        )
+    }
+}
+
+@Composable
+private fun AccountSection(
+    onSwitchSessionClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_user),
+            title = "Switch Session",
+            subtitle = "Switch between servers and users",
+            onClick = onSwitchSessionClick
         )
     }
 }

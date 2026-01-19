@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -14,7 +15,6 @@ import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
-import com.makd.afinity.data.models.server.ServerWithAddressAndUser
 import com.makd.afinity.data.models.server.ServerWithAddresses
 import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
@@ -36,9 +36,7 @@ interface DatabaseRepository {
     suspend fun deleteServerAddress(addressId: UUID)
     suspend fun getServerAddresses(serverId: String): List<ServerAddress>
     suspend fun getServerWithAddresses(serverId: String): ServerWithAddresses?
-    suspend fun getServerWithAddressAndUser(serverId: String): ServerWithAddressAndUser?
     suspend fun getServerWithAddressesAndUsers(serverId: String): ServerWithAddressesAndUsers?
-    suspend fun getCurrentServerWithAddressAndUser(): ServerWithAddressAndUser?
 
     suspend fun insertUser(user: User)
     suspend fun updateUser(user: User)
@@ -133,5 +131,5 @@ interface DatabaseRepository {
     fun getAllDownloadsFlow(): Flow<List<DownloadDto>>
     fun getDownloadsByStatusFlow(statuses: List<DownloadStatus>): Flow<List<DownloadDto>>
     suspend fun deleteDownload(downloadId: UUID)
-    suspend fun getSources(itemId: UUID): List<com.makd.afinity.data.database.entities.AfinitySourceDto>
+    suspend fun getSources(itemId: UUID): List<AfinitySourceDto>
 }

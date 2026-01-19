@@ -1,16 +1,15 @@
 package com.makd.afinity.data.repository.playback
 
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.MediaInfoApi
 import org.jellyfin.sdk.api.operations.PlayStateApi
 import org.jellyfin.sdk.api.operations.SessionApi
-import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.api.operations.VideosApi
 import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.MediaSourceInfo
@@ -26,22 +25,13 @@ import javax.inject.Singleton
 
 @Singleton
 class JellyfinPlaybackRepository @Inject constructor(
-    private val apiClient: ApiClient,
+    private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val preferencesRepository: PreferencesRepository
 ) : PlaybackRepository {
 
     private suspend fun getCurrentUserId(): UUID? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val userApi = UserApi(apiClient)
-                val response = userApi.getCurrentUser()
-                response.content?.id
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get current user ID")
-                null
-            }
-        }
+        return sessionManager.currentSession.value?.userId
     }
 
     override suspend fun getPlaybackInfo(
@@ -55,6 +45,7 @@ class JellyfinPlaybackRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext null
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val mediaInfoApi = MediaInfoApi(apiClient)
 
                 val deviceProfile = DeviceProfile(
@@ -120,6 +111,7 @@ class JellyfinPlaybackRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val mediaInfoApi = MediaInfoApi(apiClient)
 
                 val deviceProfile = DeviceProfile(
@@ -180,6 +172,7 @@ class JellyfinPlaybackRepository @Inject constructor(
     ): String? {
         return withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val videosApi = VideosApi(apiClient)
 
                 val streamUrl = videosApi.getVideoStreamUrl(
@@ -216,6 +209,7 @@ class JellyfinPlaybackRepository @Inject constructor(
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val playStateApi = PlayStateApi(apiClient)
 
                 playStateApi.onPlaybackStart(
@@ -252,6 +246,7 @@ class JellyfinPlaybackRepository @Inject constructor(
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val playStateApi = PlayStateApi(apiClient)
 
                 playStateApi.onPlaybackProgress(
@@ -289,6 +284,7 @@ class JellyfinPlaybackRepository @Inject constructor(
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val playStateApi = PlayStateApi(apiClient)
 
                 playStateApi.onPlaybackStopped(
@@ -325,11 +321,18 @@ class JellyfinPlaybackRepository @Inject constructor(
                 return
             }
 
+            val serverId = sessionManager.currentSession.value?.serverId
+            if (serverId == null) {
+                Timber.w("Cannot save playback progress locally: no active server session")
+                return
+            }
+
             val existingData = databaseRepository.getUserData(userId, itemId)
 
             val updatedData = AfinityUserDataDto(
                 userId = userId,
                 itemId = itemId,
+                serverId = serverId,
                 played = existingData?.played ?: false,
                 favorite = existingData?.favorite ?: false,
                 playbackPositionTicks = positionTicks,
@@ -337,7 +340,7 @@ class JellyfinPlaybackRepository @Inject constructor(
             )
 
             databaseRepository.insertUserData(updatedData)
-            Timber.i("✓ Saved playback progress locally for item $itemId: ${positionTicks / 10000}ms (will sync when online)")
+            Timber.i("Saved playback progress locally for item $itemId: ${positionTicks / 10000}ms (will sync when online)")
         } catch (e: Exception) {
             Timber.e(e, "Failed to save playback progress locally for item: $itemId")
         }
@@ -346,6 +349,7 @@ class JellyfinPlaybackRepository @Inject constructor(
     override suspend fun pingSession(sessionId: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val playStateApi = PlayStateApi(apiClient)
                 playStateApi.pingPlaybackSession(playSessionId = sessionId)
                 true
@@ -362,6 +366,7 @@ class JellyfinPlaybackRepository @Inject constructor(
     override suspend fun getActiveSession(): String? {
         return withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val sessionApi = SessionApi(apiClient)
                 val response = sessionApi.getSessions()
                 response.content?.firstOrNull { session ->
@@ -380,6 +385,7 @@ class JellyfinPlaybackRepository @Inject constructor(
     override suspend fun endSession(sessionId: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val sessionApi = SessionApi(apiClient)
                 sessionApi.reportSessionEnded()
                 true
@@ -420,6 +426,7 @@ class JellyfinPlaybackRepository @Inject constructor(
     override suspend fun getBitrateTestBytes(size: Int): ByteArray? {
         return withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val mediaInfoApi = MediaInfoApi(apiClient)
                 val constrainedSize = size.coerceIn(1, 100_000_000)
                 val response = mediaInfoApi.getBitrateTestBytes(size = constrainedSize)

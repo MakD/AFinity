@@ -25,6 +25,7 @@ import java.util.UUID
 data class AfinitySeasonDto(
     @PrimaryKey
     val id: UUID,
+    val serverId: String,
     val seriesId: UUID,
     val name: String,
     val seriesName: String,
@@ -33,9 +34,10 @@ data class AfinitySeasonDto(
     val images: AfinityImages? = null,
 )
 
-fun AfinitySeason.toAfinitySeasonDto(): AfinitySeasonDto {
+fun AfinitySeason.toAfinitySeasonDto(serverId: String): AfinitySeasonDto {
     return AfinitySeasonDto(
         id = id,
+        serverId = serverId,
         seriesId = seriesId,
         name = name,
         seriesName = seriesName,

@@ -5,11 +5,18 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityShow
+import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinityPersonImage
+import com.makd.afinity.data.models.media.AfinitySource
+import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
@@ -445,7 +452,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                 if (localPath != null) {
                     downloadedImages["primary"] = localPath
                     successCount++
-                    Timber.i("✓ Primary image downloaded")
+                    Timber.i("Primary image downloaded")
                 }
             }
 
@@ -455,7 +462,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                 if (localPath != null) {
                     downloadedImages["backdrop"] = localPath
                     successCount++
-                    Timber.i("✓ Backdrop image downloaded")
+                    Timber.i("Backdrop image downloaded")
                 }
             }
 
@@ -465,7 +472,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                 if (localPath != null) {
                     downloadedImages["thumb"] = localPath
                     successCount++
-                    Timber.i("✓ Thumb image downloaded")
+                    Timber.i("Thumb image downloaded")
                 }
             }
 
@@ -475,7 +482,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                 if (localPath != null) {
                     downloadedImages["logo"] = localPath
                     successCount++
-                    Timber.i("✓ Logo image downloaded")
+                    Timber.i("Logo image downloaded")
                 }
             }
 
@@ -486,7 +493,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                     if (localPath != null) {
                         downloadedImages["showPrimary"] = localPath
                         successCount++
-                        Timber.i("✓ Show primary image downloaded")
+                        Timber.i("Show primary image downloaded")
                     }
                 }
 
@@ -496,7 +503,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                     if (localPath != null) {
                         downloadedImages["showBackdrop"] = localPath
                         successCount++
-                        Timber.i("✓ Show backdrop image downloaded")
+                        Timber.i("Show backdrop image downloaded")
                     }
                 }
 
@@ -506,14 +513,14 @@ class MediaDownloadWorker @AssistedInject constructor(
                     if (localPath != null) {
                         downloadedImages["showLogo"] = localPath
                         successCount++
-                        Timber.i("✓ Show logo image downloaded")
+                        Timber.i("Show logo image downloaded")
                     }
                 }
             }
 
             Timber.i("Successfully downloaded $successCount images")
 
-            val updatedImages = com.makd.afinity.data.models.media.AfinityImages(
+            val updatedImages = AfinityImages(
                 primary = downloadedImages["primary"] ?: images.primary,
                 backdrop = downloadedImages["backdrop"] ?: images.backdrop,
                 thumb = downloadedImages["thumb"] ?: images.thumb,
@@ -531,7 +538,7 @@ class MediaDownloadWorker @AssistedInject constructor(
             )
 
             when (item) {
-                is com.makd.afinity.data.models.media.AfinityMovie -> {
+                is AfinityMovie -> {
                     databaseRepository.insertMovie(item.copy(images = updatedImages))
                     Timber.i("Updated movie in database with local image paths")
 
@@ -542,7 +549,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                     }
                 }
 
-                is com.makd.afinity.data.models.media.AfinityEpisode -> {
+                is AfinityEpisode -> {
                     databaseRepository.insertEpisode(item.copy(images = updatedImages))
                     Timber.i("Updated episode in database with local image paths")
                 }
@@ -583,7 +590,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                 if (localPath != null) {
                     downloadedImages["primary"] = localPath
                     successCount++
-                    Timber.i("✓ Show primary image downloaded")
+                    Timber.i("Show primary image downloaded")
                 }
             }
 
@@ -593,7 +600,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                 if (localPath != null) {
                     downloadedImages["backdrop"] = localPath
                     successCount++
-                    Timber.i("✓ Show backdrop image downloaded")
+                    Timber.i("Show backdrop image downloaded")
                 }
             }
 
@@ -603,13 +610,13 @@ class MediaDownloadWorker @AssistedInject constructor(
                 if (localPath != null) {
                     downloadedImages["logo"] = localPath
                     successCount++
-                    Timber.i("✓ Show logo image downloaded")
+                    Timber.i("Show logo image downloaded")
                 }
             }
 
             Timber.i("Successfully downloaded $successCount show images")
 
-            val updatedImages = com.makd.afinity.data.models.media.AfinityImages(
+            val updatedImages = AfinityImages(
                 primary = downloadedImages["primary"] ?: images.primary,
                 backdrop = downloadedImages["backdrop"] ?: images.backdrop,
                 thumb = downloadedImages["thumb"] ?: images.thumb,
@@ -658,7 +665,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                 if (localPath != null) {
                     downloadedImages["primary"] = localPath
                     successCount++
-                    Timber.i("✓ Season primary image downloaded")
+                    Timber.i("Season primary image downloaded")
                 }
             }
 
@@ -668,13 +675,13 @@ class MediaDownloadWorker @AssistedInject constructor(
                 if (localPath != null) {
                     downloadedImages["backdrop"] = localPath
                     successCount++
-                    Timber.i("✓ Season backdrop image downloaded")
+                    Timber.i("Season backdrop image downloaded")
                 }
             }
 
             Timber.i("Successfully downloaded $successCount season images")
 
-            val updatedImages = com.makd.afinity.data.models.media.AfinityImages(
+            val updatedImages = AfinityImages(
                 primary = downloadedImages["primary"] ?: images.primary,
                 backdrop = downloadedImages["backdrop"] ?: images.backdrop,
                 thumb = downloadedImages["thumb"] ?: images.thumb,
@@ -720,9 +727,9 @@ class MediaDownloadWorker @AssistedInject constructor(
                     val localPath =
                         downloadImage(uri.toString(), peopleImagesDir, person.id.toString())
                     if (localPath != null) {
-                        Timber.i("✓ Downloaded image for ${person.name}")
+                        Timber.i("Downloaded image for ${person.name}")
                         person.copy(
-                            image = com.makd.afinity.data.models.media.AfinityPersonImage(
+                            image = AfinityPersonImage(
                                 uri = localPath,
                                 blurHash = person.image.blurHash
                             )
@@ -800,16 +807,16 @@ class MediaDownloadWorker @AssistedInject constructor(
         file: File
     ) {
         try {
-            val localSource = com.makd.afinity.data.database.entities.AfinitySourceDto(
+            val localSource = AfinitySourceDto(
                 id = "${sourceId}_local",
                 itemId = itemId,
                 name = "$sourceName (Downloaded)",
-                type = com.makd.afinity.data.models.media.AfinitySourceType.LOCAL,
+                type = AfinitySourceType.LOCAL,
                 path = file.absolutePath,
                 downloadId = null
             )
             databaseRepository.insertSource(
-                com.makd.afinity.data.models.media.AfinitySource(
+                AfinitySource(
                     id = localSource.id,
                     name = localSource.name,
                     type = localSource.type,

@@ -8,7 +8,6 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.makd.afinity.data.models.server.Server
-import com.makd.afinity.data.models.server.ServerWithAddressAndUser
 import com.makd.afinity.data.models.server.ServerWithAddresses
 import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.server.ServerWithUsers
@@ -48,15 +47,7 @@ interface ServerDao {
 
     @Transaction
     @Query("SELECT * FROM servers WHERE id = :serverId")
-    suspend fun getServerWithAddressAndUser(serverId: String): ServerWithAddressAndUser?
-
-    @Transaction
-    @Query("SELECT * FROM servers WHERE id = :serverId")
     suspend fun getServerWithAddressesAndUsers(serverId: String): ServerWithAddressesAndUsers?
-
-    @Transaction
-    @Query("SELECT * FROM servers WHERE currentUserId IS NOT NULL LIMIT 1")
-    suspend fun getCurrentServerWithAddressAndUser(): ServerWithAddressAndUser?
 
     @Transaction
     @Query("SELECT * FROM servers WHERE id = :serverId")

@@ -1,11 +1,11 @@
 package com.makd.afinity.data.repository.segments
 
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.toAfinitySegment
 import com.makd.afinity.data.repository.DatabaseRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.operations.MediaSegmentsApi
 import timber.log.Timber
 import java.util.UUID
@@ -14,7 +14,7 @@ import javax.inject.Singleton
 
 @Singleton
 class JellyfinSegmentsRepository @Inject constructor(
-    private val apiClient: ApiClient,
+    private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository
 ) : SegmentsRepository {
 
@@ -23,13 +23,14 @@ class JellyfinSegmentsRepository @Inject constructor(
             Timber.d("Checking database for cached segments for item $itemId")
             val cachedSegments = databaseRepository.getSegmentsForItem(itemId)
             if (cachedSegments.isNotEmpty()) {
-                Timber.i("✓ Loaded ${cachedSegments.size} segments from database for item $itemId")
+                Timber.i("Loaded ${cachedSegments.size} segments from database for item $itemId")
                 return@withContext cachedSegments
             }
 
             Timber.d("No cached segments found in database, fetching from API")
 
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val mediaSegmentsApi = MediaSegmentsApi(apiClient)
                 val response = mediaSegmentsApi.getItemSegments(itemId)
 
@@ -44,7 +45,7 @@ class JellyfinSegmentsRepository @Inject constructor(
                         try {
                             Timber.d("Caching segment ${segment.type} (${segment.startTicks}-${segment.endTicks}) for item $itemId")
                             databaseRepository.insertSegment(segment, itemId)
-                            Timber.d("✓ Successfully cached segment ${segment.type}")
+                            Timber.d("Successfully cached segment ${segment.type}")
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to cache segment ${segment.type} in database")
                         }
@@ -56,7 +57,7 @@ class JellyfinSegmentsRepository @Inject constructor(
                 Timber.w(e, "API fetch failed, checking database again in case segments were cached")
                 val fallbackSegments = databaseRepository.getSegmentsForItem(itemId)
                 if (fallbackSegments.isNotEmpty()) {
-                    Timber.i("✓ Loaded ${fallbackSegments.size} segments from database after API failure")
+                    Timber.i("Loaded ${fallbackSegments.size} segments from database after API failure")
                 } else {
                     Timber.d("No segments available offline for item $itemId")
                 }

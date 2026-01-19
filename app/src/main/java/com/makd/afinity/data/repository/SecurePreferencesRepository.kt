@@ -1,12 +1,21 @@
 package com.makd.afinity.data.repository
 
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
+
+data class ServerUserToken(
+    val serverId: String,
+    val userId: UUID,
+    val accessToken: String,
+    val username: String,
+    val serverUrl: String
+)
 
 interface SecurePreferencesRepository {
 
     suspend fun saveAuthenticationData(
         accessToken: String,
-        userId: java.util.UUID,
+        userId: UUID,
         serverId: String,
         serverUrl: String,
         username: String
@@ -20,6 +29,20 @@ interface SecurePreferencesRepository {
     suspend fun clearAuthenticationData()
     suspend fun hasValidAuthData(): Boolean
     fun getAuthenticationStateFlow(): Flow<Boolean>
+
+    suspend fun saveServerUserToken(
+        serverId: String,
+        userId: UUID,
+        accessToken: String,
+        username: String,
+        serverUrl: String
+    )
+
+    suspend fun getServerUserToken(serverId: String, userId: UUID): String?
+    suspend fun getLastUserIdForServer(serverId: String): UUID?
+    suspend fun getAllServerUserTokens(): List<ServerUserToken>
+    suspend fun clearServerUserToken(serverId: String, userId: UUID)
+    suspend fun clearAllServerTokens(serverId: String)
 
     suspend fun saveDeviceId(deviceId: String)
     suspend fun getDeviceId(): String?

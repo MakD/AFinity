@@ -259,7 +259,7 @@ class ItemDetailViewModel @Inject constructor(
                                 _uiState.value = _uiState.value.copy(
                                     episodesPagingData = pagingData
                                 )
-                                Timber.d("✓ Episodes paging data set in UI state for offline season")
+                                Timber.d("Episodes paging data set in UI state for offline season")
 
                                 val nextEpisode = getNextEpisodeForSeasonOffline(item)
                                 _uiState.value = _uiState.value.copy(nextEpisode = nextEpisode)

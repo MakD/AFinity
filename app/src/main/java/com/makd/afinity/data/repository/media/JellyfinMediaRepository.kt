@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.media
 
 import android.content.Context
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
@@ -34,7 +35,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.GenresApi
 import org.jellyfin.sdk.api.operations.ItemsApi
@@ -42,7 +42,6 @@ import org.jellyfin.sdk.api.operations.LibraryApi
 import org.jellyfin.sdk.api.operations.StudiosApi
 import org.jellyfin.sdk.api.operations.TrickplayApi
 import org.jellyfin.sdk.api.operations.TvShowsApi
-import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.api.operations.UserLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
@@ -60,7 +59,7 @@ import javax.inject.Singleton
 
 @Singleton
 class JellyfinMediaRepository @Inject constructor(
-    private val apiClient: ApiClient,
+    private val sessionManager: SessionManager,
     @ApplicationContext private val context: Context,
     private val boxSetCache: BoxSetCache
 ) : MediaRepository {
@@ -70,6 +69,7 @@ class JellyfinMediaRepository @Inject constructor(
     ): AfinityItem? {
         return withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val userId = getCurrentUserId() ?: return@withContext null
                 val itemsApi = ItemsApi(apiClient)
                 val response = itemsApi.getItems(
@@ -168,6 +168,7 @@ class JellyfinMediaRepository @Inject constructor(
     override suspend fun invalidateContinueWatchingCache() {
         withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
                 val userId = getCurrentUserId() ?: return@withContext
                 val itemsApi = ItemsApi(apiClient)
                 val response = itemsApi.getResumeItems(
@@ -193,6 +194,7 @@ class JellyfinMediaRepository @Inject constructor(
     override suspend fun invalidateLatestMediaCache() {
         withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
                 val userId = getCurrentUserId() ?: return@withContext
                 val userLibraryApi = UserLibraryApi(apiClient)
                 val response = userLibraryApi.getLatestMedia(
@@ -220,6 +222,7 @@ class JellyfinMediaRepository @Inject constructor(
     override suspend fun invalidateNextUpCache() {
         withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext
                 val userId = getCurrentUserId() ?: return@withContext
                 val tvShowsApi = TvShowsApi(apiClient)
                 val response = tvShowsApi.getNextUp(
@@ -268,22 +271,16 @@ class JellyfinMediaRepository @Inject constructor(
     override val nextUp: Flow<List<AfinityEpisode>> = _nextUp.asStateFlow()
 
     private suspend fun getCurrentUserId(): UUID? = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val userApi = UserApi(apiClient)
-            val response = userApi.getCurrentUser()
-            response.content?.id
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get current user ID")
-            null
-        }
+        return@withContext sessionManager.currentSession.value?.userId
     }
 
     private fun getBaseUrl(): String {
-        return apiClient.baseUrl ?: ""
+        return sessionManager.currentSession.value?.serverUrl ?: ""
     }
 
     override suspend fun getLibraries(): List<AfinityCollection> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             Timber.d("Attempting to get libraries via MediaFolders API")
             try {
                 val libraryApi = LibraryApi(apiClient)
@@ -342,6 +339,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityItem> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val userLibraryApi = UserLibraryApi(apiClient)
@@ -381,6 +379,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityItem> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
@@ -428,6 +427,11 @@ class JellyfinMediaRepository @Inject constructor(
         studios: List<String>
     ): BaseItemDtoQueryResult = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext BaseItemDtoQueryResult(
+                items = emptyList(),
+                totalRecordCount = 0,
+                startIndex = 0
+            )
             val userId = getCurrentUserId() ?: return@withContext BaseItemDtoQueryResult(
                 items = emptyList(),
                 totalRecordCount = 0,
@@ -510,6 +514,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): BaseItemDto? = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
             val userId = getCurrentUserId() ?: return@withContext null
 
             val itemsApi = ItemsApi(apiClient)
@@ -536,6 +541,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityItem> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val libraryApi = LibraryApi(apiClient)
@@ -570,6 +576,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityMovie> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
@@ -618,6 +625,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityMovie> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
@@ -657,6 +665,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityShow> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
@@ -701,6 +710,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityShow> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
@@ -744,6 +754,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinitySeason> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
@@ -771,6 +782,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityEpisode> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val actualSeriesId = seriesId ?: run {
@@ -802,6 +814,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityMovie> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val itemsApi = ItemsApi(apiClient)
 
@@ -828,6 +841,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityShow> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val itemsApi = ItemsApi(apiClient)
 
@@ -855,6 +869,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityEpisode> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val itemsApi = ItemsApi(apiClient)
 
@@ -882,6 +897,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinitySeason> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val itemsApi = ItemsApi(apiClient)
 
@@ -908,6 +924,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityBoxSet> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val itemsApi = ItemsApi(apiClient)
 
@@ -937,6 +954,7 @@ class JellyfinMediaRepository @Inject constructor(
         enableResumable: Boolean
     ): List<AfinityEpisode> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val tvShowsApi = TvShowsApi(apiClient)
@@ -967,6 +985,7 @@ class JellyfinMediaRepository @Inject constructor(
     override suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem> =
         withContext(Dispatchers.IO) {
             return@withContext try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val userLibraryApi = UserLibraryApi(apiClient)
                 val response = userLibraryApi.getSpecialFeatures(
                     itemId = itemId,
@@ -1006,6 +1025,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityItem> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
@@ -1036,6 +1056,7 @@ class JellyfinMediaRepository @Inject constructor(
     override suspend fun getPerson(personId: UUID): AfinityPersonDetail? =
         withContext(Dispatchers.IO) {
             return@withContext try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val userId = getCurrentUserId() ?: return@withContext null
 
                 val userLibraryApi = UserLibraryApi(apiClient)
@@ -1067,6 +1088,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityItem> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
@@ -1103,6 +1125,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityMovie> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val itemsApi = ItemsApi(apiClient)
@@ -1136,6 +1159,7 @@ class JellyfinMediaRepository @Inject constructor(
         fields: List<ItemFields>?
     ): List<AfinityMovie> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val libraryApi = LibraryApi(apiClient)
@@ -1174,7 +1198,7 @@ class JellyfinMediaRepository @Inject constructor(
                     Timber.d("File exists: ${trickplayFile.exists()}")
 
                     if (trickplayFile.exists()) {
-                        Timber.i("✓ Loading trickplay tile from local storage: $width/$index.jpg (${trickplayFile.length()} bytes)")
+                        Timber.i("Loading trickplay tile from local storage: $width/$index.jpg (${trickplayFile.length()} bytes)")
                         return@withContext trickplayFile.readBytes()
                     } else {
                         Timber.d("Trickplay file not found locally, trying API")
@@ -1188,9 +1212,10 @@ class JellyfinMediaRepository @Inject constructor(
 
             return@withContext try {
                 Timber.d("Fetching trickplay tile from API: $width/$index")
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val trickplayApi = TrickplayApi(apiClient)
                 val response = trickplayApi.getTrickplayTileImage(itemId, width, index)
-                Timber.d("✓ Fetched trickplay tile from API: ${response.content?.size ?: 0} bytes")
+                Timber.d("Fetched trickplay tile from API: ${response.content?.size ?: 0} bytes")
                 response.content
             } catch (e: Exception) {
                 Timber.w(e, "Failed to get trickplay data for tile $index")
@@ -1204,6 +1229,7 @@ class JellyfinMediaRepository @Inject constructor(
         includeItemTypes: List<String>
     ): List<String> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
             val genresApi = GenresApi(apiClient)
 
@@ -1243,6 +1269,7 @@ class JellyfinMediaRepository @Inject constructor(
         includeItemTypes: List<String>
     ): List<AfinityStudio> = withContext(Dispatchers.IO) {
         return@withContext try {
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val userId = getCurrentUserId() ?: return@withContext emptyList()
 
             val librariesResponse = getLibraries()
@@ -1351,6 +1378,7 @@ class JellyfinMediaRepository @Inject constructor(
     }
 
     private suspend fun fetchAllBoxSetsWithChildren(): List<BoxSetWithChildren> {
+        val apiClient = sessionManager.getCurrentApiClient() ?: return emptyList()
         val userId = getCurrentUserId() ?: return emptyList()
         val itemsApi = ItemsApi(apiClient)
 
@@ -1416,6 +1444,7 @@ class JellyfinMediaRepository @Inject constructor(
             }
 
             val userId = getCurrentUserId() ?: return@withContext emptyList()
+            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
             val itemsApi = ItemsApi(apiClient)
 
             val boxSetsResponse = itemsApi.getItems(

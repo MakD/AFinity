@@ -4,16 +4,21 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
 import com.makd.afinity.data.models.jellyseerr.CreateRequestBody
+import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyfinLoginRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LoginRequest
-import com.makd.afinity.data.models.jellyseerr.MediaType
-import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
+import com.makd.afinity.data.models.jellyseerr.MediaInfo
+import com.makd.afinity.data.models.jellyseerr.MediaType
+import com.makd.afinity.data.models.jellyseerr.RatingsCombined
+import com.makd.afinity.data.models.jellyseerr.RequestUser
+import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
+import com.makd.afinity.data.repository.RequestEvent
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
@@ -53,8 +58,8 @@ class JellyseerrRepositoryImpl @Inject constructor(
     private val _isAuthenticated = MutableStateFlow(false)
     override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
-    private val _requestEvents = MutableSharedFlow<com.makd.afinity.data.repository.RequestEvent>()
-    override val requestEvents: SharedFlow<com.makd.afinity.data.repository.RequestEvent> = _requestEvents.asSharedFlow()
+    private val _requestEvents = MutableSharedFlow<RequestEvent>()
+    override val requestEvents: SharedFlow<RequestEvent> = _requestEvents.asSharedFlow()
 
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
@@ -141,7 +146,7 @@ class JellyseerrRepositoryImpl @Inject constructor(
     override suspend fun logout(): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
-                if (networkConnectivityMonitor.isCurrentlyConnected()) {
+                if (hasValidConfiguration() && networkConnectivityMonitor.isCurrentlyConnected()) {
                     try {
                         apiService.get().logout()
                     } catch (e: Exception) {
@@ -242,7 +247,7 @@ class JellyseerrRepositoryImpl @Inject constructor(
                     }
 
                     cacheRequest(latestRequest)
-                    _requestEvents.emit(com.makd.afinity.data.repository.RequestEvent(latestRequest))
+                    _requestEvents.emit(RequestEvent(latestRequest))
 
                     Timber.d("Request created successfully: ${latestRequest.id} with status ${latestRequest.status}")
                     Result.success(latestRequest)
@@ -700,7 +705,7 @@ class JellyseerrRepositoryImpl @Inject constructor(
 
                     val ratings = if (ratingsResponse?.isSuccessful == true && ratingsResponse.body() != null) {
                         val rtRating = ratingsResponse.body()!!
-                        com.makd.afinity.data.models.jellyseerr.RatingsCombined(
+                        RatingsCombined(
                             rt = rtRating,
                             imdb = null
                         )
@@ -775,7 +780,7 @@ class JellyseerrRepositoryImpl @Inject constructor(
         return JellyseerrRequest(
             id = id,
             status = status,
-            media = com.makd.afinity.data.models.jellyseerr.MediaInfo(
+            media = MediaInfo(
                 id = id,
                 mediaType = mediaType,
                 tmdbId = tmdbId,
@@ -789,7 +794,7 @@ class JellyseerrRepositoryImpl @Inject constructor(
                 releaseDate = mediaReleaseDate,
                 firstAirDate = mediaFirstAirDate
             ),
-            requestedBy = com.makd.afinity.data.models.jellyseerr.RequestUser(
+            requestedBy = RequestUser(
                 id = 0,
                 displayName = requestedByName,
                 avatar = requestedByAvatar
@@ -812,7 +817,7 @@ class JellyseerrRepositoryImpl @Inject constructor(
         return getDiscoverTv(page = page, network = networkId)
     }
 
-    override suspend fun getMovieGenreSlider(): Result<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>> {
+    override suspend fun getMovieGenreSlider(): Result<List<GenreSliderItem>> {
         return withContext(Dispatchers.IO) {
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
@@ -833,7 +838,7 @@ class JellyseerrRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTvGenreSlider(): Result<List<com.makd.afinity.data.models.jellyseerr.GenreSliderItem>> {
+    override suspend fun getTvGenreSlider(): Result<List<GenreSliderItem>> {
         return withContext(Dispatchers.IO) {
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {

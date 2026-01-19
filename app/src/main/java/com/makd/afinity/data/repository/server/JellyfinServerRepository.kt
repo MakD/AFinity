@@ -1,12 +1,17 @@
 package com.makd.afinity.data.repository.server
 
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
+import com.makd.afinity.data.repository.DatabaseRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
@@ -16,13 +21,19 @@ import org.jellyfin.sdk.api.operations.SystemApi
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Singleton
 class JellyfinServerRepository @Inject constructor(
     private val jellyfin: Jellyfin,
-    private val apiClient: ApiClient
+    private val apiClient: ApiClient,
+    private val sessionManagerProvider: Provider<SessionManager>,
+    private val databaseRepository: DatabaseRepository
 ) : ServerRepository {
+
+    private val sessionManager: SessionManager
+        get() = sessionManagerProvider.get()
 
     private val _currentBaseUrl = MutableStateFlow("")
     override val currentBaseUrl: StateFlow<String> = _currentBaseUrl.asStateFlow()
@@ -32,6 +43,35 @@ class JellyfinServerRepository @Inject constructor(
 
     private val _currentServer = MutableStateFlow<Server?>(null)
     override val currentServer: StateFlow<Server?> = _currentServer.asStateFlow()
+
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    init {
+        scope.launch {
+            sessionManager.currentSession.collect { session ->
+                if (session != null) {
+                    try {
+                        val server = databaseRepository.getServer(session.serverId)
+                        if (server != null) {
+                            _currentServer.value = server
+                            _currentBaseUrl.value = server.address
+                            _isConnected.value = true
+                            Timber.d("JellyfinServerRepository: Updated current server to ${server.name} (${server.id})")
+                        } else {
+                            Timber.w("JellyfinServerRepository: Session changed but server ${session.serverId} not found in database")
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "JellyfinServerRepository: Failed to load server for session")
+                    }
+                } else {
+                    _currentServer.value = null
+                    _currentBaseUrl.value = ""
+                    _isConnected.value = false
+                    Timber.d("JellyfinServerRepository: Session cleared, current server reset")
+                }
+            }
+        }
+    }
 
     override fun getBaseUrl(): String {
         return apiClient.baseUrl ?: ""
@@ -63,11 +103,10 @@ class JellyfinServerRepository @Inject constructor(
                     Timber.d("Discovered server: ${serverInfo.name} at ${serverInfo.address}")
 
                     val server = Server(
-                        id = serverInfo.address?.replace("http://", "")?.replace("https://", "")
-                            ?: UUID.randomUUID().toString(),
+                        id = serverInfo.id ?: UUID.randomUUID().toString(),
                         name = serverInfo.name ?: "Jellyfin Server",
-                        currentServerAddressId = null,
-                        currentUserId = null
+                        version = null,
+                        address = serverInfo.address ?: ""
                     )
                     discoveredServers.add(server)
                 }
@@ -95,12 +134,10 @@ class JellyfinServerRepository @Inject constructor(
                 Timber.d("Discovered server: ${serverInfo.name} at ${serverInfo.address}")
 
                 val server = Server(
-                    id = serverInfo.address?.replace("http://", "")?.replace("https://", "")
-                        ?: UUID.randomUUID().toString(),
+                    id = serverInfo.id ?: UUID.randomUUID().toString(),
                     name = serverInfo.name ?: "Jellyfin Server",
                     version = null,
-                    currentServerAddressId = null,
-                    currentUserId = null
+                    address = serverInfo.address ?: ""
                 )
                 discoveredServers.add(server)
                 emit(discoveredServers.toList())
@@ -133,8 +170,7 @@ class JellyfinServerRepository @Inject constructor(
                             id = systemInfo.id ?: UUID.randomUUID().toString(),
                             name = systemInfo.serverName ?: "Jellyfin Server",
                             version = systemInfo.version,
-                            currentServerAddressId = null,
-                            currentUserId = null
+                            address = serverAddress
                         )
 
                         apiClient.update(baseUrl = originalUrl)
@@ -185,8 +221,7 @@ class JellyfinServerRepository @Inject constructor(
                         id = it.id ?: UUID.randomUUID().toString(),
                         name = it.serverName ?: "Jellyfin Server",
                         version = it.version,
-                        currentServerAddressId = null,
-                        currentUserId = null
+                        address = _currentBaseUrl.value
                     )
                 }
             } catch (e: Exception) {
@@ -208,8 +243,7 @@ class JellyfinServerRepository @Inject constructor(
                         id = systemInfo.id ?: UUID.randomUUID().toString(),
                         name = systemInfo.serverName ?: "Jellyfin Server",
                         version = systemInfo.version,
-                        currentServerAddressId = null,
-                        currentUserId = null
+                        address = _currentBaseUrl.value
                     )
                     _currentServer.value = server
                     _isConnected.value = true

@@ -37,40 +37,41 @@ interface EpisodeDao {
     @Query("DELETE FROM episodes WHERE serverId = :serverId")
     suspend fun deleteEpisodesByServerId(serverId: String)
 
-    @Query("SELECT * FROM episodes WHERE id = :episodeId")
-    suspend fun getEpisode(episodeId: UUID): AfinityEpisodeDto?
+    @Query("SELECT * FROM episodes WHERE id = :episodeId AND serverId = :serverId")
+    suspend fun getEpisode(episodeId: UUID, serverId: String): AfinityEpisodeDto?
 
-    @Query("SELECT * FROM episodes WHERE seasonId = :seasonId ORDER BY indexNumber ASC")
-    suspend fun getEpisodesForSeason(seasonId: UUID): List<AfinityEpisodeDto>
+    @Query("SELECT * FROM episodes WHERE seasonId = :seasonId AND serverId = :serverId ORDER BY indexNumber ASC")
+    suspend fun getEpisodesForSeason(seasonId: UUID, serverId: String): List<AfinityEpisodeDto>
 
-    @Query("SELECT * FROM episodes WHERE seasonId = :seasonId ORDER BY indexNumber ASC")
-    fun getEpisodesForSeasonFlow(seasonId: UUID): Flow<List<AfinityEpisodeDto>>
+    @Query("SELECT * FROM episodes WHERE seasonId = :seasonId AND serverId = :serverId ORDER BY indexNumber ASC")
+    fun getEpisodesForSeasonFlow(seasonId: UUID, serverId: String): Flow<List<AfinityEpisodeDto>>
 
-    @Query("SELECT * FROM episodes WHERE seriesId = :seriesId ORDER BY parentIndexNumber ASC, indexNumber ASC")
-    suspend fun getEpisodesForSeries(seriesId: UUID): List<AfinityEpisodeDto>
+    @Query("SELECT * FROM episodes WHERE seriesId = :seriesId AND serverId = :serverId ORDER BY parentIndexNumber ASC, indexNumber ASC")
+    suspend fun getEpisodesForSeries(seriesId: UUID, serverId: String): List<AfinityEpisodeDto>
 
     @Query("""
-        SELECT * FROM episodes 
-        WHERE (serverId = :serverId OR serverId IS NULL) 
+        SELECT * FROM episodes
+        WHERE serverId = :serverId
         AND (name LIKE '%' || :query || '%' OR overview LIKE '%' || :query || '%')
         ORDER BY seriesName ASC, parentIndexNumber ASC, indexNumber ASC
     """)
-    suspend fun searchEpisodes(query: String, serverId: String? = null): List<AfinityEpisodeDto>
+    suspend fun searchEpisodes(query: String, serverId: String): List<AfinityEpisodeDto>
 
     @Query("""
         SELECT e.* FROM episodes e
         INNER JOIN userdata u ON e.id = u.itemId
-        WHERE u.userId = :userId AND u.playbackPositionTicks > 0 AND u.played = 0
+        WHERE e.serverId = :serverId AND u.serverId = :serverId
+        AND u.userId = :userId AND u.playbackPositionTicks > 0 AND u.played = 0
         ORDER BY u.playbackPositionTicks DESC
         LIMIT :limit
     """)
-    suspend fun getContinueWatchingEpisodes(userId: UUID, limit: Int): List<AfinityEpisodeDto>
+    suspend fun getContinueWatchingEpisodes(userId: UUID, serverId: String, limit: Int): List<AfinityEpisodeDto>
 
-    @Query("SELECT * FROM episodes ORDER BY seriesName ASC, parentIndexNumber ASC, indexNumber ASC")
-    suspend fun getAllEpisodes(): List<AfinityEpisodeDto>
+    @Query("SELECT * FROM episodes WHERE serverId = :serverId ORDER BY seriesName ASC, parentIndexNumber ASC, indexNumber ASC")
+    suspend fun getAllEpisodes(serverId: String): List<AfinityEpisodeDto>
 
-    @Query("SELECT COUNT(*) FROM episodes")
-    suspend fun getEpisodeCount(): Int
+    @Query("SELECT COUNT(*) FROM episodes WHERE serverId = :serverId")
+    suspend fun getEpisodeCount(serverId: String): Int
 
     @Query("DELETE FROM episodes")
     suspend fun deleteAllEpisodes()

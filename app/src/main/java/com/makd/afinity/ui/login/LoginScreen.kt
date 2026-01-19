@@ -103,6 +103,9 @@ fun LoginScreen(
         )
     )
 
+    val savedServers by viewModel.savedServers.collectAsStateWithLifecycle()
+    val savedUsers by viewModel.savedUsers.collectAsStateWithLifecycle()
+
     var selectedLoginMethod by remember { mutableStateOf(LoginMethod.PASSWORD) }
     val focusManager = LocalFocusManager.current
 
@@ -184,13 +187,16 @@ fun LoginScreen(
 
             ServerConnectionSection(
                 serverUrl = loginState.serverUrl,
+                savedServers = savedServers,
                 discoveredServers = loginState.uiState.discoveredServers,
+                uiState = loginState.uiState,
                 isConnecting = loginState.uiState.isConnecting,
                 isDiscovering = loginState.uiState.isDiscovering,
                 isConnectedToServer = loginState.uiState.isConnectedToServer,
                 onUrlChange = viewModel::setServerUrl,
                 onConnectToServer = viewModel::connectToServer,
-                onServerSelect = { server ->
+                onSavedServerSelect = viewModel::selectServer,
+                onDiscoveredServerSelect = { server ->
                     val serverUrl = if (server.id.contains(":")) {
                         "http://${server.id}"
                     } else {
@@ -199,6 +205,7 @@ fun LoginScreen(
                     viewModel.setServerUrl(serverUrl)
                     viewModel.connectToServer()
                 },
+                onAddNewServer = viewModel::showAddNewServer,
                 onDiscoverServers = viewModel::discoverServers
             )
 
@@ -214,11 +221,13 @@ fun LoginScreen(
                         selectedMethod = selectedLoginMethod,
                         onMethodChanged = { selectedLoginMethod = it },
                         uiState = loginState.uiState,
+                        savedUsers = savedUsers,
                         publicUsers = loginState.publicUsers,
                         serverUrl = loginState.serverUrl,
                         onUsernameChange = viewModel::updateUsername,
                         onPasswordChange = viewModel::updatePassword,
                         onUserSelect = viewModel::selectUser,
+                        onSavedUserLogin = viewModel::loginWithSavedUser,
                         onPasswordLogin = viewModel::login,
                         onQuickConnectStart = viewModel::startQuickConnect,
                         onQuickConnectCancel = viewModel::cancelQuickConnect
@@ -233,150 +242,291 @@ fun LoginScreen(
 @Composable
 private fun ServerConnectionSection(
     serverUrl: String,
+    savedServers: List<Server>,
     discoveredServers: List<Server>,
+    uiState: LoginUiState,
     isConnecting: Boolean,
     isDiscovering: Boolean,
     isConnectedToServer: Boolean,
     onUrlChange: (String) -> Unit,
     onConnectToServer: () -> Unit,
-    onServerSelect: (Server) -> Unit,
+    onSavedServerSelect: (Server) -> Unit,
+    onDiscoveredServerSelect: (Server) -> Unit,
+    onAddNewServer: () -> Unit,
     onDiscoverServers: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
+    val showSavedServers = savedServers.isNotEmpty() && !uiState.showAddServerInput
+
+    if (showSavedServers) {
+        Card(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            OutlinedTextField(
-                value = serverUrl,
-                onValueChange = onUrlChange,
-                label = { Text("Server URL") },
-                placeholder = { Text("https://example.jellyfin.com") },
-                leadingIcon = {
-                    Icon(
-                        painterResource(id = R.drawable.ic_link_rotated),
-                        contentDescription = null
-                    )
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Uri,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = { onConnectToServer() }
-                ),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    disabledContainerColor = Color.Transparent,
-                    errorContainerColor = Color.Transparent
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onConnectToServer,
-                enabled = !isConnecting && serverUrl.isNotBlank() && !isConnectedToServer,
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (isConnecting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Connecting...")
-                } else if (isConnectedToServer) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_circle_check),
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Connected")
-                } else {
-                    Text("Connect to Server")
-                }
-            }
-        }
-    }
-
-    Spacer(modifier = Modifier.height(24.dp))
-
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.padding(12.dp)
             ) {
                 Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_search),
+                        painter = painterResource(id = R.drawable.ic_server),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Local Servers",
+                        text = "Saved Servers",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                if (isDiscovering) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
+                Spacer(modifier = Modifier.height(12.dp))
+
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 240.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(savedServers) { server ->
+                        SavedServerCard(
+                            server = server,
+                            isSelected = uiState.selectedServer?.id == server.id,
+                            isConnecting = isConnecting && uiState.selectedServer?.id == server.id,
+                            onClick = { onSavedServerSelect(server) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = onAddNewServer,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_plus),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
                     )
-                } else {
-                    IconButton(
-                        onClick = onDiscoverServers,
-                        modifier = Modifier.size(24.dp)
-                    ) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add New Server")
+                }
+            }
+        }
+    } else {
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                OutlinedTextField(
+                    value = serverUrl,
+                    onValueChange = onUrlChange,
+                    label = { Text("Server URL") },
+                    placeholder = { Text("https://example.jellyfin.com") },
+                    leadingIcon = {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_refresh),
-                            contentDescription = "Refresh servers",
+                            painterResource(id = R.drawable.ic_link_rotated),
+                            contentDescription = null
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { onConnectToServer() }
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        errorContainerColor = Color.Transparent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = onConnectToServer,
+                    enabled = !isConnecting && serverUrl.isNotBlank() && !isConnectedToServer,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isConnecting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Connecting...")
+                    } else if (isConnectedToServer) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_circle_check),
+                            contentDescription = null,
                             modifier = Modifier.size(16.dp)
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Connected")
+                    } else {
+                        Text("Connect to Server")
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-            if (discoveredServers.isNotEmpty()) {
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 200.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(discoveredServers) { server ->
-                        ServerItem(
-                            server = server,
-                            onClick = { onServerSelect(server) }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_search),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Local Servers",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
+
+                    if (isDiscovering) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        IconButton(
+                            onClick = onDiscoverServers,
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_refresh),
+                                contentDescription = "Refresh servers",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                 }
-            } else if (!isDiscovering) {
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (discoveredServers.isNotEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 200.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(discoveredServers) { server ->
+                            ServerItem(
+                                server = server,
+                                onClick = { onDiscoveredServerSelect(server) }
+                            )
+                        }
+                    }
+                } else if (!isDiscovering) {
+                    Text(
+                        text = "No servers found on local network",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SavedServerCard(
+    server: Server,
+    isSelected: Boolean,
+    isConnecting: Boolean,
+    onClick: () -> Unit
+) {
+    OutlinedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        ),
+        border = if (isSelected) {
+            CardDefaults.outlinedCardBorder().copy(
+                brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
+            )
+        } else {
+            CardDefaults.outlinedCardBorder().copy(
+                brush = androidx.compose.ui.graphics.SolidColor(Color.Transparent)
+            )
+        }
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
-                    text = "No servers found on local network",
+                    text = server.name,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
+                    ),
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = server.address,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+
+            if (isConnecting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+            } else if (isSelected) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_circle_check),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -417,15 +567,91 @@ private fun LoginMethodSection(
     selectedMethod: LoginMethod,
     onMethodChanged: (LoginMethod) -> Unit,
     uiState: LoginUiState,
+    savedUsers: List<User>,
     publicUsers: List<User>,
     serverUrl: String,
     onUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onUserSelect: (User) -> Unit,
+    onSavedUserLogin: (User) -> Unit,
     onPasswordLogin: () -> Unit,
     onQuickConnectStart: () -> Unit,
     onQuickConnectCancel: () -> Unit
 ) {
+    if (savedUsers.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_user),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Saved Users",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
+                ) {
+                    items(savedUsers) { user ->
+                        SavedUserCard(
+                            user = user,
+                            isLoggingIn = uiState.isLoggingIn,
+                            serverBaseUrl = serverUrl,
+                            onClick = { onSavedUserLogin(user) }
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
+            )
+            Text(
+                text = "or login with",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 12.dp)
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -752,6 +978,97 @@ private fun UserProfileCard(
                 modifier = Modifier.fillMaxWidth()
 
             )
+        }
+    }
+}
+
+@Composable
+private fun SavedUserCard(
+    user: User,
+    isLoggingIn: Boolean,
+    serverBaseUrl: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    val profileImageUrl = user.primaryImageTag?.let {
+        "$serverBaseUrl/Users/${user.id}/Images/Primary?tag=$it"
+    }
+
+    OutlinedCard(
+        onClick = onClick,
+        modifier = modifier.width(80.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+        ),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+        )
+    ) {
+        Box {
+            Column(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (profileImageUrl != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(profileImageUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Profile picture for ${user.name}",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = user.name.firstOrNull()?.uppercase() ?: "?",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = user.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            if (isLoggingIn) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
     }
 }

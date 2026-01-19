@@ -39,7 +39,6 @@ object DatabaseModule {
             "afinity_database"
         )
             .addMigrations(*DatabaseMigrations.ALL_MIGRATIONS)
-            .fallbackToDestructiveMigration() // TODO Remove in production
             .build()
     }
 

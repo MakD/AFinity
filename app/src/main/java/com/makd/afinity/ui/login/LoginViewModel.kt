@@ -2,9 +2,14 @@ package com.makd.afinity.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
+import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -20,7 +25,10 @@ import javax.inject.Inject
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val databaseRepository: DatabaseRepository,
+    private val sessionManager: SessionManager,
+    private val securePreferencesRepository: SecurePreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -31,6 +39,12 @@ class LoginViewModel @Inject constructor(
 
     private val _publicUsers = MutableStateFlow<List<User>>(emptyList())
     val publicUsers: StateFlow<List<User>> = _publicUsers.asStateFlow()
+
+    private val _savedServers = MutableStateFlow<List<Server>>(emptyList())
+    val savedServers: StateFlow<List<Server>> = _savedServers.asStateFlow()
+
+    private val _savedUsers = MutableStateFlow<List<User>>(emptyList())
+    val savedUsers: StateFlow<List<User>> = _savedUsers.asStateFlow()
 
     private val _connectedServerUrl = MutableStateFlow("")
 
@@ -51,6 +65,16 @@ class LoginViewModel @Inject constructor(
     }
 
     init {
+        viewModelScope.launch {
+            try {
+                val servers = databaseRepository.getAllServers()
+                _savedServers.value = servers
+                Timber.d("Loaded ${servers.size} saved servers")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load saved servers")
+            }
+        }
+
         viewModelScope.launch {
             val currentUrl = jellyfinRepository.getBaseUrl()
             if (currentUrl.isNotBlank()) {
@@ -114,6 +138,13 @@ class LoginViewModel @Inject constructor(
                         jellyfinRepository.setBaseUrl(url)
                         jellyfinRepository.refreshServerInfo()
                         _connectedServerUrl.value = url
+
+                        try {
+                            databaseRepository.insertServer(validationResult.server)
+                            Timber.d("Saved server to database: ${validationResult.server.name} (${validationResult.server.id})")
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to save server to database, continuing anyway")
+                        }
 
                         loadPublicUsers()
 
@@ -186,6 +217,135 @@ class LoginViewModel @Inject constructor(
             username = user.name,
             error = null
         )
+    }
+
+    fun selectServer(server: Server) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(
+                    selectedServer = server,
+                    showAddServerInput = false,
+                    isConnecting = true,
+                    error = null
+                )
+
+                Timber.d("Selecting server: ${server.name} (${server.address})")
+
+                jellyfinRepository.setBaseUrl(server.address)
+                jellyfinRepository.refreshServerInfo()
+                _serverUrl.value = server.address
+                _connectedServerUrl.value = server.address
+
+                loadSavedUsers(server.id)
+
+                loadPublicUsers()
+
+                _uiState.value = _uiState.value.copy(
+                    isConnecting = false,
+                    isConnectedToServer = true
+                )
+
+                Timber.d("Successfully connected to saved server: ${server.name}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to connect to saved server: ${server.name}")
+                _uiState.value = _uiState.value.copy(
+                    isConnecting = false,
+                    isConnectedToServer = false,
+                    error = "Failed to connect to ${server.name}: ${e.message}"
+                )
+            }
+        }
+    }
+
+    private suspend fun loadSavedUsers(serverId: String) {
+        try {
+            val allUsers = databaseRepository.getUsersForServer(serverId)
+            val usersWithTokens = allUsers.filter { user ->
+                val hasToken = securePreferencesRepository.getServerUserToken(serverId, user.id) != null
+                if (!hasToken) {
+                    Timber.d("Excluding user ${user.name} from saved users (no token)")
+                }
+                hasToken
+            }
+            _savedUsers.value = usersWithTokens
+            Timber.d("Loaded ${usersWithTokens.size} saved users with tokens for server $serverId (${allUsers.size} total users)")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load saved users for server $serverId")
+            _savedUsers.value = emptyList()
+        }
+    }
+
+    fun loginWithSavedUser(user: User) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoggingIn = true,
+                error = null
+            )
+
+            try {
+                Timber.d("Attempting 1-tap login for saved user: ${user.name}")
+
+                val token = securePreferencesRepository.getServerUserToken(user.serverId, user.id)
+
+                if (token != null) {
+                    val server = databaseRepository.getServer(user.serverId)
+                    if (server == null) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoggingIn = false,
+                            error = "Server not found. Please login again."
+                        )
+                        Timber.w("Server ${user.serverId} not found in database for user ${user.name}")
+                        return@launch
+                    }
+
+                    val serverUrl = server.address
+                    Timber.d("Using server URL from database: $serverUrl")
+
+                    val result = sessionManager.startSession(
+                        serverUrl = serverUrl,
+                        serverId = user.serverId,
+                        userId = user.id,
+                        accessToken = token
+                    )
+
+                    if (result.isSuccess) {
+                        (authRepository as? JellyfinAuthRepository)?.setSessionActive(user)
+
+                        _uiState.value = _uiState.value.copy(
+                            isLoggingIn = false,
+                            isLoggedIn = true
+                        )
+                        Timber.d("Successfully logged in with saved user: ${user.name}")
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoggingIn = false,
+                            error = "Failed to start session: ${result.exceptionOrNull()?.message}"
+                        )
+                        Timber.e(result.exceptionOrNull(), "Failed to start session for user: ${user.name}")
+                    }
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoggingIn = false,
+                        error = "Saved session expired. Please login again."
+                    )
+                    Timber.w("No saved token found for user: ${user.name}")
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoggingIn = false,
+                    error = "Login failed: ${e.message ?: "Unknown error"}"
+                )
+                Timber.e(e, "1-tap login failed for user: ${user.name}")
+            }
+        }
+    }
+
+    fun showAddNewServer() {
+        _uiState.value = _uiState.value.copy(
+            showAddServerInput = true,
+            selectedServer = null
+        )
+        clearServerConnection()
     }
 
     fun login() {
@@ -394,12 +554,14 @@ data class LoginUiState(
     val username: String = "",
     val password: String = "",
     val selectedUser: User? = null,
+    val selectedServer: Server? = null,
+    val showAddServerInput: Boolean = false,
     val isLoggingIn: Boolean = false,
     val isLoggedIn: Boolean = false,
     val isConnecting: Boolean = false,
     val isConnectedToServer: Boolean = false,
     val isDiscovering: Boolean = false,
-    val discoveredServers: List<com.makd.afinity.data.models.server.Server> = emptyList(),
+    val discoveredServers: List<Server> = emptyList(),
     val error: String? = null,
     val quickConnectCode: String? = null,
     val quickConnectSecret: String? = null

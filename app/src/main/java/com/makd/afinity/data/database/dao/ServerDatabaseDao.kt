@@ -77,10 +77,11 @@ abstract class ServerDatabaseDao {
     abstract suspend fun getUserData(userId: UUID, itemId: UUID): AfinityUserDataDto?
 
     @Transaction
-    open suspend fun getUserDataOrCreateNew(itemId: UUID, userId: UUID): AfinityUserDataDto {
+    open suspend fun getUserDataOrCreateNew(itemId: UUID, userId: UUID, serverId: String): AfinityUserDataDto {
         return getUserData(userId, itemId) ?: AfinityUserDataDto(
             userId = userId,
             itemId = itemId,
+            serverId = serverId,
             played = false,
             favorite = false,
             playbackPositionTicks = 0L

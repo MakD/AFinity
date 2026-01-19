@@ -192,7 +192,7 @@ class TrickplayDownloadWorker @AssistedInject constructor(
                     }
                 }
 
-                Timber.i("✓ Downloaded trickplay tiled image: $resolution/$tileIndex.jpg (${outputFile.length()} bytes)")
+                Timber.i("Downloaded trickplay tiled image: $resolution/$tileIndex.jpg (${outputFile.length()} bytes)")
 
             } catch (e: Exception) {
                 Timber.w(e, "Failed to download trickplay tile $tileIndex")

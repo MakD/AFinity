@@ -1,12 +1,11 @@
 package com.makd.afinity.data.repository.userdata
 
+import com.makd.afinity.data.manager.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.api.operations.PlayStateApi
-import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.api.operations.UserLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
@@ -19,26 +18,18 @@ import javax.inject.Singleton
 
 @Singleton
 class JellyfinUserDataRepository @Inject constructor(
-    private val apiClient: ApiClient
+    private val sessionManager: SessionManager
 ) : UserDataRepository {
 
     private suspend fun getCurrentUserId(): UUID? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val userApi = UserApi(apiClient)
-                val response = userApi.getCurrentUser()
-                response.content?.id
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get current user ID")
-                null
-            }
-        }
+        return sessionManager.currentSession.value?.userId
     }
 
     override suspend fun markWatched(itemId: UUID): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val playStateApi = PlayStateApi(apiClient)
 
                 playStateApi.markPlayedItem(
@@ -61,6 +52,7 @@ class JellyfinUserDataRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val playStateApi = PlayStateApi(apiClient)
 
                 playStateApi.markUnplayedItem(
@@ -81,6 +73,7 @@ class JellyfinUserDataRepository @Inject constructor(
     override suspend fun updatePlaybackPosition(itemId: UUID, positionTicks: Long): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val playStateApi = PlayStateApi(apiClient)
 
                 playStateApi.onPlaybackProgress(
@@ -103,6 +96,7 @@ class JellyfinUserDataRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext null
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val itemsApi = ItemsApi(apiClient)
 
                 val response = itemsApi.getItemUserData(
@@ -124,6 +118,7 @@ class JellyfinUserDataRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val userLibraryApi = UserLibraryApi(apiClient)
 
                 userLibraryApi.markFavoriteItem(
@@ -145,6 +140,7 @@ class JellyfinUserDataRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val userLibraryApi = UserLibraryApi(apiClient)
 
                 userLibraryApi.unmarkFavoriteItem(
@@ -170,6 +166,7 @@ class JellyfinUserDataRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val itemsApi = ItemsApi(apiClient)
 
                 val response = itemsApi.getItems(
@@ -199,6 +196,7 @@ class JellyfinUserDataRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val itemsApi = ItemsApi(apiClient)
 
                 val jellyfinRating = rating.coerceIn(0, 10)
@@ -225,6 +223,7 @@ class JellyfinUserDataRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val itemsApi = ItemsApi(apiClient)
 
                 itemsApi.updateItemUserData(
@@ -249,6 +248,7 @@ class JellyfinUserDataRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val itemsApi = ItemsApi(apiClient)
 
                 itemsApi.updateItemUserData(
@@ -273,6 +273,7 @@ class JellyfinUserDataRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext false
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 var successCount = 0
 
                 items.forEach { userDataDto ->

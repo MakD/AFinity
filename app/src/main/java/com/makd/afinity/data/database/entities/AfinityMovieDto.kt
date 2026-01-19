@@ -13,7 +13,7 @@ import java.util.UUID
 data class AfinityMovieDto(
     @PrimaryKey
     val id: UUID,
-    val serverId: String?,
+    val serverId: String,
     val name: String,
     val originalTitle: String?,
     val overview: String,
@@ -33,7 +33,7 @@ data class AfinityMovieDto(
     val people: List<AfinityPerson>? = null,
 )
 
-fun AfinityMovie.toAfinityMovieDto(serverId: String? = null): AfinityMovieDto {
+fun AfinityMovie.toAfinityMovieDto(serverId: String): AfinityMovieDto {
     return AfinityMovieDto(
         id = id,
         serverId = serverId,

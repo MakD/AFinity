@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.auth
 
 import com.makd.afinity.core.AppConstants
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -25,14 +26,21 @@ import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Singleton
 class JellyfinAuthRepository @Inject constructor(
     private val apiClient: ApiClient,
+    //private val sessionManager: SessionManager,
+    private val sessionManagerProvider: Provider<SessionManager>,
     private val securePreferencesRepository: SecurePreferencesRepository,
-    private val networkConnectivityMonitor: NetworkConnectivityMonitor
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val databaseRepository: com.makd.afinity.data.repository.DatabaseRepository
 ) : AuthRepository {
+
+    private val sessionManager: SessionManager
+        get() = sessionManagerProvider.get()
 
     private val _currentUser = MutableStateFlow<User?>(null)
     override val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
@@ -83,6 +91,15 @@ class JellyfinAuthRepository @Inject constructor(
                         _currentUser.value = user
                         _isAuthenticated.value = true
 
+                        sessionManager.startSession(
+                            serverUrl = serverUrl,
+                            serverId = serverId ?: "",
+                            userId = UUID.fromString(userId),
+                            accessToken = accessToken
+                        ).onFailure { e ->
+                            Timber.w(e, "Failed to start session via SessionManager in offline mode, continuing anyway")
+                        }
+
                         Timber.d("Successfully restored authentication from cache in offline mode for user: $username")
                         return@withContext true
                     } catch (e: IllegalArgumentException) {
@@ -109,6 +126,15 @@ class JellyfinAuthRepository @Inject constructor(
 
                     _currentUser.value = user
                     _isAuthenticated.value = true
+
+                    sessionManager.startSession(
+                        serverUrl = serverUrl,
+                        serverId = serverId ?: "",
+                        userId = userDto.id,
+                        accessToken = accessToken
+                    ).onFailure { e ->
+                        Timber.w(e, "Failed to start session via SessionManager during restoration, continuing anyway")
+                    }
 
                     Timber.d("Successfully restored authentication from encrypted storage for user: $username")
                     return@withContext true
@@ -278,15 +304,13 @@ class JellyfinAuthRepository @Inject constructor(
     override suspend fun logout() {
         withContext(Dispatchers.IO) {
             try {
-                if (_isAuthenticated.value) {
-                    val sessionApi = SessionApi(apiClient)
-                    sessionApi.reportSessionEnded()
-                }
+                sessionManager.logout()
 
                 clearAllAuthData()
-                Timber.d("Successfully logged out and cleared encrypted data")
+                Timber.d("Successfully logged out and cleared encrypted data (token kept for re-login)")
             } catch (e: Exception) {
                 Timber.e(e, "Error during logout, clearing encrypted state anyway")
+                sessionManager.logout()
                 clearAllAuthData()
             }
         }
@@ -350,6 +374,27 @@ class JellyfinAuthRepository @Inject constructor(
 
     override fun getAccessToken(): String? = apiClient.accessToken
 
+    fun setAuthenticatedUser(user: User, accessToken: String, serverUrl: String) {
+        Timber.d("=== setAuthenticatedUser START ===")
+        Timber.d("User: ${user.name}, UserId: ${user.id}")
+        Timber.d("Server URL: $serverUrl")
+        Timber.d("Token (first 10 chars): ${accessToken.take(10)}...")
+        Timber.d("ApiClient BEFORE update - baseUrl: ${apiClient.baseUrl}, hasToken: ${!apiClient.accessToken.isNullOrBlank()}")
+
+        apiClient.update(baseUrl = serverUrl, accessToken = accessToken)
+
+        Timber.d("ApiClient AFTER update - baseUrl: ${apiClient.baseUrl}, hasToken: ${!apiClient.accessToken.isNullOrBlank()}")
+        _currentUser.value = user
+        _isAuthenticated.value = true
+        Timber.d("=== setAuthenticatedUser END ===")
+    }
+
+    fun setSessionActive(user: User) {
+        Timber.d("Setting session active for user: ${user.name}")
+        _currentUser.value = user
+        _isAuthenticated.value = true
+    }
+
     private suspend fun handleSuccessfulAuth(authResult: AuthenticationResult, username: String) {
         authResult.accessToken?.let { token ->
             apiClient.update(accessToken = token)
@@ -364,6 +409,26 @@ class JellyfinAuthRepository @Inject constructor(
                     primaryImageTag = userDto.primaryImageTag
                 )
                 _currentUser.value = user
+
+                try {
+                    databaseRepository.insertUser(user)
+                    Timber.d("Saved user to database: ${user.name}")
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to save user to database, continuing anyway")
+                }
+
+                val serverUrl = apiClient.baseUrl ?: ""
+                val serverId = authResult.serverId ?: ""
+                val userId = userDto.id
+
+                sessionManager.startSession(
+                    serverUrl = serverUrl,
+                    serverId = serverId,
+                    userId = userId,
+                    accessToken = token
+                ).onFailure { e ->
+                    Timber.e(e, "Failed to start session via SessionManager")
+                }
             }
 
             Timber.d("Successfully authenticated user: $username")
