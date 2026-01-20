@@ -76,12 +76,25 @@ class HomeViewModel @Inject constructor(
     private val renderedActorNames = mutableSetOf<String>()
 
     init {
-
         viewModelScope.launch {
             appDataRepository.isInitialDataLoaded.collect { isLoaded ->
                 if (!isLoaded) {
-                    Timber.d("Data cleared detected, resetting HomeViewModel UI state")
+                    Timber.d("Data cleared detected (Session Switch/Clear), resetting HomeViewModel UI state")
+                    loadedRecommendationSections.clear()
+                    cachedShuffledGenres = emptyList()
+                    renderedPeopleNames.clear()
+                    renderedItemIds.clear()
+                    renderedWatchedMovies.clear()
+                    renderedStarringWatchedMovies.clear()
+                    renderedActorNames.clear()
+
                     _uiState.value = HomeUiState()
+                } else {
+                    Timber.d("Initial Data Loaded: Triggering secondary content load (Studios, Genres, Recs)")
+                    launch { loadStudios() }
+                    launch { loadCombinedGenres() }
+                    launch { loadNewHomescreenSections() }
+                    launch { loadDownloadedContent() }
                 }
             }
         }
@@ -188,18 +201,6 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            loadCombinedGenres()
-        }
-
-        viewModelScope.launch {
-            loadStudios()
-        }
-
-        viewModelScope.launch {
-            loadDownloadedContent()
-        }
-
-        viewModelScope.launch {
             offlineModeManager.isOffline.collect { isOffline ->
                 Timber.d("Offline mode changed: $isOffline")
                 _uiState.value = _uiState.value.copy(isOffline = isOffline)
@@ -252,7 +253,9 @@ class HomeViewModel @Inject constructor(
                 return
             }
 
-            loadedRecommendationSections.clear()
+            if (loadedRecommendationSections.isNotEmpty()) {
+                loadedRecommendationSections.clear()
+            }
 
             viewModelScope.launch(Dispatchers.IO) {
                 try {

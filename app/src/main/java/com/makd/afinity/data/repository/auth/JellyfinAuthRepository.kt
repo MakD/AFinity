@@ -122,8 +122,14 @@ class JellyfinAuthRepository @Inject constructor(
                         val userDto = response.content!!
                         val updatedUser = user.copy(primaryImageTag = userDto.primaryImageTag)
                         _currentUser.value = updatedUser
+                        sessionManager.updateCurrentUser(updatedUser)
+                        try {
+                            databaseRepository.insertUser(updatedUser)
+                        } catch (e: Exception) {
+                            Timber.w("Failed to update user in DB during restore")
+                        }
 
-                        Timber.d("Session validated with server successfully")
+                        Timber.d("Session validated with server successfully (ImageTag: ${updatedUser.primaryImageTag})")
                         return@withContext true
                     } else {
                         Timber.w("Server validation timed out - keeping optimistic session (assuming server reachable but slow)")

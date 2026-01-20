@@ -72,8 +72,8 @@ class JellyseerrRepositoryImpl @Inject constructor(
 
     override suspend fun setActiveJellyfinSession(serverId: String, userId: UUID) {
         Timber.d("Switching Jellyseerr context to Server: $serverId, User: $userId")
+        _isAuthenticated.value = false
         activeContext = serverId to userId
-
         _currentSessionId.value = "${serverId}_$userId"
 
         val hasAuth = securePreferencesRepository.switchJellyseerrContext(serverId, userId)

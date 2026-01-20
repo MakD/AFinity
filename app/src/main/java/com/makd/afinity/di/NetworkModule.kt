@@ -28,6 +28,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import timber.log.Timber
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
@@ -186,7 +187,7 @@ object NetworkModule {
 
     private fun normalizeJellyseerrUrl(raw: String?): String {
         if (raw.isNullOrBlank()) {
-            throw IllegalStateException("Seerr server URL not configured")
+            throw IOException("Seerr server URL not configured")
         }
 
         var base = raw.trim()
@@ -225,7 +226,7 @@ object NetworkModule {
                 }
 
                 if (currentBaseUrl == null) {
-                    throw IllegalStateException("Jellyseerr server URL not configured. Please configure the server URL first.")
+                    throw IOException("Jellyseerr server URL not configured. Please configure the server URL first.")
                 }
 
                 val newUrl = currentBaseUrl.toHttpUrlOrNull()?.newBuilder()
@@ -239,7 +240,7 @@ object NetworkModule {
                         }
                     }
                     ?.build()
-                    ?: throw IllegalStateException("Failed to build Jellyseerr URL")
+                    ?: throw IOException("Failed to build Jellyseerr URL")
 
                 val newRequest = originalRequest.newBuilder()
                     .url(newUrl)

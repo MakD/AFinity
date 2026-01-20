@@ -76,9 +76,6 @@ class SessionManager @Inject constructor(
         caller: String = "Unknown"
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            Timber.d("=== SessionManager.startSession START ===")
-            Timber.d("CALLER: $caller")
-
             val user = databaseRepository.getUser(userId)
             val server = databaseRepository.getServer(serverId)
 
@@ -124,13 +121,19 @@ class SessionManager @Inject constructor(
             _connectionState.value = ConnectionState.Online(session)
 
             sessionPreferences.saveActiveSession(serverId, userId, serverUrl)
-
-            Timber.d("=== SessionManager.startSession SUCCESS ===")
             Result.success(Unit)
         } catch (e: Exception) {
             Timber.e(e, "Failed to start session")
             _connectionState.value = ConnectionState.Disconnected
             Result.failure(e)
+        }
+    }
+
+    fun updateCurrentUser(user: User) {
+        val current = _currentSession.value
+        if (current != null && current.userId == user.id) {
+            _currentSession.value = current.copy(user = user)
+            Timber.d("Updated current user in session: ${user.name} (Tag: ${user.primaryImageTag})")
         }
     }
 
@@ -172,7 +175,6 @@ class SessionManager @Inject constructor(
     }
 
     suspend fun switchUser(serverId: String, userId: UUID): Result<Unit> {
-
         val token = securePrefsRepository.getServerUserToken(serverId, userId)
             ?: return Result.failure(
                 IllegalStateException("No token found for user $userId on server $serverId")
@@ -192,9 +194,13 @@ class SessionManager @Inject constructor(
             return
         }
 
+        val serverId = savedSession.serverId
+        val userId = savedSession.userId
+        val serverUrl = savedSession.serverUrl
+
         val token = securePrefsRepository.getServerUserToken(
-            savedSession.serverId,
-            savedSession.userId
+            serverId,
+            userId
         ) ?: run {
             Timber.w("Saved session exists but no token found - clearing")
             sessionPreferences.clearSession()
@@ -202,9 +208,9 @@ class SessionManager @Inject constructor(
         }
 
         val result = startSession(
-            savedSession.serverUrl,
-            savedSession.serverId,
-            savedSession.userId,
+            serverUrl,
+            serverId,
+            userId,
             token,
             caller = "SessionManager.restoreLastSession"
         )
@@ -257,7 +263,9 @@ class SessionManager @Inject constructor(
     private fun getOrCreateApiClient(serverId: String, serverUrl: String): ApiClient {
         val existingClient = apiClients[serverId]
         if (existingClient != null) {
-            Timber.d("Reusing existing ApiClient for server: $serverId (baseUrl: ${existingClient.baseUrl})")
+            if (existingClient.baseUrl != serverUrl) {
+                existingClient.update(baseUrl = serverUrl)
+            }
             return existingClient
         }
 

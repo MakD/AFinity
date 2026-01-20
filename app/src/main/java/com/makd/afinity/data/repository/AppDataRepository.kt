@@ -27,14 +27,18 @@ import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.util.JellyfinImageUrlBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.ItemFields
@@ -51,7 +55,8 @@ class AppDataRepository @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val preferencesRepository: PreferencesRepository,
     private val database: AfinityDatabase,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val jellyfinImageUrlBuilder: JellyfinImageUrlBuilder
 ) {
     private val GENRE_CACHE_TTL = 12.hours.inWholeMilliseconds
     private val PERSON_SECTION_CACHE_TTL = 48.hours.inWholeMilliseconds
@@ -91,8 +96,30 @@ class AppDataRepository @Inject constructor(
     val separateTvLibrarySections: StateFlow<List<Pair<AfinityCollection, List<AfinityShow>>>> =
         _separateTvLibrarySections.asStateFlow()
 
-    private val _userProfileImageUrl = MutableStateFlow<String?>(null)
-    val userProfileImageUrl: StateFlow<String?> = _userProfileImageUrl.asStateFlow()
+    val userProfileImageUrl: StateFlow<String?> = sessionManager.currentSession
+        .map { session ->
+            if (session?.user != null && !session.user.primaryImageTag.isNullOrBlank()) {
+                val url = jellyfinImageUrlBuilder.buildUserPrimaryImageUrl(
+                    baseUrl = session.serverUrl,
+                    userId = session.user.id.toString(),
+                    tag = session.user.primaryImageTag
+                )
+
+                if (session.user.accessToken != null) {
+                    val separator = if (url.contains("?")) "&" else "?"
+                    "$url${separator}api_key=${session.user.accessToken}"
+                } else {
+                    url
+                }
+            } else {
+                null
+            }
+        }
+        .stateIn(
+            scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
 
     private val _latestMovies = MutableStateFlow<List<AfinityMovie>>(emptyList())
     val latestMovies: StateFlow<List<AfinityMovie>> = _latestMovies.asStateFlow()
@@ -183,7 +210,6 @@ class AppDataRepository @Inject constructor(
                 val continueWatchingDeferred = async { loadContinueWatching() }
                 val nextUpDeferred = async { loadNextUp() }
                 val librariesDeferred = async { loadLibraries() }
-                val userProfileDeferred = async { loadUserProfileImage() }
 
                 updateProgress(0.3f, "Fetching content...")
 
@@ -198,7 +224,6 @@ class AppDataRepository @Inject constructor(
                 _heroCarouselItems.value = heroCarouselDeferred.await()
                 _continueWatching.value = continueWatchingDeferred.await()
                 _nextUp.value = nextUpDeferred.await()
-                _userProfileImageUrl.value = userProfileDeferred.await()
 
                 updateProgress(0.8f, "Finalizing home screen...")
 
@@ -333,17 +358,6 @@ class AppDataRepository @Inject constructor(
             Timber.e(e, "Failed to load libraries")
             emptyList()
         }
-    }
-
-    private suspend fun loadUserProfileImage(): String? {
-        val url = try {
-            jellyfinRepository.getUserProfileImageUrl()
-        } catch (e: Exception) { null }
-        return url
-    }
-
-    fun saveUserProfileImageUrl(url: String?) {
-        _userProfileImageUrl.value = url
     }
 
     private suspend fun loadHomeSpecificData(
@@ -888,7 +902,8 @@ class AppDataRepository @Inject constructor(
                 sectionType = sectionType
             )
 
-            val movieJsonStrings = selectedItems.mapNotNull { afinityTypeConverters.fromAfinityMovie(it) }
+            val movieJsonStrings =
+                selectedItems.mapNotNull { afinityTypeConverters.fromAfinityMovie(it) }
             val entity = PersonSectionCacheEntity(
                 cacheKey = cacheKey,
                 personData = json.encodeToString(personWithCount.toCached()),
@@ -967,7 +982,6 @@ class AppDataRepository @Inject constructor(
         _continueWatching.value = emptyList()
         _nextUp.value = emptyList()
         _libraries.value = emptyList()
-        _userProfileImageUrl.value = null
         _latestMovies.value = emptyList()
         _latestTvSeries.value = emptyList()
         _highestRated.value = emptyList()
