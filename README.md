@@ -147,8 +147,8 @@ Once connected, the Requests tab will appear in the bottom navigation.
 - [ ] Adaptive streaming with quality selection (transcoding support)
 - [ ] Chromecast support
 - [X] Enhanced accessibility features
-- [ ] Multi-user profile switching
-- [ ] Multi-server support
+- [X] Multi-user profile switching
+- [X] Multi-server support
 
 ### Player Enhancements
 
@@ -166,9 +166,9 @@ Once connected, the Requests tab will appear in the bottom navigation.
 
 ### Technical
 
-- [ ] Background sync optimization
+- [X] Background sync optimization
 - [ ] Cache management
-- [ ] Network quality detection
+- [X] Network quality detection
 - [ ] Performance monitoring
 
 ## Acknowledgments
