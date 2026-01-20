@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class PersonViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
+    private val appDataRepository: AppDataRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -31,7 +33,15 @@ class PersonViewModel @Inject constructor(
     val uiState: StateFlow<PersonUiState> = _uiState.asStateFlow()
 
     init {
-        loadPersonDetails()
+        viewModelScope.launch {
+            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
+                if (isLoaded) {
+                    loadPersonDetails()
+                } else {
+                    _uiState.value = PersonUiState()
+                }
+            }
+        }
     }
 
     private fun loadPersonDetails() {

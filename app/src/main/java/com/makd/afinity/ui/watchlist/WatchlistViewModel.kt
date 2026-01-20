@@ -9,6 +9,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -29,7 +30,8 @@ class WatchlistViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val watchlistRepository: WatchlistRepository,
     private val userDataRepository: UserDataRepository,
-    private val downloadRepository: DownloadRepository
+    private val downloadRepository: DownloadRepository,
+    private val appDataRepository: AppDataRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WatchlistUiState())
@@ -50,7 +52,16 @@ class WatchlistViewModel @Inject constructor(
         _selectedEpisodeDownloadInfo.asStateFlow()
 
     init {
-        loadWatchlist()
+        viewModelScope.launch {
+            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
+                if (isLoaded) {
+                    loadWatchlist()
+                } else {
+                    _uiState.value = WatchlistUiState()
+                    clearSelectedEpisode()
+                }
+            }
+        }
     }
 
     fun loadWatchlist() {
@@ -63,7 +74,6 @@ class WatchlistViewModel @Inject constructor(
                     val showsDeferred = async { watchlistRepository.getWatchlistShows() }
                     val seasonsDeferred = async { watchlistRepository.getWatchlistSeasons() }
                     val episodesDeferred = async { watchlistRepository.getWatchlistEpisodes() }
-
 
                     val movies = moviesDeferred.await()
                     val shows = showsDeferred.await()
@@ -79,7 +89,6 @@ class WatchlistViewModel @Inject constructor(
                         error = null,
                     )
                 }
-
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load watchlist")
                 _uiState.value = _uiState.value.copy(

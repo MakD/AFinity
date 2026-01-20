@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,13 +19,29 @@ import javax.inject.Inject
 @HiltViewModel
 class GenreResultsViewModel @Inject constructor(
     private val mediaRepository: MediaRepository,
-    private val jellyfinRepository: JellyfinRepository
+    private val jellyfinRepository: JellyfinRepository,
+    private val appDataRepository: AppDataRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GenreResultsUiState())
     val uiState: StateFlow<GenreResultsUiState> = _uiState.asStateFlow()
 
+    private var currentGenre: String? = null
+
+    init {
+        viewModelScope.launch {
+            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
+                if (isLoaded) {
+                    currentGenre?.let { loadGenreResults(it) }
+                } else {
+                    _uiState.value = GenreResultsUiState()
+                }
+            }
+        }
+    }
+
     fun loadGenreResults(genre: String) {
+        currentGenre = genre
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)

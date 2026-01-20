@@ -8,6 +8,7 @@ import androidx.paging.cachedIn
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.UUID
@@ -27,6 +29,7 @@ enum class FilterType {
 @HiltViewModel
 class LibraryContentViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
+    private val appDataRepository: AppDataRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -58,7 +61,22 @@ class LibraryContentViewModel @Inject constructor(
     private var currentFilter = FilterType.ALL
 
     init {
-        loadLibraryContent()
+        viewModelScope.launch {
+            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
+                if (isLoaded) {
+                    loadLibraryContent()
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = true,
+                            error = null,
+                            userProfileImageUrl = null
+                        )
+                    }
+                    _pagingData.value = emptyFlow()
+                }
+            }
+        }
     }
 
     private suspend fun loadUserProfileImage(): String? {
@@ -132,7 +150,7 @@ class LibraryContentViewModel @Inject constructor(
                 Timber.e(e, "Failed to load library content")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Failed to load library: ${e.message}"
+                    error = "Content not available on this server"
                 )
             }
         }

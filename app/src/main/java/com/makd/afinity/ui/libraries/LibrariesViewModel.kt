@@ -3,6 +3,7 @@ package com.makd.afinity.ui.libraries
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,27 +15,27 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LibrariesViewModel @Inject constructor(
-    private val jellyfinRepository: JellyfinRepository
+    private val jellyfinRepository: JellyfinRepository,
+    private val appDataRepository: AppDataRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibrariesUiState())
     val uiState: StateFlow<LibrariesUiState> = _uiState.asStateFlow()
 
-    private var lastLoadTime = 0L
-    private val cacheValidDuration = 2 * 60 * 1000L
-
     init {
-        loadLibraries()
+        viewModelScope.launch {
+            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
+                if (isLoaded) {
+                    loadLibraries(forceRefresh = true)
+                } else {
+                    _uiState.value = LibrariesUiState()
+                }
+            }
+        }
     }
 
-    private fun loadLibraries() {
+    private fun loadLibraries(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            val currentTime = System.currentTimeMillis()
-            if (currentTime - lastLoadTime < cacheValidDuration && _uiState.value.libraries.isNotEmpty()) {
-                Timber.d("Using cached libraries data")
-                return@launch
-            }
-
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
@@ -45,7 +46,6 @@ class LibrariesViewModel @Inject constructor(
                     error = null
                 )
 
-                lastLoadTime = currentTime
                 Timber.d("Successfully loaded ${libraries.size} libraries")
 
             } catch (e: Exception) {

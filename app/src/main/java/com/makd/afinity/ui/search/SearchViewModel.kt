@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
@@ -29,7 +30,8 @@ import javax.inject.Inject
 class SearchViewModel @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val jellyfinRepository: JellyfinRepository,
-    private val jellyseerrRepository: JellyseerrRepository
+    private val jellyseerrRepository: JellyseerrRepository,
+    private val appDataRepository: AppDataRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -38,8 +40,24 @@ class SearchViewModel @Inject constructor(
     val isJellyseerrAuthenticated = jellyseerrRepository.isAuthenticated
 
     init {
-        loadLibraries()
-        loadGenres()
+        viewModelScope.launch {
+            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
+                if (isLoaded) {
+                    loadLibraries()
+                    loadGenres()
+
+                    if (_uiState.value.searchQuery.isNotEmpty()) {
+                        if (_uiState.value.isJellyseerrSearchMode) {
+                            performJellyseerrSearch()
+                        } else {
+                            performSearch()
+                        }
+                    }
+                } else {
+                    _uiState.value = SearchUiState()
+                }
+            }
+        }
     }
 
     fun loadLibraries() {

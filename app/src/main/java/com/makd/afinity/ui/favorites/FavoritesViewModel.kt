@@ -10,6 +10,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -32,7 +33,8 @@ class FavoritesViewModel @Inject constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
     private val watchlistRepository: WatchlistRepository,
-    private val downloadRepository: DownloadRepository
+    private val downloadRepository: DownloadRepository,
+    private val appDataRepository: AppDataRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FavoritesUiState())
@@ -53,7 +55,16 @@ class FavoritesViewModel @Inject constructor(
         _selectedEpisodeDownloadInfo.asStateFlow()
 
     init {
-        loadFavorites()
+        viewModelScope.launch {
+            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
+                if (isLoaded) {
+                    loadFavorites()
+                } else {
+                    _uiState.value = FavoritesUiState()
+                    clearSelectedEpisode()
+                }
+            }
+        }
     }
 
     fun loadFavorites() {

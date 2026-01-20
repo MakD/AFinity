@@ -35,6 +35,7 @@ import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.Trickplay
 import com.makd.afinity.data.models.player.VideoZoomMode
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
@@ -75,6 +76,7 @@ class PlayerViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val playlistManager: PlaylistManager,
     private val downloadRepository: JellyfinDownloadRepository,
+    private val appDataRepository: AppDataRepository,
     private val apiClient: ApiClient
 ) : ViewModel(), Player.Listener {
 
@@ -112,6 +114,17 @@ class PlayerViewModel @Inject constructor(
     }
 
     init {
+        viewModelScope.launch {
+            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
+                if (!isLoaded) {
+                    Timber.d("Session cleared, stopping playback")
+                    stopPlayback()
+                    player.stop()
+                    player.clearMediaItems()
+                    updateUiState { PlayerUiState() }
+                }
+            }
+        }
         initializePlayer()
         startPositionUpdateLoop()
         startProgressReporting()
