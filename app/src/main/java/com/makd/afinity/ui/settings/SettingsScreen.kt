@@ -21,8 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -30,25 +28,26 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -75,7 +74,6 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val combineLibrarySections by viewModel.combineLibrarySections.collectAsStateWithLifecycle()
     val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsStateWithLifecycle()
     val manualOfflineMode by viewModel.manualOfflineMode.collectAsStateWithLifecycle()
@@ -87,8 +85,8 @@ fun SettingsScreen(
     var showJellyseerrLogoutDialog by remember { mutableStateOf(false) }
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
-    val jellyseerrSheetState = androidx.compose.material3.rememberModalBottomSheetState()
-    val sessionSwitcherSheetState = androidx.compose.material3.rememberModalBottomSheetState()
+    val jellyseerrSheetState = rememberModalBottomSheetState()
+    val sessionSwitcherSheetState = rememberModalBottomSheetState()
 
     if (showLogoutDialog) {
         LogoutConfirmationDialog(
@@ -96,9 +94,7 @@ fun SettingsScreen(
                 showLogoutDialog = false
                 viewModel.logout(onLogoutComplete)
             },
-            onDismiss = {
-                showLogoutDialog = false
-            }
+            onDismiss = { showLogoutDialog = false }
         )
     }
 
@@ -108,9 +104,7 @@ fun SettingsScreen(
                 showJellyseerrLogoutDialog = false
                 viewModel.logoutFromJellyseerr()
             },
-            onDismiss = {
-                showJellyseerrLogoutDialog = false
-            }
+            onDismiss = { showJellyseerrLogoutDialog = false }
         )
     }
 
@@ -129,22 +123,17 @@ fun SettingsScreen(
     }
 
     uiState.error?.let { error ->
-        LaunchedEffect(error) {
-            Timber.e("Settings error: $error")
-        }
+        LaunchedEffect(error) { Timber.e("Settings error: $error") }
         AlertDialog(
             onDismissRequest = { viewModel.clearError() },
             title = { Text("Error") },
             text = { Text(error) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.clearError() }) {
-                    Text("OK")
-                }
-            }
+            confirmButton = { TextButton(onClick = { viewModel.clearError() }) { Text("OK") } }
         )
     }
 
     Scaffold(
+        modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = {
@@ -168,7 +157,7 @@ fun SettingsScreen(
                 )
             )
         },
-        modifier = modifier.fillMaxSize()
+        containerColor = MaterialTheme.colorScheme.surface
     ) { innerPadding ->
         if (uiState.isLoading) {
             Box(
@@ -184,49 +173,84 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                item(key = "profile_${uiState.currentUser?.id}_${uiState.serverName}") {
+                item(key = "profile") {
                     ProfileHeader(
                         userName = uiState.currentUser?.name ?: "Unknown User",
                         serverName = uiState.serverName,
                         serverUrl = uiState.serverUrl,
-                        userProfileImageUrl = uiState.userProfileImageUrl
+                        userProfileImageUrl = uiState.userProfileImageUrl,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
 
                 item {
-                    GeneralSection(
-                        manualOfflineMode = manualOfflineMode,
-                        effectiveOfflineMode = effectiveOfflineMode,
-                        isNetworkAvailable = isNetworkAvailable,
-                        isJellyseerrAuthenticated = isJellyseerrAuthenticated,
-                        onOfflineModeToggle = viewModel::toggleOfflineMode,
-                        onJellyseerrToggle = { enabled ->
-                            if (enabled) {
-                                showJellyseerrBottomSheet = true
-                            } else {
-                                showJellyseerrLogoutDialog = true
+                    SettingsGroup(title = "General") {
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_cloud_off),
+                            title = "Offline Mode",
+                            subtitle = if (!isNetworkAvailable) "Offline (No connection)" else if (manualOfflineMode) "Manually enabled" else "Force offline mode",
+                            checked = effectiveOfflineMode,
+                            onCheckedChange = viewModel::toggleOfflineMode,
+                            enabled = isNetworkAvailable
+                        )
+                        SettingsDivider()
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_request_seerr_dark),
+                            title = "Discovery & Requests",
+                            subtitle = if (isJellyseerrAuthenticated) "Connected via Seerr" else "Connect to request content",
+                            checked = isJellyseerrAuthenticated,
+                            onCheckedChange = { enabled ->
+                                if (enabled) showJellyseerrBottomSheet =
+                                    true else showJellyseerrLogoutDialog = true
                             }
-                        },
-                        onDownloadClick = onDownloadClick,
-                        onSwitchSessionClick = { showSessionSwitcherSheet = true },
-                        onLogoutClick = { showLogoutDialog = true },
-                        isLoggingOut = uiState.isLoggingOut
-                    )
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_download),
+                            title = "Downloads",
+                            subtitle = "Manage offline content",
+                            onClick = onDownloadClick
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_user),
+                            title = "Switch Session",
+                            subtitle = "Change user or server",
+                            onClick = { showSessionSwitcherSheet = true }
+                        )
+                    }
                 }
 
                 item {
-                    AppearanceSection(
-                        onAppearanceOptionsClick = onAppearanceOptionsClick
-                    )
+                    SettingsGroup(title = "Connections") {
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_server),
+                            title = "Manage Servers",
+                            subtitle = "Add or remove Jellyfin servers",
+                            onClick = onServerManagementClick
+                        )
+                    }
                 }
 
                 item {
-                    PlaybackSection(
-                        onPlayerOptionsClick = onPlayerOptionsClick
-                    )
+                    SettingsGroup(title = "Preferences") {
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_color_swatch),
+                            title = "Appearance",
+                            subtitle = "Themes and layout",
+                            onClick = onAppearanceOptionsClick
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_playback_settings),
+                            title = "Playback",
+                            subtitle = "Player behavior and quality",
+                            onClick = onPlayerOptionsClick
+                        )
+                    }
                 }
 
                 item {
@@ -234,24 +258,108 @@ fun SettingsScreen(
                 }
 
                 item {
-                    ServerManagementSection(
-                        onServerManagementClick = onServerManagementClick
-                    )
+                    SettingsGroup(title = "About") {
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_versions),
+                            title = "Version",
+                            subtitle = "${AppConstants.VERSION_NAME} (${if (AppConstants.IS_DEBUG) "Debug" else "Release"})",
+                            onClick = null
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_source_code),
+                            title = "Licenses",
+                            subtitle = "Open source libraries",
+                            onClick = onLicensesClick
+                        )
+                    }
                 }
 
                 item {
-                    AboutSection(
-                        appVersion = AppConstants.VERSION_NAME,
-                        onLicensesClick = onLicensesClick
-                    )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .padding(bottom = 32.dp)
+                    ) {
+                        Button(
+                            onClick = { showLogoutDialog = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            enabled = !uiState.isLoggingOut
+                        ) {
+                            if (uiState.isLoggingOut) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_logout),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Log Out",
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun SettingsGroup(
+    title: String? = null,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        if (title != null) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+            )
+        }
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(vertical = 4.dp)
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 56.dp, end = 16.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+    )
 }
 
 @Composable
@@ -262,403 +370,77 @@ private fun ProfileHeader(
     userProfileImageUrl: String?,
     modifier: Modifier = Modifier
 ) {
-    Timber.d(
-        "ProfileHeader recomposing: userName=$userName, serverName=$serverName, serverUrl=$serverUrl, profileImageUrl=${
-            userProfileImageUrl?.take(
-                50
-            )
-        }"
-    )
-
-    Card(
+    Row(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                .size(72.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
-            ) {
-                if (userProfileImageUrl != null) {
-                    AsyncImage(
-                        imageUrl = userProfileImageUrl,
-                        contentDescription = "Profile Picture",
-                        targetWidth = 64.dp,
-                        targetHeight = 64.dp,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_user),
-                        contentDescription = "Profile",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = userName,
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Text(
-                        text = serverName ?: "Jellyfin Server",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (serverUrl != null) {
-                        Text(
-                            text = serverUrl,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun GeneralSection(
-    manualOfflineMode: Boolean,
-    effectiveOfflineMode: Boolean,
-    isNetworkAvailable: Boolean,
-    isJellyseerrAuthenticated: Boolean,
-    onOfflineModeToggle: (Boolean) -> Unit,
-    onJellyseerrToggle: (Boolean) -> Unit,
-    onDownloadClick: () -> Unit,
-    onSwitchSessionClick: () -> Unit,
-    onLogoutClick: () -> Unit,
-    isLoggingOut: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val offlineSubtitle = when {
-        !isNetworkAvailable -> "Offline (No network connection)"
-        manualOfflineMode -> "Manually enabled"
-        else -> "Manually enable offline mode"
-    }
-
-    val jellyseerrSubtitle = if (isJellyseerrAuthenticated) {
-        "Connected - Tap to logout"
-    } else {
-        "Connect to request content"
-    }
-
-    SettingsSection(
-        title = "General",
-        icon = painterResource(id = R.drawable.ic_settings),
-        modifier = modifier
-    ) {
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_cloud_off),
-            title = "Offline Mode",
-            subtitle = offlineSubtitle,
-            checked = effectiveOfflineMode,
-            onCheckedChange = onOfflineModeToggle,
-            enabled = isNetworkAvailable
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_request_seerr_dark),
-            title = "Seerr",
-            subtitle = jellyseerrSubtitle,
-            checked = isJellyseerrAuthenticated,
-            onCheckedChange = onJellyseerrToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_download),
-            title = "Downloads",
-            subtitle = "Manage downloads and offline content",
-            onClick = onDownloadClick
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_user),
-            title = "Switch Session",
-            subtitle = "Switch between servers and users",
-            onClick = onSwitchSessionClick
-        )
-
-        Button(
-            onClick = onLogoutClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer
-            ),
-            shape = RoundedCornerShape(12.dp),
-            enabled = !isLoggingOut
-        ) {
-            if (isLoggingOut) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    strokeWidth = 2.dp
+            if (userProfileImageUrl != null) {
+                AsyncImage(
+                    imageUrl = userProfileImageUrl,
+                    contentDescription = "Profile Picture",
+                    targetWidth = 72.dp,
+                    targetHeight = 72.dp,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             } else {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_logout),
-                    contentDescription = "Logout",
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Logout",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    painter = painterResource(id = R.drawable.ic_user),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.size(32.dp)
                 )
             }
         }
-    }
-}
 
-@Composable
-private fun AppearanceSection(
-    onAppearanceOptionsClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_color_swatch),
-            title = "Appearance",
-            subtitle = "Configure theme, colors, and library layout",
-            onClick = onAppearanceOptionsClick
-        )
-    }
-}
+        Spacer(modifier = Modifier.width(20.dp))
 
-@Composable
-private fun PlaybackSection(
-    onPlayerOptionsClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_playback_settings),
-            title = "Player Options",
-            subtitle = "Configure playback and player settings",
-            onClick = onPlayerOptionsClick
-        )
-    }
-}
-
-@Composable
-private fun ServerManagementSection(
-    onServerManagementClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_server),
-            title = "Manage Servers",
-            subtitle = "Add, edit, and manage multiple Jellyfin servers",
-            onClick = onServerManagementClick
-        )
-    }
-}
-
-@Composable
-private fun JellyseerrLogoutConfirmationDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_request_seerr_dark),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(32.dp)
-            )
-        },
-        title = {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = "Logout from Seerr",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold
-                )
+                text = userName,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
             )
-        },
-        text = {
-            Text(
-                text = "Are you sure you want to logout from Seerr? You will need to login again to request content.",
-                style = MaterialTheme.typography.bodyLarge
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                )
+
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(8.dp),
             ) {
-                Text("Logout")
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_server),
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = serverName ?: "Unknown Server",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-        shape = RoundedCornerShape(24.dp)
-    )
-}
 
-@Composable
-private fun AboutSection(
-    appVersion: String,
-    onLicensesClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    SettingsSection(
-        title = "About",
-        icon = painterResource(id = R.drawable.ic_info_outlined),
-        modifier = modifier
-    ) {
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_versions),
-            title = "App Version",
-            subtitle = appVersion,
-            onClick = null
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_code),
-            title = "Build Type",
-            subtitle = if (AppConstants.IS_DEBUG) "Debug" else "Release",
-            onClick = null
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_source_code),
-            title = "Open Source Licenses",
-            subtitle = "View licenses for open source libraries",
-            onClick = onLicensesClick
-        )
-    }
-}
-
-@Composable
-private fun SettingsSection(
-    title: String,
-    icon: Painter,
-    modifier: Modifier = Modifier,
-    content: @Composable (ColumnScope.() -> Unit)
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    painter = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
+            if (serverUrl != null) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = serverUrl,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            content()
         }
     }
 }
@@ -675,16 +457,9 @@ private fun SettingsItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable(onClick = onClick)
-                } else {
-                    Modifier
-                }
-            )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             painter = icon,
@@ -693,24 +468,27 @@ private fun SettingsItem(
             modifier = Modifier.size(24.dp)
         )
 
+        Spacer(modifier = Modifier.width(16.dp))
+
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
-                ),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (subtitle.isNotBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
         }
 
         if (trailing != null) {
@@ -719,8 +497,8 @@ private fun SettingsItem(
             Icon(
                 painter = painterResource(id = R.drawable.ic_chevron_right),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.size(24.dp)
+                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -750,45 +528,39 @@ private fun SettingsSwitchItem(
                 onCheckedChange = onCheckedChange,
                 enabled = enabled,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
-                    disabledCheckedThumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    disabledCheckedTrackColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                        alpha = 0.5f
-                    )
-                )
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    uncheckedBorderColor = MaterialTheme.colorScheme.outline
+                ),
+                modifier = Modifier.scale(0.8f)
             )
         }
     )
 }
 
 @Composable
-private fun LogoutConfirmationDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
+private fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
                 painter = painterResource(id = R.drawable.ic_logout),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(32.dp)
+                tint = MaterialTheme.colorScheme.error
             )
         },
         title = {
             Text(
-                text = "Logout",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold
-                )
+                "Log Out",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
             )
         },
         text = {
             Text(
-                text = "Are you sure you want to logout? You will need to login again to access your content.",
-                style = MaterialTheme.typography.bodyLarge
+                "Are you sure you want to log out? You will need to sign in again to access content.",
+                style = MaterialTheme.typography.bodyMedium
             )
         },
         confirmButton = {
@@ -798,15 +570,42 @@ private fun LogoutConfirmationDialog(
                     containerColor = MaterialTheme.colorScheme.error,
                     contentColor = MaterialTheme.colorScheme.onError
                 )
-            ) {
-                Text("Logout")
-            }
+            ) { Text("Log Out") }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    )
+}
+
+@Composable
+private fun JellyseerrLogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_request_seerr_dark),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
         },
-        shape = RoundedCornerShape(24.dp)
+        title = {
+            Text(
+                "Disconnect Seerr",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        text = {
+            Text(
+                "Disconnecting will prevent you from making new requests. You can reconnect at any time.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) { Text("Disconnect") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
     )
 }

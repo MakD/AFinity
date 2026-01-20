@@ -25,8 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +37,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -53,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
@@ -94,9 +94,7 @@ fun PlayerOptionsScreen(
         ).preferencesRepository()
     }
     val subtitlePrefs by preferencesRepository.getSubtitlePreferencesFlow()
-        .collectAsStateWithLifecycle(
-            initialValue = SubtitlePreferences.DEFAULT
-        )
+        .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
 
     Scaffold(
         topBar = {
@@ -122,238 +120,218 @@ fun PlayerOptionsScreen(
                 )
             )
         },
+        containerColor = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                PlaybackOptionsSection(
-                    autoPlay = uiState.autoPlay,
-                    skipIntroEnabled = uiState.skipIntroEnabled,
-                    skipOutroEnabled = uiState.skipOutroEnabled,
-                    useExoPlayer = uiState.useExoPlayer,
-                    pipGestureEnabled = uiState.pipGestureEnabled,
-                    pipBackgroundPlay = uiState.pipBackgroundPlay,
-                    onPipBackgroundPlayToggle = viewModel::togglePipBackgroundPlay,
-                    onAutoPlayToggle = viewModel::toggleAutoPlay,
-                    onSkipIntroToggle = viewModel::toggleSkipIntro,
-                    onSkipOutroToggle = viewModel::toggleSkipOutro,
-                    onUseExoPlayerToggle = viewModel::toggleUseExoPlayer,
-                    onPipGestureToggle = viewModel::togglePipGesture
-                )
-            }
-
-            item {
-                PlayerUISection(
-                    logoAutoHide = uiState.logoAutoHide,
-                    onLogoAutoHideToggle = viewModel::toggleLogoAutoHide,
-                    defaultVideoZoomMode = uiState.defaultVideoZoomMode,
-                    onVideoZoomModeChange = viewModel::setDefaultVideoZoomMode
-                )
-            }
-
-            item {
-                SubtitleCustomizationSection(
-                    subtitlePrefs = subtitlePrefs,
-                    useExoPlayer = uiState.useExoPlayer,
-                    onUpdate = { updatedPrefs ->
-                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
-                            .launch {
-                                preferencesRepository.setSubtitlePreferences(updatedPrefs)
-                            }
-                    }
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun PlaybackOptionsSection(
-    autoPlay: Boolean,
-    skipIntroEnabled: Boolean,
-    skipOutroEnabled: Boolean,
-    useExoPlayer: Boolean,
-    pipGestureEnabled: Boolean,
-    pipBackgroundPlay: Boolean,
-    onAutoPlayToggle: (Boolean) -> Unit,
-    onSkipIntroToggle: (Boolean) -> Unit,
-    onSkipOutroToggle: (Boolean) -> Unit,
-    onUseExoPlayerToggle: (Boolean) -> Unit,
-    onPipGestureToggle: (Boolean) -> Unit,
-    onPipBackgroundPlayToggle: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    PlayerSettingsSection(
-        modifier = modifier
-    ) {
-        PlayerSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_video_settings),
-            title = "Use ExoPlayer",
-            subtitle = "Uses LibMPV when disabled",
-            checked = useExoPlayer,
-            onCheckedChange = onUseExoPlayerToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        PlayerSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_pip),
-            title = "Picture-in-Picture Home Gesture",
-            subtitle = "Use home button or gesture to enter picture-in-picture",
-            checked = pipGestureEnabled,
-            onCheckedChange = onPipGestureToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        PlayerSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_headphones),
-            title = "Background Play in PiP",
-            subtitle = "Continue playing audio when screen is turned off while in Picture-in-Picture mode",
-            checked = pipBackgroundPlay,
-            onCheckedChange = onPipBackgroundPlayToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        PlayerSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_play_arrow),
-            title = "Auto-play",
-            subtitle = "Automatically play next episode",
-            checked = autoPlay,
-            onCheckedChange = onAutoPlayToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        PlayerSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_skip_next),
-            title = "Skip Intro",
-            subtitle = "Show the Skip Intro Button",
-            checked = skipIntroEnabled,
-            onCheckedChange = onSkipIntroToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        PlayerSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_fast_forward),
-            title = "Skip Outro",
-            subtitle = "Show the Skip Outro Button",
-            checked = skipOutroEnabled,
-            onCheckedChange = onSkipOutroToggle
-        )
-    }
-}
-
-@Composable
-private fun PlayerUISection(
-    logoAutoHide: Boolean,
-    onLogoAutoHideToggle: (Boolean) -> Unit,
-    defaultVideoZoomMode: VideoZoomMode,
-    onVideoZoomModeChange: (VideoZoomMode) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    PlayerSettingsSection(
-        modifier = modifier
-    ) {
-        PlayerSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_visibility),
-            title = "Auto-hide Logo/Title",
-            subtitle = "Logo/title auto-hides with controls",
-            checked = logoAutoHide,
-            onCheckedChange = onLogoAutoHideToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        VideoZoomModeDropdownItem(
-            selectedMode = defaultVideoZoomMode,
-            onModeSelected = onVideoZoomModeChange
-        )
-    }
-}
-
-@Composable
-private fun PlayerSettingsSection(
-    title: String? = null,
-    icon: Painter? = null,
-    modifier: Modifier = Modifier,
-    content: @Composable (ColumnScope.() -> Unit)
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-        ) {
-            if (title != null && icon != null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        painter = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                SettingsGroup(title = "Engine & Behavior") {
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_video_settings),
+                        title = "Use ExoPlayer",
+                        subtitle = "Uses LibMPV when disabled",
+                        checked = uiState.useExoPlayer,
+                        onCheckedChange = viewModel::toggleUseExoPlayer
                     )
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_play_arrow),
+                        title = "Auto-play",
+                        subtitle = "Automatically play next episode",
+                        checked = uiState.autoPlay,
+                        onCheckedChange = viewModel::toggleAutoPlay
                     )
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
             }
 
-            content()
+            item {
+                SettingsGroup(title = "Picture-in-Picture") {
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_pip),
+                        title = "Home Gesture",
+                        subtitle = "Enter PiP when swiping home",
+                        checked = uiState.pipGestureEnabled,
+                        onCheckedChange = viewModel::togglePipGesture
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_headphones),
+                        title = "Background Audio",
+                        subtitle = "Keep playing audio when screen is off",
+                        checked = uiState.pipBackgroundPlay,
+                        onCheckedChange = viewModel::togglePipBackgroundPlay
+                    )
+                }
+            }
+
+            item {
+                SettingsGroup(title = "Interface") {
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_skip_next),
+                        title = "Skip Intro Button",
+                        subtitle = "Show button when intro is detected",
+                        checked = uiState.skipIntroEnabled,
+                        onCheckedChange = viewModel::toggleSkipIntro
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_fast_forward),
+                        title = "Skip Outro Button",
+                        subtitle = "Show button when outro is detected",
+                        checked = uiState.skipOutroEnabled,
+                        onCheckedChange = viewModel::toggleSkipOutro
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_visibility),
+                        title = "Auto-hide Logo",
+                        subtitle = "Hide title logo with player controls",
+                        checked = uiState.logoAutoHide,
+                        onCheckedChange = viewModel::toggleLogoAutoHide
+                    )
+                    SettingsDivider()
+                    VideoZoomModeSelectorItem(
+                        selectedMode = uiState.defaultVideoZoomMode,
+                        onModeSelected = viewModel::setDefaultVideoZoomMode
+                    )
+                }
+            }
+
+            item {
+                SettingsGroup(title = "Subtitles") {
+                    Box(modifier = Modifier.padding(16.dp)) {
+                        SubtitlePreview(
+                            subtitlePrefs = subtitlePrefs,
+                            useExoPlayer = uiState.useExoPlayer
+                        )
+                    }
+
+                    SettingsDivider()
+
+                    SubtitleCustomizationContent(
+                        subtitlePrefs = subtitlePrefs,
+                        useExoPlayer = uiState.useExoPlayer,
+                        onUpdate = { updatedPrefs ->
+                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
+                                .launch {
+                                    preferencesRepository.setSubtitlePreferences(updatedPrefs)
+                                }
+                        }
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun PlayerSettingsSwitchItem(
+private fun SettingsGroup(
+    title: String? = null,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        if (title != null) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+            )
+        }
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 56.dp, end = 16.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+    )
+}
+
+@Composable
+private fun SettingsItem(
+    icon: Painter? = null,
+    title: String,
+    subtitle: String? = null,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    trailing: @Composable (() -> Unit)? = null
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icon != null) {
+            Icon(
+                painter = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
+
+        if (trailing != null) {
+            trailing()
+        } else if (onClick != null) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingsSwitchItem(
     icon: Painter,
     title: String,
     subtitle: String,
@@ -362,271 +340,264 @@ private fun PlayerSettingsSwitchItem(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (enabled) {
-                    Modifier.clickable { onCheckedChange(!checked) }
-                } else {
-                    Modifier
-                }
-            )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            painter = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
+    SettingsItem(
+        icon = icon,
+        title = title,
+        subtitle = subtitle,
+        onClick = if (enabled) {
+            { onCheckedChange(!checked) }
+        } else null,
+        modifier = modifier,
+        trailing = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                enabled = enabled,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    uncheckedBorderColor = MaterialTheme.colorScheme.outline
                 ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2
+                modifier = Modifier.scale(0.8f)
             )
         }
+    )
+}
 
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
-                disabledCheckedThumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                disabledCheckedTrackColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                    alpha = 0.5f
+@Composable
+private fun VideoZoomModeSelectorItem(
+    selectedMode: VideoZoomMode,
+    onModeSelected: (VideoZoomMode) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val modes = listOf(VideoZoomMode.FIT, VideoZoomMode.ZOOM, VideoZoomMode.STRETCH)
+
+    Box {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_fullscreen),
+            title = "Default Zoom",
+            subtitle = selectedMode.getDisplayName(),
+            onClick = { expanded = true },
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp)
                 )
-            )
+            }
         )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        ) {
+            modes.forEach { mode ->
+                DropdownMenuItem(
+                    text = { Text(mode.getDisplayName()) },
+                    onClick = {
+                        onModeSelected(mode)
+                        expanded = false
+                    },
+                    leadingIcon = if (selectedMode == mode) {
+                        {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_check),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    } else null
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun SubtitleCustomizationSection(
+private fun SubtitleCustomizationContent(
     subtitlePrefs: SubtitlePreferences,
     useExoPlayer: Boolean,
-    onUpdate: (SubtitlePreferences) -> Unit,
-    modifier: Modifier = Modifier
+    onUpdate: (SubtitlePreferences) -> Unit
 ) {
-    PlayerSettingsSection(
-        title = "Subtitle Customization",
-        icon = painterResource(id = R.drawable.ic_subtitle_format),
-        modifier = modifier
-    ) {
-        SubtitlePreview(
-            subtitlePrefs = subtitlePrefs,
-            useExoPlayer = useExoPlayer,
-            modifier = Modifier.padding(16.dp)
-        )
+    ColorPickerItem(
+        title = "Text Color",
+        color = subtitlePrefs.textColor,
+        onColorChange = { onUpdate(subtitlePrefs.copy(textColor = it)) }
+    )
 
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
+    SettingsDivider()
 
+    SubtitleSliderItem(
+        title = "Text Size",
+        value = subtitlePrefs.textSize,
+        valueRange = 0.5f..2.0f,
+        onValueChange = { onUpdate(subtitlePrefs.copy(textSize = it)) }
+    )
+
+    SettingsDivider()
+
+    SettingsSwitchItem(
+        icon = painterResource(id = R.drawable.ic_bold),
+        title = "Bold Text",
+        subtitle = "Make subtitles thicker",
+        checked = subtitlePrefs.bold,
+        onCheckedChange = { onUpdate(subtitlePrefs.copy(bold = it)) }
+    )
+
+    if (!useExoPlayer) {
+        SettingsDivider()
+        SettingsSwitchItem(
+            icon = painterResource(id = R.drawable.ic_italic),
+            title = "Italic Text",
+            subtitle = "Slant text style",
+            checked = subtitlePrefs.italic,
+            onCheckedChange = { onUpdate(subtitlePrefs.copy(italic = it)) }
+        )
+    }
+
+    SettingsDivider()
+
+    SubtitleDropdownItem(
+        title = "Outline Style",
+        selectedValue = subtitlePrefs.outlineStyle.displayName,
+        options = SubtitleOutlineStyle.entries
+            .filter { style ->
+                when (style) {
+                    SubtitleOutlineStyle.BACKGROUND_BOX -> !useExoPlayer
+                    SubtitleOutlineStyle.RAISED, SubtitleOutlineStyle.DEPRESSED -> useExoPlayer
+                    else -> true
+                }
+            }
+            .map { it.displayName },
+        onValueChange = { selected ->
+            val style = SubtitleOutlineStyle.entries.first { it.displayName == selected }
+            onUpdate(subtitlePrefs.copy(outlineStyle = style))
+        },
+        icon = painterResource(id = R.drawable.ic_texture)
+    )
+
+    if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE || subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW) {
+        SettingsDivider()
         ColorPickerItem(
-            title = "Text Color",
-            color = subtitlePrefs.textColor,
-            onColorChange = { onUpdate(subtitlePrefs.copy(textColor = it)) }
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        SubtitleSliderItem(
-            title = "Text Size",
-            value = subtitlePrefs.textSize,
-            valueRange = 0.5f..2.0f,
-            onValueChange = { onUpdate(subtitlePrefs.copy(textSize = it)) }
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        PlayerSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_bold),
-            title = "Bold",
-            subtitle = "Make subtitle text bold",
-            checked = subtitlePrefs.bold,
-            onCheckedChange = { onUpdate(subtitlePrefs.copy(bold = it)) }
+            title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW) "Shadow Color" else "Outline Color",
+            color = subtitlePrefs.outlineColor,
+            onColorChange = { onUpdate(subtitlePrefs.copy(outlineColor = it)) }
         )
 
         if (!useExoPlayer) {
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
-
-            PlayerSettingsSwitchItem(
-                icon = painterResource(id = R.drawable.ic_italic),
-                title = "Italic",
-                subtitle = "Make subtitle text italic",
-                checked = subtitlePrefs.italic,
-                onCheckedChange = { onUpdate(subtitlePrefs.copy(italic = it)) }
+            SettingsDivider()
+            SubtitleSliderItem(
+                title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW) "Shadow Size" else "Outline Size",
+                value = subtitlePrefs.outlineSize,
+                valueRange = 0f..10f,
+                onValueChange = { onUpdate(subtitlePrefs.copy(outlineSize = it)) }
             )
         }
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    } else if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.BACKGROUND_BOX) {
+        SettingsDivider()
+        ColorPickerItem(
+            title = "Background Color",
+            color = subtitlePrefs.backgroundColor,
+            onColorChange = { onUpdate(subtitlePrefs.copy(backgroundColor = it)) }
         )
+    }
+
+    if (useExoPlayer) {
+        SettingsDivider()
+        ColorPickerItem(
+            title = "Window Color",
+            color = subtitlePrefs.windowColor,
+            onColorChange = { onUpdate(subtitlePrefs.copy(windowColor = it)) }
+        )
+    }
+
+    if (!useExoPlayer) {
+        SettingsDivider()
+        SubtitleDropdownItem(
+            title = "Vertical Position",
+            selectedValue = subtitlePrefs.verticalPosition.displayName,
+            options = SubtitleVerticalPosition.entries.map { it.displayName },
+            onValueChange = { selected ->
+                val position = SubtitleVerticalPosition.entries.first { it.displayName == selected }
+                onUpdate(subtitlePrefs.copy(verticalPosition = position))
+            },
+            icon = painterResource(id = R.drawable.ic_vertical)
+        )
+
+        SettingsDivider()
 
         SubtitleDropdownItem(
-            title = "Outline Style",
-            selectedValue = subtitlePrefs.outlineStyle.displayName,
-            options = SubtitleOutlineStyle.entries
-                .filter { style ->
-                    when (style) {
-                        SubtitleOutlineStyle.BACKGROUND_BOX -> !useExoPlayer
-                        SubtitleOutlineStyle.RAISED, SubtitleOutlineStyle.DEPRESSED -> useExoPlayer
-                        else -> true
-                    }
-                }
-                .map { it.displayName },
+            title = "Horizontal Alignment",
+            selectedValue = subtitlePrefs.horizontalAlignment.displayName,
+            options = SubtitleHorizontalAlignment.entries.map { it.displayName },
             onValueChange = { selected ->
-                val style = SubtitleOutlineStyle.entries.first { it.displayName == selected }
-                onUpdate(subtitlePrefs.copy(outlineStyle = style))
+                val alignment =
+                    SubtitleHorizontalAlignment.entries.first { it.displayName == selected }
+                onUpdate(subtitlePrefs.copy(horizontalAlignment = alignment))
             },
-            icon = painterResource(id = R.drawable.ic_texture)
+            icon = painterResource(id = R.drawable.ic_horizontal)
         )
+    }
 
-        when (subtitlePrefs.outlineStyle) {
-            SubtitleOutlineStyle.OUTLINE, SubtitleOutlineStyle.DROP_SHADOW -> {
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                val colorTitle =
-                    if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW) {
-                        "Drop Shadow Color"
-                    } else {
-                        "Outline Color"
-                    }
-
-                ColorPickerItem(
-                    title = colorTitle,
-                    color = subtitlePrefs.outlineColor,
-                    onColorChange = { onUpdate(subtitlePrefs.copy(outlineColor = it)) }
-                )
-
-                if (!useExoPlayer) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-
-                    val sizeTitle =
-                        if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW) {
-                            "Drop Shadow Offset"
-                        } else {
-                            "Outline Size"
-                        }
-
-                    SubtitleSliderItem(
-                        title = sizeTitle,
-                        value = subtitlePrefs.outlineSize,
-                        valueRange = 0f..10f,
-                        onValueChange = { onUpdate(subtitlePrefs.copy(outlineSize = it)) }
-                    )
-                }
-            }
-
-            SubtitleOutlineStyle.BACKGROUND_BOX -> {
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                ColorPickerItem(
-                    title = "Background Color",
-                    color = subtitlePrefs.backgroundColor,
-                    onColorChange = { onUpdate(subtitlePrefs.copy(backgroundColor = it)) }
-                )
-            }
-
-            else -> {
-                // NONE, RAISED, DEPRESSED - no additional color picker
-            }
+    Box(modifier = Modifier.padding(16.dp)) {
+        OutlinedButton(
+            onClick = { onUpdate(SubtitlePreferences.DEFAULT) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_refresh),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Reset Defaults")
         }
+    }
+}
 
-        if (useExoPlayer) {
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
+@Composable
+private fun ColorPickerItem(
+    title: String,
+    color: Int,
+    onColorChange: (Int) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
 
-            ColorPickerItem(
-                title = "Window Color",
-                color = subtitlePrefs.windowColor,
-                onColorChange = { onUpdate(subtitlePrefs.copy(windowColor = it)) }
-            )
-        }
-
-        if (!useExoPlayer) {
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
-
-            SubtitleDropdownItem(
-                title = "Vertical Position",
-                selectedValue = subtitlePrefs.verticalPosition.displayName,
-                options = SubtitleVerticalPosition.entries.map { it.displayName },
-                onValueChange = { selected ->
-                    val position =
-                        SubtitleVerticalPosition.entries.first { it.displayName == selected }
-                    onUpdate(subtitlePrefs.copy(verticalPosition = position))
-                },
-                icon = painterResource(id = R.drawable.ic_vertical)
-            )
-
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
-
-            SubtitleDropdownItem(
-                title = "Horizontal Alignment",
-                selectedValue = subtitlePrefs.horizontalAlignment.displayName,
-                options = SubtitleHorizontalAlignment.entries.map { it.displayName },
-                onValueChange = { selected ->
-                    val alignment =
-                        SubtitleHorizontalAlignment.entries.first { it.displayName == selected }
-                    onUpdate(subtitlePrefs.copy(horizontalAlignment = alignment))
-                },
-                icon = painterResource(id = R.drawable.ic_horizontal)
-            )
-        }
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showDialog = true }
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Color(color))
+                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
         )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
 
-        ResetToDefaultsButton(
-            onClick = { onUpdate(SubtitlePreferences.DEFAULT) }
+    if (showDialog) {
+        SimpleColorPickerDialog(
+            initialColor = color,
+            onColorSelected = {
+                onColorChange(it)
+                showDialog = false
+            },
+            onDismiss = { showDialog = false }
         )
     }
 }
@@ -636,33 +607,24 @@ private fun SubtitleSliderItem(
     title: String,
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
-    onValueChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    onValueChange: (Float) -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
-                ),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = String.format(Locale.US, "%.1f", value),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.primary
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
         Slider(
             value = value,
             onValueChange = onValueChange,
@@ -671,16 +633,8 @@ private fun SubtitleSliderItem(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary
             ),
-            track = { sliderState ->
-                SliderDefaults.Track(
-                    sliderState = sliderState,
-                    modifier = Modifier.height(8.dp)
-                )
-            },
-            modifier = Modifier
-                .height(18.dp)
+            modifier = Modifier.height(24.dp)
         )
-        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 
@@ -690,152 +644,49 @@ private fun SubtitleDropdownItem(
     selectedValue: String,
     options: List<String>,
     onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    icon: Painter = painterResource(id = R.drawable.ic_settings)
+    icon: Painter
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { expanded = true }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            painter = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp)
+    Box {
+        SettingsItem(
+            icon = icon,
+            title = title,
+            subtitle = selectedValue,
+            onClick = { expanded = true },
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         )
 
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = selectedValue,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Box {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                options.forEach { option ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = option,
-                                style = MaterialTheme.typography.bodyLarge
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onValueChange(option)
+                        expanded = false
+                    },
+                    leadingIcon = if (selectedValue == option) {
+                        {
+                            Icon(
+                                painterResource(id = R.drawable.ic_check),
+                                null,
+                                tint = MaterialTheme.colorScheme.primary
                             )
-                        },
-                        onClick = {
-                            onValueChange(option)
-                            expanded = false
-                        },
-                        leadingIcon = if (selectedValue == option) {
-                            {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        } else null
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ColorPickerItem(
-    modifier: Modifier = Modifier,
-    title: String,
-    color: Int,
-    onColorChange: (Int) -> Unit,
-    subtitle: String? = null
-) {
-    var showDialog by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { showDialog = true }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color(color))
-                .border(
-                    2.dp,
-                    MaterialTheme.colorScheme.outline,
-                    CircleShape
-                )
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                Text(
-                    text = String.format("#%06X", 0xFFFFFF and color),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    } else null
                 )
             }
         }
-    }
-
-    if (showDialog) {
-        SimpleColorPickerDialog(
-            initialColor = color,
-            onColorSelected = { selectedColor ->
-                onColorChange(selectedColor)
-                showDialog = false
-            },
-            onDismiss = { showDialog = false }
-        )
     }
 }
 
@@ -995,10 +846,10 @@ private fun SubtitlePreview(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(100.dp)
             .background(
                 androidx.compose.ui.graphics.Color.DarkGray,
-                RoundedCornerShape(8.dp)
+                RoundedCornerShape(12.dp)
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -1124,111 +975,5 @@ private fun SubtitlePreview(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun VideoZoomModeDropdownItem(
-    selectedMode: VideoZoomMode,
-    onModeSelected: (VideoZoomMode) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val modes = listOf(VideoZoomMode.FIT, VideoZoomMode.ZOOM, VideoZoomMode.STRETCH)
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { expanded = true }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_fullscreen),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = "Default Video Mode",
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = selectedMode.getDisplayName(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Box {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                modes.forEach { mode ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = mode.getDisplayName(),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        },
-                        onClick = {
-                            onModeSelected(mode)
-                            expanded = false
-                        },
-                        leadingIcon = if (selectedMode == mode) {
-                            {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        } else null
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ResetToDefaultsButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.error
-        )
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_refresh),
-            contentDescription = null,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Reset to Defaults")
     }
 }
