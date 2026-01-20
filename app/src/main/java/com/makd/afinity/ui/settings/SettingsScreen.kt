@@ -197,12 +197,6 @@ fun SettingsScreen(
                 }
 
                 item {
-                    AccountSection(
-                        onSwitchSessionClick = { showSessionSwitcherSheet = true }
-                    )
-                }
-
-                item {
                     GeneralSection(
                         manualOfflineMode = manualOfflineMode,
                         effectiveOfflineMode = effectiveOfflineMode,
@@ -217,6 +211,7 @@ fun SettingsScreen(
                             }
                         },
                         onDownloadClick = onDownloadClick,
+                        onSwitchSessionClick = { showSessionSwitcherSheet = true },
                         onLogoutClick = { showLogoutDialog = true },
                         isLoggingOut = uiState.isLoggingOut
                     )
@@ -267,7 +262,13 @@ private fun ProfileHeader(
     userProfileImageUrl: String?,
     modifier: Modifier = Modifier
 ) {
-    Timber.d("ProfileHeader recomposing: userName=$userName, serverName=$serverName, serverUrl=$serverUrl, profileImageUrl=${userProfileImageUrl?.take(50)}")
+    Timber.d(
+        "ProfileHeader recomposing: userName=$userName, serverName=$serverName, serverUrl=$serverUrl, profileImageUrl=${
+            userProfileImageUrl?.take(
+                50
+            )
+        }"
+    )
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -353,6 +354,7 @@ private fun GeneralSection(
     onOfflineModeToggle: (Boolean) -> Unit,
     onJellyseerrToggle: (Boolean) -> Unit,
     onDownloadClick: () -> Unit,
+    onSwitchSessionClick: () -> Unit,
     onLogoutClick: () -> Unit,
     isLoggingOut: Boolean,
     modifier: Modifier = Modifier
@@ -406,6 +408,18 @@ private fun GeneralSection(
             title = "Downloads",
             subtitle = "Manage downloads and offline content",
             onClick = onDownloadClick
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_user),
+            title = "Switch Session",
+            subtitle = "Switch between servers and users",
+            onClick = onSwitchSessionClick
         )
 
         Button(
@@ -504,27 +518,6 @@ private fun ServerManagementSection(
             title = "Manage Servers",
             subtitle = "Add, edit, and manage multiple Jellyfin servers",
             onClick = onServerManagementClick
-        )
-    }
-}
-
-@Composable
-private fun AccountSection(
-    onSwitchSessionClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        SettingsItem(
-            icon = painterResource(id = R.drawable.ic_user),
-            title = "Switch Session",
-            subtitle = "Switch between servers and users",
-            onClick = onSwitchSessionClick
         )
     }
 }

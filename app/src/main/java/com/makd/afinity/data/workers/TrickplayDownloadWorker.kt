@@ -5,12 +5,14 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.media.AfinityTrickplayInfo
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
-import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.di.DownloadClient
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +21,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userApi
+import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
@@ -30,11 +33,10 @@ import java.util.UUID
 class TrickplayDownloadWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val apiClient: ApiClient,
-    private val mediaRepository: MediaRepository,
+    private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: JellyfinDownloadRepository,
-    private val okHttpClient: OkHttpClient,
+    @DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
@@ -63,6 +65,12 @@ class TrickplayDownloadWorker @AssistedInject constructor(
         try {
             Timber.d("Starting trickplay download for item: $itemId")
 
+            val download: DownloadDto = databaseRepository.getDownloadByItemId(itemId)
+                ?: return@withContext Result.failure(workDataOf("error" to "Download not found"))
+
+            val apiClient = sessionManager.getOrRestoreApiClient(download.serverId)
+                ?: return@withContext Result.failure(workDataOf("error" to "Could not restore session for server ${download.serverId}"))
+
             val userId = try {
                 apiClient.userApi.getCurrentUser().content?.id
             } catch (e: Exception) {
@@ -70,10 +78,20 @@ class TrickplayDownloadWorker @AssistedInject constructor(
             } ?: return@withContext Result.failure(workDataOf("error" to "User not authenticated"))
 
             val baseUrl = apiClient.baseUrl ?: ""
-            val baseItemDto = mediaRepository.getItem(
-                itemId = itemId,
-                fields = listOf(ItemFields.TRICKPLAY, ItemFields.OVERVIEW)
-            ) ?: return@withContext Result.failure(workDataOf("error" to "Item not found"))
+
+            val itemsApi = ItemsApi(apiClient)
+            val baseItemDto = try {
+                itemsApi.getItems(
+                    userId = userId,
+                    ids = listOf(itemId),
+                    fields = listOf(ItemFields.TRICKPLAY, ItemFields.OVERVIEW),
+                    enableImages = false,
+                    enableUserData = false
+                ).content?.items?.firstOrNull()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to fetch item details for trickplay")
+                null
+            } ?: return@withContext Result.failure(workDataOf("error" to "Item not found"))
 
             val item = when (baseItemDto.type) {
                 BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
@@ -100,6 +118,7 @@ class TrickplayDownloadWorker @AssistedInject constructor(
                 Timber.d("Processing trickplay resolution: key='$resolution', info.width=${info.width}")
                 try {
                     downloadTrickplayTiles(
+                        apiClient = apiClient,
                         itemId = itemId,
                         resolution = resolution,
                         info = info,
@@ -141,6 +160,7 @@ class TrickplayDownloadWorker @AssistedInject constructor(
     }
 
     private suspend fun downloadTrickplayTiles(
+        apiClient: ApiClient,
         itemId: UUID,
         resolution: String,
         info: AfinityTrickplayInfo,

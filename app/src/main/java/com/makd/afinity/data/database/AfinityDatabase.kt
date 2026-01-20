@@ -91,7 +91,7 @@ import com.makd.afinity.data.models.user.User
         JellyseerrRequestEntity::class,
         JellyseerrConfigEntity::class,
     ],
-    version = 24,
+    version = 25,
     exportSchema = false
 )
 @TypeConverters(AfinityTypeConverters::class)

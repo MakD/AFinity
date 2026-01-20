@@ -5,12 +5,14 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
-import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.di.DownloadClient
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +21,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userApi
+import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -31,11 +34,10 @@ import java.util.UUID
 class SubtitleDownloadWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val apiClient: ApiClient,
-    private val mediaRepository: MediaRepository,
+    private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: JellyfinDownloadRepository,
-    private val okHttpClient: OkHttpClient,
+    @DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
@@ -64,6 +66,12 @@ class SubtitleDownloadWorker @AssistedInject constructor(
         try {
             Timber.d("Starting subtitle download for item: $itemId")
 
+            val download: DownloadDto = databaseRepository.getDownloadByItemId(itemId)
+                ?: return@withContext Result.failure(workDataOf("error" to "Download not found"))
+
+            val apiClient = sessionManager.getOrRestoreApiClient(download.serverId)
+                ?: return@withContext Result.failure(workDataOf("error" to "Could not restore session for server ${download.serverId}"))
+
             val userId = try {
                 apiClient.userApi.getCurrentUser().content?.id
             } catch (e: Exception) {
@@ -71,10 +79,20 @@ class SubtitleDownloadWorker @AssistedInject constructor(
             } ?: return@withContext Result.failure(workDataOf("error" to "User not authenticated"))
 
             val baseUrl = apiClient.baseUrl ?: ""
-            val baseItemDto = mediaRepository.getItem(
-                itemId = itemId,
-                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.MEDIA_STREAMS)
-            ) ?: return@withContext Result.failure(workDataOf("error" to "Item not found"))
+
+            val itemsApi = ItemsApi(apiClient)
+            val baseItemDto = try {
+                itemsApi.getItems(
+                    userId = userId,
+                    ids = listOf(itemId),
+                    fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.MEDIA_STREAMS),
+                    enableImages = false,
+                    enableUserData = false
+                ).content?.items?.firstOrNull()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to fetch item details for subtitles")
+                null
+            } ?: return@withContext Result.failure(workDataOf("error" to "Item not found"))
 
             val item = when (baseItemDto.type) {
                 BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
@@ -94,10 +112,6 @@ class SubtitleDownloadWorker @AssistedInject constructor(
                         stream.isExternal == true
             }
 
-            source.mediaStreams.forEach { stream ->
-                Timber.d("Stream: type=${stream.type}, isExternal=${stream.isExternal}, language=${stream.language}, index=${stream.index}, path=${stream.path}")
-            }
-
             if (subtitleStreams.isEmpty()) {
                 Timber.d("No external subtitles found for item: $itemId")
                 return@withContext Result.success()
@@ -109,6 +123,7 @@ class SubtitleDownloadWorker @AssistedInject constructor(
             subtitleStreams.forEach { stream ->
                 try {
                     downloadSubtitle(
+                        apiClient = apiClient,
                         itemId = itemId,
                         stream = stream,
                         baseUrl = baseUrl,
@@ -141,6 +156,7 @@ class SubtitleDownloadWorker @AssistedInject constructor(
     }
 
     private fun downloadSubtitle(
+        apiClient: ApiClient,
         itemId: UUID,
         stream: AfinityMediaStream,
         baseUrl: String,

@@ -27,6 +27,7 @@ import com.makd.afinity.data.workers.TrickplayDownloadWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -78,10 +79,13 @@ class JellyfinDownloadRepository @Inject constructor(
                 }
             }
 
-            getCurrentUserId()
-                ?: return@withContext Result.failure(Exception("User not authenticated"))
+            val currentSession = sessionManager.currentSession.value
+                ?: return@withContext Result.failure(Exception("No active session"))
 
-            val baseUrl = sessionManager.currentSession.value?.serverUrl ?: ""
+            val userId = currentSession.userId
+            val serverId = currentSession.serverId
+            val baseUrl = currentSession.serverUrl
+
             val baseItemDto = mediaRepository.getItem(
                 itemId = itemId,
                 fields = listOf(
@@ -123,6 +127,8 @@ class JellyfinDownloadRepository @Inject constructor(
                 error = null,
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
+                serverId = serverId,
+                userId = userId
             )
 
             databaseRepository.insertDownload(download)
@@ -293,11 +299,29 @@ class JellyfinDownloadRepository @Inject constructor(
 
     override fun getAllDownloadsFlow(): Flow<List<DownloadInfo>> {
         return databaseRepository.getAllDownloadsFlow()
+            .combine(sessionManager.currentSession) { downloads, session ->
+                if (session == null) {
+                    emptyList()
+                } else {
+                    downloads.filter {
+                        it.serverId == session.serverId && it.userId == session.userId
+                    }
+                }
+            }
             .map { downloads -> downloads.map { it.toDownloadInfo() } }
     }
 
     override fun getDownloadsByStatusFlow(statuses: List<DownloadStatus>): Flow<List<DownloadInfo>> {
         return databaseRepository.getDownloadsByStatusFlow(statuses)
+            .combine(sessionManager.currentSession) { downloads, session ->
+                if (session == null) {
+                    emptyList()
+                } else {
+                    downloads.filter {
+                        it.serverId == session.serverId && it.userId == session.userId
+                    }
+                }
+            }
             .map { downloads -> downloads.map { it.toDownloadInfo() } }
     }
 

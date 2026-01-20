@@ -426,6 +426,13 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_24_25 = object : Migration(24, 25) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE downloads ADD COLUMN serverId TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE downloads ADD COLUMN userId TEXT NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'")
+        }
+    }
+
     val ALL_MIGRATIONS = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -445,6 +452,7 @@ object DatabaseMigrations {
         MIGRATION_18_19,
         MIGRATION_21_22,
         MIGRATION_22_23,
-        MIGRATION_23_24
+        MIGRATION_23_24,
+        MIGRATION_24_25
     )
 }

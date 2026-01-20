@@ -254,7 +254,7 @@ private fun LoginHeader(
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(64.dp)
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = "AFinity",
                     style = MaterialTheme.typography.displayMedium.copy(

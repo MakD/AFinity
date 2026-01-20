@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.createJellyfin
@@ -130,6 +131,25 @@ class SessionManager @Inject constructor(
             Timber.e(e, "Failed to start session")
             _connectionState.value = ConnectionState.Disconnected
             Result.failure(e)
+        }
+    }
+
+    suspend fun getOrRestoreApiClient(serverId: String): ApiClient? {
+        apiClients[serverId]?.let { return it }
+
+        val server = databaseRepository.getServer(serverId) ?: return null
+        val tokens = securePrefsRepository.getAllServerUserTokens()
+        val tokenInfo = tokens.find { it.serverId == serverId } ?: return null
+
+        Timber.d("Restoring ApiClient for background work: Server $serverId")
+        val client = getOrCreateApiClient(serverId, tokenInfo.serverUrl)
+        client.update(baseUrl = tokenInfo.serverUrl, accessToken = tokenInfo.accessToken)
+        return client
+    }
+
+    fun getServerIdForUrl(url: String): String? {
+        return runBlocking {
+            securePrefsRepository.getAllServerUserTokens().find { it.serverUrl == url }?.serverId
         }
     }
 

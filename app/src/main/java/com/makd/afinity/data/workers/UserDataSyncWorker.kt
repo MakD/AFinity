@@ -5,12 +5,12 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.DatabaseRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
@@ -20,7 +20,7 @@ import timber.log.Timber
 class UserDataSyncWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val apiClient: ApiClient,
+    private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -28,57 +28,77 @@ class UserDataSyncWorker @AssistedInject constructor(
         try {
             Timber.d("Starting user data sync")
 
-            val userId = try {
-                apiClient.userApi.getCurrentUser().content?.id
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get current user, cannot sync")
-                return@withContext Result.failure(workDataOf("error" to "User not authenticated"))
-            } ?: return@withContext Result.failure(workDataOf("error" to "User ID is null"))
+            val servers = databaseRepository.getAllServers()
 
-            val unsyncedData = databaseRepository.getAllUserDataToSync(userId)
-
-            if (unsyncedData.isEmpty()) {
-                Timber.d("No unsynced user data to sync")
+            if (servers.isEmpty()) {
+                Timber.d("No servers found, skipping sync")
                 return@withContext Result.success()
             }
 
-            Timber.i("Found ${unsyncedData.size} user data items to sync")
+            var totalSuccess = 0
+            var totalFailure = 0
 
-            val itemsApi = ItemsApi(apiClient)
-            var successCount = 0
-            var failureCount = 0
-
-            unsyncedData.forEach { userData ->
+            servers.forEach { server ->
                 try {
-                    Timber.d("Syncing user data for item ${userData.itemId}: position=${userData.playbackPositionTicks}, played=${userData.played}")
+                    val apiClient = sessionManager.getOrRestoreApiClient(server.id)
 
-                    itemsApi.updateItemUserData(
-                        itemId = userData.itemId,
-                        userId = userId,
-                        data = UpdateUserItemDataDto(
-                            playbackPositionTicks = userData.playbackPositionTicks,
-                            played = userData.played,
-                            isFavorite = userData.favorite,
-                        )
-                    )
+                    if (apiClient == null) {
+                        Timber.d("Skipping sync for server ${server.name}: No valid session found")
+                        return@forEach
+                    }
 
-                    databaseRepository.markUserDataSynced(userId, userData.itemId)
-                    successCount++
-                    Timber.i("Successfully synced user data for item ${userData.itemId}")
+                    val userId = try {
+                        apiClient.userApi.getCurrentUser().content?.id
+                    } catch (e: Exception) {
+                        Timber.w("Could not validate user token for server ${server.name}: ${e.message}")
+                        null
+                    }
 
+                    if (userId == null) {
+                        return@forEach
+                    }
+
+                    val unsyncedData = databaseRepository.getAllUserDataToSync(userId)
+
+                    if (unsyncedData.isNotEmpty()) {
+                        Timber.i("Found ${unsyncedData.size} items to sync for user $userId on server ${server.name}")
+
+                        val itemsApi = ItemsApi(apiClient)
+
+                        unsyncedData.forEach { userData ->
+                            try {
+                                Timber.d("Syncing item ${userData.itemId} -> Server: ${server.name}")
+
+                                itemsApi.updateItemUserData(
+                                    itemId = userData.itemId,
+                                    userId = userId,
+                                    data = UpdateUserItemDataDto(
+                                        playbackPositionTicks = userData.playbackPositionTicks,
+                                        played = userData.played,
+                                        isFavorite = userData.favorite,
+                                    )
+                                )
+
+                                databaseRepository.markUserDataSynced(userId, userData.itemId)
+                                totalSuccess++
+                            } catch (e: Exception) {
+                                totalFailure++
+                                Timber.w(e, "Failed to sync item ${userData.itemId} on server ${server.name}")
+                            }
+                        }
+                    }
                 } catch (e: Exception) {
-                    failureCount++
-                    Timber.w(e, "Failed to sync user data for item ${userData.itemId}")
+                    Timber.e(e, "Error processing sync for server ${server.name}")
                 }
             }
 
-            Timber.i("User data sync completed: $successCount succeeded, $failureCount failed out of ${unsyncedData.size} total")
+            Timber.i("Global user data sync completed. Success: $totalSuccess, Failures: $totalFailure")
 
-            return@withContext if (successCount > 0 || failureCount == 0) {
+            return@withContext if (totalSuccess > 0 || totalFailure == 0) {
                 Result.success(
                     workDataOf(
-                        "synced_count" to successCount,
-                        "failed_count" to failureCount
+                        "synced_count" to totalSuccess,
+                        "failed_count" to totalFailure
                     )
                 )
             } else {
@@ -86,7 +106,7 @@ class UserDataSyncWorker @AssistedInject constructor(
             }
 
         } catch (e: Exception) {
-            Timber.e(e, "User data sync failed")
+            Timber.e(e, "User data sync failed with critical error")
             return@withContext Result.retry()
         }
     }

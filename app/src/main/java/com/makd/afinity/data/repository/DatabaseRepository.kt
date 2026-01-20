@@ -62,7 +62,7 @@ interface DatabaseRepository {
     suspend fun searchShows(query: String, userId: UUID): List<AfinityShow>
     fun getShowsFlow(userId: UUID): Flow<List<AfinityShow>>
 
-    suspend fun insertSeason(season: AfinitySeason)
+    suspend fun insertSeason(season: AfinitySeason, serverId: String? = null)
     suspend fun updateSeason(season: AfinitySeason)
     suspend fun deleteSeason(seasonId: UUID)
     suspend fun getSeason(seasonId: UUID, userId: UUID): AfinitySeason?

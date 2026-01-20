@@ -23,6 +23,8 @@ data class DownloadDto(
     val error: String?,
     val createdAt: Long,
     val updatedAt: Long,
+    val serverId: String,
+    val userId: UUID
 )
 
 fun DownloadDto.toDownloadInfo(): DownloadInfo {

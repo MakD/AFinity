@@ -244,9 +244,9 @@ class DatabaseRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun insertSeason(season: AfinitySeason) {
-        val serverId = sessionManager.currentSession.value?.serverId ?: return
-        seasonDao.insertSeason(season.toAfinitySeasonDto(serverId))
+    override suspend fun insertSeason(season: AfinitySeason, serverId: String?) {
+        val actualServerId = serverId ?: sessionManager.currentSession.value?.serverId ?: return
+        seasonDao.insertSeason(season.toAfinitySeasonDto(actualServerId))
     }
 
     override suspend fun updateSeason(season: AfinitySeason) {
