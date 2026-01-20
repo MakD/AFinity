@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
@@ -45,7 +46,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AfinityTopAppBarViewModel @Inject constructor(
     offlineModeManager: OfflineModeManager
-) : androidx.lifecycle.ViewModel() {
+) : ViewModel() {
     val isOffline = offlineModeManager.isOffline
 }
 
