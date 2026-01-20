@@ -14,11 +14,13 @@ import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.BackdropTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -44,12 +46,43 @@ class RequestsViewModel @Inject constructor(
     private val _backdropTracker = BackdropTracker()
     val backdropTracker: BackdropTracker get() = _backdropTracker
 
+    private var requestsJob: Job? = null
+
     init {
-        loadCurrentUser()
-        observeRequests()
+        viewModelScope.launch {
+            combine(
+                jellyseerrRepository.currentSessionId,
+                jellyseerrRepository.isAuthenticated
+            ) { sessionId, isAuth ->
+                sessionId to isAuth
+            }.collect { (sessionId, isAuth) ->
+                if (sessionId != null && isAuth) {
+                    Timber.d("Session Active & Authenticated ($sessionId). Reloading ALL content...")
+                    loadCurrentUser()
+                    observeRequests()
+                    loadRequests()
+                    loadDiscoverContent()
+                } else {
+                    Timber.d("Session Inactive or Logged Out. Clearing content...")
+                    _currentUser.value = null
+                    requestsJob?.cancel()
+                    _uiState.update {
+                        it.copy(
+                            requests = emptyList(),
+                            trendingItems = emptyList(),
+                            popularMovies = emptyList(),
+                            popularTv = emptyList(),
+                            upcomingMovies = emptyList(),
+                            upcomingTv = emptyList(),
+                            movieGenres = emptyList(),
+                            tvGenres = emptyList(),
+                            isLoadingDiscover = false
+                        )
+                    }
+                }
+            }
+        }
         observeRequestEvents()
-        loadRequests()
-        loadDiscoverContent()
     }
 
     private fun loadCurrentUser() {
@@ -67,15 +100,20 @@ class RequestsViewModel @Inject constructor(
     }
 
     private fun observeRequests() {
-        viewModelScope.launch {
-            jellyseerrRepository.observeRequests().collect { requests ->
-                _uiState.update {
-                    it.copy(
-                        requests = requests,
-                        isLoading = false
-                    )
+        requestsJob?.cancel()
+        requestsJob = viewModelScope.launch {
+            try {
+                jellyseerrRepository.observeRequests().collect { requests ->
+                    _uiState.update {
+                        it.copy(
+                            requests = requests,
+                            isLoading = false
+                        )
+                    }
+                    Timber.d("Database updated with ${requests.size} requests for active user")
                 }
-                Timber.d("Database updated with ${requests.size} requests")
+            } catch (e: Exception) {
+                Timber.e(e, "Error observing requests")
             }
         }
     }
@@ -149,7 +187,6 @@ class RequestsViewModel @Inject constructor(
                 jellyseerrRepository.deleteRequest(requestId).fold(
                     onSuccess = {
                         _uiState.update { it.copy(isDeletingRequest = false) }
-                        loadRequests()
                         Timber.d("Request $requestId deleted successfully")
                     },
                     onFailure = { error ->
@@ -404,7 +441,8 @@ class RequestsViewModel @Inject constructor(
                     val trending = trendingDeferred.await().getOrNull()?.results ?: emptyList()
                     val movies = moviesDeferred.await().getOrNull()?.results ?: emptyList()
                     val tv = tvDeferred.await().getOrNull()?.results ?: emptyList()
-                    val upcomingMovies = upcomingMoviesDeferred.await().getOrNull()?.results ?: emptyList()
+                    val upcomingMovies =
+                        upcomingMoviesDeferred.await().getOrNull()?.results ?: emptyList()
                     val upcomingTv = upcomingTvDeferred.await().getOrNull()?.results ?: emptyList()
                     val movieGenres = movieGenresDeferred.await().getOrNull() ?: emptyList()
                     val tvGenres = tvGenresDeferred.await().getOrNull() ?: emptyList()
@@ -451,8 +489,10 @@ class RequestsViewModel @Inject constructor(
                     onSuccess = { details ->
                         _uiState.update { it.copy(isFetchingTvDetails = false) }
 
-                        val seasonCount = if (mediaType == MediaType.TV) details.getSeasonCount() else 0
-                        val alreadyAvailableSeasons = details.mediaInfo?.getAvailableSeasons() ?: emptyList()
+                        val seasonCount =
+                            if (mediaType == MediaType.TV) details.getSeasonCount() else 0
+                        val alreadyAvailableSeasons =
+                            details.mediaInfo?.getAvailableSeasons() ?: emptyList()
                         val selectableSeasons = if (mediaType == MediaType.TV) {
                             (1..seasonCount).filter { it !in alreadyAvailableSeasons }
                         } else emptyList()

@@ -5,6 +5,7 @@ import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
@@ -47,6 +48,7 @@ class SessionManager @Inject constructor(
     private val databaseRepository: DatabaseRepository,
     private val sessionPreferences: SessionPreferences,
     private val securePrefsRepository: SecurePreferencesRepository,
+    private val jellyseerrRepository: JellyseerrRepository,
     @ApplicationContext private val context: Context
 ) {
     private val _currentSession = MutableStateFlow<Session?>(null)
@@ -107,6 +109,9 @@ class SessionManager @Inject constructor(
                 Timber.d("Synced AuthRepository with user: ${user.name}")
             }
 
+            jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
+            Timber.d("Linked Jellyseerr session for user: $userId")
+
             val session = Session(
                 serverId = serverId,
                 userId = userId,
@@ -147,16 +152,16 @@ class SessionManager @Inject constructor(
     }
 
     suspend fun switchUser(serverId: String, userId: UUID): Result<Unit> {
-        val current = _currentSession.value ?: return Result.failure(
-            IllegalStateException("No active session to switch from")
-        )
 
         val token = securePrefsRepository.getServerUserToken(serverId, userId)
             ?: return Result.failure(
                 IllegalStateException("No token found for user $userId on server $serverId")
             )
+        val serverUrl = securePrefsRepository.getAllServerUserTokens()
+            .find { it.serverId == serverId && it.userId == userId }?.serverUrl
+            ?: return Result.failure(IllegalStateException("Could not find Server URL for target user"))
 
-        return startSession(current.serverUrl, serverId, userId, token, caller = "switchUser")
+        return startSession(serverUrl, serverId, userId, token, caller = "switchUser")
     }
 
     private suspend fun restoreLastSession() {
@@ -221,7 +226,7 @@ class SessionManager @Inject constructor(
         }
 
         sessionPreferences.clearSession()
-
+        jellyseerrRepository.clearActiveSession()
         _currentSession.value = null
         _connectionState.value = ConnectionState.Disconnected
         authRepository.clearAllAuthData()

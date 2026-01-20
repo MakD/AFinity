@@ -1,12 +1,15 @@
 package com.makd.afinity.data.database.entities
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "jellyseerr_requests")
+@Entity(
+    tableName = "jellyseerr_requests",
+    primaryKeys = ["id", "jellyfinServerId", "jellyfinUserId"]
+)
 data class JellyseerrRequestEntity(
-    @PrimaryKey
     val id: Int,
+    val jellyfinServerId: String,
+    val jellyfinUserId: String,
     val status: Int,
     val mediaType: String,
     val tmdbId: Int?,

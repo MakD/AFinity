@@ -381,6 +381,51 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_23_24 = object : Migration(23, 24) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("DROP TABLE IF EXISTS jellyseerr_config")
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS jellyseerr_config (
+                    jellyfinServerId TEXT NOT NULL,
+                    jellyfinUserId TEXT NOT NULL,
+                    serverUrl TEXT NOT NULL,
+                    isLoggedIn INTEGER NOT NULL,
+                    username TEXT,
+                    userId INTEGER,
+                    permissions INTEGER,
+                    PRIMARY KEY(jellyfinServerId, jellyfinUserId)
+                )
+            """.trimIndent())
+
+            db.execSQL("DROP TABLE IF EXISTS jellyseerr_requests")
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS jellyseerr_requests (
+                    id INTEGER NOT NULL,
+                    jellyfinServerId TEXT NOT NULL,
+                    jellyfinUserId TEXT NOT NULL,
+                    status INTEGER NOT NULL,
+                    mediaType TEXT NOT NULL,
+                    tmdbId INTEGER,
+                    tvdbId INTEGER,
+                    title TEXT NOT NULL,
+                    posterPath TEXT,
+                    requestedAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    requestedByName TEXT,
+                    requestedByAvatar TEXT,
+                    cachedAt INTEGER NOT NULL,
+                    mediaTitle TEXT,
+                    mediaName TEXT,
+                    mediaBackdropPath TEXT,
+                    mediaReleaseDate TEXT,
+                    mediaFirstAirDate TEXT,
+                    mediaStatus INTEGER,
+                    PRIMARY KEY(id, jellyfinServerId, jellyfinUserId)
+                )
+            """.trimIndent())
+        }
+    }
+
     val ALL_MIGRATIONS = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -399,6 +444,7 @@ object DatabaseMigrations {
         MIGRATION_17_18,
         MIGRATION_18_19,
         MIGRATION_21_22,
-        MIGRATION_22_23
+        MIGRATION_22_23,
+        MIGRATION_23_24
     )
 }

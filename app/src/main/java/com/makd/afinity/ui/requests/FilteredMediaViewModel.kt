@@ -43,6 +43,17 @@ class FilteredMediaViewModel @Inject constructor(
                 Timber.d("Updated media item ${updatedRequest.media.tmdbId} with new request status")
             }
         }
+
+        viewModelScope.launch {
+            jellyseerrRepository.currentSessionId.collect { sessionId ->
+                if (sessionId != null && currentFilterParams != null) {
+                    Timber.d("Session switched to $sessionId. Reloading filtered media...")
+                    reloadCurrentContent()
+                } else if (sessionId == null) {
+                    _uiState.update { it.copy(items = emptyList()) }
+                }
+            }
+        }
     }
 
     fun loadContent(filterParams: FilterParams) {
@@ -51,9 +62,12 @@ class FilteredMediaViewModel @Inject constructor(
         }
 
         currentFilterParams = filterParams
+        reloadCurrentContent()
+    }
+
+    private fun reloadCurrentContent() {
         currentPage = 1
         _uiState.update { it.copy(items = emptyList(), hasReachedEnd = false) }
-
         loadPage()
     }
 
@@ -112,7 +126,7 @@ class FilteredMediaViewModel @Inject constructor(
                                 hasReachedEnd = hasReachedEnd
                             )
                         }
-                        Timber.d("Loaded page $currentPage...")
+                        Timber.d("Loaded page $currentPage for ${params.name}")
                     },
                     onFailure = { error ->
                         _uiState.update {

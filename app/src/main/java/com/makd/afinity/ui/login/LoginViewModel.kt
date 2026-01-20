@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -261,7 +262,8 @@ class LoginViewModel @Inject constructor(
         try {
             val allUsers = databaseRepository.getUsersForServer(serverId)
             val usersWithTokens = allUsers.filter { user ->
-                val hasToken = securePreferencesRepository.getServerUserToken(serverId, user.id) != null
+                val hasToken =
+                    securePreferencesRepository.getServerUserToken(serverId, user.id) != null
                 if (!hasToken) {
                     Timber.d("Excluding user ${user.name} from saved users (no token)")
                 }
@@ -330,7 +332,10 @@ class LoginViewModel @Inject constructor(
                             isLoggingIn = false,
                             error = "Failed to start session: ${result.exceptionOrNull()?.message}"
                         )
-                        Timber.e(result.exceptionOrNull(), "Failed to start session for user: ${user.name}")
+                        Timber.e(
+                            result.exceptionOrNull(),
+                            "Failed to start session for user: ${user.name}"
+                        )
                     }
                 } else {
                     _uiState.value = _uiState.value.copy(
@@ -379,11 +384,39 @@ class LoginViewModel @Inject constructor(
 
                 when (result) {
                     is AuthRepository.AuthResult.Success -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoggingIn = false,
-                            isLoggedIn = true
-                        )
-                        Timber.d("Successfully logged in user: ${currentState.username}")
+                        val sdkAuthResult = result.authResult
+
+                        val token = sdkAuthResult.accessToken
+                        val userId = sdkAuthResult.user?.id
+                        val serverId = sdkAuthResult.serverId
+                            ?: _savedServers.value.find { it.address == _serverUrl.value }?.id ?: ""
+
+                        if (token != null && userId != null) {
+                            val sessionResult = sessionManager.startSession(
+                                serverUrl = _serverUrl.value,
+                                serverId = serverId,
+                                userId = userId,
+                                accessToken = token
+                            )
+
+                            if (sessionResult.isSuccess) {
+                                _uiState.value = _uiState.value.copy(
+                                    isLoggingIn = false,
+                                    isLoggedIn = true
+                                )
+                                Timber.d("Successfully logged in user: ${currentState.username}")
+                            } else {
+                                _uiState.value = _uiState.value.copy(
+                                    isLoggingIn = false,
+                                    error = "Session start failed: ${sessionResult.exceptionOrNull()?.message}"
+                                )
+                            }
+                        } else {
+                            _uiState.value = _uiState.value.copy(
+                                isLoggingIn = false,
+                                error = "Login succeeded but user ID or token was missing."
+                            )
+                        }
                     }
 
                     is AuthRepository.AuthResult.Error -> {
@@ -449,14 +482,45 @@ class LoginViewModel @Inject constructor(
                 if (state?.authenticated == true) {
                     when (val result = authRepository.authenticateWithQuickConnect(secret)) {
                         is AuthRepository.AuthResult.Success -> {
-                            _uiState.value = _uiState.value.copy(
-                                isLoggingIn = false,
-                                isLoggedIn = true,
-                                quickConnectCode = null,
-                                quickConnectSecret = null
-                            )
-                            Timber.d("Successfully authenticated with QuickConnect")
-                            return
+                            val sdkAuthResult = result.authResult
+
+                            val token = sdkAuthResult.accessToken
+                            val userId = sdkAuthResult.user?.id
+                            val serverId = sdkAuthResult.serverId
+                                ?: _savedServers.value.find { it.address == _serverUrl.value }?.id
+                                ?: ""
+
+                            if (token != null && userId != null) {
+                                val sessionResult = sessionManager.startSession(
+                                    serverUrl = _serverUrl.value,
+                                    serverId = serverId,
+                                    userId = userId,
+                                    accessToken = token
+                                )
+
+                                if (sessionResult.isSuccess) {
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoggingIn = false,
+                                        isLoggedIn = true,
+                                        quickConnectCode = null,
+                                        quickConnectSecret = null
+                                    )
+                                    Timber.d("Successfully authenticated with QuickConnect")
+                                    return
+                                } else {
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoggingIn = false,
+                                        error = "Session start failed: ${sessionResult.exceptionOrNull()?.message}"
+                                    )
+                                    return
+                                }
+                            } else {
+                                _uiState.value = _uiState.value.copy(
+                                    isLoggingIn = false,
+                                    error = "QuickConnect succeeded but user ID or token was missing."
+                                )
+                                return
+                            }
                         }
 
                         is AuthRepository.AuthResult.Error -> {
@@ -487,6 +551,18 @@ class LoginViewModel @Inject constructor(
             )
             Timber.e(e, "QuickConnect polling failed")
         }
+    }
+
+    fun cancelAddServer() {
+        _uiState.update {
+            it.copy(
+                showAddServerInput = false,
+                error = null,
+                isConnecting = false
+            )
+        }
+        _serverUrl.value = ""
+        clearServerConnection()
     }
 
     fun cancelQuickConnect() {
@@ -535,6 +611,7 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 authRepository.logout()
+                sessionManager.logout()
                 _uiState.value = LoginUiState()
                 _publicUsers.value = emptyList()
                 _serverUrl.value = ""
