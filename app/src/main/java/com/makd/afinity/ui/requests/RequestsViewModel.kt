@@ -15,8 +15,6 @@ import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.BackdropTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -428,41 +426,55 @@ class RequestsViewModel @Inject constructor(
         _uiState.update { it.copy(isLoadingDiscover = true) }
 
         viewModelScope.launch {
-            try {
-                coroutineScope {
-                    val trendingDeferred = async { jellyseerrRepository.getTrending(limit = 10) }
-                    val moviesDeferred = async { jellyseerrRepository.getDiscoverMovies() }
-                    val tvDeferred = async { jellyseerrRepository.getDiscoverTv() }
-                    val upcomingMoviesDeferred = async { jellyseerrRepository.getUpcomingMovies() }
-                    val upcomingTvDeferred = async { jellyseerrRepository.getUpcomingTv() }
-                    val movieGenresDeferred = async { jellyseerrRepository.getMovieGenreSlider() }
-                    val tvGenresDeferred = async { jellyseerrRepository.getTvGenreSlider() }
-
-                    val trending = trendingDeferred.await().getOrNull()?.results ?: emptyList()
-                    val movies = moviesDeferred.await().getOrNull()?.results ?: emptyList()
-                    val tv = tvDeferred.await().getOrNull()?.results ?: emptyList()
-                    val upcomingMovies =
-                        upcomingMoviesDeferred.await().getOrNull()?.results ?: emptyList()
-                    val upcomingTv = upcomingTvDeferred.await().getOrNull()?.results ?: emptyList()
-                    val movieGenres = movieGenresDeferred.await().getOrNull() ?: emptyList()
-                    val tvGenres = tvGenresDeferred.await().getOrNull() ?: emptyList()
-
+            jellyseerrRepository.getTrending(limit = 10).fold(
+                onSuccess = { result ->
                     _uiState.update {
                         it.copy(
-                            trendingItems = trending,
-                            popularMovies = movies,
-                            popularTv = tv,
-                            upcomingMovies = upcomingMovies,
-                            upcomingTv = upcomingTv,
-                            movieGenres = movieGenres,
-                            tvGenres = tvGenres,
+                            trendingItems = result.results,
                             isLoadingDiscover = false
                         )
                     }
+                },
+                onFailure = {
+                    Timber.e(it, "Failed to load trending items")
+                    _uiState.update { it.copy(isLoadingDiscover = false) }
                 }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load discover content")
-                _uiState.update { it.copy(isLoadingDiscover = false) }
+            )
+        }
+
+        viewModelScope.launch {
+            jellyseerrRepository.getDiscoverMovies().onSuccess { result ->
+                _uiState.update { it.copy(popularMovies = result.results) }
+            }
+        }
+
+        viewModelScope.launch {
+            jellyseerrRepository.getDiscoverTv().onSuccess { result ->
+                _uiState.update { it.copy(popularTv = result.results) }
+            }
+        }
+
+        viewModelScope.launch {
+            jellyseerrRepository.getUpcomingMovies().onSuccess { result ->
+                _uiState.update { it.copy(upcomingMovies = result.results) }
+            }
+        }
+
+        viewModelScope.launch {
+            jellyseerrRepository.getUpcomingTv().onSuccess { result ->
+                _uiState.update { it.copy(upcomingTv = result.results) }
+            }
+        }
+
+        viewModelScope.launch {
+            jellyseerrRepository.getMovieGenreSlider().onSuccess { result ->
+                _uiState.update { it.copy(movieGenres = result) }
+            }
+        }
+
+        viewModelScope.launch {
+            jellyseerrRepository.getTvGenreSlider().onSuccess { result ->
+                _uiState.update { it.copy(tvGenres = result) }
             }
         }
     }
