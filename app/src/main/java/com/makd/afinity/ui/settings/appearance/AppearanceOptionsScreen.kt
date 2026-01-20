@@ -1,22 +1,21 @@
 package com.makd.afinity.ui.settings.appearance
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -85,225 +86,120 @@ fun AppearanceOptionsScreen(
                 )
             )
         },
+        containerColor = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                ThemeSection(
-                    themeMode = uiState.themeMode,
-                    dynamicColors = uiState.dynamicColors,
-                    onThemeModeChange = viewModel::setThemeMode,
-                    onDynamicColorsToggle = viewModel::toggleDynamicColors
-                )
+                SettingsGroup(title = "Theme") {
+                    ThemeSelectorItem(
+                        currentThemeMode = uiState.themeMode,
+                        onThemeModeChange = viewModel::setThemeMode
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_colorize),
+                        title = "Dynamic Colors",
+                        subtitle = "Use colors from your wallpaper",
+                        checked = uiState.dynamicColors,
+                        onCheckedChange = viewModel::toggleDynamicColors
+                    )
+                }
             }
 
             item {
-                LibrarySection(
-                    combineLibrarySections = combineLibrarySections,
-                    homeSortByDateAdded = homeSortByDateAdded,
-                    episodeLayout = episodeLayout,
-                    onCombineLibrarySectionsToggle = viewModel::toggleCombineLibrarySections,
-                    onHomeSortByDateAddedToggle = viewModel::toggleHomeSortByDateAdded,
-                    onEpisodeLayoutChange = viewModel::setEpisodeLayout
-                )
+                SettingsGroup(title = "Home Screen") {
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_view_module),
+                        title = "Combine Library Sections",
+                        subtitle = "Merge Movies and TV Shows into single lists",
+                        checked = combineLibrarySections,
+                        onCheckedChange = viewModel::toggleCombineLibrarySections
+                    )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_calendar),
+                        title = "Sort by Date Added",
+                        subtitle = "Show newest content first on home screen",
+                        checked = homeSortByDateAdded,
+                        onCheckedChange = viewModel::toggleHomeSortByDateAdded
+                    )
+                }
+            }
+
+            item {
+                SettingsGroup(title = "Content Layout") {
+                    EpisodeLayoutSelectorItem(
+                        selectedLayout = episodeLayout,
+                        onLayoutSelected = viewModel::setEpisodeLayout
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ThemeSection(
-    themeMode: String,
-    dynamicColors: Boolean,
-    onThemeModeChange: (String) -> Unit,
-    onDynamicColorsToggle: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var themeMenuExpanded by remember { mutableStateOf(false) }
-    val currentTheme = ThemeMode.fromString(themeMode)
-
-    AppearanceSettingsSection(
-        modifier = modifier
-    ) {
-        AppearanceSettingsItem(
-            icon = painterResource(id = R.drawable.ic_dark_mode),
-            title = "Theme Mode",
-            subtitle = currentTheme.displayName,
-            onClick = { themeMenuExpanded = true },
-            trailing = {
-                Box {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    DropdownMenu(
-                        expanded = themeMenuExpanded,
-                        onDismissRequest = { themeMenuExpanded = false }
-                    ) {
-                        ThemeMode.entries.forEach { mode ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = mode.displayName,
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                onClick = {
-                                    onThemeModeChange(mode.name)
-                                    themeMenuExpanded = false
-                                },
-                                leadingIcon = if (themeMode == mode.name) {
-                                    {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_check),
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                } else null
-                            )
-                        }
-                    }
-                }
-            }
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        AppearanceSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_colorize),
-            title = "Dynamic Colors",
-            subtitle = "Use colors from wallpaper",
-            checked = dynamicColors,
-            onCheckedChange = onDynamicColorsToggle
-        )
-    }
-}
-
-@Composable
-private fun LibrarySection(
-    combineLibrarySections: Boolean,
-    homeSortByDateAdded: Boolean,
-    episodeLayout: EpisodeLayout,
-    onCombineLibrarySectionsToggle: (Boolean) -> Unit,
-    onHomeSortByDateAddedToggle: (Boolean) -> Unit,
-    onEpisodeLayoutChange: (EpisodeLayout) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    AppearanceSettingsSection(
-        modifier = modifier
-    ) {
-        AppearanceSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_view_module),
-            title = "Combine Library Sections",
-            subtitle = "Show one combined section for Movies and TV Shows",
-            checked = combineLibrarySections,
-            onCheckedChange = onCombineLibrarySectionsToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        AppearanceSettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_calendar),
-            title = "Sort by Date Added",
-            subtitle = "Show newest content first on home screen",
-            checked = homeSortByDateAdded,
-            onCheckedChange = onHomeSortByDateAddedToggle
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-
-        EpisodeLayoutDropdownItem(
-            selectedLayout = episodeLayout,
-            onLayoutSelected = onEpisodeLayoutChange
-        )
-    }
-}
-
-@Composable
-private fun AppearanceSettingsSection(
+private fun SettingsGroup(
     title: String? = null,
-    icon: Painter? = null,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
+        if (title != null) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+            )
+        }
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            if (title != null && icon != null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        painter = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
+            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                content()
             }
-
-            content()
         }
     }
 }
 
 @Composable
-private fun AppearanceSettingsItem(
+private fun SettingsDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 56.dp, end = 16.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+    )
+}
+
+@Composable
+private fun SettingsItem(
     icon: Painter,
     title: String,
     subtitle: String,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     trailing: @Composable (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             painter = icon,
@@ -312,24 +208,27 @@ private fun AppearanceSettingsItem(
             modifier = Modifier.size(24.dp)
         )
 
+        Spacer(modifier = Modifier.width(16.dp))
+
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
-                ),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (subtitle.isNotBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
         }
 
         if (trailing != null) {
@@ -339,7 +238,7 @@ private fun AppearanceSettingsItem(
 }
 
 @Composable
-private fun AppearanceSettingsSwitchItem(
+private fun SettingsSwitchItem(
     icon: Painter,
     title: String,
     subtitle: String,
@@ -348,111 +247,150 @@ private fun AppearanceSettingsSwitchItem(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled) { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            painter = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
+    SettingsItem(
+        icon = icon,
+        title = title,
+        subtitle = subtitle,
+        onClick = if (enabled) {
+            { onCheckedChange(!checked) }
+        } else null,
+        modifier = modifier,
+        trailing = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                enabled = enabled,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    uncheckedBorderColor = MaterialTheme.colorScheme.outline
                 ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                modifier = Modifier.scale(0.8f)
             )
         }
+    )
+}
 
-        Spacer(modifier = Modifier.width(8.dp))
+@Composable
+private fun ThemeSelectorItem(
+    currentThemeMode: String,
+    onThemeModeChange: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val currentTheme = ThemeMode.fromString(currentThemeMode)
 
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
-                disabledCheckedThumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                disabledCheckedTrackColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                    alpha = 0.5f
+    Box {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_dark_mode),
+            title = "Theme Mode",
+            subtitle = currentTheme.displayName,
+            onClick = { expanded = true },
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp)
                 )
-            )
+            }
         )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        ) {
+            ThemeMode.entries.forEach { mode ->
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = mode.displayName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (mode.name == currentThemeMode) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        onThemeModeChange(mode.name)
+                        expanded = false
+                    }
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun EpisodeLayoutDropdownItem(
+private fun EpisodeLayoutSelectorItem(
     selectedLayout: EpisodeLayout,
-    onLayoutSelected: (EpisodeLayout) -> Unit,
-    modifier: Modifier = Modifier
+    onLayoutSelected: (EpisodeLayout) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     val layouts = listOf(EpisodeLayout.HORIZONTAL, EpisodeLayout.VERTICAL)
 
-    AppearanceSettingsItem(
-        icon = painterResource(id = R.drawable.ic_view_module),
-        title = "Episode Layout",
-        subtitle = selectedLayout.getDisplayName(),
-        onClick = { expanded = true },
-        trailing = {
-            Box {
+    Box {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_view_module),
+            title = "Episode Layout",
+            subtitle = selectedLayout.getDisplayName(),
+            onClick = { expanded = true },
+            trailing = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp)
                 )
+            }
+        )
 
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    layouts.forEach { layout ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = layout.getDisplayName(),
-                                    style = MaterialTheme.typography.bodyLarge
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        ) {
+            layouts.forEach { layout ->
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = layout.getDisplayName(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (layout == selectedLayout) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
                                 )
-                            },
-                            onClick = {
-                                onLayoutSelected(layout)
-                                expanded = false
-                            },
-                            leadingIcon = if (selectedLayout == layout) {
-                                {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_check),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            } else null
-                        )
+                            }
+                        }
+                    },
+                    onClick = {
+                        onLayoutSelected(layout)
+                        expanded = false
                     }
-                }
+                )
             }
         }
-    )
+    }
 }

@@ -104,7 +104,7 @@ suspend fun BaseItemDto.toAfinityEpisode(
 }
 
 suspend fun AfinityEpisodeDto.toAfinityEpisode(database: ServerDatabaseDao, userId: UUID): AfinityEpisode {
-    val userData = database.getUserDataOrCreateNew(id, userId)
+    val userData = database.getUserDataOrCreateNew(id, userId, serverId)
     val sources = database.getSources(id).map { it.toAfinitySource(database) }
     val trickplayInfos = mutableMapOf<String, AfinityTrickplayInfo>()
     for (source in sources) {

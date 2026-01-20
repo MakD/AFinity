@@ -239,7 +239,7 @@ private fun SearchTopBar(
     ) {
         IconButton(onClick = onBackClick) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_arrow_left),
+                painter = painterResource(id = R.drawable.ic_chevron_left),
                 contentDescription = "Back",
                 tint = MaterialTheme.colorScheme.onBackground
             )

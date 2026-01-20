@@ -1,8 +1,10 @@
 package com.makd.afinity.data.repository.auth
 
 import com.makd.afinity.core.AppConstants
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +17,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.operations.QuickConnectApi
 import org.jellyfin.sdk.api.operations.SessionApi
 import org.jellyfin.sdk.api.operations.UserApi
@@ -25,14 +28,20 @@ import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Singleton
 class JellyfinAuthRepository @Inject constructor(
     private val apiClient: ApiClient,
+    private val sessionManagerProvider: Provider<SessionManager>,
     private val securePreferencesRepository: SecurePreferencesRepository,
-    private val networkConnectivityMonitor: NetworkConnectivityMonitor
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val databaseRepository: DatabaseRepository
 ) : AuthRepository {
+
+    private val sessionManager: SessionManager
+        get() = sessionManagerProvider.get()
 
     private val _currentUser = MutableStateFlow<User?>(null)
     override val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
@@ -59,71 +68,92 @@ class JellyfinAuthRepository @Inject constructor(
                 val username = securePreferencesRepository.getSavedUsername()
 
                 if (accessToken.isNullOrBlank() || userId.isNullOrBlank() ||
-                    serverUrl.isNullOrBlank() || username.isNullOrBlank()) {
+                    serverUrl.isNullOrBlank() || username.isNullOrBlank()
+                ) {
                     Timber.w("Incomplete encrypted auth data found, clearing and requiring fresh login")
                     clearAllAuthData()
                     return@withContext false
                 }
 
-                apiClient.update(baseUrl = serverUrl, accessToken = accessToken)
-
-                val isConnected = networkConnectivityMonitor.isCurrentlyConnected()
-
-                if (!isConnected) {
-                    Timber.d("Device is offline, restoring auth from cache without validation")
-                    try {
-                        val user = User(
-                            id = UUID.fromString(userId),
-                            name = username,
-                            serverId = serverId ?: "",
-                            accessToken = accessToken,
-                            primaryImageTag = null
-                        )
-
-                        _currentUser.value = user
-                        _isAuthenticated.value = true
-
-                        Timber.d("Successfully restored authentication from cache in offline mode for user: $username")
-                        return@withContext true
-                    } catch (e: IllegalArgumentException) {
-                        Timber.e(e, "Invalid UUID format for userId, clearing auth data")
-                        clearAllAuthData()
-                        return@withContext false
-                    }
-                }
-
-                val response = withTimeoutOrNull(5000L) {
-                    val userApi = UserApi(apiClient)
-                    userApi.getCurrentUser()
-                }
-
-                if (response?.content != null) {
-                    val userDto = response.content!!
-                    val user = User(
-                        id = userDto.id,
-                        name = userDto.name ?: username,
-                        serverId = serverId ?: "",
-                        accessToken = accessToken,
-                        primaryImageTag = userDto.primaryImageTag
-                    )
-
-                    _currentUser.value = user
-                    _isAuthenticated.value = true
-
-                    Timber.d("Successfully restored authentication from encrypted storage for user: $username")
-                    return@withContext true
-                } else {
-                    Timber.w("Token validation failed or timed out, clearing encrypted auth data")
+                val userUuid = try {
+                    UUID.fromString(userId)
+                } catch (e: IllegalArgumentException) {
+                    Timber.e(e, "Invalid UUID format in saved data")
                     clearAllAuthData()
                     return@withContext false
                 }
-            } catch (e: ApiClientException) {
-                Timber.w(e, "API error during auth restoration, likely invalid token")
-                clearAllAuthData()
-                return@withContext false
+
+                val user = User(
+                    id = userUuid,
+                    name = username,
+                    serverId = serverId ?: "",
+                    accessToken = accessToken,
+                    primaryImageTag = null
+                )
+
+                apiClient.update(baseUrl = serverUrl, accessToken = accessToken)
+                _currentUser.value = user
+                _isAuthenticated.value = true
+
+                sessionManager.startSession(
+                    serverUrl = serverUrl,
+                    serverId = serverId ?: "",
+                    userId = userUuid,
+                    accessToken = accessToken
+                ).onFailure { e ->
+                    Timber.w(e, "SessionManager start failed during restore (non-fatal)")
+                }
+
+                Timber.d("Optimistically restored session for user: $username")
+
+                val isConnected = networkConnectivityMonitor.isCurrentlyConnected()
+                if (!isConnected) {
+                    Timber.d("Device offline - keeping optimistic session")
+                    return@withContext true
+                }
+
+                try {
+                    val response = withTimeoutOrNull(5000L) {
+                        val userApi = UserApi(apiClient)
+                        userApi.getCurrentUser()
+                    }
+
+                    if (response?.content != null) {
+                        val userDto = response.content!!
+                        val updatedUser = user.copy(primaryImageTag = userDto.primaryImageTag)
+                        _currentUser.value = updatedUser
+                        sessionManager.updateCurrentUser(updatedUser)
+                        try {
+                            databaseRepository.insertUser(updatedUser)
+                        } catch (e: Exception) {
+                            Timber.w("Failed to update user in DB during restore")
+                        }
+
+                        Timber.d("Session validated with server successfully (ImageTag: ${updatedUser.primaryImageTag})")
+                        return@withContext true
+                    } else {
+                        Timber.w("Server validation timed out - keeping optimistic session (assuming server reachable but slow)")
+                        return@withContext true
+                    }
+                } catch (e: InvalidStatusException) {
+                    if (e.status == 401) {
+                        Timber.e("Token rejected by server (401) - Logging out")
+                        clearAllAuthData()
+                        return@withContext false
+                    }
+
+                    Timber.w("Server returned error ${e.status} - keeping optimistic session")
+                    return@withContext true
+                } catch (e: ApiClientException) {
+                    Timber.w(e, "ApiClient error during validation - keeping optimistic session")
+                    return@withContext true
+                } catch (e: Exception) {
+                    Timber.e(e, "Unexpected error during validation - keeping optimistic session")
+                    return@withContext true
+                }
+
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error during auth restoration")
-                clearAllAuthData()
+                Timber.e(e, "Critical error during auth restoration")
                 return@withContext false
             }
         }
@@ -167,7 +197,10 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
-    override suspend fun authenticateByName(username: String, password: String): AuthRepository.AuthResult {
+    override suspend fun authenticateByName(
+        username: String,
+        password: String
+    ): AuthRepository.AuthResult {
         return withContext(Dispatchers.IO) {
             try {
                 val userApi = UserApi(apiClient)
@@ -278,15 +311,13 @@ class JellyfinAuthRepository @Inject constructor(
     override suspend fun logout() {
         withContext(Dispatchers.IO) {
             try {
-                if (_isAuthenticated.value) {
-                    val sessionApi = SessionApi(apiClient)
-                    sessionApi.reportSessionEnded()
-                }
+                sessionManager.logout()
 
                 clearAllAuthData()
-                Timber.d("Successfully logged out and cleared encrypted data")
+                Timber.d("Successfully logged out and cleared encrypted data (token kept for re-login)")
             } catch (e: Exception) {
                 Timber.e(e, "Error during logout, clearing encrypted state anyway")
+                sessionManager.logout()
                 clearAllAuthData()
             }
         }
@@ -350,6 +381,20 @@ class JellyfinAuthRepository @Inject constructor(
 
     override fun getAccessToken(): String? = apiClient.accessToken
 
+    fun setAuthenticatedUser(user: User, accessToken: String, serverUrl: String) {
+
+        apiClient.update(baseUrl = serverUrl, accessToken = accessToken)
+
+        Timber.d("ApiClient AFTER update - baseUrl: ${apiClient.baseUrl}, hasToken: ${!apiClient.accessToken.isNullOrBlank()}")
+        _currentUser.value = user
+        _isAuthenticated.value = true
+    }
+
+    fun setSessionActive(user: User) {
+        _currentUser.value = user
+        _isAuthenticated.value = true
+    }
+
     private suspend fun handleSuccessfulAuth(authResult: AuthenticationResult, username: String) {
         authResult.accessToken?.let { token ->
             apiClient.update(accessToken = token)
@@ -364,6 +409,26 @@ class JellyfinAuthRepository @Inject constructor(
                     primaryImageTag = userDto.primaryImageTag
                 )
                 _currentUser.value = user
+
+                try {
+                    databaseRepository.insertUser(user)
+                    Timber.d("Saved user to database: ${user.name}")
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to save user to database, continuing anyway")
+                }
+
+                val serverUrl = apiClient.baseUrl ?: ""
+                val serverId = authResult.serverId ?: ""
+                val userId = userDto.id
+
+                sessionManager.startSession(
+                    serverUrl = serverUrl,
+                    serverId = serverId,
+                    userId = userId,
+                    accessToken = token
+                ).onFailure { e ->
+                    Timber.e(e, "Failed to start session via SessionManager")
+                }
             }
 
             Timber.d("Successfully authenticated user: $username")

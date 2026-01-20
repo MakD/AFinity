@@ -12,7 +12,7 @@ import java.util.UUID
 data class AfinityShowDto(
     @PrimaryKey
     val id: UUID,
-    val serverId: String?,
+    val serverId: String,
     val name: String,
     val originalTitle: String?,
     val overview: String,
@@ -30,7 +30,7 @@ data class AfinityShowDto(
     val people: List<AfinityPerson>? = null,
 )
 
-fun AfinityShow.toAfinityShowDto(serverId: String? = null): AfinityShowDto {
+fun AfinityShow.toAfinityShowDto(serverId: String): AfinityShowDto {
     return AfinityShowDto(
         id = id,
         serverId = serverId,

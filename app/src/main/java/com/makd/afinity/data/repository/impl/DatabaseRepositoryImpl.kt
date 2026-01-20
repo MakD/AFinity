@@ -11,6 +11,7 @@ import com.makd.afinity.data.database.dao.ShowDao
 import com.makd.afinity.data.database.dao.SourceDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
 import com.makd.afinity.data.database.entities.AfinityMovieDto
 import com.makd.afinity.data.database.entities.AfinitySeasonDto
@@ -43,20 +44,26 @@ import com.makd.afinity.data.models.media.toAfinitySource
 import com.makd.afinity.data.models.media.toAfinityTrickplayInfo
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
-import com.makd.afinity.data.models.server.ServerWithAddressAndUser
 import com.makd.afinity.data.models.server.ServerWithAddresses
 import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class DatabaseRepositoryImpl @Inject constructor(
+    //private val sessionManager: SessionManager,
+    private val sessionManagerProvider: Provider<SessionManager>,
     private val serverDao: ServerDao,
     private val serverAddressDao: ServerAddressDao,
     private val userDao: UserDao,
@@ -69,6 +76,9 @@ class DatabaseRepositoryImpl @Inject constructor(
     private val userDataDao: UserDataDao,
     private val serverDatabaseDao: ServerDatabaseDao
 ) : DatabaseRepository {
+
+    private val sessionManager: SessionManager
+        get() = sessionManagerProvider.get()
 
     override suspend fun insertServer(server: Server) {
         serverDao.insertServer(server)
@@ -114,16 +124,8 @@ class DatabaseRepositoryImpl @Inject constructor(
         return serverDao.getServerWithAddresses(serverId)
     }
 
-    override suspend fun getServerWithAddressAndUser(serverId: String): ServerWithAddressAndUser? {
-        return serverDao.getServerWithAddressAndUser(serverId)
-    }
-
     override suspend fun getServerWithAddressesAndUsers(serverId: String): ServerWithAddressesAndUsers? {
         return serverDao.getServerWithAddressesAndUsers(serverId)
-    }
-
-    override suspend fun getCurrentServerWithAddressAndUser(): ServerWithAddressAndUser? {
-        return serverDao.getCurrentServerWithAddressAndUser()
     }
 
     override suspend fun insertUser(user: User) {
@@ -155,11 +157,13 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertMovie(movie: AfinityMovie, serverId: String?) {
-        movieDao.insertMovie(movie.toAfinityMovieDto(serverId))
+        val actualServerId = serverId ?: sessionManager.currentSession.value?.serverId ?: return
+        movieDao.insertMovie(movie.toAfinityMovieDto(actualServerId))
     }
 
     override suspend fun updateMovie(movie: AfinityMovie) {
-        movieDao.updateMovie(movie.toAfinityMovieDto())
+        val serverId = sessionManager.currentSession.value?.serverId ?: return
+        movieDao.updateMovie(movie.toAfinityMovieDto(serverId))
     }
 
     override suspend fun deleteMovie(movieId: UUID) {
@@ -167,34 +171,43 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMovie(movieId: UUID, userId: UUID): AfinityMovie? {
-        val movieDto = movieDao.getMovie(movieId) ?: return null
+        val serverId = sessionManager.currentSession.value?.serverId ?: return null
+        val movieDto = movieDao.getMovie(movieId, serverId) ?: return null
         return movieDto.toAfinityMovie(serverDatabaseDao, userId)
     }
 
     override suspend fun getAllMovies(userId: UUID, serverId: String?): List<AfinityMovie> {
-        return movieDao.getMovies(serverId).map {
+        val actualServerId = serverId ?: sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return movieDao.getMovies(actualServerId).map {
             it.toAfinityMovie(serverDatabaseDao, userId)
         }
     }
 
     override suspend fun searchMovies(query: String, userId: UUID): List<AfinityMovie> {
-        return movieDao.searchMovies(query).map {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return movieDao.searchMovies(query, serverId).map {
             it.toAfinityMovie(serverDatabaseDao, userId)
         }
     }
 
     override fun getMoviesFlow(userId: UUID): Flow<List<AfinityMovie>> {
-        return movieDao.getMoviesFlow().map { movieDtos ->
-            movieDtos.map { it.toAfinityMovie(serverDatabaseDao, userId) }
-        }
+        return sessionManager.currentSession
+            .filterNotNull()
+            .flatMapLatest { session ->
+                movieDao.getMoviesFlow(session.serverId).map { movieDtos ->
+                    movieDtos.map { it.toAfinityMovie(serverDatabaseDao, userId) }
+                }
+            }
     }
 
     override suspend fun insertShow(show: AfinityShow, serverId: String?) {
-        showDao.insertShow(show.toAfinityShowDto(serverId))
+        val actualServerId = serverId ?: sessionManager.currentSession.value?.serverId ?: return
+        showDao.insertShow(show.toAfinityShowDto(actualServerId))
     }
 
     override suspend fun updateShow(show: AfinityShow) {
-        showDao.updateShow(show.toAfinityShowDto())
+        val serverId = sessionManager.currentSession.value?.serverId ?: return
+        showDao.updateShow(show.toAfinityShowDto(serverId))
     }
 
     override suspend fun deleteShow(showId: UUID) {
@@ -202,34 +215,43 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getShow(showId: UUID, userId: UUID): AfinityShow? {
-        val showDto = showDao.getShow(showId) ?: return null
+        val serverId = sessionManager.currentSession.value?.serverId ?: return null
+        val showDto = showDao.getShow(showId, serverId) ?: return null
         return showDto.toAfinityShow(serverDatabaseDao, userId)
     }
 
     override suspend fun getAllShows(userId: UUID, serverId: String?): List<AfinityShow> {
-        return showDao.getShows(serverId).map {
+        val actualServerId = serverId ?: sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return showDao.getShows(actualServerId).map {
             it.toAfinityShow(serverDatabaseDao, userId)
         }
     }
 
     override suspend fun searchShows(query: String, userId: UUID): List<AfinityShow> {
-        return showDao.searchShows(query).map {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return showDao.searchShows(query, serverId).map {
             it.toAfinityShow(serverDatabaseDao, userId)
         }
     }
 
     override fun getShowsFlow(userId: UUID): Flow<List<AfinityShow>> {
-        return showDao.getShowsFlow().map { showDtos ->
-            showDtos.map { it.toAfinityShow(serverDatabaseDao, userId) }
-        }
+        return sessionManager.currentSession
+            .filterNotNull()
+            .flatMapLatest { session ->
+                showDao.getShowsFlow(session.serverId).map { showDtos ->
+                    showDtos.map { it.toAfinityShow(serverDatabaseDao, userId) }
+                }
+            }
     }
 
-    override suspend fun insertSeason(season: AfinitySeason) {
-        seasonDao.insertSeason(season.toAfinitySeasonDto())
+    override suspend fun insertSeason(season: AfinitySeason, serverId: String?) {
+        val actualServerId = serverId ?: sessionManager.currentSession.value?.serverId ?: return
+        seasonDao.insertSeason(season.toAfinitySeasonDto(actualServerId))
     }
 
     override suspend fun updateSeason(season: AfinitySeason) {
-        seasonDao.updateSeason(season.toAfinitySeasonDto())
+        val serverId = sessionManager.currentSession.value?.serverId ?: return
+        seasonDao.updateSeason(season.toAfinitySeasonDto(serverId))
     }
 
     override suspend fun deleteSeason(seasonId: UUID) {
@@ -237,22 +259,26 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSeason(seasonId: UUID, userId: UUID): AfinitySeason? {
-        val seasonDto = seasonDao.getSeason(seasonId) ?: return null
+        val serverId = sessionManager.currentSession.value?.serverId ?: return null
+        val seasonDto = seasonDao.getSeason(seasonId, serverId) ?: return null
         return seasonDto.toAfinitySeason(serverDatabaseDao, userId)
     }
 
     override suspend fun getSeasonsForShow(showId: UUID, userId: UUID): List<AfinitySeason> {
-        return seasonDao.getSeasonsForSeries(showId).map {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return seasonDao.getSeasonsForSeries(showId, serverId).map {
             it.toAfinitySeason(serverDatabaseDao, userId)
         }
     }
 
     override suspend fun insertEpisode(episode: AfinityEpisode, serverId: String?) {
-        episodeDao.insertEpisode(episode.toAfinityEpisodeDto(serverId))
+        val actualServerId = serverId ?: sessionManager.currentSession.value?.serverId ?: return
+        episodeDao.insertEpisode(episode.toAfinityEpisodeDto(actualServerId))
     }
 
     override suspend fun updateEpisode(episode: AfinityEpisode) {
-        episodeDao.updateEpisode(episode.toAfinityEpisodeDto())
+        val serverId = sessionManager.currentSession.value?.serverId ?: return
+        episodeDao.updateEpisode(episode.toAfinityEpisodeDto(serverId))
     }
 
     override suspend fun deleteEpisode(episodeId: UUID) {
@@ -260,38 +286,47 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getEpisode(episodeId: UUID, userId: UUID): AfinityEpisode? {
-        val episodeDto = episodeDao.getEpisode(episodeId) ?: return null
+        val serverId = sessionManager.currentSession.value?.serverId ?: return null
+        val episodeDto = episodeDao.getEpisode(episodeId, serverId) ?: return null
         return episodeDto.toAfinityEpisode(serverDatabaseDao, userId)
     }
 
     override suspend fun getEpisodesForSeason(seasonId: UUID, userId: UUID): List<AfinityEpisode> {
-        return episodeDao.getEpisodesForSeason(seasonId).map {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return episodeDao.getEpisodesForSeason(seasonId, serverId).map {
             it.toAfinityEpisode(serverDatabaseDao, userId)
         }
     }
 
     override suspend fun getEpisodesForShow(showId: UUID, userId: UUID): List<AfinityEpisode> {
-        return episodeDao.getEpisodesForSeries(showId).map {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return episodeDao.getEpisodesForSeries(showId, serverId).map {
             it.toAfinityEpisode(serverDatabaseDao, userId)
         }
     }
 
     override suspend fun getNextEpisodesToWatch(userId: UUID, limit: Int): List<AfinityEpisode> {
-        return episodeDao.getContinueWatchingEpisodes(userId, limit).map {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return episodeDao.getContinueWatchingEpisodes(userId, serverId, limit).map {
             it.toAfinityEpisode(serverDatabaseDao, userId)
         }
     }
 
     override suspend fun searchEpisodes(query: String, userId: UUID): List<AfinityEpisode> {
-        return episodeDao.searchEpisodes(query).map {
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return episodeDao.searchEpisodes(query, serverId).map {
             it.toAfinityEpisode(serverDatabaseDao, userId)
         }
     }
 
     override fun getEpisodesFlow(seasonId: UUID, userId: UUID): Flow<List<AfinityEpisode>> {
-        return episodeDao.getEpisodesForSeasonFlow(seasonId).map { episodeDtos ->
-            episodeDtos.map { it.toAfinityEpisode(serverDatabaseDao, userId) }
-        }
+        return sessionManager.currentSession
+            .filterNotNull()
+            .flatMapLatest { session ->
+                episodeDao.getEpisodesForSeasonFlow(seasonId, session.serverId).map { episodeDtos ->
+                    episodeDtos.map { it.toAfinityEpisode(serverDatabaseDao, userId) }
+                }
+            }
     }
 
     override suspend fun insertSource(source: AfinitySource, itemId: UUID) {
@@ -381,23 +416,28 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteUserData(userId: UUID, itemId: UUID) {
-        userDataDao.deleteUserDataByIds(userId, itemId)
+        val serverId = sessionManager.currentSession.value?.serverId ?: return
+        userDataDao.deleteUserDataByIds(userId, itemId, serverId)
     }
 
     override suspend fun getUserData(userId: UUID, itemId: UUID): AfinityUserDataDto? {
-        return userDataDao.getUserData(userId, itemId)
+        val serverId = sessionManager.currentSession.value?.serverId ?: return null
+        return userDataDao.getUserData(userId, itemId, serverId)
     }
 
     override suspend fun getUserDataOrCreateNew(itemId: UUID, userId: UUID): AfinityUserDataDto {
-        return serverDatabaseDao.getUserDataOrCreateNew(itemId, userId)
+        val serverId = sessionManager.currentSession.value?.serverId ?: ""
+        return serverDatabaseDao.getUserDataOrCreateNew(itemId, userId, serverId)
     }
 
     override suspend fun getAllUserDataToSync(userId: UUID): List<AfinityUserDataDto> {
-        return userDataDao.getUnsyncedUserData(userId)
+        val serverId = sessionManager.currentSession.value?.serverId ?: return emptyList()
+        return userDataDao.getUnsyncedUserData(userId, serverId)
     }
 
     override suspend fun markUserDataSynced(userId: UUID, itemId: UUID) {
-        userDataDao.markUserDataSynced(userId, itemId)
+        val serverId = sessionManager.currentSession.value?.serverId ?: return
+        userDataDao.markUserDataSynced(userId, itemId, serverId)
     }
 
     override suspend fun getFavoriteMovies(userId: UUID): List<AfinityMovie> {
@@ -419,21 +459,29 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override fun getFavoriteMoviesFlow(userId: UUID): Flow<List<AfinityMovie>> {
-        return userDataDao.getFavoriteItemsFlow(userId).map { userDataList ->
-            val movieIds = userDataList.map { it.itemId }
-            movieIds.mapNotNull { movieId ->
-                getMovie(movieId, userId)
+        return sessionManager.currentSession
+            .filterNotNull()
+            .flatMapLatest { session ->
+                userDataDao.getFavoriteItemsFlow(userId, session.serverId).map { userDataList ->
+                    val movieIds = userDataList.map { it.itemId }
+                    movieIds.mapNotNull { movieId ->
+                        getMovie(movieId, userId)
+                    }
+                }
             }
-        }
     }
 
     override fun getFavoriteShowsFlow(userId: UUID): Flow<List<AfinityShow>> {
-        return userDataDao.getFavoriteItemsFlow(userId).map { userDataList ->
-            val showIds = userDataList.map { it.itemId }
-            showIds.mapNotNull { showId ->
-                getShow(showId, userId)
+        return sessionManager.currentSession
+            .filterNotNull()
+            .flatMapLatest { session ->
+                userDataDao.getFavoriteItemsFlow(userId, session.serverId).map { userDataList ->
+                    val showIds = userDataList.map { it.itemId }
+                    showIds.mapNotNull { showId ->
+                        getShow(showId, userId)
+                    }
+                }
             }
-        }
     }
 
     override suspend fun getRecentlyWatchedItems(userId: UUID, limit: Int): List<AfinityItem> {
@@ -455,17 +503,21 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override fun getContinueWatchingFlow(userId: UUID): Flow<List<AfinityItem>> {
-        return userDataDao.getContinueWatchingItemsFlow(userId).map { userDataList ->
-            val itemIds = userDataList.map { it.itemId }
-            val items = mutableListOf<AfinityItem>()
+        return sessionManager.currentSession
+            .filterNotNull()
+            .flatMapLatest { session ->
+                userDataDao.getContinueWatchingItemsFlow(userId, session.serverId).map { userDataList ->
+                    val itemIds = userDataList.map { it.itemId }
+                    val items = mutableListOf<AfinityItem>()
 
-            itemIds.forEach { itemId ->
-                getMovie(itemId, userId)?.let { items.add(it) }
-                    ?: getEpisode(itemId, userId)?.let { items.add(it) }
+                    itemIds.forEach { itemId ->
+                        getMovie(itemId, userId)?.let { items.add(it) }
+                            ?: getEpisode(itemId, userId)?.let { items.add(it) }
+                    }
+
+                    items
+                }
             }
-
-            items
-        }
     }
 
     override suspend fun searchAllItems(query: String, userId: UUID): List<AfinityItem> {
@@ -486,7 +538,8 @@ class DatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun clearUserData(userId: UUID) {
-        userDataDao.deleteUserDataByUserId(userId)
+        val serverId = sessionManager.currentSession.value?.serverId ?: return
+        userDataDao.deleteUserDataByUserId(userId, serverId)
     }
 
     override suspend fun getDatabaseSize(): Long {
@@ -497,7 +550,7 @@ class DatabaseRepositoryImpl @Inject constructor(
         database: ServerDatabaseDao,
         userId: UUID
     ): AfinityMovie {
-        val userData = database.getUserDataOrCreateNew(id, userId)
+        val userData = database.getUserDataOrCreateNew(id, userId, serverId)
         val sources = database.getSources(id).map { it.toAfinitySource(database) }
         val trickplayInfos = mutableMapOf<String, AfinityTrickplayInfo>()
         for (source in sources) {
@@ -542,7 +595,7 @@ class DatabaseRepositoryImpl @Inject constructor(
         database: ServerDatabaseDao,
         userId: UUID
     ): AfinityShow {
-        val userData = database.getUserDataOrCreateNew(id, userId)
+        val userData = database.getUserDataOrCreateNew(id, userId, serverId)
         val seasonDtos = database.getSeasonsForSeries(id)
         val seasons = seasonDtos.map { it.toAfinitySeason(database, userId) }
         val seasonCount = seasons.size
@@ -584,7 +637,7 @@ class DatabaseRepositoryImpl @Inject constructor(
         database: ServerDatabaseDao,
         userId: UUID
     ): AfinitySeason {
-        val userData = database.getUserDataOrCreateNew(id, userId)
+        val userData = database.getUserDataOrCreateNew(id, userId, serverId)
         val episodeDtos = database.getEpisodesForSeason(id)
         val episodes = episodeDtos.map { it.toAfinityEpisode(database, userId) }
         val episodeCount = episodes.size
@@ -618,7 +671,7 @@ class DatabaseRepositoryImpl @Inject constructor(
         database: ServerDatabaseDao,
         userId: UUID
     ): AfinityEpisode {
-        val userData = database.getUserDataOrCreateNew(id, userId)
+        val userData = database.getUserDataOrCreateNew(id, userId, serverId)
         val sources = database.getSources(id).map { it.toAfinitySource(database) }
         val trickplayInfos = mutableMapOf<String, AfinityTrickplayInfo>()
         for (source in sources) {

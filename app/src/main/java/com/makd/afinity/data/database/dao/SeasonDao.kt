@@ -31,23 +31,26 @@ interface SeasonDao {
     @Query("DELETE FROM seasons WHERE seriesId = :seriesId")
     suspend fun deleteSeasonsBySeriesId(seriesId: UUID)
 
-    @Query("SELECT * FROM seasons WHERE id = :seasonId")
-    suspend fun getSeason(seasonId: UUID): AfinitySeasonDto?
+    @Query("DELETE FROM seasons WHERE serverId = :serverId")
+    suspend fun deleteSeasonsByServerId(serverId: String)
 
-    @Query("SELECT * FROM seasons WHERE seriesId = :seriesId ORDER BY indexNumber ASC")
-    suspend fun getSeasonsForSeries(seriesId: UUID): List<AfinitySeasonDto>
+    @Query("SELECT * FROM seasons WHERE id = :seasonId AND serverId = :serverId")
+    suspend fun getSeason(seasonId: UUID, serverId: String): AfinitySeasonDto?
 
-    @Query("SELECT * FROM seasons WHERE seriesId = :seriesId ORDER BY indexNumber ASC")
-    fun getSeasonsForSeriesFlow(seriesId: UUID): Flow<List<AfinitySeasonDto>>
+    @Query("SELECT * FROM seasons WHERE seriesId = :seriesId AND serverId = :serverId ORDER BY indexNumber ASC")
+    suspend fun getSeasonsForSeries(seriesId: UUID, serverId: String): List<AfinitySeasonDto>
 
-    @Query("SELECT * FROM seasons WHERE name LIKE '%' || :query || '%' ORDER BY name ASC")
-    suspend fun searchSeasons(query: String): List<AfinitySeasonDto>
+    @Query("SELECT * FROM seasons WHERE seriesId = :seriesId AND serverId = :serverId ORDER BY indexNumber ASC")
+    fun getSeasonsForSeriesFlow(seriesId: UUID, serverId: String): Flow<List<AfinitySeasonDto>>
 
-    @Query("SELECT * FROM seasons ORDER BY seriesName ASC, indexNumber ASC")
-    suspend fun getAllSeasons(): List<AfinitySeasonDto>
+    @Query("SELECT * FROM seasons WHERE serverId = :serverId AND name LIKE '%' || :query || '%' ORDER BY name ASC")
+    suspend fun searchSeasons(query: String, serverId: String): List<AfinitySeasonDto>
 
-    @Query("SELECT COUNT(*) FROM seasons")
-    suspend fun getSeasonCount(): Int
+    @Query("SELECT * FROM seasons WHERE serverId = :serverId ORDER BY seriesName ASC, indexNumber ASC")
+    suspend fun getAllSeasons(serverId: String): List<AfinitySeasonDto>
+
+    @Query("SELECT COUNT(*) FROM seasons WHERE serverId = :serverId")
+    suspend fun getSeasonCount(serverId: String): Int
 
     @Query("DELETE FROM seasons")
     suspend fun deleteAllSeasons()

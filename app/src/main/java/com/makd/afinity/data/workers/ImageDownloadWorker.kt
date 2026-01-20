@@ -5,9 +5,14 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
-import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.di.DownloadClient
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -26,8 +31,7 @@ import java.util.UUID
 class ImageDownloadWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val apiClient: ApiClient,
-    private val mediaRepository: MediaRepository,
+    private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: JellyfinDownloadRepository,
     @DownloadClient private val okHttpClient: OkHttpClient,
@@ -59,6 +63,12 @@ class ImageDownloadWorker @AssistedInject constructor(
         try {
             Timber.d("Starting image download for item: $itemId")
 
+            val download: DownloadDto = databaseRepository.getDownloadByItemId(itemId)
+                ?: return@withContext Result.failure(workDataOf("error" to "Download not found"))
+
+            val apiClient = sessionManager.getOrRestoreApiClient(download.serverId)
+                ?: return@withContext Result.failure(workDataOf("error" to "Could not restore session for server ${download.serverId}"))
+
             val userId = try {
                 apiClient.userApi.getCurrentUser().content?.id
             } catch (e: Exception) {
@@ -77,6 +87,10 @@ class ImageDownloadWorker @AssistedInject constructor(
             val images = item.images
             val downloadedImages = mutableMapOf<String, android.net.Uri>()
 
+            fun downloadWithClient(url: String, baseName: String): android.net.Uri? {
+                return downloadImage(apiClient, url, imagesDir, baseName)
+            }
+
             if (images.primary != null) {
                 try {
                     val url = images.primary.toString()
@@ -84,14 +98,10 @@ class ImageDownloadWorker @AssistedInject constructor(
                         Timber.d("Primary image already local, skipping download: $url")
                     } else {
                         Timber.d("Downloading primary image from: $url")
-                        val localUri = downloadImage(
-                            url = url,
-                            outputDir = imagesDir,
-                            baseName = "primary"
-                        )
+                        val localUri = downloadWithClient(url, "primary")
                         if (localUri != null) {
                             downloadedImages["primary"] = localUri
-                            Timber.i("✓ Primary image downloaded successfully")
+                            Timber.i("Primary image downloaded successfully")
                         }
                     }
                 } catch (e: Exception) {
@@ -106,14 +116,10 @@ class ImageDownloadWorker @AssistedInject constructor(
                         Timber.d("Backdrop image already local, skipping download: $url")
                     } else {
                         Timber.d("Downloading backdrop image from: $url")
-                        val localUri = downloadImage(
-                            url = url,
-                            outputDir = imagesDir,
-                            baseName = "backdrop"
-                        )
+                        val localUri = downloadWithClient(url, "backdrop")
                         if (localUri != null) {
                             downloadedImages["backdrop"] = localUri
-                            Timber.i("✓ Backdrop image downloaded successfully")
+                            Timber.i("Backdrop image downloaded successfully")
                         }
                     }
                 } catch (e: Exception) {
@@ -128,14 +134,10 @@ class ImageDownloadWorker @AssistedInject constructor(
                         Timber.d("Logo image already local, skipping download: $url")
                     } else {
                         Timber.d("Downloading logo image from: $url")
-                        val localUri = downloadImage(
-                            url = url,
-                            outputDir = imagesDir,
-                            baseName = "logo"
-                        )
+                        val localUri = downloadWithClient(url, "logo")
                         if (localUri != null) {
                             downloadedImages["logo"] = localUri
-                            Timber.i("✓ Logo image downloaded successfully")
+                            Timber.i("Logo image downloaded successfully")
                         }
                     }
                 } catch (e: Exception) {
@@ -150,14 +152,10 @@ class ImageDownloadWorker @AssistedInject constructor(
                         Timber.d("Thumb image already local, skipping download: $url")
                     } else {
                         Timber.d("Downloading thumb image from: $url")
-                        val localUri = downloadImage(
-                            url = url,
-                            outputDir = imagesDir,
-                            baseName = "thumb"
-                        )
+                        val localUri = downloadWithClient(url, "thumb")
                         if (localUri != null) {
                             downloadedImages["thumb"] = localUri
-                            Timber.i("✓ Thumb image downloaded successfully")
+                            Timber.i("Thumb image downloaded successfully")
                         }
                     }
                 } catch (e: Exception) {
@@ -165,7 +163,7 @@ class ImageDownloadWorker @AssistedInject constructor(
                 }
             }
 
-            if (item is com.makd.afinity.data.models.media.AfinityEpisode) {
+            if (item is AfinityEpisode) {
                 if (item.seriesLogo != null) {
                     try {
                         val url = item.seriesLogo.toString()
@@ -173,14 +171,10 @@ class ImageDownloadWorker @AssistedInject constructor(
                             Timber.d("Series logo already local, skipping download: $url")
                         } else {
                             Timber.d("Downloading series logo image from: $url")
-                            val localUri = downloadImage(
-                                url = url,
-                                outputDir = imagesDir,
-                                baseName = "series_logo"
-                            )
+                            val localUri = downloadWithClient(url, "series_logo")
                             if (localUri != null) {
                                 downloadedImages["series_logo"] = localUri
-                                Timber.i("✓ Series logo image downloaded successfully")
+                                Timber.i("Series logo image downloaded successfully")
                             }
                         }
                     } catch (e: Exception) {
@@ -192,7 +186,7 @@ class ImageDownloadWorker @AssistedInject constructor(
             Timber.i("Image download completed for item: $itemId - ${downloadedImages.size} images downloaded")
 
             if (downloadedImages.isNotEmpty()) {
-                updateItemWithLocalImages(item, downloadedImages, userId)
+                updateItemWithLocalImages(item, downloadedImages, download.serverId)
             }
 
             return@withContext Result.success(
@@ -213,7 +207,12 @@ class ImageDownloadWorker @AssistedInject constructor(
         }
     }
 
-    private fun downloadImage(url: String, outputDir: File, baseName: String): android.net.Uri? {
+    private fun downloadImage(
+        apiClient: ApiClient,
+        url: String,
+        outputDir: File,
+        baseName: String
+    ): android.net.Uri? {
         val request = Request.Builder()
             .url(url)
             .header("X-Emby-Token", apiClient.accessToken ?: "")
@@ -261,13 +260,13 @@ class ImageDownloadWorker @AssistedInject constructor(
     }
 
     private suspend fun updateItemWithLocalImages(
-        item: com.makd.afinity.data.models.media.AfinityItem,
+        item: AfinityItem,
         downloadedImages: Map<String, android.net.Uri>,
-        userId: UUID
+        serverId: String
     ) {
         try {
             val images = item.images
-            val updatedImages = com.makd.afinity.data.models.media.AfinityImages(
+            val updatedImages = AfinityImages(
                 primary = downloadedImages["primary"] ?: images.primary,
                 backdrop = downloadedImages["backdrop"] ?: images.backdrop,
                 thumb = downloadedImages["thumb"] ?: images.thumb,
@@ -285,13 +284,13 @@ class ImageDownloadWorker @AssistedInject constructor(
             )
 
             when (item) {
-                is com.makd.afinity.data.models.media.AfinityMovie -> {
-                    databaseRepository.insertMovie(item.copy(images = updatedImages))
+                is AfinityMovie -> {
+                    databaseRepository.insertMovie(item.copy(images = updatedImages), serverId)
                     Timber.i("Updated movie in database with ${downloadedImages.size} local image paths")
                 }
 
-                is com.makd.afinity.data.models.media.AfinityEpisode -> {
-                    databaseRepository.insertEpisode(item.copy(images = updatedImages))
+                is AfinityEpisode -> {
+                    databaseRepository.insertEpisode(item.copy(images = updatedImages), serverId)
                     Timber.i("Updated episode in database with ${downloadedImages.size} local image paths")
                 }
 

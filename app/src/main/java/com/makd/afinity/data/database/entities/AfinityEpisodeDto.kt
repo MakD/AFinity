@@ -34,7 +34,7 @@ import java.util.UUID
 data class AfinityEpisodeDto(
     @PrimaryKey
     val id: UUID,
-    val serverId: String?,
+    val serverId: String,
     val seasonId: UUID,
     val seriesId: UUID,
     val name: String,
@@ -50,7 +50,7 @@ data class AfinityEpisodeDto(
     val images: AfinityImages? = null,
 )
 
-fun AfinityEpisode.toAfinityEpisodeDto(serverId: String? = null): AfinityEpisodeDto {
+fun AfinityEpisode.toAfinityEpisodeDto(serverId: String): AfinityEpisodeDto {
     return AfinityEpisodeDto(
         id = id,
         serverId = serverId,

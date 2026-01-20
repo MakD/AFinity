@@ -31,28 +31,28 @@ interface ShowDao {
     @Query("DELETE FROM shows WHERE serverId = :serverId")
     suspend fun deleteShowsByServerId(serverId: String)
 
-    @Query("SELECT * FROM shows WHERE id = :showId")
-    suspend fun getShow(showId: UUID): AfinityShowDto?
+    @Query("SELECT * FROM shows WHERE id = :showId AND serverId = :serverId")
+    suspend fun getShow(showId: UUID, serverId: String): AfinityShowDto?
 
-    @Query("SELECT * FROM shows WHERE serverId = :serverId OR serverId IS NULL ORDER BY name ASC")
-    suspend fun getShows(serverId: String? = null): List<AfinityShowDto>
+    @Query("SELECT * FROM shows WHERE serverId = :serverId ORDER BY name ASC")
+    suspend fun getShows(serverId: String): List<AfinityShowDto>
 
-    @Query("SELECT * FROM shows WHERE serverId = :serverId OR serverId IS NULL ORDER BY name ASC")
-    fun getShowsFlow(serverId: String? = null): Flow<List<AfinityShowDto>>
+    @Query("SELECT * FROM shows WHERE serverId = :serverId ORDER BY name ASC")
+    fun getShowsFlow(serverId: String): Flow<List<AfinityShowDto>>
 
     @Query("""
-        SELECT * FROM shows 
-        WHERE (serverId = :serverId OR serverId IS NULL) 
+        SELECT * FROM shows
+        WHERE serverId = :serverId
         AND (name LIKE '%' || :query || '%' OR originalTitle LIKE '%' || :query || '%')
         ORDER BY name ASC
     """)
-    suspend fun searchShows(query: String, serverId: String? = null): List<AfinityShowDto>
+    suspend fun searchShows(query: String, serverId: String): List<AfinityShowDto>
 
-    @Query("SELECT * FROM shows ORDER BY name ASC")
-    suspend fun getAllShows(): List<AfinityShowDto>
+    @Query("SELECT * FROM shows WHERE serverId = :serverId ORDER BY name ASC")
+    suspend fun getAllShows(serverId: String): List<AfinityShowDto>
 
-    @Query("SELECT COUNT(*) FROM shows")
-    suspend fun getShowCount(): Int
+    @Query("SELECT COUNT(*) FROM shows WHERE serverId = :serverId")
+    suspend fun getShowCount(serverId: String): Int
 
     @Query("DELETE FROM shows")
     suspend fun deleteAllShows()

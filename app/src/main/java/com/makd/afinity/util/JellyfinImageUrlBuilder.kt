@@ -16,11 +16,12 @@ class JellyfinImageUrlBuilder @Inject constructor() {
         maxWidth: Int? = null,
         maxHeight: Int? = null,
         quality: Int = 90,
-        format: String = "webp"
+        format: String = "webp",
+        endpoint: String = "Items"
     ): String {
         return buildString {
             append(baseUrl.trimEnd('/'))
-            append("/Items/$itemId/Images/$imageType")
+            append("/$endpoint/$itemId/Images/$imageType")
 
             val params = mutableListOf<String>()
 
@@ -50,7 +51,24 @@ class JellyfinImageUrlBuilder @Inject constructor() {
         tag = tag,
         maxWidth = maxWidth,
         maxHeight = maxHeight,
-        quality = quality
+        quality = quality,
+        endpoint = "Items"
+    )
+
+    fun buildUserPrimaryImageUrl(
+        baseUrl: String,
+        userId: String,
+        tag: String? = null,
+        maxWidth: Int? = null,
+        quality: Int = 90
+    ): String = buildOptimizedImageUrl(
+        baseUrl = baseUrl,
+        itemId = userId,
+        imageType = "Primary",
+        tag = tag,
+        maxWidth = maxWidth,
+        quality = quality,
+        endpoint = "Users"
     )
 
     fun buildBackdropUrl(
@@ -65,7 +83,8 @@ class JellyfinImageUrlBuilder @Inject constructor() {
         imageType = "Backdrop",
         tag = tag,
         maxWidth = maxWidth,
-        quality = quality
+        quality = quality,
+        endpoint = "Items"
     )
 
     fun dpToPx(dp: Dp, density: Density): Int {

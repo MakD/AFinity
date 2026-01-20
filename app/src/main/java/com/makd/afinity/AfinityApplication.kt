@@ -7,7 +7,10 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
+import coil3.gif.AnimatedImageDecoder
+import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.CachePolicy
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -18,6 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import timber.log.Timber
 import javax.inject.Inject
@@ -33,6 +37,9 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
 
     @Inject
     lateinit var preferencesRepository: PreferencesRepository
+
+    @Inject
+    lateinit var okHttpClient: OkHttpClient
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -60,8 +67,16 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     override fun newImageLoader(context: PlatformContext): ImageLoader {
         return ImageLoader.Builder(context)
             .components {
-                add(OkHttpNetworkFetcherFactory())
+                add(OkHttpNetworkFetcherFactory(callFactory = { okHttpClient }))
                 add(SvgDecoder.Factory())
+                add(AnimatedImageDecoder.Factory())
+            }
+            .memoryCache {
+                MemoryCache.Builder()
+                    .maxSizePercent(context)
+                    .strongReferencesEnabled(true)
+                    .weakReferencesEnabled(true)
+                    .build()
             }
             .diskCache {
                 DiskCache.Builder()
@@ -69,6 +84,9 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
                     .maxSizeBytes(512L * 1024 * 1024)
                     .build()
             }
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .networkCachePolicy(CachePolicy.ENABLED)
             .crossfade(true)
             .build()
     }

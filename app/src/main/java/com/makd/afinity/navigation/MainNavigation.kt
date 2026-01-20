@@ -49,6 +49,8 @@ import com.makd.afinity.ui.settings.SettingsScreen
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
+import com.makd.afinity.ui.settings.servers.AddEditServerScreen
+import com.makd.afinity.ui.settings.servers.ServerManagementScreen
 import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
 import com.makd.afinity.ui.watchlist.WatchlistScreen
 import kotlinx.coroutines.launch
@@ -103,7 +105,9 @@ fun MainNavigation(
                 route != "download_settings" &&
                 route != "player_options" &&
                 route != "appearance_options" &&
-                route != "licenses"
+                route != "licenses" &&
+                route != "server_management" &&
+                !route.startsWith("add_edit_server")
     } ?: true
 
     val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
@@ -523,6 +527,10 @@ fun MainNavigation(
                     onAppearanceOptionsClick = {
                         val route = Destination.createAppearanceOptionsRoute()
                         navController.navigate(route)
+                    },
+                    onServerManagementClick = {
+                        val route = Destination.createServerManagementRoute()
+                        navController.navigate(route)
                     }
                 )
             }
@@ -556,6 +564,39 @@ fun MainNavigation(
 
             composable(Destination.LICENSES_ROUTE) {
                 LicensesScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(Destination.SERVER_MANAGEMENT_ROUTE) {
+                ServerManagementScreen(
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onAddServerClick = {
+                        val route = Destination.createAddEditServerRoute(serverId = null)
+                        navController.navigate(route)
+                    },
+                    onEditServerClick = { serverId ->
+                        val route = Destination.createAddEditServerRoute(serverId = serverId)
+                        navController.navigate(route)
+                    }
+                )
+            }
+
+            composable(
+                route = Destination.ADD_EDIT_SERVER_ROUTE,
+                arguments = listOf(
+                    navArgument("serverId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) {
+                AddEditServerScreen(
                     onBackClick = {
                         navController.popBackStack()
                     }

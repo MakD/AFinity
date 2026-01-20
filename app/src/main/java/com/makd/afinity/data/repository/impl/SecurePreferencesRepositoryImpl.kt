@@ -7,10 +7,13 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.google.crypto.tink.Aead
-import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.KeyTemplate
+import com.google.crypto.tink.RegistryConfiguration
 import com.google.crypto.tink.aead.AeadConfig
+import com.google.crypto.tink.aead.PredefinedAeadParameters
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.repository.ServerUserToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -56,13 +59,12 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
         try {
             AeadConfig.register()
 
-            AndroidKeysetManager.Builder()
-                .withSharedPref(context, TINK_KEYSET_NAME, PREF_FILE_NAME)
-                .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
-                .withMasterKeyUri(MASTER_KEY_URI)
-                .build()
-                .keysetHandle
-                .getPrimitive(Aead::class.java)
+            AndroidKeysetManager.Builder().withSharedPref(context, TINK_KEYSET_NAME, PREF_FILE_NAME)
+                .withKeyTemplate(KeyTemplate.createFrom(PredefinedAeadParameters.AES256_GCM))
+                .withMasterKeyUri(MASTER_KEY_URI).build().keysetHandle.getPrimitive(
+                    RegistryConfiguration.get(),
+                    Aead::class.java
+                )
         } catch (e: Exception) {
             Timber.e(e, "CRITICAL: Tink Init failed. Clearing broken keys.")
             context.getSharedPreferences(PREF_FILE_NAME, Context.MODE_PRIVATE).edit().clear()
@@ -89,6 +91,9 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     @Volatile
     private var cachedJellyseerrCookie: String? = null
 
+    @Volatile
+    private var cachedJellyseerrUsername: String? = null
+
     private val _authenticationState = MutableStateFlow(false)
 
     init {
@@ -107,13 +112,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
         }
     }
 
-
     override suspend fun saveAuthenticationData(
-        accessToken: String,
-        userId: UUID,
-        serverId: String,
-        serverUrl: String,
-        username: String
+        accessToken: String, userId: UUID, serverId: String, serverUrl: String, username: String
     ) {
         context.dataStore.edit { prefs ->
             prefs[KEY_ACCESS_TOKEN] = encrypt(accessToken)
@@ -170,10 +170,92 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
         context.dataStore.edit { it.clear() }
         cachedJellyseerrUrl = null
         cachedJellyseerrCookie = null
+        cachedJellyseerrUsername = null
         _authenticationState.value = false
         Timber.d("Cleared all secure data")
     }
 
+    private fun getJellyseerrKey(
+        prefix: String, serverId: String, userId: UUID
+    ): Preferences.Key<String> {
+        return stringPreferencesKey("${prefix}_${serverId}_$userId")
+    }
+
+    override suspend fun saveJellyseerrAuthForUser(
+        jellyfinServerId: String,
+        jellyfinUserId: UUID,
+        url: String,
+        cookie: String,
+        username: String
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs[getJellyseerrKey("jsr_url", jellyfinServerId, jellyfinUserId)] = encrypt(url)
+            prefs[getJellyseerrKey("jsr_cookie", jellyfinServerId, jellyfinUserId)] =
+                encrypt(cookie)
+            prefs[getJellyseerrKey("jsr_user", jellyfinServerId, jellyfinUserId)] =
+                encrypt(username)
+        }
+
+        cachedJellyseerrUrl = url
+        cachedJellyseerrCookie = cookie
+        cachedJellyseerrUsername = username
+
+        Timber.d("Saved Jellyseerr auth for user $jellyfinUserId on server $jellyfinServerId")
+    }
+
+    override suspend fun switchJellyseerrContext(
+        jellyfinServerId: String, jellyfinUserId: UUID
+    ): Boolean {
+        return withContext(Dispatchers.IO) {
+            val prefs = context.dataStore.data.first()
+
+            val urlKey = getJellyseerrKey("jsr_url", jellyfinServerId, jellyfinUserId)
+            val cookieKey = getJellyseerrKey("jsr_cookie", jellyfinServerId, jellyfinUserId)
+            val userKey = getJellyseerrKey("jsr_user", jellyfinServerId, jellyfinUserId)
+
+            val url = decrypt(prefs[urlKey])
+            val cookie = decrypt(prefs[cookieKey])
+            val username = decrypt(prefs[userKey])
+
+            cachedJellyseerrUrl = url
+            cachedJellyseerrCookie = cookie
+            cachedJellyseerrUsername = username
+
+            Timber.d("Switched Jellyseerr context. Valid: ${!url.isNullOrBlank() && !cookie.isNullOrBlank()}")
+
+            !url.isNullOrBlank() && !cookie.isNullOrBlank()
+        }
+    }
+
+    override fun clearActiveJellyseerrCache() {
+        cachedJellyseerrUrl = null
+        cachedJellyseerrCookie = null
+        cachedJellyseerrUsername = null
+    }
+
+    override suspend fun getJellyseerrAuthForUser(
+        jellyfinServerId: String, jellyfinUserId: UUID
+    ): Triple<String?, String?, String?> {
+        return withContext(Dispatchers.IO) {
+            val prefs = context.dataStore.data.first()
+            val url = decrypt(prefs[getJellyseerrKey("jsr_url", jellyfinServerId, jellyfinUserId)])
+            val cookie =
+                decrypt(prefs[getJellyseerrKey("jsr_cookie", jellyfinServerId, jellyfinUserId)])
+            val user =
+                decrypt(prefs[getJellyseerrKey("jsr_user", jellyfinServerId, jellyfinUserId)])
+            Triple(url, cookie, user)
+        }
+    }
+
+    override suspend fun clearJellyseerrAuthForUser(
+        jellyfinServerId: String, jellyfinUserId: UUID
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs.remove(getJellyseerrKey("jsr_url", jellyfinServerId, jellyfinUserId))
+            prefs.remove(getJellyseerrKey("jsr_cookie", jellyfinServerId, jellyfinUserId))
+            prefs.remove(getJellyseerrKey("jsr_user", jellyfinServerId, jellyfinUserId))
+        }
+    }
 
     override suspend fun saveJellyseerrServerUrl(url: String) {
         cachedJellyseerrUrl = url
@@ -183,9 +265,7 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     override suspend fun getJellyseerrServerUrl(): String? {
         if (cachedJellyseerrUrl != null) return cachedJellyseerrUrl
 
-        val url = getDecryptedString(KEY_JELLYSEERR_SERVER_URL)
-        cachedJellyseerrUrl = url
-        return url
+        return getDecryptedString(KEY_JELLYSEERR_SERVER_URL)
     }
 
     override suspend fun saveJellyseerrCookie(cookie: String) {
@@ -195,10 +275,7 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun getJellyseerrCookie(): String? {
         if (cachedJellyseerrCookie != null) return cachedJellyseerrCookie
-
-        val cookie = getDecryptedString(KEY_JELLYSEERR_COOKIE)
-        cachedJellyseerrCookie = cookie
-        return cookie
+        return getDecryptedString(KEY_JELLYSEERR_COOKIE)
     }
 
     override suspend fun saveJellyseerrUsername(username: String) {
@@ -206,11 +283,10 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getJellyseerrUsername(): String? =
-        getDecryptedString(KEY_JELLYSEERR_USERNAME)
+        cachedJellyseerrUsername ?: getDecryptedString(KEY_JELLYSEERR_USERNAME)
 
     override suspend fun clearJellyseerrAuthData() {
-        cachedJellyseerrUrl = null
-        cachedJellyseerrCookie = null
+        clearActiveJellyseerrCache()
         context.dataStore.edit {
             it.remove(KEY_JELLYSEERR_SERVER_URL)
             it.remove(KEY_JELLYSEERR_COOKIE)
@@ -219,7 +295,7 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun hasValidJellyseerrAuth(): Boolean {
-        if (cachedJellyseerrCookie != null && cachedJellyseerrUrl != null) return true
+        if (!cachedJellyseerrCookie.isNullOrBlank() && !cachedJellyseerrUrl.isNullOrBlank()) return true
 
         val cookie = getJellyseerrCookie()
         val url = getJellyseerrServerUrl()
@@ -236,5 +312,101 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
             val encryptedValue = preferences[key]
             decrypt(encryptedValue)
         }
+    }
+
+    override suspend fun saveServerUserToken(
+        serverId: String, userId: UUID, accessToken: String, username: String, serverUrl: String
+    ) {
+        context.dataStore.edit { prefs ->
+            val tokenKey = stringPreferencesKey("token_${serverId}_$userId")
+            val usernameKey = stringPreferencesKey("username_${serverId}_$userId")
+            val serverUrlKey = stringPreferencesKey("serverUrl_${serverId}_$userId")
+            val lastUserKey = stringPreferencesKey("lastUser_$serverId")
+
+            prefs[tokenKey] = encrypt(accessToken)
+            prefs[usernameKey] = encrypt(username)
+            prefs[serverUrlKey] = encrypt(serverUrl)
+            prefs[lastUserKey] = encrypt(userId.toString())
+        }
+        Timber.d("Saved token for server=$serverId, user=$userId")
+    }
+
+    override suspend fun getServerUserToken(serverId: String, userId: UUID): String? {
+        val tokenKey = stringPreferencesKey("token_${serverId}_$userId")
+        return getDecryptedString(tokenKey)
+    }
+
+    override suspend fun getLastUserIdForServer(serverId: String): UUID? {
+        val lastUserKey = stringPreferencesKey("lastUser_$serverId")
+        val userIdString = getDecryptedString(lastUserKey) ?: return null
+        return try {
+            UUID.fromString(userIdString)
+        } catch (e: IllegalArgumentException) {
+            Timber.w("Invalid UUID for server $serverId: $userIdString")
+            null
+        }
+    }
+
+    override suspend fun getAllServerUserTokens(): List<ServerUserToken> {
+        return withContext(Dispatchers.IO) {
+            val preferences = context.dataStore.data.first()
+            val tokens = mutableListOf<ServerUserToken>()
+
+            preferences.asMap().keys.filter { it.name.startsWith("token_") }.forEach { key ->
+                try {
+                    val parts = key.name.removePrefix("token_").split("_")
+                    if (parts.size == 2) {
+                        val serverId = parts[0]
+                        val userId = UUID.fromString(parts[1])
+
+                        val token = decrypt(preferences[key] as? String)
+                        val username =
+                            getDecryptedString(stringPreferencesKey("username_${serverId}_$userId"))
+                        val serverUrl =
+                            getDecryptedString(stringPreferencesKey("serverUrl_${serverId}_$userId"))
+
+                        if (token != null && username != null && serverUrl != null) {
+                            tokens.add(
+                                ServerUserToken(
+                                    serverId = serverId,
+                                    userId = userId,
+                                    accessToken = token,
+                                    username = username,
+                                    serverUrl = serverUrl
+                                )
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to parse token key: ${key.name}")
+                }
+            }
+
+            tokens
+        }
+    }
+
+    override suspend fun clearServerUserToken(serverId: String, userId: UUID) {
+        context.dataStore.edit { prefs ->
+            val tokenKey = stringPreferencesKey("token_${serverId}_$userId")
+            val usernameKey = stringPreferencesKey("username_${serverId}_$userId")
+            val serverUrlKey = stringPreferencesKey("serverUrl_${serverId}_$userId")
+
+            prefs.remove(tokenKey)
+            prefs.remove(usernameKey)
+            prefs.remove(serverUrlKey)
+        }
+        Timber.d("Cleared token for server=$serverId, user=$userId")
+    }
+
+    override suspend fun clearAllServerTokens(serverId: String) {
+        context.dataStore.edit { prefs ->
+            val keysToRemove = prefs.asMap().keys.filter { key ->
+                key.name.contains("_${serverId}_") || key.name == "lastUser_$serverId"
+            }
+
+            keysToRemove.forEach { prefs.remove(it) }
+        }
+        Timber.d("Cleared all tokens for server=$serverId")
     }
 }

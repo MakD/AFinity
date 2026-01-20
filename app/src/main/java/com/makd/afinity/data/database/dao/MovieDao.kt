@@ -31,31 +31,31 @@ interface MovieDao {
     @Query("DELETE FROM movies WHERE serverId = :serverId")
     suspend fun deleteMoviesByServerId(serverId: String)
 
-    @Query("SELECT * FROM movies WHERE id = :movieId")
-    suspend fun getMovie(movieId: UUID): AfinityMovieDto?
+    @Query("SELECT * FROM movies WHERE id = :movieId AND serverId = :serverId")
+    suspend fun getMovie(movieId: UUID, serverId: String): AfinityMovieDto?
 
-    @Query("SELECT * FROM movies WHERE serverId = :serverId OR serverId IS NULL ORDER BY name ASC")
-    suspend fun getMovies(serverId: String? = null): List<AfinityMovieDto>
+    @Query("SELECT * FROM movies WHERE serverId = :serverId ORDER BY name ASC")
+    suspend fun getMovies(serverId: String): List<AfinityMovieDto>
 
-    @Query("SELECT * FROM movies WHERE serverId = :serverId OR serverId IS NULL ORDER BY name ASC")
-    fun getMoviesFlow(serverId: String? = null): Flow<List<AfinityMovieDto>>
+    @Query("SELECT * FROM movies WHERE serverId = :serverId ORDER BY name ASC")
+    fun getMoviesFlow(serverId: String): Flow<List<AfinityMovieDto>>
 
     @Query("""
-        SELECT * FROM movies 
-        WHERE (serverId = :serverId OR serverId IS NULL) 
+        SELECT * FROM movies
+        WHERE serverId = :serverId
         AND (name LIKE '%' || :query || '%' OR originalTitle LIKE '%' || :query || '%')
         ORDER BY name ASC
     """)
-    suspend fun searchMovies(query: String, serverId: String? = null): List<AfinityMovieDto>
+    suspend fun searchMovies(query: String, serverId: String): List<AfinityMovieDto>
 
-    @Query("SELECT * FROM movies WHERE premiereDate >= :fromDate ORDER BY premiereDate DESC LIMIT :limit")
-    suspend fun getRecentMovies(fromDate: Long, limit: Int): List<AfinityMovieDto>
+    @Query("SELECT * FROM movies WHERE serverId = :serverId AND premiereDate >= :fromDate ORDER BY premiereDate DESC LIMIT :limit")
+    suspend fun getRecentMovies(fromDate: Long, limit: Int, serverId: String): List<AfinityMovieDto>
 
-    @Query("SELECT * FROM movies ORDER BY name ASC")
-    suspend fun getAllMovies(): List<AfinityMovieDto>
+    @Query("SELECT * FROM movies WHERE serverId = :serverId ORDER BY name ASC")
+    suspend fun getAllMovies(serverId: String): List<AfinityMovieDto>
 
-    @Query("SELECT COUNT(*) FROM movies")
-    suspend fun getMovieCount(): Int
+    @Query("SELECT COUNT(*) FROM movies WHERE serverId = :serverId")
+    suspend fun getMovieCount(serverId: String): Int
 
     @Query("DELETE FROM movies")
     suspend fun deleteAllMovies()

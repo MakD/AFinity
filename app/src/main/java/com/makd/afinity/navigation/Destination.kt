@@ -53,6 +53,8 @@ enum class Destination(
         const val APPEARANCE_OPTIONS_ROUTE = "appearance_options"
         const val LICENSES_ROUTE = "licenses"
         const val FILTERED_MEDIA_ROUTE = "filtered_media/{filterType}/{filterId}/{filterName}"
+        const val SERVER_MANAGEMENT_ROUTE = "server_management"
+        const val ADD_EDIT_SERVER_ROUTE = "add_edit_server?serverId={serverId}"
 
         fun createPersonRoute(personId: String): String {
             return "person/$personId"
@@ -125,6 +127,18 @@ enum class Destination(
 
         fun createFilteredMediaRoute(filterType: String, filterId: Int, filterName: String): String {
             return "filtered_media/$filterType/$filterId/${filterName.replace("/", "%2F")}"
+        }
+
+        fun createServerManagementRoute(): String {
+            return SERVER_MANAGEMENT_ROUTE
+        }
+
+        fun createAddEditServerRoute(serverId: String? = null): String {
+            return if (serverId != null) {
+                "add_edit_server?serverId=$serverId"
+            } else {
+                "add_edit_server"
+            }
         }
     }
 }
