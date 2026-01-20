@@ -107,7 +107,7 @@ fun MainNavigation(
                 route != "appearance_options" &&
                 route != "licenses" &&
                 route != "server_management" &&
-                route != "add_edit_server/"
+                !route.startsWith("add_edit_server")
     } ?: true
 
     val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
