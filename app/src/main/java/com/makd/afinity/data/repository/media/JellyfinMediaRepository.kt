@@ -87,9 +87,6 @@ class JellyfinMediaRepository @Inject constructor(
                     if (freshItem is AfinityEpisode) {
                         updateEpisodeInNextUpCache(freshItem)
                     }
-                    Timber.d("Successfully refreshed UserData for item: ${freshItem.name} (${freshItem.id})")
-                    Timber.d("- Played: ${freshItem.played}")
-                    Timber.d("- Progress: ${(freshItem.playbackPositionTicks.toFloat() / freshItem.runtimeTicks * 100f)}%")
                 } else {
                     Timber.w("No fresh item data received for itemId: $itemId")
                 }

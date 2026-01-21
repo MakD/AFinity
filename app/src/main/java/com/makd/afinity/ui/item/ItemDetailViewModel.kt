@@ -96,39 +96,55 @@ class ItemDetailViewModel @Inject constructor(
                 when (event) {
                     is PlaybackEvent.Stopped -> {
                         if (event.itemId == itemId) {
-                            val currentItem = _uiState.value.item ?: return@collect
-
-                            val newPosition = event.positionTicks
-                            val percentage = if (currentItem.runtimeTicks > 0) {
-                                newPosition.toDouble() / currentItem.runtimeTicks.toDouble()
-                            } else 0.0
-
-                            val isPlayed = currentItem.played || (percentage > 0.9)
-
-                            val updatedItem = when (currentItem) {
-                                is AfinityMovie -> currentItem.copy(
-                                    playbackPositionTicks = newPosition,
-                                    played = isPlayed
-                                )
-                                is AfinityEpisode -> currentItem.copy(
-                                    playbackPositionTicks = newPosition,
-                                    played = isPlayed
-                                )
-                                is AfinityVideo -> currentItem.copy(
-                                    playbackPositionTicks = newPosition,
-                                    played = isPlayed
-                                )
-                                else -> currentItem
-                            }
-                            _uiState.value = _uiState.value.copy(item = updatedItem)
-                            Timber.d("Optimistic update applied for: $itemId")
-
-                            refreshFromCacheImmediate()
+                            applyOptimisticUpdate(event.positionTicks)
+                        }
+                    }
+                    is PlaybackEvent.Synced -> {
+                        if (event.itemId == itemId) {
+                            refreshFromCacheOnly()
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun refreshFromCacheOnly() {
+        viewModelScope.launch {
+            val cachedItem = jellyfinRepository.getItemById(itemId)
+            if (cachedItem != null) {
+                _uiState.value = _uiState.value.copy(item = cachedItem)
+                Timber.d("UI synced with confirmed database state")
+            }
+        }
+    }
+
+    private fun applyOptimisticUpdate(positionTicks: Long) {
+        val currentItem = _uiState.value.item ?: return
+        val percentage = if (currentItem.runtimeTicks > 0) {
+            positionTicks.toDouble() / currentItem.runtimeTicks.toDouble()
+        } else 0.0
+        val isPlayed = currentItem.played || (percentage > 0.9)
+        val updatedItem = when (currentItem) {
+            is AfinityMovie -> currentItem.copy(
+                playbackPositionTicks = positionTicks,
+                played = isPlayed
+            )
+
+            is AfinityEpisode -> currentItem.copy(
+                playbackPositionTicks = positionTicks,
+                played = isPlayed
+            )
+
+            is AfinityVideo -> currentItem.copy(
+                playbackPositionTicks = positionTicks,
+                played = isPlayed
+            )
+
+            else -> currentItem
+        }
+        _uiState.value = _uiState.value.copy(item = updatedItem)
+        Timber.d("Optimistic update applied: Pos=${positionTicks}, Played=${isPlayed}")
     }
 
     private fun observeDownloadStatus() {

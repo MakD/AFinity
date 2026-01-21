@@ -107,14 +107,10 @@ class PlaybackStateManager @Inject constructor(
     private fun handlePlaybackStopped(itemId: UUID) {
         scope.launch {
             try {
-                val refreshedItem =
-                    mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
+                val refreshedItem = mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
 
                 if (refreshedItem != null) {
-                    Timber.d("Successfully updated UserData for played item: ${refreshedItem.name}")
-                    onItemUpdatedCallback?.invoke(itemId)
-                } else {
-                    Timber.w("Failed to refresh item data for: $itemId")
+                    _playbackEvents.emit(PlaybackEvent.Synced(itemId))
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to handle playback stopped")
@@ -132,4 +128,5 @@ class PlaybackStateManager @Inject constructor(
 
 sealed class PlaybackEvent {
     data class Stopped(val itemId: UUID, val positionTicks: Long) : PlaybackEvent()
+    data class Synced(val itemId: UUID) : PlaybackEvent()
 }
