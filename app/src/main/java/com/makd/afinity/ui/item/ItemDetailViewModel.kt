@@ -8,6 +8,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
@@ -90,9 +91,42 @@ class ItemDetailViewModel @Inject constructor(
         loadItem()
         observeDownloadStatus()
 
-        playbackStateManager.setOnItemUpdatedCallback { updatedItemId ->
-            if (updatedItemId == itemId) {
-                refreshFromCacheImmediate()
+        viewModelScope.launch {
+            playbackStateManager.playbackEvents.collect { event ->
+                when (event) {
+                    is PlaybackEvent.Stopped -> {
+                        if (event.itemId == itemId) {
+                            val currentItem = _uiState.value.item ?: return@collect
+
+                            val newPosition = event.positionTicks
+                            val percentage = if (currentItem.runtimeTicks > 0) {
+                                newPosition.toDouble() / currentItem.runtimeTicks.toDouble()
+                            } else 0.0
+
+                            val isPlayed = currentItem.played || (percentage > 0.9)
+
+                            val updatedItem = when (currentItem) {
+                                is AfinityMovie -> currentItem.copy(
+                                    playbackPositionTicks = newPosition,
+                                    played = isPlayed
+                                )
+                                is AfinityEpisode -> currentItem.copy(
+                                    playbackPositionTicks = newPosition,
+                                    played = isPlayed
+                                )
+                                is AfinityVideo -> currentItem.copy(
+                                    playbackPositionTicks = newPosition,
+                                    played = isPlayed
+                                )
+                                else -> currentItem
+                            }
+                            _uiState.value = _uiState.value.copy(item = updatedItem)
+                            Timber.d("Optimistic update applied for: $itemId")
+
+                            refreshFromCacheImmediate()
+                        }
+                    }
+                }
             }
         }
     }

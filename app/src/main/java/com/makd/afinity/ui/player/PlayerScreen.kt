@@ -239,7 +239,11 @@ fun PlayerScreen(
             player = viewModel.player,
             onPlayerEvent = viewModel::handlePlayerEvent,
             onBackClick = {
-                onBackPressed()
+                if (!hasNavigatedBack) {
+                    hasNavigatedBack = true
+                    viewModel.stopPlayback()
+                    onBackPressed()
+                }
             },
             onNextClick = viewModel::onNextChapterOrEpisode,
             onPreviousClick = viewModel::onPreviousChapterOrEpisode,

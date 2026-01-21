@@ -1166,9 +1166,14 @@ class PlayerViewModel @Inject constructor(
         hasStoppedPlayback = true
         progressReportingJob?.cancel()
 
-        playbackStateManager.updatePlaybackPosition(player.currentPosition)
+        val finalPosition = player.currentPosition
+        val item = currentItem
 
-        playbackStateManager.notifyPlaybackStopped()
+        if (item != null) {
+            playbackStateManager.notifyPlaybackStopped(item.id, finalPosition)
+        } else {
+            Timber.w("stopPlayback called but currentItem is null")
+        }
     }
 
     private fun updateUiState(update: (PlayerUiState) -> PlayerUiState) {

@@ -7,6 +7,8 @@ import com.makd.afinity.data.sync.UserDataSyncScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.UUID
@@ -20,6 +22,9 @@ class PlaybackStateManager @Inject constructor(
     private val syncScheduler: UserDataSyncScheduler
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private val _playbackEvents = MutableSharedFlow<PlaybackEvent>()
+    val playbackEvents = _playbackEvents.asSharedFlow()
 
     private var currentItemId: UUID? = null
     private var currentSessionId: String? = null
@@ -54,13 +59,15 @@ class PlaybackStateManager @Inject constructor(
         onPlaybackStoppedCallback = callback
     }
 
-    fun notifyPlaybackStopped() {
+    fun notifyPlaybackStopped(itemId: UUID, positionMs: Long) {
         scope.launch {
-            try {
-                reportPlaybackStop()
+            val positionTicks = positionMs * 10000
+            _playbackEvents.emit(PlaybackEvent.Stopped(itemId, positionTicks))
 
-                onPlaybackStoppedCallback?.invoke()
-                handlePlaybackStopped()
+            try {
+                updatePlaybackPosition(positionMs)
+                reportPlaybackStop()
+                handlePlaybackStopped(itemId)
             } catch (e: Exception) {
                 Timber.e(e, "Error in notifyPlaybackStopped")
             }
@@ -97,19 +104,17 @@ class PlaybackStateManager @Inject constructor(
         }
     }
 
-    private fun handlePlaybackStopped() {
+    private fun handlePlaybackStopped(itemId: UUID) {
         scope.launch {
             try {
-                currentItemId?.let { itemId ->
-                    val refreshedItem =
-                        mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
+                val refreshedItem =
+                    mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
 
-                    if (refreshedItem != null) {
-                        Timber.d("Successfully updated UserData for played item: ${refreshedItem.name}")
-                        onItemUpdatedCallback?.invoke(itemId)
-                    } else {
-                        Timber.w("Failed to refresh item data for: $itemId")
-                    }
+                if (refreshedItem != null) {
+                    Timber.d("Successfully updated UserData for played item: ${refreshedItem.name}")
+                    onItemUpdatedCallback?.invoke(itemId)
+                } else {
+                    Timber.w("Failed to refresh item data for: $itemId")
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to handle playback stopped")
@@ -123,4 +128,8 @@ class PlaybackStateManager @Inject constructor(
         lastKnownPosition = 0L
         lastKnownMediaSourceId = null
     }
+}
+
+sealed class PlaybackEvent {
+    data class Stopped(val itemId: UUID, val positionTicks: Long) : PlaybackEvent()
 }
