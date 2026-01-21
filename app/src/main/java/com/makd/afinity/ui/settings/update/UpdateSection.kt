@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -40,7 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -159,17 +157,6 @@ private fun CheckForUpdatesItem(
     val isChecking = updateState is UpdateState.Checking
     val isDownloading = updateState is UpdateState.Downloading
 
-    val infiniteTransition = rememberInfiniteTransition(label = "refresh_rotation")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "refresh_rotation"
-    )
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -183,7 +170,6 @@ private fun CheckForUpdatesItem(
             tint = if (isChecking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .size(24.dp)
-                .rotate(if (isChecking) rotation else 0f)
         )
 
         Spacer(modifier = Modifier.width(16.dp))

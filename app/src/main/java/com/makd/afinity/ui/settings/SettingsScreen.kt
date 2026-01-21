@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -262,7 +263,7 @@ fun SettingsScreen(
                         SettingsItem(
                             icon = painterResource(id = R.drawable.ic_versions),
                             title = "Version",
-                            subtitle = "${AppConstants.VERSION_NAME} (${if (AppConstants.IS_DEBUG) "Debug" else "Release"})",
+                            subtitle = "${AppConstants.VERSION_NAME} (${if (AppConstants.IS_DEBUG) "Debug Build" else "Release Build"})",
                             onClick = null
                         )
                         SettingsDivider()
@@ -363,83 +364,81 @@ private fun SettingsDivider() {
 }
 
 @Composable
-private fun ProfileHeader(
+fun ProfileHeader(
     userName: String,
     serverName: String?,
     serverUrl: String?,
     userProfileImageUrl: String?,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp, bottom = 0.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
-                .size(72.dp)
+                .size(96.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
             contentAlignment = Alignment.Center
         ) {
             if (userProfileImageUrl != null) {
                 AsyncImage(
                     imageUrl = userProfileImageUrl,
                     contentDescription = "Profile Picture",
-                    targetWidth = 72.dp,
-                    targetHeight = 72.dp,
+                    targetWidth = 96.dp,
+                    targetHeight = 96.dp,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_user),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(32.dp)
+                Text(
+                    text = userName.take(1).uppercase(),
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = userName,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface
+        )
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = userName,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(8.dp),
+        Spacer(modifier = Modifier.height(8.dp))
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            shape = RoundedCornerShape(50),
+            modifier = Modifier.height(32.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_server),
-                        contentDescription = null,
-                        modifier = Modifier.size(12.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_server),
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = serverName ?: "Unknown Server",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (serverUrl != null) {
+                    VerticalDivider(modifier = Modifier.height(12.dp))
                     Text(
-                        text = serverName ?: "Unknown Server",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        text = serverUrl,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-            }
-
-            if (serverUrl != null) {
-                Text(
-                    text = serverUrl,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
         }
     }
