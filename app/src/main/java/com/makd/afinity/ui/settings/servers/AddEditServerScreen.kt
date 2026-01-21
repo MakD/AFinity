@@ -133,7 +133,7 @@ fun AddEditServerScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = if (state.serverId != null) "Edit Server" else "Connect to Server",
+                text = if (state.serverId != null) "Edit Server" else "Add Server",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -141,7 +141,7 @@ fun AddEditServerScreen(
             )
 
             Text(
-                text = "Enter your Jellyfin server details below",
+                text = "Enter the details of your Jellyfin server",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -261,7 +261,7 @@ fun AddEditServerScreen(
                     )
                 } else {
                     Text(
-                        text = if (state.serverId != null) "Save Changes" else "Connect",
+                        text = if (state.serverId != null) "Save Changes" else "Save Server",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold
                         )

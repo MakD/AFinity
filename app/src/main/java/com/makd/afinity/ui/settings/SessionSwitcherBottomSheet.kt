@@ -42,12 +42,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.ui.components.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionSwitcherBottomSheet(
     onDismiss: () -> Unit,
+    onAddAccountClick: (Server) -> Unit,
     sheetState: SheetState,
     modifier: Modifier = Modifier,
     viewModel: SessionSwitcherViewModel = hiltViewModel()
@@ -107,42 +109,31 @@ fun SessionSwitcherBottomSheet(
 
             if (state.isSwitching) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 48.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
                 }
             } else if (state.sessionGroups.isEmpty()) {
-                EmptySessionsState(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 48.dp)
-                )
+                EmptySessionsState(modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp))
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    items(
-                        items = state.sessionGroups,
-                        key = { it.server.id }
-                    ) { sessionGroup ->
+                    items(items = state.sessionGroups, key = { it.server.id }) { sessionGroup ->
                         ServerSessionGroupItem(
                             sessionGroup = sessionGroup,
                             onSessionClick = { session ->
                                 viewModel.switchSession(session.serverId, session.userId)
-                            }
+                            },
+                            onAddAccountClick = { onAddAccountClick(sessionGroup.server) }
                         )
                     }
                 }
             }
 
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.padding(16.dp)
-            )
+            SnackbarHost(hostState = snackbarHostState)
         }
     }
 }
@@ -151,6 +142,7 @@ fun SessionSwitcherBottomSheet(
 private fun ServerSessionGroupItem(
     sessionGroup: ServerSessionGroup,
     onSessionClick: (UserSession) -> Unit,
+    onAddAccountClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -173,32 +165,59 @@ private fun ServerSessionGroupItem(
             )
             Text(
                 text = sessionGroup.server.name,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
         ) {
-            sessionGroup.sessions.forEachIndexed { index, session ->
+            sessionGroup.sessions.forEach { session ->
                 SessionItem(
                     session = session,
                     onClick = { onSessionClick(session) }
                 )
-                if (index < sessionGroup.sessions.lastIndex) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onAddAccountClick)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_plus),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
+
+                Text(
+                    text = if (sessionGroup.sessions.isEmpty()) "Login to this server" else "Add another account",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }

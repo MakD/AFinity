@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.login
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.SessionManager
@@ -25,6 +26,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val jellyfinRepository: JellyfinRepository,
     private val authRepository: AuthRepository,
     private val databaseRepository: DatabaseRepository,
@@ -76,24 +78,33 @@ class LoginViewModel @Inject constructor(
             }
         }
 
-        viewModelScope.launch {
-            val currentUrl = jellyfinRepository.getBaseUrl()
-            if (currentUrl.isNotBlank()) {
-                _serverUrl.value = currentUrl
-                _connectedServerUrl.value = currentUrl
-                jellyfinRepository.refreshServerInfo()
-                _uiState.value = _uiState.value.copy(isConnectedToServer = true)
-                loadPublicUsers()
-            }
-        }
+        val passedServerUrl = savedStateHandle.get<String>("serverUrl")
 
-        viewModelScope.launch {
-            authRepository.isAuthenticated.collect { isAuthenticated ->
-                if (isAuthenticated) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoggedIn = true,
-                        isLoggingIn = false
-                    )
+        if (!passedServerUrl.isNullOrBlank()) {
+            Timber.d("Login initialized with passed server URL: $passedServerUrl")
+            _serverUrl.value = passedServerUrl
+            _uiState.value = _uiState.value.copy(showAddServerInput = true)
+            connectToServer()
+        } else {
+            viewModelScope.launch {
+                val currentUrl = jellyfinRepository.getBaseUrl()
+                if (currentUrl.isNotBlank()) {
+                    _serverUrl.value = currentUrl
+                    _connectedServerUrl.value = currentUrl
+                    jellyfinRepository.refreshServerInfo()
+                    _uiState.value = _uiState.value.copy(isConnectedToServer = true)
+                    loadPublicUsers()
+                }
+            }
+
+            viewModelScope.launch {
+                authRepository.isAuthenticated.collect { isAuthenticated ->
+                    if (isAuthenticated) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoggedIn = true,
+                            isLoggingIn = false
+                        )
+                    }
                 }
             }
         }
@@ -123,6 +134,7 @@ class LoginViewModel @Inject constructor(
 
     fun connectToServer() {
         val url = _serverUrl.value.trim()
+        if (url.isBlank()) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isConnecting = true,

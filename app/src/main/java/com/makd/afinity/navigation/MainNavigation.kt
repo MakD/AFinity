@@ -35,6 +35,7 @@ import com.makd.afinity.ui.home.HomeScreen
 import com.makd.afinity.ui.item.ItemDetailScreen
 import com.makd.afinity.ui.libraries.LibrariesScreen
 import com.makd.afinity.ui.library.LibraryContentScreen
+import com.makd.afinity.ui.login.LoginScreen
 import com.makd.afinity.ui.main.MainViewModel
 import com.makd.afinity.ui.person.PersonScreen
 import com.makd.afinity.ui.player.PlayerLauncher
@@ -107,7 +108,8 @@ fun MainNavigation(
                 route != "appearance_options" &&
                 route != "licenses" &&
                 route != "server_management" &&
-                !route.startsWith("add_edit_server")
+                !route.startsWith("add_edit_server") &&
+                !route.startsWith("login")
     } ?: true
 
     val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
@@ -505,12 +507,12 @@ fun MainNavigation(
 
             composable(Destination.SETTINGS_ROUTE) {
                 SettingsScreen(
+                    navController = navController,
                     onBackClick = {
                         navController.popBackStack()
                     },
                     onLogoutComplete = {
-                        // Logout is handled by MainViewModel observing auth state
-                        // MainActivity will automatically show LoginScreen
+                        // Logout handled by MainActivity observing auth state
                     },
                     onLicensesClick = {
                         val route = Destination.createLicensesRoute()
@@ -600,6 +602,27 @@ fun MainNavigation(
                     onBackClick = {
                         navController.popBackStack()
                     }
+                )
+            }
+
+            composable(
+                route = Destination.LOGIN_ROUTE,
+                arguments = listOf(
+                    navArgument("serverUrl") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) {
+                LoginScreen(
+                    onLoginSuccess = {
+                        navController.navigate(Destination.HOME.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
                 )
             }
         }

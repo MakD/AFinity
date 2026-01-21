@@ -55,8 +55,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import com.makd.afinity.R
 import com.makd.afinity.core.AppConstants
+import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.settings.update.UpdateSection
 import timber.log.Timber
@@ -64,6 +66,7 @@ import timber.log.Timber
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    navController: NavHostController,
     onBackClick: () -> Unit,
     onLogoutComplete: () -> Unit,
     onLicensesClick: () -> Unit,
@@ -119,6 +122,10 @@ fun SettingsScreen(
     if (showSessionSwitcherSheet) {
         SessionSwitcherBottomSheet(
             onDismiss = { showSessionSwitcherSheet = false },
+            onAddAccountClick = { server ->
+                showSessionSwitcherSheet = false
+                navController.navigate(Destination.createLoginRoute(serverUrl = server.address))
+            },
             sheetState = sessionSwitcherSheetState
         )
     }

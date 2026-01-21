@@ -56,6 +56,8 @@ enum class Destination(
         const val SERVER_MANAGEMENT_ROUTE = "server_management"
         const val ADD_EDIT_SERVER_ROUTE = "add_edit_server?serverId={serverId}"
 
+        const val LOGIN_ROUTE = "login?serverUrl={serverUrl}"
+
         fun createPersonRoute(personId: String): String {
             return "person/$personId"
         }
@@ -138,6 +140,14 @@ enum class Destination(
                 "add_edit_server?serverId=$serverId"
             } else {
                 "add_edit_server"
+            }
+        }
+
+        fun createLoginRoute(serverUrl: String? = null): String {
+            return if (serverUrl != null) {
+                "login?serverUrl=$serverUrl"
+            } else {
+                "login"
             }
         }
     }
