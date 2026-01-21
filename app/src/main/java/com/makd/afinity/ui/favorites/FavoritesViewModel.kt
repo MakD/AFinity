@@ -2,6 +2,8 @@ package com.makd.afinity.ui.favorites
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.PlaybackEvent
+import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -32,6 +34,7 @@ class FavoritesViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
+    private val playbackStateManager: PlaybackStateManager,
     private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository
@@ -62,6 +65,13 @@ class FavoritesViewModel @Inject constructor(
                 } else {
                     _uiState.value = FavoritesUiState()
                     clearSelectedEpisode()
+                }
+            }
+        }
+        viewModelScope.launch {
+            playbackStateManager.playbackEvents.collect { event ->
+                if (event is PlaybackEvent.Synced) {
+                    loadFavorites()
                 }
             }
         }
@@ -204,6 +214,8 @@ class FavoritesViewModel @Inject constructor(
 
                 if (success) {
                     _selectedEpisode.value = episode.copy(played = !episode.played)
+                    mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
+                    playbackStateManager.notifyItemChanged(episode.id)
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watched status")

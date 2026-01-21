@@ -5,12 +5,10 @@ import org.jellyfin.sdk.model.api.ItemFields
 object FieldSets {
 
     val HERO_CAROUSEL = listOf(
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
         ItemFields.GENRES,
-        ItemFields.REMOTE_TRAILERS,
-        ItemFields.CHILD_COUNT,
-        ItemFields.RECURSIVE_ITEM_COUNT,
         ItemFields.OVERVIEW,
+        ItemFields.REMOTE_TRAILERS,
+        ItemFields.CHILD_COUNT
     )
 
     val MEDIA_ITEM_CARDS = listOf(
@@ -22,29 +20,22 @@ object FieldSets {
     )
 
     val CONTINUE_WATCHING = listOf(
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        ItemFields.TRICKPLAY,
-        ItemFields.OVERVIEW,
-        ItemFields.MEDIA_SOURCES,
-        ItemFields.MEDIA_STREAMS
-        )
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
+    )
 
     val NEXT_UP = listOf(
-        ItemFields.OVERVIEW,
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        ItemFields.MEDIA_SOURCES,
-        ItemFields.MEDIA_STREAMS
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
     )
 
     val LIBRARY_GRID = listOf(
         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        ItemFields.CHILD_COUNT,
         ItemFields.RECURSIVE_ITEM_COUNT
     )
 
     val SEARCH_RESULTS = listOf(
         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        ItemFields.OVERVIEW
+        ItemFields.OVERVIEW,
+        ItemFields.RECURSIVE_ITEM_COUNT
     )
 
     val ITEM_DETAIL = listOf(
@@ -85,7 +76,9 @@ object FieldSets {
     val SEASON_DETAIL = listOf(
         ItemFields.OVERVIEW,
         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        ItemFields.CHILD_COUNT
+        ItemFields.TAGLINES,
+        ItemFields.EXTERNAL_URLS,
+        ItemFields.PEOPLE
     )
 
     val PERSON_DETAIL = listOf(
@@ -95,33 +88,17 @@ object FieldSets {
         ItemFields.PRODUCTION_LOCATIONS
     )
 
-    val REFRESH_USER_DATA = listOf(
-        ItemFields.OVERVIEW,
-        ItemFields.GENRES,
-        ItemFields.PEOPLE,
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        ItemFields.MEDIA_SOURCES,
-        ItemFields.MEDIA_STREAMS,
-        ItemFields.TRICKPLAY,
-        ItemFields.CHAPTERS,
-        ItemFields.EXTERNAL_URLS,
-        ItemFields.TAGLINES
-    )
+    val REFRESH_USER_DATA = emptyList<ItemFields>()
 
     val CACHE_CONTINUE_WATCHING = listOf(
         ItemFields.OVERVIEW,
         ItemFields.GENRES,
-        ItemFields.PEOPLE,
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-        ItemFields.MEDIA_SOURCES,
-        ItemFields.MEDIA_STREAMS,
-        ItemFields.TRICKPLAY
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
     )
 
     val CACHE_LATEST_MEDIA = listOf(
         ItemFields.OVERVIEW,
         ItemFields.GENRES,
-        ItemFields.PEOPLE,
         ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
         ItemFields.CHILD_COUNT,
         ItemFields.RECURSIVE_ITEM_COUNT
@@ -129,6 +106,7 @@ object FieldSets {
 
     val CACHE_NEXT_UP = listOf(
         ItemFields.OVERVIEW,
-        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+        ItemFields.AIR_TIME
     )
 }

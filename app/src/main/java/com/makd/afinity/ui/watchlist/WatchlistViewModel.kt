@@ -2,6 +2,8 @@ package com.makd.afinity.ui.watchlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.PlaybackEvent
+import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -13,6 +15,7 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,7 +34,9 @@ class WatchlistViewModel @Inject constructor(
     private val watchlistRepository: WatchlistRepository,
     private val userDataRepository: UserDataRepository,
     private val downloadRepository: DownloadRepository,
-    private val appDataRepository: AppDataRepository
+    private val appDataRepository: AppDataRepository,
+    private val mediaRepository: MediaRepository,
+    private val playbackStateManager: PlaybackStateManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WatchlistUiState())
@@ -59,6 +64,13 @@ class WatchlistViewModel @Inject constructor(
                 } else {
                     _uiState.value = WatchlistUiState()
                     clearSelectedEpisode()
+                }
+            }
+        }
+        viewModelScope.launch {
+            playbackStateManager.playbackEvents.collect { event ->
+                if (event is PlaybackEvent.Synced) {
+                    loadWatchlist()
                 }
             }
         }
@@ -198,6 +210,8 @@ class WatchlistViewModel @Inject constructor(
 
                 if (success) {
                     _selectedEpisode.value = episode.copy(played = !episode.played)
+                    mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
+                    playbackStateManager.notifyItemChanged(episode.id)
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watched status")

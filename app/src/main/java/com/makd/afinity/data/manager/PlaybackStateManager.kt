@@ -1,5 +1,6 @@
 package com.makd.afinity.data.manager
 
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
@@ -111,10 +112,21 @@ class PlaybackStateManager @Inject constructor(
 
                 if (refreshedItem != null) {
                     _playbackEvents.emit(PlaybackEvent.Synced(itemId))
+                    if (refreshedItem is AfinityEpisode && refreshedItem.played) {
+                        Timber.d("Episode finished. Refreshing Next Up queue...")
+                        mediaRepository.invalidateNextUpCache()
+                    }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to handle playback stopped")
             }
+        }
+    }
+
+    fun notifyItemChanged(itemId: UUID) {
+        scope.launch {
+            Timber.d("Broadcasting manual item change for: $itemId")
+            _playbackEvents.emit(PlaybackEvent.Synced(itemId))
         }
     }
 

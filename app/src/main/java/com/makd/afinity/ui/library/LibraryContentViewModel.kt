@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.makd.afinity.data.manager.PlaybackEvent
+import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityItem
@@ -30,6 +32,7 @@ enum class FilterType {
 class LibraryContentViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val appDataRepository: AppDataRepository,
+    private val playbackStateManager: PlaybackStateManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -74,6 +77,13 @@ class LibraryContentViewModel @Inject constructor(
                         )
                     }
                     _pagingData.value = emptyFlow()
+                }
+            }
+        }
+        viewModelScope.launch {
+            playbackStateManager.playbackEvents.collect { event ->
+                if (event is PlaybackEvent.Synced) {
+                    loadItems()
                 }
             }
         }

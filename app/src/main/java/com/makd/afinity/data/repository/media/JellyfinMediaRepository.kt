@@ -32,6 +32,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -79,20 +81,44 @@ class JellyfinMediaRepository @Inject constructor(
                     enableImages = true,
                     enableUserData = true
                 )
+
                 val freshBaseItemDto = response.content?.items?.firstOrNull()
                 val freshItem = freshBaseItemDto?.toAfinityItem(getBaseUrl())
+
                 if (freshItem != null) {
                     updateItemInCache(_continueWatching, freshItem)
                     updateItemInCache(_latestMedia, freshItem)
+
                     if (freshItem is AfinityEpisode) {
                         updateEpisodeInNextUpCache(freshItem)
+                        freshItem.seriesId?.let { seriesId ->
+                            launch {
+                                try {
+                                    kotlinx.coroutines.delay(500)
+
+                                    val seriesResponse = itemsApi.getItems(
+                                        userId = userId,
+                                        ids = listOf(seriesId),
+                                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                                        enableImages = true,
+                                        enableUserData = true
+                                    )
+                                    val seriesItem = seriesResponse.content?.items?.firstOrNull()
+                                        ?.toAfinityItem(getBaseUrl())
+
+                                    if (seriesItem != null) {
+                                        updateItemInCache(_latestMedia, seriesItem)
+                                    }
+                                } catch (e: Exception) {
+                                    Timber.w("Failed to background sync parent series")
+                                }
+                            }
+                        }
                     }
-                } else {
-                    Timber.w("No fresh item data received for itemId: $itemId")
                 }
                 return@withContext freshItem
             } catch (e: Exception) {
-                Timber.e(e, "Failed to refresh UserData for item: $itemId")
+                Timber.e(e, "Failed to refresh UserData")
                 null
             }
         }
@@ -102,64 +128,76 @@ class JellyfinMediaRepository @Inject constructor(
         cache: MutableStateFlow<List<AfinityItem>>,
         updatedItem: AfinityItem
     ) {
-        val currentList = cache.value.toMutableList()
-        val existingIndex = currentList.indexOfFirst { it.id == updatedItem.id }
+        cache.update { currentList ->
+            val newList = currentList.toMutableList()
+            val existingIndex = newList.indexOfFirst { it.id == updatedItem.id }
 
-        when {
-            updatedItem.played && cache == _continueWatching -> {
-                if (existingIndex != -1) {
-                    currentList.removeAt(existingIndex)
-                    Timber.d("Removed completed item from continue watching: ${updatedItem.name}")
+            when {
+                updatedItem.played && cache == _continueWatching -> {
+                    if (existingIndex != -1) {
+                        newList.removeAt(existingIndex)
+                        Timber.d("Removed completed item: ${updatedItem.name}")
+                    }
+                }
+
+                (updatedItem.playbackPositionTicks.toFloat() / updatedItem.runtimeTicks * 100f) > 0f &&
+                        !updatedItem.played &&
+                        cache == _continueWatching -> {
+                    if (existingIndex != -1) {
+                        newList.removeAt(existingIndex)
+                    }
+                    newList.add(0, updatedItem)
+                    Timber.d("Moved item to start of continue watching: ${updatedItem.name}")
+                }
+
+                existingIndex != -1 -> {
+                    newList[existingIndex] = updatedItem
+                    Timber.d("Updated item in cache: ${updatedItem.name}")
                 }
             }
+            if (updatedItem is AfinityEpisode && updatedItem.seriesId != null) {
+                val parentSeriesIndex = newList.indexOfFirst {
+                    it is AfinityShow && it.id == updatedItem.seriesId
+                }
 
-            (updatedItem.playbackPositionTicks.toFloat() / updatedItem.runtimeTicks * 100f) > 0f &&
-                    !updatedItem.played &&
-                    cache == _continueWatching -> {
-                if (existingIndex != -1) {
-                    currentList[existingIndex] = updatedItem
-                    Timber.d("Updated item in continue watching: ${updatedItem.name} (${updatedItem.playbackPositionTicks.toFloat() / updatedItem.runtimeTicks * 100f}%)")
-                } else {
-                    currentList.add(0, updatedItem)
-                    Timber.d("Added item to continue watching: ${updatedItem.name} (${updatedItem.playbackPositionTicks.toFloat() / updatedItem.runtimeTicks * 100f}%)")
+                if (parentSeriesIndex != -1) {
+                    val parent = newList[parentSeriesIndex] as AfinityShow
+                    val currentCount = parent.unplayedItemCount ?: 0
+                    val newCount = if (updatedItem.played) {
+                        (currentCount - 1).coerceAtLeast(0)
+                    } else {
+                        currentCount + 1
+                    }
+                    if (currentCount != newCount) {
+                        newList[parentSeriesIndex] = parent.copy(unplayedItemCount = newCount)
+                        Timber.d("Optimistic Update: Series '${parent.name}' badge $currentCount -> $newCount")
+                    }
                 }
             }
-
-            existingIndex != -1 -> {
-                currentList[existingIndex] = updatedItem
-                Timber.d("Updated item in cache: ${updatedItem.name}")
-            }
-
-            else -> {
-            }
+            newList
         }
-
-        cache.value = currentList
     }
 
     private fun updateEpisodeInNextUpCache(updatedEpisode: AfinityEpisode) {
-        val currentList = _nextUp.value.toMutableList()
-        val existingIndex = currentList.indexOfFirst { it.id == updatedEpisode.id }
+        _nextUp.update { currentList ->
+            val newList = currentList.toMutableList()
+            val existingIndex = newList.indexOfFirst { it.id == updatedEpisode.id }
 
-        when {
-            updatedEpisode.played -> {
-                if (existingIndex != -1) {
-                    currentList.removeAt(existingIndex)
-                    Timber.d("Removed completed episode from next up: ${updatedEpisode.name}")
+            when {
+                updatedEpisode.played -> {
+                    if (existingIndex != -1) {
+                        newList.removeAt(existingIndex)
+                        Timber.d("Removed completed episode from next up: ${updatedEpisode.name}")
+                    }
+                }
+
+                existingIndex != -1 -> {
+                    newList[existingIndex] = updatedEpisode
+                    Timber.d("Updated episode in next up: ${updatedEpisode.name}")
                 }
             }
-
-            existingIndex != -1 -> {
-                currentList[existingIndex] = updatedEpisode
-                Timber.d("Updated episode in next up: ${updatedEpisode.name}")
-            }
-
-            else -> {
-                // Episode not in next up, don't add it here
-            }
+            newList
         }
-
-        _nextUp.value = currentList
     }
 
     override suspend fun invalidateContinueWatchingCache() {
@@ -424,11 +462,12 @@ class JellyfinMediaRepository @Inject constructor(
         studios: List<String>
     ): BaseItemDtoQueryResult = withContext(Dispatchers.IO) {
         return@withContext try {
-            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext BaseItemDtoQueryResult(
-                items = emptyList(),
-                totalRecordCount = 0,
-                startIndex = 0
-            )
+            val apiClient =
+                sessionManager.getCurrentApiClient() ?: return@withContext BaseItemDtoQueryResult(
+                    items = emptyList(),
+                    totalRecordCount = 0,
+                    startIndex = 0
+                )
             val userId = getCurrentUserId() ?: return@withContext BaseItemDtoQueryResult(
                 items = emptyList(),
                 totalRecordCount = 0,
@@ -982,7 +1021,8 @@ class JellyfinMediaRepository @Inject constructor(
     override suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem> =
         withContext(Dispatchers.IO) {
             return@withContext try {
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val userLibraryApi = UserLibraryApi(apiClient)
                 val response = userLibraryApi.getSpecialFeatures(
                     itemId = itemId,

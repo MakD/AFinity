@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.manager.PlaybackEvent
+import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.MovieSection
 import com.makd.afinity.data.models.PersonFromMovieSection
@@ -25,6 +27,7 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.navigation.Destination
@@ -57,7 +60,9 @@ class HomeViewModel @Inject constructor(
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: DownloadRepository,
     private val offlineModeManager: OfflineModeManager,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val mediaRepository: MediaRepository,
+    private val playbackStateManager: PlaybackStateManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -209,6 +214,14 @@ class HomeViewModel @Inject constructor(
                     loadDownloadedContent()
                 } else {
                     refresh()
+                }
+            }
+        }
+        viewModelScope.launch {
+            playbackStateManager.playbackEvents.collect { event ->
+                if (event is PlaybackEvent.Synced) {
+                    Timber.d("HomeViewModel received sync event for ${event.itemId}")
+                    appDataRepository.reloadHomeData()
                 }
             }
         }
@@ -719,6 +732,13 @@ class HomeViewModel @Inject constructor(
     fun toggleEpisodeWatched(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
+                val isNowPlayed = !episode.played
+                val updatedEpisode = episode.copy(
+                    played = isNowPlayed,
+                    playbackPositionTicks = if (!isNowPlayed) episode.runtimeTicks else 0
+                )
+                _selectedEpisode.value = updatedEpisode
+
                 val success = if (episode.played) {
                     userDataRepository.markUnwatched(episode.id)
                 } else {
@@ -726,13 +746,19 @@ class HomeViewModel @Inject constructor(
                 }
 
                 if (success) {
-                    _selectedEpisode.value = episode.copy(
-                        played = !episode.played,
-                        playbackPositionTicks = if (!episode.played) episode.runtimeTicks else 0
-                    )
+                    mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
+
+                    playbackStateManager.notifyItemChanged(episode.id)
+
+                    if (updatedEpisode.played) {
+                        mediaRepository.invalidateNextUpCache()
+                    }
+                } else {
+                    _selectedEpisode.value = episode
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watched status")
+                _selectedEpisode.value = episode
             }
         }
     }
