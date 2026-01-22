@@ -12,8 +12,10 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LoginRequest
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaInfo
+import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
+import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.RequestUser
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.network.JellyseerrApiService
@@ -422,7 +424,28 @@ class JellyseerrRepositoryImpl @Inject constructor(
             try {
                 val response = apiService.get().approveRequest(requestId)
                 if (response.isSuccessful && response.body() != null) {
-                    val req = response.body()!!
+                    var req = response.body()!!
+                    val (serverId, userId) = activeContext ?: return@withContext Result.failure(
+                        Exception("No session")
+                    )
+                    val existingEntity = jellyseerrDao.getAllRequests(serverId, userId.toString())
+                        .first()
+                        .find { it.id == requestId }
+                    req = req.copy(
+                        status = RequestStatus.APPROVED.value,
+                        media = req.media.copy(
+                            status = MediaStatus.PROCESSING.value,
+                            title = if (req.media.title.isNullOrBlank()) existingEntity?.mediaTitle else req.media.title,
+                            name = if (req.media.name.isNullOrBlank()) existingEntity?.mediaName else req.media.name,
+                            posterPath = req.media.posterPath ?: existingEntity?.posterPath,
+                            backdropPath = req.media.backdropPath
+                                ?: existingEntity?.mediaBackdropPath,
+                            releaseDate = req.media.releaseDate ?: existingEntity?.mediaReleaseDate,
+                            firstAirDate = req.media.firstAirDate
+                                ?: existingEntity?.mediaFirstAirDate
+                        )
+                    )
+
                     cacheRequest(req)
                     Result.success(req)
                 } else Result.failure(Exception("Failed"))
@@ -437,7 +460,26 @@ class JellyseerrRepositoryImpl @Inject constructor(
             try {
                 val response = apiService.get().declineRequest(requestId)
                 if (response.isSuccessful && response.body() != null) {
-                    val req = response.body()!!
+                    var req = response.body()!!
+                    val (serverId, userId) = activeContext ?: return@withContext Result.failure(
+                        Exception("No session")
+                    )
+                    val existingEntity = jellyseerrDao.getAllRequests(serverId, userId.toString())
+                        .first()
+                        .find { it.id == requestId }
+                    req = req.copy(
+                        status = RequestStatus.DECLINED.value,
+
+                        media = req.media.copy(
+                            title = if (req.media.title.isNullOrBlank()) existingEntity?.mediaTitle else req.media.title,
+                            name = if (req.media.name.isNullOrBlank()) existingEntity?.mediaName else req.media.name,
+                            posterPath = req.media.posterPath ?: existingEntity?.posterPath,
+                            backdropPath = req.media.backdropPath ?: existingEntity?.mediaBackdropPath,
+                            releaseDate = req.media.releaseDate ?: existingEntity?.mediaReleaseDate,
+                            firstAirDate = req.media.firstAirDate ?: existingEntity?.mediaFirstAirDate
+                        )
+                    )
+
                     cacheRequest(req)
                     Result.success(req)
                 } else Result.failure(Exception("Failed"))

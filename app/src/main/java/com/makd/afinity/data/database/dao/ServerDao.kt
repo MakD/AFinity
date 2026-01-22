@@ -16,11 +16,19 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ServerDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertServer(server: Server)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertServer(server: Server): Long
 
     @Update
     suspend fun updateServer(server: Server)
+
+    @Transaction
+    suspend fun upsertServer(server: Server) {
+        val id = insertServer(server)
+        if (id == -1L) {
+            updateServer(server)
+        }
+    }
 
     @Delete
     suspend fun deleteServer(server: Server)

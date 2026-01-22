@@ -100,43 +100,59 @@ fun RequestCard(
                     )
                 }
 
-                val status = MediaStatus.fromValue(request.media.status ?: 1)
-                if (status != null) {
-                    val backgroundColor = when (status) {
-                        MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
-                        MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
-                        MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
-                        MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.secondary
-                        MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
-                        MediaStatus.DELETED -> MaterialTheme.colorScheme.error
-                    }
+                val requestStatus = RequestStatus.fromValue(request.status)
+                val mediaStatus = MediaStatus.fromValue(request.media.status ?: 1)
 
-                    val textColor = when (status) {
-                        MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
-                        MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
-                        MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
-                        MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.onSecondary
-                        MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
-                        MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
-                    }
+                val (badgeText, badgeColor, badgeTextColor) = when (requestStatus) {
+                    RequestStatus.DECLINED -> Triple(
+                        "Declined",
+                        MaterialTheme.colorScheme.error,
+                        MaterialTheme.colorScheme.onError
+                    )
 
-                    Card(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp),
-                        shape = RoundedCornerShape(4.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = backgroundColor
-                        )
-                    ) {
-                        Text(
-                            text = MediaStatus.getDisplayName(status),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = textColor,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    RequestStatus.APPROVED if mediaStatus == MediaStatus.PENDING -> Triple(
+                        "Processing",
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.onPrimary
+                    )
+
+                    else -> Triple(
+                        MediaStatus.getDisplayName(mediaStatus),
+                        when (mediaStatus) {
+                            MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
+                            MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
+                            MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
+                            MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.secondary
+                            MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
+                            MediaStatus.DELETED -> MaterialTheme.colorScheme.error
+                        },
+                        when (mediaStatus) {
+                            MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
+                            MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
+                            MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
+                            MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.onSecondary
+                            MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
+                            MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
+                        }
+                    )
+                }
+
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = badgeColor
+                    )
+                ) {
+                    Text(
+                        text = badgeText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = badgeTextColor,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 if (isPending && isAdmin) {

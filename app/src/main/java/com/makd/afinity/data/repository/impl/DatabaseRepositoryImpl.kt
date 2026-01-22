@@ -62,7 +62,6 @@ import javax.inject.Singleton
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class DatabaseRepositoryImpl @Inject constructor(
-    //private val sessionManager: SessionManager,
     private val sessionManagerProvider: Provider<SessionManager>,
     private val serverDao: ServerDao,
     private val serverAddressDao: ServerAddressDao,
@@ -81,7 +80,7 @@ class DatabaseRepositoryImpl @Inject constructor(
         get() = sessionManagerProvider.get()
 
     override suspend fun insertServer(server: Server) {
-        serverDao.insertServer(server)
+        serverDao.upsertServer(server)
     }
 
     override suspend fun updateServer(server: Server) {
