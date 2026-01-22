@@ -107,7 +107,6 @@ class PlayerActivity : ComponentActivity() {
         }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         hideSystemUI()
 
         val itemId = intent.getStringExtra("itemId")?.let { UUID.fromString(it) } ?: run {
