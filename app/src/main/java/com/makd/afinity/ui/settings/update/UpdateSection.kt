@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.BuildConfig
 import com.makd.afinity.R
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
@@ -73,6 +74,7 @@ fun UpdateSection(
 
     if (showUpdateDialog && pendingRelease != null) {
         UpdateAvailableDialog(
+            currentVersionName = BuildConfig.VERSION_NAME,
             release = pendingRelease!!,
             downloadedFile = if (updateState is UpdateState.Downloaded) (updateState as UpdateState.Downloaded).file else null,
             isDownloading = updateState is UpdateState.Downloading,

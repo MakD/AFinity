@@ -60,6 +60,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
 import mx.platacard.pagerindicator.PagerWormIndicator
 import timber.log.Timber
@@ -75,12 +76,16 @@ fun HeroCarousel(
     modifier: Modifier = Modifier,
     isScrolling: Boolean = false
 ) {
+    if (items.isEmpty()) return
+
     val configuration = LocalConfiguration.current
     val isLandscape =
         configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val infinitePageCount = Int.MAX_VALUE
     val middleStart = infinitePageCount / 2
-    val adjustedStart = middleStart - (middleStart % items.size)
+
+    val adjustedStart = if (items.isNotEmpty()) middleStart - (middleStart % items.size) else 0
+
     val currentPageIndex = rememberSaveable(items.size) {
         mutableIntStateOf(adjustedStart)
     }
@@ -135,11 +140,16 @@ fun HeroCarouselPortrait(
         onPageChanged(pagerState.currentPage)
     }
 
-    val context = LocalContext.current
-    LaunchedEffect(items.size, isScrolling, pagerState.settledPage) {
+    LaunchedEffect(items.size, isScrolling) {
         if (items.size > 1) {
-            while (!isScrolling) {
+            while (isActive) {
                 delay(5000)
+                if (pagerState.isScrollInProgress || isScrolling) {
+                    while (pagerState.isScrollInProgress || isScrolling) {
+                        delay(100)
+                    }
+                    continue
+                }
                 try {
                     pagerState.animateScrollToPage(
                         page = pagerState.currentPage + 1,
@@ -154,6 +164,7 @@ fun HeroCarouselPortrait(
 
     val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
 
+    val context = LocalContext.current
     LaunchedEffect(pagerState.currentPage) {
         val currentIndex = pagerState.currentPage % items.size
         val nextIndex = (currentIndex + 1) % items.size
@@ -193,13 +204,21 @@ fun HeroCarouselPortrait(
                     .graphicsLayer { alpha = 0.99f }
                     .drawWithCache {
                         val gradient = Brush.verticalGradient(
-                            colors = listOf(Color.Black, Color.Transparent),
-                            startY = size.height * 0.75f,
+                            colors = listOf(
+                                Color.Black,
+                                Color.Black.copy(alpha = 0.98f),
+                                Color.Black.copy(alpha = 0.92f),
+                                Color.Black.copy(alpha = 0.78f),
+                                Color.Black.copy(alpha = 0.55f),
+                                Color.Black.copy(alpha = 0.25f),
+                                Color.Transparent
+                            ),
+                            startY = size.height * 0.55f,
                             endY = size.height
                         )
                         onDrawWithContent {
                             drawContent()
-                            drawRect(Color.Black.copy(alpha = 0.3f))
+                            drawRect(Color.Black.copy(alpha = 0.25f))
                             drawRect(gradient, blendMode = BlendMode.DstIn)
                         }
                     }
@@ -403,10 +422,16 @@ private fun HeroCarouselLandscape(
     val configuration = LocalConfiguration.current
     val landscapeHeight = (configuration.screenHeightDp * 0.95f).dp
 
-    LaunchedEffect(items.size, isScrolling, pagerState.settledPage) {
+    LaunchedEffect(items.size, isScrolling) {
         if (items.size > 1) {
-            while (!isScrolling) {
+            while (isActive) {
                 delay(5000)
+                if (pagerState.isScrollInProgress || isScrolling) {
+                    while (pagerState.isScrollInProgress || isScrolling) {
+                        delay(100)
+                    }
+                    continue
+                }
                 try {
                     pagerState.animateScrollToPage(
                         page = pagerState.currentPage + 1,
@@ -461,13 +486,22 @@ private fun HeroCarouselLandscape(
                     .graphicsLayer { alpha = 0.99f }
                     .drawWithCache {
                         val gradient = Brush.verticalGradient(
-                            colors = listOf(Color.Black, Color.Transparent),
-                            startY = size.height * 0.75f,
+                            colors = listOf(
+                                Color.Black,
+                                Color.Black.copy(alpha = 0.98f),
+                                Color.Black.copy(alpha = 0.92f),
+                                Color.Black.copy(alpha = 0.78f),
+                                Color.Black.copy(alpha = 0.55f),
+                                Color.Black.copy(alpha = 0.25f),
+                                Color.Transparent
+                            ),
+                            startY = size.height * 0.55f,
                             endY = size.height
                         )
+
                         onDrawWithContent {
                             drawContent()
-                            drawRect(Color.Black.copy(alpha = 0.3f))
+                            drawRect(Color.Black.copy(alpha = 0.25f))
                             drawRect(gradient, blendMode = BlendMode.DstIn)
                         }
                     }

@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.updater.models.UpdateState
 
@@ -56,6 +57,7 @@ fun GlobalUpdateDialog(
 
         if (release != null) {
             UpdateAvailableDialog(
+                currentVersionName = BuildConfig.VERSION_NAME,
                 release = release,
                 downloadedFile = downloadedFile,
                 isDownloading = updateState is UpdateState.Downloading,
