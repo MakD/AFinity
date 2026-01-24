@@ -1,9 +1,13 @@
 package com.makd.afinity.ui.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -11,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import java.util.UUID
 
@@ -24,6 +29,9 @@ fun PlayerScreenWrapper(
     startPositionMs: Long = 0L,
     seasonId: UUID? = null,
     shuffle: Boolean = false,
+    isLiveChannel: Boolean = false,
+    channelName: String? = null,
+    liveStreamUrl: String? = null,
     navController: androidx.navigation.NavController? = null,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier,
@@ -31,20 +39,54 @@ fun PlayerScreenWrapper(
 ) {
     val item by viewModel.item.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val fetchedStreamUrl by viewModel.liveStreamUrl.collectAsState()
+    val streamError by viewModel.streamError.collectAsState()
 
-    LaunchedEffect(itemId) {
-        viewModel.loadItem(itemId)
+    LaunchedEffect(itemId, isLiveChannel) {
+        if (isLiveChannel) {
+            viewModel.loadLiveChannel(itemId, channelName ?: "Live TV")
+        } else {
+            viewModel.loadItem(itemId)
+        }
     }
 
+    val effectiveStreamUrl = if (isLiveChannel) fetchedStreamUrl else liveStreamUrl
+
     when {
-        isLoading -> {
+        isLoading || (isLiveChannel && effectiveStreamUrl == null && streamError == null) -> {
             Box(
                 modifier = modifier
                     .fillMaxSize()
                     .background(Color.Black),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(color = Color.White)
+                    if (isLiveChannel && item != null) {
+                        Text(
+                            text = "Tuning ${item?.name ?: channelName}...",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        }
+
+        streamError != null -> {
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = streamError ?: "Failed to load stream",
+                    color = Color.White
+                )
             }
         }
 
@@ -57,6 +99,8 @@ fun PlayerScreenWrapper(
                 startPositionMs = startPositionMs,
                 seasonId = seasonId,
                 shuffle = shuffle,
+                isLiveChannel = isLiveChannel,
+                liveStreamUrl = effectiveStreamUrl,
                 navController = navController,
                 onBackPressed = onBackPressed,
                 modifier = modifier
@@ -70,7 +114,7 @@ fun PlayerScreenWrapper(
                     .background(Color.Black),
                 contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.Text(
+                Text(
                     text = "Failed to load media",
                     color = Color.White
                 )

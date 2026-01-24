@@ -120,8 +120,11 @@ class PlayerActivity : ComponentActivity() {
         val startPositionMs = intent.getLongExtra("startPositionMs", 0L)
         val seasonId = intent.getStringExtra("seasonId")?.let { UUID.fromString(it) }
         val shuffle = intent.getBooleanExtra("shuffle", false)
+        val isLiveChannel = intent.getBooleanExtra("isLiveChannel", false)
+        val channelName = intent.getStringExtra("channelName")
+        val liveStreamUrl = intent.getStringExtra("liveStreamUrl")
 
-        Timber.d("PlayerActivity: Starting playback for item $itemId, seasonId=$seasonId, shuffle=$shuffle")
+        Timber.d("PlayerActivity: Starting playback for item $itemId, seasonId=$seasonId, shuffle=$shuffle, isLive=$isLiveChannel")
 
         setContent {
             val themeMode by preferencesRepository.getThemeModeFlow()
@@ -152,6 +155,9 @@ class PlayerActivity : ComponentActivity() {
                     startPositionMs = startPositionMs,
                     seasonId = seasonId,
                     shuffle = shuffle,
+                    isLiveChannel = isLiveChannel,
+                    channelName = channelName,
+                    liveStreamUrl = liveStreamUrl,
                     onBackPressed = { finish() },
                     modifier = Modifier.fillMaxSize()
                 )
