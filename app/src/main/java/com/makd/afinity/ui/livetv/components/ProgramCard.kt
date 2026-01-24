@@ -2,6 +2,7 @@ package com.makd.afinity.ui.livetv.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,12 +18,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -32,37 +36,62 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+
+private val TimeFormatter = DateTimeFormatter.ofPattern("h:mm a")
 
 @Composable
 fun ProgramCard(
     programWithChannel: ProgramWithChannel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    now: LocalDateTime = LocalDateTime.now(),
     cardWidth: Dp = 200.dp
 ) {
     val program = programWithChannel.program
     val channel = programWithChannel.channel
-    val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
 
-    Card(
-        modifier = modifier
-            .width(cardWidth)
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = MaterialTheme.shapes.medium
+    val isLive = remember(program, now) {
+        program.startDate != null &&
+                program.endDate != null &&
+                now.isAfter(program.startDate) &&
+                now.isBefore(program.endDate)
+    }
+
+    val progressPercentage = remember(program, now) {
+        if (isLive && program.startDate != null && program.endDate != null) {
+            val totalSeconds =
+                ChronoUnit.SECONDS.between(program.startDate, program.endDate).toFloat()
+            val elapsedSeconds = ChronoUnit.SECONDS.between(program.startDate, now).toFloat()
+            if (totalSeconds > 0) (elapsedSeconds / totalSeconds).coerceIn(0f, 1f) else 0f
+        } else {
+            0f
+        }
+    }
+
+    Column(
+        modifier = modifier.width(cardWidth)
     ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surface)
-            ) {
-                val imageUrl = program.images.thumb ?: program.images.primary ?: channel.images.thumb ?: channel.images.primary
+        Card(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                val programImage = program.images.thumb ?: program.images.primary
+                val channelImage = channel.images.thumb ?: channel.images.primary
+                val imageUrl = programImage ?: channelImage
+
+                val showChannelOverlay = programImage != null && channel.images.primary != null
+
                 if (imageUrl != null) {
                     AsyncImage(
                         imageUrl = imageUrl.toString(),
@@ -76,7 +105,7 @@ fun ProgramCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_live_tv),
+                            painter = painterResource(id = R.drawable.ic_live_tv_nav),
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
@@ -84,7 +113,7 @@ fun ProgramCard(
                     }
                 }
 
-                if (program.isCurrentlyAiring()) {
+                if (isLive) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -94,7 +123,7 @@ fun ProgramCard(
                     }
                 }
 
-                if (channel.images.primary != null) {
+                if (showChannelOverlay) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
@@ -112,70 +141,79 @@ fun ProgramCard(
                     }
                 }
 
-                if (program.isCurrentlyAiring()) {
-                    Box(
+                if (isLive) {
+                    LinearProgressIndicator(
+                        progress = { progressPercentage },
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
                             .fillMaxWidth()
-                    ) {
-                        ProgramProgressBar(program = program)
-                    }
+                            .height(4.dp)
+                            .align(Alignment.BottomCenter),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = Color.Black.copy(alpha = 0.3f)
+                    )
                 }
             }
+        }
 
-            Column(
-                modifier = Modifier.padding(12.dp)
-            ) {
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = program.name,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            channel.channelNumber?.let { number ->
                 Text(
-                    text = program.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    text = number,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
                 )
+                Text(
+                    text = "•",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
-                Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = channel.name,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    channel.channelNumber?.let { number ->
-                        Text(
-                            text = number,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+        val timeText = remember(program.startDate, program.endDate) {
+            buildString {
+                program.startDate?.let { start ->
+                    append(start.format(TimeFormatter))
+                    program.endDate?.let { end ->
+                        append(" - ")
+                        append(end.format(TimeFormatter))
                     }
-                    Text(
-                        text = channel.name,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                val timeText = buildString {
-                    program.startDate?.let { start ->
-                        append(start.format(timeFormatter))
-                        program.endDate?.let { end ->
-                            append(" - ")
-                            append(end.format(timeFormatter))
-                        }
-                    }
-                }
-                if (timeText.isNotEmpty()) {
-                    Text(
-                        text = timeText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
                 }
             }
+        }
+
+        if (timeText.isNotEmpty()) {
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

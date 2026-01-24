@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -31,30 +32,66 @@ class LiveTvViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LiveTvUiState())
     val uiState: StateFlow<LiveTvUiState> = _uiState.asStateFlow()
 
+    private val _selectedLetter = MutableStateFlow<String?>(null)
+    val selectedLetter: StateFlow<String?> = _selectedLetter.asStateFlow()
+
+    private var allChannelsCache: List<AfinityChannel> = emptyList()
+
     private var refreshJob: Job? = null
 
     init {
         checkLiveTvAccess()
     }
 
+    fun onLetterSelected(letter: String) {
+        val newLetter = if (_selectedLetter.value == letter) null else letter
+        _selectedLetter.value = newLetter
+        applyFilterToCache(newLetter)
+    }
+
+    fun clearLetterFilter() {
+        _selectedLetter.value = null
+        applyFilterToCache(null)
+    }
+
+    private fun applyFilterToCache(letter: String?) {
+        viewModelScope.launch(Dispatchers.Default) {
+            val currentCache = allChannelsCache
+
+            val filteredList = if (letter == null) {
+                currentCache
+            } else {
+                currentCache.filter { channel ->
+                    val firstChar = channel.name.firstOrNull()?.uppercase() ?: ""
+                    if (letter == "#") {
+                        firstChar.isNotEmpty() && !firstChar[0].isLetter()
+                    } else {
+                        firstChar == letter
+                    }
+                }
+            }
+
+            _uiState.update { it.copy(channels = filteredList) }
+        }
+    }
+
     private fun checkLiveTvAccess() {
         viewModelScope.launch {
             try {
                 val hasAccess = liveTvRepository.hasLiveTvAccess()
-                _uiState.value = _uiState.value.copy(hasLiveTvAccess = hasAccess)
+                _uiState.update { it.copy(hasLiveTvAccess = hasAccess) }
                 if (hasAccess) {
                     loadChannels()
                     loadCategorizedPrograms()
                     startPeriodicRefresh()
                 } else {
-                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    _uiState.update { it.copy(isLoading = false) }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check Live TV access")
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Failed to check Live TV access"
-                )
+                _uiState.update {
+                    it.copy(isLoading = false, error = "Failed to check Live TV access")
+                }
             }
         }
     }
@@ -63,17 +100,20 @@ class LiveTvViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val channels = liveTvRepository.getChannels()
-                _uiState.value = _uiState.value.copy(
-                    channels = channels,
-                    epgChannels = channels,
-                    isLoading = false
-                )
+                allChannelsCache = channels
+                applyFilterToCache(_selectedLetter.value)
+
+                _uiState.update {
+                    it.copy(
+                        epgChannels = channels,
+                        isLoading = false
+                    )
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load channels")
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Failed to load channels"
-                )
+                _uiState.update {
+                    it.copy(isLoading = false, error = "Failed to load channels")
+                }
             }
         }
     }
@@ -81,7 +121,7 @@ class LiveTvViewModel @Inject constructor(
     fun loadCategorizedPrograms() {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isCategoriesLoading = true)
+                _uiState.update { it.copy(isCategoriesLoading = true) }
 
                 val channels = liveTvRepository.getChannels()
                 val channelsMap = channels.associateBy { it.id }
@@ -109,8 +149,11 @@ class LiveTvViewModel @Inject constructor(
                 categorized.forEach { (category, programList) ->
                     when (category) {
                         LiveTvCategory.ON_NOW -> {
-                            programList.sortBy { it.channel.channelNumber?.toIntOrNull() ?: Int.MAX_VALUE }
+                            programList.sortBy {
+                                it.channel.channelNumber?.toIntOrNull() ?: Int.MAX_VALUE
+                            }
                         }
+
                         else -> {
                             programList.sortBy { it.program.name.lowercase() }
                         }
@@ -121,13 +164,15 @@ class LiveTvViewModel @Inject constructor(
                     category == LiveTvCategory.ON_NOW || programs.isNotEmpty()
                 }
 
-                _uiState.value = _uiState.value.copy(
-                    categorizedPrograms = filteredCategories,
-                    isCategoriesLoading = false
-                )
+                _uiState.update {
+                    it.copy(
+                        categorizedPrograms = filteredCategories,
+                        isCategoriesLoading = false
+                    )
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load categorized programs")
-                _uiState.value = _uiState.value.copy(isCategoriesLoading = false)
+                _uiState.update { it.copy(isCategoriesLoading = false) }
             }
         }
     }
@@ -135,72 +180,75 @@ class LiveTvViewModel @Inject constructor(
     fun loadEpgData() {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isEpgLoading = true)
+                _uiState.update { it.copy(isEpgLoading = true) }
 
-                val channels = liveTvRepository.getChannels()
+                val channels =
+                    if (allChannelsCache.isNotEmpty()) allChannelsCache else liveTvRepository.getChannels()
+
                 if (channels.isEmpty()) {
                     Timber.w("EPG: No channels found.")
-                    _uiState.value = _uiState.value.copy(isEpgLoading = false)
+                    _uiState.update { it.copy(isEpgLoading = false) }
                     return@launch
                 }
 
                 val startTime = _uiState.value.epgStartTime
                 val endTime = startTime.plusHours(_uiState.value.epgVisibleHours.toLong() + 1)
 
-                Timber.d("EPG: Loading programs for ${channels.size} channels from $startTime to $endTime")
-
                 val allPrograms = channels.chunked(100).map { batch ->
                     async(Dispatchers.IO) {
                         try {
-                            val result = liveTvRepository.getPrograms(
+                            liveTvRepository.getPrograms(
                                 channelIds = batch.map { it.id },
                                 minStartDate = startTime,
                                 maxEndDate = endTime
                             )
-                            Timber.d("EPG Batch: Fetched ${result.size} programs for ${batch.size} channels")
-                            result
                         } catch (e: Exception) {
-                            Timber.e(e, "EPG Batch Failed for ${batch.size} channels")
                             emptyList()
                         }
                     }
                 }.awaitAll().flatten()
 
-                Timber.d("EPG: Total Loaded ${allPrograms.size} programs")
-
                 val programsByChannel = allPrograms.groupBy { it.channelId }
 
-                _uiState.value = _uiState.value.copy(
-                    epgChannels = channels,
-                    epgPrograms = programsByChannel,
-                    isEpgLoading = false
-                )
+                _uiState.update {
+                    it.copy(
+                        epgChannels = channels,
+                        epgPrograms = programsByChannel,
+                        isEpgLoading = false
+                    )
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load EPG data")
-                _uiState.value = _uiState.value.copy(isEpgLoading = false)
+                _uiState.update { it.copy(isEpgLoading = false) }
             }
         }
     }
 
     fun selectTab(tab: LiveTvTab) {
-        _uiState.value = _uiState.value.copy(selectedTab = tab)
+        _uiState.update { it.copy(selectedTab = tab) }
         when (tab) {
             LiveTvTab.HOME -> loadCategorizedPrograms()
             LiveTvTab.GUIDE -> loadEpgData()
-            LiveTvTab.CHANNELS -> loadChannels()
+            LiveTvTab.CHANNELS -> {
+                if (allChannelsCache.isEmpty()) {
+                    loadChannels()
+                } else {
+                    applyFilterToCache(_selectedLetter.value)
+                }
+            }
         }
     }
 
     fun jumpToNow() {
-        _uiState.value = _uiState.value.copy(
-            epgStartTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
-        )
+        _uiState.update {
+            it.copy(epgStartTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS))
+        }
         loadEpgData()
     }
 
     fun navigateEpgTime(hours: Int) {
         val newStartTime = _uiState.value.epgStartTime.plusHours(hours.toLong())
-        _uiState.value = _uiState.value.copy(epgStartTime = newStartTime)
+        _uiState.update { it.copy(epgStartTime = newStartTime) }
         loadEpgData()
     }
 
@@ -221,7 +269,8 @@ class LiveTvViewModel @Inject constructor(
                 LiveTvTab.GUIDE -> loadEpgData()
                 LiveTvTab.CHANNELS -> {
                     val channels = liveTvRepository.getChannels()
-                    _uiState.value = _uiState.value.copy(channels = channels)
+                    allChannelsCache = channels
+                    applyFilterToCache(_selectedLetter.value)
                 }
             }
         } catch (e: Exception) {
@@ -234,14 +283,10 @@ class LiveTvViewModel @Inject constructor(
             try {
                 val success = liveTvRepository.toggleChannelFavorite(channelId)
                 if (success) {
-                    val updatedChannels = _uiState.value.channels.map { channel ->
-                        if (channel.id == channelId) {
-                            channel.copy(favorite = !channel.favorite)
-                        } else {
-                            channel
-                        }
+                    allChannelsCache = allChannelsCache.map { channel ->
+                        if (channel.id == channelId) channel.copy(favorite = !channel.favorite) else channel
                     }
-                    _uiState.value = _uiState.value.copy(channels = updatedChannels)
+                    applyFilterToCache(_selectedLetter.value)
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle favorite for channel: $channelId")
@@ -251,15 +296,20 @@ class LiveTvViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isRefreshing = true)
+            _uiState.update { it.copy(isRefreshing = true) }
             try {
-                loadChannels()
+                val channels = liveTvRepository.getChannels()
+                allChannelsCache = channels
+
                 loadCategorizedPrograms()
                 loadEpgData()
-                _uiState.value = _uiState.value.copy(isRefreshing = false)
+
+                applyFilterToCache(_selectedLetter.value)
+
+                _uiState.update { it.copy(isRefreshing = false) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh")
-                _uiState.value = _uiState.value.copy(isRefreshing = false)
+                _uiState.update { it.copy(isRefreshing = false) }
             }
         }
     }

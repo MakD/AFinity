@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.livetv.tabs
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import com.makd.afinity.ui.livetv.components.EpgProgramRow
 import com.makd.afinity.ui.livetv.components.EpgTimeHeader
 import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LiveTvGuideTab(
     uiState: LiveTvUiState,
@@ -128,51 +130,58 @@ fun LiveTvGuideTab(
             }
         }
 
-        Row(
+        LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
-            LazyColumn(
-                modifier = Modifier.width(channelCellWidth)
-            ) {
-                item {
+            stickyHeader {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(headerHeight)
+                        .background(MaterialTheme.colorScheme.surface)
+                ) {
                     Box(
                         modifier = Modifier
                             .width(channelCellWidth)
                             .height(headerHeight)
                             .background(MaterialTheme.colorScheme.surface)
                     )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .horizontalScroll(horizontalScrollState)
+                    ) {
+                        EpgTimeHeader(
+                            startTime = uiState.epgStartTime,
+                            visibleHours = uiState.epgVisibleHours,
+                            hourWidth = hourWidth
+                        )
+                    }
                 }
+            }
 
-                items(
-                    items = uiState.epgChannels,
-                    key = { it.id }
-                ) { channel ->
+            items(
+                items = uiState.epgChannels,
+                key = { it.id }
+            ) { channel ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(rowHeight)
+                ) {
                     EpgChannelCell(
                         channel = channel,
                         onClick = { onChannelClick(channel) },
                         cellWidth = channelCellWidth,
                         cellHeight = rowHeight
                     )
-                }
-            }
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .horizontalScroll(horizontalScrollState)
-            ) {
-                EpgTimeHeader(
-                    startTime = uiState.epgStartTime,
-                    visibleHours = uiState.epgVisibleHours,
-                    hourWidth = hourWidth
-                )
-
-                LazyColumn {
-                    items(
-                        items = uiState.epgChannels,
-                        key = { it.id }
-                    ) { channel ->
-                        val channelPrograms = uiState.epgPrograms[channel.id] ?: emptyList()
+                    val channelPrograms = uiState.epgPrograms[channel.id] ?: emptyList()
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .horizontalScroll(horizontalScrollState)
+                    ) {
                         EpgProgramRow(
                             channel = channel,
                             programs = channelPrograms,

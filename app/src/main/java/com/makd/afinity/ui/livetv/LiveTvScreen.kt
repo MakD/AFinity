@@ -5,17 +5,22 @@ package com.makd.afinity.ui.livetv
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -24,6 +29,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,8 +58,11 @@ fun LiveTvScreen(
     viewModel: LiveTvViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedLetter by viewModel.selectedLetter.collectAsStateWithLifecycle()
+
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(pagerState.currentPage) {
         val tab = when (pagerState.currentPage) {
@@ -112,7 +122,7 @@ fun LiveTvScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_live_tv),
+                            painter = painterResource(id = R.drawable.ic_live_tv_nav),
                             contentDescription = null,
                             modifier = Modifier.padding(16.dp),
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
@@ -137,34 +147,43 @@ fun LiveTvScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    SecondaryTabRow(selectedTabIndex = pagerState.currentPage) {
-                        Tab(
-                            selected = pagerState.currentPage == 0,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(0)
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item {
+                            NavigationChip(
+                                selected = pagerState.currentPage == 0,
+                                label = "Home",
+                                iconResId = R.drawable.ic_home,
+                                onClick = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(0) }
                                 }
-                            },
-                            text = { Text("Home") }
-                        )
-                        Tab(
-                            selected = pagerState.currentPage == 1,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(1)
+                            )
+                        }
+                        item {
+                            NavigationChip(
+                                selected = pagerState.currentPage == 1,
+                                label = "TV Guide",
+                                iconResId = R.drawable.ic_schedule,
+                                onClick = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
                                 }
-                            },
-                            text = { Text("TV Guide") }
-                        )
-                        Tab(
-                            selected = pagerState.currentPage == 2,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(2)
+                            )
+                        }
+                        item {
+                            NavigationChip(
+                                selected = pagerState.currentPage == 2,
+                                label = "Channels",
+                                iconResId = R.drawable.ic_view_module,
+                                onClick = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(2) }
                                 }
-                            },
-                            text = { Text("Channels") }
-                        )
+                            )
+                        }
                     }
 
                     HorizontalPager(
@@ -176,7 +195,7 @@ fun LiveTvScreen(
                                 uiState = uiState,
                                 onProgramClick = { programWithChannel ->
                                     PlayerLauncher.launchLiveChannel(
-                                        context = navController.context,
+                                        context = context,
                                         channelId = programWithChannel.channel.id,
                                         channelName = programWithChannel.channel.name
                                     )
@@ -188,7 +207,7 @@ fun LiveTvScreen(
                                 uiState = uiState,
                                 onChannelClick = { channel ->
                                     PlayerLauncher.launchLiveChannel(
-                                        context = navController.context,
+                                        context = context,
                                         channelId = channel.id,
                                         channelName = channel.name
                                     )
@@ -202,14 +221,17 @@ fun LiveTvScreen(
                                 uiState = uiState,
                                 onChannelClick = { channel ->
                                     PlayerLauncher.launchLiveChannel(
-                                        context = navController.context,
+                                        context = context,
                                         channelId = channel.id,
                                         channelName = channel.name
                                     )
                                 },
                                 onFavoriteClick = { channel ->
                                     viewModel.toggleFavorite(channel.id)
-                                }
+                                },
+                                selectedLetter = selectedLetter,
+                                onLetterSelected = viewModel::onLetterSelected,
+                                onClearFilter = viewModel::clearLetterFilter
                             )
                         }
                     }
@@ -217,4 +239,48 @@ fun LiveTvScreen(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NavigationChip(
+    selected: Boolean,
+    label: String,
+    iconResId: Int,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                )
+            )
+        },
+        leadingIcon = {
+            Icon(
+                painter = painterResource(id = iconResId),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+        },
+        shape = CircleShape,
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = if (selected) Color.Transparent else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+            selectedBorderColor = Color.Transparent
+        ),
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = Color.Transparent,
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    )
 }

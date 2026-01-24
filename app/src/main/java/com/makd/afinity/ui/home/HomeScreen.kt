@@ -1,3 +1,5 @@
+@file:UnstableApi
+
 package com.makd.afinity.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
@@ -72,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.R.drawable.ic_launcher_monochrome
@@ -1183,7 +1186,7 @@ private fun PopularStudiosSection(
     val fixedRowHeight = cardHeight + 8.dp
 
     Column(
-        modifier = Modifier.padding(horizontal = 14.dp)
+        modifier = Modifier.padding(horizontal = 16.dp)
     ) {
         Text(
             text = "Popular Studios",

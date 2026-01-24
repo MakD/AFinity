@@ -3,7 +3,6 @@ package com.makd.afinity.ui.livetv.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
@@ -17,6 +16,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
+import com.makd.afinity.ui.theme.CardDimensions
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import java.time.LocalDateTime
 
 @Composable
 fun ProgramCategoryRow(
@@ -24,30 +26,31 @@ fun ProgramCategoryRow(
     programs: List<ProgramWithChannel>,
     onProgramClick: (ProgramWithChannel) -> Unit,
     modifier: Modifier = Modifier,
-    widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact
+    widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
+    now: LocalDateTime
 ) {
     if (programs.isEmpty()) return
 
-    val cardWidth = when (widthSizeClass) {
-        WindowWidthSizeClass.Compact -> 200.dp
-        WindowWidthSizeClass.Medium -> 220.dp
-        WindowWidthSizeClass.Expanded -> 260.dp
-        else -> 200.dp
-    }
+    val cardWidth = widthSizeClass.landscapeWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val fixedRowHeight = cardHeight + 8.dp + 22.dp + 20.dp + 20.dp
 
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier.padding(horizontal = 14.dp)
+    ) {
         Text(
             text = category.displayName,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
-
         LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
             items(
                 items = programs,
@@ -56,7 +59,8 @@ fun ProgramCategoryRow(
                 ProgramCard(
                     programWithChannel = programWithChannel,
                     onClick = { onProgramClick(programWithChannel) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
+                    now = now
                 )
             }
         }
