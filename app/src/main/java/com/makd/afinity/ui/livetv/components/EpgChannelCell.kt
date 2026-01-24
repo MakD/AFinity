@@ -62,7 +62,7 @@ fun EpgChannelCell(
                 )
             } else {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_live_tv),
+                    painter = painterResource(id = R.drawable.ic_live_tv_nav),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
