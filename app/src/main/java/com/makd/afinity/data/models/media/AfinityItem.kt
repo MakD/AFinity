@@ -1,6 +1,7 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
+import com.makd.afinity.data.models.extensions.toAfinityChannel
 import com.makd.afinity.data.repository.JellyfinRepository
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -37,6 +38,7 @@ suspend fun BaseItemDto.toAfinityItem(
         BaseItemKind.SERIES -> toAfinityShow(jellyfinRepository)
         BaseItemKind.BOX_SET -> toAfinityBoxSet(jellyfinRepository)
         BaseItemKind.FOLDER -> toAfinityFolder(jellyfinRepository)
+        BaseItemKind.TV_CHANNEL -> toAfinityChannel(jellyfinRepository.getBaseUrl())
         else -> null
     }
 }

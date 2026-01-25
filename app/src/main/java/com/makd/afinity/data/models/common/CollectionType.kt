@@ -21,6 +21,7 @@ enum class CollectionType(val type: String) {
             TvShows,
             BoxSets,
             Mixed,
+            LiveTv,
         )
 
         fun fromString(string: String?): CollectionType {

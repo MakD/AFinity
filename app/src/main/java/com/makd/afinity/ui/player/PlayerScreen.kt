@@ -56,6 +56,8 @@ fun PlayerScreen(
     startPositionMs: Long = 0L,
     seasonId: UUID? = null,
     shuffle: Boolean = false,
+    isLiveChannel: Boolean = false,
+    liveStreamUrl: String? = null,
     onBackPressed: () -> Unit,
     navController: NavController? = null,
     modifier: Modifier = Modifier,
@@ -82,22 +84,35 @@ fun PlayerScreen(
     var dragStartBrightness by remember { mutableFloatStateOf(-1f) }
     LocalLifecycleOwner.current
 
-    LaunchedEffect(item.id, mediaSourceId) {
-        Timber.d("Loading media: ${item.name}")
-        viewModel.handlePlayerEvent(
-            PlayerEvent.LoadMedia(
-                item = item,
-                mediaSourceId = mediaSourceId,
-                audioStreamIndex = audioStreamIndex,
-                subtitleStreamIndex = subtitleStreamIndex,
-                startPositionMs = startPositionMs
+    LaunchedEffect(item.id, mediaSourceId, isLiveChannel, liveStreamUrl) {
+        if (isLiveChannel && liveStreamUrl != null) {
+            Timber.d("Loading live channel: ${item.name}")
+            viewModel.handlePlayerEvent(
+                PlayerEvent.LoadLiveChannel(
+                    channelId = item.id,
+                    channelName = item.name,
+                    streamUrl = liveStreamUrl
+                )
             )
-        )
+        } else {
+            Timber.d("Loading media: ${item.name}")
+            viewModel.handlePlayerEvent(
+                PlayerEvent.LoadMedia(
+                    item = item,
+                    mediaSourceId = mediaSourceId,
+                    audioStreamIndex = audioStreamIndex,
+                    subtitleStreamIndex = subtitleStreamIndex,
+                    startPositionMs = startPositionMs
+                )
+            )
+        }
     }
 
-    LaunchedEffect(item, seasonId, shuffle) {
-        Timber.d("Initializing playlist for item: ${item.name} (${item.id}), seasonId=$seasonId, shuffle=$shuffle")
-        viewModel.initializePlaylist(item, seasonId, shuffle)
+    LaunchedEffect(item, seasonId, shuffle, isLiveChannel) {
+        if (!isLiveChannel) {
+            Timber.d("Initializing playlist for item: ${item.name} (${item.id}), seasonId=$seasonId, shuffle=$shuffle")
+            viewModel.initializePlaylist(item, seasonId, shuffle)
+        }
     }
 
     LaunchedEffect(navController) {

@@ -196,6 +196,11 @@ class LibraryContentViewModel @Inject constructor(
     }
 
     fun scrollToLetter(letter: String) {
+        if (_uiState.value.selectedLetter == letter) {
+            clearLetterFilter()
+            return
+        }
+
         viewModelScope.launch {
             try {
                 val type = libraryType ?: return@launch

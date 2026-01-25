@@ -2,6 +2,7 @@ package com.makd.afinity.data.models.player
 
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
+import java.util.UUID
 
 data class PlayerState(
     val isPlaying: Boolean = false,
@@ -51,6 +52,12 @@ sealed class PlayerEvent {
         val audioStreamIndex: Int? = null,
         val subtitleStreamIndex: Int? = null,
         val startPositionMs: Long = 0L
+    ) : PlayerEvent()
+
+    data class LoadLiveChannel(
+        val channelId: UUID,
+        val channelName: String,
+        val streamUrl: String
     ) : PlayerEvent()
 
     data class SkipSegment(val segment: AfinitySegment) : PlayerEvent()

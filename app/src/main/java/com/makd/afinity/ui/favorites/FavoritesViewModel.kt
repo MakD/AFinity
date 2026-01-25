@@ -16,6 +16,7 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
+import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
@@ -37,7 +38,8 @@ class FavoritesViewModel @Inject constructor(
     private val playbackStateManager: PlaybackStateManager,
     private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
-    private val appDataRepository: AppDataRepository
+    private val appDataRepository: AppDataRepository,
+    private val liveTvRepository: LiveTvRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FavoritesUiState())
@@ -88,12 +90,21 @@ class FavoritesViewModel @Inject constructor(
                     val seasonsDeferred = async { jellyfinRepository.getFavoriteSeasons() }
                     val episodesDeferred = async { jellyfinRepository.getFavoriteEpisodes() }
                     val boxSetsDeferred = async { jellyfinRepository.getFavoriteBoxSets() }
+                    val channelsDeferred = async {
+                        try {
+                            liveTvRepository.getChannels(isFavorite = true)
+                        } catch (e: Exception) {
+                            Timber.d("Live TV not available or no favorite channels")
+                            emptyList()
+                        }
+                    }
 
                     val movies = moviesDeferred.await()
                     val shows = showsDeferred.await()
                     val seasons = seasonsDeferred.await()
                     val episodes = episodesDeferred.await()
                     val boxSets = boxSetsDeferred.await()
+                    val channels = channelsDeferred.await()
 
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -102,6 +113,7 @@ class FavoritesViewModel @Inject constructor(
                         seasons = seasons.sortedBy { it.name },
                         episodes = episodes.sortedBy { it.name },
                         boxSets = boxSets.sortedBy { it.name },
+                        channels = channels.sortedBy { it.channelNumber ?: it.name },
                         people = emptyList(),
                         error = null
                     )
@@ -302,6 +314,7 @@ data class FavoritesUiState(
     val episodes: List<AfinityEpisode> = emptyList(),
     val boxSets: List<AfinityBoxSet> = emptyList(),
     val people: List<com.makd.afinity.data.models.media.AfinityPersonDetail> = emptyList(),
+    val channels: List<com.makd.afinity.data.models.livetv.AfinityChannel> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 )

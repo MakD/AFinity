@@ -8,14 +8,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -57,6 +66,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -98,6 +108,12 @@ fun LibraryContentScreen(
     val scrollToIndex by viewModel.scrollToIndex.collectAsStateWithLifecycle()
     var showSortDialog by remember { mutableStateOf(false) }
 
+    val layoutDirection = LocalLayoutDirection.current
+    val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
+    val safeStart = safeDrawing.calculateStartPadding(layoutDirection)
+    val safeEnd = safeDrawing.calculateEndPadding(layoutDirection)
+    val safeBottom = safeDrawing.calculateBottomPadding()
+
     LaunchedEffect(scrollToIndex) {
         Timber.d("Alphabet scroll: LaunchedEffect triggered with scrollToIndex: $scrollToIndex")
         if (scrollToIndex >= 0) {
@@ -126,7 +142,11 @@ fun LibraryContentScreen(
 
             FilterRow(
                 currentFilter = uiState.currentFilter,
-                onFilterSelected = { viewModel.updateFilter(it) }
+                onFilterSelected = { viewModel.updateFilter(it) },
+                contentPadding = PaddingValues(
+                    start = 16.dp + safeStart,
+                    end = 16.dp + safeEnd
+                )
             )
 
             when {
@@ -180,8 +200,14 @@ fun LibraryContentScreen(
                                         Timber.d("Alphabet scroll: Letter '$letter' selected")
                                         viewModel.scrollToLetter(letter)
                                     },
+                                    selectedLetter = uiState.selectedLetter,
                                     modifier = Modifier
                                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                                        .windowInsetsPadding(
+                                            WindowInsets.safeDrawing.only(
+                                                WindowInsetsSides.Horizontal
+                                            )
+                                        )
                                 )
                             }
                         }
@@ -215,10 +241,10 @@ fun LibraryContentScreen(
                             columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
                             state = gridState,
                             contentPadding = PaddingValues(
-                                start = 16.dp,
+                                start = 16.dp + safeStart,
                                 end = 16.dp,
                                 top = 16.dp,
-                                bottom = 80.dp
+                                bottom = 80.dp + safeBottom
                             ),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -283,8 +309,14 @@ fun LibraryContentScreen(
                                     Timber.d("Alphabet scroll: Letter '$letter' selected")
                                     viewModel.scrollToLetter(letter)
                                 },
+                                selectedLetter = uiState.selectedLetter,
                                 modifier = Modifier
                                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                                    .windowInsetsPadding(
+                                        WindowInsets.safeDrawing.only(
+                                            WindowInsetsSides.End
+                                        )
+                                    )
                             )
                         }
                     }
@@ -296,6 +328,7 @@ fun LibraryContentScreen(
             onClick = { showSortDialog = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.End + WindowInsetsSides.Bottom))
                 .padding(16.dp)
                 .padding(end = 24.dp)
         ) {
@@ -415,8 +448,78 @@ private fun LibraryContentTopBar(
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.background.copy(alpha = backgroundOpacity)
-        )
+        ),
+        windowInsets = WindowInsets.safeDrawing
     )
+}
+
+@Composable
+private fun FilterRow(
+    currentFilter: FilterType,
+    onFilterSelected: (FilterType) -> Unit,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp)
+) {
+    val filters = listOf(
+        FilterType.ALL to "All",
+        FilterType.WATCHED to "Watched",
+        FilterType.UNWATCHED to "Unwatched",
+        FilterType.WATCHLIST to "Watchlist",
+        FilterType.FAVORITES to "Favorites"
+    )
+
+    LazyRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = contentPadding
+    ) {
+        items(filters) { (filterType, label) ->
+            FilterChip(
+                selected = currentFilter == filterType,
+                onClick = {
+                    onFilterSelected(filterType)
+                },
+                label = { Text(label) },
+                leadingIcon = if (currentFilter == filterType) {
+                    when (filterType) {
+                        FilterType.FAVORITES -> {
+                            {
+                                Icon(
+                                    painterResource(id = R.drawable.ic_favorite_filled),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        FilterType.WATCHLIST -> {
+                            {
+                                Icon(
+                                    painterResource(id = R.drawable.ic_bookmark_filled),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        else -> {
+                            {
+                                Icon(
+                                    painterResource(id = R.drawable.ic_circle_check),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                } else null,
+                shape = RoundedCornerShape(50)
+            )
+        }
+    }
 }
 
 @Composable
@@ -842,75 +945,8 @@ private fun SortOptionRow(
 }
 
 @Composable
-private fun FilterRow(
-    currentFilter: FilterType,
-    onFilterSelected: (FilterType) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val filters = listOf(
-        FilterType.ALL to "All",
-        FilterType.WATCHED to "Watched",
-        FilterType.UNWATCHED to "Unwatched",
-        FilterType.WATCHLIST to "Watchlist",
-        FilterType.FAVORITES to "Favorites"
-    )
-
-    LazyRow(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
-    ) {
-        items(filters) { (filterType, label) ->
-            FilterChip(
-                selected = currentFilter == filterType,
-                onClick = {
-                    onFilterSelected(filterType)
-                },
-                label = { Text(label) },
-                leadingIcon = if (currentFilter == filterType) {
-                    when (filterType) {
-                        FilterType.FAVORITES -> {
-                            {
-                                Icon(
-                                    painterResource(id = R.drawable.ic_favorite_filled),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-
-                        FilterType.WATCHLIST -> {
-                            {
-                                Icon(
-                                    painterResource(id = R.drawable.ic_bookmark_filled),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-
-                        else -> {
-                            {
-                                Icon(
-                                    painterResource(id = R.drawable.ic_circle_check),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-                } else null,
-                shape = RoundedCornerShape(50)
-            )
-        }
-    }
-}
-
-@Composable
 private fun AlphabetScroller(
+    selectedLetter: String?,
     onLetterSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -918,7 +954,7 @@ private fun AlphabetScroller(
 
     LazyColumn(
         modifier = modifier
-            .width(24.dp)
+            .width(32.dp)
             .padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -927,15 +963,21 @@ private fun AlphabetScroller(
             items = letters,
             key = { letter -> letter }
         ) { letter ->
+            val isSelected = selectedLetter == letter
             Text(
                 text = letter,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Medium
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                 ),
-                color = MaterialTheme.colorScheme.primary,
+                color = if (isSelected)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
                     .clickable { onLetterSelected(letter) }
                     .padding(horizontal = 4.dp, vertical = 2.dp)
+                    .fillMaxWidth()
             )
         }
     }

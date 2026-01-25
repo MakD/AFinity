@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -47,6 +51,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.ContinueWatchingCard
@@ -146,7 +151,8 @@ fun FavoritesScreen(
                             uiState.seasons.isNotEmpty() ||
                             uiState.episodes.isNotEmpty() ||
                             uiState.boxSets.isNotEmpty() ||
-                            uiState.people.isNotEmpty()
+                            uiState.people.isNotEmpty() ||
+                            uiState.channels.isNotEmpty()
 
                     if (!hasAnyFavorites) {
                         Column(
@@ -238,6 +244,26 @@ fun FavoritesScreen(
                                             episodes = uiState.episodes,
                                             onEpisodeClick = { episode ->
                                                 viewModel.selectEpisode(episode)
+                                            },
+                                            cardWidth = landscapeWidth
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (uiState.channels.isNotEmpty()) {
+                                item {
+                                    FavoriteSection(
+                                        title = "Live TV Channels (${uiState.channels.size})"
+                                    ) {
+                                        FavoriteChannelsRow(
+                                            channels = uiState.channels,
+                                            onChannelClick = { channel ->
+                                                PlayerLauncher.launchLiveChannel(
+                                                    context = context,
+                                                    channelId = channel.id,
+                                                    channelName = channel.name
+                                                )
                                             },
                                             cardWidth = landscapeWidth
                                         )
@@ -488,5 +514,95 @@ private fun FavoritePersonCard(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth()
         )
+    }
+}
+
+@Composable
+private fun FavoriteChannelsRow(
+    channels: List<AfinityChannel>,
+    onChannelClick: (AfinityChannel) -> Unit,
+    cardWidth: Dp
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 0.dp)
+    ) {
+        items(channels) { channel ->
+            FavoriteChannelCard(
+                channel = channel,
+                onClick = { onChannelClick(channel) },
+                cardWidth = cardWidth
+            )
+        }
+    }
+}
+
+@Composable
+private fun FavoriteChannelCard(
+    channel: AfinityChannel,
+    onClick: () -> Unit,
+    cardWidth: Dp
+) {
+    Column(
+        modifier = Modifier.width(cardWidth)
+    ) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                val imageUrl = channel.images.primary ?: channel.images.thumb
+                if (imageUrl != null) {
+                    AsyncImage(
+                        imageUrl = imageUrl.toString(),
+                        contentDescription = channel.name,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text(
+                        text = channel.channelNumber ?: channel.name.take(3),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            channel.channelNumber?.let { number ->
+                Text(
+                    text = number,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+            Text(
+                text = channel.name,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }

@@ -23,8 +23,11 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.models.livetv.AfinityChannel
+import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
+import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
@@ -205,6 +208,8 @@ class PlayerViewModel @Inject constructor(
         progressReportingJob = viewModelScope.launch {
             while (true) {
                 delay(5000L)
+                if (_uiState.value.isLiveChannel) continue
+
                 currentItem?.let { item ->
                     currentSessionId?.let { sessionId ->
                         try {
@@ -435,6 +440,15 @@ class PlayerViewModel @Inject constructor(
                         event.audioStreamIndex,
                         event.subtitleStreamIndex,
                         event.startPositionMs
+                    )
+                }
+
+                is PlayerEvent.LoadLiveChannel -> {
+                    updateUiState { it.copy(isLoading = true, isLiveChannel = true) }
+                    loadLiveChannel(
+                        event.channelId,
+                        event.channelName,
+                        event.streamUrl
                     )
                 }
 
@@ -742,6 +756,87 @@ class PlayerViewModel @Inject constructor(
             }
         }
         updateCurrentTrackSelections()
+    }
+
+    private suspend fun loadLiveChannel(
+        channelId: UUID,
+        channelName: String,
+        streamUrl: String
+    ) {
+        try {
+            Timber.d("Loading live channel: $channelName ($channelId)")
+            Timber.d("Stream URL: $streamUrl")
+            val userAgent = "AFinity/${com.makd.afinity.BuildConfig.VERSION_NAME} (Android; ExoPlayer)"
+
+            if (player is MPVPlayer) {
+                val mpv = player as MPVPlayer
+                mpv.setOption("user-agent", userAgent)
+                mpv.setOption("http-header-fields", "allow-cross-protocol-redirects: true")
+
+                withContext(Dispatchers.Main) {
+                    val mediaItem = MediaItem.Builder()
+                        .setMediaId(channelId.toString())
+                        .setUri(streamUrl)
+                        .setMediaMetadata(MediaMetadata.Builder().setTitle(channelName).build())
+                        .build()
+
+                    player.setMediaItem(mediaItem)
+                    player.prepare()
+                    player.play()
+                    showControls()
+                }
+            }
+            else if (player is ExoPlayer) {
+                val dataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
+                    .setUserAgent(userAgent)
+                    .setAllowCrossProtocolRedirects(true)
+                    .setKeepPostFor302Redirects(true)
+                    .setConnectTimeoutMs(15000)
+                    .setReadTimeoutMs(15000)
+
+                val mediaItem = MediaItem.Builder()
+                    .setMediaId(channelId.toString())
+                    .setUri(streamUrl)
+                    .setMimeType(MimeTypes.APPLICATION_M3U8)
+                    .setMediaMetadata(MediaMetadata.Builder().setTitle(channelName).build())
+                    .build()
+
+                val hlsMediaSource = androidx.media3.exoplayer.hls.HlsMediaSource.Factory(dataSourceFactory)
+                    .setAllowChunklessPreparation(true)
+                    .createMediaSource(mediaItem)
+
+                withContext(Dispatchers.Main) {
+                    (player as ExoPlayer).setMediaSource(hlsMediaSource)
+                    player.prepare()
+                    player.play()
+                    showControls()
+                }
+            }
+
+            val channelItem = AfinityChannel(
+                id = channelId,
+                name = channelName,
+                images = AfinityImages(),
+                channelType = ChannelType.TV,
+                channelNumber = null,
+                serviceName = null
+            )
+
+            currentItem = channelItem
+
+            updateUiState {
+                it.copy(
+                    isLoading = false,
+                    isLiveChannel = true,
+                    currentItem = channelItem
+                )
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load live channel")
+            updateUiState {
+                it.copy(isLoading = false, showError = true, errorMessage = "Failed to load live channel.")
+            }
+        }
     }
 
     private fun loadTrickplayData() {
@@ -1278,6 +1373,7 @@ class PlayerViewModel @Inject constructor(
         val pipBackgroundPlay: Boolean = true,
         val isControlsVisible: Boolean = true,
         val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
-        val logoAutoHide: Boolean = false
+        val logoAutoHide: Boolean = false,
+        val isLiveChannel: Boolean = false
     )
 }

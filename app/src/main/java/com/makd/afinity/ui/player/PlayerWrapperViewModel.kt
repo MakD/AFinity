@@ -3,10 +3,15 @@ package com.makd.afinity.ui.player
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.livetv.AfinityChannel
+import com.makd.afinity.data.models.livetv.ChannelType
+import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +24,8 @@ import javax.inject.Inject
 class PlayerWrapperViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val databaseRepository: DatabaseRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val liveTvRepository: LiveTvRepository
 ) : ViewModel() {
 
     private val _item = MutableStateFlow<AfinityItem?>(null)
@@ -27,6 +33,65 @@ class PlayerWrapperViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _liveStreamUrl = MutableStateFlow<String?>(null)
+    val liveStreamUrl: StateFlow<String?> = _liveStreamUrl.asStateFlow()
+
+    private val _streamError = MutableStateFlow<String?>(null)
+    val streamError: StateFlow<String?> = _streamError.asStateFlow()
+
+    fun loadLiveChannel(channelId: UUID, channelName: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _streamError.value = null
+            Timber.d("PlayerWrapperViewModel: Loading live channel $channelId ($channelName)")
+
+            val placeholderChannel = AfinityChannel(
+                id = channelId,
+                name = channelName,
+                images = AfinityImages(),
+                channelNumber = null,
+                channelType = ChannelType.TV,
+                serviceName = null
+            )
+            _item.value = placeholderChannel
+
+            try {
+                val channelDeferred = viewModelScope.async {
+                    try {
+                        liveTvRepository.getChannel(channelId)
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to load channel details, using placeholder")
+                        null
+                    }
+                }
+
+                val streamUrlDeferred = viewModelScope.async {
+                    liveTvRepository.getChannelStreamUrl(channelId)
+                }
+
+                val channel = channelDeferred.await()
+                if (channel != null) {
+                    Timber.d("PlayerWrapperViewModel: Loaded live channel from API: ${channel.name}")
+                    _item.value = channel
+                }
+
+                val streamUrl = streamUrlDeferred.await()
+                if (streamUrl != null) {
+                    Timber.d("PlayerWrapperViewModel: Got stream URL: $streamUrl")
+                    _liveStreamUrl.value = streamUrl
+                } else {
+                    Timber.e("PlayerWrapperViewModel: Failed to get stream URL")
+                    _streamError.value = "Failed to get stream URL"
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "PlayerWrapperViewModel: Failed to load live channel")
+                _streamError.value = "Failed to load channel: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
 
     fun loadItem(itemId: UUID) {
         viewModelScope.launch {

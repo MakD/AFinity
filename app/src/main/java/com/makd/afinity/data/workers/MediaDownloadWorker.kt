@@ -1,11 +1,18 @@
 package com.makd.afinity.data.workers
 
+import android.app.NotificationChannel
+import android.content.pm.ServiceInfo
+import android.app.NotificationManager
 import android.content.Context
 import android.net.Uri
+import android.os.Build
+import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.manager.SessionManager
@@ -91,6 +98,13 @@ class MediaDownloadWorker @AssistedInject constructor(
         val itemType = inputData.getString(KEY_ITEM_TYPE) ?: "Unknown"
 
         try {
+            val foregroundInfo = createForegroundInfo(downloadId.hashCode(), itemName, 0, 0)
+            setForeground(foregroundInfo)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to promote to foreground service")
+        }
+
+        try {
             Timber.d("Starting media download for item: $itemName ($itemType)")
 
             val download: DownloadDto = databaseRepository.getDownload(downloadId)
@@ -146,6 +160,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                 BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
                 BaseItemKind.EPISODE -> baseItemDto.toAfinityEpisode(baseUrl)
                     ?: return@withContext Result.failure(workDataOf("error" to "Failed to convert episode"))
+
                 else -> return@withContext Result.failure(
                     workDataOf("error" to "Unsupported item type: ${baseItemDto.type}")
                 )
@@ -184,6 +199,7 @@ class MediaDownloadWorker @AssistedInject constructor(
 
                 val totalBytes = response.body?.contentLength() ?: -1L
                 var downloadedBytes = 0L
+                var lastUpdateTime = 0L
 
                 response.body?.byteStream()?.use { input ->
                     FileOutputStream(outputFile).use { output ->
@@ -193,7 +209,10 @@ class MediaDownloadWorker @AssistedInject constructor(
                         while (input.read(buffer).also { bytes = it } != -1) {
                             if (isStopped) {
                                 Timber.d("Download cancelled by user")
-                                try { output.close() } catch (_: Exception) {}
+                                try {
+                                    output.close()
+                                } catch (_: Exception) {
+                                }
                                 outputFile.delete()
                                 return@withContext Result.failure(workDataOf("error" to "Cancelled"))
                             }
@@ -211,6 +230,18 @@ class MediaDownloadWorker @AssistedInject constructor(
                                         "totalBytes" to totalBytes
                                     )
                                 )
+                                val currentTime = System.currentTimeMillis()
+                                if (currentTime - lastUpdateTime > 500 || downloadedBytes == totalBytes) {
+                                    lastUpdateTime = currentTime
+                                    setForeground(
+                                        createForegroundInfo(
+                                            downloadId.hashCode(),
+                                            itemName,
+                                            downloadedBytes,
+                                            totalBytes
+                                        )
+                                    )
+                                }
                             }
                         }
                     }
@@ -320,7 +351,9 @@ class MediaDownloadWorker @AssistedInject constructor(
                     enableImages = true,
                     enableUserData = true
                 ).content?.items?.firstOrNull()
-            } catch (e: Exception) { null }
+            } catch (e: Exception) {
+                null
+            }
 
             if (baseItemDto == null) return
 
@@ -329,6 +362,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                     val movie = baseItemDto.toAfinityMovie(baseUrl)
                     databaseRepository.insertMovie(movie, serverId)
                 }
+
                 BaseItemKind.EPISODE -> {
                     val episode = baseItemDto.toAfinityEpisode(baseUrl)
                     if (episode != null) {
@@ -338,11 +372,17 @@ class MediaDownloadWorker @AssistedInject constructor(
                                     itemsApi.getItems(
                                         userId = userId,
                                         ids = listOf(seriesId),
-                                        fields = listOf(ItemFields.OVERVIEW, ItemFields.GENRES, ItemFields.PEOPLE),
+                                        fields = listOf(
+                                            ItemFields.OVERVIEW,
+                                            ItemFields.GENRES,
+                                            ItemFields.PEOPLE
+                                        ),
                                         enableImages = true,
                                         enableUserData = true
                                     ).content?.items?.firstOrNull()
-                                } catch (e: Exception) { null }
+                                } catch (e: Exception) {
+                                    null
+                                }
 
                                 showDto?.toAfinityShow(baseUrl)?.let { show ->
                                     databaseRepository.insertShow(show, serverId)
@@ -361,7 +401,9 @@ class MediaDownloadWorker @AssistedInject constructor(
                                         enableImages = true,
                                         enableUserData = true
                                     ).content?.items?.firstOrNull()
-                                } catch (e: Exception) { null }
+                                } catch (e: Exception) {
+                                    null
+                                }
 
                                 seasonDto?.toAfinitySeason(baseUrl)?.let { season ->
                                     databaseRepository.insertSeason(season, serverId)
@@ -373,6 +415,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                         databaseRepository.insertEpisode(episode, serverId)
                     }
                 }
+
                 else -> Timber.w("Unsupported item type: ${baseItemDto.type}")
             }
         } catch (e: Exception) {
@@ -380,7 +423,13 @@ class MediaDownloadWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun downloadImages(apiClient: ApiClient, serverId: String, itemId: UUID, itemType: String, userId: UUID) {
+    private suspend fun downloadImages(
+        apiClient: ApiClient,
+        serverId: String,
+        itemId: UUID,
+        itemType: String,
+        userId: UUID
+    ) {
         try {
             val item = when (itemType.uppercase()) {
                 "MOVIE" -> databaseRepository.getMovie(itemId, userId)
@@ -434,6 +483,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                     databaseRepository.insertMovie(item.copy(images = updatedImages), serverId)
                     downloadPersonImages(apiClient, serverId, itemId, userId)
                 }
+
                 is AfinityEpisode -> {
                     databaseRepository.insertEpisode(item.copy(images = updatedImages), serverId)
                 }
@@ -443,7 +493,12 @@ class MediaDownloadWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun downloadShowImages(apiClient: ApiClient, serverId: String, showId: UUID, userId: UUID) {
+    private suspend fun downloadShowImages(
+        apiClient: ApiClient,
+        serverId: String,
+        showId: UUID,
+        userId: UUID
+    ) {
         try {
             val show = databaseRepository.getShow(showId, userId) ?: return
             val showDir = downloadRepository.getItemDownloadDirectory(showId)
@@ -477,7 +532,12 @@ class MediaDownloadWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun downloadSeasonImages(apiClient: ApiClient, serverId: String, seasonId: UUID, userId: UUID) {
+    private suspend fun downloadSeasonImages(
+        apiClient: ApiClient,
+        serverId: String,
+        seasonId: UUID,
+        userId: UUID
+    ) {
         try {
             val season = databaseRepository.getSeason(seasonId, userId) ?: return
             val seasonDir = downloadRepository.getItemDownloadDirectory(seasonId)
@@ -510,7 +570,12 @@ class MediaDownloadWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun downloadPersonImages(apiClient: ApiClient, serverId: String, itemId: UUID, userId: UUID) {
+    private suspend fun downloadPersonImages(
+        apiClient: ApiClient,
+        serverId: String,
+        itemId: UUID,
+        userId: UUID
+    ) {
         try {
             val movie = databaseRepository.getMovie(itemId, userId) ?: return
             if (movie.people.isEmpty()) return
@@ -520,9 +585,19 @@ class MediaDownloadWorker @AssistedInject constructor(
 
             val updatedPeople = movie.people.map { person ->
                 person.image.uri?.let { uri ->
-                    val localPath = downloadImage(apiClient, uri.toString(), peopleImagesDir, person.id.toString())
+                    val localPath = downloadImage(
+                        apiClient,
+                        uri.toString(),
+                        peopleImagesDir,
+                        person.id.toString()
+                    )
                     if (localPath != null) {
-                        person.copy(image = AfinityPersonImage(uri = localPath, blurHash = person.image.blurHash))
+                        person.copy(
+                            image = AfinityPersonImage(
+                                uri = localPath,
+                                blurHash = person.image.blurHash
+                            )
+                        )
                     } else person
                 } ?: person
             }
@@ -610,6 +685,58 @@ class MediaDownloadWorker @AssistedInject constructor(
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to create LOCAL source entry")
+        }
+    }
+
+    private fun createForegroundInfo(
+        notificationId: Int,
+        itemName: String,
+        downloadedBytes: Long,
+        totalBytes: Long
+    ): ForegroundInfo {
+        val context: Context = applicationContext
+        val channelId = "download_channel"
+        val title = "Downloading $itemName"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Downloads",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Background download tasks"
+            }
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val progressText = if (totalBytes > 0) {
+            "${(downloadedBytes * 100 / totalBytes)}%"
+        } else {
+            "Starting..."
+        }
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setContentTitle(title)
+            .setContentText(progressText)
+            .setSmallIcon(R.drawable.ic_download)
+            .setOngoing(true)
+            .setProgress(
+                if (totalBytes > 0) totalBytes.toInt() else 0,
+                if (totalBytes > 0) downloadedBytes.toInt() else 0,
+                totalBytes <= 0
+            )
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .build()
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(
+                notificationId,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            )
+        } else {
+            ForegroundInfo(notificationId, notification)
         }
     }
 }

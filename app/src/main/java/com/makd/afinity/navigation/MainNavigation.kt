@@ -1,3 +1,5 @@
+@file:UnstableApi
+
 package com.makd.afinity.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -426,6 +429,15 @@ fun MainNavigation(
                         val route = Destination.createItemDetailRoute(jellyfinItemId)
                         navController.navigate(route)
                     },
+                    modifier = Modifier.fillMaxSize(),
+                    widthSizeClass = widthSizeClass
+                )
+            }
+
+            composable(Destination.LIVE_TV.route) {
+                com.makd.afinity.ui.livetv.LiveTvScreen(
+                    navController = navController,
+                    mainUiState = mainUiState,
                     modifier = Modifier.fillMaxSize(),
                     widthSizeClass = widthSizeClass
                 )

@@ -37,6 +37,12 @@ enum class Destination(
         title = "Requests",
         selectedIconRes = R.drawable.ic_plus_filled,
         unselectedIconRes = R.drawable.ic_plus
+    ),
+    LIVE_TV(
+        route = "live_tv",
+        title = "Live TV",
+        selectedIconRes = R.drawable.ic_live_tv_filled_nav,
+        unselectedIconRes = R.drawable.ic_live_tv_nav
     );
 
     companion object {

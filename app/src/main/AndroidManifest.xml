@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
-    <!-- Wake lock permissions for background playback
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" /> -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:name=".AfinityApplication"
@@ -25,25 +25,26 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:exported="true"
             android:label="@string/app_name"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.AFinity.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".ui.player.PlayerActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|uiMode|keyboard|keyboardHidden|navigation"
-            android:screenOrientation="sensorLandscape"
+            android:exported="false"
             android:launchMode="singleTask"
+            android:screenOrientation="sensorLandscape"
             android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.AFinity"
-            android:exported="false" />
+            android:theme="@style/Theme.AFinity" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -54,7 +55,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Disable default WorkManager initialization to use Hilt's worker factory -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
@@ -65,6 +65,11 @@
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
     </application>
 
 </manifest>

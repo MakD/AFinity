@@ -63,6 +63,7 @@ import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
@@ -864,102 +865,119 @@ private fun SeekBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Slider(
-            value = draggedPosition ?: position.toFloat(),
-            onValueChange = { newPosition ->
-                if (!uiState.isSeeking) {
-                    onPlayerEvent(PlayerEvent.OnSeekBarDragStart)
-                }
-                draggedPosition = newPosition
-                onPlayerEvent(PlayerEvent.OnSeekBarValueChange(newPosition.toLong()))
-            },
-            onValueChangeFinished = {
-                onPlayerEvent(PlayerEvent.OnSeekBarDragFinished)
-                draggedPosition = null
-            },
-            valueRange = 0f..duration.toFloat().coerceAtLeast(0f),
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = Color.White.copy(alpha = 0.3f)
-            ),
-            track = { sliderState ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(18.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    SliderDefaults.Track(
-                        sliderState = sliderState,
-                        modifier = Modifier.height(6.dp),
-                        thumbTrackGapSize = 6.dp
+        if (uiState.isLiveChannel) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(6.dp)
+                    .padding(start = 8.dp)
+                    .background(
+                        Color.Red.copy(alpha = 0.8f),
+                        RoundedCornerShape(3.dp)
                     )
-                    Canvas(
+            )
+        } else {
+            Slider(
+                value = draggedPosition ?: position.toFloat(),
+                onValueChange = { newPosition ->
+                    if (!uiState.isSeeking) {
+                        onPlayerEvent(PlayerEvent.OnSeekBarDragStart)
+                    }
+                    draggedPosition = newPosition
+                    onPlayerEvent(PlayerEvent.OnSeekBarValueChange(newPosition.toLong()))
+                },
+                onValueChangeFinished = {
+                    onPlayerEvent(PlayerEvent.OnSeekBarDragFinished)
+                    draggedPosition = null
+                },
+                valueRange = 0f..duration.toFloat().coerceAtLeast(0f),
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                ),
+                track = { sliderState ->
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 6.dp)
-                            .height(6.dp)
+                            .height(18.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        if (duration > 0) {
-                            val progress = (sliderState.value - sliderState.valueRange.start) /
-                                    (sliderState.valueRange.endInclusive - sliderState.valueRange.start)
+                        SliderDefaults.Track(
+                            sliderState = sliderState,
+                            modifier = Modifier.height(6.dp),
+                            thumbTrackGapSize = 6.dp
+                        )
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 6.dp)
+                                .height(6.dp)
+                        ) {
+                            if (duration > 0) {
+                                val progress = (sliderState.value - sliderState.valueRange.start) /
+                                        (sliderState.valueRange.endInclusive - sliderState.valueRange.start)
 
-                            val activeWidthPx = size.width * progress
-                            val gapSafetyOffset = 10.dp.toPx()
+                                val activeWidthPx = size.width * progress
+                                val gapSafetyOffset = 10.dp.toPx()
 
-                            clipRect(
-                                left = (activeWidthPx + gapSafetyOffset).coerceAtMost(size.width),
-                                top = 0f,
-                                right = size.width,
-                                bottom = size.height
-                            ) {
-                                uiState.chapters.forEach { chapter ->
-                                    val fraction =
-                                        chapter.startPosition.toFloat() / duration.toFloat()
-                                    val x = size.width * fraction
+                                clipRect(
+                                    left = (activeWidthPx + gapSafetyOffset).coerceAtMost(size.width),
+                                    top = 0f,
+                                    right = size.width,
+                                    bottom = size.height
+                                ) {
+                                    uiState.chapters.forEach { chapter ->
+                                        val fraction =
+                                            chapter.startPosition.toFloat() / duration.toFloat()
+                                        val x = size.width * fraction
 
-                                    drawCircle(
-                                        color = Color.White.copy(alpha = 0.8f),
-                                        radius = 2.dp.toPx(),
-                                        center = Offset(
-                                            x,
-                                            size.height / 2
+                                        drawCircle(
+                                            color = Color.White.copy(alpha = 0.8f),
+                                            radius = 2.dp.toPx(),
+                                            center = Offset(
+                                                x,
+                                                size.height / 2
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            },
-            modifier = Modifier
-                .weight(1f)
-                .height(18.dp)
-                .padding(start = 8.dp)
-        )
-
-        Box(
-            modifier = Modifier
-                .width(50.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    onPlayerEvent(PlayerEvent.ToggleRemainingTime)
                 },
-            contentAlignment = Alignment.CenterEnd
-        ) {
-            Text(
-                text = if (uiState.showRemainingTime) {
-                    "-${formatTime((duration - position).coerceAtLeast(0L))}"
-                } else {
-                    formatTime(position)
-                },
-                color = Color.White,
-                fontSize = 12.sp,
-                maxLines = 1
+                modifier = Modifier
+                    .weight(1f)
+                    .height(18.dp)
+                    .padding(start = 8.dp)
             )
+        }
+
+        if (uiState.isLiveChannel) {
+            LiveBadge()
+        } else {
+            Box(
+                modifier = Modifier
+                    .width(50.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        onPlayerEvent(PlayerEvent.ToggleRemainingTime)
+                    },
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Text(
+                    text = if (uiState.showRemainingTime) {
+                        "-${formatTime((duration - position).coerceAtLeast(0L))}"
+                    } else {
+                        formatTime(position)
+                    },
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    maxLines = 1
+                )
+            }
         }
     }
 }

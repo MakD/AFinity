@@ -2,6 +2,9 @@ package com.makd.afinity.data.models.extensions
 
 import androidx.core.net.toUri
 import com.makd.afinity.data.models.common.CollectionType
+import com.makd.afinity.data.models.livetv.AfinityChannel
+import com.makd.afinity.data.models.livetv.AfinityProgram
+import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityCollection
@@ -509,5 +512,57 @@ fun BaseItemPerson.toAfinityPerson(
         type = type,
         role = role.orEmpty(),
         image = personImage,
+    )
+}
+
+fun BaseItemDto.toAfinityChannel(
+    baseUrl: String,
+    currentProgram: AfinityProgram? = null
+): AfinityChannel {
+    val afinityChannelType = when (channelType) {
+        org.jellyfin.sdk.model.api.ChannelType.RADIO -> ChannelType.RADIO
+        org.jellyfin.sdk.model.api.ChannelType.TV -> ChannelType.TV
+        else -> ChannelType.TV
+    }
+
+    return AfinityChannel(
+        id = id,
+        name = name.orEmpty(),
+        overview = overview.orEmpty(),
+        favorite = userData?.isFavorite == true,
+        images = toAfinityImages(baseUrl),
+        channelNumber = channelNumber,
+        channelType = afinityChannelType,
+        currentProgram = currentProgram,
+        serviceName = null,
+        providerIds = providerIds?.mapNotNull { (key, value) ->
+            value?.let { key to it }
+        }?.toMap(),
+        externalUrls = toAfinityExternalUrls(),
+        liked = userData?.likes == true,
+    )
+}
+
+fun BaseItemDto.toAfinityProgram(
+    baseUrl: String,
+): AfinityProgram {
+    return AfinityProgram(
+        id = id,
+        channelId = channelId ?: id,
+        name = name.orEmpty(),
+        overview = overview.orEmpty(),
+        startDate = startDate,
+        endDate = endDate,
+        images = toAfinityImages(baseUrl),
+        isLive = isLive == true,
+        isNew = isSeries == true && indexNumber == 1,
+        isPremiere = isPremiere == true,
+        episodeTitle = episodeTitle,
+        seasonNumber = parentIndexNumber,
+        episodeNumber = indexNumber,
+        productionYear = productionYear,
+        genres = genres ?: emptyList(),
+        officialRating = officialRating,
+        communityRating = communityRating
     )
 }
