@@ -23,7 +23,7 @@ jobs:
             echo "RELEASE_AUTHOR=${{ github.event.release.author.login }}" >> $GITHUB_ENV
             echo "RELEASE_AUTHOR_AVATAR=${{ github.event.release.author.avatar_url }}" >> $GITHUB_ENV
             echo "ASSETS<<EOF" >> $GITHUB_ENV
-            echo '${{ toJson(github.event.release.assets) }}' | jq -r 'map("[\(.name)](\(.browser_download_url))") | join("\n")' >> $GITHUB_ENV
+            printf '%s\n' '${{ toJson(github.event.release.assets) }}' | jq -r 'map("[\(.name)](\(.browser_download_url))") | join("\n")' >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           else
             # Fetch latest release data for manual triggers
@@ -39,7 +39,7 @@ jobs:
             echo "RELEASE_AUTHOR=$(echo "$RELEASE_DATA" | jq -r '.author.login')" >> $GITHUB_ENV
             echo "RELEASE_AUTHOR_AVATAR=$(echo "$RELEASE_DATA" | jq -r '.author.avatar_url')" >> $GITHUB_ENV
             echo "ASSETS<<EOF" >> $GITHUB_ENV
-            echo "$RELEASE_DATA" | jq -r '.assets | map("[\(.name)](\(.browser_download_url))") | join("\n")' >> $GITHUB_ENV
+            printf '%s\n' "$RELEASE_DATA" | jq -r '.assets | map("[\(.name)](\(.browser_download_url))") | join("\n")' >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           fi
           
@@ -68,6 +68,80 @@ jobs:
 
           if [ ${#RELEASE_BODY} -gt $MAX_DESC_LENGTH ]; then
             echo "Release body is ${#RELEASE_BODY} characters, truncating to $MAX_DESC_LENGTH"
+            RELEASE_BODY_TRUNCATED="${RELEASE_BODY:0:$MAX_DESC_LENGTH}... [Read full release notes]($RELEASE_URL)"
+          else
+            echo "Release body is ${#RELEASE_BODY} characters (within limit)"
+            RELEASE_BODY_TRUNCATED="$RELEASE_BODY"
+          fi
+
+          # Create Discord embed JSON using jq (proper escaping)
+          DISCORD_PAYLOAD=$(jq -n \
+            --arg title "🚀 New Release: $RELEASE_NAME" \
+            --arg description "$RELEASE_BODY_TRUNCATED" \
+            --arg url "$RELEASE_URL" \
+            --arg tag "$RELEASE_TAG" \
+            --arg author "$RELEASE_AUTHOR" \
+            --arg avatar "$RELEASE_AUTHOR_AVATAR" \
+            --arg assets "$ASSETS" \
+            --arg timestamp "$TIMESTAMP" \
+            --arg repo "$REPO_NAME" \
+            --arg repo_url "$REPO_URL" \
+            '{
+              embeds: [{
+                title: $title,
+                description: $description,
+                url: $url,
+                color: 3066993,
+                fields: [
+                  {
+                    name: "📦 Version",
+                    value: ("`" + $tag + "`"),
+                    inline: true
+                  },
+                  {
+                    name: "👤 Author",
+                    value: ("[" + $author + "](https://github.com/" + $author + ")"),
+                    inline: true
+                  },
+                  {
+                    name: "📂 Repository",
+                    value: ("[" + $repo + "](" + $repo_url + ")"),
+                    inline: false
+                  },
+                  {
+                    name: "⬇️ Downloads",
+                    value: $assets,
+                    inline: false
+                  }
+                ],
+                author: {
+                  name: $author,
+                  icon_url: $avatar,
+                  url: ("https://github.com/" + $author)
+                },
+                timestamp: $timestamp,
+                footer: {
+                  text: ("Released from " + $repo)
+                }
+              }]
+            }') || { echo "Failed to create JSON payload"; exit 1; }
+
+          # Send to Discord with error handling
+          echo "Sending notification to Discord..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -H "Content-Type: application/json" \
+               -d "$DISCORD_PAYLOAD" \
+               "$DISCORD_WEBHOOK_URL")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -eq 204 ] || [ "$HTTP_CODE" -eq 200 ]; then
+            echo "Successfully sent Discord notification (HTTP $HTTP_CODE)"
+          else
+            echo "Failed to send Discord notification (HTTP $HTTP_CODE)"
+            echo "Response: $RESPONSE_BODY"
+            exit 1
+          fi            echo "Release body is ${#RELEASE_BODY} characters, truncating to $MAX_DESC_LENGTH"
             RELEASE_BODY_TRUNCATED="${RELEASE_BODY:0:$MAX_DESC_LENGTH}... [Read full release notes]($RELEASE_URL)"
           else
             echo "Release body is ${#RELEASE_BODY} characters (within limit)"
