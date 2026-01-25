@@ -18,6 +18,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
@@ -355,6 +356,9 @@ class PlayerViewModel @Inject constructor(
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         if (isPlaying) {
             updateUiState { it.copy(isLoading = false) }
+            if (_uiState.value.showControls) {
+                startControlsAutoHide()
+            }
         }
         updatePlayerState()
         updatePipParams?.invoke()
@@ -378,10 +382,12 @@ class PlayerViewModel @Inject constructor(
     private fun updatePlayerState() {
         val position = player.currentPosition.coerceAtLeast(0)
         val duration = player.duration.coerceAtLeast(0)
+        val isPlaying = player.isPlaying
+        val isBuffering = !isPlaying && player.playbackState == Player.STATE_BUFFERING
         _uiState.value = _uiState.value.copy(
-            isPlaying = player.isPlaying,
-            isPaused = !player.isPlaying && player.playbackState == Player.STATE_READY,
-            isBuffering = player.playbackState == Player.STATE_BUFFERING,
+            isPlaying = isPlaying,
+            isPaused = !isPlaying && player.playbackState == Player.STATE_READY,
+            isBuffering = isBuffering,
             currentPosition = position,
             duration = duration
         )

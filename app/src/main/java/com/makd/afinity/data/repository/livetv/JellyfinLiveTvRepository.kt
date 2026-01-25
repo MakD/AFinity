@@ -202,10 +202,12 @@ class JellyfinLiveTvRepository @Inject constructor(
 
             val mediaInfoApi = MediaInfoApi(apiClient)
 
+            val maxBitrate = 140_000_000
+
             val deviceProfile = DeviceProfile(
                 name = "AFinity Live TV",
-                maxStreamingBitrate = 20_000_000,
-                maxStaticBitrate = 20_000_000,
+                maxStreamingBitrate = maxBitrate,
+                maxStaticBitrate = maxBitrate,
                 codecProfiles = emptyList(),
                 containerProfiles = emptyList(),
                 directPlayProfiles = emptyList(),
@@ -215,11 +217,11 @@ class JellyfinLiveTvRepository @Inject constructor(
 
             val playbackInfoDto = PlaybackInfoDto(
                 userId = userId,
-                maxStreamingBitrate = 20_000_000,
+                maxStreamingBitrate = maxBitrate,
                 startTimeTicks = 0L,
                 deviceProfile = deviceProfile,
-                enableDirectPlay = false,
-                enableDirectStream = false,
+                enableDirectPlay = true,
+                enableDirectStream = true,
                 enableTranscoding = true,
                 allowVideoStreamCopy = true,
                 allowAudioStreamCopy = true,
@@ -247,8 +249,20 @@ class JellyfinLiveTvRepository @Inject constructor(
             val source = sources.first()
             val liveStreamId = source.liveStreamId
             val mediaSourceId = source.id
+            val directStreamPath = source.path
 
-            Timber.d("Source: id=$mediaSourceId, liveStreamId=$liveStreamId, transcodingUrl=${source.transcodingUrl}")
+            Timber.d("Source: id=$mediaSourceId, liveStreamId=$liveStreamId, path=$directStreamPath, supportsDirectPlay=${source.supportsDirectPlay}, supportsDirectStream=${source.supportsDirectStream}, transcodingUrl=${source.transcodingUrl}")
+
+            if (!directStreamPath.isNullOrBlank() &&
+                (directStreamPath.contains(".m3u8") || directStreamPath.contains(".m3u"))) {
+                val directUrl = if (directStreamPath.startsWith("http")) {
+                    directStreamPath
+                } else {
+                    "$baseUrl$directStreamPath"
+                }
+                Timber.d("Using direct stream URL (IPTV): $directUrl")
+                return@withContext directUrl
+            }
 
             if (!source.transcodingUrl.isNullOrBlank()) {
                 val transcodingUrl = source.transcodingUrl!!
@@ -277,15 +291,20 @@ class JellyfinLiveTvRepository @Inject constructor(
             params.add("VideoCodec=h264")
             params.add("AudioCodec=aac")
             params.add("AudioStreamIndex=-1")
-            params.add("VideoBitrate=20000000")
-            params.add("AudioBitrate=128000")
-            params.add("MaxFramerate=30")
-            params.add("SegmentContainer=ts")
+            params.add("VideoBitrate=$maxBitrate")
+            params.add("AudioBitrate=384000")
+            params.add("AudioSampleRate=48000")
             params.add("TranscodingMaxAudioChannels=2")
+            params.add("audiochannels=2")
+            params.add("SegmentContainer=ts")
             params.add("MinSegments=1")
             params.add("BreakOnNonKeyFrames=False")
-            params.add("h264-profile=main")
-            params.add("h264-level=41")
+            params.add("RequireAvc=false")
+            params.add("EnableAudioVbrEncoding=true")
+            params.add("aac-profile=lc")
+            params.add("h264-profile=high,main,baseline,constrainedbaseline,high10")
+            params.add("h264-level=52")
+            params.add("h264-rangetype=SDR")
             params.add("h264-deinterlace=true")
 
             val queryString = params.joinToString("&")
