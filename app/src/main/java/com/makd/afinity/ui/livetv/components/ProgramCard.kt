@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -128,15 +128,17 @@ fun ProgramCard(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .padding(8.dp)
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                                RoundedCornerShape(6.dp)
+                            )
+                            .padding(4.dp)
                     ) {
                         AsyncImage(
                             imageUrl = channel.images.primary.toString(),
                             contentDescription = channel.name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            modifier = Modifier.size(28.dp),
+                            contentScale = ContentScale.Fit
                         )
                     }
                 }

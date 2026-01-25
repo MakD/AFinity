@@ -39,6 +39,11 @@ class JellyfinLiveTvRepository @Inject constructor(
     override suspend fun getChannels(
         type: ChannelType?,
         isFavorite: Boolean?,
+        isMovie: Boolean?,
+        isSeries: Boolean?,
+        isNews: Boolean?,
+        isKids: Boolean?,
+        isSports: Boolean?,
         limit: Int?
     ): List<AfinityChannel> = withContext(Dispatchers.IO) {
         try {
@@ -53,6 +58,11 @@ class JellyfinLiveTvRepository @Inject constructor(
                     }
                 },
                 isFavorite = isFavorite,
+                isMovie = isMovie,
+                isSeries = isSeries,
+                isNews = isNews,
+                isKids = isKids,
+                isSports = isSports,
                 limit = limit,
                 sortBy = listOf(ItemSortBy.SORT_NAME),
                 sortOrder = SortOrder.ASCENDING,
@@ -64,7 +74,8 @@ class JellyfinLiveTvRepository @Inject constructor(
             )
 
             response.content.items?.mapNotNull { channelDto ->
-                channelDto.toAfinityChannel(baseUrl, null)
+                val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
+                channelDto.toAfinityChannel(baseUrl, currentProgram)
             } ?: emptyList()
         } catch (e: Exception) {
             Timber.e(e, "Failed to get Live TV channels")
@@ -79,7 +90,8 @@ class JellyfinLiveTvRepository @Inject constructor(
 
             val response = liveTvApi.getChannel(channelId)
             val channelDto = response.content
-            channelDto.toAfinityChannel(baseUrl, null)
+            val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
+            channelDto.toAfinityChannel(baseUrl, currentProgram)
         } catch (e: Exception) {
             Timber.e(e, "Failed to get channel: $channelId")
             null
@@ -90,6 +102,12 @@ class JellyfinLiveTvRepository @Inject constructor(
         channelIds: List<UUID>?,
         minStartDate: LocalDateTime?,
         maxEndDate: LocalDateTime?,
+        hasAired: Boolean?,
+        isMovie: Boolean?,
+        isSeries: Boolean?,
+        isNews: Boolean?,
+        isKids: Boolean?,
+        isSports: Boolean?,
         limit: Int?
     ): List<AfinityProgram> = withContext(Dispatchers.IO) {
         try {
@@ -100,13 +118,19 @@ class JellyfinLiveTvRepository @Inject constructor(
                 channelIds = channelIds,
                 minStartDate = minStartDate,
                 maxEndDate = maxEndDate,
+                hasAired = hasAired,
+                isMovie = isMovie,
+                isSeries = isSeries,
+                isNews = isNews,
+                isKids = isKids,
+                isSports = isSports,
                 limit = limit,
                 sortBy = listOf(ItemSortBy.START_DATE),
                 sortOrder = listOf(SortOrder.ASCENDING),
                 enableImages = true,
                 imageTypeLimit = 1,
                 enableImageTypes = listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
-                fields = listOf(ItemFields.OVERVIEW, ItemFields.GENRES)
+                fields = listOf(ItemFields.OVERVIEW, ItemFields.GENRES, ItemFields.CHANNEL_INFO)
             )
 
             response.content.items?.map { programDto ->

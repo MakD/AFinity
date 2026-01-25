@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -39,11 +39,13 @@ fun ChannelCard(
     channel: AfinityChannel,
     onClick: () -> Unit,
     onFavoriteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showProgramOverlays: Boolean = true
 ) {
     val currentProgram = channel.currentProgram
 
-    val showProgramImage = currentProgram?.images?.primary != null || currentProgram?.images?.thumb != null
+    val showProgramImage = showProgramOverlays &&
+            (currentProgram?.images?.primary != null || currentProgram?.images?.thumb != null)
     val displayImageUrl = if (showProgramImage) {
         currentProgram?.images?.thumb ?: currentProgram?.images?.primary
     } else {
@@ -68,7 +70,9 @@ fun ChannelCard(
             Box(modifier = Modifier.fillMaxSize()) {
                 if (displayImageUrl != null) {
                     val imageMod = if (!showProgramImage) {
-                        Modifier.fillMaxSize().padding(16.dp)
+                        Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
                     } else {
                         Modifier.fillMaxSize()
                     }
@@ -98,14 +102,16 @@ fun ChannelCard(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .padding(6.dp)
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                                RoundedCornerShape(6.dp)
+                            )
+                            .padding(4.dp)
                     ) {
                         AsyncImage(
                             imageUrl = channel.images.primary.toString(),
                             contentDescription = null,
-                            modifier = Modifier.fillMaxSize().padding(2.dp),
+                            modifier = Modifier.size(28.dp),
                             contentScale = ContentScale.Fit
                         )
                     }
@@ -131,7 +137,7 @@ fun ChannelCard(
                     )
                 }
 
-                if (currentProgram?.isCurrentlyAiring() == true) {
+                if (showProgramOverlays && currentProgram?.isCurrentlyAiring() == true) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopStart)
@@ -141,7 +147,7 @@ fun ChannelCard(
                     }
                 }
 
-                if (currentProgram?.isCurrentlyAiring() == true) {
+                if (showProgramOverlays && currentProgram?.isCurrentlyAiring() == true) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -178,7 +184,15 @@ fun ChannelCard(
 
         Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = currentProgram?.name ?: "Unknown Program",
+            text = buildString {
+                append(currentProgram?.name ?: "Unknown Program")
+                val start = currentProgram?.startDate
+                val end = currentProgram?.endDate
+                if (start != null && end != null) {
+                    val formatter = java.time.format.DateTimeFormatter.ofPattern("h:mm a")
+                    append(" • ${start.format(formatter)} - ${end.format(formatter)}")
+                }
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

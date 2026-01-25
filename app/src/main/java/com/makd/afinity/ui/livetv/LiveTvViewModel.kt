@@ -122,44 +122,53 @@ class LiveTvViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isCategoriesLoading = true) }
-
                 val channels = liveTvRepository.getChannels()
                 val channelsMap = channels.associateBy { it.id }
-
-                val now = LocalDateTime.now()
-                val programs = liveTvRepository.getPrograms(
-                    minStartDate = now.minusHours(2),
-                    maxEndDate = now.plusHours(4),
-                    limit = 200
-                )
-
-                val categorized = mutableMapOf<LiveTvCategory, MutableList<ProgramWithChannel>>()
-                LiveTvCategory.entries.forEach { categorized[it] = mutableListOf() }
-
-                programs.forEach { program ->
-                    val channel = channelsMap[program.channelId] ?: return@forEach
-                    val programWithChannel = ProgramWithChannel(program, channel)
-                    val categories = LiveTvCategory.categorizeProgram(program)
-
-                    categories.forEach { category ->
-                        categorized[category]?.add(programWithChannel)
+                val categorizedPrograms = awaitAll(
+                    async(Dispatchers.IO) {
+                        LiveTvCategory.ON_NOW to liveTvRepository.getPrograms(hasAired = false, limit = 50)
+                    },
+                    async(Dispatchers.IO) {
+                        LiveTvCategory.MOVIES to liveTvRepository.getPrograms(hasAired = false, isMovie = true, limit = 20)
+                    },
+                    async(Dispatchers.IO) {
+                        LiveTvCategory.SHOWS to liveTvRepository.getPrograms(hasAired = false, isSeries = true, limit = 20)
+                    },
+                    async(Dispatchers.IO) {
+                        LiveTvCategory.SPORTS to liveTvRepository.getPrograms(hasAired = false, isSports = true, limit = 20)
+                    },
+                    async(Dispatchers.IO) {
+                        LiveTvCategory.KIDS to liveTvRepository.getPrograms(hasAired = false, isKids = true, limit = 20)
+                    },
+                    async(Dispatchers.IO) {
+                        LiveTvCategory.NEWS to liveTvRepository.getPrograms(hasAired = false, isNews = true, limit = 20)
                     }
-                }
+                )
+                val categorized = mutableMapOf<LiveTvCategory, MutableList<ProgramWithChannel>>()
 
-                categorized.forEach { (category, programList) ->
+                categorizedPrograms.forEach { (category, programs) ->
+                    val programsWithChannel = programs
+                        .filter { program ->
+                            program.isCurrentlyAiring() && channelsMap.containsKey(program.channelId)
+                        }
+                        .map { program ->
+                            ProgramWithChannel(program, channelsMap[program.channelId]!!)
+                        }
+                        .toMutableList()
+
                     when (category) {
                         LiveTvCategory.ON_NOW -> {
-                            programList.sortBy {
+                            programsWithChannel.sortBy {
                                 it.channel.channelNumber?.toIntOrNull() ?: Int.MAX_VALUE
                             }
                         }
-
                         else -> {
-                            programList.sortBy { it.program.name.lowercase() }
+                            programsWithChannel.sortBy { it.program.name.lowercase() }
                         }
                     }
-                }
 
+                    categorized[category] = programsWithChannel
+                }
                 val filteredCategories = categorized.filter { (category, programs) ->
                     category == LiveTvCategory.ON_NOW || programs.isNotEmpty()
                 }

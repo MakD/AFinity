@@ -200,9 +200,14 @@ fun LibraryContentScreen(
                                         Timber.d("Alphabet scroll: Letter '$letter' selected")
                                         viewModel.scrollToLetter(letter)
                                     },
+                                    selectedLetter = uiState.selectedLetter,
                                     modifier = Modifier
                                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
-                                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                                        .windowInsetsPadding(
+                                            WindowInsets.safeDrawing.only(
+                                                WindowInsetsSides.Horizontal
+                                            )
+                                        )
                                 )
                             }
                         }
@@ -304,9 +309,14 @@ fun LibraryContentScreen(
                                     Timber.d("Alphabet scroll: Letter '$letter' selected")
                                     viewModel.scrollToLetter(letter)
                                 },
+                                selectedLetter = uiState.selectedLetter,
                                 modifier = Modifier
                                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
-                                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.End))
+                                    .windowInsetsPadding(
+                                        WindowInsets.safeDrawing.only(
+                                            WindowInsetsSides.End
+                                        )
+                                    )
                             )
                         }
                     }
@@ -936,6 +946,7 @@ private fun SortOptionRow(
 
 @Composable
 private fun AlphabetScroller(
+    selectedLetter: String?,
     onLetterSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -952,12 +963,17 @@ private fun AlphabetScroller(
             items = letters,
             key = { letter -> letter }
         ) { letter ->
+            val isSelected = selectedLetter == letter
             Text(
                 text = letter,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Medium
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                 ),
-                color = MaterialTheme.colorScheme.primary,
+                color = if (isSelected)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
                     .clickable { onLetterSelected(letter) }
                     .padding(horizontal = 4.dp, vertical = 2.dp)

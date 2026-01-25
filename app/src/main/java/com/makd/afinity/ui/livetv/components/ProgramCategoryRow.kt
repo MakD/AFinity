@@ -32,8 +32,9 @@ fun ProgramCategoryRow(
     if (programs.isEmpty()) return
 
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp + 22.dp + 20.dp + 20.dp
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
     Column(
         modifier = modifier.padding(horizontal = 14.dp)

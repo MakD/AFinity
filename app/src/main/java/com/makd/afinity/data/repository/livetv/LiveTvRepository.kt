@@ -11,6 +11,11 @@ interface LiveTvRepository {
     suspend fun getChannels(
         type: ChannelType? = null,
         isFavorite: Boolean? = null,
+        isMovie: Boolean? = null,
+        isSeries: Boolean? = null,
+        isNews: Boolean? = null,
+        isKids: Boolean? = null,
+        isSports: Boolean? = null,
         limit: Int? = null
     ): List<AfinityChannel>
 
@@ -20,6 +25,12 @@ interface LiveTvRepository {
         channelIds: List<UUID>? = null,
         minStartDate: LocalDateTime? = null,
         maxEndDate: LocalDateTime? = null,
+        hasAired: Boolean? = null,
+        isMovie: Boolean? = null,
+        isSeries: Boolean? = null,
+        isNews: Boolean? = null,
+        isKids: Boolean? = null,
+        isSports: Boolean? = null,
         limit: Int? = null
     ): List<AfinityProgram>
 

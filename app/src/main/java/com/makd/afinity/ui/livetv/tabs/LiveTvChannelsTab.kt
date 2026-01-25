@@ -138,7 +138,8 @@ fun LiveTvChannelsTab(
                             ChannelCard(
                                 channel = channel,
                                 onClick = { onChannelClick(channel) },
-                                onFavoriteClick = { onFavoriteClick(channel) }
+                                onFavoriteClick = { onFavoriteClick(channel) },
+                                showProgramOverlays = false
                             )
                         }
                     }
