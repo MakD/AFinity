@@ -174,8 +174,8 @@ fun LiveTvScreen(
                         item {
                             NavigationChip(
                                 selected = pagerState.currentPage == 0,
-                                label = "Home",
-                                iconResId = R.drawable.ic_home,
+                                label = "Programs",
+                                iconResId = R.drawable.ic_tv_prog,
                                 onClick = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(0) }
                                 }
@@ -185,7 +185,7 @@ fun LiveTvScreen(
                             NavigationChip(
                                 selected = pagerState.currentPage == 1,
                                 label = "TV Guide",
-                                iconResId = R.drawable.ic_schedule,
+                                iconResId = R.drawable.ic_epg,
                                 onClick = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(1) }
                                 }
@@ -195,7 +195,7 @@ fun LiveTvScreen(
                             NavigationChip(
                                 selected = pagerState.currentPage == 2,
                                 label = "Channels",
-                                iconResId = R.drawable.ic_view_module,
+                                iconResId = R.drawable.ic_channels,
                                 onClick = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(2) }
                                 }

@@ -124,8 +124,8 @@ fun ChannelCard(
                         .padding(4.dp)
                         .size(28.dp),
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                        contentColor = if (channel.favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                        contentColor = if (channel.favorite) androidx.compose.ui.graphics.Color.Red else MaterialTheme.colorScheme.onSurface
                     )
                 ) {
                     Icon(
