@@ -197,7 +197,8 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             while (true) {
                 delay(100)
-                if (player.isPlaying && !_uiState.value.isSeeking) {
+                val isMpvLive = player is MPVPlayer && _uiState.value.isLiveChannel
+                if ((player.isPlaying || isMpvLive) && !_uiState.value.isSeeking) {
                     updatePlayerState()
                 }
             }
@@ -379,14 +380,51 @@ class PlayerViewModel @Inject constructor(
         updatePlayerState()
     }
 
+    private var lastKnownPosition = 0L
+    private var lastKnownDuration = 0L
+    private var mpvStreamActiveTime = 0L
+    private var mpvLiveAutoHideTriggered = false
+
     private fun updatePlayerState() {
         val position = player.currentPosition.coerceAtLeast(0)
         val duration = player.duration.coerceAtLeast(0)
         val isPlaying = player.isPlaying
-        val isBuffering = !isPlaying && player.playbackState == Player.STATE_BUFFERING
+        val playbackState = player.playbackState
+        val isLiveChannel = _uiState.value.isLiveChannel
+        val isMpv = player is MPVPlayer
+        val wasActuallyPlaying = _uiState.value.isPlaying
+
+        val isActuallyPlaying = if (isMpv && isLiveChannel) {
+            val positionAdvancing = position > lastKnownPosition && position > 0
+            val durationAdvancing = duration > lastKnownDuration && duration > 0
+            val streamActive = positionAdvancing || durationAdvancing
+
+            if (streamActive || isPlaying) {
+                mpvStreamActiveTime = System.currentTimeMillis()
+                true
+            } else {
+                val recentlyActive = System.currentTimeMillis() - mpvStreamActiveTime < 10000
+                recentlyActive && duration > 0
+            }
+        } else {
+            isPlaying
+        }
+
+        if (isMpv && isLiveChannel && isActuallyPlaying && !wasActuallyPlaying && !mpvLiveAutoHideTriggered) {
+            mpvLiveAutoHideTriggered = true
+            if (_uiState.value.showControls) {
+                startControlsAutoHide()
+            }
+        }
+
+        val isBuffering = !isActuallyPlaying && playbackState == Player.STATE_BUFFERING
+
+        lastKnownPosition = position
+        lastKnownDuration = duration
+
         _uiState.value = _uiState.value.copy(
-            isPlaying = isPlaying,
-            isPaused = !isPlaying && player.playbackState == Player.STATE_READY,
+            isPlaying = isActuallyPlaying,
+            isPaused = !isActuallyPlaying && playbackState == Player.STATE_READY,
             isBuffering = isBuffering,
             currentPosition = position,
             duration = duration
@@ -769,6 +807,8 @@ class PlayerViewModel @Inject constructor(
         channelName: String,
         streamUrl: String
     ) {
+        mpvLiveAutoHideTriggered = false
+
         try {
             Timber.d("Loading live channel: $channelName ($channelId)")
             Timber.d("Stream URL: $streamUrl")
