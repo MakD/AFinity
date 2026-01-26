@@ -9,9 +9,12 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
+import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -25,8 +28,11 @@ class MainNavigationViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
     val watchlistRepository: WatchlistRepository,
     val jellyseerrRepository: JellyseerrRepository,
+    private val liveTvRepository: LiveTvRepository,
     private val offlineModeManager: OfflineModeManager
 ) : ViewModel() {
+    private val _hasLiveTvAccess = MutableStateFlow(true)
+    val hasLiveTvAccess = _hasLiveTvAccess.asStateFlow()
 
     val appLoadingState = combine(
         appDataRepository.isInitialDataLoaded,
@@ -47,31 +53,54 @@ class MainNavigationViewModel @Inject constructor(
     init {
         observeAuthAndLoadData()
         refreshServerInfo()
+        observeDataLoaded()
+    }
+
+    private fun observeDataLoaded() {
+        viewModelScope.launch {
+            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
+                if (isLoaded) {
+                    Timber.d("Data loaded, checking Live TV access...")
+                    checkLiveTvAccess()
+                }
+            }
+        }
     }
 
     private fun observeAuthAndLoadData() {
         viewModelScope.launch {
             val initialAuthState = authRepository.isAuthenticated.value
-            Timber.d("Initial auth state: $initialAuthState")
 
             if (initialAuthState) {
-                val isDataLoaded = appDataRepository.isInitialDataLoaded.value
-                Timber.d("Already authenticated - isDataLoaded: $isDataLoaded - triggering data load")
                 loadAppData()
             }
 
             var previousAuthState = initialAuthState
 
             authRepository.isAuthenticated.collect { isAuthenticated ->
-                Timber.d("Auth state changed - isAuthenticated: $isAuthenticated, previous: $previousAuthState")
-
                 if (isAuthenticated && !previousAuthState) {
-                    val isDataLoaded = appDataRepository.isInitialDataLoaded.value
-                    Timber.d("Fresh login detected - isDataLoaded: $isDataLoaded - triggering data load")
+                    Timber.d("Fresh login detected")
+                    _hasLiveTvAccess.value = false
                     loadAppData()
+                }
+                else if (!isAuthenticated) {
+                    _hasLiveTvAccess.value = false
                 }
 
                 previousAuthState = isAuthenticated
+            }
+        }
+    }
+
+    private fun checkLiveTvAccess() {
+        viewModelScope.launch {
+            try {
+                val hasAccess = liveTvRepository.hasLiveTvAccess()
+                Timber.d("Live TV access check result: $hasAccess")
+                _hasLiveTvAccess.value = hasAccess
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to check Live TV access")
+                _hasLiveTvAccess.value = true
             }
         }
     }

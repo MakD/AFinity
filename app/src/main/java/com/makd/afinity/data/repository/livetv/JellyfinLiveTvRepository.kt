@@ -83,20 +83,21 @@ class JellyfinLiveTvRepository @Inject constructor(
         }
     }
 
-    override suspend fun getChannel(channelId: UUID): AfinityChannel? = withContext(Dispatchers.IO) {
-        try {
-            val liveTvApi = getLiveTvApi() ?: return@withContext null
-            val baseUrl = getBaseUrl()
+    override suspend fun getChannel(channelId: UUID): AfinityChannel? =
+        withContext(Dispatchers.IO) {
+            try {
+                val liveTvApi = getLiveTvApi() ?: return@withContext null
+                val baseUrl = getBaseUrl()
 
-            val response = liveTvApi.getChannel(channelId)
-            val channelDto = response.content
-            val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
-            channelDto.toAfinityChannel(baseUrl, currentProgram)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get channel: $channelId")
-            null
+                val response = liveTvApi.getChannel(channelId)
+                val channelDto = response.content
+                val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
+                channelDto.toAfinityChannel(baseUrl, currentProgram)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get channel: $channelId")
+                null
+            }
         }
-    }
 
     override suspend fun getPrograms(
         channelIds: List<UUID>?,
@@ -142,22 +143,23 @@ class JellyfinLiveTvRepository @Inject constructor(
         }
     }
 
-    override suspend fun getCurrentProgram(channelId: UUID): AfinityProgram? = withContext(Dispatchers.IO) {
-        try {
-            val now = LocalDateTime.now()
-            val programs = getPrograms(
-                channelIds = listOf(channelId),
-                minStartDate = now.minusHours(2),
-                maxEndDate = now.plusHours(1),
-                limit = 5
-            )
+    override suspend fun getCurrentProgram(channelId: UUID): AfinityProgram? =
+        withContext(Dispatchers.IO) {
+            try {
+                val now = LocalDateTime.now()
+                val programs = getPrograms(
+                    channelIds = listOf(channelId),
+                    minStartDate = now.minusHours(2),
+                    maxEndDate = now.plusHours(1),
+                    limit = 5
+                )
 
-            programs.find { it.isCurrentlyAiring() }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get current program for channel: $channelId")
-            null
+                programs.find { it.isCurrentlyAiring() }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get current program for channel: $channelId")
+                null
+            }
         }
-    }
 
     override suspend fun getRecommendedPrograms(
         isAiring: Boolean,
@@ -185,162 +187,169 @@ class JellyfinLiveTvRepository @Inject constructor(
         }
     }
 
-    override suspend fun getChannelStreamUrl(channelId: UUID): String? = withContext(Dispatchers.IO) {
-        try {
-            val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
-            val baseUrl = getBaseUrl()
-            val accessToken = apiClient.accessToken
-            val deviceId = apiClient.deviceInfo.id
+    override suspend fun getChannelStreamUrl(channelId: UUID): String? =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
+                val baseUrl = getBaseUrl()
+                val accessToken = apiClient.accessToken
+                val deviceId = apiClient.deviceInfo.id
 
-            val userId = sessionManager.currentSession.value?.userId
-                ?: return@withContext null
+                val userId = sessionManager.currentSession.value?.userId
+                    ?: return@withContext null
 
-            if (baseUrl.isBlank() || accessToken.isNullOrBlank()) {
-                Timber.e("Missing baseUrl or accessToken")
-                return@withContext null
-            }
-
-            val mediaInfoApi = MediaInfoApi(apiClient)
-
-            val maxBitrate = 140_000_000
-
-            val deviceProfile = DeviceProfile(
-                name = "AFinity Live TV",
-                maxStreamingBitrate = maxBitrate,
-                maxStaticBitrate = maxBitrate,
-                codecProfiles = emptyList(),
-                containerProfiles = emptyList(),
-                directPlayProfiles = emptyList(),
-                transcodingProfiles = emptyList(),
-                subtitleProfiles = emptyList()
-            )
-
-            val playbackInfoDto = PlaybackInfoDto(
-                userId = userId,
-                maxStreamingBitrate = maxBitrate,
-                startTimeTicks = 0L,
-                deviceProfile = deviceProfile,
-                enableDirectPlay = true,
-                enableDirectStream = true,
-                enableTranscoding = true,
-                allowVideoStreamCopy = true,
-                allowAudioStreamCopy = true,
-                autoOpenLiveStream = true,
-                liveStreamId = null,
-                mediaSourceId = null,
-                audioStreamIndex = null,
-                subtitleStreamIndex = null
-            )
-
-            val playbackResponse = mediaInfoApi.getPostedPlaybackInfo(
-                itemId = channelId,
-                data = playbackInfoDto
-            )
-            val playbackInfo = playbackResponse.content
-
-            Timber.d("PlaybackInfo: playSessionId=${playbackInfo.playSessionId}, mediaSources=${playbackInfo.mediaSources?.size ?: 0}")
-
-            val sources = playbackInfo.mediaSources
-            if (sources.isNullOrEmpty()) {
-                Timber.e("PlaybackInfo returned no media sources")
-                return@withContext null
-            }
-
-            val source = sources.first()
-            val liveStreamId = source.liveStreamId
-            val mediaSourceId = source.id
-            val directStreamPath = source.path
-
-            Timber.d("Source: id=$mediaSourceId, liveStreamId=$liveStreamId, path=$directStreamPath, supportsDirectPlay=${source.supportsDirectPlay}, supportsDirectStream=${source.supportsDirectStream}, transcodingUrl=${source.transcodingUrl}")
-
-            if (!directStreamPath.isNullOrBlank() &&
-                (directStreamPath.contains(".m3u8") || directStreamPath.contains(".m3u"))) {
-                val directUrl = if (directStreamPath.startsWith("http")) {
-                    directStreamPath
-                } else {
-                    "$baseUrl$directStreamPath"
+                if (baseUrl.isBlank() || accessToken.isNullOrBlank()) {
+                    Timber.e("Missing baseUrl or accessToken")
+                    return@withContext null
                 }
-                Timber.d("Using direct stream URL (IPTV): $directUrl")
-                return@withContext directUrl
-            }
 
-            if (!source.transcodingUrl.isNullOrBlank()) {
-                val transcodingUrl = source.transcodingUrl!!
-                val fullUrl = if (transcodingUrl.startsWith("http")) {
-                    transcodingUrl
-                } else {
-                    "$baseUrl$transcodingUrl"
+                val mediaInfoApi = MediaInfoApi(apiClient)
+
+                val maxBitrate = 140_000_000
+
+                val deviceProfile = DeviceProfile(
+                    name = "AFinity Live TV",
+                    maxStreamingBitrate = maxBitrate,
+                    maxStaticBitrate = maxBitrate,
+                    codecProfiles = emptyList(),
+                    containerProfiles = emptyList(),
+                    directPlayProfiles = emptyList(),
+                    transcodingProfiles = emptyList(),
+                    subtitleProfiles = emptyList()
+                )
+
+                val playbackInfoDto = PlaybackInfoDto(
+                    userId = userId,
+                    maxStreamingBitrate = maxBitrate,
+                    startTimeTicks = 0L,
+                    deviceProfile = deviceProfile,
+                    enableDirectPlay = true,
+                    enableDirectStream = true,
+                    enableTranscoding = true,
+                    allowVideoStreamCopy = true,
+                    allowAudioStreamCopy = true,
+                    autoOpenLiveStream = true,
+                    liveStreamId = null,
+                    mediaSourceId = null,
+                    audioStreamIndex = null,
+                    subtitleStreamIndex = null
+                )
+
+                val playbackResponse = mediaInfoApi.getPostedPlaybackInfo(
+                    itemId = channelId,
+                    data = playbackInfoDto
+                )
+                val playbackInfo = playbackResponse.content
+
+                Timber.d("PlaybackInfo: playSessionId=${playbackInfo.playSessionId}, mediaSources=${playbackInfo.mediaSources?.size ?: 0}")
+
+                val sources = playbackInfo.mediaSources
+                if (sources.isNullOrEmpty()) {
+                    Timber.e("PlaybackInfo returned no media sources")
+                    return@withContext null
                 }
-                Timber.d("Using server-provided transcoding URL: $fullUrl")
-                return@withContext fullUrl
+
+                val source = sources.first()
+                val liveStreamId = source.liveStreamId
+                val mediaSourceId = source.id
+                val directStreamPath = source.path
+
+                Timber.d("Source: id=$mediaSourceId, liveStreamId=$liveStreamId, path=$directStreamPath, supportsDirectPlay=${source.supportsDirectPlay}, supportsDirectStream=${source.supportsDirectStream}, transcodingUrl=${source.transcodingUrl}")
+
+                if (!directStreamPath.isNullOrBlank() &&
+                    (directStreamPath.contains(".m3u8") || directStreamPath.contains(".m3u"))
+                ) {
+                    val directUrl = if (directStreamPath.startsWith("http")) {
+                        directStreamPath
+                    } else {
+                        "$baseUrl$directStreamPath"
+                    }
+                    Timber.d("Using direct stream URL (IPTV): $directUrl")
+                    return@withContext directUrl
+                }
+
+                if (!source.transcodingUrl.isNullOrBlank()) {
+                    val transcodingUrl = source.transcodingUrl!!
+                    val fullUrl = if (transcodingUrl.startsWith("http")) {
+                        transcodingUrl
+                    } else {
+                        "$baseUrl$transcodingUrl"
+                    }
+                    Timber.d("Using server-provided transcoding URL: $fullUrl")
+                    return@withContext fullUrl
+                }
+
+                if (liveStreamId.isNullOrBlank()) {
+                    Timber.e("No LiveStreamId returned - cannot construct stream URL")
+                    return@withContext null
+                }
+
+                val playSessionId =
+                    playbackInfo.playSessionId ?: UUID.randomUUID().toString().replace("-", "")
+
+                val params = mutableListOf<String>()
+                params.add("api_key=$accessToken")
+                params.add("DeviceId=$deviceId")
+                params.add("MediaSourceId=$mediaSourceId")
+                params.add("LiveStreamId=$liveStreamId")
+                params.add("PlaySessionId=$playSessionId")
+                params.add("VideoCodec=h264")
+                params.add("AudioCodec=aac")
+                params.add("AudioStreamIndex=-1")
+                params.add("VideoBitrate=$maxBitrate")
+                params.add("AudioBitrate=384000")
+                params.add("AudioSampleRate=48000")
+                params.add("TranscodingMaxAudioChannels=2")
+                params.add("audiochannels=2")
+                params.add("SegmentContainer=ts")
+                params.add("MinSegments=1")
+                params.add("BreakOnNonKeyFrames=False")
+                params.add("RequireAvc=false")
+                params.add("EnableAudioVbrEncoding=true")
+                params.add("aac-profile=lc")
+                params.add("h264-profile=high,main,baseline,constrainedbaseline,high10")
+                params.add("h264-level=52")
+                params.add("h264-rangetype=SDR")
+                params.add("h264-deinterlace=true")
+
+                val queryString = params.joinToString("&")
+                val streamUrl = "${baseUrl}/videos/${channelId}/master.m3u8?$queryString"
+
+                Timber.d("Generated stream URL: $streamUrl")
+                streamUrl
+
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get stream URL for channel: $channelId")
+                null
             }
-
-            if (liveStreamId.isNullOrBlank()) {
-                Timber.e("No LiveStreamId returned - cannot construct stream URL")
-                return@withContext null
-            }
-
-            val playSessionId = playbackInfo.playSessionId ?: UUID.randomUUID().toString().replace("-", "")
-
-            val params = mutableListOf<String>()
-            params.add("api_key=$accessToken")
-            params.add("DeviceId=$deviceId")
-            params.add("MediaSourceId=$mediaSourceId")
-            params.add("LiveStreamId=$liveStreamId")
-            params.add("PlaySessionId=$playSessionId")
-            params.add("VideoCodec=h264")
-            params.add("AudioCodec=aac")
-            params.add("AudioStreamIndex=-1")
-            params.add("VideoBitrate=$maxBitrate")
-            params.add("AudioBitrate=384000")
-            params.add("AudioSampleRate=48000")
-            params.add("TranscodingMaxAudioChannels=2")
-            params.add("audiochannels=2")
-            params.add("SegmentContainer=ts")
-            params.add("MinSegments=1")
-            params.add("BreakOnNonKeyFrames=False")
-            params.add("RequireAvc=false")
-            params.add("EnableAudioVbrEncoding=true")
-            params.add("aac-profile=lc")
-            params.add("h264-profile=high,main,baseline,constrainedbaseline,high10")
-            params.add("h264-level=52")
-            params.add("h264-rangetype=SDR")
-            params.add("h264-deinterlace=true")
-
-            val queryString = params.joinToString("&")
-            val streamUrl = "${baseUrl}/videos/${channelId}/master.m3u8?$queryString"
-
-            Timber.d("Generated stream URL: $streamUrl")
-            streamUrl
-
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get stream URL for channel: $channelId")
-            null
         }
-    }
 
-    override suspend fun toggleChannelFavorite(channelId: UUID): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val channel = getChannel(channelId) ?: return@withContext false
-            if (channel.favorite) {
-                userDataRepository.removeFromFavorites(channelId)
-            } else {
-                userDataRepository.addToFavorites(channelId)
+    override suspend fun toggleChannelFavorite(channelId: UUID): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val channel = getChannel(channelId) ?: return@withContext false
+                if (channel.favorite) {
+                    userDataRepository.removeFromFavorites(channelId)
+                } else {
+                    userDataRepository.addToFavorites(channelId)
+                }
+                true
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle favorite for channel: $channelId")
+                false
             }
-            true
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to toggle favorite for channel: $channelId")
-            false
         }
-    }
 
     override suspend fun hasLiveTvAccess(): Boolean = withContext(Dispatchers.IO) {
         try {
             val liveTvApi = getLiveTvApi() ?: return@withContext false
-            val response = liveTvApi.getLiveTvInfo()
-            response.content.isEnabled
+            val channelsResponse = liveTvApi.getLiveTvChannels(
+                limit = 1,
+                enableImages = false
+            )
+            val channelCount = channelsResponse.content.items?.size ?: 0
+            return@withContext channelCount > 0
         } catch (e: Exception) {
-            Timber.e(e, "Failed to check Live TV access")
             false
         }
     }

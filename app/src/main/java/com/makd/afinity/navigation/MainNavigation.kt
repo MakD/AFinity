@@ -79,6 +79,7 @@ fun MainNavigation(
         hiltViewModel<MainNavigationViewModel>().jellyseerrRepository
     val isJellyseerrAuthenticated by jellyseerrRepository.isAuthenticated
         .collectAsStateWithLifecycle()
+    val hasLiveTvAccess by viewModel.hasLiveTvAccess.collectAsStateWithLifecycle()
     val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
     val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val navController = rememberNavController()
@@ -156,6 +157,10 @@ fun MainNavigation(
                 }
 
                 if (destination == Destination.REQUESTS && !isJellyseerrAuthenticated) {
+                    return@forEach
+                }
+
+                if (destination == Destination.LIVE_TV && !hasLiveTvAccess) {
                     return@forEach
                 }
 
