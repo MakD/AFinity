@@ -345,7 +345,9 @@ class JellyfinLiveTvRepository @Inject constructor(
             val liveTvApi = getLiveTvApi() ?: return@withContext false
             val channelsResponse = liveTvApi.getLiveTvChannels(
                 limit = 1,
-                enableImages = false
+                enableImages = false,
+                enableUserData = false,
+                addCurrentProgram = false
             )
             val channelCount = channelsResponse.content.items?.size ?: 0
             return@withContext channelCount > 0
