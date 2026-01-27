@@ -126,7 +126,7 @@ class LiveTvViewModel @Inject constructor(
                 val channelsMap = channels.associateBy { it.id }
                 val categorizedPrograms = awaitAll(
                     async(Dispatchers.IO) {
-                        LiveTvCategory.ON_NOW to liveTvRepository.getPrograms(hasAired = false, limit = 50)
+                        LiveTvCategory.ON_NOW to liveTvRepository.getPrograms(hasAired = false, limit = 20)
                     },
                     async(Dispatchers.IO) {
                         LiveTvCategory.MOVIES to liveTvRepository.getPrograms(hasAired = false, isMovie = true, limit = 20)
