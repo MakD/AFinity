@@ -11,6 +11,7 @@ import androidx.paging.map
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
@@ -504,7 +505,8 @@ class ItemDetailViewModel @Inject constructor(
                             val response = jellyfinRepository.getItems(
                                 parentId = item.id,
                                 includeItemTypes = listOf("MOVIE", "SERIES"),
-                                limit = 100
+                                limit = 100,
+                                sortBy = SortBy.RELEASE_DATE
                             )
                             val items = response.items?.mapNotNull { baseItem ->
                                 baseItem.toAfinityItem(jellyfinRepository.getBaseUrl())
