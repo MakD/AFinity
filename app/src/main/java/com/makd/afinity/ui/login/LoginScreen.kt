@@ -171,8 +171,9 @@ fun LoginScreen(
                             onConnectToServer = viewModel::connectToServer,
                             onSavedServerSelect = viewModel::selectServer,
                             onDiscoveredServerSelect = { server ->
-                                val url =
-                                    if (server.id.contains(":")) "http://${server.id}" else "http://${server.id}:8096"
+                                val url = server.address.ifBlank {
+                                    "http://${server.name}:8096"
+                                }
                                 viewModel.setServerUrl(url)
                                 viewModel.connectToServer()
                             },
@@ -480,7 +481,7 @@ private fun ServerConnectionContent(
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    server.id,
+                                    server.address,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
