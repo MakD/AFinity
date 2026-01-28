@@ -53,13 +53,11 @@ Connect with us on [Discord](https://discord.gg/uZTjF8c2Vm) and be part of the d
   <img src="screenshots/movie_details.png" width="30%" alt="Movie Details Page">
   &nbsp;
   <img src="screenshots/show_details.png" width="30%" alt="Show Details Page">
-  &nbsp;
   <img src="screenshots/library.png" width="30%" alt="Library Page">
   &nbsp;
   <img src="screenshots/person.png" width="30%" alt="Favorite Page">
   &nbsp;
   <img src="screenshots/live_tv.png" width="30%" alt="Person Detail Page">
-  &nbsp;
   <img src="screenshots/live_tv_guide.png" width="30%" alt="Library Page">
   &nbsp;
   <img src="screenshots/request_screen.png" width="30%" alt="Favorite Page">
