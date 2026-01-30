@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
-    private val downloadRepository: DownloadRepository
+    private val downloadRepository: DownloadRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DownloadsUiState())
@@ -26,6 +28,29 @@ class DownloadsViewModel @Inject constructor(
     init {
         observeDownloads()
         loadStorageInfo()
+        loadDownloadPreferences()
+    }
+
+    private fun loadDownloadPreferences() {
+        viewModelScope.launch {
+            try {
+                val wifiOnly = preferencesRepository.getDownloadOverWifiOnly()
+                _uiState.value = _uiState.value.copy(downloadOverWifiOnly = wifiOnly)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load download preferences")
+            }
+        }
+    }
+
+    fun setDownloadOverWifiOnly(wifiOnly: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setDownloadOverWifiOnly(wifiOnly)
+                _uiState.value = _uiState.value.copy(downloadOverWifiOnly = wifiOnly)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update download WiFi preference")
+            }
+        }
     }
 
     private fun observeDownloads() {
@@ -178,5 +203,6 @@ data class DownloadsUiState(
     val activeDownloads: List<DownloadInfo> = emptyList(),
     val completedDownloads: List<DownloadInfo> = emptyList(),
     val totalStorageUsed: Long = 0L,
+    val downloadOverWifiOnly: Boolean = true,
     val error: String? = null
 )
