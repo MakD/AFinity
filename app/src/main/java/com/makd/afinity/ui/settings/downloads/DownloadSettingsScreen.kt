@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -75,7 +76,7 @@ fun DownloadSettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Downloads",
+                        text = stringResource(R.string.downloads_title),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -85,7 +86,7 @@ fun DownloadSettingsScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -123,7 +124,10 @@ fun DownloadSettingsScreen(
             if (uiState.activeDownloads.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Active Downloads (${uiState.activeDownloads.size})",
+                        text = stringResource(
+                            R.string.active_downloads_header_fmt,
+                            uiState.activeDownloads.size
+                        ),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -145,7 +149,10 @@ fun DownloadSettingsScreen(
             if (uiState.completedDownloads.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Completed Downloads (${uiState.completedDownloads.size})",
+                        text = stringResource(
+                            R.string.completed_downloads_header_fmt,
+                            uiState.completedDownloads.size
+                        ),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -182,9 +189,17 @@ private fun NetworkStatusCard(
     modifier: Modifier = Modifier
 ) {
     val (statusText, statusColor, statusIcon) = if (isOffline) {
-        Triple("Offline mode", MaterialTheme.colorScheme.tertiary, painterResource(id = R.drawable.ic_wifi_off))
+        Triple(
+            stringResource(R.string.network_status_offline),
+            MaterialTheme.colorScheme.tertiary,
+            painterResource(id = R.drawable.ic_wifi_off)
+        )
     } else {
-        Triple("Online - Downloads active", MaterialTheme.colorScheme.primary, painterResource(id = R.drawable.ic_wifi))
+        Triple(
+            stringResource(R.string.network_status_online),
+            MaterialTheme.colorScheme.primary,
+            painterResource(id = R.drawable.ic_wifi)
+        )
     }
 
     Card(
@@ -221,7 +236,7 @@ private fun NetworkStatusCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Network Status",
+                    text = stringResource(R.string.network_status_title),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
@@ -267,7 +282,7 @@ private fun StorageStatisticsCard(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_storage),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.cd_storage_stats),
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(28.dp)
                 )
@@ -283,8 +298,9 @@ private fun StorageStatisticsCard(
                     ),
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+                val countText = if (downloadCount == 1) stringResource(R.string.download_singular) else stringResource(R.string.download_plural)
                 Text(
-                    text = "$downloadCount ${if (downloadCount == 1) "download" else "downloads"}",
+                    text = stringResource(R.string.download_count_fmt, downloadCount, countText),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                 )
@@ -327,7 +343,7 @@ private fun ActiveDownloadCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "${download.itemType} • ${download.sourceName}",
+                        text = stringResource(R.string.download_item_info_fmt, download.itemType, download.sourceName),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -339,32 +355,35 @@ private fun ActiveDownloadCard(
                             IconButton(onClick = { onPause(download.id) }) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_pause_outline),
-                                    contentDescription = "Pause"
+                                    contentDescription = stringResource(R.string.cd_pause_download)
                                 )
                             }
                         }
+
                         DownloadStatus.PAUSED -> {
                             IconButton(onClick = { onResume(download.id) }) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_play_arrow),
-                                    contentDescription = "Resume"
+                                    contentDescription = stringResource(R.string.cd_resume_download)
                                 )
                             }
                         }
+
                         DownloadStatus.FAILED -> {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_exclamation_circle),
-                                contentDescription = "Failed",
+                                contentDescription = stringResource(R.string.cd_status_failed),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
+
                         else -> {}
                     }
 
                     IconButton(onClick = { onCancel(download.id) }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_cancel),
-                            contentDescription = "Cancel"
+                            contentDescription = stringResource(R.string.cd_cancel_download)
                         )
                     }
                 }
@@ -383,12 +402,13 @@ private fun ActiveDownloadCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                val unknownError = stringResource(R.string.error_unknown)
                 Text(
                     text = when (download.status) {
-                        DownloadStatus.QUEUED -> "Queued"
-                        DownloadStatus.DOWNLOADING -> "Downloading"
-                        DownloadStatus.PAUSED -> "Paused"
-                        DownloadStatus.FAILED -> "Failed: ${download.error ?: "Unknown error"}"
+                        DownloadStatus.QUEUED -> stringResource(R.string.download_status_queued)
+                        DownloadStatus.DOWNLOADING -> stringResource(R.string.download_status_downloading)
+                        DownloadStatus.PAUSED -> stringResource(R.string.download_status_paused)
+                        DownloadStatus.FAILED -> stringResource(R.string.download_status_failed_fmt, download.error ?: unknownError)
                         else -> ""
                     },
                     style = MaterialTheme.typography.bodySmall,
@@ -400,7 +420,7 @@ private fun ActiveDownloadCard(
                 )
 
                 Text(
-                    text = "${formatSize(download.bytesDownloaded)} / ${formatSize(download.totalBytes)}",
+                    text = stringResource(R.string.download_progress_size_fmt, formatSize(download.bytesDownloaded), formatSize(download.totalBytes)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -434,7 +454,7 @@ private fun CompletedDownloadCard(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_circle_check),
-                    contentDescription = "Completed",
+                    contentDescription = stringResource(R.string.cd_status_completed),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(40.dp)
                 )
@@ -453,7 +473,7 @@ private fun CompletedDownloadCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "${download.itemType} • ${formatSize(download.totalBytes)}",
+                        text = stringResource(R.string.download_item_info_fmt, download.itemType, formatSize(download.totalBytes)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -463,7 +483,7 @@ private fun CompletedDownloadCard(
             IconButton(onClick = { onDelete(download.id) }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_delete),
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(R.string.cd_delete_download),
                     tint = MaterialTheme.colorScheme.error
                 )
             }
@@ -496,7 +516,7 @@ private fun EmptyState(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "No downloads",
+                text = stringResource(R.string.empty_downloads_title),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
@@ -507,7 +527,7 @@ private fun EmptyState(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Downloaded content will appear here",
+                text = stringResource(R.string.empty_downloads_message),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center

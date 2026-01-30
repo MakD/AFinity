@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,7 +99,7 @@ private fun SeekIndicator(
                     painter = if (direction > 0) painterResource(id = R.drawable.ic_fast_forward) else painterResource(
                         id = R.drawable.ic_fast_rewind
                     ),
-                    contentDescription = if (direction > 0) "Fast Forward" else "Rewind",
+                    contentDescription = if (direction > 0) stringResource(R.string.cd_fast_forward) else stringResource(R.string.cd_rewind),
                     tint = Color.White,
                     modifier = Modifier.size(40.dp)
                 )
@@ -106,7 +107,7 @@ private fun SeekIndicator(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = if (direction > 0) "+10s" else "-10s",
+                    text = if (direction > 0) stringResource(R.string.seek_forward_text) else stringResource(R.string.seek_rewind_text),
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
@@ -152,7 +153,7 @@ private fun BrightnessIndicator(
             ) {
                 Icon(
                     painter = getBrightnessIcon(level),
-                    contentDescription = "Brightness",
+                    contentDescription = stringResource(R.string.cd_brightness),
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
@@ -179,7 +180,7 @@ private fun BrightnessIndicator(
                 }
 
                 Text(
-                    text = "${(level * 100).roundToInt()}%",
+                    text = stringResource(R.string.percent_fmt, (level * 100).roundToInt()),
                     color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
@@ -225,7 +226,7 @@ private fun VolumeIndicator(
             ) {
                 Icon(
                     painter = getVolumeIcon(level),
-                    contentDescription = "Volume",
+                    contentDescription = stringResource(R.string.cd_volume),
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
@@ -252,7 +253,7 @@ private fun VolumeIndicator(
                 }
 
                 Text(
-                    text = "$level%",
+                    text = stringResource(R.string.percent_fmt, level),
                     color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium

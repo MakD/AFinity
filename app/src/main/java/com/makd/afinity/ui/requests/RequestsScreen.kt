@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,7 +59,7 @@ fun RequestsScreen(
             AfinityTopAppBar(
                 title = {
                     Text(
-                        text = "Requests",
+                        text = stringResource(R.string.requests_title),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -94,7 +95,7 @@ fun RequestsScreen(
 
                 uiState.error != null && uiState.requests.isEmpty() && uiState.trendingItems.isEmpty() -> {
                     ErrorView(
-                        message = uiState.error ?: "Unknown error",
+                        message = uiState.error ?: stringResource(R.string.error_unknown),
                         onRetry = {
                             viewModel.loadRequests()
                             viewModel.loadDiscoverContent()
@@ -128,8 +129,9 @@ fun RequestsScreen(
 
                         if (uiState.trendingItems.isNotEmpty()) {
                             item {
+                                val trendingTitle = stringResource(R.string.section_trending)
                                 DiscoverSection(
-                                    title = "Trending Now",
+                                    title = trendingTitle,
                                     items = uiState.trendingItems.take(15),
                                     onItemClick = { item ->
                                         if (item.mediaInfo?.isFullyAvailable() == true) {
@@ -154,7 +156,7 @@ fun RequestsScreen(
                                             FilterParams(
                                                 type = FilterType.TRENDING,
                                                 id = 0,
-                                                name = "Trending Now"
+                                                name = trendingTitle
                                             )
                                         )
                                     },
@@ -165,8 +167,9 @@ fun RequestsScreen(
 
                         if (uiState.popularMovies.isNotEmpty()) {
                             item {
+                                val popMoviesTitle = stringResource(R.string.section_popular_movies)
                                 DiscoverSection(
-                                    title = "Popular Movies",
+                                    title = popMoviesTitle,
                                     items = uiState.popularMovies.take(15),
                                     onItemClick = { item ->
                                         if (item.mediaInfo?.isFullyAvailable() == true) {
@@ -191,7 +194,7 @@ fun RequestsScreen(
                                             FilterParams(
                                                 type = FilterType.POPULAR_MOVIES,
                                                 id = 0,
-                                                name = "Popular Movies"
+                                                name = popMoviesTitle
                                             )
                                         )
                                     },
@@ -221,8 +224,9 @@ fun RequestsScreen(
 
                         if (uiState.upcomingMovies.isNotEmpty()) {
                             item {
+                                val upcomingMoviesTitle = stringResource(R.string.section_upcoming_movies)
                                 DiscoverSection(
-                                    title = "Upcoming Movies",
+                                    title = upcomingMoviesTitle,
                                     items = uiState.upcomingMovies.take(15),
                                     onItemClick = { item ->
                                         if (item.mediaInfo?.isFullyAvailable() == true) {
@@ -247,7 +251,7 @@ fun RequestsScreen(
                                             FilterParams(
                                                 type = FilterType.UPCOMING_MOVIES,
                                                 id = 0,
-                                                name = "Upcoming Movies"
+                                                name = upcomingMoviesTitle
                                             )
                                         )
                                     },
@@ -275,8 +279,9 @@ fun RequestsScreen(
 
                         if (uiState.popularTv.isNotEmpty()) {
                             item {
+                                val popTvTitle = stringResource(R.string.section_popular_tv)
                                 DiscoverSection(
-                                    title = "Popular TV Shows",
+                                    title = popTvTitle,
                                     items = uiState.popularTv.take(15),
                                     onItemClick = { item ->
                                         if (item.mediaInfo?.isFullyAvailable() == true) {
@@ -301,7 +306,7 @@ fun RequestsScreen(
                                             FilterParams(
                                                 type = FilterType.POPULAR_TV,
                                                 id = 0,
-                                                name = "Popular TV Shows"
+                                                name = popTvTitle
                                             )
                                         )
                                     },
@@ -331,8 +336,9 @@ fun RequestsScreen(
 
                         if (uiState.upcomingTv.isNotEmpty()) {
                             item {
+                                val upcomingTvTitle = stringResource(R.string.section_upcoming_tv)
                                 DiscoverSection(
-                                    title = "Upcoming TV Shows",
+                                    title = upcomingTvTitle,
                                     items = uiState.upcomingTv.take(15),
                                     onItemClick = { item ->
                                         if (item.mediaInfo?.isFullyAvailable() == true) {
@@ -357,7 +363,7 @@ fun RequestsScreen(
                                             FilterParams(
                                                 type = FilterType.UPCOMING_TV,
                                                 id = 0,
-                                                name = "Upcoming TV Shows"
+                                                name = upcomingTvTitle
                                             )
                                         )
                                     },
@@ -462,7 +468,7 @@ private fun NotLoggedInView(
                 modifier = Modifier.height(64.dp)
             )
             Text(
-                text = "Connect to Jellyseerr",
+                text = stringResource(R.string.jellyseerr_connect_title),
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -470,7 +476,7 @@ private fun NotLoggedInView(
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Login to Jellyseerr to request movies and TV shows",
+                text = stringResource(R.string.jellyseerr_connect_message),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -501,7 +507,7 @@ private fun ErrorView(
                 modifier = Modifier.height(48.dp)
             )
             Text(
-                text = "Error",
+                text = stringResource(R.string.error_title),
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -536,14 +542,14 @@ private fun EmptyStateView(
                 modifier = Modifier.height(48.dp)
             )
             Text(
-                text = "No content available",
+                text = stringResource(R.string.error_no_content),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Check back later for new content",
+                text = stringResource(R.string.empty_content_message),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

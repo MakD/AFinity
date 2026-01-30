@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -125,7 +126,7 @@ fun EpisodeSwitcher(
                     ) {
                         Column {
                             Text(
-                                text = "Up Next",
+                                text = stringResource(R.string.player_up_next),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -135,7 +136,7 @@ fun EpisodeSwitcher(
                                 (episodes.getOrNull(currentIndex) as? AfinityEpisode)?.parentIndexNumber
                             if (currentSeason != null) {
                                 Text(
-                                    text = "Season $currentSeason",
+                                    text = stringResource(R.string.player_season_fmt, currentSeason),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium
@@ -154,7 +155,7 @@ fun EpisodeSwitcher(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_close),
-                                contentDescription = "Close",
+                                contentDescription = stringResource(R.string.cd_close),
                                 tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -261,7 +262,7 @@ private fun EpisodeSwitcherCard(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_check),
-                        contentDescription = "Watched",
+                        contentDescription = stringResource(R.string.cd_watched_status),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(12.dp)
                     )
@@ -292,8 +293,17 @@ private fun EpisodeSwitcherCard(
                         .align(Alignment.BottomEnd)
                         .padding(6.dp)
                 ) {
+                    val minutesFmt = stringResource(R.string.time_minutes_short)
+                    val secondsFmt = stringResource(R.string.time_seconds_short)
+                    val runtimeText = remember(episode.runtimeTicks) {
+                        val totalSeconds = episode.runtimeTicks / 10000000
+                        val minutes = totalSeconds / 60
+                        val seconds = totalSeconds % 60
+                        if (minutes > 0) String.format(minutesFmt, minutes) else String.format(secondsFmt, seconds)
+                    }
+
                     Text(
-                        text = formatRuntime(episode.runtimeTicks),
+                        text = runtimeText,
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White,
                         fontSize = 10.sp,
@@ -350,7 +360,11 @@ private fun EpisodeSwitcherCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "Season ${episode.parentIndexNumber ?: 1} : Episode ${episode.indexNumber ?: 0}",
+                        text = stringResource(
+                            R.string.player_season_episode_fmt,
+                            episode.parentIndexNumber ?: 1,
+                            episode.indexNumber ?: 0
+                        ),
                         style = MaterialTheme.typography.labelSmall,
                         color = if (isCurrentlyPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
                         fontWeight = FontWeight.Bold,
@@ -371,7 +385,7 @@ private fun EpisodeSwitcherCard(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = "IMDB",
+                                contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -413,11 +427,4 @@ private fun EpisodeSwitcherCard(
             }
         }
     }
-}
-
-private fun formatRuntime(ticks: Long): String {
-    val totalSeconds = ticks / 10000000
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return if (minutes > 0) "${minutes}m" else "${seconds}s"
 }

@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -94,13 +95,13 @@ fun JellyseerrBottomSheet(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Connect to Seerr",
+                    text = stringResource(R.string.jellyseerr_connect_title),
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold
                     )
                 )
                 Text(
-                    text = "Enter your server details to enable content requests",
+                    text = stringResource(R.string.jellyseerr_connect_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -109,8 +110,8 @@ fun JellyseerrBottomSheet(
             OutlinedTextField(
                 value = uiState.serverUrl,
                 onValueChange = viewModel::updateServerUrl,
-                label = { Text("Server URL") },
-                placeholder = { Text("https://seerr.example.com") },
+                label = { Text(stringResource(R.string.label_server_url)) },
+                placeholder = { Text(stringResource(R.string.jellyseerr_placeholder_url)) },
                 leadingIcon = {
                     Icon(
                         painterResource(id = R.drawable.ic_link_rotated),
@@ -134,7 +135,7 @@ fun JellyseerrBottomSheet(
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Login Method",
+                    text = stringResource(R.string.label_login_method),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium
@@ -153,7 +154,7 @@ fun JellyseerrBottomSheet(
                             activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     ) {
-                        Text("Jellyfin Account")
+                        Text(stringResource(R.string.login_method_jellyfin))
                     }
 
                     SegmentedButton(
@@ -166,7 +167,7 @@ fun JellyseerrBottomSheet(
                             activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     ) {
-                        Text("Local Account")
+                        Text(stringResource(R.string.login_method_local))
                     }
                 }
             }
@@ -176,10 +177,18 @@ fun JellyseerrBottomSheet(
                     value = uiState.email,
                     onValueChange = viewModel::updateEmail,
                     label = {
-                        Text(if (uiState.useJellyfinAuth) "Jellyfin Username" else "Seerr Email")
+                        Text(
+                            if (uiState.useJellyfinAuth) stringResource(R.string.label_jellyfin_username) else stringResource(
+                                R.string.label_seerr_email
+                            )
+                        )
                     },
                     placeholder = {
-                        Text(if (uiState.useJellyfinAuth) "username" else "user@example.com")
+                        Text(
+                            if (uiState.useJellyfinAuth) stringResource(R.string.placeholder_username) else stringResource(
+                                R.string.placeholder_email_example
+                            )
+                        )
                     },
                     leadingIcon = {
                         Icon(
@@ -206,7 +215,11 @@ fun JellyseerrBottomSheet(
                     value = uiState.password,
                     onValueChange = viewModel::updatePassword,
                     label = {
-                        Text(if (uiState.useJellyfinAuth) "Jellyfin Password" else "Seerr Password")
+                        Text(
+                            if (uiState.useJellyfinAuth) stringResource(R.string.label_jellyfin_password) else stringResource(
+                                R.string.label_seerr_password
+                            )
+                        )
                     },
                     leadingIcon = {
                         Icon(
@@ -233,9 +246,9 @@ fun JellyseerrBottomSheet(
                                     }
                                 ),
                                 contentDescription = if (passwordVisible) {
-                                    "Hide password"
+                                    stringResource(R.string.cd_hide_password)
                                 } else {
-                                    "Show password"
+                                    stringResource(R.string.cd_show_password)
                                 }
                             )
                         }
@@ -311,7 +324,7 @@ fun JellyseerrBottomSheet(
                     )
                 } else {
                     Text(
-                        text = "Login",
+                        text = stringResource(R.string.btn_login),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold
                         )

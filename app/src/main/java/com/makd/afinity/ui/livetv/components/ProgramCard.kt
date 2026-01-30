@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -40,8 +41,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
-private val TimeFormatter = DateTimeFormatter.ofPattern("h:mm a")
-
 @Composable
 fun ProgramCard(
     programWithChannel: ProgramWithChannel,
@@ -50,6 +49,9 @@ fun ProgramCard(
     now: LocalDateTime = LocalDateTime.now(),
     cardWidth: Dp = 200.dp
 ) {
+    val timePattern = stringResource(R.string.livetv_time_pattern)
+    val timeFormatter = remember(timePattern) { DateTimeFormatter.ofPattern(timePattern) }
+
     val program = programWithChannel.program
     val channel = programWithChannel.channel
 
@@ -196,15 +198,22 @@ fun ProgramCard(
             )
         }
 
-        val timeText = remember(program.startDate, program.endDate) {
-            buildString {
-                program.startDate?.let { start ->
-                    append(start.format(TimeFormatter))
-                    program.endDate?.let { end ->
-                        append(" - ")
-                        append(end.format(TimeFormatter))
-                    }
-                }
+        val timeRangeFmt = stringResource(R.string.livetv_epg_time_range)
+
+        val timeText = remember(program.startDate, program.endDate, timeFormatter, timeRangeFmt) {
+            val start = program.startDate
+            val end = program.endDate
+
+            if (start != null && end != null) {
+                String.format(
+                    timeRangeFmt,
+                    start.format(timeFormatter),
+                    end.format(timeFormatter)
+                )
+            } else if (start != null) {
+                start.format(timeFormatter)
+            } else {
+                ""
             }
         }
 

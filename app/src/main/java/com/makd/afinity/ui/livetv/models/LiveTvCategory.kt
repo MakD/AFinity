@@ -1,10 +1,13 @@
 package com.makd.afinity.ui.livetv.models
 
-enum class LiveTvCategory(val displayName: String) {
-    ON_NOW("On Now"),
-    MOVIES("Movies"),
-    SHOWS("Shows"),
-    SPORTS("Sports"),
-    KIDS("For Kids"),
-    NEWS("News")
+import androidx.annotation.StringRes
+import com.makd.afinity.R
+
+enum class LiveTvCategory(@StringRes val displayNameRes: Int) {
+    ON_NOW(R.string.livetv_cat_on_now),
+    MOVIES(R.string.livetv_cat_movies),
+    SHOWS(R.string.livetv_cat_shows),
+    SPORTS(R.string.livetv_cat_sports),
+    KIDS(R.string.livetv_cat_kids),
+    NEWS(R.string.livetv_cat_news)
 }

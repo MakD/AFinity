@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
@@ -40,7 +41,7 @@ fun ProgramCategoryRow(
         modifier = modifier.padding(horizontal = 14.dp)
     ) {
         Text(
-            text = category.displayName,
+            text = stringResource(category.displayNameRes),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

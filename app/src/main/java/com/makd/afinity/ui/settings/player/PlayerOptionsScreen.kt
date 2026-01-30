@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -101,7 +102,7 @@ fun PlayerOptionsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Player Options",
+                        text = stringResource(R.string.player_options_title),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -111,7 +112,7 @@ fun PlayerOptionsScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -131,19 +132,19 @@ fun PlayerOptionsScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                SettingsGroup(title = "Engine & Behavior") {
+                SettingsGroup(title = stringResource(R.string.pref_group_engine)) {
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_video_settings),
-                        title = "Use ExoPlayer",
-                        subtitle = "Uses LibMPV when disabled",
+                        title = stringResource(R.string.pref_use_exoplayer_title),
+                        subtitle = stringResource(R.string.pref_use_exoplayer_summary),
                         checked = uiState.useExoPlayer,
                         onCheckedChange = viewModel::toggleUseExoPlayer
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_play_arrow),
-                        title = "Auto-play",
-                        subtitle = "Automatically play next episode",
+                        title = stringResource(R.string.pref_autoplay_title),
+                        subtitle = stringResource(R.string.pref_autoplay_summary),
                         checked = uiState.autoPlay,
                         onCheckedChange = viewModel::toggleAutoPlay
                     )
@@ -151,19 +152,19 @@ fun PlayerOptionsScreen(
             }
 
             item {
-                SettingsGroup(title = "Picture-in-Picture") {
+                SettingsGroup(title = stringResource(R.string.pref_group_pip)) {
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_pip),
-                        title = "Home Gesture",
-                        subtitle = "Enter PiP when swiping home",
+                        title = stringResource(R.string.pref_pip_gesture_title),
+                        subtitle = stringResource(R.string.pref_pip_gesture_summary),
                         checked = uiState.pipGestureEnabled,
                         onCheckedChange = viewModel::togglePipGesture
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_headphones),
-                        title = "Background Audio",
-                        subtitle = "Keep playing audio when screen is off",
+                        title = stringResource(R.string.pref_pip_background_title),
+                        subtitle = stringResource(R.string.pref_pip_background_summary),
                         checked = uiState.pipBackgroundPlay,
                         onCheckedChange = viewModel::togglePipBackgroundPlay
                     )
@@ -171,27 +172,27 @@ fun PlayerOptionsScreen(
             }
 
             item {
-                SettingsGroup(title = "Interface") {
+                SettingsGroup(title = stringResource(R.string.pref_group_interface)) {
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_skip_next),
-                        title = "Skip Intro Button",
-                        subtitle = "Show button when intro is detected",
+                        title = stringResource(R.string.pref_skip_intro_title),
+                        subtitle = stringResource(R.string.pref_skip_intro_summary),
                         checked = uiState.skipIntroEnabled,
                         onCheckedChange = viewModel::toggleSkipIntro
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_fast_forward),
-                        title = "Skip Outro Button",
-                        subtitle = "Show button when outro is detected",
+                        title = stringResource(R.string.pref_skip_outro_title),
+                        subtitle = stringResource(R.string.pref_skip_outro_summary),
                         checked = uiState.skipOutroEnabled,
                         onCheckedChange = viewModel::toggleSkipOutro
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_visibility),
-                        title = "Auto-hide Logo",
-                        subtitle = "Hide title logo with player controls",
+                        title = stringResource(R.string.pref_autohide_logo_title),
+                        subtitle = stringResource(R.string.pref_autohide_logo_summary),
                         checked = uiState.logoAutoHide,
                         onCheckedChange = viewModel::toggleLogoAutoHide
                     )
@@ -204,7 +205,7 @@ fun PlayerOptionsScreen(
             }
 
             item {
-                SettingsGroup(title = "Subtitles") {
+                SettingsGroup(title = stringResource(R.string.pref_group_subtitles)) {
                     Box(modifier = Modifier.padding(16.dp)) {
                         SubtitlePreview(
                             subtitlePrefs = subtitlePrefs,
@@ -377,8 +378,8 @@ private fun VideoZoomModeSelectorItem(
     Box {
         SettingsItem(
             icon = painterResource(id = R.drawable.ic_fullscreen),
-            title = "Default Zoom",
-            subtitle = selectedMode.getDisplayName(),
+            title = stringResource(R.string.pref_default_zoom_title),
+            subtitle = getVideoZoomModeDisplayName(selectedMode),
             onClick = { expanded = true },
             trailing = {
                 Icon(
@@ -397,7 +398,7 @@ private fun VideoZoomModeSelectorItem(
         ) {
             modes.forEach { mode ->
                 DropdownMenuItem(
-                    text = { Text(mode.getDisplayName()) },
+                    text = { Text(getVideoZoomModeDisplayName(mode)) },
                     onClick = {
                         onModeSelected(mode)
                         expanded = false
@@ -424,7 +425,7 @@ private fun SubtitleCustomizationContent(
     onUpdate: (SubtitlePreferences) -> Unit
 ) {
     ColorPickerItem(
-        title = "Text Color",
+        title = stringResource(R.string.pref_sub_text_color),
         color = subtitlePrefs.textColor,
         onColorChange = { onUpdate(subtitlePrefs.copy(textColor = it)) }
     )
@@ -432,7 +433,7 @@ private fun SubtitleCustomizationContent(
     SettingsDivider()
 
     SubtitleSliderItem(
-        title = "Text Size",
+        title = stringResource(R.string.pref_sub_text_size),
         value = subtitlePrefs.textSize,
         valueRange = 0.5f..2.0f,
         onValueChange = { onUpdate(subtitlePrefs.copy(textSize = it)) }
@@ -442,8 +443,8 @@ private fun SubtitleCustomizationContent(
 
     SettingsSwitchItem(
         icon = painterResource(id = R.drawable.ic_bold),
-        title = "Bold Text",
-        subtitle = "Make subtitles thicker",
+        title = stringResource(R.string.pref_sub_bold),
+        subtitle = stringResource(R.string.pref_sub_bold_summary),
         checked = subtitlePrefs.bold,
         onCheckedChange = { onUpdate(subtitlePrefs.copy(bold = it)) }
     )
@@ -452,8 +453,8 @@ private fun SubtitleCustomizationContent(
         SettingsDivider()
         SettingsSwitchItem(
             icon = painterResource(id = R.drawable.ic_italic),
-            title = "Italic Text",
-            subtitle = "Slant text style",
+            title = stringResource(R.string.pref_sub_italic),
+            subtitle = stringResource(R.string.pref_sub_italic_summary),
             checked = subtitlePrefs.italic,
             onCheckedChange = { onUpdate(subtitlePrefs.copy(italic = it)) }
         )
@@ -462,28 +463,27 @@ private fun SubtitleCustomizationContent(
     SettingsDivider()
 
     SubtitleDropdownItem(
-        title = "Outline Style",
-        selectedValue = subtitlePrefs.outlineStyle.displayName,
-        options = SubtitleOutlineStyle.entries
-            .filter { style ->
-                when (style) {
-                    SubtitleOutlineStyle.BACKGROUND_BOX -> !useExoPlayer
-                    SubtitleOutlineStyle.RAISED, SubtitleOutlineStyle.DEPRESSED -> useExoPlayer
-                    else -> true
-                }
+        title = stringResource(R.string.pref_sub_outline_style),
+        selectedOption = subtitlePrefs.outlineStyle,
+        options = SubtitleOutlineStyle.entries.filter { style ->
+            when (style) {
+                SubtitleOutlineStyle.BACKGROUND_BOX -> !useExoPlayer
+                SubtitleOutlineStyle.RAISED, SubtitleOutlineStyle.DEPRESSED -> useExoPlayer
+                else -> true
             }
-            .map { it.displayName },
-        onValueChange = { selected ->
-            val style = SubtitleOutlineStyle.entries.first { it.displayName == selected }
-            onUpdate(subtitlePrefs.copy(outlineStyle = style))
         },
+        onValueChange = { style -> onUpdate(subtitlePrefs.copy(outlineStyle = style)) },
+        labelProvider = { getSubtitleOutlineStyleDisplayName(it) },
         icon = painterResource(id = R.drawable.ic_texture)
     )
 
     if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE || subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW) {
         SettingsDivider()
         ColorPickerItem(
-            title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW) "Shadow Color" else "Outline Color",
+            title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW)
+                stringResource(R.string.pref_sub_shadow_color)
+            else
+                stringResource(R.string.pref_sub_outline_color),
             color = subtitlePrefs.outlineColor,
             onColorChange = { onUpdate(subtitlePrefs.copy(outlineColor = it)) }
         )
@@ -491,7 +491,10 @@ private fun SubtitleCustomizationContent(
         if (!useExoPlayer) {
             SettingsDivider()
             SubtitleSliderItem(
-                title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW) "Shadow Size" else "Outline Size",
+                title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW)
+                    stringResource(R.string.pref_sub_shadow_size)
+                else
+                    stringResource(R.string.pref_sub_outline_size),
                 value = subtitlePrefs.outlineSize,
                 valueRange = 0f..10f,
                 onValueChange = { onUpdate(subtitlePrefs.copy(outlineSize = it)) }
@@ -500,7 +503,7 @@ private fun SubtitleCustomizationContent(
     } else if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.BACKGROUND_BOX) {
         SettingsDivider()
         ColorPickerItem(
-            title = "Background Color",
+            title = stringResource(R.string.pref_sub_background_color),
             color = subtitlePrefs.backgroundColor,
             onColorChange = { onUpdate(subtitlePrefs.copy(backgroundColor = it)) }
         )
@@ -509,7 +512,7 @@ private fun SubtitleCustomizationContent(
     if (useExoPlayer) {
         SettingsDivider()
         ColorPickerItem(
-            title = "Window Color",
+            title = stringResource(R.string.pref_sub_window_color),
             color = subtitlePrefs.windowColor,
             onColorChange = { onUpdate(subtitlePrefs.copy(windowColor = it)) }
         )
@@ -518,27 +521,22 @@ private fun SubtitleCustomizationContent(
     if (!useExoPlayer) {
         SettingsDivider()
         SubtitleDropdownItem(
-            title = "Vertical Position",
-            selectedValue = subtitlePrefs.verticalPosition.displayName,
-            options = SubtitleVerticalPosition.entries.map { it.displayName },
-            onValueChange = { selected ->
-                val position = SubtitleVerticalPosition.entries.first { it.displayName == selected }
-                onUpdate(subtitlePrefs.copy(verticalPosition = position))
-            },
+            title = stringResource(R.string.pref_sub_vertical_pos),
+            selectedOption = subtitlePrefs.verticalPosition,
+            options = SubtitleVerticalPosition.entries,
+            onValueChange = { pos -> onUpdate(subtitlePrefs.copy(verticalPosition = pos)) },
+            labelProvider = { getSubtitleVerticalPositionDisplayName(it) },
             icon = painterResource(id = R.drawable.ic_vertical)
         )
 
         SettingsDivider()
 
         SubtitleDropdownItem(
-            title = "Horizontal Alignment",
-            selectedValue = subtitlePrefs.horizontalAlignment.displayName,
-            options = SubtitleHorizontalAlignment.entries.map { it.displayName },
-            onValueChange = { selected ->
-                val alignment =
-                    SubtitleHorizontalAlignment.entries.first { it.displayName == selected }
-                onUpdate(subtitlePrefs.copy(horizontalAlignment = alignment))
-            },
+            title = stringResource(R.string.pref_sub_horizontal_align),
+            selectedOption = subtitlePrefs.horizontalAlignment,
+            options = SubtitleHorizontalAlignment.entries,
+            onValueChange = { align -> onUpdate(subtitlePrefs.copy(horizontalAlignment = align)) },
+            labelProvider = { getSubtitleHorizontalAlignmentDisplayName(it) },
             icon = painterResource(id = R.drawable.ic_horizontal)
         )
     }
@@ -555,7 +553,7 @@ private fun SubtitleCustomizationContent(
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Reset Defaults")
+            Text(stringResource(R.string.action_reset_defaults))
         }
     }
 }
@@ -639,11 +637,12 @@ private fun SubtitleSliderItem(
 }
 
 @Composable
-private fun SubtitleDropdownItem(
+private fun <T> SubtitleDropdownItem(
     title: String,
-    selectedValue: String,
-    options: List<String>,
-    onValueChange: (String) -> Unit,
+    selectedOption: T,
+    options: List<T>,
+    onValueChange: (T) -> Unit,
+    labelProvider: @Composable (T) -> String,
     icon: Painter
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -652,7 +651,7 @@ private fun SubtitleDropdownItem(
         SettingsItem(
             icon = icon,
             title = title,
-            subtitle = selectedValue,
+            subtitle = labelProvider(selectedOption),
             onClick = { expanded = true },
             trailing = {
                 Icon(
@@ -670,12 +669,12 @@ private fun SubtitleDropdownItem(
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option) },
+                    text = { Text(labelProvider(option)) },
                     onClick = {
                         onValueChange(option)
                         expanded = false
                     },
-                    leadingIcon = if (selectedValue == option) {
+                    leadingIcon = if (selectedOption == option) {
                         {
                             Icon(
                                 painterResource(id = R.drawable.ic_check),
@@ -722,14 +721,14 @@ private fun SimpleColorPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Color") },
+        title = { Text(stringResource(R.string.color_picker_title)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Column {
                     Text(
-                        "Preset Colors",
+                        stringResource(R.string.color_picker_presets),
                         style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
@@ -765,7 +764,7 @@ private fun SimpleColorPickerDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        "Custom Color (Hex)",
+                        stringResource(R.string.color_picker_custom),
                         style = MaterialTheme.typography.titleSmall
                     )
 
@@ -780,13 +779,13 @@ private fun SimpleColorPickerDialog(
                                 val parsedColor = parseHexColor(newValue)
                                 isValidHex = parsedColor != null
                             },
-                            label = { Text("Hex Code") },
-                            placeholder = { Text("#AARRGGBB") },
+                            label = { Text(stringResource(R.string.color_picker_hex_label)) },
+                            placeholder = { Text(stringResource(R.string.color_picker_hex_hint)) },
                             isError = !isValidHex,
                             supportingText = if (!isValidHex) {
                                 {
                                     Text(
-                                        "Invalid hex format",
+                                        stringResource(R.string.color_picker_invalid),
                                         color = MaterialTheme.colorScheme.error
                                     )
                                 }
@@ -823,7 +822,7 @@ private fun SimpleColorPickerDialog(
                         enabled = isValidHex,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Apply Custom Color")
+                        Text(stringResource(R.string.color_picker_apply))
                     }
                 }
             }
@@ -831,7 +830,7 @@ private fun SimpleColorPickerDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
@@ -900,7 +899,7 @@ private fun SubtitlePreview(
                         Offset(offsetStep, offsetStep)
                     ).forEach { offset ->
                         Text(
-                            text = "Subtitle Preview",
+                            text = stringResource(R.string.subtitle_preview_text),
                             style = textStyle,
                             color = outlineColor,
                             modifier = Modifier.offset(offset.x.dp, offset.y.dp)
@@ -923,7 +922,7 @@ private fun SubtitlePreview(
                         Offset(offsetStep, offsetStep)
                     ).forEach { offset ->
                         Text(
-                            text = "Subtitle Preview",
+                            text = stringResource(R.string.subtitle_preview_text),
                             style = textStyle,
                             color = outlineColor,
                             modifier = Modifier.offset(offset.x.dp, offset.y.dp)
@@ -932,7 +931,7 @@ private fun SubtitlePreview(
                 }
 
                 Text(
-                    text = "Subtitle Preview",
+                    text = stringResource(R.string.subtitle_preview_text),
                     style = textStyle.copy(
                         shadow = when {
                             !useExoPlayer && subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW && subtitlePrefs.outlineSize > 0f -> {
@@ -975,5 +974,44 @@ private fun SubtitlePreview(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun getVideoZoomModeDisplayName(mode: VideoZoomMode): String {
+    return when (mode) {
+        VideoZoomMode.FIT -> stringResource(R.string.zoom_fit)
+        VideoZoomMode.ZOOM -> stringResource(R.string.zoom_zoom)
+        VideoZoomMode.STRETCH -> stringResource(R.string.zoom_stretch)
+    }
+}
+
+@Composable
+private fun getSubtitleOutlineStyleDisplayName(style: SubtitleOutlineStyle): String {
+    return when (style) {
+        SubtitleOutlineStyle.NONE -> stringResource(R.string.outline_none)
+        SubtitleOutlineStyle.OUTLINE -> stringResource(R.string.outline_outline)
+        SubtitleOutlineStyle.DROP_SHADOW -> stringResource(R.string.outline_drop_shadow)
+        SubtitleOutlineStyle.RAISED -> stringResource(R.string.outline_raised)
+        SubtitleOutlineStyle.DEPRESSED -> stringResource(R.string.outline_depressed)
+        SubtitleOutlineStyle.BACKGROUND_BOX -> stringResource(R.string.outline_background)
+    }
+}
+
+@Composable
+private fun getSubtitleVerticalPositionDisplayName(position: SubtitleVerticalPosition): String {
+    return when (position) {
+        SubtitleVerticalPosition.TOP -> stringResource(R.string.align_top)
+        SubtitleVerticalPosition.BOTTOM -> stringResource(R.string.align_bottom)
+        SubtitleVerticalPosition.CENTER -> stringResource(R.string.align_center)
+    }
+}
+
+@Composable
+private fun getSubtitleHorizontalAlignmentDisplayName(alignment: SubtitleHorizontalAlignment): String {
+    return when (alignment) {
+        SubtitleHorizontalAlignment.LEFT -> stringResource(R.string.align_left)
+        SubtitleHorizontalAlignment.CENTER -> stringResource(R.string.align_center)
+        SubtitleHorizontalAlignment.RIGHT -> stringResource(R.string.align_right)
     }
 }

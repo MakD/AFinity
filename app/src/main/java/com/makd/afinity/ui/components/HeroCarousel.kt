@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -324,7 +325,7 @@ fun HeroCarouselPortrait(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_info),
-                    contentDescription = "More Information",
+                    contentDescription = stringResource(R.string.hero_btn_more_info),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(24.dp)
                 )
@@ -344,7 +345,7 @@ fun HeroCarouselPortrait(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_video),
-                        contentDescription = "Play Trailer",
+                        contentDescription = stringResource(R.string.hero_btn_play_trailer),
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(24.dp)
                     )
@@ -357,7 +358,7 @@ fun HeroCarouselPortrait(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_play_arrow),
-                        contentDescription = "Play Media",
+                        contentDescription = stringResource(R.string.hero_btn_play_media),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(28.dp)
                     )
@@ -635,7 +636,7 @@ private fun HeroCarouselLandscape(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_info),
-                                contentDescription = "More Information",
+                                contentDescription = stringResource(R.string.hero_btn_more_info),
                                 tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -651,7 +652,7 @@ private fun HeroCarouselLandscape(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_video),
-                                contentDescription = "Play Trailer",
+                                contentDescription = stringResource(R.string.hero_btn_play_trailer),
                                 tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -664,7 +665,7 @@ private fun HeroCarouselLandscape(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_play_arrow),
-                                contentDescription = "Watch Now",
+                                contentDescription = stringResource(R.string.hero_btn_watch_now),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -721,7 +722,7 @@ private fun HeroMetadata(item: AfinityItem) {
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_imdb_logo),
-                contentDescription = "IMDB",
+                contentDescription = stringResource(R.string.cd_imdb),
                 tint = Color.Unspecified,
                 modifier = Modifier.size(24.dp)
             )
@@ -784,7 +785,8 @@ private fun HeroMetadata(item: AfinityItem) {
     if (item is AfinityShow) {
         item.seasonCount?.let { count ->
             Text(
-                text = if (count == 1) "1 Season" else "$count Seasons",
+                text = if (count == 1) stringResource(R.string.hero_season_single)
+                else stringResource(R.string.hero_season_plural, count),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

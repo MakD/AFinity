@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -50,7 +51,7 @@ fun QualitySelectionDialog(
                 modifier = Modifier.padding(24.dp)
             ) {
                 Text(
-                    text = "Select Download Quality",
+                    text = stringResource(R.string.quality_dialog_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -58,7 +59,7 @@ fun QualitySelectionDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Choose which quality to download",
+                    text = stringResource(R.string.quality_dialog_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -84,7 +85,7 @@ fun QualitySelectionDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -96,7 +97,7 @@ fun QualitySelectionDialog(
                         },
                         enabled = selectedSource != null
                     ) {
-                        Text("Download")
+                        Text(stringResource(R.string.action_download))
                     }
                 }
             }
@@ -131,7 +132,10 @@ private fun QualityOption(
                 painter = if (isSelected) painterResource(id = R.drawable.ic_radio_button_checked) else painterResource(
                     id = R.drawable.ic_radio_button_unchecked
                 ),
-                contentDescription = if (isSelected) "Selected" else "Not selected",
+                contentDescription = if (isSelected)
+                    stringResource(R.string.cd_selected)
+                else
+                    stringResource(R.string.cd_not_selected),
                 tint = if (isSelected) {
                     MaterialTheme.colorScheme.primary
                 } else {
@@ -152,9 +156,9 @@ private fun QualityOption(
 
                 val sizeInMB = source.size / (1024 * 1024)
                 val sizeText = if (sizeInMB > 1024) {
-                    String.format("%.2f GB", sizeInMB / 1024.0)
+                    stringResource(R.string.file_size_gb, sizeInMB / 1024.0)
                 } else {
-                    String.format("%d MB", sizeInMB)
+                    stringResource(R.string.file_size_mb, sizeInMB)
                 }
 
                 Text(

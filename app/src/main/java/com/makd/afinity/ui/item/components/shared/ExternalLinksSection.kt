@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
@@ -32,14 +33,15 @@ import com.makd.afinity.data.models.media.AfinityItem
 @Composable
 fun ExternalLinksSection(item: AfinityItem) {
     val context = LocalContext.current
-    val externalLinks = getExternalLinks(item)
+    val defaultLinkName = stringResource(R.string.external_link_default_name)
+    val externalLinks = remember(item) { getExternalLinks(item, defaultLinkName) }
 
     if (externalLinks.isNotEmpty()) {
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "External Links",
+                text = stringResource(R.string.external_links_title),
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -86,7 +88,7 @@ private data class ExternalLink(
     val iconRes: Int
 )
 
-private fun getExternalLinks(item: AfinityItem): List<ExternalLink> {
+private fun getExternalLinks(item: AfinityItem, defaultName: String): List<ExternalLink> {
     val links = mutableListOf<ExternalLink>()
 
     val externalUrls = item.externalUrls ?: return emptyList()
@@ -108,7 +110,7 @@ private fun getExternalLinks(item: AfinityItem): List<ExternalLink> {
 
         links.add(
             ExternalLink(
-                name = externalUrl.name ?: "External Link",
+                name = externalUrl.name ?: defaultName,
                 url = url,
                 iconRes = iconRes
             )

@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -96,7 +97,7 @@ fun LiveTvScreen(
             AfinityTopAppBar(
                 title = {
                     Text(
-                        text = "Live TV",
+                        text = stringResource(R.string.livetv_title),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -145,12 +146,12 @@ fun LiveTvScreen(
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )
                         Text(
-                            text = "Live TV not available",
+                            text = stringResource(R.string.livetv_error_not_available_title),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         Text(
-                            text = "Configure Live TV on your Jellyfin server",
+                            text = stringResource(R.string.livetv_error_not_available_message),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                         )
@@ -174,7 +175,7 @@ fun LiveTvScreen(
                         item {
                             NavigationChip(
                                 selected = pagerState.currentPage == 0,
-                                label = "Programs",
+                                label = stringResource(R.string.livetv_tab_programs),
                                 iconResId = R.drawable.ic_tv_prog,
                                 onClick = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(0) }
@@ -184,7 +185,7 @@ fun LiveTvScreen(
                         item {
                             NavigationChip(
                                 selected = pagerState.currentPage == 1,
-                                label = "TV Guide",
+                                label = stringResource(R.string.livetv_tab_guide),
                                 iconResId = R.drawable.ic_epg,
                                 onClick = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(1) }
@@ -194,7 +195,7 @@ fun LiveTvScreen(
                         item {
                             NavigationChip(
                                 selected = pagerState.currentPage == 2,
-                                label = "Channels",
+                                label = stringResource(R.string.livetv_tab_channels),
                                 iconResId = R.drawable.ic_channels,
                                 onClick = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(2) }

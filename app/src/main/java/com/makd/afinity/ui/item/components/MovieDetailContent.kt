@@ -24,10 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityItem
@@ -131,7 +133,7 @@ internal fun ChaptersSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Chapters",
+            text = stringResource(R.string.chapters_title),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

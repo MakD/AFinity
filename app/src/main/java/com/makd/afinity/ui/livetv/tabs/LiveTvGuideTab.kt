@@ -24,9 +24,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -66,7 +68,8 @@ fun LiveTvGuideTab(
     val headerHeight: Dp = 40.dp
 
     val horizontalScrollState = rememberScrollState()
-    val dateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d")
+    val datePattern = stringResource(R.string.livetv_guide_date_fmt)
+    val dateFormatter = remember(datePattern) { DateTimeFormatter.ofPattern(datePattern) }
 
     if (uiState.isEpgLoading && uiState.epgChannels.isEmpty()) {
         Box(
@@ -90,7 +93,7 @@ fun LiveTvGuideTab(
             IconButton(onClick = { onNavigateTime(-3) }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_chevron_left),
-                    contentDescription = "Previous"
+                    contentDescription = stringResource(R.string.cd_guide_previous_time)
                 )
             }
 
@@ -102,12 +105,10 @@ fun LiveTvGuideTab(
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
+                val startHour = uiState.epgStartTime.hour
+                val endHour = uiState.epgStartTime.plusHours(uiState.epgVisibleHours.toLong()).hour
                 Text(
-                    text = "${uiState.epgStartTime.hour}:00 - ${
-                        uiState.epgStartTime.plusHours(
-                            uiState.epgVisibleHours.toLong()
-                        ).hour
-                    }:00",
+                    text = stringResource(R.string.livetv_guide_time_range_fmt, startHour, endHour),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -119,13 +120,13 @@ fun LiveTvGuideTab(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                Text("Now")
+                Text(stringResource(R.string.action_now))
             }
 
             IconButton(onClick = { onNavigateTime(3) }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_chevron_right),
-                    contentDescription = "Next"
+                    contentDescription = stringResource(R.string.cd_guide_next_time)
                 )
             }
         }

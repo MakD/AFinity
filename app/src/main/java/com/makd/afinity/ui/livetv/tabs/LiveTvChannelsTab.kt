@@ -34,9 +34,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.ChannelCard
@@ -78,7 +80,7 @@ fun LiveTvChannelsTab(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "No channels starting with '$selectedLetter'",
+                                text = stringResource(R.string.livetv_empty_letter_fmt, selectedLetter ?: ""),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -86,7 +88,7 @@ fun LiveTvChannelsTab(
                                 onClick = onClearFilter,
                                 modifier = Modifier.padding(top = 16.dp)
                             ) {
-                                Text("Show All Channels")
+                                Text(stringResource(R.string.action_show_all_channels))
                             }
                         }
                     }
@@ -96,7 +98,7 @@ fun LiveTvChannelsTab(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No channels available",
+                            text = stringResource(R.string.livetv_empty_generic),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -117,14 +119,17 @@ fun LiveTvChannelsTab(
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Column(modifier = Modifier.padding(bottom = 8.dp)) {
                                 Text(
-                                    text = if (selectedLetter != null) "Channels ($selectedLetter)" else "All Channels",
+                                    text = if (selectedLetter != null)
+                                        stringResource(R.string.livetv_header_letter_fmt, selectedLetter)
+                                    else
+                                        stringResource(R.string.livetv_header_all),
                                     style = MaterialTheme.typography.headlineSmall.copy(
                                         fontWeight = FontWeight.Bold
                                     ),
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
                                 Text(
-                                    text = "${uiState.channels.size} channels found",
+                                    text = stringResource(R.string.livetv_count_fmt, uiState.channels.size),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

@@ -68,6 +68,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -257,7 +258,7 @@ private fun LoginHeader(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "AFinity",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.displayMedium.copy(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = (-1).sp
@@ -267,7 +268,7 @@ private fun LoginHeader(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Connect to Jellyfin",
+                text = stringResource(R.string.login_connect_to_jellyfin),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -284,7 +285,7 @@ private fun LoginHeader(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_server),
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.cd_server_icon),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -297,7 +298,7 @@ private fun LoginHeader(
                 }
             }
             Text(
-                text = "Welcome Back",
+                text = stringResource(R.string.login_welcome_back),
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
@@ -336,7 +337,7 @@ private fun ServerConnectionContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Saved Servers",
+                        text = stringResource(R.string.login_saved_servers),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -348,7 +349,7 @@ private fun ServerConnectionContent(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add New")
+                            Text(stringResource(R.string.login_add_new_server))
                         }
                     }
                 }
@@ -372,8 +373,8 @@ private fun ServerConnectionContent(
                 OutlinedTextField(
                     value = serverUrl,
                     onValueChange = onUrlChange,
-                    placeholder = { Text("https://jellyfin.example.com") },
-                    label = { Text("Server URL") },
+                    placeholder = { Text(stringResource(R.string.login_server_url_placeholder)) },
+                    label = { Text(stringResource(R.string.login_server_url_label)) },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_link_rotated),
@@ -413,7 +414,10 @@ private fun ServerConnectionContent(
                             strokeWidth = 3.dp
                         )
                     } else {
-                        Text("Connect", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            stringResource(R.string.login_btn_connect),
+                            style = MaterialTheme.typography.titleMedium
+                        )
                     }
                 }
 
@@ -423,7 +427,7 @@ private fun ServerConnectionContent(
                         onClick = onCancelAddServer,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.login_btn_cancel))
                     }
                 }
             }
@@ -436,7 +440,7 @@ private fun ServerConnectionContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Local Network",
+                    text = stringResource(R.string.login_local_network),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -453,7 +457,7 @@ private fun ServerConnectionContent(
                         IconButton(onClick = onDiscoverServers) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_refresh),
-                                contentDescription = "Refresh"
+                                contentDescription = stringResource(R.string.login_refresh)
                             )
                         }
                     }
@@ -478,7 +482,7 @@ private fun ServerConnectionContent(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_server),
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.cd_server_icon),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.width(16.dp))
@@ -505,7 +509,7 @@ private fun ServerConnectionContent(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "No servers found nearby",
+                        stringResource(R.string.login_no_servers_found),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -589,7 +593,7 @@ private fun UserLoginContent(
             onClick = onChangeServer,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Text("Switch Server")
+            Text(stringResource(R.string.login_switch_server))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -633,7 +637,7 @@ private fun UserLoginContent(
                     tabIndex = 0
                     onMethodChange(LoginMethod.PASSWORD)
                 },
-                text = { Text("Password") }
+                text = { Text(stringResource(R.string.login_method_password)) }
             )
             Tab(
                 selected = tabIndex == 1,
@@ -641,7 +645,7 @@ private fun UserLoginContent(
                     tabIndex = 1
                     onMethodChange(LoginMethod.QUICK_CONNECT)
                 },
-                text = { Text("Quick Connect") }
+                text = { Text(stringResource(R.string.login_method_quick_connect)) }
             )
         }
 
@@ -706,7 +710,7 @@ private fun UserAvatarItem(
                         .data(imageUrl)
                         .crossfade(true)
                         .build(),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.cd_user_avatar),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -745,7 +749,7 @@ private fun PasswordForm(
         OutlinedTextField(
             value = uiState.username,
             onValueChange = onUsernameChange,
-            label = { Text("Username") },
+            label = { Text(stringResource(R.string.login_username_label)) },
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_user),
@@ -768,7 +772,7 @@ private fun PasswordForm(
         OutlinedTextField(
             value = uiState.password,
             onValueChange = onPasswordChange,
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.login_password_label)) },
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_lock_filled),
@@ -828,7 +832,10 @@ private fun PasswordForm(
                     strokeWidth = 3.dp
                 )
             } else {
-                Text("Sign In", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.login_btn_sign_in),
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
     }
@@ -856,7 +863,7 @@ private fun QuickConnectView(
                 tint = MaterialTheme.colorScheme.primary
             )
             Text(
-                "Use Quick Connect to sign in without a password via your Jellyfin dashboard.",
+                stringResource(R.string.login_quick_connect_description),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -867,7 +874,7 @@ private fun QuickConnectView(
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Generate Code")
+                Text(stringResource(R.string.login_btn_generate_code))
             }
         } else if (uiState.quickConnectCode != null) {
             Text(
@@ -879,14 +886,14 @@ private fun QuickConnectView(
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                "Enter this code in your browser",
+                stringResource(R.string.login_quick_connect_instructions),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             TextButton(onClick = onCancel) {
                 Icon(painter = painterResource(id = R.drawable.ic_close), contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Cancel")
+                Text(stringResource(R.string.login_btn_cancel))
             }
         } else {
             CircularProgressIndicator()

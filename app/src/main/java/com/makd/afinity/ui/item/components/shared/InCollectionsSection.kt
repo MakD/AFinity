@@ -9,8 +9,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -29,7 +31,7 @@ fun InCollectionsSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Included In",
+            text = stringResource(R.string.collections_included_in),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

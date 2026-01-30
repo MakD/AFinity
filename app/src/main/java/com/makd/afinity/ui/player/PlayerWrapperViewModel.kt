@@ -1,7 +1,9 @@
 package com.makd.afinity.ui.player
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.ChannelType
@@ -11,6 +13,7 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +25,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PlayerWrapperViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val jellyfinRepository: JellyfinRepository,
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
@@ -82,11 +86,11 @@ class PlayerWrapperViewModel @Inject constructor(
                     _liveStreamUrl.value = streamUrl
                 } else {
                     Timber.e("PlayerWrapperViewModel: Failed to get stream URL")
-                    _streamError.value = "Failed to get stream URL"
+                    _streamError.value = context.getString(R.string.error_get_stream_url)
                 }
             } catch (e: Exception) {
                 Timber.e(e, "PlayerWrapperViewModel: Failed to load live channel")
-                _streamError.value = "Failed to load channel: ${e.message}"
+                _streamError.value = context.getString(R.string.error_load_channel_fmt, e.message)
             } finally {
                 _isLoading.value = false
             }

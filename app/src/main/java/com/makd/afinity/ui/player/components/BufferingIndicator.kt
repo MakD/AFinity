@@ -23,9 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.makd.afinity.R
 
 @Composable
 fun ErrorIndicator(
@@ -56,7 +58,7 @@ fun ErrorIndicator(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Playback Error",
+                    text = stringResource(R.string.player_error_title),
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
@@ -78,7 +80,7 @@ fun ErrorIndicator(
                     )
                 ) {
                     Text(
-                        text = "Retry",
+                        text = stringResource(R.string.action_retry),
                         color = Color.White,
                         fontWeight = FontWeight.Medium
                     )

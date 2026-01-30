@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -132,7 +133,7 @@ fun ChannelCard(
                         painter = painterResource(
                             id = if (channel.favorite) R.drawable.ic_favorite_filled else R.drawable.ic_favorite
                         ),
-                        contentDescription = "Favorite",
+                        contentDescription = stringResource(R.string.cd_favorite),
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -183,16 +184,26 @@ fun ChannelCard(
         }
 
         Spacer(modifier = Modifier.height(2.dp))
+
+        val timePattern = stringResource(R.string.livetv_time_pattern)
+        val programName = currentProgram?.name ?: stringResource(R.string.livetv_unknown_program)
+        val start = currentProgram?.startDate
+        val end = currentProgram?.endDate
+
+        val text = if (start != null && end != null) {
+            val formatter = java.time.format.DateTimeFormatter.ofPattern(timePattern)
+            stringResource(
+                R.string.livetv_program_time_fmt,
+                programName,
+                start.format(formatter),
+                end.format(formatter)
+            )
+        } else {
+            programName
+        }
+
         Text(
-            text = buildString {
-                append(currentProgram?.name ?: "Unknown Program")
-                val start = currentProgram?.startDate
-                val end = currentProgram?.endDate
-                if (start != null && end != null) {
-                    val formatter = java.time.format.DateTimeFormatter.ofPattern("h:mm a")
-                    append(" • ${start.format(formatter)} - ${end.format(formatter)}")
-                }
-            },
+            text = text,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

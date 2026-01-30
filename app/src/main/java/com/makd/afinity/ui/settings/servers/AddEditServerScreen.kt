@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -88,7 +89,7 @@ fun AddEditServerScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -133,7 +134,9 @@ fun AddEditServerScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = if (state.serverId != null) "Edit Server" else "Add Server",
+                text = if (state.serverId != null) stringResource(R.string.title_edit_server) else stringResource(
+                    R.string.title_add_server
+                ),
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -141,7 +144,7 @@ fun AddEditServerScreen(
             )
 
             Text(
-                text = "Enter the details of your Jellyfin server",
+                text = stringResource(R.string.server_details_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -153,8 +156,8 @@ fun AddEditServerScreen(
             OutlinedTextField(
                 value = state.serverUrl,
                 onValueChange = viewModel::updateServerUrl,
-                label = { Text("Server URL") },
-                placeholder = { Text("https://example.jellyfin.com") },
+                label = { Text(stringResource(R.string.label_server_url)) },
+                placeholder = { Text(stringResource(R.string.placeholder_server_url)) },
                 leadingIcon = {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_link_rotated),
@@ -175,8 +178,8 @@ fun AddEditServerScreen(
             OutlinedTextField(
                 value = state.serverName,
                 onValueChange = viewModel::updateServerName,
-                label = { Text("Server Name (Optional)") },
-                placeholder = { Text("My Jellyfin Server") },
+                label = { Text(stringResource(R.string.label_server_name_optional)) },
+                placeholder = { Text(stringResource(R.string.placeholder_server_name)) },
                 leadingIcon = {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_edit),
@@ -233,9 +236,9 @@ fun AddEditServerScreen(
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Testing...")
+                        Text(stringResource(R.string.btn_testing))
                     } else {
-                        Text("Test Connection")
+                        Text(stringResource(R.string.btn_test_connection))
                     }
                 }
             }
@@ -261,7 +264,9 @@ fun AddEditServerScreen(
                     )
                 } else {
                     Text(
-                        text = if (state.serverId != null) "Save Changes" else "Save Server",
+                        text = if (state.serverId != null) stringResource(R.string.btn_save_changes) else stringResource(
+                            R.string.btn_save_server
+                        ),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -314,14 +319,18 @@ private fun ConnectionSuccessCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Connection Successful",
+                    text = stringResource(R.string.connection_success_title),
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.Bold
                     ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Found ${serverInfo.name} (v${serverInfo.version})",
+                    text = stringResource(
+                        R.string.connection_success_fmt,
+                        serverInfo.name,
+                        serverInfo.version
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -370,7 +379,7 @@ private fun ConnectionErrorCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Connection Failed",
+                    text = stringResource(R.string.connection_failed_title),
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.Bold
                     ),

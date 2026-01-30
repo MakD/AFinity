@@ -67,6 +67,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -166,7 +167,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Something went wrong",
+                        text = stringResource(R.string.home_error_title),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -176,7 +177,7 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Data will refresh automatically",
+                        text = stringResource(R.string.home_error_message),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -276,7 +277,7 @@ fun HomeScreen(
                                 Column {
                                     Spacer(modifier = Modifier.height(24.dp))
                                     OptimizedLatestTvSeriesSection(
-                                        title = "Downloaded Movies",
+                                        title = stringResource(R.string.home_downloaded_movies),
                                         items = uiState.downloadedMovies,
                                         onItemClick = onItemClick,
                                         widthSizeClass = widthSizeClass
@@ -292,7 +293,7 @@ fun HomeScreen(
                                 Column {
                                     Spacer(modifier = Modifier.height(24.dp))
                                     OptimizedLatestTvSeriesSection(
-                                        title = "Downloaded Shows",
+                                        title = stringResource(R.string.home_downloaded_shows),
                                         items = uiState.downloadedShows,
                                         onItemClick = onItemClick,
                                         widthSizeClass = widthSizeClass
@@ -535,7 +536,7 @@ fun HomeScreen(
                     ) {
                         Image(
                             painter = painterResource(id = ic_launcher_monochrome),
-                            contentDescription = "App Logo",
+                            contentDescription = stringResource(R.string.cd_app_logo),
                             modifier = Modifier
                                 .size(60.dp)
                                 .fillMaxSize(),
@@ -662,7 +663,7 @@ private fun HighestRatedSection(
         modifier = Modifier.padding(horizontal = 16.dp)
     ) {
         Text(
-            text = "Critics' Choice",
+            text = stringResource(R.string.home_critics_choice),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -763,7 +764,7 @@ private fun HighestRatedCard(
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = "Watched",
+                                    contentDescription = stringResource(R.string.cd_watched_status),
                                     tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -782,7 +783,7 @@ private fun HighestRatedCard(
                                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
                                     ) {
                                         Text(
-                                            text = if (count > 99) "99+ EP" else "$count EP",
+                                            text = if (count > 99) stringResource(R.string.home_episode_count_plus) else stringResource(R.string.home_episode_count_fmt, count),
                                             style = MaterialTheme.typography.labelSmall.copy(
                                                 fontWeight = FontWeight.Bold
                                             ),
@@ -862,7 +863,7 @@ private fun HighestRatedCard(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = "IMDB",
+                                contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
                                 modifier = Modifier.size(imdbIconSize)
                             )
@@ -892,7 +893,7 @@ private fun HighestRatedCard(
                                             R.drawable.ic_rotten_tomato_rotten
                                         }
                                     ),
-                                    contentDescription = "Rotten Tomatoes",
+                                    contentDescription = stringResource(R.string.cd_rotten_tomatoes),
                                     tint = Color.Unspecified,
                                     modifier = Modifier.size(rtIconSize)
                                 )
@@ -1189,7 +1190,7 @@ private fun PopularStudiosSection(
         modifier = Modifier.padding(horizontal = 16.dp)
     ) {
         Text(
-            text = "Popular Studios",
+            text = stringResource(R.string.home_popular_studios),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

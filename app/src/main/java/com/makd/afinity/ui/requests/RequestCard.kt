@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -103,38 +104,49 @@ fun RequestCard(
                 val requestStatus = RequestStatus.fromValue(request.status)
                 val mediaStatus = MediaStatus.fromValue(request.media.status ?: 1)
 
-                val (badgeText, badgeColor, badgeTextColor) = when (requestStatus) {
-                    RequestStatus.DECLINED -> Triple(
-                        "Declined",
+                val (badgeText, badgeColor, badgeTextColor) = when {
+                    requestStatus == RequestStatus.DECLINED -> Triple(
+                        stringResource(R.string.status_declined),
                         MaterialTheme.colorScheme.error,
                         MaterialTheme.colorScheme.onError
                     )
 
-                    RequestStatus.APPROVED if mediaStatus == MediaStatus.PENDING -> Triple(
-                        "Processing",
+                    requestStatus == RequestStatus.APPROVED && mediaStatus == MediaStatus.PENDING -> Triple(
+                        stringResource(R.string.status_processing),
                         MaterialTheme.colorScheme.primary,
                         MaterialTheme.colorScheme.onPrimary
                     )
 
-                    else -> Triple(
-                        MediaStatus.getDisplayName(mediaStatus),
-                        when (mediaStatus) {
-                            MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
-                            MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
-                            MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
-                            MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.secondary
-                            MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
-                            MediaStatus.DELETED -> MaterialTheme.colorScheme.error
-                        },
-                        when (mediaStatus) {
-                            MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
-                            MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
-                            MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
-                            MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.onSecondary
-                            MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
-                            MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
+                    else -> {
+                        val statusText = when (mediaStatus) {
+                            MediaStatus.PENDING -> stringResource(R.string.status_pending)
+                            MediaStatus.PROCESSING -> stringResource(R.string.status_processing)
+                            MediaStatus.PARTIALLY_AVAILABLE -> stringResource(R.string.status_partially_available)
+                            MediaStatus.AVAILABLE -> stringResource(R.string.status_available)
+                            MediaStatus.DELETED -> stringResource(R.string.status_deleted)
+                            else -> stringResource(R.string.status_unknown)
                         }
-                    )
+
+                        Triple(
+                            statusText,
+                            when (mediaStatus) {
+                                MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
+                                MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
+                                MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
+                                MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.secondary
+                                MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
+                                MediaStatus.DELETED -> MaterialTheme.colorScheme.error
+                            },
+                            when (mediaStatus) {
+                                MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
+                                MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
+                                MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
+                                MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.onSecondary
+                                MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
+                                MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
+                            }
+                        )
+                    }
                 }
 
                 Card(
@@ -176,7 +188,7 @@ fun RequestCard(
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = "Approve",
+                                    contentDescription = stringResource(R.string.cd_approve),
                                     tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -197,7 +209,7 @@ fun RequestCard(
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_cancel),
-                                    contentDescription = "Decline",
+                                    contentDescription = stringResource(R.string.cd_decline),
                                     tint = MaterialTheme.colorScheme.onErrorContainer,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -223,7 +235,10 @@ fun RequestCard(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Requested by ${request.requestedBy.displayName ?: "Unknown"}",
+            text = stringResource(
+                R.string.requested_by_fmt,
+                request.requestedBy.displayName ?: stringResource(R.string.user_unknown)
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

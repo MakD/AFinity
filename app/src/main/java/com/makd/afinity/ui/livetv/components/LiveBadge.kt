@@ -10,9 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.makd.afinity.R
 
 @Composable
 fun LiveBadge(
@@ -25,7 +27,7 @@ fun LiveBadge(
             .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
         Text(
-            text = "LIVE",
+            text = stringResource(R.string.livetv_live_badge),
             color = Color.White,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,

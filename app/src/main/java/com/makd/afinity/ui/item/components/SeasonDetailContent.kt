@@ -19,13 +19,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.makd.afinity.R
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -47,7 +50,7 @@ fun SeasonDetailContent(
     specialFeatures: List<AfinityItem>,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
-    navController: androidx.navigation.NavController,
+    navController: NavController,
     preferencesRepository: PreferencesRepository,
     widthSizeClass: WindowWidthSizeClass
 ) {
@@ -105,7 +108,7 @@ private fun EpisodesSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Episodes",
+            text = stringResource(R.string.season_episodes_title),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

@@ -1,6 +1,8 @@
 package com.makd.afinity.data.repository
 
+import android.content.Context
 import androidx.core.net.toUri
+import com.makd.afinity.R
 import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.AfinityTypeConverters
 import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
@@ -28,6 +30,7 @@ import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.util.JellyfinImageUrlBuilder
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -52,6 +55,7 @@ import kotlin.time.Duration.Companion.hours
 
 @Singleton
 class AppDataRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val jellyfinRepository: JellyfinRepository,
     private val preferencesRepository: PreferencesRepository,
     private val database: AfinityDatabase,
@@ -191,7 +195,7 @@ class AppDataRepository @Inject constructor(
     fun skipInitialDataLoad() {
         Timber.d("Skipping initial data load for offline mode")
         _loadingProgress.value = 1f
-        _loadingPhase.value = "Ready (Offline Mode)"
+        _loadingPhase.value = context.getString(R.string.loading_phase_offline)
         _isInitialDataLoaded.value = true
     }
 
@@ -203,7 +207,7 @@ class AppDataRepository @Inject constructor(
 
         try {
             coroutineScope {
-                updateProgress(0.1f, "Connecting to server...")
+                updateProgress(0.1f, context.getString(R.string.loading_phase_connecting))
 
                 val latestMediaDeferred = async { loadLatestMedia() }
                 val heroCarouselDeferred = async { loadHeroCarousel() }
@@ -211,33 +215,31 @@ class AppDataRepository @Inject constructor(
                 val nextUpDeferred = async { loadNextUp() }
                 val librariesDeferred = async { loadLibraries() }
 
-                updateProgress(0.3f, "Fetching content...")
+                updateProgress(0.3f, context.getString(R.string.loading_phase_fetching))
 
                 val libraries = librariesDeferred.await()
                 _libraries.value = libraries
 
                 val homeDataDeferred = async { loadHomeSpecificData(libraries) }
 
-                updateProgress(0.5f, "Processing libraries...")
+                updateProgress(0.5f, context.getString(R.string.loading_phase_processing))
 
                 _latestMedia.value = latestMediaDeferred.await()
                 _heroCarouselItems.value = heroCarouselDeferred.await()
                 _continueWatching.value = continueWatchingDeferred.await()
                 _nextUp.value = nextUpDeferred.await()
 
-                updateProgress(0.8f, "Finalizing home screen...")
+                updateProgress(0.8f, context.getString(R.string.loading_phase_finalizing))
 
                 val (latestMovies, latestTvSeries, highestRated) = homeDataDeferred.await()
                 _latestMovies.value = latestMovies
                 _latestTvSeries.value = latestTvSeries
                 _highestRated.value = highestRated
 
-                updateProgress(1f, "Ready!")
+                updateProgress(1f, context.getString(R.string.loading_phase_ready))
                 _isInitialDataLoaded.value = true
 
                 startLiveDataCollectors()
-
-                Timber.d("All initial data loaded successfully in parallel")
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load initial app data")

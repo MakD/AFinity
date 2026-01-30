@@ -61,6 +61,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -307,7 +308,7 @@ fun LibraryContentScreen(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_arrows_sort),
-                contentDescription = "Sort"
+                contentDescription = stringResource(R.string.cd_sort_fab)
             )
         }
     }
@@ -367,12 +368,12 @@ private fun LibraryContentTopBar(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_search),
-                            contentDescription = "Search",
+                            contentDescription = stringResource(R.string.action_search),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "Search",
+                            text = stringResource(R.string.action_search),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodyMedium,
                             fontSize = 20.sp,
@@ -401,7 +402,7 @@ private fun LibraryContentTopBar(
                     if (userProfileImageUrl != null) {
                         AsyncImage(
                             imageUrl = userProfileImageUrl,
-                            contentDescription = "Profile",
+                            contentDescription = stringResource(R.string.cd_profile),
                             targetWidth = 48.dp,
                             targetHeight = 48.dp,
                             modifier = Modifier.fillMaxSize(),
@@ -410,7 +411,7 @@ private fun LibraryContentTopBar(
                     } else {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_user_circle),
-                            contentDescription = "Profile",
+                            contentDescription = stringResource(R.string.cd_profile),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(32.dp)
                         )
@@ -470,7 +471,7 @@ private fun MediaItemGridCard(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_check),
-                                contentDescription = "Watched",
+                                contentDescription = stringResource(R.string.cd_watched_status),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -497,7 +498,10 @@ private fun MediaItemGridCard(
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
                             ) {
                                 Text(
-                                    text = if (text.toIntOrNull() != null && text.toInt() > 99) "99+ EP" else "$text EP",
+                                    text = if (text.toIntOrNull() != null && text.toInt() > 99)
+                                        stringResource(R.string.home_episode_count_plus)
+                                    else
+                                        stringResource(R.string.home_episode_count_fmt, text.toIntOrNull() ?: 0),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold
                                     ),
@@ -543,7 +547,7 @@ private fun MediaItemGridCard(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = "IMDB",
+                                contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -568,7 +572,7 @@ private fun MediaItemGridCard(
                                         R.drawable.ic_rotten_tomato_rotten
                                     }
                                 ),
-                                contentDescription = "Rotten Tomatoes",
+                                contentDescription = stringResource(R.string.cd_rotten_tomatoes),
                                 tint = Color.Unspecified,
                                 modifier = Modifier.size(12.dp)
                             )
@@ -602,7 +606,7 @@ private fun MediaItemGridCard(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = "IMDB",
+                                contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -630,7 +634,7 @@ private fun ErrorMessage(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Something went wrong",
+            text = stringResource(R.string.home_error_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
@@ -655,14 +659,14 @@ private fun EmptyLibraryMessage(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "No items found",
+            text = stringResource(R.string.library_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
 
         Text(
-            text = "This library appears to be empty or the content hasn't been scanned yet.",
+            text = stringResource(R.string.library_empty_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -682,21 +686,21 @@ private fun EmptyLetterFilterMessage(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "No items found",
+            text = stringResource(R.string.library_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
 
         Text(
-            text = "No content starting with \"$letter\"",
+            text = stringResource(R.string.library_empty_letter_fmt, letter),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
         Button(onClick = onClearFilter) {
-            Text("Show All")
+            Text(stringResource(R.string.action_show_all))
         }
     }
 }
@@ -708,11 +712,11 @@ private fun EmptyFilterMessage(
     modifier: Modifier = Modifier
 ) {
     val filterMessage = when (filterType) {
-        FilterType.WATCHED -> "No watched items found"
-        FilterType.UNWATCHED -> "No unwatched items found"
-        FilterType.WATCHLIST -> "No items in your watchlist"
-        FilterType.FAVORITES -> "No favorite items found"
-        FilterType.ALL -> "No items found"
+        FilterType.WATCHED -> stringResource(R.string.filter_empty_watched)
+        FilterType.UNWATCHED -> stringResource(R.string.filter_empty_unwatched)
+        FilterType.WATCHLIST -> stringResource(R.string.filter_empty_watchlist)
+        FilterType.FAVORITES -> stringResource(R.string.filter_empty_favorites)
+        FilterType.ALL -> stringResource(R.string.filter_empty_all)
     }
 
     Column(
@@ -721,7 +725,7 @@ private fun EmptyFilterMessage(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "No items found",
+            text = stringResource(R.string.library_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
@@ -735,7 +739,7 @@ private fun EmptyFilterMessage(
         )
 
         Button(onClick = onClearFilter) {
-            Text("Clear Filter")
+            Text(stringResource(R.string.action_clear_filter))
         }
     }
 }
@@ -751,7 +755,7 @@ private fun SortDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Sort by")
+            Text(stringResource(R.string.sort_title))
         },
         text = {
             Column(
@@ -766,7 +770,7 @@ private fun SortDialog(
                         shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
                     ) {
                         Spacer(Modifier.width(4.dp))
-                        Text("Ascending")
+                        Text(stringResource(R.string.sort_ascending))
                     }
 
                     SegmentedButton(
@@ -775,28 +779,38 @@ private fun SortDialog(
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
                     ) {
                         Spacer(Modifier.width(4.dp))
-                        Text("Descending")
+                        Text(stringResource(R.string.sort_descending))
                     }
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    SortOptionRow("Title", SortBy.NAME, selectedSort) { selectedSort = it }
-                    SortOptionRow("IMDB Rating", SortBy.IMDB_RATING, selectedSort) {
-                        selectedSort = it
-                    }
                     SortOptionRow(
-                        "Parental Rating",
+                        stringResource(R.string.sort_option_title),
+                        SortBy.NAME,
+                        selectedSort
+                    ) { selectedSort = it }
+                    SortOptionRow(
+                        stringResource(R.string.sort_option_imdb),
+                        SortBy.IMDB_RATING,
+                        selectedSort
+                    ) { selectedSort = it }
+                    SortOptionRow(
+                        stringResource(R.string.sort_option_parental),
                         SortBy.PARENTAL_RATING,
                         selectedSort
                     ) { selectedSort = it }
-                    SortOptionRow("Date Added", SortBy.DATE_ADDED, selectedSort) {
-                        selectedSort = it
-                    }
-                    SortOptionRow("Date Played", SortBy.DATE_PLAYED, selectedSort) {
-                        selectedSort = it
-                    }
                     SortOptionRow(
-                        "Release Date",
+                        stringResource(R.string.sort_option_date_added),
+                        SortBy.DATE_ADDED,
+                        selectedSort
+                    ) { selectedSort = it }
+                    SortOptionRow(
+                        stringResource(R.string.sort_option_date_played),
+                        SortBy.DATE_PLAYED,
+                        selectedSort
+                    ) { selectedSort = it }
+                    SortOptionRow(
+                        stringResource(R.string.sort_option_release_date),
                         SortBy.RELEASE_DATE,
                         selectedSort
                     ) { selectedSort = it }
@@ -810,12 +824,12 @@ private fun SortDialog(
                     onDismiss()
                 }
             ) {
-                Text("Apply")
+                Text(stringResource(R.string.action_apply))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
@@ -854,11 +868,11 @@ private fun FilterRow(
     modifier: Modifier = Modifier
 ) {
     val filters = listOf(
-        FilterType.ALL to "All",
-        FilterType.WATCHED to "Watched",
-        FilterType.UNWATCHED to "Unwatched",
-        FilterType.WATCHLIST to "Watchlist",
-        FilterType.FAVORITES to "Favorites"
+        FilterType.ALL to stringResource(R.string.filter_all),
+        FilterType.WATCHED to stringResource(R.string.filter_watched),
+        FilterType.UNWATCHED to stringResource(R.string.filter_unwatched),
+        FilterType.WATCHLIST to stringResource(R.string.filter_watchlist),
+        FilterType.FAVORITES to stringResource(R.string.filter_favorites)
     )
 
     LazyRow(

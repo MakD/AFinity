@@ -20,11 +20,13 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
@@ -44,7 +46,7 @@ fun SpecialFeaturesSection(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Special Features",
+                text = stringResource(R.string.special_features_title),
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold
                 ),

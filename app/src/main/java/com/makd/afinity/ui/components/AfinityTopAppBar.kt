@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -89,12 +90,12 @@ fun AfinityTopAppBar(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_search),
-                                contentDescription = "Search",
+                                contentDescription = stringResource(R.string.cd_search_icon),
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
-                                text = "Search",
+                                text = stringResource(R.string.top_bar_search_hint),
                                 color = Color.White,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontSize = 20.sp,
@@ -125,7 +126,7 @@ fun AfinityTopAppBar(
                             if (userProfileImageUrl != null) {
                                 AsyncImage(
                                     imageUrl = userProfileImageUrl,
-                                    contentDescription = "Profile",
+                                    contentDescription = stringResource(R.string.cd_profile_icon),
                                     targetWidth = 48.dp,
                                     targetHeight = 48.dp,
                                     modifier = Modifier.fillMaxSize(),
@@ -134,7 +135,7 @@ fun AfinityTopAppBar(
                             } else {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_user_circle),
-                                    contentDescription = "Profile",
+                                    contentDescription = stringResource(R.string.cd_profile_icon),
                                     tint = Color.White,
                                     modifier = Modifier.size(32.dp)
                                 )
@@ -157,7 +158,7 @@ fun AfinityTopAppBar(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_cloud_off),
-                                contentDescription = "Offline Mode",
+                                contentDescription = stringResource(R.string.cd_offline_mode),
                                 tint = MaterialTheme.colorScheme.onTertiaryContainer,
                                 modifier = Modifier.size(14.dp)
                             )

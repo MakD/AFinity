@@ -9,9 +9,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -28,7 +30,7 @@ fun SimilarItemsSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "More Like This",
+            text = stringResource(R.string.similar_items_title),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

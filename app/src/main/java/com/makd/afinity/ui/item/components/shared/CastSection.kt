@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,7 +58,7 @@ fun CastSection(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Cast",
+                text = stringResource(R.string.cast_section_title),
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -122,7 +123,7 @@ private fun CastMemberCard(
         )
 
         Text(
-            text = if (person.role.isNotEmpty()) "as ${person.role}" else "",
+            text = if (person.role.isNotEmpty()) stringResource(R.string.cast_role_format, person.role) else "",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

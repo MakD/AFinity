@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -134,9 +135,17 @@ fun SettingsScreen(
         LaunchedEffect(error) { Timber.e("Settings error: $error") }
         AlertDialog(
             onDismissRequest = { viewModel.clearError() },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.dialog_error_title)) },
             text = { Text(error) },
-            confirmButton = { TextButton(onClick = { viewModel.clearError() }) { Text("OK") } }
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) {
+                    Text(
+                        stringResource(
+                            R.string.action_ok
+                        )
+                    )
+                }
+            }
         )
     }
 
@@ -146,7 +155,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Settings",
+                        text = stringResource(R.string.settings_title),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -156,7 +165,7 @@ fun SettingsScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -186,7 +195,8 @@ fun SettingsScreen(
             ) {
                 item(key = "profile") {
                     ProfileHeader(
-                        userName = uiState.currentUser?.name ?: "Unknown User",
+                        userName = uiState.currentUser?.name
+                            ?: stringResource(R.string.unknown_user),
                         serverName = uiState.serverName,
                         serverUrl = uiState.serverUrl,
                         userProfileImageUrl = uiState.userProfileImageUrl,
@@ -195,11 +205,13 @@ fun SettingsScreen(
                 }
 
                 item {
-                    SettingsGroup(title = "General") {
+                    SettingsGroup(title = stringResource(R.string.pref_group_general)) {
                         SettingsSwitchItem(
                             icon = painterResource(id = R.drawable.ic_cloud_off),
-                            title = "Offline Mode",
-                            subtitle = if (!isNetworkAvailable) "Offline (No connection)" else if (manualOfflineMode) "Manually enabled" else "Force offline mode",
+                            title = stringResource(R.string.pref_offline_mode),
+                            subtitle = if (!isNetworkAvailable) stringResource(R.string.offline_mode_no_connection)
+                            else if (manualOfflineMode) stringResource(R.string.offline_mode_manual)
+                            else stringResource(R.string.offline_mode_force),
                             checked = effectiveOfflineMode,
                             onCheckedChange = viewModel::toggleOfflineMode,
                             enabled = isNetworkAvailable
@@ -207,8 +219,10 @@ fun SettingsScreen(
                         SettingsDivider()
                         SettingsSwitchItem(
                             icon = painterResource(id = R.drawable.ic_request_seerr_dark),
-                            title = "Discovery & Requests",
-                            subtitle = if (isJellyseerrAuthenticated) "Connected via Seerr" else "Connect to request content",
+                            title = stringResource(R.string.pref_discovery_requests),
+                            subtitle = if (isJellyseerrAuthenticated) stringResource(R.string.discovery_connected) else stringResource(
+                                R.string.discovery_connect
+                            ),
                             checked = isJellyseerrAuthenticated,
                             onCheckedChange = { enabled ->
                                 if (enabled) showJellyseerrBottomSheet =
@@ -218,44 +232,44 @@ fun SettingsScreen(
                         SettingsDivider()
                         SettingsItem(
                             icon = painterResource(id = R.drawable.ic_download),
-                            title = "Downloads",
-                            subtitle = "Manage offline content",
+                            title = stringResource(R.string.pref_downloads),
+                            subtitle = stringResource(R.string.pref_downloads_summary),
                             onClick = onDownloadClick
                         )
                         SettingsDivider()
                         SettingsItem(
                             icon = painterResource(id = R.drawable.ic_user),
-                            title = "Switch Session",
-                            subtitle = "Change user or server",
+                            title = stringResource(R.string.pref_switch_session),
+                            subtitle = stringResource(R.string.pref_switch_session_summary),
                             onClick = { showSessionSwitcherSheet = true }
                         )
                     }
                 }
 
                 item {
-                    SettingsGroup(title = "Connections") {
+                    SettingsGroup(title = stringResource(R.string.pref_group_connections)) {
                         SettingsItem(
                             icon = painterResource(id = R.drawable.ic_server),
-                            title = "Manage Servers",
-                            subtitle = "Add or remove Jellyfin servers",
+                            title = stringResource(R.string.pref_manage_servers),
+                            subtitle = stringResource(R.string.pref_manage_servers_summary),
                             onClick = onServerManagementClick
                         )
                     }
                 }
 
                 item {
-                    SettingsGroup(title = "Preferences") {
+                    SettingsGroup(title = stringResource(R.string.pref_group_preferences)) {
                         SettingsItem(
                             icon = painterResource(id = R.drawable.ic_color_swatch),
-                            title = "Appearance",
-                            subtitle = "Themes and layout",
+                            title = stringResource(R.string.pref_appearance),
+                            subtitle = stringResource(R.string.pref_appearance_summary),
                             onClick = onAppearanceOptionsClick
                         )
                         SettingsDivider()
                         SettingsItem(
                             icon = painterResource(id = R.drawable.ic_playback_settings),
-                            title = "Playback",
-                            subtitle = "Player behavior and quality",
+                            title = stringResource(R.string.pref_playback),
+                            subtitle = stringResource(R.string.pref_playback_summary),
                             onClick = onPlayerOptionsClick
                         )
                     }
@@ -266,18 +280,26 @@ fun SettingsScreen(
                 }
 
                 item {
-                    SettingsGroup(title = "About") {
+                    SettingsGroup(title = stringResource(R.string.pref_group_about)) {
+                        val buildType =
+                            if (AppConstants.IS_DEBUG) stringResource(R.string.build_debug) else stringResource(
+                                R.string.build_release
+                            )
                         SettingsItem(
                             icon = painterResource(id = R.drawable.ic_versions),
-                            title = "Version",
-                            subtitle = "${AppConstants.VERSION_NAME} (${if (AppConstants.IS_DEBUG) "Debug Build" else "Release Build"})",
+                            title = stringResource(R.string.pref_version),
+                            subtitle = stringResource(
+                                R.string.version_fmt,
+                                AppConstants.VERSION_NAME,
+                                buildType
+                            ),
                             onClick = null
                         )
                         SettingsDivider()
                         SettingsItem(
                             icon = painterResource(id = R.drawable.ic_source_code),
-                            title = "Licenses",
-                            subtitle = "Open source libraries",
+                            title = stringResource(R.string.pref_licenses),
+                            subtitle = stringResource(R.string.pref_licenses_summary),
                             onClick = onLicensesClick
                         )
                     }
@@ -316,7 +338,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Log Out",
+                                    text = stringResource(R.string.action_logout),
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                                 )
                             }
@@ -394,7 +416,7 @@ fun ProfileHeader(
             if (userProfileImageUrl != null) {
                 AsyncImage(
                     imageUrl = userProfileImageUrl,
-                    contentDescription = "Profile Picture",
+                    contentDescription = stringResource(R.string.cd_profile_picture),
                     targetWidth = 96.dp,
                     targetHeight = 96.dp,
                     contentScale = ContentScale.Crop,
@@ -434,7 +456,7 @@ fun ProfileHeader(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = serverName ?: "Unknown Server",
+                    text = serverName ?: stringResource(R.string.unknown_server),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -559,13 +581,13 @@ private fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Uni
         },
         title = {
             Text(
-                "Log Out",
+                stringResource(R.string.dialog_logout_title),
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
             )
         },
         text = {
             Text(
-                "Are you sure you want to log out? You will need to sign in again to access content.",
+                stringResource(R.string.dialog_logout_message),
                 style = MaterialTheme.typography.bodyMedium
             )
         },
@@ -576,9 +598,15 @@ private fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Uni
                     containerColor = MaterialTheme.colorScheme.error,
                     contentColor = MaterialTheme.colorScheme.onError
                 )
-            ) { Text("Log Out") }
+            ) { Text(stringResource(R.string.action_logout)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
         shape = RoundedCornerShape(28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
     )
@@ -597,20 +625,20 @@ private fun JellyseerrLogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss:
         },
         title = {
             Text(
-                "Disconnect Seerr",
+                stringResource(R.string.dialog_disconnect_seerr_title),
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
             )
         },
         text = {
             Text(
-                "Disconnecting will prevent you from making new requests. You can reconnect at any time.",
+                stringResource(R.string.dialog_disconnect_seerr_message),
                 style = MaterialTheme.typography.bodyMedium
             )
         },
         confirmButton = {
-            Button(onClick = onConfirm) { Text("Disconnect") }
+            Button(onClick = onConfirm) { Text(stringResource(R.string.action_disconnect)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
         shape = RoundedCornerShape(28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
     )

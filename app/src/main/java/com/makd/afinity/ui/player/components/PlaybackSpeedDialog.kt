@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -85,7 +86,7 @@ fun PlaybackSpeedDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Current Speed ${String.format("%.2f", sliderSpeed)}x",
+                        text = stringResource(R.string.player_speed_title_fmt, sliderSpeed),
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium
@@ -110,7 +111,7 @@ fun PlaybackSpeedDialog(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_remove),
-                                contentDescription = "Decrease speed",
+                                contentDescription = stringResource(R.string.cd_speed_decrease),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -147,7 +148,7 @@ fun PlaybackSpeedDialog(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_add),
-                                contentDescription = "Increase speed",
+                                contentDescription = stringResource(R.string.cd_speed_increase),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -231,7 +232,7 @@ private fun SpeedChip(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Text(
-            text = String.format("%.2f", speed),
+            text = stringResource(R.string.player_speed_value_fmt, speed),
             fontSize = 14.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )

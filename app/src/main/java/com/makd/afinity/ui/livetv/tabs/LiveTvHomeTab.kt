@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.ui.livetv.LiveTvUiState
@@ -89,12 +90,12 @@ fun LiveTvHomeTab(
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                 )
                 Text(
-                    text = "No programs available",
+                    text = stringResource(R.string.livetv_home_empty_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Text(
-                    text = "Check back later for program listings",
+                    text = stringResource(R.string.livetv_home_empty_message),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                 )

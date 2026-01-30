@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -75,7 +76,7 @@ fun GenreResultsScreen(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_chevron_left),
-                        contentDescription = "Back"
+                        contentDescription = stringResource(R.string.cd_back)
                     )
                 }
             }
@@ -101,11 +102,11 @@ fun GenreResultsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Something went wrong",
+                            text = stringResource(R.string.error_something_went_wrong),
                             style = MaterialTheme.typography.headlineSmall
                         )
                         Text(
-                            text = uiState.error ?: "Unknown error",
+                            text = uiState.error ?: stringResource(R.string.error_unknown),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -133,7 +134,7 @@ private fun GenreResultsContent(
     widthSizeClass: WindowWidthSizeClass
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Movies", "TV Shows")
+    val tabs = listOf(stringResource(R.string.tab_movies), stringResource(R.string.tab_tv_shows))
 
     Column {
         Box(
@@ -219,7 +220,7 @@ private fun GenreResultsContent(
         when (selectedTab) {
             0 -> {
                 if (movies.isEmpty()) {
-                    EmptyStateMessage("No movies found in this genre")
+                    EmptyStateMessage(stringResource(R.string.empty_genre_movies))
                 } else {
                     ItemGrid(
                         items = movies,
@@ -231,7 +232,7 @@ private fun GenreResultsContent(
 
             1 -> {
                 if (shows.isEmpty()) {
-                    EmptyStateMessage("No TV shows found in this genre")
+                    EmptyStateMessage(stringResource(R.string.empty_genre_tv))
                 } else {
                     ItemGrid(
                         items = shows,

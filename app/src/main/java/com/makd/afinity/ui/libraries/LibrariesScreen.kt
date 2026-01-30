@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -137,7 +138,7 @@ fun LibrariesScreen(
         AfinityTopAppBar(
             title = {
                 Text(
-                    text = "Libraries",
+                    text = stringResource(R.string.libraries_title),
                     style = MaterialTheme.typography.headlineLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -240,7 +241,7 @@ private fun ErrorMessage(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Something went wrong",
+            text = stringResource(R.string.home_error_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
@@ -254,7 +255,7 @@ private fun ErrorMessage(
         )
 
         Text(
-            text = "Data will refresh automatically",
+            text = stringResource(R.string.home_error_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -272,14 +273,14 @@ private fun EmptyLibrariesMessage(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "No libraries found",
+            text = stringResource(R.string.libraries_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
 
         Text(
-            text = "Your Jellyfin server doesn't have any libraries configured yet.",
+            text = stringResource(R.string.libraries_empty_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

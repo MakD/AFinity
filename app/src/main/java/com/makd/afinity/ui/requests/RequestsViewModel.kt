@@ -1,7 +1,9 @@
 package com.makd.afinity.ui.requests
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
@@ -14,6 +16,7 @@ import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.BackdropTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +29,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val jellyseerrRepository: JellyseerrRepository
 ) : ViewModel() {
 
@@ -159,7 +163,7 @@ class RequestsViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                error = error.message ?: "Failed to load requests"
+                                error = error.message ?: context.getString(R.string.error_requests_load_failed)
                             )
                         }
                         Timber.e(error, "Failed to load requests")
@@ -169,7 +173,7 @@ class RequestsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Unknown error"
+                        error = e.message ?: context.getString(R.string.error_unknown)
                     )
                 }
                 Timber.e(e, "Error loading requests")
@@ -191,7 +195,7 @@ class RequestsViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isDeletingRequest = false,
-                                error = "Failed to delete request: ${error.message}"
+                                error = context.getString(R.string.error_request_delete_failed_fmt, error.message)
                             )
                         }
                         Timber.e(error, "Failed to delete request")
@@ -201,7 +205,7 @@ class RequestsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isDeletingRequest = false,
-                        error = e.message ?: "Unknown error"
+                        error = e.message ?: context.getString(R.string.error_unknown)
                     )
                 }
                 Timber.e(e, "Error deleting request")
@@ -241,7 +245,7 @@ class RequestsViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isProcessingRequest = false,
-                                error = "Failed to approve request: ${error.message}"
+                                error = context.getString(R.string.error_request_approve_failed_fmt, error.message)
                             )
                         }
                         Timber.e(error, "Failed to approve request")
@@ -251,7 +255,7 @@ class RequestsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isProcessingRequest = false,
-                        error = e.message ?: "Unknown error"
+                        error = e.message ?: context.getString(R.string.error_unknown)
                     )
                 }
                 Timber.e(e, "Error approving request")
@@ -291,7 +295,7 @@ class RequestsViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isProcessingRequest = false,
-                                error = "Failed to decline request: ${error.message}"
+                                error = context.getString(R.string.error_request_decline_failed_fmt, error.message)
                             )
                         }
                         Timber.e(error, "Failed to decline request")
@@ -301,7 +305,7 @@ class RequestsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isProcessingRequest = false,
-                        error = e.message ?: "Unknown error"
+                        error = e.message ?: context.getString(R.string.error_unknown)
                     )
                 }
                 Timber.e(e, "Error declining request")
@@ -331,7 +335,7 @@ class RequestsViewModel @Inject constructor(
                         }
                         if (results.isEmpty()) {
                             _uiState.update {
-                                it.copy(searchError = "No results found for '$query'")
+                                it.copy(searchError = context.getString(R.string.error_search_no_results_fmt, query))
                             }
                         }
                         Timber.d("Found ${results.size} search results")
@@ -340,7 +344,7 @@ class RequestsViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isSearching = false,
-                                searchError = "Search failed: ${error.message}"
+                                searchError = context.getString(R.string.error_search_failed_fmt, error.message)
                             )
                         }
                         Timber.e(error, "Search failed")
@@ -350,7 +354,7 @@ class RequestsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isSearching = false,
-                        searchError = e.message ?: "Unknown error"
+                        searchError = e.message ?: context.getString(R.string.error_unknown)
                     )
                 }
                 Timber.e(e, "Error searching")
@@ -380,7 +384,7 @@ class RequestsViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isCreatingRequest = false,
-                                error = "Failed to create request: ${error.message}"
+                                error = context.getString(R.string.error_request_create_failed_fmt, error.message)
                             )
                         }
                         Timber.e(error, "Failed to create request")
@@ -390,7 +394,7 @@ class RequestsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isCreatingRequest = false,
-                        error = e.message ?: "Unknown error"
+                        error = e.message ?: context.getString(R.string.error_unknown)
                     )
                 }
                 Timber.e(e, "Error creating request")
@@ -628,7 +632,7 @@ class RequestsViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isCreatingRequest = false,
-                                error = "Failed to create request: ${error.message}"
+                                error = context.getString(R.string.error_request_create_failed_fmt, error.message)
                             )
                         }
                         Timber.e(error, "Failed to create request")
@@ -638,7 +642,7 @@ class RequestsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isCreatingRequest = false,
-                        error = e.message ?: "Unknown error"
+                        error = e.message ?: context.getString(R.string.error_unknown)
                     )
                 }
                 Timber.e(e, "Error creating request")

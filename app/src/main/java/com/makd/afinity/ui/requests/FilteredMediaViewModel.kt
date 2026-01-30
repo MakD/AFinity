@@ -1,10 +1,13 @@
 package com.makd.afinity.ui.requests
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.repository.JellyseerrRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FilteredMediaViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val jellyseerrRepository: JellyseerrRepository
 ) : ViewModel() {
 
@@ -132,7 +136,7 @@ class FilteredMediaViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                error = error.message ?: "Failed to load content"
+                                error = error.message ?: context.getString(R.string.error_load_content_generic)
                             )
                         }
                         Timber.e(error, "Failed to load content for ${params.name}")
@@ -142,7 +146,7 @@ class FilteredMediaViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Unknown error"
+                        error = e.message ?: context.getString(R.string.error_unknown)
                     )
                 }
                 Timber.e(e, "Error loading content")

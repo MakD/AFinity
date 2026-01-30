@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.halilibo.richtext.markdown.Markdown
@@ -72,7 +73,7 @@ fun UpdateAvailableDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Update Available",
+                    text = stringResource(R.string.update_available_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -90,7 +91,7 @@ fun UpdateAvailableDialog(
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = "v$currentVersionName",
+                        text = stringResource(R.string.update_version_fmt, currentVersionName),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -121,7 +122,7 @@ fun UpdateAvailableDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "What's New",
+                    text = stringResource(R.string.update_whats_new),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -187,7 +188,7 @@ fun UpdateAvailableDialog(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Install & Restart")
+                                Text(stringResource(R.string.btn_install_restart))
                             }
 
                             UpdateButtonState.DOWNLOADING -> {
@@ -197,7 +198,7 @@ fun UpdateAvailableDialog(
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Downloading...")
+                                Text(stringResource(R.string.btn_downloading))
                             }
 
                             UpdateButtonState.DOWNLOAD -> {
@@ -207,7 +208,7 @@ fun UpdateAvailableDialog(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Download Update")
+                                Text(stringResource(R.string.btn_download_update))
                             }
                         }
                     }
@@ -216,7 +217,7 @@ fun UpdateAvailableDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Not Now")
+                Text(stringResource(R.string.action_not_now))
             }
         }
     )

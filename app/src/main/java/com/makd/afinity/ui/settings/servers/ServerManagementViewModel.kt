@@ -1,11 +1,14 @@
 package com.makd.afinity.ui.settings.servers
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.DatabaseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +30,7 @@ data class ServerWithUserCount(
 
 @HiltViewModel
 class ServerManagementViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository
 ) : ViewModel() {
@@ -59,7 +63,7 @@ class ServerManagementViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Error loading servers")
                 _state.value = _state.value.copy(
-                    error = e.message ?: "Failed to load servers",
+                    error = e.message ?: context.getString(R.string.error_load_servers_failed),
                     isLoading = false
                 )
             }
@@ -82,7 +86,7 @@ class ServerManagementViewModel @Inject constructor(
                 val currentSession = sessionManager.currentSession.value
                 if (currentSession?.serverId == serverId) {
                     _state.value = _state.value.copy(
-                        error = "Cannot delete the currently active server. Please switch to another server first.",
+                        error = context.getString(R.string.error_delete_active_server),
                         isLoading = false
                     )
                     return@launch
@@ -98,7 +102,7 @@ class ServerManagementViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Error deleting server")
                 _state.value = _state.value.copy(
-                    error = e.message ?: "Failed to delete server",
+                    error = e.message ?: context.getString(R.string.error_delete_server_failed),
                     isLoading = false
                 )
             }

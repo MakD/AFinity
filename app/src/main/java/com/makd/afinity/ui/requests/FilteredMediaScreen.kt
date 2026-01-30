@@ -20,11 +20,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.R
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -229,7 +231,7 @@ private fun ErrorView(
             modifier = Modifier.padding(32.dp)
         ) {
             Text(
-                text = "Error",
+                text = stringResource(R.string.error_title),
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -242,7 +244,7 @@ private fun ErrorView(
                 textAlign = TextAlign.Center
             )
             Button(onClick = onRetry) {
-                Text(text = "Retry")
+                Text(text = stringResource(R.string.action_retry))
             }
         }
     }
@@ -259,7 +261,7 @@ private fun EmptyView(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "No content available",
+                text = stringResource(R.string.error_no_content),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.SemiBold
                 ),

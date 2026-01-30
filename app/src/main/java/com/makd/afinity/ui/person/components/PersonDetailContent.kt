@@ -40,6 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -106,7 +107,7 @@ fun PersonDetailContent(
 
                 if (movies.isNotEmpty()) {
                     PersonFilmographySection(
-                        title = "Movies",
+                        title = stringResource(R.string.person_movies_fmt, movies.size),
                         items = movies,
                         onItemClick = onItemClick,
                         cardWidth = cardWidth
@@ -115,7 +116,7 @@ fun PersonDetailContent(
 
                 if (shows.isNotEmpty()) {
                     PersonFilmographySection(
-                        title = "TV Shows",
+                        title = stringResource(R.string.person_shows_fmt, shows.size),
                         items = shows,
                         onItemClick = onItemClick,
                         cardWidth = cardWidth
@@ -141,7 +142,7 @@ private fun PersonHeroSection(
     ) {
         AsyncImage(
             imageUrl = person.images.primaryImageUrl,
-            contentDescription = "${person.name} image",
+            contentDescription = stringResource(R.string.cd_person_image_fmt, person.name),
             blurHash = person.images.primaryBlurHash,
             targetWidth = LocalConfiguration.current.screenWidthDp.dp,
             targetHeight = screenHeight * 0.6f,
@@ -192,7 +193,7 @@ private fun PersonOverviewSection(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "Biography",
+            text = stringResource(R.string.person_biography),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -233,7 +234,7 @@ private fun PersonOverviewSection(
 
         if (isEllipsized || isExpanded) {
             Text(
-                text = if (isExpanded) "Show less" else "Show more",
+                text = if (isExpanded) stringResource(R.string.action_show_less) else stringResource(R.string.action_show_more),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
@@ -261,7 +262,7 @@ private fun PersonFilmographySection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "$title (${items.size})",
+            text = title,
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -316,11 +317,12 @@ private fun PersonMetadataSection(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             person.premiereDate?.let { birthday ->
-                val formatter = java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy")
+                val datePattern = stringResource(R.string.person_date_fmt)
+                val formatter = remember(datePattern) { java.time.format.DateTimeFormatter.ofPattern(datePattern) }
                 val now = java.time.LocalDateTime.now()
                 val age = java.time.Period.between(birthday.toLocalDate(), now.toLocalDate()).years
                 Text(
-                    text = "Born: ${birthday.format(formatter)} ($age years old)",
+                    text = stringResource(R.string.person_born_fmt, birthday.format(formatter), age),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -328,7 +330,7 @@ private fun PersonMetadataSection(
 
             if (person.productionLocations.isNotEmpty()) {
                 Text(
-                    text = "Birth Place: ${person.productionLocations.first()}",
+                    text = stringResource(R.string.person_birthplace_fmt, person.productionLocations.first()),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -383,7 +385,7 @@ private fun PersonExternalLinksSection(
             ) {
                 Image(
                     painter = painterResource(id = iconRes),
-                    contentDescription = externalUrl.name ?: "External Link",
+                    contentDescription = externalUrl.name ?: stringResource(R.string.cd_external_link),
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.height(16.dp)
                 )

@@ -6,8 +6,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
@@ -19,7 +21,11 @@ fun NextUpSection(
     widthSizeClass: WindowWidthSizeClass
 ) {
     val isInProgress = episode.playbackPositionTicks > 0 && !episode.played
-    val sectionTitle = if (isInProgress) "Continue Watching" else "Next Up"
+    val sectionTitle = if (isInProgress) {
+        stringResource(R.string.home_continue_watching)
+    } else {
+        stringResource(R.string.home_next_up)
+    }
 
     val cardWidth = widthSizeClass.landscapeWidth
 

@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -111,7 +112,7 @@ private fun MainContent(
     when (authState) {
         AuthenticationState.Loading -> {
             AfinitySplashScreen(
-                statusText = "Authenticating...",
+                statusText = stringResource(R.string.splash_status_authenticating),
                 modifier = modifier
             )
         }

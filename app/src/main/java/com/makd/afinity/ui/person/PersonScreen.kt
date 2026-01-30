@@ -14,10 +14,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.makd.afinity.R
 import com.makd.afinity.ui.person.components.PersonDetailContent
 
 @Composable
@@ -52,7 +54,7 @@ fun PersonScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Something went wrong",
+                        text = stringResource(R.string.home_error_title),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -62,7 +64,7 @@ fun PersonScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Button(onClick = { viewModel.retry() }) {
-                        Text("Try Again")
+                        Text(stringResource(R.string.action_retry))
                     }
                 }
             }

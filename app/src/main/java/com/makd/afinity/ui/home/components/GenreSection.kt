@@ -36,9 +36,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.ui.components.MediaItemCard
@@ -73,7 +75,7 @@ fun GenreSection(
         modifier = modifier.padding(horizontal = 14.dp)
     ) {
         Text(
-            text = "$genre Movies",
+            text = stringResource(R.string.home_genre_movies_title, genre),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

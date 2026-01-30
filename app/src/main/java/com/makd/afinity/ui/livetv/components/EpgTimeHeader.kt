@@ -12,9 +12,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -25,7 +27,8 @@ fun EpgTimeHeader(
     hourWidth: Dp,
     modifier: Modifier = Modifier
 ) {
-    val timeFormatter = DateTimeFormatter.ofPattern("h a")
+    val timePattern = stringResource(R.string.livetv_time_header_pattern)
+    val timeFormatter = DateTimeFormatter.ofPattern(timePattern)
 
     Row(
         modifier = modifier

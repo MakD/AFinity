@@ -56,12 +56,6 @@ enum class PersonSectionType {
         DIRECTED_BY -> PersonKind.DIRECTOR
         WRITTEN_BY -> PersonKind.WRITER
     }
-
-    fun toDisplayTitle(personName: String): String = when (this) {
-        STARRING -> "Starring $personName"
-        DIRECTED_BY -> "Directed by $personName"
-        WRITTEN_BY -> "Written by $personName"
-    }
 }
 
 data class PersonSection(
@@ -74,11 +68,6 @@ data class PersonSection(
 enum class MovieSectionType {
     BECAUSE_YOU_WATCHED,
     STARRING_ACTOR_FROM;
-
-    fun toDisplayTitle(referenceName: String, personName: String? = null): String = when (this) {
-        BECAUSE_YOU_WATCHED -> "Because you watched $referenceName"
-        STARRING_ACTOR_FROM -> "Starring $personName because you watched $referenceName"
-    }
 }
 
 data class MovieSection(
@@ -91,8 +80,4 @@ data class PersonFromMovieSection(
     val person: AfinityPerson,
     val referenceMovie: AfinityMovie,
     val items: List<AfinityMovie>
-) {
-    fun toDisplayTitle(): String {
-        return "Starring ${person.name} because you watched ${referenceMovie.name}"
-    }
-}
+)

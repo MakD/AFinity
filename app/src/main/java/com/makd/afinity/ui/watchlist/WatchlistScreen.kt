@@ -21,12 +21,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.Destination
@@ -67,7 +69,7 @@ fun WatchlistScreen(
             AfinityTopAppBar(
                 title = {
                     Text(
-                        text = "Watchlist",
+                        text = stringResource(R.string.watchlist_title),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -107,7 +109,7 @@ fun WatchlistScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = uiState.error ?: "Unknown error",
+                        text = uiState.error ?: stringResource(R.string.error_unknown),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -122,7 +124,7 @@ fun WatchlistScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Your watchlist is empty",
+                        text = stringResource(R.string.watchlist_empty),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -140,7 +142,7 @@ fun WatchlistScreen(
                     if (uiState.movies.isNotEmpty()) {
                         item {
                             WatchlistSection(
-                                title = "Movies",
+                                title = stringResource(R.string.section_movies),
                                 items = uiState.movies,
                                 onItemClick = onItemClick,
                                 cardWidth = portraitWidth
@@ -151,7 +153,7 @@ fun WatchlistScreen(
                     if (uiState.shows.isNotEmpty()) {
                         item {
                             WatchlistSection(
-                                title = "TV Shows",
+                                title = stringResource(R.string.section_tv_shows),
                                 items = uiState.shows,
                                 onItemClick = onItemClick,
                                 cardWidth = portraitWidth
@@ -162,7 +164,7 @@ fun WatchlistScreen(
                     if (uiState.seasons.isNotEmpty()) {
                         item {
                             WatchlistSection(
-                                title = "Seasons",
+                                title = stringResource(R.string.section_seasons),
                                 items = uiState.seasons,
                                 onItemClick = onItemClick,
                                 cardWidth = portraitWidth
@@ -173,7 +175,7 @@ fun WatchlistScreen(
                     if (uiState.episodes.isNotEmpty()) {
                         item {
                             WatchlistEpisodesSection(
-                                title = "Episodes",
+                                title = stringResource(R.string.section_episodes),
                                 episodes = uiState.episodes,
                                 onEpisodeClick = { episode ->
                                     viewModel.selectEpisode(episode)
@@ -249,7 +251,7 @@ private fun WatchlistSection(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "$title (${items.size})",
+            text = stringResource(R.string.watchlist_section_header_fmt, title, items.size),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -282,7 +284,7 @@ private fun WatchlistEpisodesSection(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "$title (${episodes.size})",
+            text = stringResource(R.string.watchlist_section_header_fmt, title, episodes.size),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

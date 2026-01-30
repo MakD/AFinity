@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.livetv.AfinityChannel
@@ -92,7 +94,7 @@ fun FavoritesScreen(
             AfinityTopAppBar(
                 title = {
                     Text(
-                        text = "Favorites",
+                        text = stringResource(R.string.favorites_title),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -133,12 +135,12 @@ fun FavoritesScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Text(
-                            text = "Something went wrong",
+                            text = stringResource(R.string.home_error_title),
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = uiState.error ?: "Unknown error",
+                            text = uiState.error ?: stringResource(R.string.error_unknown),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -163,12 +165,12 @@ fun FavoritesScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Text(
-                                text = "No Favorites Yet",
+                                text = stringResource(R.string.favorites_empty_title),
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
-                                text = "Items you mark as favorites will appear here",
+                                text = stringResource(R.string.favorites_empty_message),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -182,7 +184,7 @@ fun FavoritesScreen(
                             if (uiState.movies.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = "Movies (${uiState.movies.size})"
+                                        title = stringResource(R.string.favorites_header_movies, uiState.movies.size)
                                     ) {
                                         FavoriteMoviesRow(
                                             movies = uiState.movies,
@@ -196,7 +198,7 @@ fun FavoritesScreen(
                             if (uiState.boxSets.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = "Box Sets (${uiState.boxSets.size})"
+                                        title = stringResource(R.string.favorites_header_boxsets, uiState.boxSets.size)
                                     ) {
                                         FavoriteBoxSetsRow(
                                             boxSets = uiState.boxSets,
@@ -210,7 +212,7 @@ fun FavoritesScreen(
                             if (uiState.shows.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = "TV Shows (${uiState.shows.size})"
+                                        title = stringResource(R.string.favorites_header_shows, uiState.shows.size)
                                     ) {
                                         FavoriteShowsRow(
                                             shows = uiState.shows,
@@ -224,7 +226,7 @@ fun FavoritesScreen(
                             if (uiState.seasons.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = "Seasons (${uiState.seasons.size})"
+                                        title = stringResource(R.string.favorites_header_seasons, uiState.seasons.size)
                                     ) {
                                         FavoriteSeasonsRow(
                                             seasons = uiState.seasons,
@@ -238,7 +240,7 @@ fun FavoritesScreen(
                             if (uiState.episodes.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = "Episodes (${uiState.episodes.size})"
+                                        title = stringResource(R.string.favorites_header_episodes, uiState.episodes.size)
                                     ) {
                                         FavoriteEpisodesRow(
                                             episodes = uiState.episodes,
@@ -254,7 +256,7 @@ fun FavoritesScreen(
                             if (uiState.channels.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = "Live TV Channels (${uiState.channels.size})"
+                                        title = stringResource(R.string.favorites_header_channels, uiState.channels.size)
                                     ) {
                                         FavoriteChannelsRow(
                                             channels = uiState.channels,
@@ -274,7 +276,7 @@ fun FavoritesScreen(
                             if (uiState.people.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = "People (${uiState.people.size})"
+                                        title = stringResource(R.string.favorites_header_people, uiState.people.size)
                                     ) {
                                         FavoritePeopleRow(
                                             people = uiState.people,

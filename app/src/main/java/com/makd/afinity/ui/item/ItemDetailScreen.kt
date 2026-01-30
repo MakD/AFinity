@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.item
 
+import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -43,6 +44,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.paging.PagingData
 import com.makd.afinity.R
+import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryImageUrl
@@ -136,7 +139,7 @@ fun ItemDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Something went wrong",
+                        text = stringResource(R.string.home_error_title),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -146,7 +149,7 @@ fun ItemDetailScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Data will refresh automatically",
+                        text = stringResource(R.string.home_error_message),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -257,7 +260,7 @@ private fun ItemDetailContent(
     specialFeatures: List<AfinityItem>,
     isInWatchlist: Boolean,
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
-    downloadInfo: com.makd.afinity.data.models.download.DownloadInfo?,
+    downloadInfo: DownloadInfo?,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -326,13 +329,13 @@ private fun LandscapeItemDetailContent(
     specialFeatures: List<AfinityItem>,
     isInWatchlist: Boolean,
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
-    downloadInfo: com.makd.afinity.data.models.download.DownloadInfo?,
+    downloadInfo: DownloadInfo?,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
     viewModel: ItemDetailViewModel,
-    context: android.content.Context,
+    context: Context,
     widthSizeClass: WindowWidthSizeClass
 ) {
     val preferencesRepository = rememberPreferencesRepository()
@@ -366,7 +369,7 @@ private fun LandscapeItemDetailContent(
             if (backdropUrl != null) {
                 AsyncImage(
                     imageUrl = backdropUrl,
-                    contentDescription = "${item.name} backdrop",
+                    contentDescription = stringResource(R.string.cd_backdrop_fmt, item.name),
                     targetWidth = 1920.dp,
                     targetHeight = 1080.dp,
                     modifier = Modifier
@@ -427,7 +430,10 @@ private fun LandscapeItemDetailContent(
                         if (logoToDisplay != null) {
                             AsyncImage(
                                 imageUrl = logoUrlToDisplay,
-                                contentDescription = "$logoNameToDisplay logo",
+                                contentDescription = stringResource(
+                                    R.string.cd_logo_fmt,
+                                    logoNameToDisplay
+                                ),
                                 targetWidth = 300.dp,
                                 targetHeight = 150.dp,
                                 modifier = Modifier
@@ -525,7 +531,7 @@ private fun LandscapeItemDetailContent(
                                                             strokeWidth = 2.dp
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Loading...")
+                                                        Text(stringResource(R.string.status_loading))
                                                     }
                                                 }
 
@@ -533,16 +539,21 @@ private fun LandscapeItemDetailContent(
                                                     val episode = nextEpisode!!
                                                     val (buttonText, buttonIcon) = when {
                                                         episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                            "Rewatch" to painterResource(id = R.drawable.ic_replay)
-
+                                                            stringResource(R.string.action_rewatch) to painterResource(
+                                                                id = R.drawable.ic_replay
+                                                            )
                                                         }
 
                                                         episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                            "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
+                                                            stringResource(R.string.action_resume_playback) to painterResource(
+                                                                id = R.drawable.ic_play_arrow
+                                                            )
                                                         }
 
                                                         else -> {
-                                                            "Play" to painterResource(id = R.drawable.ic_play_arrow)
+                                                            stringResource(R.string.action_play) to painterResource(
+                                                                id = R.drawable.ic_play_arrow
+                                                            )
                                                         }
                                                     }
 
@@ -602,7 +613,7 @@ private fun LandscapeItemDetailContent(
                                                             strokeWidth = 2.dp
                                                         )
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("Loading...")
+                                                        Text(stringResource(R.string.status_loading))
                                                     }
                                                 }
 
@@ -610,15 +621,21 @@ private fun LandscapeItemDetailContent(
                                                     val episode = nextEpisode!!
                                                     val (buttonText, buttonIcon) = when {
                                                         episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                            "Rewatch" to painterResource(id = R.drawable.ic_replay)
+                                                            stringResource(R.string.action_rewatch) to painterResource(
+                                                                id = R.drawable.ic_replay
+                                                            )
                                                         }
 
                                                         episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                            "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
+                                                            stringResource(R.string.action_resume_playback) to painterResource(
+                                                                id = R.drawable.ic_play_arrow
+                                                            )
                                                         }
 
                                                         else -> {
-                                                            "Play" to painterResource(id = R.drawable.ic_play_arrow)
+                                                            stringResource(R.string.action_play) to painterResource(
+                                                                id = R.drawable.ic_play_arrow
+                                                            )
                                                         }
                                                     }
 
@@ -666,15 +683,21 @@ private fun LandscapeItemDetailContent(
                                         else -> {
                                             val (buttonText, buttonIcon) = when {
                                                 item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
-                                                    "Rewatch" to painterResource(id = R.drawable.ic_replay)
+                                                    stringResource(R.string.action_rewatch) to painterResource(
+                                                        id = R.drawable.ic_replay
+                                                    )
                                                 }
 
                                                 item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
-                                                    "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
+                                                    stringResource(R.string.action_resume_playback) to painterResource(
+                                                        id = R.drawable.ic_play_arrow
+                                                    )
                                                 }
 
                                                 else -> {
-                                                    "Watch Now" to painterResource(id = R.drawable.ic_play_arrow)
+                                                    stringResource(R.string.hero_btn_watch_now) to painterResource(
+                                                        id = R.drawable.ic_play_arrow
+                                                    )
                                                 }
                                             }
 
@@ -718,7 +741,7 @@ private fun LandscapeItemDetailContent(
                                 ) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.ic_video),
-                                        contentDescription = "Play Trailer",
+                                        contentDescription = stringResource(R.string.hero_btn_play_trailer),
                                         tint = if (hasTrailer) {
                                             MaterialTheme.colorScheme.primary
                                         } else {
@@ -735,7 +758,10 @@ private fun LandscapeItemDetailContent(
                                         painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
                                             id = R.drawable.ic_bookmark
                                         ),
-                                        contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
+                                        contentDescription = if (isInWatchlist)
+                                            stringResource(R.string.cd_watchlist_remove)
+                                        else
+                                            stringResource(R.string.cd_watchlist_add),
                                         tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                         modifier = Modifier.size(28.dp)
                                     )
@@ -768,7 +794,7 @@ private fun LandscapeItemDetailContent(
                                     ) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_arrows_shuffle),
-                                            contentDescription = "Shuffle Play",
+                                            contentDescription = stringResource(R.string.cd_shuffle_play),
                                             tint = MaterialTheme.colorScheme.onBackground,
                                             modifier = Modifier.size(28.dp)
                                         )
@@ -782,7 +808,10 @@ private fun LandscapeItemDetailContent(
                                         painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
                                             id = R.drawable.ic_favorite
                                         ),
-                                        contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
+                                        contentDescription = if (item.favorite)
+                                            stringResource(R.string.cd_favorite_remove)
+                                        else
+                                            stringResource(R.string.cd_favorite_add),
                                         tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                         modifier = Modifier.size(28.dp)
                                     )
@@ -795,7 +824,10 @@ private fun LandscapeItemDetailContent(
                                         painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
                                             id = R.drawable.ic_circle_check_outline
                                         ),
-                                        contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
+                                        contentDescription = if (item.played)
+                                            stringResource(R.string.cd_watched_unmark)
+                                        else
+                                            stringResource(R.string.cd_watched_mark),
                                         tint = if (item.played) {
                                             Color.Green
                                         } else {
@@ -941,13 +973,13 @@ private fun PortraitItemDetailContent(
     specialFeatures: List<AfinityItem>,
     isInWatchlist: Boolean,
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
-    downloadInfo: com.makd.afinity.data.models.download.DownloadInfo?,
+    downloadInfo: DownloadInfo?,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
     viewModel: ItemDetailViewModel,
-    context: android.content.Context,
+    context: Context,
     widthSizeClass: WindowWidthSizeClass
 ) {
     val preferencesRepository = rememberPreferencesRepository()
@@ -1004,7 +1036,10 @@ private fun PortraitItemDetailContent(
 
                     AsyncImage(
                         imageUrl = logoUrlToDisplay,
-                        contentDescription = "$logoNameToDisplay logo",
+                        contentDescription = stringResource(
+                            R.string.cd_logo_fmt,
+                            logoNameToDisplay
+                        ),
                         targetWidth = 240.dp,
                         targetHeight = 120.dp,
                         modifier = Modifier
@@ -1108,7 +1143,7 @@ private fun PortraitItemDetailContent(
                                                 strokeWidth = 2.dp
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Loading...")
+                                            Text(stringResource(R.string.status_loading))
                                         }
                                     }
 
@@ -1116,15 +1151,21 @@ private fun PortraitItemDetailContent(
                                         val episode = nextEpisode!!
                                         val (buttonText, buttonIcon) = when {
                                             episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                "Rewatch" to painterResource(id = R.drawable.ic_replay)
+                                                stringResource(R.string.action_rewatch) to painterResource(
+                                                    id = R.drawable.ic_replay
+                                                )
                                             }
 
                                             episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
+                                                stringResource(R.string.action_resume_playback) to painterResource(
+                                                    id = R.drawable.ic_play_arrow
+                                                )
                                             }
 
                                             else -> {
-                                                "Play" to painterResource(id = R.drawable.ic_play_arrow)
+                                                stringResource(R.string.action_play) to painterResource(
+                                                    id = R.drawable.ic_play_arrow
+                                                )
                                             }
                                         }
 
@@ -1184,7 +1225,7 @@ private fun PortraitItemDetailContent(
                                                 strokeWidth = 2.dp
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Loading...")
+                                            Text(stringResource(R.string.status_loading))
                                         }
                                     }
 
@@ -1192,15 +1233,21 @@ private fun PortraitItemDetailContent(
                                         val episode = nextEpisode!!
                                         val (buttonText, buttonIcon) = when {
                                             episode.playbackPositionTicks > 0 && episode.playbackPositionTicks >= episode.runtimeTicks -> {
-                                                "Rewatch" to painterResource(id = R.drawable.ic_replay)
+                                                stringResource(R.string.action_rewatch) to painterResource(
+                                                    id = R.drawable.ic_replay
+                                                )
                                             }
 
                                             episode.playbackPositionTicks > 0 && episode.runtimeTicks > 0 -> {
-                                                "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
+                                                stringResource(R.string.action_resume_playback) to painterResource(
+                                                    id = R.drawable.ic_play_arrow
+                                                )
                                             }
 
                                             else -> {
-                                                "Play" to painterResource(id = R.drawable.ic_play_arrow)
+                                                stringResource(R.string.action_play) to painterResource(
+                                                    id = R.drawable.ic_play_arrow
+                                                )
                                             }
                                         }
 
@@ -1247,15 +1294,21 @@ private fun PortraitItemDetailContent(
                             else -> {
                                 val (buttonText, buttonIcon) = when {
                                     item.playbackPositionTicks > 0 && item.playbackPositionTicks >= item.runtimeTicks -> {
-                                        "Rewatch" to painterResource(id = R.drawable.ic_replay)
+                                        stringResource(R.string.action_rewatch) to painterResource(
+                                            id = R.drawable.ic_replay
+                                        )
                                     }
 
                                     item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
-                                        "Resume Playback" to painterResource(id = R.drawable.ic_play_arrow)
+                                        stringResource(R.string.action_resume_playback) to painterResource(
+                                            id = R.drawable.ic_play_arrow
+                                        )
                                     }
 
                                     else -> {
-                                        "Watch Now" to painterResource(id = R.drawable.ic_play_arrow)
+                                        stringResource(R.string.hero_btn_watch_now) to painterResource(
+                                            id = R.drawable.ic_play_arrow
+                                        )
                                     }
                                 }
 
@@ -1302,7 +1355,7 @@ private fun PortraitItemDetailContent(
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_video),
-                                    contentDescription = "Play Trailer",
+                                    contentDescription = stringResource(R.string.hero_btn_play_trailer),
                                     tint = if (hasTrailer) {
                                         MaterialTheme.colorScheme.primary
                                     } else {
@@ -1323,7 +1376,10 @@ private fun PortraitItemDetailContent(
                                     painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
                                         id = R.drawable.ic_bookmark
                                     ),
-                                    contentDescription = if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
+                                    contentDescription = if (isInWatchlist)
+                                        stringResource(R.string.cd_watchlist_remove)
+                                    else
+                                        stringResource(R.string.cd_watchlist_add),
                                     tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
                                 )
@@ -1360,7 +1416,7 @@ private fun PortraitItemDetailContent(
                                 ) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.ic_arrows_shuffle),
-                                        contentDescription = "Shuffle Play",
+                                        contentDescription = stringResource(R.string.cd_shuffle_play),
                                         tint = MaterialTheme.colorScheme.onBackground,
                                         modifier = Modifier.size(28.dp)
                                     )
@@ -1378,7 +1434,10 @@ private fun PortraitItemDetailContent(
                                     painter = if (item.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
                                         id = R.drawable.ic_favorite
                                     ),
-                                    contentDescription = if (item.favorite) "Remove from Favorites" else "Add to Favorites",
+                                    contentDescription = if (item.favorite)
+                                        stringResource(R.string.cd_favorite_remove)
+                                    else
+                                        stringResource(R.string.cd_favorite_add),
                                     tint = if (item.favorite) Color.Red else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(28.dp)
                                 )
@@ -1395,7 +1454,10 @@ private fun PortraitItemDetailContent(
                                     painter = if (item.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
                                         id = R.drawable.ic_circle_check_outline
                                     ),
-                                    contentDescription = if (item.played) "Mark as Unwatched" else "Mark as Watched",
+                                    contentDescription = if (item.played)
+                                        stringResource(R.string.cd_watched_unmark)
+                                    else
+                                        stringResource(R.string.cd_watched_mark),
                                     tint = if (item.played) {
                                         Color.Green
                                     } else {

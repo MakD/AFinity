@@ -1,13 +1,16 @@
 package com.makd.afinity.ui.settings.servers
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,12 +48,14 @@ data class ServerInfo(
 
 @HiltViewModel
 class AddEditServerViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val serverRepository: ServerRepository,
     private val databaseRepository: DatabaseRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val serverId: String? = savedStateHandle.get<String>("serverId")?.takeIf { it != "null" }
+    private val serverId: String? =
+        savedStateHandle.get<String>("serverId")?.takeIf { it != "null" }
 
     private val _state = MutableStateFlow(AddEditServerState(serverId = serverId))
     val state: StateFlow<AddEditServerState> = _state.asStateFlow()
@@ -72,7 +77,7 @@ class AddEditServerViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Error loading server")
                 _state.value = _state.value.copy(
-                    error = "Failed to load server: ${e.message}"
+                    error = context.getString(R.string.error_load_server_failed_fmt, e.message)
                 )
             }
         }
@@ -93,7 +98,7 @@ class AddEditServerViewModel @Inject constructor(
         val url = _state.value.serverUrl.trim()
         if (url.isBlank()) {
             _state.value = _state.value.copy(
-                connectionTestResult = ConnectionTestResult.Error("Please enter a server URL")
+                connectionTestResult = ConnectionTestResult.Error(context.getString(R.string.error_enter_server_url))
             )
             return
         }
@@ -122,6 +127,7 @@ class AddEditServerViewModel @Inject constructor(
                             serverName = currentName.ifBlank { serverInfo.name }
                         )
                     }
+
                     is JellyfinServerRepository.ServerConnectionResult.Error -> {
                         _state.value = _state.value.copy(
                             isTestingConnection = false,
@@ -134,7 +140,10 @@ class AddEditServerViewModel @Inject constructor(
                 _state.value = _state.value.copy(
                     isTestingConnection = false,
                     connectionTestResult = ConnectionTestResult.Error(
-                        "Connection test failed: ${e.message ?: "Unknown error"}"
+                        context.getString(
+                            R.string.error_connection_test_failed_fmt,
+                            e.message ?: context.getString(R.string.error_unknown)
+                        )
                     )
                 )
             }
@@ -147,14 +156,14 @@ class AddEditServerViewModel @Inject constructor(
         val name = currentState.serverName.trim()
 
         if (url.isBlank()) {
-            _state.value = _state.value.copy(error = "Server URL is required")
+            _state.value = _state.value.copy(error = context.getString(R.string.error_url_required))
             return
         }
 
         val testResult = currentState.connectionTestResult
         if (testResult !is ConnectionTestResult.Success) {
             _state.value = _state.value.copy(
-                error = "Please test the connection first"
+                error = context.getString(R.string.error_test_connection_first)
             )
             return
         }
@@ -190,7 +199,7 @@ class AddEditServerViewModel @Inject constructor(
                 Timber.e(e, "Error saving server")
                 _state.value = _state.value.copy(
                     isSaving = false,
-                    error = "Failed to save server: ${e.message}"
+                    error = context.getString(R.string.error_save_server_failed_fmt, e.message)
                 )
             }
         }

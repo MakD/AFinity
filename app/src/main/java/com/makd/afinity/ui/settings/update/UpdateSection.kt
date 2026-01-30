@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -93,7 +94,7 @@ fun UpdateSection(
         )
     }
 
-    SettingsGroup(title = "Updates", modifier = modifier) {
+    SettingsGroup(title = stringResource(R.string.pref_group_updates), modifier = modifier) {
         CheckForUpdatesItem(
             updateState = updateState,
             lastCheckTime = uiState.lastCheckTime,
@@ -181,7 +182,7 @@ private fun CheckForUpdatesItem(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Check for Updates",
+                text = stringResource(R.string.pref_check_updates_title),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -198,12 +199,12 @@ private fun CheckForUpdatesItem(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Downloading...",
+                            text = stringResource(R.string.update_status_downloading),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "$progress%",
+                            text = stringResource(R.string.update_progress_fmt, progress),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -227,10 +228,18 @@ private fun CheckForUpdatesItem(
             ) {
                 Text(
                     text = when (updateState) {
-                        is UpdateState.Checking -> "Checking..."
-                        is UpdateState.UpToDate -> "Up to date • $lastCheckTime"
-                        is UpdateState.Error -> "Check failed • $lastCheckTime"
-                        else -> "Last check: $lastCheckTime"
+                        is UpdateState.Checking -> stringResource(R.string.update_status_checking)
+                        is UpdateState.UpToDate -> stringResource(
+                            R.string.update_status_uptodate_fmt,
+                            lastCheckTime
+                        )
+
+                        is UpdateState.Error -> stringResource(
+                            R.string.update_status_failed_fmt,
+                            lastCheckTime
+                        )
+
+                        else -> stringResource(R.string.update_status_last_check_fmt, lastCheckTime)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = when (updateState) {
@@ -278,12 +287,12 @@ private fun UpdateFrequencySelector(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "Check Frequency",
+                    text = stringResource(R.string.pref_check_frequency_title),
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = currentFrequency.displayName,
+                    text = getUpdateCheckFrequencyDisplayName(currentFrequency),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
@@ -304,7 +313,7 @@ private fun UpdateFrequencySelector(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = frequency.displayName,
+                                text = getUpdateCheckFrequencyDisplayName(frequency),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -325,5 +334,15 @@ private fun UpdateFrequencySelector(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun getUpdateCheckFrequencyDisplayName(frequency: UpdateCheckFrequency): String {
+    return when (frequency) {
+        UpdateCheckFrequency.ON_APP_OPEN -> stringResource(R.string.freq_on_app_open)
+        UpdateCheckFrequency.SIX_HOURS -> stringResource(R.string.freq_6_hours)
+        UpdateCheckFrequency.TWELVE_HOURS -> stringResource(R.string.freq_12_hours)
+        UpdateCheckFrequency.TWENTY_FOUR_HOURS -> stringResource(R.string.freq_24_hours)
     }
 }

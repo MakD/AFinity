@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -97,7 +98,7 @@ fun SessionSwitcherBottomSheet(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Switch Session",
+                    text = stringResource(R.string.session_switcher_title),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -109,13 +110,19 @@ fun SessionSwitcherBottomSheet(
 
             if (state.isSwitching) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
                 }
             } else if (state.sessionGroups.isEmpty()) {
-                EmptySessionsState(modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp))
+                EmptySessionsState(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp)
+                )
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(vertical = 8.dp),
@@ -213,7 +220,9 @@ private fun ServerSessionGroupItem(
                 }
 
                 Text(
-                    text = if (sessionGroup.sessions.isEmpty()) "Login to this server" else "Add another account",
+                    text = if (sessionGroup.sessions.isEmpty()) stringResource(R.string.action_login_server) else stringResource(
+                        R.string.action_add_account
+                    ),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
@@ -247,7 +256,7 @@ private fun SessionItem(
             if (session.userAvatar != null) {
                 AsyncImage(
                     imageUrl = session.userAvatar,
-                    contentDescription = "User Avatar",
+                    contentDescription = stringResource(R.string.cd_user_avatar),
                     targetWidth = 40.dp,
                     targetHeight = 40.dp,
                     contentScale = ContentScale.Crop,
@@ -281,7 +290,7 @@ private fun SessionItem(
         if (session.isCurrent) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_circle_check),
-                contentDescription = "Current session",
+                contentDescription = stringResource(R.string.cd_current_session),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
@@ -312,12 +321,12 @@ private fun EmptySessionsState(
             modifier = Modifier.size(48.dp)
         )
         Text(
-            text = "No saved sessions",
+            text = stringResource(R.string.empty_sessions_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = "Login to a server to create a session",
+            text = stringResource(R.string.empty_sessions_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         )

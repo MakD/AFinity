@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -98,8 +99,16 @@ fun DiscoverMediaCard(
                                 containerColor = backgroundColor
                             )
                         ) {
+                            val statusText = when (status) {
+                                MediaStatus.PENDING -> stringResource(R.string.status_pending)
+                                MediaStatus.PROCESSING -> stringResource(R.string.status_processing)
+                                MediaStatus.PARTIALLY_AVAILABLE -> stringResource(R.string.status_partially_available)
+                                MediaStatus.AVAILABLE -> stringResource(R.string.status_available)
+                                MediaStatus.DELETED -> stringResource(R.string.status_deleted)
+                                else -> stringResource(R.string.status_unknown)
+                            }
                             Text(
-                                text = MediaStatus.getDisplayName(status),
+                                text = statusText,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = textColor,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -150,7 +159,7 @@ fun DiscoverMediaCard(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_tmdb_short),
-                            contentDescription = "TMDB",
+                            contentDescription = stringResource(R.string.cd_tmdb_rating),
                             tint = Color.Unspecified,
                             modifier = Modifier.size(
                                 if (fontScale > 1.3f) 12.dp

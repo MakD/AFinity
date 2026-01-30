@@ -23,6 +23,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.ChannelType
@@ -641,7 +642,7 @@ class PlayerViewModel @Inject constructor(
                     it.copy(
                         isLoading = false,
                         showError = true,
-                        errorMessage = "No media sources available."
+                        errorMessage = context.getString(R.string.error_no_media_sources)
                     )
                 }
                 return
@@ -707,7 +708,7 @@ class PlayerViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             showError = true,
-                            errorMessage = "Failed to load stream."
+                            errorMessage = context.getString(R.string.error_load_stream)
                         )
                     }
                     return@coroutineScope
@@ -728,9 +729,7 @@ class PlayerViewModel @Inject constructor(
                                     else -> MimeTypes.TEXT_UNKNOWN
                                 }
 
-                                val language =
-                                    subtitleFile.nameWithoutExtension.split("_").firstOrNull()
-                                        ?: "unknown"
+                                val language = subtitleFile.nameWithoutExtension.split("_").firstOrNull() ?: context.getString(R.string.track_unknown)
 
                                 MediaItem.SubtitleConfiguration.Builder("file://${subtitleFile.absolutePath}".toUri())
                                     .setLabel(language)
@@ -756,7 +755,7 @@ class PlayerViewModel @Inject constructor(
                                 MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
                                     .setLabel(
                                         stream.displayTitle ?: stream.language
-                                        ?: "Track ${stream.index}"
+                                        ?: context.getString(R.string.track_number_fmt, stream.index)
                                     )
                                     .setMimeType(MimeTypes.APPLICATION_SUBRIP)
                                     .setLanguage(stream.language ?: "eng")
@@ -795,7 +794,7 @@ class PlayerViewModel @Inject constructor(
                 it.copy(
                     isLoading = false,
                     showError = true,
-                    errorMessage = "An unexpected error occurred."
+                    errorMessage = context.getString(R.string.error_unexpected)
                 )
             }
         }
@@ -880,7 +879,7 @@ class PlayerViewModel @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to load live channel")
             updateUiState {
-                it.copy(isLoading = false, showError = true, errorMessage = "Failed to load live channel.")
+                it.copy(isLoading = false, showError = true, errorMessage = context.getString(R.string.error_load_live_channel))
             }
         }
     }
@@ -1109,12 +1108,12 @@ class PlayerViewModel @Inject constructor(
 
     private fun getSkipButtonText(segment: AfinitySegment): String {
         return when (segment.type) {
-            AfinitySegmentType.INTRO -> "Skip Intro"
-            AfinitySegmentType.OUTRO -> "Skip Outro"
-            AfinitySegmentType.RECAP -> "Skip Recap"
-            AfinitySegmentType.PREVIEW -> "Skip Preview"
-            AfinitySegmentType.COMMERCIAL -> "Skip Commercial"
-            else -> "Skip"
+            AfinitySegmentType.INTRO -> context.getString(R.string.skip_intro)
+            AfinitySegmentType.OUTRO -> context.getString(R.string.skip_outro)
+            AfinitySegmentType.RECAP -> context.getString(R.string.skip_recap)
+            AfinitySegmentType.PREVIEW -> context.getString(R.string.skip_preview)
+            AfinitySegmentType.COMMERCIAL -> context.getString(R.string.skip_commercial)
+            else -> context.getString(R.string.skip_generic)
         }
     }
 

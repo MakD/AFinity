@@ -1,8 +1,10 @@
 package com.makd.afinity.ui.settings.update
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.BuildConfig
+import com.makd.afinity.R
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.updater.UpdateScheduler
@@ -10,6 +12,7 @@ import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.models.UpdateState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +25,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class UpdateViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val updateManager: UpdateManager,
     private val updateScheduler: UpdateScheduler,
     private val preferencesRepository: PreferencesRepository
@@ -48,7 +52,8 @@ class UpdateViewModel @Inject constructor(
         viewModelScope.launch {
             val lastCheck = preferencesRepository.getLastUpdateCheck()
             _uiState.value = _uiState.value.copy(
-                lastCheckTime = if (lastCheck > 0) formatTimestamp(lastCheck) else "Never"
+                lastCheckTime = if (lastCheck > 0) formatTimestamp(lastCheck) else context.getString(
+                    R.string.update_never_checked)
             )
         }
     }
@@ -97,5 +102,5 @@ class UpdateViewModel @Inject constructor(
 data class UpdateUiState(
     val currentVersion: String = BuildConfig.VERSION_NAME,
     val checkFrequency: UpdateCheckFrequency = UpdateCheckFrequency.ON_APP_OPEN,
-    val lastCheckTime: String = "Never"
+    val lastCheckTime: String = ""
 )

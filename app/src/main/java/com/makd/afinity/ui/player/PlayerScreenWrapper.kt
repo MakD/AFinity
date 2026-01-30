@@ -15,8 +15,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.makd.afinity.R
 import java.util.UUID
 
 @androidx.media3.common.util.UnstableApi
@@ -42,9 +44,10 @@ fun PlayerScreenWrapper(
     val fetchedStreamUrl by viewModel.liveStreamUrl.collectAsState()
     val streamError by viewModel.streamError.collectAsState()
 
-    LaunchedEffect(itemId, isLiveChannel) {
+    val defaultChannelName = stringResource(R.string.channel_default_name)
+    LaunchedEffect(itemId, isLiveChannel, defaultChannelName) {
         if (isLiveChannel) {
-            viewModel.loadLiveChannel(itemId, channelName ?: "Live TV")
+            viewModel.loadLiveChannel(itemId, channelName ?: defaultChannelName)
         } else {
             viewModel.loadItem(itemId)
         }
@@ -67,7 +70,7 @@ fun PlayerScreenWrapper(
                     CircularProgressIndicator(color = Color.White)
                     if (isLiveChannel && item != null) {
                         Text(
-                            text = "Tuning ${item?.name ?: channelName}...",
+                            text = stringResource(R.string.player_live_tuning_fmt, item?.name ?: channelName ?: ""),
                             color = Color.White,
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -84,7 +87,7 @@ fun PlayerScreenWrapper(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = streamError ?: "Failed to load stream",
+                    text = streamError ?: stringResource(R.string.player_error_stream_load),
                     color = Color.White
                 )
             }
@@ -115,7 +118,7 @@ fun PlayerScreenWrapper(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Failed to load media",
+                    text = stringResource(R.string.player_error_media_load),
                     color = Color.White
                 )
             }

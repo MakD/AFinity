@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -100,7 +101,12 @@ fun EpisodeDetailOverlay(
             )
 
             Text(
-                text = "S${episode.parentIndexNumber}:E${episode.indexNumber} • ${episode.name}",
+                text = stringResource(
+                    R.string.episode_season_episode_fmt,
+                    episode.parentIndexNumber ?: 0,
+                    episode.indexNumber ?: 0,
+                    episode.name
+                ),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -140,7 +146,7 @@ fun EpisodeDetailOverlay(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_calendar),
-                            contentDescription = "Air date",
+                            contentDescription = stringResource(R.string.cd_air_date),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(14.dp)
                         )
@@ -162,13 +168,13 @@ fun EpisodeDetailOverlay(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_clock),
-                            contentDescription = "Duration",
+                            contentDescription = stringResource(R.string.cd_duration),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
                         val minutes = (episode.runtimeTicks / 600000000).toInt()
                         Text(
-                            text = "${minutes}m",
+                            text = stringResource(R.string.episode_duration_format, minutes),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -185,7 +191,7 @@ fun EpisodeDetailOverlay(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_imdb_logo),
-                            contentDescription = "IMDB",
+                            contentDescription = stringResource(R.string.cd_imdb),
                             tint = Color.Unspecified,
                             modifier = Modifier.size(22.dp)
                         )
@@ -215,14 +221,14 @@ fun EpisodeDetailOverlay(
                                 (videoStream.height ?: 0) <= 2160 && (videoStream.width
                                     ?: 0) <= 3840 &&
                                         ((videoStream.height ?: 0) > 1080 || (videoStream.width
-                                            ?: 0) > 1920) -> "4K"
+                                            ?: 0) > 1920) -> stringResource(R.string.meta_res_4k)
 
                                 (videoStream.height ?: 0) <= 1080 && (videoStream.width
                                     ?: 0) <= 1920 &&
                                         ((videoStream.height ?: 0) > 720 || (videoStream.width
-                                            ?: 0) > 1280) -> "HD"
+                                            ?: 0) > 1280) -> stringResource(R.string.meta_res_hd)
 
-                                else -> "SD"
+                                else -> stringResource(R.string.meta_res_sd)
                             }
 
                             VideoMetadataChip(text = resolution)
@@ -237,7 +243,7 @@ fun EpisodeDetailOverlay(
                         ?.let { videoStream ->
                             if (videoStream.videoDoViTitle != null) {
                                 VideoMetadataChipWithIcon(
-                                    text = "Vision",
+                                    stringResource(R.string.meta_vision),
                                     iconRes = R.drawable.ic_brand_dolby_digital
                                 )
                             } else {
@@ -257,17 +263,17 @@ fun EpisodeDetailOverlay(
                         ?.let { codec ->
                             when (codec.lowercase()) {
                                 "ac3" -> VideoMetadataChipWithIcon(
-                                    text = "Digital",
+                                    text = stringResource(R.string.meta_digital),
                                     iconRes = R.drawable.ic_brand_dolby_digital
                                 )
 
                                 "eac3" -> VideoMetadataChipWithIcon(
-                                    text = "Digital+",
+                                    text = stringResource(R.string.meta_digital_plus),
                                     iconRes = R.drawable.ic_brand_dolby_digital
                                 )
 
                                 "truehd" -> VideoMetadataChipWithIcon(
-                                    text = "TrueHD",
+                                    text = stringResource(R.string.meta_truehd),
                                     iconRes = R.drawable.ic_brand_dolby_digital
                                 )
 
@@ -291,7 +297,7 @@ fun EpisodeDetailOverlay(
                         source?.mediaStreams?.any { it.type == MediaStreamType.SUBTITLE } == true
 
                     if (hasSubtitles) {
-                        VideoMetadataChip(text = "CC")
+                        VideoMetadataChip(text = stringResource(R.string.meta_cc))
                     }
                 }
             }
@@ -313,7 +319,10 @@ fun EpisodeDetailOverlay(
             ) {
                 PlaybackSelectionButton(
                     item = episode,
-                    buttonText = if (episode.playbackPositionTicks > 0) "Resume" else "Play",
+                    buttonText = if (episode.playbackPositionTicks > 0)
+                        stringResource(R.string.episode_resume)
+                    else
+                        stringResource(R.string.episode_play),
                     buttonIcon = painterResource(id = R.drawable.ic_play_arrow),
                     onPlayClick = { selection ->
                         onPlayClick(episode, selection)
@@ -329,7 +338,7 @@ fun EpisodeDetailOverlay(
                         IconButton(onClick = goToSeries) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_info),
-                                contentDescription = "Go to Series",
+                                contentDescription = stringResource(R.string.cd_go_to_series),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(28.dp)
                             )
@@ -340,7 +349,7 @@ fun EpisodeDetailOverlay(
                             painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
                                 id = R.drawable.ic_bookmark
                             ),
-                            contentDescription = "Watchlist",
+                            contentDescription = stringResource(R.string.cd_watchlist),
                             tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(28.dp)
                         )
@@ -351,7 +360,7 @@ fun EpisodeDetailOverlay(
                             painter = if (episode.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
                                 id = R.drawable.ic_favorite
                             ),
-                            contentDescription = "Favorite",
+                            contentDescription = stringResource(R.string.cd_favorite),
                             tint = if (episode.favorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(28.dp)
                         )
@@ -362,7 +371,7 @@ fun EpisodeDetailOverlay(
                             painter = if (episode.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
                                 id = R.drawable.ic_circle_check_outline
                             ),
-                            contentDescription = "Watched",
+                            contentDescription = stringResource(R.string.cd_toggle_watched),
                             tint = if (episode.played) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(28.dp)
                         )

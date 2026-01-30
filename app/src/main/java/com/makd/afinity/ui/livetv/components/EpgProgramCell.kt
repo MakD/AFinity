@@ -18,10 +18,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import java.time.Duration
 import java.time.LocalDateTime
@@ -37,7 +39,8 @@ fun EpgProgramCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
+    val timePattern = stringResource(R.string.livetv_time_pattern)
+    val timeFormatter = DateTimeFormatter.ofPattern(timePattern)
     val isLive = program.isCurrentlyAiring()
 
     val programStart = program.startDate ?: return
@@ -93,7 +96,11 @@ fun EpgProgramCell(
             }
 
             Text(
-                text = "${programStart.format(timeFormatter)} - ${programEnd.format(timeFormatter)}",
+                text = stringResource(
+                    R.string.livetv_epg_time_range,
+                    programStart.format(timeFormatter),
+                    programEnd.format(timeFormatter)
+                ),
                 style = MaterialTheme.typography.labelSmall,
                 color = if (isLive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),

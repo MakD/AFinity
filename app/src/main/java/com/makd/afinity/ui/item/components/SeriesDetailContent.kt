@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -95,7 +96,10 @@ internal fun OverviewSection(item: AfinityItem) {
                         .padding(vertical = 4.dp)
                 ) {
                     Text(
-                        text = if (isExpanded) "See less" else "See more",
+                        text = if (isExpanded)
+                            stringResource(R.string.action_see_less)
+                        else
+                            stringResource(R.string.action_see_more),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -104,7 +108,10 @@ internal fun OverviewSection(item: AfinityItem) {
                         painter = if (isExpanded) painterResource(id = R.drawable.ic_keyboard_arrow_up) else painterResource(
                             id = R.drawable.ic_keyboard_arrow_down
                         ),
-                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                        contentDescription = if (isExpanded)
+                            stringResource(R.string.cd_collapse)
+                        else
+                            stringResource(R.string.cd_expand),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
@@ -145,7 +152,7 @@ internal fun DirectorSection(item: AfinityItem) {
 
     if (directors.isNotEmpty()) {
         Text(
-            text = "Director: ${directors.joinToString(", ") { it.name }}",
+            text = stringResource(R.string.director_prefix, directors.joinToString(", ") { it.name }),
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = FontWeight.SemiBold
             ),
@@ -164,7 +171,7 @@ internal fun WriterSection(item: AfinityItem) {
 
     if (writers.isNotEmpty()) {
         Text(
-            text = "Writers: ${writers.joinToString(", ") { it.name }}",
+            text = stringResource(R.string.writers_prefix, writers.joinToString(", ") { it.name }),
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = FontWeight.SemiBold
             ),
@@ -183,7 +190,7 @@ internal fun SeasonsSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Seasons",
+            text = stringResource(R.string.seasons_title),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -256,7 +263,7 @@ internal fun SeasonCard(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_check),
-                            contentDescription = "Watched",
+                            contentDescription = stringResource(R.string.cd_watched_status),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)
                         )
@@ -272,7 +279,10 @@ internal fun SeasonCard(
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
                             ) {
                                 Text(
-                                    text = if (unwatchedCount > 99) "99+ EP" else "$unwatchedCount EP",
+                                    text = if (unwatchedCount > 99)
+                                        stringResource(R.string.home_episode_count_plus)
+                                    else
+                                        stringResource(R.string.home_episode_count_fmt, unwatchedCount),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold
                                     ),

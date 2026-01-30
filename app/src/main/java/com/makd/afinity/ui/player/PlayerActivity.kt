@@ -333,10 +333,11 @@ class PlayerActivity : ComponentActivity() {
         } else {
             Icon.createWithResource(this, R.drawable.ic_player_play_filled)
         }
+        val title = if (viewModel.player.isPlaying) getString(R.string.cd_pause) else getString(R.string.cd_play)
         val playPauseAction = RemoteAction(
             playPauseIcon,
-            if (viewModel.player.isPlaying) "Pause" else "Play",
-            if (viewModel.player.isPlaying) "Pause" else "Play",
+            title,
+            title,
             playPausePendingIntent
         )
         actions.add(playPauseAction)

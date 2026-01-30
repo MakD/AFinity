@@ -22,8 +22,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.R.drawable
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
@@ -53,7 +55,7 @@ fun MyRequestsSection(
         modifier = modifier.padding(horizontal = 14.dp)
     ) {
         Text(
-            text = "Recent Requests",
+            text = stringResource(R.string.section_recent_requests),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -128,7 +130,7 @@ fun DiscoverSection(
                 ) {
                     Icon(
                         painter = painterResource(id = drawable.ic_chevron_right),
-                        contentDescription = "View All",
+                        contentDescription = stringResource(R.string.cd_view_all),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )
@@ -170,7 +172,7 @@ fun StudiosSection(
         modifier = modifier.padding(horizontal = 14.dp)
     ) {
         Text(
-            text = "Studios",
+            text = stringResource(R.string.section_studios),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -211,7 +213,7 @@ fun NetworksSection(
         modifier = modifier.padding(horizontal = 14.dp)
     ) {
         Text(
-            text = "Networks",
+            text = stringResource(R.string.section_networks),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -254,7 +256,7 @@ fun MovieGenresSection(
         modifier = modifier.padding(horizontal = 14.dp)
     ) {
         Text(
-            text = "Movie Genres",
+            text = stringResource(R.string.section_movie_genres),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -299,7 +301,7 @@ fun TvGenresSection(
         modifier = modifier.padding(horizontal = 14.dp)
     ) {
         Text(
-            text = "TV Genres",
+            text = stringResource(R.string.section_tv_genres),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

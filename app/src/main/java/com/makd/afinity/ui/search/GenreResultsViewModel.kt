@@ -1,7 +1,9 @@
 package com.makd.afinity.ui.search
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
@@ -9,6 +11,7 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +21,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GenreResultsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val jellyfinRepository: JellyfinRepository,
     private val appDataRepository: AppDataRepository
@@ -76,7 +80,7 @@ class GenreResultsViewModel @Inject constructor(
                 Timber.e(e, "Failed to load genre results")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = e.message ?: "Unknown error occurred"
+                    error = e.message ?: context.getString(R.string.error_unknown_occurred)
                 )
             }
         }

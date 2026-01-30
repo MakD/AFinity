@@ -51,6 +51,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -183,7 +184,7 @@ fun SearchScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "No results found",
+                                text = stringResource(R.string.search_no_results),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -253,7 +254,7 @@ private fun SearchTopBar(
                 .focusRequester(focusRequester),
             placeholder = {
                 Text(
-                    text = "Search movies and TV shows",
+                    text = stringResource(R.string.search_placeholder),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
@@ -269,7 +270,7 @@ private fun SearchTopBar(
                     IconButton(onClick = { onSearchQueryChange("") }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_clear),
-                            contentDescription = "Clear",
+                            contentDescription = stringResource(R.string.cd_clear),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -309,7 +310,7 @@ private fun HorizontalLibraryFilters(
     ) {
         item {
             LibraryFilterChip(
-                text = "All",
+                text = stringResource(R.string.filter_all),
                 isSelected = !isJellyseerrSearchMode && selectedLibrary == null,
                 onClick = {
                     onJellyfinSearchSelected()
@@ -322,7 +323,7 @@ private fun HorizontalLibraryFilters(
         if (isJellyseerrAuthenticated) {
             item {
                 LibraryFilterChip(
-                    text = "Request",
+                    text = stringResource(R.string.filter_request),
                     isSelected = isJellyseerrSearchMode,
                     onClick = onJellyseerrSearchSelected,
                     showCheckIcon = false
@@ -357,7 +358,7 @@ private fun SearchHomeContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Explore Genres",
+            text = stringResource(R.string.explore_genres),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -395,7 +396,7 @@ private fun SearchResultsContent(
     ) {
         item {
             Text(
-                text = "${results.size} results found",
+                text = stringResource(R.string.search_results_count_fmt, results.size),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -538,7 +539,7 @@ private fun SearchResultItem(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_check),
-                            contentDescription = "Watched",
+                            contentDescription = stringResource(R.string.cd_watched),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)
                         )
@@ -568,9 +569,9 @@ private fun SearchResultItem(
                 ) {
                     Text(
                         text = when (item) {
-                            is AfinityMovie -> "Movie"
-                            is AfinityShow -> "TV Show"
-                            else -> "Media"
+                            is AfinityMovie -> stringResource(R.string.media_type_movie)
+                            is AfinityShow -> stringResource(R.string.media_type_tv_show)
+                            else -> stringResource(R.string.media_type_media)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -605,7 +606,7 @@ private fun SearchResultItem(
                         )
                         Icon(
                             painter = painterResource(id = R.drawable.ic_imdb_logo),
-                            contentDescription = "IMDB",
+                            contentDescription = stringResource(R.string.cd_imdb),
                             tint = Color.Unspecified,
                             modifier = Modifier.size(16.dp)
                         )
@@ -631,7 +632,7 @@ private fun SearchResultItem(
                                         R.drawable.ic_rotten_tomato_rotten
                                     }
                                 ),
-                                contentDescription = "Rotten Tomatoes",
+                                contentDescription = stringResource(R.string.cd_rotten_tomatoes),
                                 tint = Color.Unspecified,
                                 modifier = Modifier.size(14.dp)
                             )
@@ -670,7 +671,7 @@ private fun JellyseerrSearchResultsContent(
     ) {
         item {
             Text(
-                text = "${results.size} results found",
+                text = stringResource(R.string.search_results_count_fmt, results.size),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -738,7 +739,8 @@ private fun JellyseerrSearchResultItem(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = item.getMediaType()?.name ?: "UNKNOWN",
+                        text = item.getMediaType()?.name
+                            ?: stringResource(R.string.media_type_unknown),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -789,8 +791,17 @@ private fun JellyseerrSearchResultItem(
                         MediaStatus.DELETED -> MaterialTheme.colorScheme.error
                     }
                 ) {
+                    val statusText = when (status) {
+                        MediaStatus.PENDING -> stringResource(R.string.status_pending)
+                        MediaStatus.PROCESSING -> stringResource(R.string.status_processing)
+                        MediaStatus.PARTIALLY_AVAILABLE -> stringResource(R.string.status_partially_available)
+                        MediaStatus.AVAILABLE -> stringResource(R.string.status_available)
+                        MediaStatus.DELETED -> stringResource(R.string.status_deleted)
+                        else -> stringResource(R.string.status_unknown)
+                    }
+
                     Text(
-                        text = MediaStatus.getDisplayName(status),
+                        text = statusText,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = when (status) {
@@ -812,7 +823,7 @@ private fun JellyseerrSearchResultItem(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_add),
-                        contentDescription = "Request",
+                        contentDescription = stringResource(R.string.cd_request_add),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }

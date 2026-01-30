@@ -12,8 +12,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
@@ -36,7 +38,7 @@ fun OptimizedContinueWatchingSection(
         modifier = Modifier.padding(horizontal = 14.dp)
     ) {
         Text(
-            text = "Continue Watching",
+            text = stringResource(R.string.home_continue_watching),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
@@ -71,7 +73,7 @@ fun OptimizedLatestMoviesSection(
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
-    title: String = "Latest Movies"
+    title: String = stringResource(R.string.home_latest_movies)
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
@@ -116,7 +118,7 @@ fun OptimizedLatestTvSeriesSection(
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
-    title: String = "Latest TV Series"
+    title: String = stringResource(R.string.home_latest_tv_series)
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)

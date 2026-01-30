@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,7 +49,7 @@ fun LicensesScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Open Source Licenses",
+                        text = stringResource(R.string.licenses_title),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -58,7 +59,7 @@ fun LicensesScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -108,14 +109,14 @@ fun LicensesScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = "Open Source Dependencies",
+                                text = stringResource(R.string.licenses_header_title),
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold
                                 )
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "This app uses the following open source libraries",
+                                text = stringResource(R.string.licenses_header_subtitle),
                                 style = MaterialTheme.typography.bodyLarge,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -142,7 +143,7 @@ fun LicensesScreen(
                         HorizontalDivider()
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Built with open source software",
+                            text = stringResource(R.string.licenses_footer_built_with),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Medium
                             ),
@@ -151,7 +152,7 @@ fun LicensesScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Licensed under their respective terms",
+                            text = stringResource(R.string.licenses_footer_terms),
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

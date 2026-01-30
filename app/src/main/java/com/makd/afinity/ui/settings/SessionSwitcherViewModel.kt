@@ -1,7 +1,9 @@
 package com.makd.afinity.ui.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.Session
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
@@ -11,6 +13,7 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,6 +46,7 @@ data class UserSession(
 
 @HiltViewModel
 class SessionSwitcherViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,
@@ -117,7 +121,7 @@ class SessionSwitcherViewModel @Inject constructor(
                 if (token == null) {
                     _state.value = _state.value.copy(
                         isSwitching = false,
-                        error = "Session token not found"
+                        error = context.getString(R.string.error_session_token_not_found)
                     )
                     return@launch
                 }
@@ -126,7 +130,7 @@ class SessionSwitcherViewModel @Inject constructor(
                 if (server == null) {
                     _state.value = _state.value.copy(
                         isSwitching = false,
-                        error = "Server not found"
+                        error = context.getString(R.string.error_server_not_found)
                     )
                     return@launch
                 }
@@ -154,14 +158,14 @@ class SessionSwitcherViewModel @Inject constructor(
                     Timber.e(error, "Failed to switch session")
                     _state.value = _state.value.copy(
                         isSwitching = false,
-                        error = "Failed to switch session: ${error.message}"
+                        error = context.getString(R.string.error_switch_session_failed_fmt, error.message)
                     )
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error switching session")
                 _state.value = _state.value.copy(
                     isSwitching = false,
-                    error = "Error switching session: ${e.message}"
+                    error = context.getString(R.string.error_switch_session_error_fmt, e.message)
                 )
             }
         }

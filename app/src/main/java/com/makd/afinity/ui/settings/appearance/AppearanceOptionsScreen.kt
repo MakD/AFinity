@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,7 +68,7 @@ fun AppearanceOptionsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Appearance",
+                        text = stringResource(R.string.appearance_title),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -77,7 +78,7 @@ fun AppearanceOptionsScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -97,7 +98,7 @@ fun AppearanceOptionsScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                SettingsGroup(title = "Theme") {
+                SettingsGroup(title = stringResource(R.string.settings_group_theme)) {
                     ThemeSelectorItem(
                         currentThemeMode = uiState.themeMode,
                         onThemeModeChange = viewModel::setThemeMode
@@ -105,8 +106,8 @@ fun AppearanceOptionsScreen(
                     SettingsDivider()
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_colorize),
-                        title = "Dynamic Colors",
-                        subtitle = "Use colors from your wallpaper",
+                        title = stringResource(R.string.pref_dynamic_colors_title),
+                        subtitle = stringResource(R.string.pref_dynamic_colors_summary),
                         checked = uiState.dynamicColors,
                         onCheckedChange = viewModel::toggleDynamicColors
                     )
@@ -114,19 +115,19 @@ fun AppearanceOptionsScreen(
             }
 
             item {
-                SettingsGroup(title = "Home Screen") {
+                SettingsGroup(title = stringResource(R.string.settings_group_home_screen)) {
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_view_module),
-                        title = "Combine Library Sections",
-                        subtitle = "Merge Movies and TV Shows into single lists",
+                        title = stringResource(R.string.pref_combine_library_title),
+                        subtitle = stringResource(R.string.pref_combine_library_summary),
                         checked = combineLibrarySections,
                         onCheckedChange = viewModel::toggleCombineLibrarySections
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_calendar),
-                        title = "Sort by Date Added",
-                        subtitle = "Show newest content first on home screen",
+                        title = stringResource(R.string.pref_sort_date_added_title),
+                        subtitle = stringResource(R.string.pref_sort_date_added_summary),
                         checked = homeSortByDateAdded,
                         onCheckedChange = viewModel::toggleHomeSortByDateAdded
                     )
@@ -134,7 +135,7 @@ fun AppearanceOptionsScreen(
             }
 
             item {
-                SettingsGroup(title = "Content Layout") {
+                SettingsGroup(title = stringResource(R.string.settings_group_content_layout)) {
                     EpisodeLayoutSelectorItem(
                         selectedLayout = episodeLayout,
                         onLayoutSelected = viewModel::setEpisodeLayout
@@ -284,8 +285,8 @@ private fun ThemeSelectorItem(
     Box {
         SettingsItem(
             icon = painterResource(id = R.drawable.ic_dark_mode),
-            title = "Theme Mode",
-            subtitle = currentTheme.displayName,
+            title = stringResource(R.string.pref_theme_mode_title),
+            subtitle = getThemeModeDisplayName(currentTheme),
             onClick = { expanded = true },
             trailing = {
                 Icon(
@@ -310,7 +311,7 @@ private fun ThemeSelectorItem(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = mode.displayName,
+                                text = getThemeModeDisplayName(mode),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -345,8 +346,8 @@ private fun EpisodeLayoutSelectorItem(
     Box {
         SettingsItem(
             icon = painterResource(id = R.drawable.ic_view_module),
-            title = "Episode Layout",
-            subtitle = selectedLayout.getDisplayName(),
+            title = stringResource(R.string.pref_episode_layout_title),
+            subtitle = getEpisodeLayoutDisplayName(selectedLayout),
             onClick = { expanded = true },
             trailing = {
                 Icon(
@@ -371,7 +372,7 @@ private fun EpisodeLayoutSelectorItem(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = layout.getDisplayName(),
+                                text = getEpisodeLayoutDisplayName(layout),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -392,5 +393,23 @@ private fun EpisodeLayoutSelectorItem(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun getThemeModeDisplayName(mode: ThemeMode): String {
+    return when (mode) {
+        ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+        ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+        ThemeMode.DARK -> stringResource(R.string.theme_dark)
+        ThemeMode.AMOLED -> stringResource(R.string.theme_amoled)
+    }
+}
+
+@Composable
+private fun getEpisodeLayoutDisplayName(layout: EpisodeLayout): String {
+    return when (layout) {
+        EpisodeLayout.HORIZONTAL -> stringResource(R.string.layout_horizontal)
+        EpisodeLayout.VERTICAL -> stringResource(R.string.layout_vertical)
     }
 }

@@ -1,7 +1,9 @@
 package com.makd.afinity.ui.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.player.VideoZoomMode
@@ -13,6 +15,7 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,6 +30,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository,
     private val preferencesRepository: PreferencesRepository,
     private val appDataRepository: AppDataRepository,
@@ -364,7 +368,7 @@ class SettingsViewModel @Inject constructor(
                 Timber.e(e, "Logout failed")
                 _uiState.value = _uiState.value.copy(
                     isLoggingOut = false,
-                    error = "Logout failed: ${e.message}"
+                    error = context.getString(R.string.error_logout_failed_fmt, e.message)
                 )
             }
         }
@@ -378,7 +382,7 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Failed to logout from Jellyseerr")
                 _uiState.value = _uiState.value.copy(
-                    error = "Failed to logout from Jellyseerr: ${e.message}"
+                    error = context.getString(R.string.error_jellyseerr_logout_failed_fmt, e.message)
                 )
             }
         }

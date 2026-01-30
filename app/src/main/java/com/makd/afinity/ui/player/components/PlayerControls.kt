@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -105,15 +106,18 @@ fun PlayerControls(
 
     val currentItem = uiState.currentItem
 
-    val audioStreamOptions = remember(currentItem) {
+    val unknownLang = stringResource(R.string.track_unknown)
+    val channelFmt = stringResource(R.string.audio_channel_fmt)
+
+    val audioStreamOptions = remember(currentItem, unknownLang, channelFmt) {
         val streams = currentItem?.sources?.firstOrNull()?.mediaStreams
             ?.filter { it.type == MediaStreamType.AUDIO }
             ?.mapIndexed { index, stream ->
                 val displayName = buildString {
-                    append(stream.language?.uppercase() ?: "Unknown")
+                    append(stream.language?.uppercase() ?: unknownLang)
                     append(" • ${stream.codec?.uppercase() ?: "N/A"}")
                     if ((stream.channels ?: 0) > 0) {
-                        append(" (${stream.channels}ch)")
+                        append(String.format(channelFmt, stream.channels))
                     }
                 }
 
@@ -127,12 +131,15 @@ fun PlayerControls(
         streams
     }
 
-    val subtitleStreamOptions = remember(currentItem, player.currentTracks) {
+    val noneText = stringResource(R.string.track_none)
+    val trackFmt = stringResource(R.string.track_number_fmt)
+
+    val subtitleStreamOptions = remember(currentItem, player.currentTracks, noneText, trackFmt) {
         val options = mutableListOf<SubtitleStreamOption>()
         options.add(
             SubtitleStreamOption(
                 stream = null,
-                displayName = "None",
+                displayName = noneText,
                 isDefault = false,
                 index = -1,
                 isNone = true
@@ -142,7 +149,7 @@ fun PlayerControls(
             .filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
             .forEachIndexed { index, trackGroup ->
                 val format = trackGroup.mediaTrackGroup.getFormat(0)
-                val displayName = format.label ?: format.language ?: "Track ${index + 1}"
+                val displayName = format.label ?: format.language ?: String.format(trackFmt, index + 1)
                 options.add(
                     SubtitleStreamOption(
                         stream = null,
@@ -230,7 +237,7 @@ fun PlayerControls(
                                         }
                                         AsyncImage(
                                             imageUrl = logoUrl,
-                                            contentDescription = "Series Logo",
+                                            contentDescription = stringResource(R.string.cd_series_logo),
                                             modifier = Modifier
                                                 .height(60.dp)
                                                 .widthIn(max = 200.dp),
@@ -246,11 +253,12 @@ fun PlayerControls(
                                         )
                                     }
                                     Text(
-                                        text = "S${
-                                            seasonNumber.toString().padStart(2, '0')
-                                        }:E${
-                                            episodeNumber.toString().padStart(2, '0')
-                                        }: $episodeTitle",
+                                        text = stringResource(
+                                            R.string.player_episode_header_fmt,
+                                            seasonNumber.toString().padStart(2, '0'),
+                                            episodeNumber.toString().padStart(2, '0'),
+                                            episodeTitle ?: ""
+                                        ),
                                         color = Color.White.copy(alpha = 0.8f),
                                         fontSize = 14.sp,
                                         maxLines = 1,
@@ -389,7 +397,7 @@ fun PlayerControls(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "Audio Track",
+                            text = stringResource(R.string.player_audio_title),
                             style = MaterialTheme.typography.titleSmall,
                             color = Color.White,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -477,7 +485,7 @@ fun PlayerControls(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "Subtitles",
+                            text = stringResource(R.string.player_subtitle_title),
                             style = MaterialTheme.typography.titleSmall,
                             color = Color.White,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -591,7 +599,7 @@ private fun TopControls(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_chevron_left),
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.cd_back),
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
@@ -609,7 +617,7 @@ private fun TopControls(
                 ) {
                     Icon(
                         painter = painterResource(id = if (uiState.isControlsLocked) R.drawable.ic_unlock_player else R.drawable.ic_lock_player),
-                        contentDescription = if (uiState.isControlsLocked) "Unlock" else "Lock",
+                        contentDescription = if (uiState.isControlsLocked) stringResource(R.string.cd_unlock) else stringResource(R.string.cd_lock),
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
@@ -622,7 +630,7 @@ private fun TopControls(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_pip),
-                            contentDescription = "Enter Picture-in-Picture",
+                            contentDescription = stringResource(R.string.cd_enter_pip),
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -668,7 +676,7 @@ private fun CenterPlayButton(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_player_skip_back),
-                        contentDescription = "Previous",
+                        contentDescription = stringResource(R.string.cd_previous),
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
                     )
@@ -681,7 +689,7 @@ private fun CenterPlayButton(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_rewind_backward_10),
-                    contentDescription = "Rewind 10s",
+                    contentDescription = stringResource(R.string.cd_rewind_10),
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
                 )
@@ -701,7 +709,7 @@ private fun CenterPlayButton(
                     Icon(
                         painter = if (isPlaying) painterResource(id = R.drawable.ic_player_pause_filled)
                         else painterResource(id = R.drawable.ic_player_play_filled),
-                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        contentDescription = if (isPlaying) stringResource(R.string.cd_pause) else stringResource(R.string.cd_play),
                         tint = Color.White,
                         modifier = Modifier.size(40.dp)
                     )
@@ -714,7 +722,7 @@ private fun CenterPlayButton(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_rewind_forward_30),
-                    contentDescription = "Forward 30s",
+                    contentDescription = stringResource(R.string.cd_forward_30),
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
                 )
@@ -727,7 +735,7 @@ private fun CenterPlayButton(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_player_skip_forward),
-                        contentDescription = "Next",
+                        contentDescription = stringResource(R.string.cd_next),
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
                     )
@@ -789,7 +797,7 @@ private fun BottomControls(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_episodes_list),
-                                contentDescription = "Episodes",
+                                contentDescription = stringResource(R.string.cd_episodes),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -802,7 +810,7 @@ private fun BottomControls(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_speed),
-                            contentDescription = "Speed",
+                            contentDescription = stringResource(R.string.cd_speed),
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -814,7 +822,7 @@ private fun BottomControls(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_audio),
-                            contentDescription = "Audio",
+                            contentDescription = stringResource(R.string.cd_audio_settings),
                             tint = if (uiState.audioStreamIndex != null) MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -826,7 +834,7 @@ private fun BottomControls(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_subtitles),
-                            contentDescription = "Subtitles",
+                            contentDescription = stringResource(R.string.cd_subtitle_settings),
                             tint = if (uiState.subtitleStreamIndex != null) MaterialTheme.colorScheme.primary else Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -838,7 +846,7 @@ private fun BottomControls(
                     ) {
                         Icon(
                             painter = uiState.videoZoomMode.getIconPainter(),
-                            contentDescription = "Aspect Ratio",
+                            contentDescription = stringResource(R.string.cd_aspect_ratio),
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )

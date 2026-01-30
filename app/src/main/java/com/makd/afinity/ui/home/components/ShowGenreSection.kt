@@ -26,9 +26,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.MediaItemCard
@@ -60,7 +62,7 @@ fun ShowGenreSection(
 
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Text(
-            text = "$genre Shows",
+            text = stringResource(R.string.home_genre_shows_title, genre),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),

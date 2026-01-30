@@ -43,7 +43,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -78,7 +80,7 @@ fun ServerManagementScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Manage Servers",
+                        text = stringResource(R.string.server_management_title),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -88,7 +90,7 @@ fun ServerManagementScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -105,7 +107,7 @@ fun ServerManagementScreen(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_add),
-                    contentDescription = "Add Server"
+                    contentDescription = stringResource(R.string.cd_add_server)
                 )
             }
         },
@@ -229,8 +231,17 @@ private fun ServerCard(
 
                 if (serverWithCount.userCount > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
+                    val userText = if (serverWithCount.userCount == 1)
+                        stringResource(R.string.user_singular)
+                    else
+                        stringResource(R.string.user_plural)
+
                     Text(
-                        text = "${serverWithCount.userCount} ${if (serverWithCount.userCount == 1) "user" else "users"}",
+                        text = stringResource(
+                            R.string.user_count_fmt,
+                            serverWithCount.userCount,
+                            userText
+                        ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium
@@ -244,14 +255,14 @@ private fun ServerCard(
                 IconButton(onClick = onEditClick) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_edit),
-                        contentDescription = "Edit Server",
+                        contentDescription = stringResource(R.string.cd_edit_server),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 IconButton(onClick = onDeleteClick) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_delete),
-                        contentDescription = "Delete Server",
+                        contentDescription = stringResource(R.string.cd_delete_server),
                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
                     )
                 }
@@ -291,17 +302,17 @@ private fun EmptyServersState(
             }
 
             Text(
-                text = "No Servers Found",
+                text = stringResource(R.string.empty_servers_title),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "Tap the + button to add your first Jellyfin server.",
+                text = stringResource(R.string.empty_servers_message),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -324,7 +335,7 @@ private fun DeleteServerConfirmationDialog(
         },
         title = {
             Text(
-                text = "Delete Server?",
+                text = stringResource(R.string.dialog_delete_server_title),
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold
                 )
@@ -333,7 +344,10 @@ private fun DeleteServerConfirmationDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Are you sure you want to delete \"${serverWithCount.server.name}\"?",
+                    text = stringResource(
+                        R.string.dialog_delete_server_message_fmt,
+                        serverWithCount.server.name
+                    ),
                     style = MaterialTheme.typography.bodyLarge
                 )
                 if (serverWithCount.userCount > 0) {
@@ -356,7 +370,10 @@ private fun DeleteServerConfirmationDialog(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "This will remove ${serverWithCount.userCount} saved user(s) and all associated data.",
+                                text = stringResource(
+                                    R.string.dialog_delete_server_warning_fmt,
+                                    serverWithCount.userCount
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 fontWeight = FontWeight.Medium
@@ -374,12 +391,12 @@ private fun DeleteServerConfirmationDialog(
                     contentColor = MaterialTheme.colorScheme.onError
                 )
             ) {
-                Text("Delete")
+                Text(stringResource(R.string.action_delete))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
         shape = RoundedCornerShape(24.dp)

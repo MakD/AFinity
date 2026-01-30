@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
@@ -49,7 +50,7 @@ fun AfinitySplashScreen(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_launcher_monochrome),
-                contentDescription = "App Logo",
+                contentDescription = stringResource(R.string.cd_app_logo),
                 modifier = Modifier.size(160.dp),
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
             )
@@ -57,7 +58,7 @@ fun AfinitySplashScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "AFinity",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -67,7 +68,7 @@ fun AfinitySplashScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Powered By Jellyfin",
+                text = stringResource(R.string.splash_powered_by),
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Medium
                 ),
@@ -101,7 +102,7 @@ fun AfinitySplashScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "${(currentProgress * 100).toInt()}%",
+                text = stringResource(R.string.splash_progress_fmt, (currentProgress * 100).toInt()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.alpha(if (showProgress) 1f else 0f)
