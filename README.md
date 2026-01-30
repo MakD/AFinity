@@ -195,9 +195,9 @@ We use **Weblate** to manage translations. You can help translate AFinity into y
 [![Issues](https://img.shields.io/github/issues/MakD/AFinity?style=for-the-badge&labelColor=000000&color=e94b3c)](https://github.com/MakD/AFinity/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/MakD/AFinity?style=for-the-badge&labelColor=000000&color=f39c12)](https://github.com/MakD/AFinity/pulls)
 
-[![Translation status](https://hosted.weblate.org/widget/afinity-yet-another-jellyfin-client/afinity/multi-auto.svg)](https://hosted.weblate.org/engage/afinity-yet-another-jellyfin-client/)
-
 </div>
+
+[![Translation status](https://hosted.weblate.org/widget/afinity-yet-another-jellyfin-client/afinity/multi-auto.svg)](https://hosted.weblate.org/engage/afinity-yet-another-jellyfin-client/)
 
 ## Acknowledgments
 
