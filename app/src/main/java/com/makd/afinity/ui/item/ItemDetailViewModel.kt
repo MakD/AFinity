@@ -955,7 +955,9 @@ class ItemDetailViewModel @Inject constructor(
     fun pauseDownload() {
         viewModelScope.launch {
             try {
-                val downloadInfo = _uiState.value.downloadInfo ?: return@launch
+                val downloadInfo = _uiState.value.downloadInfo
+                    ?: _selectedEpisodeDownloadInfo.value
+                    ?: return@launch
                 val result = downloadRepository.pauseDownload(downloadInfo.id)
                 result.onFailure { error ->
                     Timber.e(error, "Failed to pause download")
@@ -969,7 +971,9 @@ class ItemDetailViewModel @Inject constructor(
     fun resumeDownload() {
         viewModelScope.launch {
             try {
-                val downloadInfo = _uiState.value.downloadInfo ?: return@launch
+                val downloadInfo = _uiState.value.downloadInfo
+                    ?: _selectedEpisodeDownloadInfo.value
+                    ?: return@launch
                 val result = downloadRepository.resumeDownload(downloadInfo.id)
                 result.onFailure { error ->
                     Timber.e(error, "Failed to resume download")
@@ -983,7 +987,9 @@ class ItemDetailViewModel @Inject constructor(
     fun cancelDownload() {
         viewModelScope.launch {
             try {
-                val downloadInfo = _uiState.value.downloadInfo ?: return@launch
+                val downloadInfo = _uiState.value.downloadInfo
+                    ?: _selectedEpisodeDownloadInfo.value
+                    ?: return@launch
                 val result = downloadRepository.cancelDownload(downloadInfo.id)
                 result.onSuccess {
                     Timber.i("Download cancelled successfully")
