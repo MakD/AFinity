@@ -1,5 +1,7 @@
 package com.makd.afinity.ui.downloads
 
+import android.os.Environment
+import android.os.StatFs
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.download.DownloadInfo
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 
@@ -90,9 +93,11 @@ class DownloadsViewModel @Inject constructor(
     private fun loadStorageInfo() {
         viewModelScope.launch {
             try {
-                val storageUsed = downloadRepository.getTotalStorageUsed()
+                val appStorageUsed = downloadRepository.getTotalStorageUsed()
+                val deviceStats = getDeviceStorageStats()
                 _uiState.value = _uiState.value.copy(
-                    totalStorageUsed = storageUsed
+                    totalStorageUsed = appStorageUsed,
+                    deviceStorageStats = deviceStats
                 )
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load storage info")
@@ -197,6 +202,29 @@ class DownloadsViewModel @Inject constructor(
             else -> String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
         }
     }
+
+    data class DeviceStorageStats(
+        val totalBytes: Long,
+        val freeBytes: Long,
+        val usedBytes: Long,
+        val usagePercentage: Float
+    )
+
+    fun getDeviceStorageStats(): DeviceStorageStats {
+        val path: File = Environment.getDataDirectory()
+        val stat = StatFs(path.path)
+
+        val totalBytes = stat.totalBytes
+        val availableBytes = stat.availableBytes
+        val usedBytes = totalBytes - availableBytes
+
+        return DeviceStorageStats(
+            totalBytes = totalBytes,
+            freeBytes = availableBytes,
+            usedBytes = usedBytes,
+            usagePercentage = usedBytes.toFloat() / totalBytes.toFloat()
+        )
+    }
 }
 
 data class DownloadsUiState(
@@ -204,5 +232,6 @@ data class DownloadsUiState(
     val completedDownloads: List<DownloadInfo> = emptyList(),
     val totalStorageUsed: Long = 0L,
     val downloadOverWifiOnly: Boolean = true,
+    val deviceStorageStats: DownloadsViewModel.DeviceStorageStats? = null,
     val error: String? = null
 )
