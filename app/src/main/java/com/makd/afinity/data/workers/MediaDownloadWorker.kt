@@ -23,6 +23,7 @@ import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityShow
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityMediaStream
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySource
@@ -184,37 +185,50 @@ class MediaDownloadWorker @AssistedInject constructor(
 
             val downloadUrl = apiClient.libraryApi.getDownloadUrl(itemId = itemId)
 
+            val existingFileSize = if (outputFile.exists()) outputFile.length() else 0L
+
             Timber.d("Downloading from: $downloadUrl")
             Timber.d("Saving to: ${outputFile.absolutePath}")
+            Timber.d("Resuming from byte: $existingFileSize")
 
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(downloadUrl)
                 .header("X-Emby-Token", apiClient.accessToken ?: "")
-                .build()
+
+            if (existingFileSize > 0) {
+                requestBuilder.header("Range", "bytes=$existingFileSize-")
+            }
+
+            val request = requestBuilder.build()
 
             okHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw Exception("Download failed: ${response.code} ${response.message}")
+                    if (response.code == 416) {
+                        Timber.w("File already fully downloaded (416). Proceeding to completion.")
+                    } else {
+                        throw Exception("Download failed: ${response.code} ${response.message}")
+                    }
                 }
 
-                val totalBytes = response.body?.contentLength() ?: -1L
-                var downloadedBytes = 0L
+                val remainingBytes = response.body?.contentLength() ?: -1L
+                val totalBytes = if (remainingBytes != -1L) existingFileSize + remainingBytes else -1L
+
+                var downloadedBytes = existingFileSize
                 var lastUpdateTime = 0L
 
                 response.body?.byteStream()?.use { input ->
-                    FileOutputStream(outputFile).use { output ->
+                    FileOutputStream(outputFile, true).use { output ->
                         val buffer = ByteArray(BUFFER_SIZE)
                         var bytes: Int
 
                         while (input.read(buffer).also { bytes = it } != -1) {
                             if (isStopped) {
-                                Timber.d("Download cancelled by user")
+                                Timber.d("Download paused/stopped by user")
                                 try {
                                     output.close()
-                                } catch (_: Exception) {
-                                }
-                                outputFile.delete()
-                                return@withContext Result.failure(workDataOf("error" to "Cancelled"))
+                                } catch (_: Exception) {}
+
+                                return@withContext Result.failure(workDataOf("error" to "Paused"))
                             }
 
                             output.write(buffer, 0, bytes)
@@ -222,17 +236,20 @@ class MediaDownloadWorker @AssistedInject constructor(
 
                             if (totalBytes > 0) {
                                 val progress = (downloadedBytes.toFloat() / totalBytes.toFloat())
-                                updateProgress(downloadId, progress, downloadedBytes, totalBytes)
-                                setProgressAsync(
-                                    workDataOf(
-                                        PROGRESS_KEY to progress,
-                                        "downloadedBytes" to downloadedBytes,
-                                        "totalBytes" to totalBytes
-                                    )
-                                )
+
                                 val currentTime = System.currentTimeMillis()
                                 if (currentTime - lastUpdateTime > 500 || downloadedBytes == totalBytes) {
                                     lastUpdateTime = currentTime
+                                    updateProgress(downloadId, progress, downloadedBytes, totalBytes)
+
+                                    setProgressAsync(
+                                        workDataOf(
+                                            PROGRESS_KEY to progress,
+                                            "downloadedBytes" to downloadedBytes,
+                                            "totalBytes" to totalBytes
+                                        )
+                                    )
+
                                     setForeground(
                                         createForegroundInfo(
                                             downloadId.hashCode(),
@@ -266,7 +283,7 @@ class MediaDownloadWorker @AssistedInject constructor(
             ensureItemInDatabase(apiClient, download.serverId, itemId, itemType, userId)
             downloadImages(apiClient, download.serverId, itemId, itemType, userId)
             downloadSegments(itemId)
-            createLocalSource(itemId, sourceId, source.name, finalFile)
+            createLocalSource(itemId, sourceId, source.name, finalFile, source.mediaStreams)
 
             Timber.i("Media download completed successfully for: $itemName")
 
@@ -660,11 +677,13 @@ class MediaDownloadWorker @AssistedInject constructor(
         itemId: UUID,
         sourceId: String,
         sourceName: String,
-        file: File
+        file: File,
+        originalStreams: List<AfinityMediaStream>
     ) {
         try {
+            val localSourceId = "${sourceId}_local"
             val localSource = AfinitySourceDto(
-                id = "${sourceId}_local",
+                id = localSourceId,
                 itemId = itemId,
                 name = "$sourceName (Downloaded)",
                 type = AfinitySourceType.LOCAL,
@@ -683,6 +702,20 @@ class MediaDownloadWorker @AssistedInject constructor(
                 ),
                 itemId
             )
+            originalStreams.forEach { stream ->
+                if (!stream.isExternal) {
+                    try {
+                        databaseRepository.insertMediaStream(
+                            stream = stream.copy(
+                                path = file.absolutePath
+                            ),
+                            sourceId = localSourceId
+                        )
+                    } catch (e: Exception) {
+                        Timber.w("Failed to copy stream ${stream.type} to local source")
+                    }
+                }
+            }
         } catch (e: Exception) {
             Timber.e(e, "Failed to create LOCAL source entry")
         }

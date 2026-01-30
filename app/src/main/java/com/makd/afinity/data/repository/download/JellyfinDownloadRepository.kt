@@ -66,83 +66,89 @@ class JellyfinDownloadRepository @Inject constructor(
         return sessionManager.currentSession.value?.userId
     }
 
-    override suspend fun startDownload(itemId: UUID, sourceId: String): Result<UUID> = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val existingDownload = databaseRepository.getDownloadByItemId(itemId)
-            if (existingDownload != null) {
-                if (existingDownload.status == DownloadStatus.COMPLETED) {
-                    return@withContext Result.failure(Exception("Item already downloaded"))
+    override suspend fun startDownload(itemId: UUID, sourceId: String): Result<UUID> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val existingDownload = databaseRepository.getDownloadByItemId(itemId)
+                if (existingDownload != null) {
+                    if (existingDownload.status == DownloadStatus.COMPLETED) {
+                        return@withContext Result.failure(Exception("Item already downloaded"))
+                    }
+                    if (existingDownload.status == DownloadStatus.DOWNLOADING ||
+                        existingDownload.status == DownloadStatus.QUEUED
+                    ) {
+                        return@withContext Result.failure(Exception("Item is already being downloaded"))
+                    }
                 }
-                if (existingDownload.status == DownloadStatus.DOWNLOADING ||
-                    existingDownload.status == DownloadStatus.QUEUED) {
-                    return@withContext Result.failure(Exception("Item is already being downloaded"))
+
+                val currentSession = sessionManager.currentSession.value
+                    ?: return@withContext Result.failure(Exception("No active session"))
+
+                val userId = currentSession.userId
+                val serverId = currentSession.serverId
+                val baseUrl = currentSession.serverUrl
+
+                val baseItemDto = mediaRepository.getItem(
+                    itemId = itemId,
+                    fields = listOf(
+                        ItemFields.MEDIA_SOURCES,
+                        ItemFields.MEDIA_STREAMS,
+                        ItemFields.OVERVIEW
+                    )
+                ) ?: return@withContext Result.failure(Exception("Item not found"))
+
+                val item = when (baseItemDto.type) {
+                    BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
+                    BaseItemKind.EPISODE -> baseItemDto.toAfinityEpisode(baseUrl)
+                        ?: return@withContext Result.failure(Exception("Failed to convert episode"))
+
+                    else -> return@withContext Result.failure(
+                        Exception("Unsupported item type: ${baseItemDto.type}")
+                    )
                 }
-            }
 
-            val currentSession = sessionManager.currentSession.value
-                ?: return@withContext Result.failure(Exception("No active session"))
+                val source = item.sources.find { it.id == sourceId }
+                    ?: return@withContext Result.failure(Exception("Source not found"))
 
-            val userId = currentSession.userId
-            val serverId = currentSession.serverId
-            val baseUrl = currentSession.serverUrl
-
-            val baseItemDto = mediaRepository.getItem(
-                itemId = itemId,
-                fields = listOf(
-                    ItemFields.MEDIA_SOURCES,
-                    ItemFields.MEDIA_STREAMS,
-                    ItemFields.OVERVIEW
+                val downloadId = UUID.randomUUID()
+                val download = DownloadDto(
+                    id = downloadId,
+                    itemId = itemId,
+                    itemName = item.name,
+                    itemType = when (item) {
+                        is AfinityMovie -> "Movie"
+                        is AfinityEpisode -> "Episode"
+                        else -> "Unknown"
+                    },
+                    sourceId = sourceId,
+                    sourceName = source.name,
+                    status = DownloadStatus.QUEUED,
+                    progress = 0f,
+                    bytesDownloaded = 0L,
+                    totalBytes = source.size,
+                    filePath = null,
+                    error = null,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis(),
+                    serverId = serverId,
+                    userId = userId
                 )
-            ) ?: return@withContext Result.failure(Exception("Item not found"))
 
-            val item = when (baseItemDto.type) {
-                BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
-                BaseItemKind.EPISODE -> baseItemDto.toAfinityEpisode(baseUrl)
-                    ?: return@withContext Result.failure(Exception("Failed to convert episode"))
-                else -> return@withContext Result.failure(
-                    Exception("Unsupported item type: ${baseItemDto.type}")
-                )
+                databaseRepository.insertDownload(download)
+
+                queueDownloadWork(download)
+
+                Result.success(downloadId)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to start download")
+                Result.failure(e)
             }
-
-            val source = item.sources.find { it.id == sourceId }
-                ?: return@withContext Result.failure(Exception("Source not found"))
-
-            val downloadId = UUID.randomUUID()
-            val download = DownloadDto(
-                id = downloadId,
-                itemId = itemId,
-                itemName = item.name,
-                itemType = when (item) {
-                    is AfinityMovie -> "Movie"
-                    is AfinityEpisode -> "Episode"
-                    else -> "Unknown"
-                },
-                sourceId = sourceId,
-                sourceName = source.name,
-                status = DownloadStatus.QUEUED,
-                progress = 0f,
-                bytesDownloaded = 0L,
-                totalBytes = source.size,
-                filePath = null,
-                error = null,
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis(),
-                serverId = serverId,
-                userId = userId
-            )
-
-            databaseRepository.insertDownload(download)
-
-            queueDownloadWork(download)
-
-            Result.success(downloadId)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to start download")
-            Result.failure(e)
         }
-    }
 
-    private suspend fun queueDownloadWork(download: DownloadDto) {
+    private suspend fun queueDownloadWork(
+        download: DownloadDto,
+        policy: ExistingWorkPolicy = ExistingWorkPolicy.KEEP
+    ) {
         val wifiOnly = preferencesRepository.getDownloadOverWifiOnly()
 
         val constraints = Constraints.Builder()
@@ -185,117 +191,127 @@ class JellyfinDownloadRepository @Inject constructor(
 
         workManager.beginUniqueWork(
             "download_${download.id}",
-            ExistingWorkPolicy.KEEP,
+            policy,
             mediaDownloadRequest
         ).then(listOf(trickplayDownloadRequest, imageDownloadRequest, subtitleDownloadRequest))
             .enqueue()
     }
 
-    override suspend fun pauseDownload(downloadId: UUID): Result<Unit> = withContext(Dispatchers.IO) {
-        return@withContext try {
-            workManager.cancelUniqueWork("download_$downloadId")
+    override suspend fun pauseDownload(downloadId: UUID): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                workManager.cancelUniqueWork("download_$downloadId")
 
-            val download = databaseRepository.getDownload(downloadId)
-            if (download != null) {
-                databaseRepository.insertDownload(
-                    download.copy(
-                        status = DownloadStatus.PAUSED,
-                        updatedAt = System.currentTimeMillis()
+                val download = databaseRepository.getDownload(downloadId)
+                if (download != null) {
+                    databaseRepository.insertDownload(
+                        download.copy(
+                            status = DownloadStatus.PAUSED,
+                            updatedAt = System.currentTimeMillis()
+                        )
                     )
-                )
-            }
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to pause download")
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun resumeDownload(downloadId: UUID): Result<Unit> = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val download = databaseRepository.getDownload(downloadId)
-                ?: return@withContext Result.failure(Exception("Download not found"))
-
-            if (download.status != DownloadStatus.PAUSED) {
-                return@withContext Result.failure(Exception("Download is not paused"))
-            }
-
-            val updatedDownload = download.copy(
-                status = DownloadStatus.QUEUED,
-                updatedAt = System.currentTimeMillis()
-            )
-            databaseRepository.insertDownload(updatedDownload)
-
-            queueDownloadWork(updatedDownload)
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to resume download")
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun cancelDownload(downloadId: UUID): Result<Unit> = withContext(Dispatchers.IO) {
-        return@withContext try {
-            workManager.cancelUniqueWork("download_$downloadId")
-
-            val download = databaseRepository.getDownload(downloadId)
-            if (download != null) {
-                download.filePath?.let { path ->
-                    File(path).also { file ->
-                        if (file.exists()) file.delete()
-                    }
-                    File("$path.download").also { file ->
-                        if (file.exists()) file.delete()
-                    }
                 }
+
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to pause download")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun resumeDownload(downloadId: UUID): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val download = databaseRepository.getDownload(downloadId)
+                    ?: return@withContext Result.failure(Exception("Download not found"))
+
+                if (download.status != DownloadStatus.PAUSED && download.status != DownloadStatus.FAILED) {
+                    return@withContext Result.failure(Exception("Download is not paused or failed"))
+                }
+
+                val updatedDownload = download.copy(
+                    status = DownloadStatus.QUEUED,
+                    error = null,
+                    updatedAt = System.currentTimeMillis()
+                )
+                databaseRepository.insertDownload(updatedDownload)
+
+                queueDownloadWork(updatedDownload, ExistingWorkPolicy.REPLACE)
+
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to resume download")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun cancelDownload(downloadId: UUID): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                workManager.cancelUniqueWork("download_$downloadId")
+
+                val download = databaseRepository.getDownload(downloadId)
+                if (download != null) {
+                    val itemDir = getItemDownloadDirectory(download.itemId)
+                    val mediaDir = File(itemDir, "media")
+                    if (mediaDir.exists()) {
+                        mediaDir.listFiles { _, name ->
+                            name.startsWith(download.sourceId)
+                        }?.forEach { file ->
+                            Timber.d("Deleting download file: ${file.name}")
+                            file.delete()
+                        }
+                    }
+                    if (itemDir.exists() && (itemDir.listFiles()?.isEmpty() == true ||
+                                itemDir.listFiles()?.all {
+                                    it.name == "media" && it.listFiles()?.isEmpty() == true
+                                } == true)
+                    ) {
+                        itemDir.deleteRecursively()
+                    }
+                    databaseRepository.deleteDownload(downloadId)
+                }
+
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to cancel download")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun deleteDownload(downloadId: UUID): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val download = databaseRepository.getDownload(downloadId)
+                    ?: return@withContext Result.failure(Exception("Download not found"))
 
                 val itemFolder = File(downloadDir, download.itemId.toString())
-                if (itemFolder.exists() && itemFolder.listFiles()?.isEmpty() == true) {
-                    itemFolder.delete()
+                if (itemFolder.exists()) {
+                    itemFolder.deleteRecursively()
                 }
 
+                val sources = databaseRepository.getSources(download.itemId)
+                sources.filter { it.type == AfinitySourceType.LOCAL }
+                    .forEach { databaseRepository.deleteSource(it.id) }
+
                 databaseRepository.deleteDownload(downloadId)
+
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to delete download")
+                Result.failure(e)
             }
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to cancel download")
-            Result.failure(e)
         }
-    }
 
-    override suspend fun deleteDownload(downloadId: UUID): Result<Unit> = withContext(Dispatchers.IO) {
-        return@withContext try {
-            val download = databaseRepository.getDownload(downloadId)
-                ?: return@withContext Result.failure(Exception("Download not found"))
-
-            val itemFolder = File(downloadDir, download.itemId.toString())
-            if (itemFolder.exists()) {
-                itemFolder.deleteRecursively()
-            }
-
-            val sources = databaseRepository.getSources(download.itemId)
-            sources.filter { it.type == AfinitySourceType.LOCAL }
-                .forEach { databaseRepository.deleteSource(it.id) }
-
-            databaseRepository.deleteDownload(downloadId)
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to delete download")
-            Result.failure(e)
+    override suspend fun getDownload(downloadId: UUID): DownloadInfo? =
+        withContext(Dispatchers.IO) {
+            databaseRepository.getDownload(downloadId)?.toDownloadInfo()
         }
-    }
 
-    override suspend fun getDownload(downloadId: UUID): DownloadInfo? = withContext(Dispatchers.IO) {
-        databaseRepository.getDownload(downloadId)?.toDownloadInfo()
-    }
-
-    override suspend fun getDownloadByItemId(itemId: UUID): DownloadInfo? = withContext(Dispatchers.IO) {
-        databaseRepository.getDownloadByItemId(itemId)?.toDownloadInfo()
-    }
+    override suspend fun getDownloadByItemId(itemId: UUID): DownloadInfo? =
+        withContext(Dispatchers.IO) {
+            databaseRepository.getDownloadByItemId(itemId)?.toDownloadInfo()
+        }
 
     override fun getAllDownloadsFlow(): Flow<List<DownloadInfo>> {
         return databaseRepository.getAllDownloadsFlow()
@@ -327,7 +343,7 @@ class JellyfinDownloadRepository @Inject constructor(
 
     override fun getActiveDownloadsFlow(): Flow<List<DownloadInfo>> {
         return getDownloadsByStatusFlow(
-            listOf(DownloadStatus.QUEUED, DownloadStatus.DOWNLOADING)
+            listOf(DownloadStatus.QUEUED, DownloadStatus.DOWNLOADING, DownloadStatus.PAUSED, DownloadStatus.FAILED)
         )
     }
 

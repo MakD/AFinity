@@ -155,7 +155,7 @@ class SubtitleDownloadWorker @AssistedInject constructor(
         }
     }
 
-    private fun downloadSubtitle(
+    private suspend fun downloadSubtitle(
         apiClient: ApiClient,
         itemId: UUID,
         stream: AfinityMediaStream,
@@ -175,34 +175,52 @@ class SubtitleDownloadWorker @AssistedInject constructor(
 
         val outputFile = File(outputDir, "${language}_${stream.index}.$extension")
 
-        if (outputFile.exists()) {
-            return
-        }
+        if (!outputFile.exists()) {
+            val subtitleUrl =
+                "$baseUrl/Videos/$itemId/$mediaSourceId/Subtitles/${stream.index}/Stream.$extension?api_key=${apiClient.accessToken}"
 
-        val subtitleUrl =
-            "$baseUrl/Videos/$itemId/$mediaSourceId/Subtitles/${stream.index}/Stream.$extension?api_key=${apiClient.accessToken}"
+            val request = Request.Builder()
+                .url(subtitleUrl)
+                .header("X-Emby-Token", apiClient.accessToken ?: "")
+                .build()
 
-        val request = Request.Builder()
-            .url(subtitleUrl)
-            .header("X-Emby-Token", apiClient.accessToken ?: "")
-            .build()
+            try {
+                okHttpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        Timber.w("Failed to download subtitle: ${response.code}")
+                        return
+                    }
 
-        okHttpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw Exception("Failed to download subtitle: ${response.code}")
-            }
-
-            response.body?.byteStream()?.use { input ->
-                FileOutputStream(outputFile).use { output ->
-                    val buffer = ByteArray(BUFFER_SIZE)
-                    var bytes: Int
-                    while (input.read(buffer).also { bytes = it } != -1) {
-                        output.write(buffer, 0, bytes)
+                    response.body?.byteStream()?.use { input ->
+                        FileOutputStream(outputFile).use { output ->
+                            val buffer = ByteArray(BUFFER_SIZE)
+                            var bytes: Int
+                            while (input.read(buffer).also { bytes = it } != -1) {
+                                output.write(buffer, 0, bytes)
+                            }
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                Timber.e(e, "Error downloading subtitle file")
+                return
             }
         }
 
-        Timber.d("Downloaded subtitle: $language.$extension")
+        if (outputFile.exists() && outputFile.length() > 0) {
+            val localSourceId = "${mediaSourceId}_local"
+            try {
+                val localStream = stream.copy(
+                    path = outputFile.absolutePath,
+                    isExternal = true,
+                )
+                databaseRepository.insertMediaStream(localStream, localSourceId)
+                Timber.d("Registered local subtitle in DB: ${outputFile.name}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to insert subtitle stream into database")
+            }
+        }
+
+        Timber.d("Processed subtitle: $language.$extension")
     }
 }
