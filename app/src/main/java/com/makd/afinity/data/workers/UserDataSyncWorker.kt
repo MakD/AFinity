@@ -75,8 +75,7 @@ class UserDataSyncWorker @AssistedInject constructor(
                                     data = UpdateUserItemDataDto(
                                         playbackPositionTicks = userData.playbackPositionTicks,
                                         played = userData.played,
-                                        isFavorite = userData.favorite,
-                                        lastPlayedDate = java.time.LocalDateTime.now()
+                                        isFavorite = userData.favorite
                                     )
                                 )
 
