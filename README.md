@@ -144,7 +144,16 @@ The Requests tab will appear in your bottom navigation once connected.
 
 ## Contributing
 
-We welcome contributions from the community! Here's how you can help:
+We welcome contributions from the community! Whether you're a developer, designer, or translator, here is how you can help:
+
+### Help Translate
+We use **Weblate** to manage translations. You can help translate AFinity into your language directly in your browser without needing any technical knowledge.
+
+1. Visit our [Weblate Project](https://hosted.weblate.org/projects/afinity-yet-another-jellyfin-client/).
+2. Select your language (or start a new one).
+3. Start translating! Changes are automatically synced back to this repository.
+
+### Code Contributions
 
 1. **Fork** the repository
 2. **Create** a feature branch (`git checkout -b feature/AmazingFeature`)
@@ -185,6 +194,8 @@ We welcome contributions from the community! Here's how you can help:
 
 [![Issues](https://img.shields.io/github/issues/MakD/AFinity?style=for-the-badge&labelColor=000000&color=e94b3c)](https://github.com/MakD/AFinity/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/MakD/AFinity?style=for-the-badge&labelColor=000000&color=f39c12)](https://github.com/MakD/AFinity/pulls)
+
+[![Translation status](https://hosted.weblate.org/widget/afinity-yet-another-jellyfin-client/afinity/multi-auto.svg)](https://hosted.weblate.org/engage/afinity-yet-another-jellyfin-client/)
 
 </div>
 
