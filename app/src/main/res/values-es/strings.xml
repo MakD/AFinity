@@ -1,3 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="splash_status_authenticating">Autentificando...</string>
+    <string name="loading_phase_offline">Listo (Modo Offline)</string>
+    <string name="loading_phase_connecting">Conectando al server...</string>
+    <string name="loading_phase_processing">Procesando librerias...</string>
+    <string name="loading_phase_finalizing">Finalizando la pantalla de inicio...</string>
+    <string name="loading_phase_ready">¡Listo!</string>
 </resources>
