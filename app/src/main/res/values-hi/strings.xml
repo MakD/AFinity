@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="splash_powered_by">जेलीफिन द्वारा संचालित</string>
+    <string name="splash_status_authenticating">प्रमाणीकरण हो रहा है..।</string>
+</resources>

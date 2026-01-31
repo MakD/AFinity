@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="splash_powered_by">Powered by Jellyfin</string>
+    <string name="splash_progress_fmt">%1$d%%</string>
+    <string name="splash_status_authenticating">Authentifiziere...</string>
+    <string name="loading_phase_offline">Bereit (Offline-Modus)</string>
+    <string name="loading_phase_connecting">Verbinde mit Server...</string>
+    <string name="loading_phase_fetching">Lade Inhalte...</string>
+    <string name="loading_phase_processing">Verarbeite Bibliotheken...</string>
+    <string name="loading_phase_finalizing">Finalisiere Startbildschirm...</string>
+    <string name="loading_phase_ready">Bereit!</string>
+    <string name="login_connect_to_jellyfin">Mit Jellyfin verbinden</string>
+    <string name="login_welcome_back">Willkommen zurück</string>
+    <string name="login_saved_servers">Gespeicherte Server</string>
+    <string name="login_add_new_server">Neu hinzufügen</string>
+    <string name="login_server_url_label">Server URL</string>
+    <string name="login_server_url_placeholder">https://jellyfin.example.com</string>
+    <string name="login_btn_connect">Verbinden</string>
+    <string name="login_btn_cancel">Abbrechen</string>
+    <string name="login_local_network">Local Network</string>
+    <string name="login_no_servers_found">Keine Server in der Nähe gefunden</string>
+    <string name="login_refresh">Aktualisieren</string>
+    <string name="login_switch_server">Server wechseln</string>
+    <string name="login_method_password">Passwort</string>
+    <string name="login_method_quick_connect">Quick Connect</string>
+    <string name="login_username_label">Benutzername</string>
+    <string name="login_password_label">Passwort</string>
+    <string name="login_btn_sign_in">Einloggen</string>
+    <string name="login_quick_connect_description">Nutze Quick Connect, um dich ohne Passwort über dein Jellyfin-Dashboard anzumelden.</string>
+    <string name="login_btn_generate_code">Code generieren</string>
+    <string name="login_quick_connect_instructions">Code im Browser eingeben</string>
+    <string name="cd_server_icon">Server Icon</string>
+    <string name="top_bar_search_hint">Suche</string>
+    <string name="cd_search_icon">Suche</string>
+    <string name="cd_profile_icon">Profil</string>
+    <string name="cd_offline_mode">Offline-Modus</string>
+    <string name="home_error_title">Etwas ist schiefgelaufen</string>
+    <string name="home_error_message">Daten werden automatisch aktualisiert</string>
+    <string name="home_downloaded_movies">Heruntergeladene Filme</string>
+    <string name="home_downloaded_shows">Heruntergeladene Serien</string>
+    <string name="home_critics_choice">Kritiker-Empfehlungen</string>
+    <string name="home_popular_studios">Beliebte Studios</string>
+</resources>
