@@ -94,9 +94,11 @@ class DownloadsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val appStorageUsed = downloadRepository.getTotalStorageUsed()
+                val allServersStorageUsed = downloadRepository.getTotalStorageUsedAllServers()
                 val deviceStats = getDeviceStorageStats()
                 _uiState.value = _uiState.value.copy(
                     totalStorageUsed = appStorageUsed,
+                    totalStorageUsedAllServers = allServersStorageUsed,
                     deviceStorageStats = deviceStats
                 )
             } catch (e: Exception) {
@@ -231,6 +233,7 @@ data class DownloadsUiState(
     val activeDownloads: List<DownloadInfo> = emptyList(),
     val completedDownloads: List<DownloadInfo> = emptyList(),
     val totalStorageUsed: Long = 0L,
+    val totalStorageUsedAllServers: Long = 0L,
     val downloadOverWifiOnly: Boolean = true,
     val deviceStorageStats: DownloadsViewModel.DeviceStorageStats? = null,
     val error: String? = null

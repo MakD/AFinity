@@ -105,7 +105,9 @@ interface DatabaseRepository {
     suspend fun getUserData(userId: UUID, itemId: UUID): AfinityUserDataDto?
     suspend fun getUserDataOrCreateNew(itemId: UUID, userId: UUID): AfinityUserDataDto
     suspend fun getAllUserDataToSync(userId: UUID): List<AfinityUserDataDto>
+    suspend fun getAllUserDataToSync(userId: UUID, serverId: String): List<AfinityUserDataDto>
     suspend fun markUserDataSynced(userId: UUID, itemId: UUID)
+    suspend fun markUserDataSynced(userId: UUID, itemId: UUID, serverId: String)
 
     suspend fun getFavoriteMovies(userId: UUID): List<AfinityMovie>
     suspend fun getFavoriteShows(userId: UUID): List<AfinityShow>
@@ -128,8 +130,14 @@ interface DatabaseRepository {
     suspend fun insertDownload(download: DownloadDto)
     suspend fun getDownload(downloadId: UUID): DownloadDto?
     suspend fun getDownloadByItemId(itemId: UUID): DownloadDto?
+    suspend fun getDownloadByItemIdScoped(itemId: UUID, serverId: String, userId: UUID): DownloadDto?
     fun getAllDownloadsFlow(): Flow<List<DownloadDto>>
+    fun getAllDownloadsFlowScoped(serverId: String, userId: UUID): Flow<List<DownloadDto>>
     fun getDownloadsByStatusFlow(statuses: List<DownloadStatus>): Flow<List<DownloadDto>>
+    fun getDownloadsByStatusFlowScoped(statuses: List<DownloadStatus>, serverId: String, userId: UUID): Flow<List<DownloadDto>>
+    suspend fun getTotalBytesForServer(serverId: String): Long
+    suspend fun getTotalBytesAllServers(): Long
+    suspend fun backfillEmptyServerIds(serverId: String, userId: UUID)
     suspend fun deleteDownload(downloadId: UUID)
     suspend fun getSources(itemId: UUID): List<AfinitySourceDto>
 }

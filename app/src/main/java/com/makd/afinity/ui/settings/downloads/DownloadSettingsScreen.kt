@@ -114,6 +114,7 @@ fun DownloadSettingsScreen(
             item {
                 StatusHub(
                     totalStorageUsed = uiState.totalStorageUsed,
+                    totalStorageUsedAllServers = uiState.totalStorageUsedAllServers,
                     downloadCount = uiState.activeDownloads.size + uiState.completedDownloads.size,
                     isOffline = isOffline,
                     wifiOnly = uiState.downloadOverWifiOnly,
@@ -179,6 +180,7 @@ fun DownloadSettingsScreen(
 @Composable
 fun StatusHub(
     totalStorageUsed: Long,
+    totalStorageUsedAllServers: Long,
     downloadCount: Int,
     isOffline: Boolean,
     wifiOnly: Boolean,
@@ -230,7 +232,7 @@ fun StatusHub(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(R.string.downloads_title),
+                        text = stringResource(R.string.storage_this_server),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -243,6 +245,19 @@ fun StatusHub(
                         ),
                         color = MaterialTheme.colorScheme.onSurface
                     )
+
+                    if (totalStorageUsedAllServers > totalStorageUsed) {
+                        Text(
+                            text = stringResource(
+                                R.string.storage_all_servers_fmt,
+                                formatSize(totalStorageUsedAllServers)
+                            ),
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
                     val freeSpaceText = deviceStats?.freeBytes?.let { formatSize(it) } ?: "..."
                     Text(

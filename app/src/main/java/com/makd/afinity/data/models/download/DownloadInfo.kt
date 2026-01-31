@@ -17,4 +17,6 @@ data class DownloadInfo(
     val error: String?,
     val createdAt: Long,
     val updatedAt: Long,
+    val serverId: String,
+    val userId: UUID,
 )

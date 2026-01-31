@@ -34,4 +34,6 @@ interface DownloadRepository {
     suspend fun isItemDownloading(itemId: UUID): Boolean
 
     suspend fun getTotalStorageUsed(): Long
+
+    suspend fun getTotalStorageUsedAllServers(): Long
 }

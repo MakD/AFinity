@@ -124,6 +124,24 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM downloads WHERE status = :status")
     abstract suspend fun deleteDownloadsByStatus(status: DownloadStatus)
 
+    @Query("SELECT * FROM downloads WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId")
+    abstract suspend fun getDownloadByItemIdScoped(itemId: UUID, serverId: String, userId: UUID): DownloadDto?
+
+    @Query("SELECT * FROM downloads WHERE serverId = :serverId AND userId = :userId ORDER BY createdAt DESC")
+    abstract fun getAllDownloadsFlowScoped(serverId: String, userId: UUID): Flow<List<DownloadDto>>
+
+    @Query("SELECT * FROM downloads WHERE status IN (:statuses) AND serverId = :serverId AND userId = :userId ORDER BY createdAt DESC")
+    abstract fun getDownloadsByStatusFlowScoped(statuses: List<DownloadStatus>, serverId: String, userId: UUID): Flow<List<DownloadDto>>
+
+    @Query("SELECT COALESCE(SUM(totalBytes), 0) FROM downloads WHERE serverId = :serverId AND status = 'COMPLETED'")
+    abstract suspend fun getTotalBytesForServer(serverId: String): Long
+
+    @Query("SELECT COALESCE(SUM(totalBytes), 0) FROM downloads WHERE status = 'COMPLETED'")
+    abstract suspend fun getTotalBytesAllServers(): Long
+
+    @Query("UPDATE downloads SET serverId = :serverId, userId = :userId WHERE serverId = ''")
+    abstract suspend fun backfillEmptyServerIds(serverId: String, userId: UUID)
+
     @Query("DELETE FROM movies WHERE id = :movieId")
     abstract suspend fun deleteMovie(movieId: UUID)
 

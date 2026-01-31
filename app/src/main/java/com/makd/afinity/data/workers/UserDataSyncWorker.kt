@@ -58,7 +58,7 @@ class UserDataSyncWorker @AssistedInject constructor(
                         return@forEach
                     }
 
-                    val unsyncedData = databaseRepository.getAllUserDataToSync(userId)
+                    val unsyncedData = databaseRepository.getAllUserDataToSync(userId, server.id)
 
                     if (unsyncedData.isNotEmpty()) {
                         Timber.i("Found ${unsyncedData.size} items to sync for user $userId on server ${server.name}")
@@ -79,7 +79,7 @@ class UserDataSyncWorker @AssistedInject constructor(
                                     )
                                 )
 
-                                databaseRepository.markUserDataSynced(userId, userData.itemId)
+                                databaseRepository.markUserDataSynced(userId, userData.itemId, server.id)
                                 totalSuccess++
                             } catch (e: Exception) {
                                 totalFailure++

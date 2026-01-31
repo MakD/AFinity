@@ -29,7 +29,6 @@ import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.repository.DatabaseRepository
-import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.di.DownloadClient
@@ -57,7 +56,6 @@ class MediaDownloadWorker @AssistedInject constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: JellyfinDownloadRepository,
-    private val preferencesRepository: PreferencesRepository,
     private val segmentsRepository: SegmentsRepository,
     @DownloadClient private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
@@ -129,12 +127,6 @@ class MediaDownloadWorker @AssistedInject constructor(
 
             if (userId != download.userId) {
                 Timber.w("User ID mismatch. Download started by ${download.userId}, active token is for $userId")
-            }
-
-            try {
-                preferencesRepository.setCurrentUserId(userId.toString())
-            } catch (e: Exception) {
-                Timber.w(e, "Failed to save userId to preferences")
             }
 
             val baseUrl = apiClient.baseUrl ?: ""

@@ -558,14 +558,17 @@ class HomeViewModel @Inject constructor(
 
             Timber.d("Loading downloaded content for user: $userId")
 
+            val completedDownloads = downloadRepository.getCompletedDownloadsFlow().first()
+            val downloadedItemIds = completedDownloads.map { it.itemId }.toSet()
+
             val downloadedMovies = databaseRepository.getAllMovies(userId)
-                .filter { movie -> movie.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL } }
+                .filter { movie -> movie.id in downloadedItemIds }
 
             val allShows = databaseRepository.getAllShows(userId)
             val downloadedShows = allShows.filter { show ->
                 show.seasons.any { season ->
                     season.episodes.any { episode ->
-                        episode.sources.any { source -> source.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }
+                        episode.id in downloadedItemIds
                     }
                 }
             }
@@ -585,7 +588,7 @@ class HomeViewModel @Inject constructor(
                     season.episodes.forEach { episode ->
                         if (episode.playbackPositionTicks > 0 &&
                             !episode.played &&
-                            episode.sources.any { it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL }
+                            episode.id in downloadedItemIds
                         ) {
                             offlineContinueWatching.add(episode)
                         }

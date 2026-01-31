@@ -26,8 +26,10 @@ import com.makd.afinity.data.workers.SubtitleDownloadWorker
 import com.makd.afinity.data.workers.TrickplayDownloadWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -62,14 +64,17 @@ class JellyfinDownloadRepository @Inject constructor(
             if (!it.exists()) it.mkdirs()
         }
 
-    private suspend fun getCurrentUserId(): UUID? {
-        return sessionManager.currentSession.value?.userId
-    }
-
     override suspend fun startDownload(itemId: UUID, sourceId: String): Result<UUID> =
         withContext(Dispatchers.IO) {
             return@withContext try {
-                val existingDownload = databaseRepository.getDownloadByItemId(itemId)
+                val currentSession = sessionManager.currentSession.value
+                    ?: return@withContext Result.failure(Exception("No active session"))
+
+                val userId = currentSession.userId
+                val serverId = currentSession.serverId
+                val baseUrl = currentSession.serverUrl
+
+                val existingDownload = databaseRepository.getDownloadByItemIdScoped(itemId, serverId, userId)
                 if (existingDownload != null) {
                     if (existingDownload.status == DownloadStatus.COMPLETED) {
                         return@withContext Result.failure(Exception("Item already downloaded"))
@@ -80,13 +85,6 @@ class JellyfinDownloadRepository @Inject constructor(
                         return@withContext Result.failure(Exception("Item is already being downloaded"))
                     }
                 }
-
-                val currentSession = sessionManager.currentSession.value
-                    ?: return@withContext Result.failure(Exception("No active session"))
-
-                val userId = currentSession.userId
-                val serverId = currentSession.serverId
-                val baseUrl = currentSession.serverUrl
 
                 val baseItemDto = mediaRepository.getItem(
                     itemId = itemId,
@@ -310,33 +308,26 @@ class JellyfinDownloadRepository @Inject constructor(
 
     override suspend fun getDownloadByItemId(itemId: UUID): DownloadInfo? =
         withContext(Dispatchers.IO) {
-            databaseRepository.getDownloadByItemId(itemId)?.toDownloadInfo()
+            val session = sessionManager.currentSession.value ?: return@withContext null
+            databaseRepository.getDownloadByItemIdScoped(itemId, session.serverId, session.userId)?.toDownloadInfo()
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getAllDownloadsFlow(): Flow<List<DownloadInfo>> {
-        return databaseRepository.getAllDownloadsFlow()
-            .combine(sessionManager.currentSession) { downloads, session ->
-                if (session == null) {
-                    emptyList()
-                } else {
-                    downloads.filter {
-                        it.serverId == session.serverId && it.userId == session.userId
-                    }
-                }
+        return sessionManager.currentSession
+            .filterNotNull()
+            .flatMapLatest { session ->
+                databaseRepository.getAllDownloadsFlowScoped(session.serverId, session.userId)
             }
             .map { downloads -> downloads.map { it.toDownloadInfo() } }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getDownloadsByStatusFlow(statuses: List<DownloadStatus>): Flow<List<DownloadInfo>> {
-        return databaseRepository.getDownloadsByStatusFlow(statuses)
-            .combine(sessionManager.currentSession) { downloads, session ->
-                if (session == null) {
-                    emptyList()
-                } else {
-                    downloads.filter {
-                        it.serverId == session.serverId && it.userId == session.userId
-                    }
-                }
+        return sessionManager.currentSession
+            .filterNotNull()
+            .flatMapLatest { session ->
+                databaseRepository.getDownloadsByStatusFlowScoped(statuses, session.serverId, session.userId)
             }
             .map { downloads -> downloads.map { it.toDownloadInfo() } }
     }
@@ -354,34 +345,34 @@ class JellyfinDownloadRepository @Inject constructor(
     }
 
     override suspend fun isItemDownloaded(itemId: UUID): Boolean = withContext(Dispatchers.IO) {
-        val download = databaseRepository.getDownloadByItemId(itemId)
+        val session = sessionManager.currentSession.value ?: return@withContext false
+        val download = databaseRepository.getDownloadByItemIdScoped(itemId, session.serverId, session.userId)
         download?.status == DownloadStatus.COMPLETED
     }
 
     override suspend fun isItemDownloading(itemId: UUID): Boolean = withContext(Dispatchers.IO) {
-        val download = databaseRepository.getDownloadByItemId(itemId)
+        val session = sessionManager.currentSession.value ?: return@withContext false
+        val download = databaseRepository.getDownloadByItemIdScoped(itemId, session.serverId, session.userId)
         download?.status == DownloadStatus.DOWNLOADING || download?.status == DownloadStatus.QUEUED
     }
 
     override suspend fun getTotalStorageUsed(): Long = withContext(Dispatchers.IO) {
         return@withContext try {
-            calculateDirectorySize(downloadDir)
+            val session = sessionManager.currentSession.value ?: return@withContext 0L
+            databaseRepository.getTotalBytesForServer(session.serverId)
         } catch (e: Exception) {
             Timber.e(e, "Failed to calculate storage used")
             0L
         }
     }
 
-    private fun calculateDirectorySize(directory: File): Long {
-        var size = 0L
-        if (directory.exists()) {
-            directory.walkTopDown().forEach { file ->
-                if (file.isFile) {
-                    size += file.length()
-                }
-            }
+    override suspend fun getTotalStorageUsedAllServers(): Long = withContext(Dispatchers.IO) {
+        return@withContext try {
+            databaseRepository.getTotalBytesAllServers()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to calculate total storage used")
+            0L
         }
-        return size
     }
 
     fun getDownloadDirectory(): File = downloadDir

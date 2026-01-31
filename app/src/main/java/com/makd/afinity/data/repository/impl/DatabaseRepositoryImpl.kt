@@ -434,8 +434,16 @@ class DatabaseRepositoryImpl @Inject constructor(
         return userDataDao.getUnsyncedUserData(userId, serverId)
     }
 
+    override suspend fun getAllUserDataToSync(userId: UUID, serverId: String): List<AfinityUserDataDto> {
+        return userDataDao.getUnsyncedUserData(userId, serverId)
+    }
+
     override suspend fun markUserDataSynced(userId: UUID, itemId: UUID) {
         val serverId = sessionManager.currentSession.value?.serverId ?: return
+        userDataDao.markUserDataSynced(userId, itemId, serverId)
+    }
+
+    override suspend fun markUserDataSynced(userId: UUID, itemId: UUID, serverId: String) {
         userDataDao.markUserDataSynced(userId, itemId, serverId)
     }
 
@@ -722,12 +730,36 @@ class DatabaseRepositoryImpl @Inject constructor(
         return serverDatabaseDao.getDownloadByItemId(itemId)
     }
 
+    override suspend fun getDownloadByItemIdScoped(itemId: UUID, serverId: String, userId: UUID): DownloadDto? {
+        return serverDatabaseDao.getDownloadByItemIdScoped(itemId, serverId, userId)
+    }
+
     override fun getAllDownloadsFlow(): Flow<List<DownloadDto>> {
         return serverDatabaseDao.getAllDownloadsFlow()
     }
 
+    override fun getAllDownloadsFlowScoped(serverId: String, userId: UUID): Flow<List<DownloadDto>> {
+        return serverDatabaseDao.getAllDownloadsFlowScoped(serverId, userId)
+    }
+
     override fun getDownloadsByStatusFlow(statuses: List<DownloadStatus>): Flow<List<DownloadDto>> {
         return serverDatabaseDao.getDownloadsByStatusFlow(statuses)
+    }
+
+    override fun getDownloadsByStatusFlowScoped(statuses: List<DownloadStatus>, serverId: String, userId: UUID): Flow<List<DownloadDto>> {
+        return serverDatabaseDao.getDownloadsByStatusFlowScoped(statuses, serverId, userId)
+    }
+
+    override suspend fun getTotalBytesForServer(serverId: String): Long {
+        return serverDatabaseDao.getTotalBytesForServer(serverId)
+    }
+
+    override suspend fun getTotalBytesAllServers(): Long {
+        return serverDatabaseDao.getTotalBytesAllServers()
+    }
+
+    override suspend fun backfillEmptyServerIds(serverId: String, userId: UUID) {
+        serverDatabaseDao.backfillEmptyServerIds(serverId, userId)
     }
 
     override suspend fun deleteDownload(downloadId: UUID) {

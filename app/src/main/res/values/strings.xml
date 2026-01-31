@@ -436,6 +436,8 @@
     <string name="empty_downloads_title">No downloads</string>
     <string name="empty_downloads_message">Downloaded content will appear here</string>
     <string name="storage_free_on_device_fmt">%1$s free on device</string>
+    <string name="storage_this_server">This server</string>
+    <string name="storage_all_servers_fmt">%1$s total across all servers</string>
 
     <string name="download_preferences_title">Download Settings</string>
     <string name="pref_download_wifi_only_title">Wi-Fi only</string>

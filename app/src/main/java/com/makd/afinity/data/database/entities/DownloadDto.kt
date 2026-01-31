@@ -43,5 +43,7 @@ fun DownloadDto.toDownloadInfo(): DownloadInfo {
         error = error,
         createdAt = createdAt,
         updatedAt = updatedAt,
+        serverId = serverId,
+        userId = userId,
     )
 }
