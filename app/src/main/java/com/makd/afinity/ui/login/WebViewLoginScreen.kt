@@ -6,6 +6,7 @@ import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,6 +64,7 @@ fun WebViewContent(
     modifier: Modifier = Modifier
 ) {
     val originalHost = url.toUri().host
+    val isDarkTheme = isSystemInDarkTheme()
 
     AndroidView(
         modifier = modifier,
@@ -71,10 +73,10 @@ fun WebViewContent(
                 settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
-                    databaseEnabled = true
                     cacheMode = WebSettings.LOAD_DEFAULT
-                    userAgentString =
-                        "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+                    if (isDarkTheme) {
+                        isAlgorithmicDarkeningAllowed = true
+                    }
                 }
 
                 CookieManager.getInstance().setAcceptCookie(true)

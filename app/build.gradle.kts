@@ -148,6 +148,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.webkit)
     implementation(libs.tink.android)
     implementation(libs.blurhash)
     implementation(libs.okhttp)
