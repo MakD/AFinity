@@ -6,4 +6,26 @@
     <string name="loading_phase_processing">Procesando librerias...</string>
     <string name="loading_phase_finalizing">Finalizando la pantalla de inicio...</string>
     <string name="loading_phase_ready">¡Listo!</string>
+    <string name="login_add_new_server">Añadir nuevo</string>
+    <string name="login_btn_cancel">Cancelar</string>
+    <string name="login_local_network">Red local</string>
+    <string name="login_welcome_back">Bienvenido</string>
+    <string name="login_saved_servers">Servidores guardados</string>
+    <string name="login_server_url_label">URL del servidor</string>
+    <string name="login_btn_connect">Conectar</string>
+    <string name="login_refresh">Actualizar</string>
+    <string name="login_switch_server">Cambiar de Servidor</string>
+    <string name="login_method_password">Contraseña</string>
+    <string name="login_method_quick_connect">Conexión Rápida</string>
+    <string name="login_username_label">Nombre de usuario</string>
+    <string name="login_password_label">Contraseña</string>
+    <string name="login_btn_sign_in">Iniciar sesión</string>
+    <string name="login_btn_generate_code">Generar código</string>
+    <string name="login_quick_connect_instructions">Introduzca este código en su navegador</string>
+    <string name="cd_server_icon">Icono del servidor</string>
+    <string name="top_bar_search_hint">Buscar</string>
+    <string name="cd_search_icon">Buscar</string>
+    <string name="cd_profile_icon">Perfil</string>
+    <string name="cd_offline_mode">Modo desconectado</string>
+    <string name="home_error_title">Se ha producido un error</string>
 </resources>
