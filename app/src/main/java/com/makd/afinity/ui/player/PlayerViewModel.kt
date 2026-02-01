@@ -18,9 +18,12 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
-import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import com.makd.afinity.R
@@ -43,6 +46,7 @@ import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
@@ -62,6 +66,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
@@ -82,7 +87,9 @@ class PlayerViewModel @Inject constructor(
     private val playlistManager: PlaylistManager,
     private val downloadRepository: JellyfinDownloadRepository,
     private val appDataRepository: AppDataRepository,
-    private val apiClient: ApiClient
+    private val apiClient: ApiClient,
+    private val okHttpClient: OkHttpClient,
+    private val securePreferencesRepository: SecurePreferencesRepository
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
@@ -268,7 +275,11 @@ class PlayerViewModel @Inject constructor(
         val renderersFactory = DefaultRenderersFactory(context)
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
 
+        val okHttpDataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
+        val dataSourceFactory = DefaultDataSource.Factory(context, okHttpDataSourceFactory)
+
         return ExoPlayer.Builder(context, renderersFactory)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
             .setAudioAttributes(audioAttributes, true)
             .setTrackSelector(trackSelector)
             .setSeekBackIncrementMs(10000)
@@ -349,6 +360,18 @@ class PlayerViewModel @Inject constructor(
         mpvPlayer.setOption("sub-align-x", subtitlePrefs.horizontalAlignment.mpvValue)
 
         return mpvPlayer
+    }
+
+    private fun configureMpvCookies(streamUrl: String) {
+        if (player is MPVPlayer) {
+            val mpv = player as MPVPlayer
+            val host = streamUrl.toUri().host
+            val cookies = host?.let { securePreferencesRepository.getCachedAuthCookiesForHost(it) }
+            if (!cookies.isNullOrBlank()) {
+                mpv.setOption("http-header-fields", "Cookie: $cookies")
+                Timber.d("Set proxy cookies for MPV playback (host=$host)")
+            }
+        }
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
@@ -778,6 +801,7 @@ class PlayerViewModel @Inject constructor(
                     .build()
 
                 withContext(Dispatchers.Main) {
+                    configureMpvCookies(streamUrl)
                     player.setMediaItems(listOf(mediaItem), 0, startPositionMs)
                     player.prepare()
                     player.play()
@@ -816,7 +840,7 @@ class PlayerViewModel @Inject constructor(
             if (player is MPVPlayer) {
                 val mpv = player as MPVPlayer
                 mpv.setOption("user-agent", userAgent)
-                mpv.setOption("http-header-fields", "allow-cross-protocol-redirects: true")
+                configureMpvCookies(streamUrl)
 
                 withContext(Dispatchers.Main) {
                     val mediaItem = MediaItem.Builder()
@@ -832,12 +856,7 @@ class PlayerViewModel @Inject constructor(
                 }
             }
             else if (player is ExoPlayer) {
-                val dataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                    .setUserAgent(userAgent)
-                    .setAllowCrossProtocolRedirects(true)
-                    .setKeepPostFor302Redirects(true)
-                    .setConnectTimeoutMs(15000)
-                    .setReadTimeoutMs(15000)
+                val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
 
                 val mediaItem = MediaItem.Builder()
                     .setMediaId(channelId.toString())
@@ -846,7 +865,7 @@ class PlayerViewModel @Inject constructor(
                     .setMediaMetadata(MediaMetadata.Builder().setTitle(channelName).build())
                     .build()
 
-                val hlsMediaSource = androidx.media3.exoplayer.hls.HlsMediaSource.Factory(dataSourceFactory)
+                val hlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
                     .setAllowChunklessPreparation(true)
                     .createMediaSource(mediaItem)
 
