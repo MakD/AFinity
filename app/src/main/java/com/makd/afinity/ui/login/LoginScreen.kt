@@ -96,6 +96,7 @@ enum class LoginMethod {
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
+    onWebViewLoginRequired: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass
@@ -121,6 +122,14 @@ fun LoginScreen(
     LaunchedEffect(loginState.uiState.isLoggedIn) {
         if (loginState.uiState.isLoggedIn) {
             onLoginSuccess()
+        }
+    }
+
+    LaunchedEffect(loginState.uiState.requiresWebViewUrl) {
+        val url = loginState.uiState.requiresWebViewUrl
+        if (url != null) {
+            viewModel.onWebViewLaunched()
+            onWebViewLoginRequired(url)
         }
     }
 

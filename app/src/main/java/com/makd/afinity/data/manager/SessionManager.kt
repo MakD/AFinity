@@ -1,7 +1,5 @@
 package com.makd.afinity.data.manager
 
-import android.content.Context
-import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -10,7 +8,6 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,9 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.createJellyfin
-import org.jellyfin.sdk.model.ClientInfo
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -50,7 +46,7 @@ class SessionManager @Inject constructor(
     private val sessionPreferences: SessionPreferences,
     private val securePrefsRepository: SecurePreferencesRepository,
     private val jellyseerrRepository: JellyseerrRepository,
-    @ApplicationContext private val context: Context
+    private val jellyfin: Jellyfin
 ) {
     private val _currentSession = MutableStateFlow<Session?>(null)
     val currentSession: StateFlow<Session?> = _currentSession.asStateFlow()
@@ -270,13 +266,6 @@ class SessionManager @Inject constructor(
         }
 
         Timber.d("Creating NEW ApiClient for server: $serverId with baseUrl: $serverUrl")
-        val jellyfin = createJellyfin {
-            this.context = this@SessionManager.context
-            this.clientInfo = ClientInfo(
-                name = "AFinity",
-                version = BuildConfig.VERSION_NAME
-            )
-        }
         val newClient = jellyfin.createApi(baseUrl = serverUrl)
         apiClients[serverId] = newClient
         return newClient

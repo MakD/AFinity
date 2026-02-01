@@ -46,6 +46,7 @@ fun RequestsScreen(
     viewModel: RequestsViewModel = hiltViewModel(),
     onNavigateToFilteredMedia: (FilterParams) -> Unit = {},
     onItemClick: (jellyfinItemId: String) -> Unit = {},
+    onWebViewLoginRequired: (String) -> Unit,
     widthSizeClass: WindowWidthSizeClass
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -441,6 +442,10 @@ fun RequestsScreen(
         if (showJellyseerrBottomSheet) {
             JellyseerrBottomSheet(
                 onDismiss = { showJellyseerrBottomSheet = false },
+                onWebViewLoginRequired = { url ->
+                    showJellyseerrBottomSheet = false
+                    onWebViewLoginRequired(url)
+                },
                 sheetState = sheetState
             )
         }

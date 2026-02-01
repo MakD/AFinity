@@ -116,6 +116,10 @@ fun SettingsScreen(
     if (showJellyseerrBottomSheet) {
         JellyseerrBottomSheet(
             onDismiss = { showJellyseerrBottomSheet = false },
+            onWebViewLoginRequired = { url ->
+                showJellyseerrBottomSheet = false
+                navController.navigate(Destination.createWebViewLoginRoute(url))
+            },
             sheetState = jellyseerrSheetState
         )
     }

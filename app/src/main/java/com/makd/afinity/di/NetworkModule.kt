@@ -59,7 +59,10 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideBaseOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
+    fun provideBaseOkHttpClient(
+        @ApplicationContext context: Context,
+        securePreferencesRepository: SecurePreferencesRepository
+    ): OkHttpClient {
         val dispatcher = Dispatcher(Executors.newCachedThreadPool { runnable ->
             Thread(runnable, "Jellyfin-OkHttp").apply {
                 isDaemon = false
@@ -84,6 +87,25 @@ object NetworkModule {
                     maxSize = 50L * 1024L * 1024L
                 )
             )
+            .addInterceptor { chain ->
+                val originalRequest = chain.request()
+                val host = originalRequest.url.host
+                val builder = originalRequest.newBuilder()
+                val cookies = securePreferencesRepository.getCachedAuthCookiesForHost(host)
+                    ?: kotlinx.coroutines.runBlocking {
+                        securePreferencesRepository.getAuthCookiesForHost(host)
+                    }
+                if (!cookies.isNullOrBlank()) {
+                    builder.addHeader("Cookie", cookies)
+                    Timber.tag("ProxyCookie")
+                        .d("Attaching cookies for host=$host: ${cookies.take(100)}...")
+                } else {
+                    Timber.tag("ProxyCookie")
+                        .d("No proxy cookies for host=$host (url=${originalRequest.url})")
+                }
+                builder.header("User-Agent", "AFinity-Android-Client")
+                chain.proceed(builder.build())
+            }
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -112,7 +134,10 @@ object NetworkModule {
     @Provides
     @Singleton
     @DownloadClient
-    fun provideDownloadOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
+    fun provideDownloadOkHttpClient(
+        @ApplicationContext context: Context,
+        securePreferencesRepository: SecurePreferencesRepository
+    ): OkHttpClient {
         val dispatcher = Dispatcher(Executors.newCachedThreadPool { runnable ->
             Thread(runnable, "Download-OkHttp").apply {
                 isDaemon = false
@@ -131,6 +156,20 @@ object NetworkModule {
         val builder = OkHttpClient.Builder()
             .dispatcher(dispatcher)
             .connectionPool(connectionPool)
+            .addInterceptor { chain ->
+                val originalRequest = chain.request()
+                val host = originalRequest.url.host
+                val builder = originalRequest.newBuilder()
+                val cookies = securePreferencesRepository.getCachedAuthCookiesForHost(host)
+                    ?: kotlinx.coroutines.runBlocking {
+                        securePreferencesRepository.getAuthCookiesForHost(host)
+                    }
+                if (!cookies.isNullOrBlank()) {
+                    builder.addHeader("Cookie", cookies)
+                }
+                builder.header("User-Agent", "AFinity-Android-Client")
+                chain.proceed(builder.build())
+            }
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(5, TimeUnit.MINUTES)
             .writeTimeout(5, TimeUnit.MINUTES)
@@ -242,12 +281,27 @@ object NetworkModule {
                     ?.build()
                     ?: throw IOException("Failed to build Jellyseerr URL")
 
+                val cookieParts = mutableListOf<String>()
+
+                val proxyCookies =
+                    securePreferencesRepository.getCachedAuthCookiesForHost(newUrl.host)
+                        ?: kotlinx.coroutines.runBlocking {
+                            securePreferencesRepository.getAuthCookiesForHost(newUrl.host)
+                        }
+                if (!proxyCookies.isNullOrBlank()) {
+                    cookieParts.add(proxyCookies)
+                }
+
+                val jsrCookie = securePreferencesRepository.getCachedJellyseerrCookie()
+                if (!jsrCookie.isNullOrBlank()) {
+                    cookieParts.add(jsrCookie)
+                }
+
                 val newRequest = originalRequest.newBuilder()
                     .url(newUrl)
                     .apply {
-                        val cookie = securePreferencesRepository.getCachedJellyseerrCookie()
-                        cookie?.let {
-                            addHeader("Cookie", it)
+                        if (cookieParts.isNotEmpty()) {
+                            addHeader("Cookie", cookieParts.joinToString("; "))
                         }
                         addHeader("Content-Type", "application/json")
                     }

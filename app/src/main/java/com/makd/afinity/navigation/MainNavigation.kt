@@ -39,6 +39,9 @@ import com.makd.afinity.ui.item.ItemDetailScreen
 import com.makd.afinity.ui.libraries.LibrariesScreen
 import com.makd.afinity.ui.library.LibraryContentScreen
 import com.makd.afinity.ui.login.LoginScreen
+import com.makd.afinity.ui.jellyseerr.JellyseerrLoginViewModel
+import com.makd.afinity.ui.login.LoginViewModel
+import com.makd.afinity.ui.login.WebViewLoginScreen
 import com.makd.afinity.ui.main.MainViewModel
 import com.makd.afinity.ui.person.PersonScreen
 import com.makd.afinity.ui.player.PlayerLauncher
@@ -54,6 +57,7 @@ import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
 import com.makd.afinity.ui.settings.downloads.DownloadSettingsScreen
 import com.makd.afinity.ui.settings.player.PlayerOptionsScreen
 import com.makd.afinity.ui.settings.servers.AddEditServerScreen
+import com.makd.afinity.ui.settings.servers.AddEditServerViewModel
 import com.makd.afinity.ui.settings.servers.ServerManagementScreen
 import com.makd.afinity.ui.settings.update.GlobalUpdateDialog
 import com.makd.afinity.ui.watchlist.WatchlistScreen
@@ -113,7 +117,8 @@ fun MainNavigation(
                 route != "licenses" &&
                 route != "server_management" &&
                 !route.startsWith("add_edit_server") &&
-                !route.startsWith("login")
+                !route.startsWith("login") &&
+                !route.startsWith("webview_login")
     } ?: true
 
     val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
@@ -434,6 +439,10 @@ fun MainNavigation(
                         val route = Destination.createItemDetailRoute(jellyfinItemId)
                         navController.navigate(route)
                     },
+                    onWebViewLoginRequired = { url ->
+                        val route = Destination.createWebViewLoginRoute(url)
+                        navController.navigate(route)
+                    },
                     modifier = Modifier.fillMaxSize(),
                     widthSizeClass = widthSizeClass
                 )
@@ -522,7 +531,20 @@ fun MainNavigation(
                 )
             }
 
-            composable(Destination.SETTINGS_ROUTE) {
+            composable(Destination.SETTINGS_ROUTE) { backStackEntry ->
+                val jellyseerrLoginViewModel = hiltViewModel<JellyseerrLoginViewModel>()
+
+                val webViewCookies by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("webview_cookies", null)
+                    .collectAsStateWithLifecycle()
+
+                LaunchedEffect(webViewCookies) {
+                    webViewCookies?.let { cookies ->
+                        jellyseerrLoginViewModel.saveAuthCookies(cookies)
+                        backStackEntry.savedStateHandle.remove<String>("webview_cookies")
+                    }
+                }
+
                 SettingsScreen(
                     navController = navController,
                     onBackClick = {
@@ -614,10 +636,26 @@ fun MainNavigation(
                         defaultValue = null
                     }
                 )
-            ) {
+            ) { backStackEntry ->
+                val addEditServerViewModel = hiltViewModel<AddEditServerViewModel>()
+
+                val webViewCookies by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("webview_cookies", null)
+                    .collectAsStateWithLifecycle()
+
+                LaunchedEffect(webViewCookies) {
+                    webViewCookies?.let { cookies ->
+                        addEditServerViewModel.saveAuthCookies(cookies)
+                        backStackEntry.savedStateHandle.remove<String>("webview_cookies")
+                    }
+                }
+
                 AddEditServerScreen(
                     onBackClick = {
                         navController.popBackStack()
+                    },
+                    onWebViewLoginRequired = { url ->
+                        navController.navigate(Destination.createWebViewLoginRoute(url))
                     }
                 )
             }
@@ -631,15 +669,57 @@ fun MainNavigation(
                         defaultValue = null
                     }
                 )
-            ) {
+            ) { backStackEntry ->
+                val loginViewModel = hiltViewModel<LoginViewModel>()
+
+                val webViewCookies by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("webview_cookies", null)
+                    .collectAsStateWithLifecycle()
+
+                LaunchedEffect(webViewCookies) {
+                    webViewCookies?.let { cookies ->
+                        loginViewModel.saveAuthCookies(cookies)
+                        backStackEntry.savedStateHandle.remove<String>("webview_cookies")
+                    }
+                }
+
                 LoginScreen(
                     onLoginSuccess = {
                         navController.navigate(Destination.HOME.route) {
                             popUpTo(0) { inclusive = true }
                         }
                     },
+                    onWebViewLoginRequired = { url ->
+                        val route = Destination.createWebViewLoginRoute(url)
+                        navController.navigate(route)
+                    },
                     modifier = Modifier.fillMaxSize(),
                     widthSizeClass = widthSizeClass
+                )
+            }
+
+            composable(
+                route = Destination.WEBVIEW_LOGIN_ROUTE,
+                arguments = listOf(
+                    navArgument("url") {
+                        type = NavType.StringType
+                        nullable = false
+                    }
+                )
+            ) { backStackEntry ->
+                val urlArg = backStackEntry.arguments?.getString("url") ?: ""
+                val serverUrl = java.net.URLDecoder.decode(urlArg, "UTF-8")
+                WebViewLoginScreen(
+                    url = serverUrl,
+                    onLoginSuccess = { cookies ->
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("webview_cookies", cookies)
+                        navController.popBackStack()
+                    },
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
                 )
             }
         }

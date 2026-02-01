@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.impl
 
 import android.content.Context
+import android.net.Uri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -25,6 +26,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,6 +51,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
 
         val KEY_DEVICE_ID = stringPreferencesKey("device_id")
         val KEY_API_KEY = stringPreferencesKey("api_key")
+
+        private const val AUTH_COOKIES_PREFIX = "auth_cookies_"
 
         val KEY_JELLYSEERR_SERVER_URL = stringPreferencesKey("jellyseerr_server_url")
         val KEY_JELLYSEERR_COOKIE = stringPreferencesKey("jellyseerr_cookie")
@@ -93,6 +97,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
 
     @Volatile
     private var cachedJellyseerrUsername: String? = null
+
+    private val authCookiesCache = ConcurrentHashMap<String, String>()
 
     private val _authenticationState = MutableStateFlow(false)
 
@@ -171,6 +177,7 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
         cachedJellyseerrUrl = null
         cachedJellyseerrCookie = null
         cachedJellyseerrUsername = null
+        authCookiesCache.clear()
         _authenticationState.value = false
         Timber.d("Cleared all secure data")
     }
@@ -408,5 +415,31 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
             keysToRemove.forEach { prefs.remove(it) }
         }
         Timber.d("Cleared all tokens for server=$serverId")
+    }
+
+    override suspend fun saveAuthCookies(serverUrl: String, cookies: String) {
+        val host = Uri.parse(serverUrl).host ?: return
+        authCookiesCache[host] = cookies
+        val key = stringPreferencesKey("$AUTH_COOKIES_PREFIX$host")
+        context.dataStore.edit { preferences ->
+            preferences[key] = cookies
+        }
+    }
+
+    override fun getCachedAuthCookiesForHost(host: String): String? {
+        return authCookiesCache[host]
+    }
+
+    override suspend fun getAuthCookiesForHost(host: String): String? {
+        authCookiesCache[host]?.let { return it }
+        val key = stringPreferencesKey("$AUTH_COOKIES_PREFIX$host")
+        val cookies = withContext(Dispatchers.IO) {
+            val preferences = context.dataStore.data.first()
+            preferences[key]
+        }
+        if (cookies != null) {
+            authCookiesCache[host] = cookies
+        }
+        return cookies
     }
 }

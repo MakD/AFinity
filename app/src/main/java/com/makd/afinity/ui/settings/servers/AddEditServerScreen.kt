@@ -62,6 +62,7 @@ import com.makd.afinity.R
 @Composable
 fun AddEditServerScreen(
     onBackClick: () -> Unit,
+    onWebViewLoginRequired: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AddEditServerViewModel = hiltViewModel()
 ) {
@@ -78,6 +79,13 @@ fun AddEditServerScreen(
     LaunchedEffect(state.saveSuccess) {
         if (state.saveSuccess) {
             onBackClick()
+        }
+    }
+
+    LaunchedEffect(state.requiresWebViewUrl) {
+        state.requiresWebViewUrl?.let { url ->
+            viewModel.onWebViewLaunched()
+            onWebViewLoginRequired(url)
         }
     }
 

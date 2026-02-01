@@ -61,6 +61,7 @@ import com.makd.afinity.ui.jellyseerr.JellyseerrLoginViewModel
 @Composable
 fun JellyseerrBottomSheet(
     onDismiss: () -> Unit,
+    onWebViewLoginRequired: (String) -> Unit,
     sheetState: SheetState,
     modifier: Modifier = Modifier,
     viewModel: JellyseerrLoginViewModel = hiltViewModel()
@@ -68,6 +69,13 @@ fun JellyseerrBottomSheet(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.requiresWebViewUrl) {
+        uiState.requiresWebViewUrl?.let { url ->
+            viewModel.onWebViewLaunched()
+            onWebViewLoginRequired(url)
+        }
+    }
 
     LaunchedEffect(uiState.loginSuccess) {
         if (uiState.loginSuccess) {

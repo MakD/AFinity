@@ -64,6 +64,10 @@ interface SecurePreferencesRepository {
     suspend fun hasValidJellyseerrAuth(): Boolean
 
     suspend fun saveJellyseerrServerUrl(url: String)
+
+    suspend fun saveAuthCookies(serverUrl: String, cookies: String)
+    suspend fun getAuthCookiesForHost(host: String): String?
+    fun getCachedAuthCookiesForHost(host: String): String?
     fun getCachedJellyseerrServerUrl(): String?
     fun getCachedJellyseerrCookie(): String?
 

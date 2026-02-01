@@ -13,6 +13,7 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import android.webkit.CookieManager
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -31,7 +36,8 @@ class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
-    private val securePreferencesRepository: SecurePreferencesRepository
+    private val securePreferencesRepository: SecurePreferencesRepository,
+    private val okHttpClient: OkHttpClient
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -170,13 +176,40 @@ class LoginViewModel @Inject constructor(
                     }
 
                     is JellyfinServerRepository.ServerConnectionResult.Error -> {
-                        Timber.w("Server validation failed for: $url - ${validationResult.message}")
+                        Timber.w("Server validation failed. Trying CookieManager sync...")
+                        if (trySyncWebViewCookies(url)) {
+                            Timber.d("Synced proxy cookies from CookieManager, retrying...")
+                            val retryResult = jellyfinRepository.validateServer(url)
+                            if (retryResult is JellyfinServerRepository.ServerConnectionResult.Success) {
+                                jellyfinRepository.setBaseUrl(url)
+                                jellyfinRepository.refreshServerInfo()
+                                _connectedServerUrl.value = url
+                                try {
+                                    databaseRepository.insertServer(retryResult.server)
+                                } catch (_: Exception) { }
+                                loadPublicUsers()
+                                _uiState.value = _uiState.value.copy(
+                                    isConnecting = false,
+                                    isConnectedToServer = true
+                                )
+                                Timber.d("Successfully connected after cookie sync: $url")
+                                return@launch
+                            }
+                        }
 
-                        _uiState.value = _uiState.value.copy(
-                            isConnecting = false,
-                            isConnectedToServer = false,
-                            error = "Not a valid Jellyfin server: ${validationResult.message}"
-                        )
+                        Timber.w("Checking for Proxy Wall...")
+                        if (checkForProxyWall(url)) {
+                            _uiState.value = _uiState.value.copy(
+                                isConnecting = false,
+                                requiresWebViewUrl = url
+                            )
+                        } else {
+                            _uiState.value = _uiState.value.copy(
+                                isConnecting = false,
+                                isConnectedToServer = false,
+                                error = "Not a valid Jellyfin server: ${validationResult.message}"
+                            )
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -188,6 +221,42 @@ class LoginViewModel @Inject constructor(
                 Timber.e(e, "Failed to connect to server: $url")
             }
         }
+    }
+
+    private suspend fun trySyncWebViewCookies(url: String): Boolean {
+        val cookies = CookieManager.getInstance().getCookie(url)
+        if (!cookies.isNullOrBlank()) {
+            Timber.d("Found existing proxy cookies in CookieManager for: $url")
+            securePreferencesRepository.saveAuthCookies(url, cookies)
+            return true
+        }
+        return false
+    }
+
+    private suspend fun checkForProxyWall(url: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = Request.Builder().url("$url/System/Info/Public").build()
+                okHttpClient.newCall(request).execute().use { response ->
+                    val isHtml = response.header("Content-Type", "")?.contains("text/html") == true
+                    val code = response.code
+                    code in 300..399 || code == 401 || code == 403 || (code == 200 && isHtml)
+                }
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+    fun saveAuthCookies(cookies: String) {
+        viewModelScope.launch {
+            securePreferencesRepository.saveAuthCookies(_serverUrl.value, cookies)
+            connectToServer()
+        }
+    }
+
+    fun onWebViewLaunched() {
+        _uiState.value = _uiState.value.copy(requiresWebViewUrl = null)
     }
 
     private fun clearServerConnection() {
@@ -662,7 +731,8 @@ data class LoginUiState(
     val discoveredServers: List<Server> = emptyList(),
     val error: String? = null,
     val quickConnectCode: String? = null,
-    val quickConnectSecret: String? = null
+    val quickConnectSecret: String? = null,
+    val requiresWebViewUrl: String? = null
 )
 
 data class LoginState(

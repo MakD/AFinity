@@ -63,6 +63,7 @@ enum class Destination(
         const val ADD_EDIT_SERVER_ROUTE = "add_edit_server?serverId={serverId}"
 
         const val LOGIN_ROUTE = "login?serverUrl={serverUrl}"
+        const val WEBVIEW_LOGIN_ROUTE = "webview_login?url={url}"
 
         fun createPersonRoute(personId: String): String {
             return "person/$personId"
@@ -85,7 +86,6 @@ enum class Destination(
             if (params.isNotEmpty()) {
                 route += "?" + params.joinToString("&")
             }
-
             return route
         }
 
@@ -155,6 +155,10 @@ enum class Destination(
             } else {
                 "login"
             }
+        }
+        fun createWebViewLoginRoute(url: String): String {
+            val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
+            return "webview_login?url=$encodedUrl"
         }
     }
 }

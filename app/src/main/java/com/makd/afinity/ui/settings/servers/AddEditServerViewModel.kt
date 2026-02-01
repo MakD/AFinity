@@ -1,20 +1,26 @@
 package com.makd.afinity.ui.settings.servers
 
 import android.content.Context
+import android.webkit.CookieManager
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -26,7 +32,8 @@ data class AddEditServerState(
     val connectionTestResult: ConnectionTestResult? = null,
     val isSaving: Boolean = false,
     val error: String? = null,
-    val saveSuccess: Boolean = false
+    val saveSuccess: Boolean = false,
+    val requiresWebViewUrl: String? = null
 )
 
 sealed class ConnectionTestResult {
@@ -51,6 +58,8 @@ class AddEditServerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val serverRepository: ServerRepository,
     private val databaseRepository: DatabaseRepository,
+    private val securePreferencesRepository: SecurePreferencesRepository,
+    private val okHttpClient: OkHttpClient,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -113,26 +122,29 @@ class AddEditServerViewModel @Inject constructor(
 
                 when (val result = serverRepository.testServerConnection(url)) {
                     is JellyfinServerRepository.ServerConnectionResult.Success -> {
-                        val serverInfo = ServerInfo(
-                            id = result.server.id,
-                            name = result.server.name,
-                            version = result.version,
-                            address = result.serverAddress
-                        )
-
-                        val currentName = _state.value.serverName
-                        _state.value = _state.value.copy(
-                            isTestingConnection = false,
-                            connectionTestResult = ConnectionTestResult.Success(serverInfo),
-                            serverName = currentName.ifBlank { serverInfo.name }
-                        )
+                        handleTestSuccess(result)
                     }
 
                     is JellyfinServerRepository.ServerConnectionResult.Error -> {
-                        _state.value = _state.value.copy(
-                            isTestingConnection = false,
-                            connectionTestResult = ConnectionTestResult.Error(result.message)
-                        )
+                        if (trySyncWebViewCookies(url)) {
+                            val retryResult = serverRepository.testServerConnection(url)
+                            if (retryResult is JellyfinServerRepository.ServerConnectionResult.Success) {
+                                handleTestSuccess(retryResult)
+                                return@launch
+                            }
+                        }
+
+                        if (checkForProxyWall(url)) {
+                            _state.value = _state.value.copy(
+                                isTestingConnection = false,
+                                requiresWebViewUrl = url
+                            )
+                        } else {
+                            _state.value = _state.value.copy(
+                                isTestingConnection = false,
+                                connectionTestResult = ConnectionTestResult.Error(result.message)
+                            )
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -148,6 +160,58 @@ class AddEditServerViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun handleTestSuccess(result: JellyfinServerRepository.ServerConnectionResult.Success) {
+        val serverInfo = ServerInfo(
+            id = result.server.id,
+            name = result.server.name,
+            version = result.version,
+            address = result.serverAddress
+        )
+        val currentName = _state.value.serverName
+        _state.value = _state.value.copy(
+            isTestingConnection = false,
+            connectionTestResult = ConnectionTestResult.Success(serverInfo),
+            serverName = currentName.ifBlank { serverInfo.name }
+        )
+    }
+
+    private suspend fun trySyncWebViewCookies(url: String): Boolean {
+        val cookies = CookieManager.getInstance().getCookie(url)
+        if (!cookies.isNullOrBlank()) {
+            Timber.d("AddEditServer: Found proxy cookies in CookieManager for: $url")
+            securePreferencesRepository.saveAuthCookies(url, cookies)
+            return true
+        }
+        return false
+    }
+
+    private suspend fun checkForProxyWall(url: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = Request.Builder().url("$url/System/Info/Public").build()
+                okHttpClient.newCall(request).execute().use { response ->
+                    val isHtml = response.header("Content-Type", "")?.contains("text/html") == true
+                    val code = response.code
+                    code in 300..399 || code == 401 || code == 403 || (code == 200 && isHtml)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "AddEditServer: checkForProxyWall exception")
+                false
+            }
+        }
+    }
+
+    fun saveAuthCookies(cookies: String) {
+        viewModelScope.launch {
+            securePreferencesRepository.saveAuthCookies(_state.value.serverUrl, cookies)
+            testConnection()
+        }
+    }
+
+    fun onWebViewLaunched() {
+        _state.value = _state.value.copy(requiresWebViewUrl = null)
     }
 
     fun saveServer() {

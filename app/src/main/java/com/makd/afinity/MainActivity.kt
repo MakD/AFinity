@@ -14,6 +14,9 @@ import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -29,6 +32,8 @@ import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.navigation.MainNavigation
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.login.LoginScreen
+import com.makd.afinity.ui.login.LoginViewModel
+import com.makd.afinity.ui.login.WebViewLoginScreen
 import com.makd.afinity.ui.theme.AFinityTheme
 import com.makd.afinity.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
@@ -127,15 +132,34 @@ private fun MainContent(
         }
 
         AuthenticationState.NotAuthenticated -> {
-            Scaffold(
-                modifier = modifier
-            ) { innerPadding ->
-                LoginScreen(
-                    onLoginSuccess = {
+            var webViewUrl by remember { mutableStateOf<String?>(null) }
+
+            if (webViewUrl != null) {
+                val loginViewModel = hiltViewModel<LoginViewModel>()
+
+                WebViewLoginScreen(
+                    url = webViewUrl!!,
+                    onLoginSuccess = { cookies ->
+                        loginViewModel.saveAuthCookies(cookies)
+                        webViewUrl = null
                     },
-                    modifier = Modifier.padding(innerPadding),
-                    widthSizeClass = widthSizeClass
+                    onBackClick = {
+                        webViewUrl = null
+                    }
                 )
+            } else {
+                Scaffold(
+                    modifier = modifier
+                ) { innerPadding ->
+                    LoginScreen(
+                        onLoginSuccess = {},
+                        onWebViewLoginRequired = { url ->
+                            webViewUrl = url
+                        },
+                        modifier = Modifier.padding(innerPadding),
+                        widthSizeClass = widthSizeClass
+                    )
+                }
             }
         }
     }
