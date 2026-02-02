@@ -1,6 +1,11 @@
 package com.makd.afinity.ui.settings.player
 
 import android.graphics.Color
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -48,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,6 +84,7 @@ import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.di.PreferencesEntryPoint
 import com.makd.afinity.ui.settings.SettingsViewModel
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -89,6 +96,7 @@ fun PlayerOptionsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
     val context = LocalContext.current
     val preferencesRepository = remember {
@@ -154,9 +162,16 @@ fun PlayerOptionsScreen(
                 }
             }
 
-            if (!uiState.useExoPlayer) {
-                item {
-                    SettingsGroup(title = stringResource(R.string.pref_group_mpv)) {
+            item {
+                AnimatedVisibility(
+                    visible = !uiState.useExoPlayer,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    SettingsGroup(
+                        title = stringResource(R.string.pref_group_mpv),
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    ) {
                         SubtitleDropdownItem(
                             title = stringResource(R.string.pref_mpv_hwdec_title),
                             selectedOption = uiState.mpvHwDec,
@@ -275,10 +290,9 @@ fun PlayerOptionsScreen(
                         subtitlePrefs = subtitlePrefs,
                         useExoPlayer = uiState.useExoPlayer,
                         onUpdate = { updatedPrefs ->
-                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
-                                .launch {
-                                    preferencesRepository.setSubtitlePreferences(updatedPrefs)
-                                }
+                            scope.launch(Dispatchers.IO) {
+                                preferencesRepository.setSubtitlePreferences(updatedPrefs)
+                            }
                         }
                     )
                 }
@@ -505,15 +519,21 @@ private fun SubtitleCustomizationContent(
         onCheckedChange = { onUpdate(subtitlePrefs.copy(bold = it)) }
     )
 
-    if (!useExoPlayer) {
-        SettingsDivider()
-        SettingsSwitchItem(
-            icon = painterResource(id = R.drawable.ic_italic),
-            title = stringResource(R.string.pref_sub_italic),
-            subtitle = stringResource(R.string.pref_sub_italic_summary),
-            checked = subtitlePrefs.italic,
-            onCheckedChange = { onUpdate(subtitlePrefs.copy(italic = it)) }
-        )
+    AnimatedVisibility(
+        visible = !useExoPlayer,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Column {
+            SettingsDivider()
+            SettingsSwitchItem(
+                icon = painterResource(id = R.drawable.ic_italic),
+                title = stringResource(R.string.pref_sub_italic),
+                subtitle = stringResource(R.string.pref_sub_italic_summary),
+                checked = subtitlePrefs.italic,
+                onCheckedChange = { onUpdate(subtitlePrefs.copy(italic = it)) }
+            )
+        }
     }
 
     SettingsDivider()
@@ -533,68 +553,95 @@ private fun SubtitleCustomizationContent(
         icon = painterResource(id = R.drawable.ic_texture)
     )
 
-    if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE || subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW) {
-        SettingsDivider()
-        ColorPickerItem(
-            title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW)
-                stringResource(R.string.pref_sub_shadow_color)
-            else
-                stringResource(R.string.pref_sub_outline_color),
-            color = subtitlePrefs.outlineColor,
-            onColorChange = { onUpdate(subtitlePrefs.copy(outlineColor = it)) }
-        )
-
-        if (!useExoPlayer) {
+    AnimatedVisibility(
+        visible = subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE ||
+                subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Column {
             SettingsDivider()
-            SubtitleSliderItem(
+            ColorPickerItem(
                 title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW)
-                    stringResource(R.string.pref_sub_shadow_size)
+                    stringResource(R.string.pref_sub_shadow_color)
                 else
-                    stringResource(R.string.pref_sub_outline_size),
-                value = subtitlePrefs.outlineSize,
-                valueRange = 0f..10f,
-                onValueChange = { onUpdate(subtitlePrefs.copy(outlineSize = it)) }
+                    stringResource(R.string.pref_sub_outline_color),
+                color = subtitlePrefs.outlineColor,
+                onColorChange = { onUpdate(subtitlePrefs.copy(outlineColor = it)) }
+            )
+
+            if (!useExoPlayer) {
+                SettingsDivider()
+                SubtitleSliderItem(
+                    title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW)
+                        stringResource(R.string.pref_sub_shadow_size)
+                    else
+                        stringResource(R.string.pref_sub_outline_size),
+                    value = subtitlePrefs.outlineSize,
+                    valueRange = 0f..10f,
+                    onValueChange = { onUpdate(subtitlePrefs.copy(outlineSize = it)) }
+                )
+            }
+        }
+    }
+
+    AnimatedVisibility(
+        visible = subtitlePrefs.outlineStyle == SubtitleOutlineStyle.BACKGROUND_BOX,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Column {
+            SettingsDivider()
+            ColorPickerItem(
+                title = stringResource(R.string.pref_sub_background_color),
+                color = subtitlePrefs.backgroundColor,
+                onColorChange = { onUpdate(subtitlePrefs.copy(backgroundColor = it)) }
             )
         }
-    } else if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.BACKGROUND_BOX) {
-        SettingsDivider()
-        ColorPickerItem(
-            title = stringResource(R.string.pref_sub_background_color),
-            color = subtitlePrefs.backgroundColor,
-            onColorChange = { onUpdate(subtitlePrefs.copy(backgroundColor = it)) }
-        )
     }
 
-    if (useExoPlayer) {
-        SettingsDivider()
-        ColorPickerItem(
-            title = stringResource(R.string.pref_sub_window_color),
-            color = subtitlePrefs.windowColor,
-            onColorChange = { onUpdate(subtitlePrefs.copy(windowColor = it)) }
-        )
+    AnimatedVisibility(
+        visible = useExoPlayer,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Column {
+            SettingsDivider()
+            ColorPickerItem(
+                title = stringResource(R.string.pref_sub_window_color),
+                color = subtitlePrefs.windowColor,
+                onColorChange = { onUpdate(subtitlePrefs.copy(windowColor = it)) }
+            )
+        }
     }
 
-    if (!useExoPlayer) {
-        SettingsDivider()
-        SubtitleDropdownItem(
-            title = stringResource(R.string.pref_sub_vertical_pos),
-            selectedOption = subtitlePrefs.verticalPosition,
-            options = SubtitleVerticalPosition.entries,
-            onValueChange = { pos -> onUpdate(subtitlePrefs.copy(verticalPosition = pos)) },
-            labelProvider = { getSubtitleVerticalPositionDisplayName(it) },
-            icon = painterResource(id = R.drawable.ic_vertical)
-        )
+    AnimatedVisibility(
+        visible = !useExoPlayer,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Column {
+            SettingsDivider()
+            SubtitleDropdownItem(
+                title = stringResource(R.string.pref_sub_vertical_pos),
+                selectedOption = subtitlePrefs.verticalPosition,
+                options = SubtitleVerticalPosition.entries,
+                onValueChange = { pos -> onUpdate(subtitlePrefs.copy(verticalPosition = pos)) },
+                labelProvider = { getSubtitleVerticalPositionDisplayName(it) },
+                icon = painterResource(id = R.drawable.ic_vertical)
+            )
 
-        SettingsDivider()
+            SettingsDivider()
 
-        SubtitleDropdownItem(
-            title = stringResource(R.string.pref_sub_horizontal_align),
-            selectedOption = subtitlePrefs.horizontalAlignment,
-            options = SubtitleHorizontalAlignment.entries,
-            onValueChange = { align -> onUpdate(subtitlePrefs.copy(horizontalAlignment = align)) },
-            labelProvider = { getSubtitleHorizontalAlignmentDisplayName(it) },
-            icon = painterResource(id = R.drawable.ic_horizontal)
-        )
+            SubtitleDropdownItem(
+                title = stringResource(R.string.pref_sub_horizontal_align),
+                selectedOption = subtitlePrefs.horizontalAlignment,
+                options = SubtitleHorizontalAlignment.entries,
+                onValueChange = { align -> onUpdate(subtitlePrefs.copy(horizontalAlignment = align)) },
+                labelProvider = { getSubtitleHorizontalAlignmentDisplayName(it) },
+                icon = painterResource(id = R.drawable.ic_horizontal)
+            )
+        }
     }
 
     Box(modifier = Modifier.padding(16.dp)) {
