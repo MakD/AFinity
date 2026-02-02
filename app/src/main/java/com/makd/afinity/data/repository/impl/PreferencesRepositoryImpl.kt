@@ -11,6 +11,9 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.player.MpvAudioOutput
+import com.makd.afinity.data.models.player.MpvHwDec
+import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
@@ -85,6 +88,10 @@ class PreferencesRepositoryImpl @Inject constructor(
         val SUBTITLE_HORIZONTAL_ALIGNMENT = stringPreferencesKey("subtitle_horizontal_alignment")
 
         val LOGO_AUTO_HIDE = booleanPreferencesKey("logo_auto_hide")
+
+        val MPV_HW_DEC = stringPreferencesKey("mpv_hw_dec")
+        val MPV_VIDEO_OUTPUT = stringPreferencesKey("mpv_video_output")
+        val MPV_AUDIO_OUTPUT = stringPreferencesKey("mpv_audio_output")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -428,6 +435,66 @@ class PreferencesRepositoryImpl @Inject constructor(
     override suspend fun setUseExoPlayer(value: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.USE_EXO_PLAYER] = value
+        }
+    }
+
+    override suspend fun setMpvHwDec(hwDec: MpvHwDec) {
+        dataStore.edit { preferences ->
+            preferences[Keys.MPV_HW_DEC] = hwDec.value
+        }
+    }
+
+    override suspend fun getMpvHwDec(): MpvHwDec {
+        return dataStore.data.first()[Keys.MPV_HW_DEC]?.let {
+            MpvHwDec.fromValue(it)
+        } ?: MpvHwDec.default
+    }
+
+    override fun getMpvHwDecFlow(): Flow<MpvHwDec> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.MPV_HW_DEC]?.let {
+                MpvHwDec.fromValue(it)
+            } ?: MpvHwDec.default
+        }
+    }
+
+    override suspend fun setMpvVideoOutput(videoOutput: MpvVideoOutput) {
+        dataStore.edit { preferences ->
+            preferences[Keys.MPV_VIDEO_OUTPUT] = videoOutput.value
+        }
+    }
+
+    override suspend fun getMpvVideoOutput(): MpvVideoOutput {
+        return dataStore.data.first()[Keys.MPV_VIDEO_OUTPUT]?.let {
+            MpvVideoOutput.fromValue(it)
+        } ?: MpvVideoOutput.default
+    }
+
+    override fun getMpvVideoOutputFlow(): Flow<MpvVideoOutput> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.MPV_VIDEO_OUTPUT]?.let {
+                MpvVideoOutput.fromValue(it)
+            } ?: MpvVideoOutput.default
+        }
+    }
+
+    override suspend fun setMpvAudioOutput(audioOutput: MpvAudioOutput) {
+        dataStore.edit { preferences ->
+            preferences[Keys.MPV_AUDIO_OUTPUT] = audioOutput.value
+        }
+    }
+
+    override suspend fun getMpvAudioOutput(): MpvAudioOutput {
+        return dataStore.data.first()[Keys.MPV_AUDIO_OUTPUT]?.let {
+            MpvAudioOutput.fromValue(it)
+        } ?: MpvAudioOutput.default
+    }
+
+    override fun getMpvAudioOutputFlow(): Flow<MpvAudioOutput> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.MPV_AUDIO_OUTPUT]?.let {
+                MpvAudioOutput.fromValue(it)
+            } ?: MpvAudioOutput.default
         }
     }
 

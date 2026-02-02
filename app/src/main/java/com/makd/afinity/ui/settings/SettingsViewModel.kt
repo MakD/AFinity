@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.player.MpvAudioOutput
+import com.makd.afinity.data.models.player.MpvHwDec
+import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.AppDataRepository
@@ -176,6 +179,24 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(defaultVideoZoomMode = mode)
             }
         }
+
+        viewModelScope.launch {
+            preferencesRepository.getMpvHwDecFlow().collect { hwDec ->
+                _uiState.value = _uiState.value.copy(mpvHwDec = hwDec)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getMpvVideoOutputFlow().collect { vo ->
+                _uiState.value = _uiState.value.copy(mpvVideoOutput = vo)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getMpvAudioOutputFlow().collect { ao ->
+                _uiState.value = _uiState.value.copy(mpvAudioOutput = ao)
+            }
+        }
     }
 
     fun setThemeMode(mode: String) {
@@ -335,6 +356,39 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setMpvHwDec(hwDec: MpvHwDec) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMpvHwDec(hwDec)
+                Timber.d("MPV hardware decoding set to: ${hwDec.getDisplayName()}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set MPV hardware decoding")
+            }
+        }
+    }
+
+    fun setMpvVideoOutput(videoOutput: MpvVideoOutput) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMpvVideoOutput(videoOutput)
+                Timber.d("MPV video output set to: ${videoOutput.getDisplayName()}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set MPV video output")
+            }
+        }
+    }
+
+    fun setMpvAudioOutput(audioOutput: MpvAudioOutput) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setMpvAudioOutput(audioOutput)
+                Timber.d("MPV audio output set to: ${audioOutput.getDisplayName()}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set MPV audio output")
+            }
+        }
+    }
+
     fun setEpisodeLayout(layout: EpisodeLayout) {
         viewModelScope.launch {
             try {
@@ -382,7 +436,10 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Failed to logout from Jellyseerr")
                 _uiState.value = _uiState.value.copy(
-                    error = context.getString(R.string.error_jellyseerr_logout_failed_fmt, e.message)
+                    error = context.getString(
+                        R.string.error_jellyseerr_logout_failed_fmt,
+                        e.message
+                    )
                 )
             }
         }
@@ -409,6 +466,9 @@ data class SettingsUiState(
     val useExoPlayer: Boolean = true,
     val logoAutoHide: Boolean = false,
     val defaultVideoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
+    val mpvHwDec: MpvHwDec = MpvHwDec.default,
+    val mpvVideoOutput: MpvVideoOutput = MpvVideoOutput.default,
+    val mpvAudioOutput: MpvAudioOutput = MpvAudioOutput.default,
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,
     val error: String? = null

@@ -12,6 +12,7 @@ import timber.log.Timber
 @Composable
 fun MpvSurface(
     modifier: Modifier = Modifier,
+    videoOutput: String = "gpu",
     onSurfaceCreated: () -> Unit = {},
     onSurfaceDestroyed: () -> Unit = {}
 ) {
@@ -23,7 +24,7 @@ fun MpvSurface(
                     override fun surfaceCreated(holder: SurfaceHolder) {
                         MPVLib.attachSurface(holder.surface)
                         MPVLib.setOptionString("force-window", "yes")
-                        MPVLib.setOptionString("vo", "gpu")
+                        MPVLib.setOptionString("vo", videoOutput)
                         MPVLib.setOptionString("vid", "auto")
                         onSurfaceCreated()
                         Timber.d("MPV surface created and attached")

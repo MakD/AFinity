@@ -2,6 +2,9 @@ package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.player.MpvAudioOutput
+import com.makd.afinity.data.models.player.MpvHwDec
+import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.VideoZoomMode
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +48,18 @@ interface PreferencesRepository {
 
     val useExoPlayer: Flow<Boolean>
     suspend fun setUseExoPlayer(value: Boolean)
+
+    suspend fun setMpvHwDec(hwDec: MpvHwDec)
+    suspend fun getMpvHwDec(): MpvHwDec
+    fun getMpvHwDecFlow(): Flow<MpvHwDec>
+
+    suspend fun setMpvVideoOutput(videoOutput: MpvVideoOutput)
+    suspend fun getMpvVideoOutput(): MpvVideoOutput
+    fun getMpvVideoOutputFlow(): Flow<MpvVideoOutput>
+
+    suspend fun setMpvAudioOutput(audioOutput: MpvAudioOutput)
+    suspend fun getMpvAudioOutput(): MpvAudioOutput
+    fun getMpvAudioOutputFlow(): Flow<MpvAudioOutput>
 
     suspend fun setThemeMode(mode: String)
     suspend fun getThemeMode(): String

@@ -277,25 +277,36 @@ class PlayerViewModel @Inject constructor(
             .build()
     }
 
+    var mpvVideoOutputValue: String = "gpu"
+        private set
+
     private fun createMPVPlayer(): MPVPlayer {
         val audioAttributes = AudioAttributes.Builder()
             .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
             .setUsage(C.USAGE_MEDIA)
             .build()
 
+        val (mpvHwDec, mpvVideoOutput, mpvAudioOutput, subtitlePrefs) = kotlinx.coroutines.runBlocking {
+            val hwDec = preferencesRepository.getMpvHwDec()
+            val vo = preferencesRepository.getMpvVideoOutput()
+            val ao = preferencesRepository.getMpvAudioOutput()
+            val subs = preferencesRepository.getSubtitlePreferences()
+            MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs)
+        }
+
+        mpvVideoOutputValue = mpvVideoOutput
+
+        Timber.d("MPV preferences: hwdec=$mpvHwDec, vo=$mpvVideoOutput, ao=$mpvAudioOutput")
+
         val mpvPlayer = MPVPlayer.Builder(application)
             .setAudioAttributes(audioAttributes, true)
             .setSeekBackIncrementMs(10000)
             .setSeekForwardIncrementMs(10000)
             .setPauseAtEndOfMediaItems(true)
-            .setVideoOutput("gpu")
-            .setAudioOutput("audiotrack")
-            .setHwDec("mediacodec")
+            .setVideoOutput(mpvVideoOutput)
+            .setAudioOutput(mpvAudioOutput)
+            .setHwDec(mpvHwDec)
             .build()
-
-        val subtitlePrefs = kotlinx.coroutines.runBlocking {
-            preferencesRepository.getSubtitlePreferences()
-        }
 
         mpvPlayer.setOption("sub-ass-override", "strip")
         mpvPlayer.setOption("sub-use-margins", "yes")
@@ -729,7 +740,9 @@ class PlayerViewModel @Inject constructor(
                                     else -> MimeTypes.TEXT_UNKNOWN
                                 }
 
-                                val language = subtitleFile.nameWithoutExtension.split("_").firstOrNull() ?: context.getString(R.string.track_unknown)
+                                val language =
+                                    subtitleFile.nameWithoutExtension.split("_").firstOrNull()
+                                        ?: context.getString(R.string.track_unknown)
 
                                 MediaItem.SubtitleConfiguration.Builder("file://${subtitleFile.absolutePath}".toUri())
                                     .setLabel(language)
@@ -755,7 +768,10 @@ class PlayerViewModel @Inject constructor(
                                 MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
                                     .setLabel(
                                         stream.displayTitle ?: stream.language
-                                        ?: context.getString(R.string.track_number_fmt, stream.index)
+                                        ?: context.getString(
+                                            R.string.track_number_fmt,
+                                            stream.index
+                                        )
                                     )
                                     .setMimeType(MimeTypes.APPLICATION_SUBRIP)
                                     .setLanguage(stream.language ?: "eng")
@@ -811,7 +827,8 @@ class PlayerViewModel @Inject constructor(
         try {
             Timber.d("Loading live channel: $channelName ($channelId)")
             Timber.d("Stream URL: $streamUrl")
-            val userAgent = "AFinity/${com.makd.afinity.BuildConfig.VERSION_NAME} (Android; ExoPlayer)"
+            val userAgent =
+                "AFinity/${com.makd.afinity.BuildConfig.VERSION_NAME} (Android; ExoPlayer)"
 
             if (player is MPVPlayer) {
                 val mpv = player as MPVPlayer
@@ -830,8 +847,7 @@ class PlayerViewModel @Inject constructor(
                     player.play()
                     showControls()
                 }
-            }
-            else if (player is ExoPlayer) {
+            } else if (player is ExoPlayer) {
                 val dataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
                     .setUserAgent(userAgent)
                     .setAllowCrossProtocolRedirects(true)
@@ -846,9 +862,10 @@ class PlayerViewModel @Inject constructor(
                     .setMediaMetadata(MediaMetadata.Builder().setTitle(channelName).build())
                     .build()
 
-                val hlsMediaSource = androidx.media3.exoplayer.hls.HlsMediaSource.Factory(dataSourceFactory)
-                    .setAllowChunklessPreparation(true)
-                    .createMediaSource(mediaItem)
+                val hlsMediaSource =
+                    androidx.media3.exoplayer.hls.HlsMediaSource.Factory(dataSourceFactory)
+                        .setAllowChunklessPreparation(true)
+                        .createMediaSource(mediaItem)
 
                 withContext(Dispatchers.Main) {
                     (player as ExoPlayer).setMediaSource(hlsMediaSource)
@@ -879,7 +896,11 @@ class PlayerViewModel @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to load live channel")
             updateUiState {
-                it.copy(isLoading = false, showError = true, errorMessage = context.getString(R.string.error_load_live_channel))
+                it.copy(
+                    isLoading = false,
+                    showError = true,
+                    errorMessage = context.getString(R.string.error_load_live_channel)
+                )
             }
         }
     }
@@ -1422,3 +1443,10 @@ class PlayerViewModel @Inject constructor(
         val isLiveChannel: Boolean = false
     )
 }
+
+private data class MpvPrefsSnapshot(
+    val hwDec: String,
+    val videoOutput: String,
+    val audioOutput: String,
+    val subtitlePrefs: SubtitlePreferences
+)

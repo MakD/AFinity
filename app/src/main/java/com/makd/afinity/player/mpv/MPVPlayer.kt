@@ -162,6 +162,8 @@ class MPVPlayer(
 
         MPVLib.create(context)
 
+        Timber.d("MPVPlayer init: vo=$videoOutput, ao=$audioOutput, hwdec=$hwDec")
+
         MPVLib.setOptionString("config", "yes")
         MPVLib.setOptionString("config-dir", mpvDir.path)
         MPVLib.setOptionString("profile", "fast")

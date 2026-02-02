@@ -230,6 +230,7 @@ fun PlayerScreen(
                 is MPVPlayer -> {
                     MpvSurface(
                         modifier = Modifier.fillMaxSize(),
+                        videoOutput = viewModel.mpvVideoOutputValue,
                         onSurfaceCreated = {
                             Timber.d("MPV surface created in player screen")
                         },

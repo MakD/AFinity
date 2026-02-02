@@ -67,6 +67,9 @@ import androidx.core.graphics.toColorInt
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.player.MpvAudioOutput
+import com.makd.afinity.data.models.player.MpvHwDec
+import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
@@ -148,6 +151,39 @@ fun PlayerOptionsScreen(
                         checked = uiState.autoPlay,
                         onCheckedChange = viewModel::toggleAutoPlay
                     )
+                }
+            }
+
+            if (!uiState.useExoPlayer) {
+                item {
+                    SettingsGroup(title = stringResource(R.string.pref_group_mpv)) {
+                        SubtitleDropdownItem(
+                            title = stringResource(R.string.pref_mpv_hwdec_title),
+                            selectedOption = uiState.mpvHwDec,
+                            options = MpvHwDec.entries.toList(),
+                            onValueChange = viewModel::setMpvHwDec,
+                            labelProvider = { it.getDisplayName() },
+                            icon = painterResource(id = R.drawable.ic_cpu)
+                        )
+                        SettingsDivider()
+                        SubtitleDropdownItem(
+                            title = stringResource(R.string.pref_mpv_video_output_title),
+                            selectedOption = uiState.mpvVideoOutput,
+                            options = MpvVideoOutput.entries.toList(),
+                            onValueChange = viewModel::setMpvVideoOutput,
+                            labelProvider = { it.getDisplayName() },
+                            icon = painterResource(id = R.drawable.ic_video_settings)
+                        )
+                        SettingsDivider()
+                        SubtitleDropdownItem(
+                            title = stringResource(R.string.pref_mpv_audio_output_title),
+                            selectedOption = uiState.mpvAudioOutput,
+                            options = MpvAudioOutput.entries.toList(),
+                            onValueChange = viewModel::setMpvAudioOutput,
+                            labelProvider = { it.getDisplayName() },
+                            icon = painterResource(id = R.drawable.ic_audio)
+                        )
+                    }
                 }
             }
 

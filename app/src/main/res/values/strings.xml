@@ -457,6 +457,13 @@
     <string name="pref_group_engine">Engine &amp; Behavior</string>
     <string name="pref_use_exoplayer_title">Use ExoPlayer</string>
     <string name="pref_use_exoplayer_summary">Uses LibMPV when disabled</string>
+    <string name="pref_group_mpv">MPV Options</string>
+    <string name="pref_mpv_hwdec_title">Hardware Decoding</string>
+    <string name="pref_mpv_hwdec_summary">Hardware acceleration for video decoding</string>
+    <string name="pref_mpv_video_output_title">Video Output</string>
+    <string name="pref_mpv_video_output_summary">GPU rendering backend</string>
+    <string name="pref_mpv_audio_output_title">Audio Output</string>
+    <string name="pref_mpv_audio_output_summary">Audio output driver</string>
     <string name="pref_autoplay_title">Auto-play</string>
     <string name="pref_autoplay_summary">Automatically play next episode</string>
 
