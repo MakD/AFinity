@@ -61,6 +61,14 @@ interface PreferencesRepository {
     suspend fun getMpvAudioOutput(): MpvAudioOutput
     fun getMpvAudioOutputFlow(): Flow<MpvAudioOutput>
 
+    suspend fun setPreferredAudioLanguage(language: String)
+    suspend fun getPreferredAudioLanguage(): String
+    fun getPreferredAudioLanguageFlow(): Flow<String>
+
+    suspend fun setPreferredSubtitleLanguage(language: String)
+    suspend fun getPreferredSubtitleLanguage(): String
+    fun getPreferredSubtitleLanguageFlow(): Flow<String>
+
     suspend fun setThemeMode(mode: String)
     suspend fun getThemeMode(): String
     fun getThemeModeFlow(): Flow<String>

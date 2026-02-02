@@ -92,6 +92,9 @@ class PreferencesRepositoryImpl @Inject constructor(
         val MPV_HW_DEC = stringPreferencesKey("mpv_hw_dec")
         val MPV_VIDEO_OUTPUT = stringPreferencesKey("mpv_video_output")
         val MPV_AUDIO_OUTPUT = stringPreferencesKey("mpv_audio_output")
+
+        val PREFERRED_AUDIO_LANGUAGE = stringPreferencesKey("preferred_audio_language")
+        val PREFERRED_SUBTITLE_LANGUAGE = stringPreferencesKey("preferred_subtitle_language")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -495,6 +498,38 @@ class PreferencesRepositoryImpl @Inject constructor(
             preferences[Keys.MPV_AUDIO_OUTPUT]?.let {
                 MpvAudioOutput.fromValue(it)
             } ?: MpvAudioOutput.default
+        }
+    }
+
+    override suspend fun setPreferredAudioLanguage(language: String) {
+        dataStore.edit { preferences ->
+            preferences[Keys.PREFERRED_AUDIO_LANGUAGE] = language
+        }
+    }
+
+    override suspend fun getPreferredAudioLanguage(): String {
+        return dataStore.data.first()[Keys.PREFERRED_AUDIO_LANGUAGE] ?: ""
+    }
+
+    override fun getPreferredAudioLanguageFlow(): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.PREFERRED_AUDIO_LANGUAGE] ?: ""
+        }
+    }
+
+    override suspend fun setPreferredSubtitleLanguage(language: String) {
+        dataStore.edit { preferences ->
+            preferences[Keys.PREFERRED_SUBTITLE_LANGUAGE] = language
+        }
+    }
+
+    override suspend fun getPreferredSubtitleLanguage(): String {
+        return dataStore.data.first()[Keys.PREFERRED_SUBTITLE_LANGUAGE] ?: ""
+    }
+
+    override fun getPreferredSubtitleLanguageFlow(): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[Keys.PREFERRED_SUBTITLE_LANGUAGE] ?: ""
         }
     }
 

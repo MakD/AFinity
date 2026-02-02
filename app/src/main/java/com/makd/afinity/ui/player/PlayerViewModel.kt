@@ -259,11 +259,28 @@ class PlayerViewModel @Inject constructor(
             .setUsage(C.USAGE_MEDIA)
             .build()
 
+        val (preferredAudioLang, preferredSubLang) = kotlinx.coroutines.runBlocking {
+            Pair(
+                preferencesRepository.getPreferredAudioLanguage(),
+                preferencesRepository.getPreferredSubtitleLanguage()
+            )
+        }
+
         val trackSelector = DefaultTrackSelector(context)
         trackSelector.setParameters(
             trackSelector.buildUponParameters()
                 .setTunnelingEnabled(true)
+                .apply {
+                    if (preferredAudioLang.isNotEmpty()) {
+                        setPreferredAudioLanguage(preferredAudioLang)
+                    }
+                    if (preferredSubLang.isNotEmpty()) {
+                        setPreferredTextLanguage(preferredSubLang)
+                    }
+                }
         )
+
+        Timber.d("ExoPlayer preferences: preferredAudioLang=$preferredAudioLang, preferredSubLang=$preferredSubLang")
 
         val renderersFactory = DefaultRenderersFactory(context)
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
@@ -286,17 +303,19 @@ class PlayerViewModel @Inject constructor(
             .setUsage(C.USAGE_MEDIA)
             .build()
 
-        val (mpvHwDec, mpvVideoOutput, mpvAudioOutput, subtitlePrefs) = kotlinx.coroutines.runBlocking {
+        val (mpvHwDec, mpvVideoOutput, mpvAudioOutput, subtitlePrefs, preferredAudioLang, preferredSubLang) = kotlinx.coroutines.runBlocking {
             val hwDec = preferencesRepository.getMpvHwDec()
             val vo = preferencesRepository.getMpvVideoOutput()
             val ao = preferencesRepository.getMpvAudioOutput()
             val subs = preferencesRepository.getSubtitlePreferences()
-            MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs)
+            val audioLang = preferencesRepository.getPreferredAudioLanguage()
+            val subLang = preferencesRepository.getPreferredSubtitleLanguage()
+            MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang, subLang)
         }
 
         mpvVideoOutputValue = mpvVideoOutput
 
-        Timber.d("MPV preferences: hwdec=$mpvHwDec, vo=$mpvVideoOutput, ao=$mpvAudioOutput")
+        Timber.d("MPV preferences: hwdec=$mpvHwDec, vo=$mpvVideoOutput, ao=$mpvAudioOutput, alang=$preferredAudioLang, slang=$preferredSubLang")
 
         val mpvPlayer = MPVPlayer.Builder(application)
             .setAudioAttributes(audioAttributes, true)
@@ -358,6 +377,13 @@ class PlayerViewModel @Inject constructor(
 
         mpvPlayer.setOption("sub-align-y", subtitlePrefs.verticalPosition.mpvValue)
         mpvPlayer.setOption("sub-align-x", subtitlePrefs.horizontalAlignment.mpvValue)
+
+        if (preferredAudioLang.isNotEmpty()) {
+            mpvPlayer.setOption("alang", preferredAudioLang)
+        }
+        if (preferredSubLang.isNotEmpty()) {
+            mpvPlayer.setOption("slang", preferredSubLang)
+        }
 
         return mpvPlayer
     }
@@ -1448,5 +1474,7 @@ private data class MpvPrefsSnapshot(
     val hwDec: String,
     val videoOutput: String,
     val audioOutput: String,
-    val subtitlePrefs: SubtitlePreferences
+    val subtitlePrefs: SubtitlePreferences,
+    val preferredAudioLanguage: String,
+    val preferredSubtitleLanguage: String
 )

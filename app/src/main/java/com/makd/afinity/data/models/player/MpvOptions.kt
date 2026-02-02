@@ -6,7 +6,7 @@ enum class MpvHwDec(val value: String) {
     MEDIACODEC_COPY("mediacodec-copy");
 
     companion object {
-        val default = MEDIACODEC
+        val default = MEDIACODEC_COPY
         fun fromValue(value: String): MpvHwDec {
             return entries.find { it.value == value } ?: default
         }
@@ -15,8 +15,8 @@ enum class MpvHwDec(val value: String) {
     fun getDisplayName(): String {
         return when (this) {
             NO -> "Disabled"
-            MEDIACODEC -> "MediaCodec"
-            MEDIACODEC_COPY -> "MediaCodec (Copy)"
+            MEDIACODEC -> "mediacodec"
+            MEDIACODEC_COPY -> "mediacodec-copy"
         }
     }
 }
@@ -26,7 +26,7 @@ enum class MpvVideoOutput(val value: String) {
     GPU_NEXT("gpu-next");
 
     companion object {
-        val default = GPU
+        val default = GPU_NEXT
         fun fromValue(value: String): MpvVideoOutput {
             return entries.find { it.value == value } ?: default
         }

@@ -188,6 +188,26 @@ fun PlayerOptionsScreen(
             }
 
             item {
+                SettingsGroup(title = stringResource(R.string.pref_group_language)) {
+                    LanguageSelectorItem(
+                        title = stringResource(R.string.pref_preferred_audio_language_title),
+                        subtitle = stringResource(R.string.pref_preferred_audio_language_summary),
+                        selectedCode = uiState.preferredAudioLanguage,
+                        onLanguageSelected = viewModel::setPreferredAudioLanguage,
+                        icon = painterResource(id = R.drawable.ic_language)
+                    )
+                    SettingsDivider()
+                    LanguageSelectorItem(
+                        title = stringResource(R.string.pref_preferred_subtitle_language_title),
+                        subtitle = stringResource(R.string.pref_preferred_subtitle_language_summary),
+                        selectedCode = uiState.preferredSubtitleLanguage,
+                        onLanguageSelected = viewModel::setPreferredSubtitleLanguage,
+                        icon = painterResource(id = R.drawable.ic_subtitles)
+                    )
+                }
+            }
+
+            item {
                 SettingsGroup(title = stringResource(R.string.pref_group_pip)) {
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_pip),
@@ -723,6 +743,186 @@ private fun <T> SubtitleDropdownItem(
             }
         }
     }
+}
+
+@Composable
+private fun LanguageSelectorItem(
+    title: String,
+    subtitle: String,
+    selectedCode: String,
+    onLanguageSelected: (String) -> Unit,
+    icon: Painter
+) {
+    val context = LocalContext.current
+    val languages = remember { context.resources.getStringArray(R.array.languages) }
+    val languageCodes = remember { context.resources.getStringArray(R.array.language_values) }
+
+    val selectedIndex = languageCodes.indexOf(selectedCode).coerceAtLeast(0)
+    val displayName = languages.getOrElse(selectedIndex) { languages[0] }
+
+    var showDialog by remember { mutableStateOf(false) }
+
+    SettingsItem(
+        icon = icon,
+        title = title,
+        subtitle = displayName,
+        onClick = { showDialog = true },
+        trailing = {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    )
+
+    if (showDialog) {
+        LanguagePickerDialog(
+            languages = languages,
+            languageCodes = languageCodes,
+            selectedCode = selectedCode,
+            onSelect = { code ->
+                onLanguageSelected(code)
+                showDialog = false
+            },
+            onDismiss = { showDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun LanguagePickerDialog(
+    languages: Array<String>,
+    languageCodes: Array<String>,
+    selectedCode: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredIndices = remember(searchQuery) {
+        if (searchQuery.isBlank()) {
+            languages.indices.toList()
+        } else {
+            languages.indices.filter { i ->
+                languages[i].contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.pref_group_language)) },
+        text = {
+            Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_search),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        androidx.compose.foundation.text.BasicTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                            singleLine = true,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(vertical = 12.dp),
+                            decorationBox = { innerTextField ->
+                                if (searchQuery.isEmpty()) {
+                                    Text(
+                                        text = stringResource(R.string.pref_language_search_hint),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        )
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(
+                                onClick = { searchQuery = "" },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_clear),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp)
+                ) {
+                    items(filteredIndices.size) { filterIdx ->
+                        val idx = filteredIndices[filterIdx]
+                        val isSelected = languageCodes[idx] == selectedCode
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .then(
+                                    if (isSelected) Modifier.background(
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                    ) else Modifier
+                                )
+                                .clickable { onSelect(languageCodes[idx]) }
+                                .padding(horizontal = 12.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = languages[idx],
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
 }
 
 @Composable

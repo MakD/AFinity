@@ -197,6 +197,18 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(mpvAudioOutput = ao)
             }
         }
+
+        viewModelScope.launch {
+            preferencesRepository.getPreferredAudioLanguageFlow().collect { lang ->
+                _uiState.value = _uiState.value.copy(preferredAudioLanguage = lang)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getPreferredSubtitleLanguageFlow().collect { lang ->
+                _uiState.value = _uiState.value.copy(preferredSubtitleLanguage = lang)
+            }
+        }
     }
 
     fun setThemeMode(mode: String) {
@@ -389,6 +401,28 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setPreferredAudioLanguage(language: String) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setPreferredAudioLanguage(language)
+                Timber.d("Preferred audio language set to: $language")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set preferred audio language")
+            }
+        }
+    }
+
+    fun setPreferredSubtitleLanguage(language: String) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setPreferredSubtitleLanguage(language)
+                Timber.d("Preferred subtitle language set to: $language")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set preferred subtitle language")
+            }
+        }
+    }
+
     fun setEpisodeLayout(layout: EpisodeLayout) {
         viewModelScope.launch {
             try {
@@ -469,6 +503,8 @@ data class SettingsUiState(
     val mpvHwDec: MpvHwDec = MpvHwDec.default,
     val mpvVideoOutput: MpvVideoOutput = MpvVideoOutput.default,
     val mpvAudioOutput: MpvAudioOutput = MpvAudioOutput.default,
+    val preferredAudioLanguage: String = "",
+    val preferredSubtitleLanguage: String = "",
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,
     val error: String? = null

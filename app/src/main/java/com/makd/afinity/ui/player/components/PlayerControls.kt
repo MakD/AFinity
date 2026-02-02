@@ -149,7 +149,10 @@ fun PlayerControls(
             .filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
             .forEachIndexed { index, trackGroup ->
                 val format = trackGroup.mediaTrackGroup.getFormat(0)
-                val displayName = format.label ?: format.language ?: String.format(trackFmt, index + 1)
+                val displayName = listOfNotNull(
+                    format.label ?: format.language ?: String.format(trackFmt, index + 1),
+                    format.codecs?.let { formatSubtitleCodec(it) }
+                ).joinToString(" - ")
                 options.add(
                     SubtitleStreamOption(
                         stream = null,
@@ -1000,5 +1003,21 @@ private fun formatTime(timeMs: Long): String {
         String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
     } else {
         String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
+    }
+}
+
+private fun formatSubtitleCodec(codec: String): String {
+    return when (codec.lowercase()) {
+        "subrip" -> "SRT"
+        "ass", "ssa" -> "ASS"
+        "webvtt", "vtt" -> "VTT"
+        "mov_text" -> "TX3G"
+        "dvd_subtitle", "dvdsub" -> "VOBSUB"
+        "hdmv_pgs_subtitle", "pgssub" -> "PGS"
+        "dvb_subtitle" -> "DVB"
+        "sami" -> "SAMI"
+        "microdvd" -> "MicroDVD"
+        "subviewer" -> "SubViewer"
+        else -> codec.uppercase()
     }
 }

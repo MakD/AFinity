@@ -357,6 +357,7 @@ class MPVPlayer(
                 }
 
                 "playlist-current-pos" -> {
+                    if (value < 0) return@post
                     currentMediaItemIndex = value.toInt()
                     val newMediaItem = currentMediaItem
                     if (oldMediaItem?.mediaId != newMediaItem?.mediaId) {
