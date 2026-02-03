@@ -1,0 +1,152 @@
+name: Discord Activity Notification
+
+on:
+  issues:
+    types: [opened, closed]
+  pull_request:
+    types: [opened, closed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          EVENT_TYPE="${{ github.event_name }}"
+          ACTION="${{ github.event.action }}"
+          REPO_NAME="${{ github.repository }}"
+          REPO_URL="https://github.com/${{ github.repository }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          TITLE=""
+          DESCRIPTION=""
+          URL=""
+          AUTHOR_NAME=""
+          AUTHOR_ICON=""
+          AUTHOR_URL=""
+          COLOR=0
+          STATUS_TEXT=""
+          LABELS_RAW=""
+
+          if [ "$EVENT_TYPE" == "issues" ]; then
+            TITLE="${{ github.event.issue.title }}"
+            NUMBER="${{ github.event.issue.number }}"
+            URL="${{ github.event.issue.html_url }}"
+            DESCRIPTION="${{ github.event.issue.body }}"
+            AUTHOR_NAME="${{ github.event.issue.user.login }}"
+            AUTHOR_ICON="${{ github.event.issue.user.avatar_url }}"
+            AUTHOR_URL="${{ github.event.issue.user.html_url }}"
+            LABELS_RAW='${{ toJson(github.event.issue.labels) }}'
+            
+            if [ "$ACTION" == "opened" ]; then
+              STATUS_TEXT="Issue Opened"
+              COLOR=5793266
+            elif [ "$ACTION" == "closed" ]; then
+              STATUS_TEXT="Issue Closed"
+              COLOR=15548997
+            fi
+
+          elif [ "$EVENT_TYPE" == "pull_request" ]; then
+            TITLE="${{ github.event.pull_request.title }}"
+            NUMBER="${{ github.event.pull_request.number }}"
+            URL="${{ github.event.pull_request.html_url }}"
+            DESCRIPTION="${{ github.event.pull_request.body }}"
+            AUTHOR_NAME="${{ github.event.pull_request.user.login }}"
+            AUTHOR_ICON="${{ github.event.pull_request.user.avatar_url }}"
+            AUTHOR_URL="${{ github.event.pull_request.user.html_url }}"
+            LABELS_RAW='${{ toJson(github.event.pull_request.labels) }}'
+            
+            if [ "$ACTION" == "opened" ]; then
+              STATUS_TEXT="Pull Request Opened"
+              COLOR=5793266
+            elif [ "$ACTION" == "closed" ]; then
+              IS_MERGED="${{ github.event.pull_request.merged }}"
+              if [ "$IS_MERGED" == "true" ]; then
+                STATUS_TEXT="Pull Request Merged"
+                COLOR=10181046
+              else
+                STATUS_TEXT="Pull Request Closed"
+                COLOR=9807270
+              fi
+            fi
+          fi
+
+          LABELS_STRING=$(echo "$LABELS_RAW" | jq -r 'if length > 0 then map("`" + .name + "`") | join(" ") else "None" end')
+
+          MAX_DESC_LENGTH=2000
+          if [ -z "$DESCRIPTION" ]; then
+            DESCRIPTION="No description provided."
+          fi
+          
+          if [ ${#DESCRIPTION} -gt $MAX_DESC_LENGTH ]; then
+            DESCRIPTION_TRUNCATED="${DESCRIPTION:0:$MAX_DESC_LENGTH}... [Read more]($URL)"
+          else
+            DESCRIPTION_TRUNCATED="$DESCRIPTION"
+          fi
+
+          DISCORD_PAYLOAD=$(jq -n \
+            --arg title "$STATUS_TEXT: #$NUMBER $TITLE" \
+            --arg description "$DESCRIPTION_TRUNCATED" \
+            --arg url "$URL" \
+            --arg color "$COLOR" \
+            --arg author_name "$AUTHOR_NAME" \
+            --arg author_icon "$AUTHOR_ICON" \
+            --arg author_url "$AUTHOR_URL" \
+            --arg repo "$REPO_NAME" \
+            --arg repo_url "$REPO_URL" \
+            --arg timestamp "$TIMESTAMP" \
+            --arg status "$STATUS_TEXT" \
+            --arg labels "$LABELS_STRING" \
+            '{
+              embeds: [{
+                title: $title,
+                description: $description,
+                url: $url,
+                color: ($color | tonumber),
+                fields: [
+                  {
+                    name: "Status",
+                    value: $status,
+                    inline: true
+                  },
+                  {
+                    name: "Author",
+                    value: ("[" + $author_name + "](" + $author_url + ")"),
+                    inline: true
+                  },
+                  {
+                    name: "Labels",
+                    value: $labels,
+                    inline: true
+                  },
+                  {
+                    name: "Repository",
+                    value: ("[" + $repo + "](" + $repo_url + ")"),
+                    inline: false
+                  }
+                ],
+                author: {
+                  name: $author_name,
+                  icon_url: $author_icon,
+                  url: $author_url
+                },
+                timestamp: $timestamp,
+                footer: {
+                  text: ("Notification from " + $repo)
+                }
+              }]
+            }')
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -H "Content-Type: application/json" \
+               -d "$DISCORD_PAYLOAD" \
+               "$DISCORD_WEBHOOK_URL")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" -eq 204 ] || [ "$HTTP_CODE" -eq 200 ]; then
+            echo "Notification sent successfully."
+          else
+            echo "Failed to send notification. HTTP Code: $HTTP_CODE"
+            exit 1
+          fi
