@@ -5,8 +5,9 @@ package com.makd.afinity.navigation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -241,11 +242,11 @@ fun MainNavigation(
             ?.startsWith("audiobookshelf/player/") == true
         val showMiniPlayer = audiobookshelfPlaybackState.sessionId != null && !isOnAudiobookshelfPlayer
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
             startDestination = Destination.HOME.route,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(Destination.HOME.route) {
                 HomeScreen(
@@ -756,7 +757,8 @@ fun MainNavigation(
         AnimatedVisibility(
             visible = showMiniPlayer,
             enter = slideInVertically { it },
-            exit = slideOutVertically { it }
+            exit = slideOutVertically { it },
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             MiniPlayer(
                 title = audiobookshelfPlaybackState.displayTitle,
