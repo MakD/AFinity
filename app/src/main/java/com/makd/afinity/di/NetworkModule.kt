@@ -3,6 +3,7 @@ package com.makd.afinity.di
 import android.content.Context
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.core.AppConstants
+import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.Module
@@ -41,6 +42,10 @@ annotation class DownloadClient
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class JellyseerrClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class AudiobookshelfRetrofit
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -283,5 +288,108 @@ object NetworkModule {
     @Singleton
     fun provideJellyseerrApiService(retrofit: Retrofit): JellyseerrApiService {
         return retrofit.create(JellyseerrApiService::class.java)
+    }
+
+    private fun normalizeAudiobookshelfUrl(raw: String?): String {
+        if (raw.isNullOrBlank()) {
+            throw IOException("Audiobookshelf server URL not configured")
+        }
+
+        var base = raw.trim()
+
+        if (!base.startsWith("http://") && !base.startsWith("https://")) {
+            base = "http://$base"
+        }
+
+        if (!base.endsWith("/")) {
+            base += "/"
+        }
+
+        return base
+    }
+
+    @Provides
+    @Singleton
+    @AudiobookshelfClient
+    fun provideAudiobookshelfOkHttpClient(
+        baseOkHttpClient: OkHttpClient,
+        securePreferencesRepository: SecurePreferencesRepository
+    ): OkHttpClient {
+        return baseOkHttpClient.newBuilder()
+            .addInterceptor { chain ->
+                val originalRequest = chain.request()
+
+                val savedUrl = securePreferencesRepository.getCachedAudiobookshelfServerUrl()
+                val currentBaseUrl = try {
+                    if (!savedUrl.isNullOrBlank()) {
+                        normalizeAudiobookshelfUrl(savedUrl)
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+
+                if (currentBaseUrl == null) {
+                    throw IOException("Audiobookshelf server URL not configured. Please configure the server URL first.")
+                }
+
+                val newUrl = currentBaseUrl.toHttpUrlOrNull()?.newBuilder()
+                    ?.addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
+                    ?.apply {
+                        for (i in 0 until originalRequest.url.querySize) {
+                            addQueryParameter(
+                                originalRequest.url.queryParameterName(i),
+                                originalRequest.url.queryParameterValue(i)
+                            )
+                        }
+                    }
+                    ?.build()
+                    ?: throw IOException("Failed to build Audiobookshelf URL")
+
+                val newRequest = originalRequest.newBuilder()
+                    .url(newUrl)
+                    .apply {
+                        val token = securePreferencesRepository.getCachedAudiobookshelfToken()
+                        token?.let {
+                            addHeader("Authorization", "Bearer $it")
+                        }
+                        addHeader("Content-Type", "application/json")
+                    }
+                    .build()
+
+                chain.proceed(newRequest)
+            }
+            .build()
+    }
+
+    private val audiobookshelfJson = kotlinx.serialization.json.Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        encodeDefaults = true
+    }
+
+    @Provides
+    @Singleton
+    @AudiobookshelfRetrofit
+    fun provideAudiobookshelfRetrofit(
+        @AudiobookshelfClient okHttpClient: OkHttpClient
+    ): Retrofit {
+        val contentType = "application/json".toMediaType()
+        val baseUrl = "http://placeholder.audiobookshelf/"
+
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(audiobookshelfJson.asConverterFactory(contentType))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAudiobookshelfApiService(
+        @AudiobookshelfRetrofit retrofit: Retrofit
+    ): AudiobookshelfApiService {
+        return retrofit.create(AudiobookshelfApiService::class.java)
     }
 }

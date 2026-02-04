@@ -7,10 +7,13 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
+import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -28,6 +31,9 @@ class MainNavigationViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
     val watchlistRepository: WatchlistRepository,
     val jellyseerrRepository: JellyseerrRepository,
+    val audiobookshelfRepository: AudiobookshelfRepository,
+    val audiobookshelfPlayer: AudiobookshelfPlayer,
+    val audiobookshelfPlaybackManager: AudiobookshelfPlaybackManager,
     private val liveTvRepository: LiveTvRepository,
     private val offlineModeManager: OfflineModeManager
 ) : ViewModel() {
@@ -82,8 +88,7 @@ class MainNavigationViewModel @Inject constructor(
                     Timber.d("Fresh login detected")
                     _hasLiveTvAccess.value = false
                     loadAppData()
-                }
-                else if (!isAuthenticated) {
+                } else if (!isAuthenticated) {
                     _hasLiveTvAccess.value = false
                 }
 

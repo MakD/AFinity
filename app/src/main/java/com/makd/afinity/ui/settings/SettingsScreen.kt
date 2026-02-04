@@ -75,6 +75,7 @@ fun SettingsScreen(
     onPlayerOptionsClick: () -> Unit,
     onAppearanceOptionsClick: () -> Unit,
     onServerManagementClick: () -> Unit,
+    onAudiobookshelfClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -85,9 +86,11 @@ fun SettingsScreen(
     val effectiveOfflineMode by viewModel.effectiveOfflineMode.collectAsStateWithLifecycle()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
     val isJellyseerrAuthenticated by viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
+    val isAudiobookshelfAuthenticated by viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
 
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showJellyseerrLogoutDialog by remember { mutableStateOf(false) }
+    var showAudiobookshelfLogoutDialog by remember { mutableStateOf(false) }
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
     val jellyseerrSheetState = rememberModalBottomSheetState()
@@ -110,6 +113,16 @@ fun SettingsScreen(
                 viewModel.logoutFromJellyseerr()
             },
             onDismiss = { showJellyseerrLogoutDialog = false }
+        )
+    }
+
+    if (showAudiobookshelfLogoutDialog) {
+        AudiobookshelfLogoutConfirmationDialog(
+            onConfirm = {
+                showAudiobookshelfLogoutDialog = false
+                viewModel.logoutFromAudiobookshelf()
+            },
+            onDismiss = { showAudiobookshelfLogoutDialog = false }
         )
     }
 
@@ -227,6 +240,19 @@ fun SettingsScreen(
                             onCheckedChange = { enabled ->
                                 if (enabled) showJellyseerrBottomSheet =
                                     true else showJellyseerrLogoutDialog = true
+                            }
+                        )
+                        SettingsDivider()
+                        SettingsSwitchItem(
+                            icon = painterResource(id = R.drawable.ic_headphones),
+                            title = stringResource(R.string.pref_audiobookshelf),
+                            subtitle = if (isAudiobookshelfAuthenticated) stringResource(R.string.audiobookshelf_connected) else stringResource(
+                                R.string.audiobookshelf_connect
+                            ),
+                            checked = isAudiobookshelfAuthenticated,
+                            onCheckedChange = { enabled ->
+                                if (enabled) onAudiobookshelfClick() else showAudiobookshelfLogoutDialog =
+                                    true
                             }
                         )
                         SettingsDivider()
@@ -607,6 +633,38 @@ private fun LogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Uni
                 Text(stringResource(R.string.action_cancel))
             }
         },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    )
+}
+
+@Composable
+private fun AudiobookshelfLogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_headphones),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        title = {
+            Text(
+                stringResource(R.string.dialog_disconnect_audiobookshelf_title),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        text = {
+            Text(
+                stringResource(R.string.dialog_disconnect_audiobookshelf_message),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) { Text(stringResource(R.string.action_disconnect)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
         shape = RoundedCornerShape(28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
     )

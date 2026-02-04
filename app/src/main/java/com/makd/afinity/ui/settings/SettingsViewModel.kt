@@ -12,6 +12,7 @@ import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
@@ -40,7 +41,8 @@ class SettingsViewModel @Inject constructor(
     private val serverRepository: ServerRepository,
     private val offlineModeManager: OfflineModeManager,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
-    private val jellyseerrRepository: JellyseerrRepository
+    private val jellyseerrRepository: JellyseerrRepository,
+    private val audiobookshelfRepository: AudiobookshelfRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -73,6 +75,9 @@ class SettingsViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val isJellyseerrAuthenticated: StateFlow<Boolean> = jellyseerrRepository.isAuthenticated
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val isAudiobookshelfAuthenticated: StateFlow<Boolean> = audiobookshelfRepository.isAuthenticated
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     init {
@@ -449,6 +454,12 @@ class SettingsViewModel @Inject constructor(
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to logout from Jellyseerr during AFinity logout")
                     }
+
+                    try {
+                        audiobookshelfRepository.logout()
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to logout from Audiobookshelf during AFinity logout")
+                    }
                 }
 
                 onLogoutComplete()
@@ -472,6 +483,23 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     error = context.getString(
                         R.string.error_jellyseerr_logout_failed_fmt,
+                        e.message
+                    )
+                )
+            }
+        }
+    }
+
+    fun logoutFromAudiobookshelf() {
+        viewModelScope.launch {
+            try {
+                audiobookshelfRepository.logout()
+                Timber.d("Audiobookshelf logout successful")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to logout from Audiobookshelf")
+                _uiState.value = _uiState.value.copy(
+                    error = context.getString(
+                        R.string.error_audiobookshelf_logout_failed_fmt,
                         e.message
                     )
                 )

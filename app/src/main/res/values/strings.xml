@@ -646,6 +646,13 @@
     <string name="discovery_connected">Connected via Seerr</string>
     <string name="discovery_connect">Connect to request content</string>
 
+    <string name="pref_audiobookshelf">Audiobookshelf</string>
+    <string name="audiobookshelf_connected">Connected to Audiobookshelf</string>
+    <string name="audiobookshelf_connect">Connect to browse audiobooks</string>
+    <string name="dialog_disconnect_audiobookshelf_title">Disconnect Audiobookshelf</string>
+    <string name="dialog_disconnect_audiobookshelf_message">Disconnecting will remove your Audiobookshelf configuration. You can reconnect at any time.</string>
+    <string name="error_audiobookshelf_logout_failed_fmt">Failed to disconnect from Audiobookshelf: %1$s</string>
+
     <string name="pref_downloads">Downloads</string>
     <string name="pref_downloads_summary">Manage offline content</string>
 

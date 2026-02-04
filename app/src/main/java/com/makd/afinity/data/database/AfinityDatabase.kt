@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.GenreCacheDao
@@ -38,6 +39,10 @@ import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.GenreCacheEntity
 import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
 import com.makd.afinity.data.database.entities.GenreShowCacheEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
 import com.makd.afinity.data.database.entities.LibraryCacheEntity
@@ -90,8 +95,13 @@ import com.makd.afinity.data.models.user.User
 
         JellyseerrRequestEntity::class,
         JellyseerrConfigEntity::class,
+
+        AudiobookshelfConfigEntity::class,
+        AudiobookshelfLibraryEntity::class,
+        AudiobookshelfItemEntity::class,
+        AudiobookshelfProgressEntity::class,
     ],
-    version = 25,
+    version = 26,
     exportSchema = false
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -120,6 +130,7 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun personSectionDao(): PersonSectionDao
     abstract fun movieSectionDao(): MovieSectionDao
     abstract fun jellyseerrDao(): JellyseerrDao
+    abstract fun audiobookshelfDao(): AudiobookshelfDao
 
     companion object {
         @Volatile

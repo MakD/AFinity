@@ -38,6 +38,12 @@ enum class Destination(
         selectedIconRes = R.drawable.ic_plus_filled,
         unselectedIconRes = R.drawable.ic_plus
     ),
+    AUDIOBOOKS(
+        route = "audiobookshelf/libraries",
+        title = "Audiobooks",
+        selectedIconRes = R.drawable.ic_headphones_filled,
+        unselectedIconRes = R.drawable.ic_headphones
+    ),
     LIVE_TV(
         route = "live_tv",
         title = "Live TV",
@@ -63,6 +69,37 @@ enum class Destination(
         const val ADD_EDIT_SERVER_ROUTE = "add_edit_server?serverId={serverId}"
 
         const val LOGIN_ROUTE = "login?serverUrl={serverUrl}"
+
+        const val AUDIOBOOKSHELF_LOGIN_ROUTE = "audiobookshelf/login"
+        const val AUDIOBOOKSHELF_LIBRARIES_ROUTE = "audiobookshelf/libraries"
+        const val AUDIOBOOKSHELF_LIBRARY_ROUTE = "audiobookshelf/library/{libraryId}"
+        const val AUDIOBOOKSHELF_ITEM_ROUTE = "audiobookshelf/item/{itemId}"
+        const val AUDIOBOOKSHELF_PLAYER_ROUTE =
+            "audiobookshelf/player/{itemId}?episodeId={episodeId}"
+
+        fun createAudiobookshelfLoginRoute(): String {
+            return AUDIOBOOKSHELF_LOGIN_ROUTE
+        }
+
+        fun createAudiobookshelfLibrariesRoute(): String {
+            return AUDIOBOOKSHELF_LIBRARIES_ROUTE
+        }
+
+        fun createAudiobookshelfLibraryRoute(libraryId: String): String {
+            return "audiobookshelf/library/$libraryId"
+        }
+
+        fun createAudiobookshelfItemRoute(itemId: String): String {
+            return "audiobookshelf/item/$itemId"
+        }
+
+        fun createAudiobookshelfPlayerRoute(itemId: String, episodeId: String? = null): String {
+            return if (episodeId != null) {
+                "audiobookshelf/player/$itemId?episodeId=$episodeId"
+            } else {
+                "audiobookshelf/player/$itemId"
+            }
+        }
 
         fun createPersonRoute(personId: String): String {
             return "person/$personId"
@@ -133,7 +170,11 @@ enum class Destination(
             return LICENSES_ROUTE
         }
 
-        fun createFilteredMediaRoute(filterType: String, filterId: Int, filterName: String): String {
+        fun createFilteredMediaRoute(
+            filterType: String,
+            filterId: Int,
+            filterName: String
+        ): String {
             return "filtered_media/$filterType/$filterId/${filterName.replace("/", "%2F")}"
         }
 

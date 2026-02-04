@@ -12,6 +12,7 @@ import com.google.crypto.tink.RegistryConfiguration
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.aead.PredefinedAeadParameters
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
+import com.makd.afinity.data.repository.AudiobookshelfAuthData
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.ServerUserToken
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -94,6 +95,18 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     @Volatile
     private var cachedJellyseerrUsername: String? = null
 
+    @Volatile
+    private var cachedAudiobookshelfUrl: String? = null
+
+    @Volatile
+    private var cachedAudiobookshelfToken: String? = null
+
+    @Volatile
+    private var cachedAudiobookshelfUserId: String? = null
+
+    @Volatile
+    private var cachedAudiobookshelfUsername: String? = null
+
     private val _authenticationState = MutableStateFlow(false)
 
     init {
@@ -171,6 +184,10 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
         cachedJellyseerrUrl = null
         cachedJellyseerrCookie = null
         cachedJellyseerrUsername = null
+        cachedAudiobookshelfUrl = null
+        cachedAudiobookshelfToken = null
+        cachedAudiobookshelfUserId = null
+        cachedAudiobookshelfUsername = null
         _authenticationState.value = false
         Timber.d("Cleared all secure data")
     }
@@ -408,5 +425,121 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
             keysToRemove.forEach { prefs.remove(it) }
         }
         Timber.d("Cleared all tokens for server=$serverId")
+    }
+
+    private fun getAudiobookshelfKey(
+        prefix: String, serverId: String, userId: UUID
+    ): Preferences.Key<String> {
+        return stringPreferencesKey("${prefix}_${serverId}_$userId")
+    }
+
+    override suspend fun saveAudiobookshelfAuthForUser(
+        jellyfinServerId: String,
+        jellyfinUserId: UUID,
+        serverUrl: String,
+        accessToken: String,
+        absUserId: String,
+        username: String
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs[getAudiobookshelfKey("abs_url", jellyfinServerId, jellyfinUserId)] =
+                encrypt(serverUrl)
+            prefs[getAudiobookshelfKey("abs_token", jellyfinServerId, jellyfinUserId)] =
+                encrypt(accessToken)
+            prefs[getAudiobookshelfKey("abs_userid", jellyfinServerId, jellyfinUserId)] =
+                encrypt(absUserId)
+            prefs[getAudiobookshelfKey("abs_user", jellyfinServerId, jellyfinUserId)] =
+                encrypt(username)
+        }
+
+        cachedAudiobookshelfUrl = serverUrl
+        cachedAudiobookshelfToken = accessToken
+        cachedAudiobookshelfUserId = absUserId
+        cachedAudiobookshelfUsername = username
+
+        Timber.d("Saved Audiobookshelf auth for user $jellyfinUserId on server $jellyfinServerId")
+    }
+
+    override suspend fun switchAudiobookshelfContext(
+        jellyfinServerId: String, jellyfinUserId: UUID
+    ): Boolean {
+        return withContext(Dispatchers.IO) {
+            val prefs = context.dataStore.data.first()
+
+            val urlKey = getAudiobookshelfKey("abs_url", jellyfinServerId, jellyfinUserId)
+            val tokenKey = getAudiobookshelfKey("abs_token", jellyfinServerId, jellyfinUserId)
+            val userIdKey = getAudiobookshelfKey("abs_userid", jellyfinServerId, jellyfinUserId)
+            val userKey = getAudiobookshelfKey("abs_user", jellyfinServerId, jellyfinUserId)
+
+            val url = decrypt(prefs[urlKey])
+            val token = decrypt(prefs[tokenKey])
+            val absUserId = decrypt(prefs[userIdKey])
+            val username = decrypt(prefs[userKey])
+
+            cachedAudiobookshelfUrl = url
+            cachedAudiobookshelfToken = token
+            cachedAudiobookshelfUserId = absUserId
+            cachedAudiobookshelfUsername = username
+
+            Timber.d("Switched Audiobookshelf context. Valid: ${!url.isNullOrBlank() && !token.isNullOrBlank()}")
+
+            !url.isNullOrBlank() && !token.isNullOrBlank()
+        }
+    }
+
+    override fun clearActiveAudiobookshelfCache() {
+        cachedAudiobookshelfUrl = null
+        cachedAudiobookshelfToken = null
+        cachedAudiobookshelfUserId = null
+        cachedAudiobookshelfUsername = null
+    }
+
+    override suspend fun getAudiobookshelfAuthForUser(
+        jellyfinServerId: String, jellyfinUserId: UUID
+    ): AudiobookshelfAuthData? {
+        return withContext(Dispatchers.IO) {
+            val prefs = context.dataStore.data.first()
+            val url =
+                decrypt(prefs[getAudiobookshelfKey("abs_url", jellyfinServerId, jellyfinUserId)])
+            val token =
+                decrypt(prefs[getAudiobookshelfKey("abs_token", jellyfinServerId, jellyfinUserId)])
+            val absUserId =
+                decrypt(prefs[getAudiobookshelfKey("abs_userid", jellyfinServerId, jellyfinUserId)])
+            val username =
+                decrypt(prefs[getAudiobookshelfKey("abs_user", jellyfinServerId, jellyfinUserId)])
+
+            if (url != null && token != null && absUserId != null && username != null) {
+                AudiobookshelfAuthData(
+                    serverUrl = url,
+                    accessToken = token,
+                    absUserId = absUserId,
+                    username = username
+                )
+            } else {
+                null
+            }
+        }
+    }
+
+    override suspend fun clearAudiobookshelfAuthForUser(
+        jellyfinServerId: String, jellyfinUserId: UUID
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs.remove(getAudiobookshelfKey("abs_url", jellyfinServerId, jellyfinUserId))
+            prefs.remove(getAudiobookshelfKey("abs_token", jellyfinServerId, jellyfinUserId))
+            prefs.remove(getAudiobookshelfKey("abs_userid", jellyfinServerId, jellyfinUserId))
+            prefs.remove(getAudiobookshelfKey("abs_user", jellyfinServerId, jellyfinUserId))
+        }
+        clearActiveAudiobookshelfCache()
+        Timber.d("Cleared Audiobookshelf auth for user $jellyfinUserId on server $jellyfinServerId")
+    }
+
+    override fun getCachedAudiobookshelfServerUrl(): String? = cachedAudiobookshelfUrl
+
+    override fun getCachedAudiobookshelfToken(): String? = cachedAudiobookshelfToken
+
+    override suspend fun hasValidAudiobookshelfAuth(): Boolean {
+        if (!cachedAudiobookshelfToken.isNullOrBlank() && !cachedAudiobookshelfUrl.isNullOrBlank()) return true
+        return false
     }
 }

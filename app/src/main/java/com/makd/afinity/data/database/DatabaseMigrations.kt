@@ -202,26 +202,31 @@ object DatabaseMigrations {
             val defaultServerId = "default-server-migration"
 
             db.execSQL("DROP TABLE IF EXISTS servers_new")
-            db.execSQL("""
+            db.execSQL(
+                """
                 CREATE TABLE servers_new (
                     id TEXT PRIMARY KEY NOT NULL,
                     name TEXT NOT NULL,
                     version TEXT,
                     address TEXT NOT NULL
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
 
-            db.execSQL("""
+            db.execSQL(
+                """
                 INSERT INTO servers_new (id, name, version, address)
                 SELECT id, name, version, '$defaultServerId'
                 FROM servers
-            """.trimIndent())
+            """.trimIndent()
+            )
 
             db.execSQL("DROP TABLE servers")
             db.execSQL("ALTER TABLE servers_new RENAME TO servers")
 
             db.execSQL("DROP TABLE IF EXISTS movies_new")
-            db.execSQL("""
+            db.execSQL(
+                """
                 CREATE TABLE movies_new (
                     id TEXT PRIMARY KEY NOT NULL,
                     serverId TEXT NOT NULL,
@@ -243,21 +248,25 @@ object DatabaseMigrations {
                     tagline TEXT,
                     people TEXT
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
 
-            db.execSQL("""
+            db.execSQL(
+                """
                 INSERT INTO movies_new
                 SELECT id, COALESCE(serverId, '$defaultServerId'), name, originalTitle, overview,
                        runtimeTicks, premiereDate, dateCreated, communityRating, officialRating,
                        criticRating, status, productionYear, endDate, chapters, images, genres, tagline, people
                 FROM movies
-            """.trimIndent())
+            """.trimIndent()
+            )
 
             db.execSQL("DROP TABLE movies")
             db.execSQL("ALTER TABLE movies_new RENAME TO movies")
 
             db.execSQL("DROP TABLE IF EXISTS shows_new")
-            db.execSQL("""
+            db.execSQL(
+                """
                 CREATE TABLE shows_new (
                     id TEXT PRIMARY KEY NOT NULL,
                     serverId TEXT NOT NULL,
@@ -277,22 +286,26 @@ object DatabaseMigrations {
                     genres TEXT,
                     people TEXT
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
 
-            db.execSQL("""
+            db.execSQL(
+                """
                 INSERT INTO shows_new
                 SELECT id, COALESCE(serverId, '$defaultServerId'), name, originalTitle, overview,
                        runtimeTicks, communityRating, officialRating, status, productionYear,
                        premiereDate, dateCreated, dateLastContentAdded, endDate, images, genres, people
                 FROM shows
-            """.trimIndent())
+            """.trimIndent()
+            )
 
             db.execSQL("DROP TABLE shows")
             db.execSQL("ALTER TABLE shows_new RENAME TO shows")
 
             db.execSQL("DROP INDEX IF EXISTS index_seasons_seriesId")
             db.execSQL("DROP TABLE IF EXISTS seasons_new")
-            db.execSQL("""
+            db.execSQL(
+                """
                 CREATE TABLE seasons_new (
                     id TEXT PRIMARY KEY NOT NULL,
                     serverId TEXT NOT NULL,
@@ -304,15 +317,18 @@ object DatabaseMigrations {
                     images TEXT,
                     FOREIGN KEY (seriesId) REFERENCES shows(id) ON DELETE CASCADE
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
 
             db.execSQL("CREATE INDEX index_seasons_seriesId ON seasons_new(seriesId)")
 
-            db.execSQL("""
+            db.execSQL(
+                """
                 INSERT INTO seasons_new
                 SELECT id, '$defaultServerId', seriesId, name, seriesName, overview, indexNumber, images
                 FROM seasons
-            """.trimIndent())
+            """.trimIndent()
+            )
 
             db.execSQL("DROP TABLE seasons")
             db.execSQL("ALTER TABLE seasons_new RENAME TO seasons")
@@ -320,7 +336,8 @@ object DatabaseMigrations {
             db.execSQL("DROP INDEX IF EXISTS index_episodes_seasonId")
             db.execSQL("DROP INDEX IF EXISTS index_episodes_seriesId")
             db.execSQL("DROP TABLE IF EXISTS episodes_new")
-            db.execSQL("""
+            db.execSQL(
+                """
                 CREATE TABLE episodes_new (
                     id TEXT PRIMARY KEY NOT NULL,
                     serverId TEXT NOT NULL,
@@ -340,24 +357,28 @@ object DatabaseMigrations {
                     FOREIGN KEY (seasonId) REFERENCES seasons(id) ON DELETE CASCADE,
                     FOREIGN KEY (seriesId) REFERENCES shows(id) ON DELETE CASCADE
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
 
             db.execSQL("CREATE INDEX index_episodes_seasonId ON episodes_new(seasonId)")
             db.execSQL("CREATE INDEX index_episodes_seriesId ON episodes_new(seriesId)")
 
-            db.execSQL("""
+            db.execSQL(
+                """
                 INSERT INTO episodes_new
                 SELECT id, COALESCE(serverId, '$defaultServerId'), seasonId, seriesId, name, seriesName,
                        overview, indexNumber, indexNumberEnd, parentIndexNumber, runtimeTicks,
                        premiereDate, communityRating, chapters, images
                 FROM episodes
-            """.trimIndent())
+            """.trimIndent()
+            )
 
             db.execSQL("DROP TABLE episodes")
             db.execSQL("ALTER TABLE episodes_new RENAME TO episodes")
 
             db.execSQL("DROP TABLE IF EXISTS userdata_new")
-            db.execSQL("""
+            db.execSQL(
+                """
                 CREATE TABLE userdata_new (
                     userId TEXT NOT NULL,
                     itemId TEXT NOT NULL,
@@ -368,13 +389,16 @@ object DatabaseMigrations {
                     toBeSynced INTEGER NOT NULL,
                     PRIMARY KEY (userId, itemId, serverId)
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
 
-            db.execSQL("""
+            db.execSQL(
+                """
                 INSERT INTO userdata_new
                 SELECT userId, itemId, '$defaultServerId', played, favorite, playbackPositionTicks, toBeSynced
                 FROM userdata
-            """.trimIndent())
+            """.trimIndent()
+            )
 
             db.execSQL("DROP TABLE userdata")
             db.execSQL("ALTER TABLE userdata_new RENAME TO userdata")
@@ -384,7 +408,8 @@ object DatabaseMigrations {
     val MIGRATION_23_24 = object : Migration(23, 24) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("DROP TABLE IF EXISTS jellyseerr_config")
-            db.execSQL("""
+            db.execSQL(
+                """
                 CREATE TABLE IF NOT EXISTS jellyseerr_config (
                     jellyfinServerId TEXT NOT NULL,
                     jellyfinUserId TEXT NOT NULL,
@@ -395,10 +420,12 @@ object DatabaseMigrations {
                     permissions INTEGER,
                     PRIMARY KEY(jellyfinServerId, jellyfinUserId)
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
 
             db.execSQL("DROP TABLE IF EXISTS jellyseerr_requests")
-            db.execSQL("""
+            db.execSQL(
+                """
                 CREATE TABLE IF NOT EXISTS jellyseerr_requests (
                     id INTEGER NOT NULL,
                     jellyfinServerId TEXT NOT NULL,
@@ -422,7 +449,8 @@ object DatabaseMigrations {
                     mediaStatus INTEGER,
                     PRIMARY KEY(id, jellyfinServerId, jellyfinUserId)
                 )
-            """.trimIndent())
+            """.trimIndent()
+            )
         }
     }
 
@@ -430,6 +458,93 @@ object DatabaseMigrations {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("ALTER TABLE downloads ADD COLUMN serverId TEXT NOT NULL DEFAULT ''")
             db.execSQL("ALTER TABLE downloads ADD COLUMN userId TEXT NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'")
+        }
+    }
+
+    val MIGRATION_25_26 = object : Migration(25, 26) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS audiobookshelf_config (
+                    jellyfinServerId TEXT NOT NULL,
+                    jellyfinUserId TEXT NOT NULL,
+                    serverUrl TEXT NOT NULL,
+                    absUserId TEXT NOT NULL,
+                    username TEXT NOT NULL,
+                    isLoggedIn INTEGER NOT NULL,
+                    lastSync INTEGER NOT NULL,
+                    PRIMARY KEY(jellyfinServerId, jellyfinUserId)
+                )
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS audiobookshelf_libraries (
+                    id TEXT NOT NULL,
+                    jellyfinServerId TEXT NOT NULL,
+                    jellyfinUserId TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    mediaType TEXT NOT NULL,
+                    icon TEXT,
+                    displayOrder INTEGER NOT NULL,
+                    totalItems INTEGER NOT NULL,
+                    totalDuration REAL,
+                    lastUpdated INTEGER NOT NULL,
+                    cachedAt INTEGER NOT NULL,
+                    PRIMARY KEY(id, jellyfinServerId, jellyfinUserId)
+                )
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS audiobookshelf_items (
+                    id TEXT NOT NULL,
+                    jellyfinServerId TEXT NOT NULL,
+                    jellyfinUserId TEXT NOT NULL,
+                    libraryId TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    authorName TEXT,
+                    narratorName TEXT,
+                    seriesName TEXT,
+                    seriesSequence TEXT,
+                    mediaType TEXT NOT NULL,
+                    duration REAL,
+                    coverUrl TEXT,
+                    description TEXT,
+                    publishedYear TEXT,
+                    genres TEXT,
+                    numTracks INTEGER,
+                    numChapters INTEGER,
+                    addedAt INTEGER,
+                    updatedAt INTEGER,
+                    cachedAt INTEGER NOT NULL,
+                    PRIMARY KEY(id, jellyfinServerId, jellyfinUserId)
+                )
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS audiobookshelf_progress (
+                    id TEXT NOT NULL,
+                    jellyfinServerId TEXT NOT NULL,
+                    jellyfinUserId TEXT NOT NULL,
+                    libraryItemId TEXT NOT NULL,
+                    episodeId TEXT,
+                    currentTime REAL NOT NULL,
+                    duration REAL NOT NULL,
+                    progress REAL NOT NULL,
+                    isFinished INTEGER NOT NULL,
+                    lastUpdate INTEGER NOT NULL,
+                    startedAt INTEGER NOT NULL,
+                    finishedAt INTEGER,
+                    pendingSync INTEGER NOT NULL,
+                    PRIMARY KEY(id, jellyfinServerId, jellyfinUserId)
+                )
+            """.trimIndent()
+            )
         }
     }
 
@@ -453,6 +568,7 @@ object DatabaseMigrations {
         MIGRATION_21_22,
         MIGRATION_22_23,
         MIGRATION_23_24,
-        MIGRATION_24_25
+        MIGRATION_24_25,
+        MIGRATION_25_26
     )
 }

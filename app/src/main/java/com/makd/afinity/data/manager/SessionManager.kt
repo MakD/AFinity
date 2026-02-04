@@ -4,6 +4,7 @@ import android.content.Context
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -50,6 +51,7 @@ class SessionManager @Inject constructor(
     private val sessionPreferences: SessionPreferences,
     private val securePrefsRepository: SecurePreferencesRepository,
     private val jellyseerrRepository: JellyseerrRepository,
+    private val audiobookshelfRepository: AudiobookshelfRepository,
     @ApplicationContext private val context: Context
 ) {
     private val _currentSession = MutableStateFlow<Session?>(null)
@@ -109,6 +111,9 @@ class SessionManager @Inject constructor(
 
             jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
             Timber.d("Linked Jellyseerr session for user: $userId")
+
+            audiobookshelfRepository.setActiveJellyfinSession(serverId, userId)
+            Timber.d("Linked Audiobookshelf session for user: $userId")
 
             val session = Session(
                 serverId = serverId,
@@ -253,6 +258,7 @@ class SessionManager @Inject constructor(
 
         sessionPreferences.clearSession()
         jellyseerrRepository.clearActiveSession()
+        audiobookshelfRepository.clearActiveSession()
         _currentSession.value = null
         _connectionState.value = ConnectionState.Disconnected
         authRepository.clearAllAuthData()

@@ -70,4 +70,35 @@ interface SecurePreferencesRepository {
     suspend fun saveJellyseerrCookie(cookie: String)
     suspend fun saveJellyseerrUsername(username: String)
     suspend fun clearJellyseerrAuthData()
+
+    suspend fun saveAudiobookshelfAuthForUser(
+        jellyfinServerId: String,
+        jellyfinUserId: UUID,
+        serverUrl: String,
+        accessToken: String,
+        absUserId: String,
+        username: String
+    )
+
+    suspend fun switchAudiobookshelfContext(jellyfinServerId: String, jellyfinUserId: UUID): Boolean
+    fun clearActiveAudiobookshelfCache()
+
+    suspend fun getAudiobookshelfAuthForUser(
+        jellyfinServerId: String,
+        jellyfinUserId: UUID
+    ): AudiobookshelfAuthData?
+
+    suspend fun clearAudiobookshelfAuthForUser(jellyfinServerId: String, jellyfinUserId: UUID)
+
+    fun getCachedAudiobookshelfServerUrl(): String?
+    fun getCachedAudiobookshelfToken(): String?
+
+    suspend fun hasValidAudiobookshelfAuth(): Boolean
 }
+
+data class AudiobookshelfAuthData(
+    val serverUrl: String,
+    val accessToken: String,
+    val absUserId: String,
+    val username: String
+)

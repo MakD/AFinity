@@ -47,6 +47,7 @@ import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.segments.SegmentsRepository
+import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -82,7 +83,8 @@ class PlayerViewModel @Inject constructor(
     private val playlistManager: PlaylistManager,
     private val downloadRepository: JellyfinDownloadRepository,
     private val appDataRepository: AppDataRepository,
-    private val apiClient: ApiClient
+    private val apiClient: ApiClient,
+    private val audiobookshelfPlayer: AudiobookshelfPlayer
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
@@ -643,6 +645,16 @@ class PlayerViewModel @Inject constructor(
 
     fun getPlayerView(): PlayerView? = playerView
 
+    private fun stopAudiobookshelfIfPlaying() {
+        if (audiobookshelfPlayer.isPlaying()) {
+            Timber.d("Stopping Audiobookshelf playback before starting Jellyfin playback")
+            audiobookshelfPlayer.pause()
+            viewModelScope.launch {
+                audiobookshelfPlayer.closeSession()
+            }
+        }
+    }
+
     private suspend fun loadMedia(
         item: AfinityItem,
         mediaSourceId: String,
@@ -650,6 +662,7 @@ class PlayerViewModel @Inject constructor(
         subtitleStreamIndex: Int?,
         startPositionMs: Long
     ) {
+        stopAudiobookshelfIfPlaying()
         try {
             val fullItem: AfinityItem = if (item.sources.isEmpty()) {
                 Timber.d("Item ${item.name} has no sources, fetching full details...")
@@ -848,6 +861,7 @@ class PlayerViewModel @Inject constructor(
         channelName: String,
         streamUrl: String
     ) {
+        stopAudiobookshelfIfPlaying()
         mpvLiveAutoHideTriggered = false
 
         try {
