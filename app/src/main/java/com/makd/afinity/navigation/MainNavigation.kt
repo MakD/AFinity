@@ -690,7 +690,6 @@ fun MainNavigation(
 
             composable(Destination.AUDIOBOOKSHELF_LIBRARIES_ROUTE) {
                 AudiobookshelfLibrariesScreen(
-                    onNavigateBack = { navController.popBackStack() },
                     onNavigateToLibrary = { libraryId ->
                         navController.navigate(
                             Destination.createAudiobookshelfLibraryRoute(
@@ -703,7 +702,9 @@ fun MainNavigation(
                     },
                     onNavigateToLogin = {
                         navController.navigate(Destination.createAudiobookshelfLoginRoute())
-                    }
+                    },
+                    navController = navController,
+                    mainUiState = mainUiState
                 )
             }
 
