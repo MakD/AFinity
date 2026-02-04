@@ -42,8 +42,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -194,7 +197,7 @@ fun ItemHeaderContent(
 
                 item.media.metadata.authorName?.let { author ->
                     Text(
-                        text = author,
+                        text = "by $author",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Medium
@@ -277,6 +280,33 @@ fun ItemHeaderContent(
 
         item.media.metadata.description?.let { description ->
             ExpandableSynopsis(description = description)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        item.media.metadata.narratorName?.let { narrator ->
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(
+                        style = SpanStyle(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Normal
+                        )
+                    ) {
+                        append("Narrated by: ")
+                    }
+
+                    withStyle(
+                        style = SpanStyle(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Medium
+                        )
+                    ) {
+                        append(narrator)
+                    }
+                },
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
