@@ -41,8 +41,8 @@ enum class Destination(
     AUDIOBOOKS(
         route = "audiobookshelf/libraries",
         title = "Audiobooks",
-        selectedIconRes = R.drawable.ic_headphones_filled,
-        unselectedIconRes = R.drawable.ic_headphones
+        selectedIconRes = R.drawable.ic_books_filled,
+        unselectedIconRes = R.drawable.ic_books
     ),
     LIVE_TV(
         route = "live_tv",

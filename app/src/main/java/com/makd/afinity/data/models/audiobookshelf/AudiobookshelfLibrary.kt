@@ -2,6 +2,7 @@ package com.makd.afinity.data.models.audiobookshelf
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 
 @Serializable
 data class Library(
@@ -158,6 +159,48 @@ data class LibraryItemsResponse(
 )
 
 @Serializable
+data class AudiobookshelfSeries(
+    @SerialName("id")
+    val id: String,
+    @SerialName("name")
+    val name: String,
+    @SerialName("nameIgnorePrefix")
+    val nameIgnorePrefix: String? = null,
+    @SerialName("description")
+    val description: String? = null,
+    @SerialName("addedAt")
+    val addedAt: Long? = null,
+    @SerialName("updatedAt")
+    val updatedAt: Long? = null,
+    @SerialName("libraryId")
+    val libraryId: String? = null,
+    @SerialName("books")
+    val books: List<LibraryItem> = emptyList()
+)
+
+@Serializable
+data class SeriesListResponse(
+    @SerialName("results")
+    val results: List<AudiobookshelfSeries>,
+    @SerialName("total")
+    val total: Int,
+    @SerialName("limit")
+    val limit: Int,
+    @SerialName("page")
+    val page: Int,
+    @SerialName("sortBy")
+    val sortBy: String? = null,
+    @SerialName("sortDesc")
+    val sortDesc: Boolean? = null,
+    @SerialName("filterBy")
+    val filterBy: String? = null,
+    @SerialName("minified")
+    val minified: Boolean? = null,
+    @SerialName("include")
+    val include: String? = null
+)
+
+@Serializable
 data class PersonalizedView(
     @SerialName("id")
     val id: String,
@@ -168,10 +211,5 @@ data class PersonalizedView(
     @SerialName("type")
     val type: String,
     @SerialName("entities")
-    val entities: List<LibraryItem>
-)
-
-@Serializable
-data class PersonalizedResponse(
-    val items: List<PersonalizedView>
+    val entities: JsonArray = JsonArray(emptyList())
 )

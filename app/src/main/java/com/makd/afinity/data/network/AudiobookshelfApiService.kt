@@ -14,6 +14,7 @@ import com.makd.afinity.data.models.audiobookshelf.LoginResponse
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.MediaProgressSyncData
 import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
+import com.makd.afinity.data.models.audiobookshelf.SeriesListResponse
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSessionRequest
 import com.makd.afinity.data.models.audiobookshelf.ProgressUpdateRequest
@@ -57,6 +58,18 @@ interface AudiobookshelfApiService {
         @Query("include") include: String? = null,
         @Query("collapseseries") collapseseries: Int? = null
     ): Response<LibraryItemsResponse>
+
+    @GET("api/libraries/{libraryId}/series")
+    suspend fun getSeries(
+        @Path("libraryId") id: String,
+        @Query("sort") sort: String = "name",
+        @Query("desc") desc: Int = 0,
+        @Query("filter") filter: String = "all",
+        @Query("limit") limit: Int = 100,
+        @Query("page") page: Int = 0,
+        @Query("minified") minified: Int = 1,
+        @Query("include") include: String = "progress"
+    ): Response<SeriesListResponse>
 
     @GET("api/libraries/{libraryId}/personalized")
     suspend fun getPersonalized(

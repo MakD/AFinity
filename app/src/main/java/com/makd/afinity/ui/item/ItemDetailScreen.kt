@@ -1,7 +1,10 @@
+@file:OptIn(UnstableApi::class)
+
 package com.makd.afinity.ui.item
 
 import android.content.Context
 import android.content.res.Configuration
+import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import androidx.paging.PagingData
 import com.makd.afinity.R

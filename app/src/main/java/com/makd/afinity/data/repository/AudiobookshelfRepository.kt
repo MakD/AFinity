@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository
 
+import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
@@ -61,6 +62,8 @@ interface AudiobookshelfRepository {
     suspend fun getItemDetails(itemId: String): Result<LibraryItem>
 
     suspend fun searchLibrary(libraryId: String, query: String): Result<SearchResponse>
+
+    suspend fun getSeries(libraryId: String, limit: Int = 100, page: Int = 0): Result<List<AudiobookshelfSeries>>
 
     suspend fun getPersonalized(libraryId: String): Result<List<PersonalizedView>>
 

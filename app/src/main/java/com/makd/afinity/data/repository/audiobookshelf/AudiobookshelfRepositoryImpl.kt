@@ -7,6 +7,7 @@ import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
+import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.DeviceInfo
 import com.makd.afinity.data.models.audiobookshelf.Library
@@ -447,6 +448,35 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to search library")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getSeries(
+        libraryId: String,
+        limit: Int,
+        page: Int
+    ): Result<List<AudiobookshelfSeries>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getSeries(
+                    id = libraryId,
+                    limit = limit,
+                    page = page
+                )
+
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!.results)
+                } else {
+                    Result.failure(Exception("Failed to fetch series: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get series for library $libraryId")
                 Result.failure(e)
             }
         }
