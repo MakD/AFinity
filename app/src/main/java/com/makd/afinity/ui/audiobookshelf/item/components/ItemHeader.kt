@@ -1,34 +1,57 @@
 package com.makd.afinity.ui.audiobookshelf.item.components
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
-import kotlin.time.Duration.Companion.seconds
+import com.makd.afinity.ui.utils.htmlToAnnotatedString
 
 @Composable
 fun ItemHeader(
@@ -38,28 +61,106 @@ fun ItemHeader(
     onPlay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            val coverUrl = if (serverUrl != null && item.media.coverPath != null) {
-                "$serverUrl/api/items/${item.id}/cover"
-            } else null
+    val coverUrl = if (serverUrl != null && item.media.coverPath != null) {
+        "$serverUrl/api/items/${item.id}/cover"
+    } else null
 
+    Box(modifier = modifier.fillMaxWidth()) {
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .height(450.dp)) {
+            ItemHeroBackground(coverUrl = coverUrl)
+        }
+
+        ItemHeaderContent(
+            item = item,
+            progress = progress,
+            coverUrl = coverUrl,
+            onPlay = onPlay
+        )
+    }
+}
+
+@Composable
+fun ItemHeroBackground(
+    coverUrl: String?,
+    modifier: Modifier = Modifier
+) {
+    if (coverUrl != null) {
+        Box(modifier = modifier.fillMaxSize()) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(coverUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(radius = 30.dp)
+                    .background(Color.Black),
+                alpha = 0.6f,
+                contentScale = ContentScale.Crop
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                MaterialTheme.colorScheme.surface
+                            ),
+                            startY = 100f
+                        )
+                    )
+            )
+        }
+    } else {
+        Box(modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface))
+    }
+}
+
+@Composable
+fun ItemHeaderContent(
+    item: LibraryItem,
+    progress: MediaProgress?,
+    coverUrl: String?,
+    onPlay: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(modifier = Modifier.statusBarsPadding())
+        Spacer(modifier = Modifier.height(140.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom
+        ) {
             if (coverUrl != null) {
                 AsyncImage(
                     model = coverUrl,
                     contentDescription = "Cover",
                     modifier = Modifier
-                        .size(140.dp)
-                        .clip(MaterialTheme.shapes.medium),
+                        .width(160.dp)
+                        .aspectRatio(1f)
+                        .shadow(12.dp, RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Crop
                 )
             } else {
                 Card(
-                    modifier = Modifier.size(140.dp),
+                    modifier = Modifier
+                        .width(160.dp)
+                        .aspectRatio(1f),
+                    shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                     )
@@ -69,127 +170,196 @@ fun ItemHeader(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(bottom = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                item.media.metadata.seriesName?.let { series ->
+                    Text(
+                        text = series.uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
                 Text(
                     text = item.media.metadata.title ?: "Unknown Title",
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 2,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 item.media.metadata.authorName?.let { author ->
                     Text(
-                        text = "by $author",
+                        text = author,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
                     )
                 }
-
-                item.media.metadata.narratorName?.let { narrator ->
-                    Text(
-                        text = "Narrated by $narrator",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                item.media.metadata.seriesName?.let { series ->
-                    Text(
-                        text = series,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
 
                 item.media.duration?.let { duration ->
-                    Text(
-                        text = formatDuration(duration),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = formatDuration(duration),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        if (progress != null && progress.progress > 0) {
+                            Text(
+                                text = " • ",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.width(4.dp))
+
+                            CircularProgressIndicator(
+                                progress = { progress.progress.toFloat() },
+                                modifier = Modifier.size(12.dp),
+                                color = Color(0xFFFFC107),
+                                strokeWidth = 2.dp,
+                                trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                            )
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            val remainingSeconds = progress.duration - progress.currentTime
+                            Text(
+                                text = "${formatDuration(remainingSeconds)} left",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        progress?.let { prog ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                LinearProgressIndicator(
-                    progress = { prog.progress.toFloat() },
-                    modifier = Modifier.fillMaxWidth(),
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = formatDuration(prog.currentTime),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "${(prog.progress * 100).toInt()}% complete",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = formatDuration(prog.duration),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = onPlay,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .height(56.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
         ) {
-            Icon(
-                imageVector = Icons.Filled.PlayArrow,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (progress != null && progress.progress > 0) "Continue Listening" else "Play",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        item.media.metadata.description?.let { description ->
+            ExpandableSynopsis(description = description)
+        }
+    }
+}
+
+@Composable
+private fun ExpandableSynopsis(
+    description: String,
+    modifier: Modifier = Modifier
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    var isEllipsized by remember { mutableStateOf(false) }
+
+    val containsHtml = remember(description) {
+        description.contains("<", ignoreCase = true) &&
+                (description.contains("href=", ignoreCase = true) ||
+                        description.contains("<br", ignoreCase = true) ||
+                        description.contains("<p", ignoreCase = true) ||
+                        description.contains("<i>", ignoreCase = true) ||
+                        description.contains("<b>", ignoreCase = true))
+    }
+
+    val linkColor = MaterialTheme.colorScheme.primary
+    val annotatedText = remember(description, linkColor) {
+        if (containsHtml) htmlToAnnotatedString(description, linkColor) else null
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "Synopsis",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        val textStyle = MaterialTheme.typography.bodyMedium
+        val textColor = MaterialTheme.colorScheme.onSurfaceVariant
+        val lineHeight = 20.sp
+        val maxLines = if (isExpanded) Int.MAX_VALUE else 4
+        val overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
+        val animModifier = Modifier.animateContentSize()
+
+        if (containsHtml && annotatedText != null) {
             Text(
-                text = if (progress != null && progress.progress > 0) "Continue" else "Play"
+                text = annotatedText,
+                style = textStyle,
+                color = textColor,
+                lineHeight = lineHeight,
+                maxLines = maxLines,
+                overflow = overflow,
+                modifier = animModifier,
+                onTextLayout = { result ->
+                    if (!isExpanded) isEllipsized = result.hasVisualOverflow
+                }
+            )
+        } else {
+            Text(
+                text = description,
+                style = textStyle,
+                color = textColor,
+                lineHeight = lineHeight,
+                maxLines = maxLines,
+                overflow = overflow,
+                modifier = animModifier,
+                onTextLayout = { result ->
+                    if (!isExpanded) isEllipsized = result.hasVisualOverflow
+                }
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        item.media.metadata.description?.let { description ->
-            Column(
+        if (isEllipsized || isExpanded) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = if (isExpanded) "Show Less" else "Show More",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text(
-                    text = "Description",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { isExpanded = !isExpanded }
+                    .padding(vertical = 4.dp)
+            )
         }
     }
 }
@@ -198,11 +368,5 @@ private fun formatDuration(seconds: Double): String {
     val totalSeconds = seconds.toLong()
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
-    val secs = totalSeconds % 60
-
-    return if (hours > 0) {
-        "${hours}h ${minutes}m"
-    } else {
-        "${minutes}m ${secs}s"
-    }
+    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }
