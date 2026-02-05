@@ -3,14 +3,19 @@ package com.makd.afinity.player.audiobookshelf
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.annotation.OptIn
-import androidx.media3.common.AudioAttributes
-import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.makd.afinity.MainActivity
+import com.makd.afinity.R
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -23,22 +28,21 @@ class AudiobookshelfPlayerService : MediaSessionService() {
     @Inject
     lateinit var playbackManager: AudiobookshelfPlaybackManager
 
+    @Inject
+    lateinit var networkConnectivityMonitor: NetworkConnectivityMonitor
+
     private var mediaSession: MediaSession? = null
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
 
-        val player = ExoPlayer.Builder(this)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
-                    .setUsage(C.USAGE_MEDIA)
-                    .build(),
-                true
-            )
-            .setHandleAudioBecomingNoisy(true)
-            .build()
+        audiobookshelfPlayer.initialize()
+
+        val player = audiobookshelfPlayer.exoPlayer
+            ?: throw IllegalStateException("Player must be initialized")
 
         val sessionActivityPendingIntent = PendingIntent.getActivity(
             this,
@@ -51,6 +55,16 @@ class AudiobookshelfPlayerService : MediaSessionService() {
             .setSessionActivity(sessionActivityPendingIntent)
             .build()
 
+        val notificationProvider = DefaultMediaNotificationProvider(this)
+        notificationProvider.setSmallIcon(R.drawable.ic_headphones_filled)
+        setMediaNotificationProvider(notificationProvider)
+
+        serviceScope.launch {
+            networkConnectivityMonitor.isNetworkAvailable.collect { isConnected ->
+                Timber.d("Service Network Monitor: Connected = $isConnected")
+            }
+        }
+
         Timber.d("AudiobookshelfPlayerService created")
     }
 
@@ -60,12 +74,12 @@ class AudiobookshelfPlayerService : MediaSessionService() {
 
     override fun onDestroy() {
         mediaSession?.run {
-            player.release()
             release()
         }
         mediaSession = null
 
         Timber.d("AudiobookshelfPlayerService destroyed")
+        serviceScope.cancel()
         super.onDestroy()
     }
 

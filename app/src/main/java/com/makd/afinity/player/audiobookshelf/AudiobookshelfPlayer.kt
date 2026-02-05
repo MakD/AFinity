@@ -1,7 +1,9 @@
 package com.makd.afinity.player.audiobookshelf
 
 import android.content.Context
+import android.content.Intent
 import androidx.annotation.OptIn
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -22,6 +24,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.net.toUri
 
 @Singleton
 class AudiobookshelfPlayer @Inject constructor(
@@ -31,7 +34,8 @@ class AudiobookshelfPlayer @Inject constructor(
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val securePreferencesRepository: SecurePreferencesRepository
 ) {
-    private var exoPlayer: ExoPlayer? = null
+    var exoPlayer: ExoPlayer? = null
+        private set
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var positionUpdateJob: Job? = null
     private var sleepTimerJob: Job? = null
@@ -108,11 +112,19 @@ class AudiobookshelfPlayer @Inject constructor(
         exoPlayer = ExoPlayer.Builder(context)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
             .setHandleAudioBecomingNoisy(true)
+            .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
             .apply {
                 addListener(playerListener)
                 playWhenReady = false
             }
+
+        try {
+            val intent = Intent(context, AudiobookshelfPlayerService::class.java)
+            context.startService(intent)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to start AudiobookshelfPlayerService")
+        }
 
         Timber.d("AudiobookshelfPlayer initialized")
     }
@@ -135,8 +147,12 @@ class AudiobookshelfPlayer @Inject constructor(
     }
 
     suspend fun loadSession(session: PlaybackSession, baseUrl: String) {
-        release()
+        stopPositionUpdates()
+        cancelSleepTimer()
         initialize()
+
+        exoPlayer?.stop()
+        exoPlayer?.clearMediaItems()
 
         currentSession = session
         serverUrl = baseUrl
@@ -157,9 +173,19 @@ class AudiobookshelfPlayer @Inject constructor(
                 "$baseUrl${track.contentUrl}"
             }
 
+            val artUrl = "$baseUrl/api/items/${session.libraryItemId}/cover?token=${securePreferencesRepository.getCachedAudiobookshelfToken()}"
+
+            val metadata = androidx.media3.common.MediaMetadata.Builder()
+                .setTitle(session.displayTitle)
+                .setArtist(session.displayAuthor)
+                .setArtworkUri(artUrl.toUri())
+                .setDisplayTitle(session.displayTitle)
+                .build()
+
             MediaItem.Builder()
                 .setUri(url)
                 .setMediaId(track.index.toString())
+                .setMediaMetadata(metadata)
                 .build()
         }
 
