@@ -275,6 +275,7 @@
     <string name="track_none">None</string>
     <string name="track_number_fmt">Track %1$d</string>
     <string name="audio_channel_fmt"> (%1$dch)</string>
+    <string name="playback_channel_name">AFinity Audiobook Playback</string>
 
     <string name="cd_logo">Logo</string>
     <string name="cd_series_logo">Series Logo</string>

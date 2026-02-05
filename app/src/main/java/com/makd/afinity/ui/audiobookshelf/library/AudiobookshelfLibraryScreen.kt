@@ -17,10 +17,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,9 +33,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.ui.audiobookshelf.library.components.AudiobookCard
 import com.makd.afinity.ui.audiobookshelf.library.components.PodcastCard
@@ -66,7 +64,7 @@ fun AudiobookshelfLibraryScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            painterResource(id = R.drawable.ic_chevron_left),
                             contentDescription = "Back"
                         )
                     }
@@ -84,15 +82,24 @@ fun AudiobookshelfLibraryScreen(
                 onValueChange = viewModel::search,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(
+                        horizontal = 16.dp,
+                        vertical = 8.dp
+                    ),
                 placeholder = { Text("Search...") },
                 leadingIcon = {
-                    Icon(Icons.Filled.Search, contentDescription = null)
+                    Icon(
+                        painterResource(id = R.drawable.ic_search),
+                        contentDescription = null
+                    )
                 },
                 trailingIcon = {
                     if (uiState.searchQuery.isNotEmpty()) {
                         IconButton(onClick = viewModel::clearSearch) {
-                            Icon(Icons.Filled.Clear, contentDescription = "Clear search")
+                            Icon(
+                                painterResource(id = R.drawable.ic_clear),
+                                contentDescription = "Clear search"
+                            )
                         }
                     } else if (uiState.isSearching) {
                         CircularProgressIndicator(

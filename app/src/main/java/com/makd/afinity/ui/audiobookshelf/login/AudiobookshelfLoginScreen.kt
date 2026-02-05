@@ -17,12 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -53,6 +48,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.makd.afinity.R
 import com.makd.afinity.data.repository.AudiobookshelfConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,7 +75,7 @@ fun AudiobookshelfLoginScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            painterResource(id = R.drawable.ic_chevron_left),
                             contentDescription = "Back"
                         )
                     }
@@ -159,7 +155,7 @@ private fun ConnectedCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Filled.CheckCircle,
+                    painterResource(id = R.drawable.ic_circle_check),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
@@ -255,7 +251,7 @@ private fun LoginForm(
                 trailingIcon = {
                     if (uiState.connectionTestSuccess) {
                         Icon(
-                            imageVector = Icons.Filled.Check,
+                            painterResource(id = R.drawable.ic_check),
                             contentDescription = "Connected",
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -298,7 +294,9 @@ private fun LoginForm(
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            painter = if (passwordVisible) painterResource(id = R.drawable.ic_visibility) else painterResource(
+                                id = R.drawable.ic_visibility_off
+                            ),
                             contentDescription = if (passwordVisible) "Hide password" else "Show password"
                         )
                     }

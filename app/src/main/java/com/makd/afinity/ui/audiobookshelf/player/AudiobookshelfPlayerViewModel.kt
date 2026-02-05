@@ -100,7 +100,6 @@ class AudiobookshelfPlayerViewModel @Inject constructor(
 
     fun setPlaybackSpeed(speed: Float) {
         audiobookshelfPlayer.setPlaybackSpeed(speed)
-        dismissSpeedSelector()
     }
 
     fun setSleepTimer(minutes: Int) {

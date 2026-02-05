@@ -12,10 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,9 +24,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.makd.afinity.R
 
 @Composable
 fun MiniPlayer(
@@ -120,7 +118,9 @@ fun MiniPlayer(
                         )
                     } else {
                         Icon(
-                            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            painter = if (isPlaying) painterResource(id = R.drawable.ic_player_pause_filled) else painterResource(
+                                id = R.drawable.ic_player_play_filled
+                            ),
                             contentDescription = if (isPlaying) "Pause" else "Play",
                             modifier = Modifier.size(28.dp)
                         )
@@ -129,7 +129,7 @@ fun MiniPlayer(
 
                 IconButton(onClick = onCloseClick) {
                     Icon(
-                        imageVector = Icons.Filled.Close,
+                        painter = painterResource(id = R.drawable.ic_close),
                         contentDescription = "Close player",
                         modifier = Modifier.size(24.dp)
                     )
