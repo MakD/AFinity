@@ -343,37 +343,58 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val response = apiService.get().getLibraryItems(
-                    id = libraryId,
-                    limit = limit,
-                    page = page,
-                    include = "progress"
-                )
+                val allItems = mutableListOf<LibraryItem>()
+                var currentPage = 0
+                var totalFetched = 0
+                var total = Int.MAX_VALUE
+                var isFirstPage = true
 
-                if (response.isSuccessful && response.body() != null) {
-                    val items = response.body()!!.results
-                    val entities = items.map { item ->
-                        item.toEntity(currentServerId, currentUserId.toString())
-                    }
+                while (totalFetched < total) {
+                    val response = apiService.get().getLibraryItems(
+                        id = libraryId,
+                        limit = limit,
+                        page = currentPage,
+                        include = "progress"
+                    )
 
-                    if (page == 0) {
-                        audiobookshelfDao.deleteItemsByLibrary(
-                            currentServerId,
-                            currentUserId.toString(),
-                            libraryId
-                        )
-                    }
-                    audiobookshelfDao.insertItems(entities)
-                    items.forEach { item ->
-                        item.userMediaProgress?.let { progress ->
-                            cacheProgress(progress)
+                    if (response.isSuccessful && response.body() != null) {
+                        val body = response.body()!!
+                        total = body.total
+                        val items = body.results
+
+                        val entities = items.map { item ->
+                            item.toEntity(currentServerId, currentUserId.toString())
                         }
-                    }
 
-                    Result.success(items)
-                } else {
-                    Result.failure(Exception("Failed to fetch items: ${response.message()}"))
+                        if (isFirstPage) {
+                            audiobookshelfDao.deleteItemsByLibrary(
+                                currentServerId,
+                                currentUserId.toString(),
+                                libraryId
+                            )
+                            isFirstPage = false
+                        }
+                        audiobookshelfDao.insertItems(entities)
+                        items.forEach { item ->
+                            item.userMediaProgress?.let { progress ->
+                                cacheProgress(progress)
+                            }
+                        }
+
+                        allItems.addAll(items)
+                        totalFetched += items.size
+                        currentPage++
+
+                        Timber.d("Fetched items page $currentPage: ${items.size} items, total: $total")
+
+                        if (items.isEmpty()) break
+                    } else {
+                        return@withContext Result.failure(Exception("Failed to fetch items: ${response.message()}"))
+                    }
                 }
+
+                Timber.d("Fetched all ${allItems.size} items for library $libraryId")
+                Result.success(allItems)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh library items")
                 Result.failure(e)
@@ -464,17 +485,35 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val response = apiService.get().getSeries(
-                    id = libraryId,
-                    limit = limit,
-                    page = page
-                )
+                val allSeries = mutableListOf<AudiobookshelfSeries>()
+                var currentPage = 0
+                var totalFetched = 0
+                var total = Int.MAX_VALUE
 
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!.results)
-                } else {
-                    Result.failure(Exception("Failed to fetch series: ${response.message()}"))
+                while (totalFetched < total) {
+                    val response = apiService.get().getSeries(
+                        id = libraryId,
+                        limit = limit,
+                        page = currentPage
+                    )
+
+                    if (response.isSuccessful && response.body() != null) {
+                        val body = response.body()!!
+                        total = body.total
+                        allSeries.addAll(body.results)
+                        totalFetched += body.results.size
+                        currentPage++
+
+                        Timber.d("Fetched series page $currentPage: ${body.results.size} items, total: $total")
+
+                        if (body.results.isEmpty()) break
+                    } else {
+                        return@withContext Result.failure(Exception("Failed to fetch series: ${response.message()}"))
+                    }
                 }
+
+                Timber.d("Fetched all ${allSeries.size} series for library $libraryId")
+                Result.success(allSeries)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get series for library $libraryId")
                 Result.failure(e)
