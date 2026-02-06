@@ -231,7 +231,7 @@ fun SettingsScreen(
                         )
                         SettingsDivider()
                         SettingsSwitchItem(
-                            icon = painterResource(id = R.drawable.ic_request_seerr_dark),
+                            icon = painterResource(id = R.drawable.ic_seerr_logo),
                             title = stringResource(R.string.pref_discovery_requests),
                             subtitle = if (isJellyseerrAuthenticated) stringResource(R.string.discovery_connected) else stringResource(
                                 R.string.discovery_connect
@@ -244,7 +244,7 @@ fun SettingsScreen(
                         )
                         SettingsDivider()
                         SettingsSwitchItem(
-                            icon = painterResource(id = R.drawable.ic_headphones),
+                            icon = painterResource(id = R.drawable.ic_audiobookshelf_light),
                             title = stringResource(R.string.pref_audiobookshelf),
                             subtitle = if (isAudiobookshelfAuthenticated) stringResource(R.string.audiobookshelf_connected) else stringResource(
                                 R.string.audiobookshelf_connect
@@ -644,7 +644,7 @@ private fun AudiobookshelfLogoutConfirmationDialog(onConfirm: () -> Unit, onDism
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                painter = painterResource(id = R.drawable.ic_headphones),
+                painter = painterResource(id = R.drawable.ic_audiobookshelf_light),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -676,7 +676,7 @@ private fun JellyseerrLogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss:
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                painter = painterResource(id = R.drawable.ic_request_seerr_dark),
+                painter = painterResource(id = R.drawable.ic_seerr_logo),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary
             )

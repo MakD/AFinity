@@ -13,6 +13,6 @@
         android:strokeColor="@color/white"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:strokeWidth="1.5"
+        android:strokeWidth="1.7"
         android:pathData="M10,9v6l5,-3Z" />
 </vector>
