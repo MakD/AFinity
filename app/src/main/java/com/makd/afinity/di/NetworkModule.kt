@@ -358,7 +358,17 @@ object NetworkModule {
                     }
                     .build()
 
-                chain.proceed(newRequest)
+                val response = chain.proceed(newRequest)
+                if (newUrl.encodedPath.contains("/play")) {
+                    val responseBody = response.body
+                    val source = responseBody?.source()
+                    source?.request(Long.MAX_VALUE)
+                    val buffer = source?.buffer?.clone()
+                    val responseString = buffer?.readUtf8()
+                    timber.log.Timber.d("ABS Play Response [${response.code}]: $responseString")
+                }
+
+                response
             }
             .build()
     }

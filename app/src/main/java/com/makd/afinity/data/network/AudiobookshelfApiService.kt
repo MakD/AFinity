@@ -130,7 +130,7 @@ interface AudiobookshelfApiService {
     suspend fun syncPlaybackSession(
         @Path("sessionId") id: String,
         @Body syncData: MediaProgressSyncData
-    ): Response<SyncResponse>
+    ): Response<Unit>
 
     @POST("api/session/{sessionId}/close")
     suspend fun closePlaybackSession(

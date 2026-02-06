@@ -65,31 +65,87 @@ class AudiobookshelfPlayer @Inject constructor(
             val controller = getConnectedController() ?: return@launch
 
             val token = securePreferencesRepository.getCachedAudiobookshelfToken()
-            playbackManager.setSession(session, baseUrl, token)
+            val isPodcastWithoutEpisode =
+                session.audioTracks.isNullOrEmpty() && session.mediaType == "podcast"
+            val episodes = session.libraryItem?.media?.episodes ?: emptyList()
 
-            val audioTracks = session.audioTracks
-            if (audioTracks.isNullOrEmpty()) {
-                Timber.e("No audio tracks found in session")
+            val audioTracks = if (isPodcastWithoutEpisode) {
+                val allTracks = episodes.mapNotNull { episode ->
+                    episode.audioTrack?.let { track ->
+                        track.copy(title = episode.title)
+                    }
+                }
+                if (allTracks.isNotEmpty()) {
+                    Timber.d("Loading ${allTracks.size} episodes for podcast playlist")
+                    allTracks
+                } else {
+                    Timber.e("No audio tracks found in any episodes")
+                    return@launch
+                }
+            } else if (session.audioTracks.isNullOrEmpty()) {
+                Timber.e("No audio tracks found in session. Session data: $session")
                 return@launch
+            } else {
+                session.audioTracks
             }
 
-            val mediaItems = audioTracks.map { track ->
+            val enhancedSession = if (isPodcastWithoutEpisode && episodes.isNotEmpty()) {
+                var accumulatedTime = 0.0
+                val episodeChapters = episodes.mapNotNull { episode ->
+                    episode.audioTrack?.let {
+                        val chapter = com.makd.afinity.data.models.audiobookshelf.BookChapter(
+                            id = episodes.indexOf(episode),
+                            start = accumulatedTime,
+                            end = accumulatedTime + (episode.duration ?: 0.0),
+                            title = episode.title
+                        )
+                        accumulatedTime += episode.duration ?: 0.0
+                        chapter
+                    }
+                }
+                val totalDuration = episodes.sumOf { it.duration ?: 0.0 }
+
+                session.copy(
+                    audioTracks = audioTracks,
+                    displayTitle = session.mediaMetadata?.title ?: session.displayTitle
+                    ?: "Podcast",
+                    displayAuthor = session.mediaMetadata?.authorName ?: session.displayAuthor,
+                    duration = totalDuration,
+                    chapters = episodeChapters
+                )
+            } else {
+                session
+            }
+
+            playbackManager.setSession(enhancedSession, baseUrl, token)
+
+            val mediaItems = audioTracks.mapIndexed { index, track ->
                 val url = if (track.contentUrl?.startsWith("http") == true) track.contentUrl
                 else "$baseUrl${track.contentUrl}"
 
                 val artUrl = if (baseUrl.isNotEmpty()) {
-                    "$baseUrl/api/items/${session.libraryItemId}/cover?token=$token"
-                } else session.coverPath
+                    "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?token=$token"
+                } else enhancedSession.coverPath
+
+                val itemTitle = if (isPodcastWithoutEpisode && track.title != null) {
+                    track.title
+                } else {
+                    enhancedSession.displayTitle ?: enhancedSession.mediaMetadata?.title
+                    ?: "Unknown"
+                }
 
                 val metadata = MediaMetadata.Builder()
-                    .setTitle(session.displayTitle)
-                    .setArtist(session.displayAuthor)
+                    .setTitle(itemTitle)
+                    .setArtist(
+                        enhancedSession.displayAuthor ?: enhancedSession.mediaMetadata?.authorName
+                        ?: ""
+                    )
                     .setArtworkUri(Uri.parse(artUrl))
                     .build()
 
                 MediaItem.Builder()
                     .setUri(url)
-                    .setMediaId(track.index.toString())
+                    .setMediaId(index.toString())
                     .setMediaMetadata(metadata)
                     .build()
             }
@@ -176,6 +232,28 @@ class AudiobookshelfPlayer @Inject constructor(
 
     fun closeSession() {
         cancelSleepTimer()
+        val state = playbackManager.playbackState.value
+        val sessionId = state.sessionId
+        if (sessionId != null) {
+            scope.launch {
+                try {
+                    val result = audiobookshelfRepository.closePlaybackSession(
+                        sessionId = sessionId,
+                        currentTime = state.currentTime,
+                        timeListened = state.currentTime,
+                        duration = state.duration
+                    )
+                    if (result.isSuccess) {
+                        Timber.d("Session closed on server: $sessionId")
+                    } else {
+                        Timber.e("Failed to close session on server: ${result.exceptionOrNull()?.message}")
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Error closing session on server")
+                }
+            }
+        }
+
         mediaController?.stop()
         mediaController?.clearMediaItems()
 
@@ -184,7 +262,7 @@ class AudiobookshelfPlayer @Inject constructor(
         controllerFuture = null
 
         playbackManager.clearSession()
-        Timber.d("Session closed")
+        Timber.d("Session closed locally")
     }
 
     fun release() {

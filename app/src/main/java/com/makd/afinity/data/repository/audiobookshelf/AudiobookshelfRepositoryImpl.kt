@@ -663,8 +663,15 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                 }
 
                 if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
+                    val session = response.body()!!
+                    Timber.d("Playback session received: id=${session.id}, mediaType=${session.mediaType}")
+                    Timber.d("Session displayTitle=${session.displayTitle}, displayAuthor=${session.displayAuthor}")
+                    Timber.d("Session audioTracks=${session.audioTracks?.size ?: 0}, chapters=${session.chapters?.size ?: 0}")
+                    Timber.d("Session episodeId=${session.episodeId}, duration=${session.duration}")
+                    Result.success(session)
                 } else {
+                    val errorBody = response.errorBody()?.string()
+                    Timber.e("Failed to start session: ${response.code()} - ${response.message()}, body=$errorBody")
                     Result.failure(Exception("Failed to start session: ${response.message()}"))
                 }
             } catch (e: Exception) {
