@@ -28,22 +28,19 @@ fun OptimizedContinueWatchingSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
-    Column(
-        modifier = Modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(R.string.home_continue_watching),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         val uniqueItems = items.distinctBy { it.id }
@@ -51,16 +48,13 @@ fun OptimizedContinueWatchingSection(
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = uniqueItems,
-                key = { item -> "continue_${item.id}" }
-            ) { item ->
+            items(items = uniqueItems, key = { item -> "continue_${item.id}" }) { item ->
                 ContinueWatchingCard(
                     item = item,
                     onClick = { onItemClick(item) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -73,22 +67,18 @@ fun OptimizedLatestMoviesSection(
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
-    title: String = stringResource(R.string.home_latest_movies)
+    title: String = stringResource(R.string.home_latest_movies),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
-    Column(
-        modifier = Modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         val uniqueItems = items.distinctBy { it.id }
@@ -96,17 +86,10 @@ fun OptimizedLatestMoviesSection(
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = uniqueItems,
-                key = { item -> "latest_movie_${item.id}" }
-            ) { item ->
-                MediaItemCard(
-                    item = item,
-                    onClick = { onItemClick(item) },
-                    cardWidth = cardWidth
-                )
+            items(items = uniqueItems, key = { item -> "latest_movie_${item.id}" }) { item ->
+                MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
             }
         }
     }
@@ -118,22 +101,18 @@ fun OptimizedLatestTvSeriesSection(
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
-    title: String = stringResource(R.string.home_latest_tv_series)
+    title: String = stringResource(R.string.home_latest_tv_series),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
-    Column(
-        modifier = Modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         val uniqueItems = items.distinctBy { it.id }
@@ -141,17 +120,10 @@ fun OptimizedLatestTvSeriesSection(
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = uniqueItems,
-                key = { item -> "latest_tv_${item.id}" }
-            ) { item ->
-                MediaItemCard(
-                    item = item,
-                    onClick = { onItemClick(item) },
-                    cardWidth = cardWidth
-                )
+            items(items = uniqueItems, key = { item -> "latest_tv_${item.id}" }) { item ->
+                MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
             }
         }
     }

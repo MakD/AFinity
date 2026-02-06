@@ -3,9 +3,9 @@ package com.makd.afinity.data.models.media
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.models.extensions.toAfinityChannel
 import com.makd.afinity.data.repository.JellyfinRepository
+import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import java.util.UUID
 
 interface AfinityItem {
     val id: UUID
@@ -44,9 +44,13 @@ suspend fun BaseItemDto.toAfinityItem(
 }
 
 fun AfinityItem.isDownloading(): Boolean {
-    return sources.filter { it.type == AfinitySourceType.LOCAL }.any { it.path.endsWith(".download") }
+    return sources
+        .filter { it.type == AfinitySourceType.LOCAL }
+        .any { it.path.endsWith(".download") }
 }
 
 fun AfinityItem.isDownloaded(): Boolean {
-    return sources.filter { it.type == AfinitySourceType.LOCAL }.any { !it.path.endsWith(".download") }
+    return sources
+        .filter { it.type == AfinitySourceType.LOCAL }
+        .any { !it.path.endsWith(".download") }
 }

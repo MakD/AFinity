@@ -26,37 +26,31 @@ fun NextUpSection(
     episodes: List<AfinityEpisode>,
     onEpisodeClick: (AfinityEpisode) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
-    Column(
-        modifier = Modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(R.string.home_next_up),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = episodes,
-                key = { episode -> "nextup_${episode.id}" }
-            ) { episode ->
+            items(items = episodes, key = { episode -> "nextup_${episode.id}" }) { episode ->
                 ContinueWatchingCard(
                     item = episode,
                     onClick = { onEpisodeClick(episode) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }

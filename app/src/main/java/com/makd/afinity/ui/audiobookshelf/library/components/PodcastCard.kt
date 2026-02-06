@@ -29,53 +29,47 @@ fun PodcastCard(
     item: LibraryItem,
     serverUrl: String?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            val coverUrl = if (serverUrl != null && item.media.coverPath != null) {
-                "$serverUrl/api/items/${item.id}/cover"
-            } else null
+            val coverUrl =
+                if (serverUrl != null && item.media.coverPath != null) {
+                    "$serverUrl/api/items/${item.id}/cover"
+                } else null
 
             if (coverUrl != null) {
                 AsyncImage(
                     model = coverUrl,
                     contentDescription = "Cover for ${item.media.metadata.title}",
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(MaterialTheme.shapes.small),
-                    contentScale = ContentScale.Crop
+                    modifier = Modifier.size(64.dp).clip(MaterialTheme.shapes.small),
+                    contentScale = ContentScale.Crop,
                 )
             } else {
                 Card(
                     modifier = Modifier.size(64.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                    )
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ),
                 ) {}
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.media.metadata.title ?: "Unknown Podcast",
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 item.media.metadata.authorName?.let { author ->
@@ -84,7 +78,7 @@ fun PodcastCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
 
@@ -92,7 +86,7 @@ fun PodcastCard(
                     Text(
                         text = "$count episodes",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -100,7 +94,7 @@ fun PodcastCard(
             Icon(
                 painterResource(id = R.drawable.ic_chevron_right),
                 contentDescription = "Open podcast",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

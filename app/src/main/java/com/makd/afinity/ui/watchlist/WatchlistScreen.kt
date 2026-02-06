@@ -48,18 +48,18 @@ fun WatchlistScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: WatchlistViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
     val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
-    val selectedEpisodeWatchlistStatus by viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
-    val selectedEpisodeDownloadInfo by viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+    val selectedEpisodeWatchlistStatus by
+        viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
+    val selectedEpisodeDownloadInfo by
+        viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadWatchlist()
-    }
+    LaunchedEffect(Unit) { viewModel.loadWatchlist() }
 
     val portraitWidth = widthSizeClass.portraitWidth
     val landscapeWidth = widthSizeClass.landscapeWidth
@@ -70,10 +70,11 @@ fun WatchlistScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.watchlist_title),
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground
+                        style =
+                            MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                 },
                 onSearchClick = {
@@ -84,18 +85,16 @@ fun WatchlistScreen(
                     val route = Destination.createSettingsRoute()
                     navController.navigate(route)
                 },
-                userProfileImageUrl = mainUiState.userProfileImageUrl
+                userProfileImageUrl = mainUiState.userProfileImageUrl,
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { innerPadding ->
         when {
             uiState.isLoading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
@@ -103,41 +102,38 @@ fun WatchlistScreen(
 
             uiState.error != null -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = uiState.error ?: stringResource(R.string.error_unknown),
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
                     )
                 }
             }
 
-            uiState.movies.isEmpty() && uiState.shows.isEmpty() && uiState.seasons.isEmpty() && uiState.episodes.isEmpty() -> {
+            uiState.movies.isEmpty() &&
+                uiState.shows.isEmpty() &&
+                uiState.seasons.isEmpty() &&
+                uiState.episodes.isEmpty() -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = stringResource(R.string.watchlist_empty),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
             else -> {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     if (uiState.movies.isNotEmpty()) {
                         item {
@@ -145,7 +141,7 @@ fun WatchlistScreen(
                                 title = stringResource(R.string.section_movies),
                                 items = uiState.movies,
                                 onItemClick = onItemClick,
-                                cardWidth = portraitWidth
+                                cardWidth = portraitWidth,
                             )
                         }
                     }
@@ -156,7 +152,7 @@ fun WatchlistScreen(
                                 title = stringResource(R.string.section_tv_shows),
                                 items = uiState.shows,
                                 onItemClick = onItemClick,
-                                cardWidth = portraitWidth
+                                cardWidth = portraitWidth,
                             )
                         }
                     }
@@ -167,7 +163,7 @@ fun WatchlistScreen(
                                 title = stringResource(R.string.section_seasons),
                                 items = uiState.seasons,
                                 onItemClick = onItemClick,
-                                cardWidth = portraitWidth
+                                cardWidth = portraitWidth,
                             )
                         }
                     }
@@ -177,10 +173,8 @@ fun WatchlistScreen(
                             WatchlistEpisodesSection(
                                 title = stringResource(R.string.section_episodes),
                                 episodes = uiState.episodes,
-                                onEpisodeClick = { episode ->
-                                    viewModel.selectEpisode(episode)
-                                },
-                                cardWidth = landscapeWidth
+                                onEpisodeClick = { episode -> viewModel.selectEpisode(episode) },
+                                cardWidth = landscapeWidth,
                             )
                         }
                     }
@@ -194,9 +188,7 @@ fun WatchlistScreen(
             episode = episode,
             isInWatchlist = selectedEpisodeWatchlistStatus,
             downloadInfo = selectedEpisodeDownloadInfo,
-            onDismiss = {
-                viewModel.clearSelectedEpisode()
-            },
+            onDismiss = { viewModel.clearSelectedEpisode() },
             onPlayClick = { episodeToPlay, selection ->
                 viewModel.clearSelectedEpisode()
                 com.makd.afinity.ui.player.PlayerLauncher.launch(
@@ -205,37 +197,23 @@ fun WatchlistScreen(
                     mediaSourceId = selection.mediaSourceId,
                     audioStreamIndex = selection.audioStreamIndex,
                     subtitleStreamIndex = selection.subtitleStreamIndex,
-                    startPositionMs = selection.startPositionMs
+                    startPositionMs = selection.startPositionMs,
                 )
             },
-            onToggleFavorite = {
-                viewModel.toggleEpisodeFavorite(episode)
-            },
-            onToggleWatchlist = {
-                viewModel.toggleEpisodeWatchlist(episode)
-            },
-            onToggleWatched = {
-                viewModel.toggleEpisodeWatched(episode)
-            },
-            onDownloadClick = {
-                viewModel.onDownloadClick()
-            },
-            onPauseDownload = {
-                viewModel.pauseDownload()
-            },
-            onResumeDownload = {
-                viewModel.resumeDownload()
-            },
-            onCancelDownload = {
-                viewModel.cancelDownload()
-            },
+            onToggleFavorite = { viewModel.toggleEpisodeFavorite(episode) },
+            onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(episode) },
+            onToggleWatched = { viewModel.toggleEpisodeWatched(episode) },
+            onDownloadClick = { viewModel.onDownloadClick() },
+            onPauseDownload = { viewModel.pauseDownload() },
+            onResumeDownload = { viewModel.resumeDownload() },
+            onCancelDownload = { viewModel.cancelDownload() },
             onGoToSeries = {
                 viewModel.clearSelectedEpisode()
                 episode.seriesId?.let { seriesId ->
                     val route = Destination.createItemDetailRoute(seriesId.toString())
                     navController.navigate(route)
                 }
-            }
+            },
         )
     }
 }
@@ -245,29 +223,21 @@ private fun WatchlistSection(
     title: String,
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = stringResource(R.string.watchlist_section_header_fmt, title, items.size),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items) { item ->
-                MediaItemCard(
-                    item = item,
-                    onClick = { onItemClick(item) },
-                    cardWidth = cardWidth
-                )
+                MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
             }
         }
     }
@@ -278,28 +248,24 @@ private fun WatchlistEpisodesSection(
     title: String,
     episodes: List<AfinityEpisode>,
     onEpisodeClick: (AfinityEpisode) -> Unit,
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = stringResource(R.string.watchlist_section_header_fmt, title, episodes.size),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(episodes) { episode ->
                 ContinueWatchingCard(
                     item = episode,
                     onClick = { onEpisodeClick(episode) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }

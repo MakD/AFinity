@@ -3,11 +3,11 @@ package com.makd.afinity.player.audiobookshelf
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AudiobookshelfPlaybackManager @Inject constructor() {
@@ -21,31 +21,34 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     fun setSession(session: PlaybackSession, serverUrl: String? = null, token: String? = null) {
         _currentSession.value = session
 
-        val coverUrl = if (serverUrl != null) {
-            val base = "$serverUrl/api/items/${session.libraryItemId}/cover"
-            if (token != null) "$base?token=$token" else base
-        } else {
-            session.coverPath
-        }
+        val coverUrl =
+            if (serverUrl != null) {
+                val base = "$serverUrl/api/items/${session.libraryItemId}/cover"
+                if (token != null) "$base?token=$token" else base
+            } else {
+                session.coverPath
+            }
 
-        _playbackState.value = _playbackState.value.copy(
-            sessionId = session.id,
-            itemId = session.libraryItemId,
-            episodeId = session.episodeId,
-            duration = session.duration,
-            chapters = session.chapters ?: emptyList(),
-            audioTracks = session.audioTracks ?: emptyList(),
-            displayTitle = session.displayTitle ?: "Unknown",
-            displayAuthor = session.displayAuthor,
-            coverUrl = coverUrl
-        )
+        _playbackState.value =
+            _playbackState.value.copy(
+                sessionId = session.id,
+                itemId = session.libraryItemId,
+                episodeId = session.episodeId,
+                duration = session.duration,
+                chapters = session.chapters ?: emptyList(),
+                audioTracks = session.audioTracks ?: emptyList(),
+                displayTitle = session.displayTitle ?: "Unknown",
+                displayAuthor = session.displayAuthor,
+                coverUrl = coverUrl,
+            )
     }
 
     fun updatePosition(currentTime: Double) {
-        _playbackState.value = _playbackState.value.copy(
-            currentTime = currentTime,
-            currentChapter = findCurrentChapter(currentTime)
-        )
+        _playbackState.value =
+            _playbackState.value.copy(
+                currentTime = currentTime,
+                currentChapter = findCurrentChapter(currentTime),
+            )
     }
 
     fun updatePlayingState(isPlaying: Boolean) {
@@ -76,8 +79,9 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     }
 
     fun getNextChapter(): BookChapter? {
-        val currentChapter = _playbackState.value.currentChapter
-            ?: return _playbackState.value.chapters.firstOrNull()
+        val currentChapter =
+            _playbackState.value.currentChapter
+                ?: return _playbackState.value.chapters.firstOrNull()
         val currentIndex = _playbackState.value.chapters.indexOf(currentChapter)
         return _playbackState.value.chapters.getOrNull(currentIndex + 1)
     }
@@ -104,7 +108,7 @@ data class AudiobookshelfPlaybackState(
     val chapters: List<BookChapter> = emptyList(),
     val audioTracks: List<AudioTrack> = emptyList(),
     val currentChapter: BookChapter? = null,
-    val sleepTimerEndTime: Long? = null
+    val sleepTimerEndTime: Long? = null,
 ) {
     val currentChapterIndex: Int
         get() = currentChapter?.let { chapter -> chapters.indexOf(chapter) } ?: -1

@@ -37,31 +37,27 @@ import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 fun SpecialFeaturesSection(
     specialFeatures: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
 
     if (specialFeatures.isNotEmpty()) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = stringResource(R.string.special_features_title),
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 0.dp)
+                contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
                 items(specialFeatures) { feature ->
                     SpecialFeatureCard(
                         feature = feature,
                         onClick = { onItemClick(feature) },
-                        cardWidth = cardWidth
+                        cardWidth = cardWidth,
                     )
                 }
             }
@@ -70,23 +66,14 @@ fun SpecialFeaturesSection(
 }
 
 @Composable
-private fun SpecialFeatureCard(
-    feature: AfinityItem,
-    onClick: () -> Unit,
-    cardWidth: Dp
-) {
-    Column(
-        modifier = Modifier.width(cardWidth)
-    ) {
+private fun SpecialFeatureCard(feature: AfinityItem, onClick: () -> Unit, cardWidth: Dp) {
+    Column(modifier = Modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
@@ -96,7 +83,7 @@ private fun SpecialFeatureCard(
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 9f / 16f,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
             }
         }
@@ -105,13 +92,11 @@ private fun SpecialFeatureCard(
 
         Text(
             text = feature.name,
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontWeight = FontWeight.Medium
-            ),
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Start,
         )
     }
 }

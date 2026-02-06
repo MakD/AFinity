@@ -37,33 +37,29 @@ import com.makd.afinity.ui.login.LoginScreen
 import com.makd.afinity.ui.theme.AFinityTheme
 import com.makd.afinity.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject
-    lateinit var preferencesRepository: PreferencesRepository
+    @Inject lateinit var preferencesRepository: PreferencesRepository
 
-    @Inject
-    lateinit var updateManager: UpdateManager
+    @Inject lateinit var updateManager: UpdateManager
 
-    @Inject
-    lateinit var offlineModeManager: OfflineModeManager
+    @Inject lateinit var offlineModeManager: OfflineModeManager
 
-    @Inject
-    lateinit var updateScheduler: UpdateScheduler
+    @Inject lateinit var updateScheduler: UpdateScheduler
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            Timber.d("Notification permission granted")
-        } else {
-            Timber.w("Notification permission denied - Media controls will not show")
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean
+            ->
+            if (isGranted) {
+                Timber.d("Notification permission granted")
+            } else {
+                Timber.w("Notification permission denied - Media controls will not show")
+            }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -76,25 +72,24 @@ class MainActivity : ComponentActivity() {
         setContent {
             @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
             val windowSize = calculateWindowSizeClass(this)
-            val themeMode by preferencesRepository.getThemeModeFlow()
-                .collectAsState(initial = "SYSTEM")
-            val dynamicColors by preferencesRepository.getDynamicColorsFlow()
-                .collectAsState(initial = true)
+            val themeMode by
+                preferencesRepository.getThemeModeFlow().collectAsState(initial = "SYSTEM")
+            val dynamicColors by
+                preferencesRepository.getDynamicColorsFlow().collectAsState(initial = true)
 
-            AFinityTheme(
-                themeMode = themeMode,
-                dynamicColor = dynamicColors
-            ) {
+            AFinityTheme(themeMode = themeMode, dynamicColor = dynamicColors) {
                 val windowInsetsController =
                     WindowCompat.getInsetsController(window, window.decorView)
                 val mode = ThemeMode.fromString(themeMode)
                 val systemInDarkTheme = isSystemInDarkTheme()
 
-                val isLightTheme = when (mode) {
-                    ThemeMode.SYSTEM -> !systemInDarkTheme
-                    ThemeMode.LIGHT -> true
-                    ThemeMode.DARK, ThemeMode.AMOLED -> false
-                }
+                val isLightTheme =
+                    when (mode) {
+                        ThemeMode.SYSTEM -> !systemInDarkTheme
+                        ThemeMode.LIGHT -> true
+                        ThemeMode.DARK,
+                        ThemeMode.AMOLED -> false
+                    }
 
                 windowInsetsController.isAppearanceLightStatusBars = isLightTheme
                 windowInsetsController.isAppearanceLightNavigationBars = isLightTheme
@@ -103,7 +98,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     updateManager = updateManager,
                     offlineModeManager = offlineModeManager,
-                    widthSizeClass = windowSize.widthSizeClass
+                    widthSizeClass = windowSize.widthSizeClass,
                 )
             }
         }
@@ -117,10 +112,9 @@ class MainActivity : ComponentActivity() {
 
     private fun checkNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
+            if (
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+                    PackageManager.PERMISSION_GRANTED
             ) {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
@@ -134,7 +128,7 @@ private fun MainContent(
     viewModel: MainViewModel = hiltViewModel(),
     updateManager: UpdateManager,
     offlineModeManager: OfflineModeManager,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val authState by viewModel.authenticationState.collectAsStateWithLifecycle()
 
@@ -142,7 +136,7 @@ private fun MainContent(
         AuthenticationState.Loading -> {
             AfinitySplashScreen(
                 statusText = stringResource(R.string.splash_status_authenticating),
-                modifier = modifier
+                modifier = modifier,
             )
         }
 
@@ -151,19 +145,16 @@ private fun MainContent(
                 modifier = modifier,
                 updateManager = updateManager,
                 offlineModeManager = offlineModeManager,
-                widthSizeClass = widthSizeClass
+                widthSizeClass = widthSizeClass,
             )
         }
 
         AuthenticationState.NotAuthenticated -> {
-            Scaffold(
-                modifier = modifier
-            ) { innerPadding ->
+            Scaffold(modifier = modifier) { innerPadding ->
                 LoginScreen(
-                    onLoginSuccess = {
-                    },
+                    onLoginSuccess = {},
                     modifier = Modifier.padding(innerPadding),
-                    widthSizeClass = widthSizeClass
+                    widthSizeClass = widthSizeClass,
                 )
             }
         }
@@ -172,6 +163,8 @@ private fun MainContent(
 
 sealed class AuthenticationState {
     object Loading : AuthenticationState()
+
     object Authenticated : AuthenticationState()
+
     object NotAuthenticated : AuthenticationState()
 }

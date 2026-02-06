@@ -5,22 +5,13 @@ import com.makd.afinity.util.GenreDuotoneColorGenerator
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-@Serializable
-data class Genre(
-    @SerialName("id")
-    val id: Int,
-    @SerialName("name")
-    val name: String
-)
+@Serializable data class Genre(@SerialName("id") val id: Int, @SerialName("name") val name: String)
 
 @Serializable
 data class GenreSliderItem(
-    @SerialName("id")
-    val id: Int,
-    @SerialName("name")
-    val name: String,
-    @SerialName("backdrops")
-    val backdrops: List<String>? = null
+    @SerialName("id") val id: Int,
+    @SerialName("name") val name: String,
+    @SerialName("backdrops") val backdrops: List<String>? = null,
 ) {
     fun getBackdropUrl(baseUrl: String = "https://image.tmdb.org/t/p/w780"): String? {
         return backdrops?.firstOrNull()?.let { "$baseUrl$it" }
@@ -28,13 +19,14 @@ data class GenreSliderItem(
 
     fun getDuotoneBackdropUrl(
         backdropTracker: BackdropTracker? = null,
-        isMovie: Boolean = true
+        isMovie: Boolean = true,
     ): String? {
-        val selectedPath = if (backdropTracker != null) {
-            backdropTracker.selectNextBackdrop(backdrops, id, isMovie)
-        } else {
-            backdrops?.firstOrNull()
-        }
+        val selectedPath =
+            if (backdropTracker != null) {
+                backdropTracker.selectNextBackdrop(backdrops, id, isMovie)
+            } else {
+                backdrops?.firstOrNull()
+            }
 
         return selectedPath?.let { path ->
             val baseUrl = GenreDuotoneColorGenerator.getDuotoneFilterUrl(id)
@@ -43,14 +35,7 @@ data class GenreSliderItem(
     }
 }
 
-@Serializable
-data class GenreListResponse(
-    @SerialName("genres")
-    val genres: List<Genre>
-)
+@Serializable data class GenreListResponse(@SerialName("genres") val genres: List<Genre>)
 
 @Serializable
-data class GenreSliderResponse(
-    @SerialName("genres")
-    val genres: List<GenreSliderItem>
-)
+data class GenreSliderResponse(@SerialName("genres") val genres: List<GenreSliderItem>)

@@ -33,27 +33,21 @@ fun AudiobookshelfSeriesTab(
     serverUrl: String?,
     onItemClick: (LibraryItem) -> Unit,
     isLoading: Boolean,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     when {
         isLoading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
 
         seriesList.isEmpty() -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = "No series found",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -63,24 +57,21 @@ fun AudiobookshelfSeriesTab(
             val cardHeight = CardDimensions.calculateHeight(cardWidth, 1f)
             val fixedRowHeight = cardHeight + 8.dp + 20.dp + 18.dp
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 seriesList.forEach { series ->
                     if (series.books.isNotEmpty()) {
                         item(key = series.id) {
                             Column {
                                 Spacer(modifier = Modifier.height(24.dp))
-                                Column(
-                                    modifier = Modifier.padding(horizontal = 14.dp)
-                                ) {
+                                Column(modifier = Modifier.padding(horizontal = 14.dp)) {
                                     Text(
                                         text = series.name,
-                                        style = MaterialTheme.typography.headlineSmall.copy(
-                                            fontWeight = FontWeight.Bold
-                                        ),
+                                        style =
+                                            MaterialTheme.typography.headlineSmall.copy(
+                                                fontWeight = FontWeight.Bold
+                                            ),
                                         color = MaterialTheme.colorScheme.onBackground,
-                                        modifier = Modifier.padding(bottom = 16.dp)
+                                        modifier = Modifier.padding(bottom = 16.dp),
                                     )
 
                                     val uniqueBooks = series.books.distinctBy { it.id }
@@ -88,17 +79,17 @@ fun AudiobookshelfSeriesTab(
                                     LazyRow(
                                         modifier = Modifier.height(fixedRowHeight),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                        contentPadding = PaddingValues(horizontal = 0.dp)
+                                        contentPadding = PaddingValues(horizontal = 0.dp),
                                     ) {
                                         items(
                                             items = uniqueBooks,
-                                            key = { item -> "${series.id}_${item.id}" }
+                                            key = { item -> "${series.id}_${item.id}" },
                                         ) { item ->
                                             AudiobookCard(
                                                 item = item,
                                                 serverUrl = serverUrl,
                                                 onClick = { onItemClick(item) },
-                                                modifier = Modifier.width(cardWidth)
+                                                modifier = Modifier.width(cardWidth),
                                             )
                                         }
                                     }

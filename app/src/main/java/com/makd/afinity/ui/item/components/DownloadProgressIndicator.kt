@@ -24,26 +24,31 @@ fun DownloadProgressIndicator(
     onResumeClick: () -> Unit,
     onCancelClick: () -> Unit,
     isLandscape: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     IconButton(
         onClick = {
             when (downloadInfo?.status) {
-                null, DownloadStatus.FAILED, DownloadStatus.CANCELLED -> onDownloadClick()
-                DownloadStatus.DOWNLOADING, DownloadStatus.QUEUED -> onCancelClick()
+                null,
+                DownloadStatus.FAILED,
+                DownloadStatus.CANCELLED -> onDownloadClick()
+                DownloadStatus.DOWNLOADING,
+                DownloadStatus.QUEUED -> onCancelClick()
                 DownloadStatus.PAUSED -> onResumeClick()
                 DownloadStatus.COMPLETED -> onCancelClick()
             }
         },
-        modifier = modifier
+        modifier = modifier,
     ) {
         when (downloadInfo?.status) {
-            null, DownloadStatus.FAILED, DownloadStatus.CANCELLED -> {
+            null,
+            DownloadStatus.FAILED,
+            DownloadStatus.CANCELLED -> {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_download),
                     contentDescription = "Download",
                     tint = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
                 )
             }
 
@@ -58,7 +63,7 @@ fun DownloadProgressIndicator(
                         painter = painterResource(id = R.drawable.ic_cancel),
                         contentDescription = "Cancel Download",
                         modifier = Modifier.size(16.dp),
-                        tint = Color.Red
+                        tint = Color.Red,
                     )
                 }
             }
@@ -68,7 +73,7 @@ fun DownloadProgressIndicator(
                     painter = painterResource(id = R.drawable.ic_hourglass_empty),
                     contentDescription = "Queued - Tap to Cancel",
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
                 )
             }
 
@@ -83,7 +88,7 @@ fun DownloadProgressIndicator(
                         painter = painterResource(id = R.drawable.ic_cloud_pause),
                         contentDescription = "Resume Download",
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -93,7 +98,7 @@ fun DownloadProgressIndicator(
                     painter = painterResource(id = R.drawable.ic_delete),
                     contentDescription = "Delete Download",
                     tint = Color.Red,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
                 )
             }
         }

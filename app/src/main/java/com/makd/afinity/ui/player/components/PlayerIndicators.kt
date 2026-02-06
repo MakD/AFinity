@@ -43,74 +43,65 @@ import kotlin.math.roundToInt
 
 @UnstableApi
 @Composable
-fun PlayerIndicators(
-    uiState: PlayerViewModel.PlayerUiState,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
+fun PlayerIndicators(uiState: PlayerViewModel.PlayerUiState, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxSize()) {
         SeekIndicator(
             show = uiState.showSeekIndicator,
             direction = uiState.seekDirection,
-            modifier = Modifier.align(Alignment.Center)
+            modifier = Modifier.align(Alignment.Center),
         )
 
         BrightnessIndicator(
             show = uiState.showBrightnessIndicator,
             level = uiState.brightnessLevel,
-            modifier = Modifier.align(Alignment.CenterStart)
+            modifier = Modifier.align(Alignment.CenterStart),
         )
 
         VolumeIndicator(
             show = uiState.showVolumeIndicator,
             level = uiState.volumeLevel,
-            modifier = Modifier.align(Alignment.CenterEnd)
+            modifier = Modifier.align(Alignment.CenterEnd),
         )
     }
 }
 
 @Composable
-private fun SeekIndicator(
-    show: Boolean,
-    direction: Int,
-    modifier: Modifier = Modifier
-) {
+private fun SeekIndicator(show: Boolean, direction: Int, modifier: Modifier = Modifier) {
     AnimatedVisibility(
         visible = show,
         enter = scaleIn(animationSpec = tween(200)) + fadeIn(),
         exit = scaleOut(animationSpec = tween(200)) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Card(
-            modifier = Modifier
-                .size(120.dp)
-                .clip(RoundedCornerShape(16.dp)),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Black.copy(alpha = 0.8f)
-            )
+            modifier = Modifier.size(120.dp).clip(RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.8f)),
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Icon(
-                    painter = if (direction > 0) painterResource(id = R.drawable.ic_fast_forward) else painterResource(
-                        id = R.drawable.ic_fast_rewind
-                    ),
-                    contentDescription = if (direction > 0) stringResource(R.string.cd_fast_forward) else stringResource(R.string.cd_rewind),
+                    painter =
+                        if (direction > 0) painterResource(id = R.drawable.ic_fast_forward)
+                        else painterResource(id = R.drawable.ic_fast_rewind),
+                    contentDescription =
+                        if (direction > 0) stringResource(R.string.cd_fast_forward)
+                        else stringResource(R.string.cd_rewind),
                     tint = Color.White,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(40.dp),
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = if (direction > 0) stringResource(R.string.seek_forward_text) else stringResource(R.string.seek_rewind_text),
+                    text =
+                        if (direction > 0) stringResource(R.string.seek_forward_text)
+                        else stringResource(R.string.seek_rewind_text),
                     color = Color.White,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }
@@ -118,64 +109,43 @@ private fun SeekIndicator(
 }
 
 @Composable
-private fun BrightnessIndicator(
-    show: Boolean,
-    level: Float,
-    modifier: Modifier = Modifier
-) {
+private fun BrightnessIndicator(show: Boolean, level: Float, modifier: Modifier = Modifier) {
     AnimatedVisibility(
         visible = show,
-        enter = slideInHorizontally(
-            initialOffsetX = { -it },
-            animationSpec = tween(200)
-        ) + fadeIn(),
-        exit = slideOutHorizontally(
-            targetOffsetX = { -it },
-            animationSpec = tween(200)
-        ) + fadeOut(),
-        modifier = modifier.padding(start = 32.dp)
+        enter =
+            slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(200)) + fadeIn(),
+        exit =
+            slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(200)) + fadeOut(),
+        modifier = modifier.padding(start = 32.dp),
     ) {
         Card(
-            modifier = Modifier
-                .width(80.dp)
-                .height(200.dp)
-                .clip(RoundedCornerShape(16.dp)),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Black.copy(alpha = 0.8f)
-            )
+            modifier = Modifier.width(80.dp).height(200.dp).clip(RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.8f)),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxSize().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Icon(
                     painter = getBrightnessIcon(level),
                     contentDescription = stringResource(R.string.cd_brightness),
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
 
                 Box(
-                    modifier = Modifier
-                        .width(6.dp)
-                        .weight(1f)
-                        .background(
-                            Color.White.copy(alpha = 0.3f),
-                            RoundedCornerShape(3.dp)
-                        )
+                    modifier =
+                        Modifier.width(6.dp)
+                            .weight(1f)
+                            .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(3.dp))
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(level)
-                            .background(
-                                Color.White,
-                                RoundedCornerShape(3.dp)
-                            )
-                            .align(Alignment.BottomCenter)
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .fillMaxHeight(level)
+                                .background(Color.White, RoundedCornerShape(3.dp))
+                                .align(Alignment.BottomCenter)
                     )
                 }
 
@@ -183,7 +153,7 @@ private fun BrightnessIndicator(
                     text = stringResource(R.string.percent_fmt, (level * 100).roundToInt()),
                     color = Color.White,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }
@@ -191,64 +161,41 @@ private fun BrightnessIndicator(
 }
 
 @Composable
-private fun VolumeIndicator(
-    show: Boolean,
-    level: Int,
-    modifier: Modifier = Modifier
-) {
+private fun VolumeIndicator(show: Boolean, level: Int, modifier: Modifier = Modifier) {
     AnimatedVisibility(
         visible = show,
-        enter = slideInHorizontally(
-            initialOffsetX = { it },
-            animationSpec = tween(200)
-        ) + fadeIn(),
-        exit = slideOutHorizontally(
-            targetOffsetX = { it },
-            animationSpec = tween(200)
-        ) + fadeOut(),
-        modifier = modifier.padding(end = 32.dp)
+        enter = slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(200)) + fadeIn(),
+        exit = slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(200)) + fadeOut(),
+        modifier = modifier.padding(end = 32.dp),
     ) {
         Card(
-            modifier = Modifier
-                .width(80.dp)
-                .height(200.dp)
-                .clip(RoundedCornerShape(16.dp)),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Black.copy(alpha = 0.8f)
-            )
+            modifier = Modifier.width(80.dp).height(200.dp).clip(RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.8f)),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxSize().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Icon(
                     painter = getVolumeIcon(level),
                     contentDescription = stringResource(R.string.cd_volume),
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
 
                 Box(
-                    modifier = Modifier
-                        .width(6.dp)
-                        .weight(1f)
-                        .background(
-                            Color.White.copy(alpha = 0.3f),
-                            RoundedCornerShape(3.dp)
-                        )
+                    modifier =
+                        Modifier.width(6.dp)
+                            .weight(1f)
+                            .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(3.dp))
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(level / 100f)
-                            .background(
-                                Color.White,
-                                RoundedCornerShape(3.dp)
-                            )
-                            .align(Alignment.BottomCenter)
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .fillMaxHeight(level / 100f)
+                                .background(Color.White, RoundedCornerShape(3.dp))
+                                .align(Alignment.BottomCenter)
                     )
                 }
 
@@ -256,7 +203,7 @@ private fun VolumeIndicator(
                     text = stringResource(R.string.percent_fmt, level),
                     color = Color.White,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }

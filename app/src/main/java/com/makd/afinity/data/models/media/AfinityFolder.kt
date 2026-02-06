@@ -1,8 +1,8 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.repository.JellyfinRepository
-import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.UUID
+import org.jellyfin.sdk.model.api.BaseItemDto
 
 data class AfinityFolder(
     override val id: UUID,
@@ -24,9 +24,7 @@ data class AfinityFolder(
     override val externalUrls: List<AfinityExternalUrl>?,
 ) : AfinityItem
 
-fun BaseItemDto.toAfinityFolder(
-    jellyfinRepository: JellyfinRepository,
-): AfinityFolder {
+fun BaseItemDto.toAfinityFolder(jellyfinRepository: JellyfinRepository): AfinityFolder {
     return AfinityFolder(
         id = id,
         name = name.orEmpty(),
@@ -35,9 +33,7 @@ fun BaseItemDto.toAfinityFolder(
         liked = userData?.likes == true,
         unplayedItemCount = userData?.unplayedItemCount,
         images = toAfinityImages(jellyfinRepository),
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
-        externalUrls = externalUrls?.map { it.toAfinityExternalUrl() }
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
     )
 }

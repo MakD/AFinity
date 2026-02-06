@@ -18,11 +18,9 @@ interface ServerAddressDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertServerAddresses(serverAddresses: List<ServerAddress>)
 
-    @Update
-    suspend fun updateServerAddress(serverAddress: ServerAddress)
+    @Update suspend fun updateServerAddress(serverAddress: ServerAddress)
 
-    @Delete
-    suspend fun deleteServerAddress(serverAddress: ServerAddress)
+    @Delete suspend fun deleteServerAddress(serverAddress: ServerAddress)
 
     @Query("DELETE FROM serverAddresses WHERE id = :addressId")
     suspend fun deleteServerAddressById(addressId: UUID)

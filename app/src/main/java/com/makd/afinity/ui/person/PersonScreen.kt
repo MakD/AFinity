@@ -27,41 +27,33 @@ fun PersonScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: PersonViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
         when {
             uiState.isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
 
             uiState.error != null -> {
                 Column(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(32.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.home_error_title),
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
                         text = uiState.error!!,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Button(onClick = { viewModel.retry() }) {
                         Text(stringResource(R.string.action_retry))
@@ -74,10 +66,8 @@ fun PersonScreen(
                     person = uiState.person!!,
                     movies = uiState.movies,
                     shows = uiState.shows,
-                    onItemClick = { item ->
-                        navController.navigate("item_detail/${item.id}")
-                    },
-                    widthSizeClass = widthSizeClass
+                    onItemClick = { item -> navController.navigate("item_detail/${item.id}") },
+                    widthSizeClass = widthSizeClass,
                 )
             }
         }

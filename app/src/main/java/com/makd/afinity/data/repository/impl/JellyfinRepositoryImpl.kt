@@ -1,6 +1,5 @@
 package com.makd.afinity.data.repository.impl
 
-
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -30,32 +29,28 @@ import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.library.FilterType
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.exception.ApiClientException
-import org.jellyfin.sdk.api.operations.ItemsApi
-import org.jellyfin.sdk.model.api.AuthenticationResult
-import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
-import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.ItemFields
-import org.jellyfin.sdk.model.api.ItemFilter
-import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import org.jellyfin.sdk.model.api.AuthenticationResult
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
+import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.ItemFilter
+import timber.log.Timber
 
 @Singleton
-class JellyfinRepositoryImpl @Inject constructor(
+class JellyfinRepositoryImpl
+@Inject
+constructor(
     private val serverRepository: ServerRepository,
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
     private val userDataRepository: UserDataRepository,
     private val playbackRepository: PlaybackRepository,
-    private val database: AfinityDatabase
+    private val database: AfinityDatabase,
 ) : JellyfinRepository {
 
     override fun getBaseUrl(): String {
@@ -84,12 +79,16 @@ class JellyfinRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun validateServer(serverUrl: String): JellyfinServerRepository.ServerConnectionResult {
+    override suspend fun validateServer(
+        serverUrl: String
+    ): JellyfinServerRepository.ServerConnectionResult {
         return try {
             serverRepository.testServerConnection(serverUrl)
         } catch (e: Exception) {
             Timber.e(e, "Failed to validate server: $serverUrl")
-            JellyfinServerRepository.ServerConnectionResult.Error("Failed to validate server: ${e.message ?: "Unknown error"}")
+            JellyfinServerRepository.ServerConnectionResult.Error(
+                "Failed to validate server: ${e.message ?: "Unknown error"}"
+            )
         }
     }
 
@@ -97,7 +96,10 @@ class JellyfinRepositoryImpl @Inject constructor(
         serverRepository.refreshServerInfo()
     }
 
-    override suspend fun authenticateByName(username: String, password: String): AuthenticationResult? {
+    override suspend fun authenticateByName(
+        username: String,
+        password: String,
+    ): AuthenticationResult? {
         return try {
             when (val result = authRepository.authenticateByName(username, password)) {
                 is AuthRepository.AuthResult.Success -> result.authResult
@@ -205,7 +207,12 @@ class JellyfinRepositoryImpl @Inject constructor(
 
     override suspend fun getNextUp(limit: Int): List<AfinityEpisode> {
         return try {
-            mediaRepository.getNextUp(seriesId = null, limit = limit, fields = FieldSets.NEXT_UP, enableResumable = false)
+            mediaRepository.getNextUp(
+                seriesId = null,
+                limit = limit,
+                fields = FieldSets.NEXT_UP,
+                enableResumable = false,
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get next up episodes")
             emptyList()
@@ -224,7 +231,7 @@ class JellyfinRepositoryImpl @Inject constructor(
     override suspend fun getGenres(
         parentId: UUID?,
         limit: Int?,
-        includeItemTypes: List<String>
+        includeItemTypes: List<String>,
     ): List<String> {
         return try {
             mediaRepository.getGenres(parentId, limit, includeItemTypes)
@@ -238,7 +245,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         genre: String,
         parentId: UUID?,
         limit: Int,
-        shuffle: Boolean
+        shuffle: Boolean,
     ): List<AfinityMovie> {
         return try {
             mediaRepository.getMoviesByGenre(genre, parentId, limit, shuffle)
@@ -252,7 +259,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         genre: String,
         parentId: UUID?,
         limit: Int,
-        shuffle: Boolean
+        shuffle: Boolean,
     ): List<AfinityShow> {
         return try {
             mediaRepository.getShowsByGenre(genre, parentId, limit, shuffle)
@@ -265,7 +272,7 @@ class JellyfinRepositoryImpl @Inject constructor(
     override suspend fun getStudios(
         parentId: UUID?,
         limit: Int?,
-        includeItemTypes: List<String>
+        includeItemTypes: List<String>,
     ): List<com.makd.afinity.data.models.media.AfinityStudio> {
         return try {
             mediaRepository.getStudios(parentId, limit, includeItemTypes)
@@ -283,27 +290,25 @@ class JellyfinRepositoryImpl @Inject constructor(
         filter: FilterType,
         nameStartsWith: String?,
         fields: List<ItemFields>?,
-        studioName: String?
+        studioName: String?,
     ): Flow<PagingData<AfinityItem>> {
         return Pager(
-            config = PagingConfig(
-                pageSize = 50,
-                enablePlaceholders = false,
-                initialLoadSize = 50
-            )
-        ) {
-            JellyfinItemsPagingSource(
-                mediaRepository = mediaRepository,
-                parentId = parentId,
-                libraryType = libraryType,
-                sortBy = sortBy,
-                sortDescending = sortDescending,
-                filter = filter,
-                baseUrl = getBaseUrl(),
-                nameStartsWith = nameStartsWith,
-                studioName = studioName
-            )
-        }.flow
+                config =
+                    PagingConfig(pageSize = 50, enablePlaceholders = false, initialLoadSize = 50)
+            ) {
+                JellyfinItemsPagingSource(
+                    mediaRepository = mediaRepository,
+                    parentId = parentId,
+                    libraryType = libraryType,
+                    sortBy = sortBy,
+                    sortDescending = sortDescending,
+                    filter = filter,
+                    baseUrl = getBaseUrl(),
+                    nameStartsWith = nameStartsWith,
+                    studioName = studioName,
+                )
+            }
+            .flow
     }
 
     override suspend fun getItems(
@@ -324,13 +329,27 @@ class JellyfinRepositoryImpl @Inject constructor(
         fields: List<ItemFields>?,
         imageTypes: List<String>,
         hasOverview: Boolean?,
-        filters: List<ItemFilter>
+        filters: List<ItemFilter>,
     ): BaseItemDtoQueryResult {
         return try {
             mediaRepository.getItems(
-                parentId, collectionTypes, sortBy, sortDescending, limit, startIndex,
-                searchTerm, includeItemTypes, genres, years, isFavorite, isPlayed, isLiked, nameStartsWith, fields,
-                imageTypes, hasOverview
+                parentId,
+                collectionTypes,
+                sortBy,
+                sortDescending,
+                limit,
+                startIndex,
+                searchTerm,
+                includeItemTypes,
+                genres,
+                years,
+                isFavorite,
+                isPlayed,
+                isLiked,
+                nameStartsWith,
+                fields,
+                imageTypes,
+                hasOverview,
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get items")
@@ -338,10 +357,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getItem(
-        itemId: UUID,
-        fields: List<ItemFields>?
-    ): BaseItemDto? {
+    override suspend fun getItem(itemId: UUID, fields: List<ItemFields>?): BaseItemDto? {
         return try {
             mediaRepository.getItem(itemId, fields)
         } catch (e: Exception) {
@@ -364,7 +380,7 @@ class JellyfinRepositoryImpl @Inject constructor(
     override suspend fun getSimilarItems(
         itemId: UUID,
         limit: Int,
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
     ): List<AfinityItem> {
         return try {
             mediaRepository.getSimilarItems(itemId, limit, fields)
@@ -381,10 +397,18 @@ class JellyfinRepositoryImpl @Inject constructor(
         limit: Int?,
         startIndex: Int,
         searchTerm: String?,
-        isPlayed: Boolean?
+        isPlayed: Boolean?,
     ): List<AfinityMovie> {
         return try {
-            mediaRepository.getMovies(parentId, sortBy, sortDescending, limit, startIndex, searchTerm, isPlayed)
+            mediaRepository.getMovies(
+                parentId,
+                sortBy,
+                sortDescending,
+                limit,
+                startIndex,
+                searchTerm,
+                isPlayed,
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get movies")
             emptyList()
@@ -398,10 +422,18 @@ class JellyfinRepositoryImpl @Inject constructor(
         limit: Int?,
         startIndex: Int,
         searchTerm: String?,
-        isPlayed: Boolean?
+        isPlayed: Boolean?,
     ): List<AfinityShow> {
         return try {
-            mediaRepository.getShows(parentId, sortBy, sortDescending, limit, startIndex, searchTerm, isPlayed)
+            mediaRepository.getShows(
+                parentId,
+                sortBy,
+                sortDescending,
+                limit,
+                startIndex,
+                searchTerm,
+                isPlayed,
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get shows")
             emptyList()
@@ -412,7 +444,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         seriesId: UUID,
         sortBy: SortBy,
         sortDescending: Boolean,
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
     ): List<AfinitySeason> {
         return try {
             mediaRepository.getSeasons(seriesId, fields)
@@ -425,7 +457,7 @@ class JellyfinRepositoryImpl @Inject constructor(
     override suspend fun getEpisodes(
         seasonId: UUID,
         seriesId: UUID,
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
     ): List<AfinityEpisode> {
         return try {
             mediaRepository.getEpisodes(seasonId, seriesId, fields)
@@ -467,7 +499,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         includeItemTypes: List<String>,
         limit: Int?,
         startIndex: Int,
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
     ): List<AfinityItem> {
         return try {
             mediaRepository.getPersonItems(personId, includeItemTypes, fields)
@@ -480,7 +512,7 @@ class JellyfinRepositoryImpl @Inject constructor(
     override suspend fun reportPlaybackStart(
         itemId: UUID,
         positionTicks: Long,
-        sessionId: String?
+        sessionId: String?,
     ) {
         try {
             val actualSessionId = sessionId ?: playbackRepository.getActiveSession() ?: return
@@ -488,7 +520,7 @@ class JellyfinRepositoryImpl @Inject constructor(
                 itemId = itemId,
                 sessionId = actualSessionId,
                 mediaSourceId = itemId.toString(),
-                playMethod = "DirectPlay"
+                playMethod = "DirectPlay",
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback start: $itemId")
@@ -499,7 +531,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         itemId: UUID,
         positionTicks: Long,
         isPaused: Boolean,
-        sessionId: String?
+        sessionId: String?,
     ) {
         try {
             val actualSessionId = sessionId ?: playbackRepository.getActiveSession() ?: return
@@ -508,7 +540,7 @@ class JellyfinRepositoryImpl @Inject constructor(
                 sessionId = actualSessionId,
                 positionTicks = positionTicks,
                 isPaused = isPaused,
-                playMethod = "DirectPlay"
+                playMethod = "DirectPlay",
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback progress: $itemId")
@@ -518,7 +550,7 @@ class JellyfinRepositoryImpl @Inject constructor(
     override suspend fun reportPlaybackStopped(
         itemId: UUID,
         positionTicks: Long,
-        sessionId: String?
+        sessionId: String?,
     ) {
         try {
             val actualSessionId = sessionId ?: playbackRepository.getActiveSession() ?: return
@@ -526,7 +558,7 @@ class JellyfinRepositoryImpl @Inject constructor(
                 itemId = itemId,
                 sessionId = actualSessionId,
                 positionTicks = positionTicks,
-                mediaSourceId = itemId.toString()
+                mediaSourceId = itemId.toString(),
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to report playback stopped: $itemId")
@@ -539,7 +571,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         maxBitrate: Int?,
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
-        videoStreamIndex: Int?
+        videoStreamIndex: Int?,
     ): String {
         return try {
             serverRepository.buildStreamUrl(
@@ -548,7 +580,7 @@ class JellyfinRepositoryImpl @Inject constructor(
                 maxBitrate,
                 audioStreamIndex,
                 subtitleStreamIndex,
-                videoStreamIndex
+                videoStreamIndex,
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get stream URL for item: $itemId")
@@ -563,7 +595,7 @@ class JellyfinRepositoryImpl @Inject constructor(
         tag: String?,
         maxWidth: Int?,
         maxHeight: Int?,
-        quality: Int?
+        quality: Int?,
     ): String {
         return try {
             serverRepository.buildImageUrl(
@@ -573,7 +605,7 @@ class JellyfinRepositoryImpl @Inject constructor(
                 tag = tag,
                 maxWidth = maxWidth,
                 maxHeight = maxHeight,
-                quality = quality
+                quality = quality,
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to get image URL for item: $itemId")
@@ -602,12 +634,13 @@ class JellyfinRepositoryImpl @Inject constructor(
             Timber.d("Getting episode to play for series: $seriesId")
 
             try {
-                val nextUpEpisodes = mediaRepository.getNextUp(
-                    seriesId = seriesId,
-                    limit = 1,
-                    fields = FieldSets.ITEM_DETAIL,
-                    enableResumable = false
-                )
+                val nextUpEpisodes =
+                    mediaRepository.getNextUp(
+                        seriesId = seriesId,
+                        limit = 1,
+                        fields = FieldSets.ITEM_DETAIL,
+                        enableResumable = false,
+                    )
                 if (nextUpEpisodes.isNotEmpty()) {
                     Timber.d("Found next up episode: ${nextUpEpisodes.first().name}")
                     return nextUpEpisodes.first()
@@ -635,10 +668,11 @@ class JellyfinRepositoryImpl @Inject constructor(
                 return null
             }
 
-            val sortedEpisodes = allEpisodes.sortedWith(
-                compareBy<AfinityEpisode> { it.parentIndexNumber ?: 0 }
-                    .thenBy { it.indexNumber ?: 0 }
-            )
+            val sortedEpisodes =
+                allEpisodes.sortedWith(
+                    compareBy<AfinityEpisode> { it.parentIndexNumber ?: 0 }
+                        .thenBy { it.indexNumber ?: 0 }
+                )
 
             val nextEpisode = sortedEpisodes.firstOrNull { !it.played }
             if (nextEpisode != null) {
@@ -690,17 +724,21 @@ class JellyfinRepositoryImpl @Inject constructor(
         return mediaRepository.getFavoriteBoxSets()
     }
 
-    override suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode? {
+    override suspend fun getEpisodeToPlayForSeason(
+        seasonId: UUID,
+        seriesId: UUID,
+    ): AfinityEpisode? {
         return try {
             Timber.d("Getting episode to play for season: $seasonId")
 
             try {
-                val nextUpEpisodes = mediaRepository.getNextUp(
-                    seriesId = seriesId,
-                    limit = 10,
-                    fields = FieldSets.ITEM_DETAIL,
-                    enableResumable = false
-                )
+                val nextUpEpisodes =
+                    mediaRepository.getNextUp(
+                        seriesId = seriesId,
+                        limit = 10,
+                        fields = FieldSets.ITEM_DETAIL,
+                        enableResumable = false,
+                    )
                 val nextUpForSeason = nextUpEpisodes.firstOrNull { it.seasonId == seasonId }
                 if (nextUpForSeason != null) {
                     Timber.d("Found next up episode for season: ${nextUpForSeason.name}")
@@ -726,7 +764,9 @@ class JellyfinRepositoryImpl @Inject constructor(
 
             val firstEpisode = sortedEpisodes.firstOrNull()
             if (firstEpisode != null) {
-                Timber.d("All episodes watched in season, returning first episode: ${firstEpisode.name}")
+                Timber.d(
+                    "All episodes watched in season, returning first episode: ${firstEpisode.name}"
+                )
                 return firstEpisode
             }
 
@@ -741,7 +781,7 @@ class JellyfinRepositoryImpl @Inject constructor(
     override suspend fun getMoviesWithPeople(
         startIndex: Int,
         limit: Int,
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
     ): List<AfinityMovie> {
         return mediaRepository.getMoviesWithPeople(startIndex, limit, fields)
     }
@@ -749,7 +789,7 @@ class JellyfinRepositoryImpl @Inject constructor(
     override suspend fun getSimilarMovies(
         movieId: UUID,
         limit: Int,
-        fields: List<ItemFields>?
+        fields: List<ItemFields>?,
     ): List<AfinityMovie> {
         return mediaRepository.getSimilarMovies(movieId, limit, fields)
     }

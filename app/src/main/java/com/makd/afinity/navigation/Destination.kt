@@ -6,49 +6,49 @@ enum class Destination(
     val route: String,
     val title: String,
     val selectedIconRes: Int,
-    val unselectedIconRes: Int
+    val unselectedIconRes: Int,
 ) {
     HOME(
         route = "home",
         title = "Home",
         selectedIconRes = R.drawable.ic_home_filled,
-        unselectedIconRes = R.drawable.ic_home
+        unselectedIconRes = R.drawable.ic_home,
     ),
     LIBRARIES(
         route = "libraries",
         title = "Libraries",
         selectedIconRes = R.drawable.ic_video_library_filled,
-        unselectedIconRes = R.drawable.ic_video_library
+        unselectedIconRes = R.drawable.ic_video_library,
     ),
     FAVORITES(
         route = "favorites",
         title = "Favorites",
         selectedIconRes = R.drawable.ic_favorite_filled,
-        unselectedIconRes = R.drawable.ic_favorite
+        unselectedIconRes = R.drawable.ic_favorite,
     ),
     WATCHLIST(
         route = "watchlist",
         title = "Watchlist",
         selectedIconRes = R.drawable.ic_bookmarks_filled,
-        unselectedIconRes = R.drawable.ic_bookmarks
+        unselectedIconRes = R.drawable.ic_bookmarks,
     ),
     REQUESTS(
         route = "requests",
         title = "Requests",
         selectedIconRes = R.drawable.ic_plus_filled,
-        unselectedIconRes = R.drawable.ic_plus
+        unselectedIconRes = R.drawable.ic_plus,
     ),
     AUDIOBOOKS(
         route = "audiobookshelf/libraries",
         title = "Audiobooks",
         selectedIconRes = R.drawable.ic_books_filled,
-        unselectedIconRes = R.drawable.ic_books
+        unselectedIconRes = R.drawable.ic_books,
     ),
     LIVE_TV(
         route = "live_tv",
         title = "Live TV",
         selectedIconRes = R.drawable.ic_live_tv_filled_nav,
-        unselectedIconRes = R.drawable.ic_live_tv_nav
+        unselectedIconRes = R.drawable.ic_live_tv_nav,
     );
 
     companion object {
@@ -110,7 +110,7 @@ enum class Destination(
             mediaSourceId: String,
             audioStreamIndex: Int? = null,
             subtitleStreamIndex: Int? = null,
-            startPositionMs: Long = 0L
+            startPositionMs: Long = 0L,
         ): String {
             var route = "player/$itemId/$mediaSourceId"
             val params = mutableListOf<String>()
@@ -173,7 +173,7 @@ enum class Destination(
         fun createFilteredMediaRoute(
             filterType: String,
             filterId: Int,
-            filterName: String
+            filterName: String,
         ): String {
             return "filtered_media/$filterType/$filterId/${filterName.replace("/", "%2F")}"
         }

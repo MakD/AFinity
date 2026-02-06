@@ -35,21 +35,15 @@ fun EpisodeList(
     episodes: List<PodcastEpisode>,
     onEpisodeClick: (PodcastEpisode) -> Unit,
     onEpisodePlay: (PodcastEpisode) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             episodes.forEach { episode ->
                 EpisodeItem(
                     episode = episode,
                     onClick = { onEpisodeClick(episode) },
-                    onPlay = { onEpisodePlay(episode) }
+                    onPlay = { onEpisodePlay(episode) },
                 )
             }
         }
@@ -57,29 +51,23 @@ fun EpisodeList(
 }
 
 @Composable
-private fun EpisodeItem(
-    episode: PodcastEpisode,
-    onClick: () -> Unit,
-    onPlay: () -> Unit
-) {
+private fun EpisodeItem(episode: PodcastEpisode, onClick: () -> Unit, onPlay: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick)
+                .padding(vertical = 12.dp, horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = episode.title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -89,7 +77,7 @@ private fun EpisodeItem(
                     Text(
                         text = formatDate(timestamp),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -98,13 +86,13 @@ private fun EpisodeItem(
                         Text(
                             text = " • ",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Text(
                         text = formatDuration(duration),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -117,7 +105,7 @@ private fun EpisodeItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.2
+                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.2,
                 )
             }
         }
@@ -127,15 +115,16 @@ private fun EpisodeItem(
         FilledIconButton(
             onClick = onPlay,
             modifier = Modifier.size(40.dp),
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary
-            )
+            colors =
+                IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_player_play_filled),
                 contentDescription = "Play episode",
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
         }
     }

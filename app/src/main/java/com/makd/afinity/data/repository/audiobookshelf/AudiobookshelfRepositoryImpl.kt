@@ -27,28 +27,29 @@ import com.makd.afinity.data.repository.ItemWithProgress
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
-class AudiobookshelfRepositoryImpl @Inject constructor(
+class AudiobookshelfRepositoryImpl
+@Inject
+constructor(
     private val apiService: Lazy<AudiobookshelfApiService>,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val database: AfinityDatabase,
-    private val networkConnectivityMonitor: NetworkConnectivityMonitor
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor,
 ) : AudiobookshelfRepository {
 
     private val audiobookshelfDao = database.audiobookshelfDao()
@@ -83,11 +84,12 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
 
         if (hasAuth && config?.isLoggedIn == true) {
             _isAuthenticated.value = true
-            _currentConfig.value = AudiobookshelfConfig(
-                serverUrl = config.serverUrl,
-                absUserId = config.absUserId,
-                username = config.username
-            )
+            _currentConfig.value =
+                AudiobookshelfConfig(
+                    serverUrl = config.serverUrl,
+                    absUserId = config.absUserId,
+                    username = config.username,
+                )
         }
 
         Timber.d("Audiobookshelf Context Switched. Authenticated: ${_isAuthenticated.value}")
@@ -106,11 +108,12 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
     override suspend fun login(
         serverUrl: String,
         username: String,
-        password: String
+        password: String,
     ): Result<AudiobookshelfUser> {
         return withContext(Dispatchers.IO) {
-            val (currentServerId, currentUserId) = activeContext
-                ?: return@withContext Result.failure(Exception("No active Jellyfin session"))
+            val (currentServerId, currentUserId) =
+                activeContext
+                    ?: return@withContext Result.failure(Exception("No active Jellyfin session"))
 
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
@@ -124,7 +127,7 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                     serverUrl = serverUrl,
                     accessToken = "",
                     absUserId = "",
-                    username = username
+                    username = username,
                 )
 
                 val loginRequest = LoginRequest(username, password)
@@ -133,8 +136,9 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val loginResponse = response.body()!!
                     val user = loginResponse.user
-                    val token = user.token
-                        ?: return@withContext Result.failure(Exception("No token received"))
+                    val token =
+                        user.token
+                            ?: return@withContext Result.failure(Exception("No token received"))
 
                     securePreferencesRepository.saveAudiobookshelfAuthForUser(
                         jellyfinServerId = currentServerId,
@@ -142,7 +146,7 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                         serverUrl = serverUrl,
                         accessToken = token,
                         absUserId = user.id,
-                        username = user.username
+                        username = user.username,
                     )
 
                     audiobookshelfDao.insertConfig(
@@ -153,21 +157,20 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                             absUserId = user.id,
                             username = user.username,
                             isLoggedIn = true,
-                            lastSync = System.currentTimeMillis()
+                            lastSync = System.currentTimeMillis(),
                         )
                     )
 
                     _isAuthenticated.value = true
-                    _currentConfig.value = AudiobookshelfConfig(
-                        serverUrl = serverUrl,
-                        absUserId = user.id,
-                        username = user.username
-                    )
+                    _currentConfig.value =
+                        AudiobookshelfConfig(
+                            serverUrl = serverUrl,
+                            absUserId = user.id,
+                            username = user.username,
+                        )
 
                     user.mediaProgress?.let { progressList ->
-                        progressList.forEach { progress ->
-                            cacheProgress(progress)
-                        }
+                        progressList.forEach { progress -> cacheProgress(progress) }
                     }
 
                     Timber.d("Audiobookshelf login successful for user: ${user.username}")
@@ -188,13 +191,13 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
 
     override suspend fun logout(): Result<Unit> {
         return withContext(Dispatchers.IO) {
-            val (currentServerId, currentUserId) = activeContext
-                ?: return@withContext Result.failure(Exception("No active session"))
+            val (currentServerId, currentUserId) =
+                activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             try {
                 securePreferencesRepository.clearAudiobookshelfAuthForUser(
                     currentServerId,
-                    currentUserId
+                    currentUserId,
                 )
 
                 audiobookshelfDao.deleteConfig(currentServerId, currentUserId.toString())
@@ -257,8 +260,8 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
 
     override suspend fun refreshLibraries(): Result<List<Library>> {
         return withContext(Dispatchers.IO) {
-            val (currentServerId, currentUserId) = activeContext
-                ?: return@withContext Result.failure(Exception("No active session"))
+            val (currentServerId, currentUserId) =
+                activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
@@ -270,21 +273,22 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val libraries = response.body()!!.libraries
 
-                    val entities = libraries.mapIndexed { index, library ->
-                        AudiobookshelfLibraryEntity(
-                            id = library.id,
-                            jellyfinServerId = currentServerId,
-                            jellyfinUserId = currentUserId.toString(),
-                            name = library.name,
-                            mediaType = library.mediaType,
-                            icon = library.icon,
-                            displayOrder = library.displayOrder ?: index,
-                            totalItems = library.stats?.totalItems ?: 0,
-                            totalDuration = library.stats?.totalDuration,
-                            lastUpdated = library.lastUpdate ?: System.currentTimeMillis(),
-                            cachedAt = System.currentTimeMillis()
-                        )
-                    }
+                    val entities =
+                        libraries.mapIndexed { index, library ->
+                            AudiobookshelfLibraryEntity(
+                                id = library.id,
+                                jellyfinServerId = currentServerId,
+                                jellyfinUserId = currentUserId.toString(),
+                                name = library.name,
+                                mediaType = library.mediaType,
+                                icon = library.icon,
+                                displayOrder = library.displayOrder ?: index,
+                                totalItems = library.stats?.totalItems ?: 0,
+                                totalDuration = library.stats?.totalDuration,
+                                lastUpdated = library.lastUpdate ?: System.currentTimeMillis(),
+                                cachedAt = System.currentTimeMillis(),
+                            )
+                        }
 
                     audiobookshelfDao.deleteAllLibraries(currentServerId, currentUserId.toString())
                     audiobookshelfDao.insertLibraries(entities)
@@ -323,20 +327,20 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
 
     override fun getLibraryItemsFlow(libraryId: String): Flow<List<LibraryItem>> {
         val (serverId, userId) = activeContext ?: return flowOf(emptyList())
-        return audiobookshelfDao.getItemsFlow(serverId, userId.toString(), libraryId)
-            .map { entities ->
-                entities.map { it.toLibraryItem() }
-            }
+        return audiobookshelfDao.getItemsFlow(serverId, userId.toString(), libraryId).map { entities
+            ->
+            entities.map { it.toLibraryItem() }
+        }
     }
 
     override suspend fun refreshLibraryItems(
         libraryId: String,
         limit: Int,
-        page: Int
+        page: Int,
     ): Result<List<LibraryItem>> {
         return withContext(Dispatchers.IO) {
-            val (currentServerId, currentUserId) = activeContext
-                ?: return@withContext Result.failure(Exception("No active session"))
+            val (currentServerId, currentUserId) =
+                activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
@@ -350,47 +354,53 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                 var isFirstPage = true
 
                 while (totalFetched < total) {
-                    val response = apiService.get().getLibraryItems(
-                        id = libraryId,
-                        limit = limit,
-                        page = currentPage,
-                        include = "progress",
-                        sort =  "media.metadata.title"
-                    )
+                    val response =
+                        apiService
+                            .get()
+                            .getLibraryItems(
+                                id = libraryId,
+                                limit = limit,
+                                page = currentPage,
+                                include = "progress",
+                                sort = "media.metadata.title",
+                            )
 
                     if (response.isSuccessful && response.body() != null) {
                         val body = response.body()!!
                         total = body.total
                         val items = body.results
 
-                        val entities = items.map { item ->
-                            item.toEntity(currentServerId, currentUserId.toString())
-                        }
+                        val entities =
+                            items.map { item ->
+                                item.toEntity(currentServerId, currentUserId.toString())
+                            }
 
                         if (isFirstPage) {
                             audiobookshelfDao.deleteItemsByLibrary(
                                 currentServerId,
                                 currentUserId.toString(),
-                                libraryId
+                                libraryId,
                             )
                             isFirstPage = false
                         }
                         audiobookshelfDao.insertItems(entities)
                         items.forEach { item ->
-                            item.userMediaProgress?.let { progress ->
-                                cacheProgress(progress)
-                            }
+                            item.userMediaProgress?.let { progress -> cacheProgress(progress) }
                         }
 
                         allItems.addAll(items)
                         totalFetched += items.size
                         currentPage++
 
-                        Timber.d("Fetched items page $currentPage: ${items.size} items, total: $total")
+                        Timber.d(
+                            "Fetched items page $currentPage: ${items.size} items, total: $total"
+                        )
 
                         if (items.isEmpty()) break
                     } else {
-                        return@withContext Result.failure(Exception("Failed to fetch items: ${response.message()}"))
+                        return@withContext Result.failure(
+                            Exception("Failed to fetch items: ${response.message()}")
+                        )
                     }
                 }
 
@@ -405,8 +415,8 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
 
     override suspend fun getItemDetails(itemId: String): Result<LibraryItem> {
         return withContext(Dispatchers.IO) {
-            val (currentServerId, currentUserId) = activeContext
-                ?: return@withContext Result.failure(Exception("No active session"))
+            val (currentServerId, currentUserId) =
+                activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
@@ -422,26 +432,22 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
 
                 if (response.isSuccessful && response.body() != null) {
                     val itemResponse = response.body()!!
-                    val item = LibraryItem(
-                        id = itemResponse.id ?: itemId,
-                        ino = itemResponse.ino,
-                        libraryId = itemResponse.libraryId ?: "",
-                        mediaType = itemResponse.mediaType ?: "book",
-                        media = itemResponse.media!!,
-                        addedAt = itemResponse.addedAt,
-                        updatedAt = itemResponse.updatedAt,
-                        userMediaProgress = itemResponse.userMediaProgress
-                    )
-                    audiobookshelfDao.insertItem(
-                        item.toEntity(
-                            currentServerId,
-                            currentUserId.toString()
+                    val item =
+                        LibraryItem(
+                            id = itemResponse.id ?: itemId,
+                            ino = itemResponse.ino,
+                            libraryId = itemResponse.libraryId ?: "",
+                            mediaType = itemResponse.mediaType ?: "book",
+                            media = itemResponse.media!!,
+                            addedAt = itemResponse.addedAt,
+                            updatedAt = itemResponse.updatedAt,
+                            userMediaProgress = itemResponse.userMediaProgress,
                         )
+                    audiobookshelfDao.insertItem(
+                        item.toEntity(currentServerId, currentUserId.toString())
                     )
 
-                    itemResponse.userMediaProgress?.let { progress ->
-                        cacheProgress(progress)
-                    }
+                    itemResponse.userMediaProgress?.let { progress -> cacheProgress(progress) }
 
                     Result.success(item)
                 } else {
@@ -478,7 +484,7 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
     override suspend fun getSeries(
         libraryId: String,
         limit: Int,
-        page: Int
+        page: Int,
     ): Result<List<AudiobookshelfSeries>> {
         return withContext(Dispatchers.IO) {
             try {
@@ -492,11 +498,10 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                 var total = Int.MAX_VALUE
 
                 while (totalFetched < total) {
-                    val response = apiService.get().getSeries(
-                        id = libraryId,
-                        limit = limit,
-                        page = currentPage
-                    )
+                    val response =
+                        apiService
+                            .get()
+                            .getSeries(id = libraryId, limit = limit, page = currentPage)
 
                     if (response.isSuccessful && response.body() != null) {
                         val body = response.body()!!
@@ -505,11 +510,15 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                         totalFetched += body.results.size
                         currentPage++
 
-                        Timber.d("Fetched series page $currentPage: ${body.results.size} items, total: $total")
+                        Timber.d(
+                            "Fetched series page $currentPage: ${body.results.size} items, total: $total"
+                        )
 
                         if (body.results.isEmpty()) break
                     } else {
-                        return@withContext Result.failure(Exception("Failed to fetch series: ${response.message()}"))
+                        return@withContext Result.failure(
+                            Exception("Failed to fetch series: ${response.message()}")
+                        )
                     }
                 }
 
@@ -555,7 +564,7 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                 item?.let {
                     ItemWithProgress(
                         item = it.toLibraryItem(),
-                        progress = progress.toMediaProgress()
+                        progress = progress.toMediaProgress(),
                     )
                 }
             }
@@ -564,8 +573,8 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
 
     override suspend fun refreshProgress(): Result<List<MediaProgress>> {
         return withContext(Dispatchers.IO) {
-            val (currentServerId, currentUserId) = activeContext
-                ?: return@withContext Result.failure(Exception("No active session"))
+            val (currentServerId, currentUserId) =
+                activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
@@ -579,14 +588,9 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                     val progressList = items.mapNotNull { it.userMediaProgress }
                     items.forEach { item ->
                         audiobookshelfDao.insertItem(
-                            item.toEntity(
-                                currentServerId,
-                                currentUserId.toString()
-                            )
+                            item.toEntity(currentServerId, currentUserId.toString())
                         )
-                        item.userMediaProgress?.let { progress ->
-                            cacheProgress(progress)
-                        }
+                        item.userMediaProgress?.let { progress -> cacheProgress(progress) }
                     }
 
                     Result.success(progressList)
@@ -605,27 +609,29 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
         episodeId: String?,
         currentTime: Double,
         duration: Double,
-        isFinished: Boolean
+        isFinished: Boolean,
     ): Result<MediaProgress> {
         return withContext(Dispatchers.IO) {
-            val (currentServerId, currentUserId) = activeContext
-                ?: return@withContext Result.failure(Exception("No active session"))
+            val (currentServerId, currentUserId) =
+                activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             try {
                 val progress = if (duration > 0) currentTime / duration else 0.0
-                val request = ProgressUpdateRequest(
-                    currentTime = currentTime,
-                    duration = duration,
-                    progress = progress,
-                    isFinished = isFinished
-                )
+                val request =
+                    ProgressUpdateRequest(
+                        currentTime = currentTime,
+                        duration = duration,
+                        progress = progress,
+                        isFinished = isFinished,
+                    )
 
                 if (networkConnectivityMonitor.isCurrentlyConnected()) {
-                    val response = if (episodeId != null) {
-                        apiService.get().updateEpisodeProgress(itemId, episodeId, request)
-                    } else {
-                        apiService.get().updateProgress(itemId, request)
-                    }
+                    val response =
+                        if (episodeId != null) {
+                            apiService.get().updateEpisodeProgress(itemId, episodeId, request)
+                        } else {
+                            apiService.get().updateProgress(itemId, request)
+                        }
 
                     if (response.isSuccessful && response.body() != null) {
                         val mediaProgress = response.body()!!
@@ -633,21 +639,22 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                         return@withContext Result.success(mediaProgress)
                     }
                 }
-                val localProgress = AudiobookshelfProgressEntity(
-                    id = "${itemId}_${episodeId ?: ""}",
-                    jellyfinServerId = currentServerId,
-                    jellyfinUserId = currentUserId.toString(),
-                    libraryItemId = itemId,
-                    episodeId = episodeId,
-                    currentTime = currentTime,
-                    duration = duration,
-                    progress = progress,
-                    isFinished = isFinished,
-                    lastUpdate = System.currentTimeMillis(),
-                    startedAt = System.currentTimeMillis(),
-                    finishedAt = if (isFinished) System.currentTimeMillis() else null,
-                    pendingSync = true
-                )
+                val localProgress =
+                    AudiobookshelfProgressEntity(
+                        id = "${itemId}_${episodeId ?: ""}",
+                        jellyfinServerId = currentServerId,
+                        jellyfinUserId = currentUserId.toString(),
+                        libraryItemId = itemId,
+                        episodeId = episodeId,
+                        currentTime = currentTime,
+                        duration = duration,
+                        progress = progress,
+                        isFinished = isFinished,
+                        lastUpdate = System.currentTimeMillis(),
+                        startedAt = System.currentTimeMillis(),
+                        finishedAt = if (isFinished) System.currentTimeMillis() else null,
+                        pendingSync = true,
+                    )
                 audiobookshelfDao.insertProgress(localProgress)
 
                 Result.success(localProgress.toMediaProgress())
@@ -660,13 +667,14 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
 
     override fun getProgressForItemFlow(itemId: String): Flow<MediaProgress?> {
         val (serverId, userId) = activeContext ?: return flowOf(null)
-        return audiobookshelfDao.getProgressForItemFlow(itemId, serverId, userId.toString())
-            .map { it?.toMediaProgress() }
+        return audiobookshelfDao.getProgressForItemFlow(itemId, serverId, userId.toString()).map {
+            it?.toMediaProgress()
+        }
     }
 
     override suspend fun startPlaybackSession(
         itemId: String,
-        episodeId: String?
+        episodeId: String?,
     ): Result<PlaybackSession> {
         return withContext(Dispatchers.IO) {
             try {
@@ -674,44 +682,56 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val deviceInfo = DeviceInfo(
-                    deviceId = getDeviceId(),
-                    manufacturer = Build.MANUFACTURER,
-                    model = Build.MODEL,
-                    sdkVersion = Build.VERSION.SDK_INT,
-                    clientName = "AFinity",
-                    clientVersion = BuildConfig.VERSION_NAME
-                )
-
-                val request = PlaybackSessionRequest(
-                    deviceInfo = deviceInfo,
-                    forceDirectPlay = true,
-                    mediaPlayer = "ExoPlayer",
-                    supportedMimeTypes = listOf(
-                        "audio/mpeg",
-                        "audio/mp4",
-                        "audio/ogg",
-                        "audio/flac",
-                        "audio/wav"
+                val deviceInfo =
+                    DeviceInfo(
+                        deviceId = getDeviceId(),
+                        manufacturer = Build.MANUFACTURER,
+                        model = Build.MODEL,
+                        sdkVersion = Build.VERSION.SDK_INT,
+                        clientName = "AFinity",
+                        clientVersion = BuildConfig.VERSION_NAME,
                     )
-                )
 
-                val response = if (episodeId != null) {
-                    apiService.get().startEpisodePlaybackSession(itemId, episodeId, request)
-                } else {
-                    apiService.get().startPlaybackSession(itemId, request)
-                }
+                val request =
+                    PlaybackSessionRequest(
+                        deviceInfo = deviceInfo,
+                        forceDirectPlay = true,
+                        mediaPlayer = "ExoPlayer",
+                        supportedMimeTypes =
+                            listOf(
+                                "audio/mpeg",
+                                "audio/mp4",
+                                "audio/ogg",
+                                "audio/flac",
+                                "audio/wav",
+                            ),
+                    )
+
+                val response =
+                    if (episodeId != null) {
+                        apiService.get().startEpisodePlaybackSession(itemId, episodeId, request)
+                    } else {
+                        apiService.get().startPlaybackSession(itemId, request)
+                    }
 
                 if (response.isSuccessful && response.body() != null) {
                     val session = response.body()!!
-                    Timber.d("Playback session received: id=${session.id}, mediaType=${session.mediaType}")
-                    Timber.d("Session displayTitle=${session.displayTitle}, displayAuthor=${session.displayAuthor}")
-                    Timber.d("Session audioTracks=${session.audioTracks?.size ?: 0}, chapters=${session.chapters?.size ?: 0}")
+                    Timber.d(
+                        "Playback session received: id=${session.id}, mediaType=${session.mediaType}"
+                    )
+                    Timber.d(
+                        "Session displayTitle=${session.displayTitle}, displayAuthor=${session.displayAuthor}"
+                    )
+                    Timber.d(
+                        "Session audioTracks=${session.audioTracks?.size ?: 0}, chapters=${session.chapters?.size ?: 0}"
+                    )
                     Timber.d("Session episodeId=${session.episodeId}, duration=${session.duration}")
                     Result.success(session)
                 } else {
                     val errorBody = response.errorBody()?.string()
-                    Timber.e("Failed to start session: ${response.code()} - ${response.message()}, body=$errorBody")
+                    Timber.e(
+                        "Failed to start session: ${response.code()} - ${response.message()}, body=$errorBody"
+                    )
                     Result.failure(Exception("Failed to start session: ${response.message()}"))
                 }
             } catch (e: Exception) {
@@ -725,7 +745,7 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
         sessionId: String,
         timeListened: Double,
         currentTime: Double,
-        duration: Double
+        duration: Double,
     ): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
@@ -733,12 +753,13 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val syncData = MediaProgressSyncData(
-                    currentTime = currentTime,
-                    timeListened = timeListened,
-                    duration = duration,
-                    progress = if (duration > 0) currentTime / duration else 0.0
-                )
+                val syncData =
+                    MediaProgressSyncData(
+                        currentTime = currentTime,
+                        timeListened = timeListened,
+                        duration = duration,
+                        progress = if (duration > 0) currentTime / duration else 0.0,
+                    )
 
                 val response = apiService.get().syncPlaybackSession(sessionId, syncData)
 
@@ -758,7 +779,7 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
         sessionId: String,
         currentTime: Double,
         timeListened: Double,
-        duration: Double
+        duration: Double,
     ): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
@@ -766,12 +787,13 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val syncData = MediaProgressSyncData(
-                    currentTime = currentTime,
-                    timeListened = timeListened,
-                    duration = duration,
-                    progress = if (duration > 0) currentTime / duration else 0.0
-                )
+                val syncData =
+                    MediaProgressSyncData(
+                        currentTime = currentTime,
+                        timeListened = timeListened,
+                        duration = duration,
+                        progress = if (duration > 0) currentTime / duration else 0.0,
+                    )
 
                 val response = apiService.get().closePlaybackSession(sessionId, syncData)
 
@@ -789,45 +811,50 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
 
     override suspend fun syncPendingProgress(): Result<Int> {
         return withContext(Dispatchers.IO) {
-            val (currentServerId, currentUserId) = activeContext
-                ?: return@withContext Result.failure(Exception("No active session"))
+            val (currentServerId, currentUserId) =
+                activeContext ?: return@withContext Result.failure(Exception("No active session"))
 
             if (!networkConnectivityMonitor.isCurrentlyConnected()) {
                 return@withContext Result.failure(Exception("No network connection"))
             }
 
             try {
-                val pendingProgress = audiobookshelfDao.getPendingSyncProgress(
-                    currentServerId,
-                    currentUserId.toString()
-                )
+                val pendingProgress =
+                    audiobookshelfDao.getPendingSyncProgress(
+                        currentServerId,
+                        currentUserId.toString(),
+                    )
 
                 var syncedCount = 0
 
                 pendingProgress.forEach { progress ->
                     try {
-                        val request = ProgressUpdateRequest(
-                            currentTime = progress.currentTime,
-                            duration = progress.duration,
-                            progress = progress.progress,
-                            isFinished = progress.isFinished
-                        )
-
-                        val response = if (progress.episodeId != null) {
-                            apiService.get().updateEpisodeProgress(
-                                progress.libraryItemId,
-                                progress.episodeId,
-                                request
+                        val request =
+                            ProgressUpdateRequest(
+                                currentTime = progress.currentTime,
+                                duration = progress.duration,
+                                progress = progress.progress,
+                                isFinished = progress.isFinished,
                             )
-                        } else {
-                            apiService.get().updateProgress(progress.libraryItemId, request)
-                        }
+
+                        val response =
+                            if (progress.episodeId != null) {
+                                apiService
+                                    .get()
+                                    .updateEpisodeProgress(
+                                        progress.libraryItemId,
+                                        progress.episodeId,
+                                        request,
+                                    )
+                            } else {
+                                apiService.get().updateProgress(progress.libraryItemId, request)
+                            }
 
                         if (response.isSuccessful) {
                             audiobookshelfDao.markSynced(
                                 progress.id,
                                 currentServerId,
-                                currentUserId.toString()
+                                currentUserId.toString(),
                             )
                             syncedCount++
                         }
@@ -847,21 +874,22 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
     private suspend fun cacheProgress(progress: MediaProgress) {
         val (currentServerId, currentUserId) = activeContext ?: return
 
-        val entity = AudiobookshelfProgressEntity(
-            id = progress.id,
-            jellyfinServerId = currentServerId,
-            jellyfinUserId = currentUserId.toString(),
-            libraryItemId = progress.libraryItemId,
-            episodeId = progress.episodeId,
-            currentTime = progress.currentTime,
-            duration = progress.duration,
-            progress = progress.progress,
-            isFinished = progress.isFinished,
-            lastUpdate = progress.lastUpdate,
-            startedAt = progress.startedAt,
-            finishedAt = progress.finishedAt,
-            pendingSync = false
-        )
+        val entity =
+            AudiobookshelfProgressEntity(
+                id = progress.id,
+                jellyfinServerId = currentServerId,
+                jellyfinUserId = currentUserId.toString(),
+                libraryItemId = progress.libraryItemId,
+                episodeId = progress.episodeId,
+                currentTime = progress.currentTime,
+                duration = progress.duration,
+                progress = progress.progress,
+                isFinished = progress.isFinished,
+                lastUpdate = progress.lastUpdate,
+                startedAt = progress.startedAt,
+                finishedAt = progress.finishedAt,
+                pendingSync = false,
+            )
 
         audiobookshelfDao.insertProgress(entity)
     }
@@ -876,7 +904,7 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
             name = name,
             mediaType = mediaType,
             icon = icon,
-            displayOrder = displayOrder
+            displayOrder = displayOrder,
         )
     }
 
@@ -901,40 +929,43 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
             numChapters = media.numChapters,
             addedAt = addedAt,
             updatedAt = updatedAt,
-            cachedAt = System.currentTimeMillis()
+            cachedAt = System.currentTimeMillis(),
         )
     }
 
     private fun AudiobookshelfItemEntity.toLibraryItem(): LibraryItem {
-        val genres = genres?.let {
-            try {
-                json.decodeFromString<List<String>>(it)
-            } catch (e: Exception) {
-                null
+        val genres =
+            genres?.let {
+                try {
+                    json.decodeFromString<List<String>>(it)
+                } catch (e: Exception) {
+                    null
+                }
             }
-        }
 
         return LibraryItem(
             id = id,
             libraryId = libraryId,
             mediaType = mediaType,
-            media = com.makd.afinity.data.models.audiobookshelf.Media(
-                metadata = com.makd.afinity.data.models.audiobookshelf.MediaMetadata(
-                    title = title,
-                    authorName = authorName,
-                    narratorName = narratorName,
-                    seriesName = seriesName,
-                    description = description,
-                    publishedYear = publishedYear,
-                    genres = genres
+            media =
+                com.makd.afinity.data.models.audiobookshelf.Media(
+                    metadata =
+                        com.makd.afinity.data.models.audiobookshelf.MediaMetadata(
+                            title = title,
+                            authorName = authorName,
+                            narratorName = narratorName,
+                            seriesName = seriesName,
+                            description = description,
+                            publishedYear = publishedYear,
+                            genres = genres,
+                        ),
+                    duration = duration,
+                    coverPath = coverUrl,
+                    numTracks = numTracks,
+                    numChapters = numChapters,
                 ),
-                duration = duration,
-                coverPath = coverUrl,
-                numTracks = numTracks,
-                numChapters = numChapters
-            ),
             addedAt = addedAt,
-            updatedAt = updatedAt
+            updatedAt = updatedAt,
         )
     }
 
@@ -949,7 +980,7 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
             isFinished = isFinished,
             lastUpdate = lastUpdate,
             startedAt = startedAt,
-            finishedAt = finishedAt
+            finishedAt = finishedAt,
         )
     }
 }

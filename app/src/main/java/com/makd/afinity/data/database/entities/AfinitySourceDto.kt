@@ -6,12 +6,9 @@ import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import java.util.UUID
 
-@Entity(
-    tableName = "sources",
-)
+@Entity(tableName = "sources")
 data class AfinitySourceDto(
-    @PrimaryKey
-    val id: String,
+    @PrimaryKey val id: String,
     val itemId: UUID,
     val name: String,
     val type: AfinitySourceType,

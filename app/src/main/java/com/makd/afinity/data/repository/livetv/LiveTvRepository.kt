@@ -16,7 +16,7 @@ interface LiveTvRepository {
         isNews: Boolean? = null,
         isKids: Boolean? = null,
         isSports: Boolean? = null,
-        limit: Int? = null
+        limit: Int? = null,
     ): List<AfinityChannel>
 
     suspend fun getChannel(channelId: UUID): AfinityChannel?
@@ -31,14 +31,14 @@ interface LiveTvRepository {
         isNews: Boolean? = null,
         isKids: Boolean? = null,
         isSports: Boolean? = null,
-        limit: Int? = null
+        limit: Int? = null,
     ): List<AfinityProgram>
 
     suspend fun getCurrentProgram(channelId: UUID): AfinityProgram?
 
     suspend fun getRecommendedPrograms(
         isAiring: Boolean = true,
-        limit: Int = 20
+        limit: Int = 20,
     ): List<AfinityProgram>
 
     suspend fun getChannelStreamUrl(channelId: UUID): String?

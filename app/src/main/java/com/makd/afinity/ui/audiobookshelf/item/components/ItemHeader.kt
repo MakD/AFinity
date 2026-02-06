@@ -62,68 +62,56 @@ fun ItemHeader(
     progress: MediaProgress?,
     serverUrl: String?,
     onPlay: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val coverUrl = if (serverUrl != null && item.media.coverPath != null) {
-        "$serverUrl/api/items/${item.id}/cover"
-    } else null
+    val coverUrl =
+        if (serverUrl != null && item.media.coverPath != null) {
+            "$serverUrl/api/items/${item.id}/cover"
+        } else null
 
     Box(modifier = modifier.fillMaxWidth()) {
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .height(450.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().height(450.dp)) {
             ItemHeroBackground(coverUrl = coverUrl)
         }
 
-        ItemHeaderContent(
-            item = item,
-            progress = progress,
-            coverUrl = coverUrl,
-            onPlay = onPlay
-        )
+        ItemHeaderContent(item = item, progress = progress, coverUrl = coverUrl, onPlay = onPlay)
     }
 }
 
 @Composable
-fun ItemHeroBackground(
-    coverUrl: String?,
-    modifier: Modifier = Modifier
-) {
+fun ItemHeroBackground(coverUrl: String?, modifier: Modifier = Modifier) {
     if (coverUrl != null) {
         Box(modifier = modifier.fillMaxSize()) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(coverUrl)
-                    .crossfade(true)
-                    .build(),
+                model =
+                    ImageRequest.Builder(LocalContext.current)
+                        .data(coverUrl)
+                        .crossfade(true)
+                        .build(),
                 contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(radius = 30.dp)
-                    .background(Color.Black),
+                modifier = Modifier.fillMaxSize().blur(radius = 30.dp).background(Color.Black),
                 alpha = 0.6f,
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
             )
 
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                MaterialTheme.colorScheme.surface
-                            ),
-                            startY = 100f
+                modifier =
+                    Modifier.fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                        MaterialTheme.colorScheme.surface,
+                                    ),
+                                startY = 100f,
+                            )
                         )
-                    )
             )
         }
     } else {
-        Box(modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface))
+        Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
     }
 }
 
@@ -133,57 +121,47 @@ fun ItemHeaderContent(
     progress: MediaProgress?,
     coverUrl: String?,
     onPlay: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Spacer(modifier = Modifier.statusBarsPadding())
         Spacer(modifier = Modifier.height(140.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Bottom
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             if (coverUrl != null) {
                 AsyncImage(
                     model = coverUrl,
                     contentDescription = "Cover",
-                    modifier = Modifier
-                        .width(160.dp)
-                        .aspectRatio(1f)
-                        .shadow(12.dp, RoundedCornerShape(12.dp))
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
+                    modifier =
+                        Modifier.width(160.dp)
+                            .aspectRatio(1f)
+                            .shadow(12.dp, RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop,
                 )
             } else {
                 Card(
-                    modifier = Modifier
-                        .width(160.dp)
-                        .aspectRatio(1f),
+                    modifier = Modifier.width(160.dp).aspectRatio(1f),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                    )
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ),
                 ) {}
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(bottom = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.weight(1f).padding(bottom = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 item.media.metadata.seriesName?.let { series ->
                     Text(
                         text = series.uppercase(),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
 
@@ -192,7 +170,7 @@ fun ItemHeaderContent(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 item.media.metadata.authorName?.let { author ->
@@ -200,7 +178,7 @@ fun ItemHeaderContent(
                         text = "by $author",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
 
@@ -209,14 +187,14 @@ fun ItemHeaderContent(
                         Text(
                             text = formatDuration(duration),
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
 
                         if (progress != null && progress.progress > 0) {
                             Text(
                                 text = " • ",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
 
                             Spacer(modifier = Modifier.width(4.dp))
@@ -236,7 +214,7 @@ fun ItemHeaderContent(
                                 text = "${formatDuration(remainingSeconds)} left",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             )
                         }
                     }
@@ -248,30 +226,31 @@ fun ItemHeaderContent(
 
         Button(
             onClick = onPlay,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(28.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_player_play_filled),
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (progress != null && progress.progress > 0) "Continue Listening" else "Play",
+                    text =
+                        if (progress != null && progress.progress > 0) "Continue Listening"
+                        else "Play",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }
@@ -286,58 +265,60 @@ fun ItemHeaderContent(
 
         item.media.metadata.narratorName?.let { narrator ->
             Text(
-                text = buildAnnotatedString {
-                    withStyle(
-                        style = SpanStyle(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Normal
-                        )
-                    ) {
-                        append("Narrated by: ")
-                    }
+                text =
+                    buildAnnotatedString {
+                        withStyle(
+                            style =
+                                SpanStyle(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Normal,
+                                )
+                        ) {
+                            append("Narrated by: ")
+                        }
 
-                    withStyle(
-                        style = SpanStyle(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Medium
-                        )
-                    ) {
-                        append(narrator)
-                    }
-                },
-                style = MaterialTheme.typography.bodyMedium
+                        withStyle(
+                            style =
+                                SpanStyle(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                        ) {
+                            append(narrator)
+                        }
+                    },
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
     }
 }
 
 @Composable
-private fun ExpandableSynopsis(
-    description: String,
-    modifier: Modifier = Modifier
-) {
+private fun ExpandableSynopsis(description: String, modifier: Modifier = Modifier) {
     var isExpanded by remember { mutableStateOf(false) }
     var isEllipsized by remember { mutableStateOf(false) }
 
-    val containsHtml = remember(description) {
-        description.contains("<", ignoreCase = true) &&
+    val containsHtml =
+        remember(description) {
+            description.contains("<", ignoreCase = true) &&
                 (description.contains("href=", ignoreCase = true) ||
-                        description.contains("<br", ignoreCase = true) ||
-                        description.contains("<p", ignoreCase = true) ||
-                        description.contains("<i>", ignoreCase = true) ||
-                        description.contains("<b>", ignoreCase = true))
-    }
+                    description.contains("<br", ignoreCase = true) ||
+                    description.contains("<p", ignoreCase = true) ||
+                    description.contains("<i>", ignoreCase = true) ||
+                    description.contains("<b>", ignoreCase = true))
+        }
 
     val linkColor = MaterialTheme.colorScheme.primary
-    val annotatedText = remember(description, linkColor) {
-        if (containsHtml) htmlToAnnotatedString(description, linkColor) else null
-    }
+    val annotatedText =
+        remember(description, linkColor) {
+            if (containsHtml) htmlToAnnotatedString(description, linkColor) else null
+        }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = "Synopsis",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -359,7 +340,7 @@ private fun ExpandableSynopsis(
                 modifier = animModifier,
                 onTextLayout = { result ->
                     if (!isExpanded) isEllipsized = result.hasVisualOverflow
-                }
+                },
             )
         } else {
             Text(
@@ -372,7 +353,7 @@ private fun ExpandableSynopsis(
                 modifier = animModifier,
                 onTextLayout = { result ->
                     if (!isExpanded) isEllipsized = result.hasVisualOverflow
-                }
+                },
             )
         }
 
@@ -383,12 +364,14 @@ private fun ExpandableSynopsis(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { isExpanded = !isExpanded }
-                    .padding(vertical = 4.dp)
+                modifier =
+                    Modifier.clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                        ) {
+                            isExpanded = !isExpanded
+                        }
+                        .padding(vertical = 4.dp),
             )
         }
     }

@@ -4,17 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
-class AudiobookshelfLoginViewModel @Inject constructor(
-    private val audiobookshelfRepository: AudiobookshelfRepository
-) : ViewModel() {
+class AudiobookshelfLoginViewModel
+@Inject
+constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AudiobookshelfLoginUiState())
     val uiState: StateFlow<AudiobookshelfLoginUiState> = _uiState.asStateFlow()
@@ -23,24 +23,15 @@ class AudiobookshelfLoginViewModel @Inject constructor(
     val currentConfig = audiobookshelfRepository.currentConfig
 
     fun updateServerUrl(url: String) {
-        _uiState.value = _uiState.value.copy(
-            serverUrl = url.trim(),
-            error = null
-        )
+        _uiState.value = _uiState.value.copy(serverUrl = url.trim(), error = null)
     }
 
     fun updateUsername(username: String) {
-        _uiState.value = _uiState.value.copy(
-            username = username,
-            error = null
-        )
+        _uiState.value = _uiState.value.copy(username = username, error = null)
     }
 
     fun updatePassword(password: String) {
-        _uiState.value = _uiState.value.copy(
-            password = password,
-            error = null
-        )
+        _uiState.value = _uiState.value.copy(password = password, error = null)
     }
 
     fun testConnection() {
@@ -51,25 +42,25 @@ class AudiobookshelfLoginViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isTestingConnection = true,
-                error = null,
-                connectionTestSuccess = false
-            )
+            _uiState.value =
+                _uiState.value.copy(
+                    isTestingConnection = true,
+                    error = null,
+                    connectionTestSuccess = false,
+                )
 
             try {
                 audiobookshelfRepository.setServerUrl(normalizeUrl(serverUrl))
-                _uiState.value = _uiState.value.copy(
-                    isTestingConnection = false,
-                    connectionTestSuccess = true
-                )
+                _uiState.value =
+                    _uiState.value.copy(isTestingConnection = false, connectionTestSuccess = true)
                 Timber.d("Server URL set: $serverUrl")
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isTestingConnection = false,
-                    connectionTestSuccess = false,
-                    error = "Failed to set server URL: ${e.message}"
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isTestingConnection = false,
+                        connectionTestSuccess = false,
+                        error = "Failed to set server URL: ${e.message}",
+                    )
                 Timber.e(e, "Failed to test connection")
             }
         }
@@ -88,32 +79,28 @@ class AudiobookshelfLoginViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.value = currentState.copy(
-                isLoggingIn = true,
-                error = null
-            )
+            _uiState.value = currentState.copy(isLoggingIn = true, error = null)
 
-            val result = audiobookshelfRepository.login(
-                serverUrl = normalizeUrl(currentState.serverUrl),
-                username = currentState.username,
-                password = currentState.password
-            )
+            val result =
+                audiobookshelfRepository.login(
+                    serverUrl = normalizeUrl(currentState.serverUrl),
+                    username = currentState.username,
+                    password = currentState.password,
+                )
 
             result.fold(
                 onSuccess = { user ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoggingIn = false,
-                        isLoggedIn = true
-                    )
+                    _uiState.value = _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
                     Timber.d("Audiobookshelf login successful for user: ${user.username}")
                 },
                 onFailure = { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoggingIn = false,
-                        error = "Login failed: ${error.message}"
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoggingIn = false,
+                            error = "Login failed: ${error.message}",
+                        )
                     Timber.e(error, "Audiobookshelf login failed")
-                }
+                },
             )
         }
     }
@@ -130,12 +117,13 @@ class AudiobookshelfLoginViewModel @Inject constructor(
                     Timber.d("Audiobookshelf logout successful")
                 },
                 onFailure = { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoggingIn = false,
-                        error = "Logout failed: ${error.message}"
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoggingIn = false,
+                            error = "Logout failed: ${error.message}",
+                        )
                     Timber.e(error, "Audiobookshelf logout failed")
-                }
+                },
             )
         }
     }
@@ -167,5 +155,5 @@ data class AudiobookshelfLoginUiState(
     val connectionTestSuccess: Boolean = false,
     val isLoggingIn: Boolean = false,
     val isLoggedIn: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )

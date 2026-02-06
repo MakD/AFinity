@@ -55,11 +55,9 @@ fun MovieDetailContent(
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onPlayClick: (AfinityMovie, PlaybackSelection) -> Unit,
     navController: androidx.navigation.NavController,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         TaglineSection(item = item)
 
         OverviewSection(item = item)
@@ -82,21 +80,26 @@ fun MovieDetailContent(
                             mediaSourceId = item.sources.firstOrNull()?.id ?: "",
                             audioStreamIndex = null,
                             subtitleStreamIndex = null,
-                            videoStreamIndex = item.sources.firstOrNull()
-                                ?.mediaStreams?.firstOrNull { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }?.index
-                                ?: 0,
-                            startPositionMs = startPositionMs
-                        )
+                            videoStreamIndex =
+                                item.sources
+                                    .firstOrNull()
+                                    ?.mediaStreams
+                                    ?.firstOrNull {
+                                        it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO
+                                    }
+                                    ?.index ?: 0,
+                            startPositionMs = startPositionMs,
+                        ),
                     )
                 },
-                widthSizeClass = widthSizeClass
+                widthSizeClass = widthSizeClass,
             )
         }
 
         SpecialFeaturesSection(
             specialFeatures = specialFeatures,
             onItemClick = onSpecialFeatureClick,
-            widthSizeClass = widthSizeClass
+            widthSizeClass = widthSizeClass,
         )
 
         InCollectionsSection(
@@ -105,7 +108,7 @@ fun MovieDetailContent(
                 val route = Destination.createItemDetailRoute(boxSet.id.toString())
                 navController.navigate(route)
             },
-            widthSizeClass = widthSizeClass
+            widthSizeClass = widthSizeClass,
         )
 
         CastSection(
@@ -114,7 +117,7 @@ fun MovieDetailContent(
                 val route = Destination.createPersonRoute(personId.toString())
                 navController.navigate(route)
             },
-            widthSizeClass = widthSizeClass
+            widthSizeClass = widthSizeClass,
         )
     }
 }
@@ -125,24 +128,20 @@ internal fun ChaptersSection(
     itemId: UUID,
     baseUrl: String,
     onChapterClick: (Long) -> Unit,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = stringResource(R.string.chapters_title),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             itemsIndexed(chapters) { index, chapter ->
                 ChapterCard(
@@ -151,7 +150,7 @@ internal fun ChaptersSection(
                     itemId = itemId,
                     baseUrl = baseUrl,
                     onClick = { onChapterClick(chapter.startPosition) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -165,24 +164,18 @@ internal fun ChapterCard(
     itemId: UUID,
     baseUrl: String,
     onClick: () -> Unit,
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
-    Column(
-        modifier = Modifier.width(cardWidth),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    Column(modifier = Modifier.width(cardWidth), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f),
+            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
             shape = RoundedCornerShape(8.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                modifier =
+                    Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 AsyncImage(
                     imageUrl = chapter.getChapterImageUrl(baseUrl, itemId),
@@ -190,23 +183,22 @@ internal fun ChapterCard(
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 9f / 16f,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
 
                 Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp),
+                    modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
                     color = Color.Black.copy(alpha = 0.75f),
-                    shape = RoundedCornerShape(4.dp)
+                    shape = RoundedCornerShape(4.dp),
                 ) {
                     Text(
                         text = formatTime(chapter.startPosition),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
                         color = Color.White,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                     )
                 }
             }
@@ -214,12 +206,10 @@ internal fun ChapterCard(
 
         Text(
             text = chapter.name ?: "Chapter ${index + 1}",
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Medium
-            ),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

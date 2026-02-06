@@ -5,6 +5,8 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -12,14 +14,14 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
-class AudiobookshelfProgressSyncer @Inject constructor(
+class AudiobookshelfProgressSyncer
+@Inject
+constructor(
     @ApplicationContext private val context: Context,
     private val audiobookshelfRepository: AudiobookshelfRepository,
-    private val playbackManager: AudiobookshelfPlaybackManager
+    private val playbackManager: AudiobookshelfPlaybackManager,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var syncJob: Job? = null
@@ -39,14 +41,15 @@ class AudiobookshelfProgressSyncer @Inject constructor(
         lastSyncTime = playbackManager.playbackState.value.currentTime
         totalTimeListened = 0.0
 
-        syncJob = scope.launch {
-            while (true) {
-                val interval = getSyncInterval()
-                delay(interval)
+        syncJob =
+            scope.launch {
+                while (true) {
+                    val interval = getSyncInterval()
+                    delay(interval)
 
-                syncProgress()
+                    syncProgress()
+                }
             }
-        }
 
         Timber.d("Progress syncer started")
     }
@@ -71,20 +74,17 @@ class AudiobookshelfProgressSyncer @Inject constructor(
         lastSyncTime = currentTime
 
         try {
-            val result = audiobookshelfRepository.syncPlaybackSession(
-                sessionId = sessionId,
-                timeListened = timeListenedSinceLastSync,
-                currentTime = currentTime,
-                duration = state.duration
-            )
+            val result =
+                audiobookshelfRepository.syncPlaybackSession(
+                    sessionId = sessionId,
+                    timeListened = timeListenedSinceLastSync,
+                    currentTime = currentTime,
+                    duration = state.duration,
+                )
 
             result.fold(
-                onSuccess = {
-                    Timber.d("Progress synced: ${currentTime}s / ${state.duration}s")
-                },
-                onFailure = { error ->
-                    Timber.w(error, "Failed to sync progress, will retry")
-                }
+                onSuccess = { Timber.d("Progress synced: ${currentTime}s / ${state.duration}s") },
+                onFailure = { error -> Timber.w(error, "Failed to sync progress, will retry") },
             )
         } catch (e: Exception) {
             Timber.e(e, "Exception syncing progress")

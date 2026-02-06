@@ -19,7 +19,7 @@ object PlayerModule {
     fun providePlaybackStateManager(
         mediaRepository: MediaRepository,
         playbackRepository: PlaybackRepository,
-        syncScheduler: UserDataSyncScheduler
+        syncScheduler: UserDataSyncScheduler,
     ): PlaybackStateManager {
         return PlaybackStateManager(mediaRepository, playbackRepository, syncScheduler)
     }

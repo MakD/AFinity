@@ -16,8 +16,8 @@ import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.user.AfinityUserDataDto
-import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 abstract class ServerDatabaseDao {
@@ -77,15 +77,21 @@ abstract class ServerDatabaseDao {
     abstract suspend fun getUserData(userId: UUID, itemId: UUID): AfinityUserDataDto?
 
     @Transaction
-    open suspend fun getUserDataOrCreateNew(itemId: UUID, userId: UUID, serverId: String): AfinityUserDataDto {
-        return getUserData(userId, itemId) ?: AfinityUserDataDto(
-            userId = userId,
-            itemId = itemId,
-            serverId = serverId,
-            played = false,
-            favorite = false,
-            playbackPositionTicks = 0L
-        ).also { insertUserData(it) }
+    open suspend fun getUserDataOrCreateNew(
+        itemId: UUID,
+        userId: UUID,
+        serverId: String,
+    ): AfinityUserDataDto {
+        return getUserData(userId, itemId)
+            ?: AfinityUserDataDto(
+                    userId = userId,
+                    itemId = itemId,
+                    serverId = serverId,
+                    played = false,
+                    favorite = false,
+                    playbackPositionTicks = 0L,
+                )
+                .also { insertUserData(it) }
     }
 
     @Query("SELECT * FROM seasons WHERE seriesId = :seriesId ORDER BY indexNumber ASC")
@@ -94,7 +100,9 @@ abstract class ServerDatabaseDao {
     @Query("SELECT * FROM episodes WHERE seasonId = :seasonId ORDER BY indexNumber ASC")
     abstract suspend fun getEpisodesForSeason(seasonId: UUID): List<AfinityEpisodeDto>
 
-    @Query("SELECT * FROM episodes WHERE seriesId = :seriesId ORDER BY parentIndexNumber ASC, indexNumber ASC")
+    @Query(
+        "SELECT * FROM episodes WHERE seriesId = :seriesId ORDER BY parentIndexNumber ASC, indexNumber ASC"
+    )
     abstract suspend fun getEpisodesForSeries(seriesId: UUID): List<AfinityEpisodeDto>
 
     @Query("SELECT * FROM segments WHERE itemId = :itemId")
@@ -124,16 +132,32 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM downloads WHERE status = :status")
     abstract suspend fun deleteDownloadsByStatus(status: DownloadStatus)
 
-    @Query("SELECT * FROM downloads WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId")
-    abstract suspend fun getDownloadByItemIdScoped(itemId: UUID, serverId: String, userId: UUID): DownloadDto?
+    @Query(
+        "SELECT * FROM downloads WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId"
+    )
+    abstract suspend fun getDownloadByItemIdScoped(
+        itemId: UUID,
+        serverId: String,
+        userId: UUID,
+    ): DownloadDto?
 
-    @Query("SELECT * FROM downloads WHERE serverId = :serverId AND userId = :userId ORDER BY createdAt DESC")
+    @Query(
+        "SELECT * FROM downloads WHERE serverId = :serverId AND userId = :userId ORDER BY createdAt DESC"
+    )
     abstract fun getAllDownloadsFlowScoped(serverId: String, userId: UUID): Flow<List<DownloadDto>>
 
-    @Query("SELECT * FROM downloads WHERE status IN (:statuses) AND serverId = :serverId AND userId = :userId ORDER BY createdAt DESC")
-    abstract fun getDownloadsByStatusFlowScoped(statuses: List<DownloadStatus>, serverId: String, userId: UUID): Flow<List<DownloadDto>>
+    @Query(
+        "SELECT * FROM downloads WHERE status IN (:statuses) AND serverId = :serverId AND userId = :userId ORDER BY createdAt DESC"
+    )
+    abstract fun getDownloadsByStatusFlowScoped(
+        statuses: List<DownloadStatus>,
+        serverId: String,
+        userId: UUID,
+    ): Flow<List<DownloadDto>>
 
-    @Query("SELECT COALESCE(SUM(totalBytes), 0) FROM downloads WHERE serverId = :serverId AND status = 'COMPLETED'")
+    @Query(
+        "SELECT COALESCE(SUM(totalBytes), 0) FROM downloads WHERE serverId = :serverId AND status = 'COMPLETED'"
+    )
     abstract suspend fun getTotalBytesForServer(serverId: String): Long
 
     @Query("SELECT COALESCE(SUM(totalBytes), 0) FROM downloads WHERE status = 'COMPLETED'")
@@ -142,11 +166,9 @@ abstract class ServerDatabaseDao {
     @Query("UPDATE downloads SET serverId = :serverId, userId = :userId WHERE serverId = ''")
     abstract suspend fun backfillEmptyServerIds(serverId: String, userId: UUID)
 
-    @Query("DELETE FROM movies WHERE id = :movieId")
-    abstract suspend fun deleteMovie(movieId: UUID)
+    @Query("DELETE FROM movies WHERE id = :movieId") abstract suspend fun deleteMovie(movieId: UUID)
 
-    @Query("DELETE FROM shows WHERE id = :showId")
-    abstract suspend fun deleteShow(showId: UUID)
+    @Query("DELETE FROM shows WHERE id = :showId") abstract suspend fun deleteShow(showId: UUID)
 
     @Query("DELETE FROM seasons WHERE id = :seasonId")
     abstract suspend fun deleteSeason(seasonId: UUID)
@@ -169,80 +191,96 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM episodes WHERE serverId = :serverId")
     abstract suspend fun deleteEpisodesByServerId(serverId: String)
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM movies 
         WHERE name LIKE '%' || :query || '%' OR originalTitle LIKE '%' || :query || '%'
         ORDER BY name ASC
         LIMIT :limit
-    """)
+    """
+    )
     abstract suspend fun searchMovies(query: String, limit: Int = 50): List<AfinityMovieDto>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM shows 
         WHERE name LIKE '%' || :query || '%' OR originalTitle LIKE '%' || :query || '%'
         ORDER BY name ASC
         LIMIT :limit
-    """)
+    """
+    )
     abstract suspend fun searchShows(query: String, limit: Int = 50): List<AfinityShowDto>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM episodes 
         WHERE name LIKE '%' || :query || '%' OR overview LIKE '%' || :query || '%'
         ORDER BY seriesName ASC, parentIndexNumber ASC, indexNumber ASC
         LIMIT :limit
-    """)
+    """
+    )
     abstract suspend fun searchEpisodes(query: String, limit: Int = 50): List<AfinityEpisodeDto>
 
-    @Query("""
+    @Query(
+        """
         SELECT m.* FROM movies m
         INNER JOIN userdata u ON m.id = u.itemId
         WHERE u.userId = :userId AND u.favorite = 1
         ORDER BY m.name ASC
-    """)
+    """
+    )
     abstract suspend fun getFavoriteMovies(userId: UUID): List<AfinityMovieDto>
 
-    @Query("""
+    @Query(
+        """
         SELECT s.* FROM shows s
         INNER JOIN userdata u ON s.id = u.itemId
         WHERE u.userId = :userId AND u.favorite = 1
         ORDER BY s.name ASC
-    """)
+    """
+    )
     abstract suspend fun getFavoriteShows(userId: UUID): List<AfinityShowDto>
 
-    @Query("""
+    @Query(
+        """
         SELECT e.* FROM episodes e
         INNER JOIN userdata u ON e.id = u.itemId
         WHERE u.userId = :userId AND u.favorite = 1
         ORDER BY e.seriesName ASC, e.parentIndexNumber ASC, e.indexNumber ASC
-    """)
+    """
+    )
     abstract suspend fun getFavoriteEpisodes(userId: UUID): List<AfinityEpisodeDto>
 
-    @Query("""
+    @Query(
+        """
         SELECT m.* FROM movies m
         INNER JOIN userdata u ON m.id = u.itemId
         WHERE u.userId = :userId AND u.playbackPositionTicks > 0 AND u.played = 0
         ORDER BY u.playbackPositionTicks DESC
         LIMIT :limit
-    """)
+    """
+    )
     abstract suspend fun getContinueWatchingMovies(userId: UUID, limit: Int): List<AfinityMovieDto>
 
-    @Query("""
+    @Query(
+        """
         SELECT e.* FROM episodes e
         INNER JOIN userdata u ON e.id = u.itemId
         WHERE u.userId = :userId AND u.playbackPositionTicks > 0 AND u.played = 0
         ORDER BY u.playbackPositionTicks DESC
         LIMIT :limit
-    """)
-    abstract suspend fun getContinueWatchingEpisodes(userId: UUID, limit: Int): List<AfinityEpisodeDto>
+    """
+    )
+    abstract suspend fun getContinueWatchingEpisodes(
+        userId: UUID,
+        limit: Int,
+    ): List<AfinityEpisodeDto>
 
-    @Query("SELECT COUNT(*) FROM movies")
-    abstract suspend fun getMovieCount(): Int
+    @Query("SELECT COUNT(*) FROM movies") abstract suspend fun getMovieCount(): Int
 
-    @Query("SELECT COUNT(*) FROM shows")
-    abstract suspend fun getShowCount(): Int
+    @Query("SELECT COUNT(*) FROM shows") abstract suspend fun getShowCount(): Int
 
-    @Query("SELECT COUNT(*) FROM episodes")
-    abstract suspend fun getEpisodeCount(): Int
+    @Query("SELECT COUNT(*) FROM episodes") abstract suspend fun getEpisodeCount(): Int
 
     @Query("SELECT COUNT(*) FROM sources WHERE type = 'LOCAL'")
     abstract suspend fun getDownloadedItemCount(): Int
@@ -261,33 +299,23 @@ abstract class ServerDatabaseDao {
         deleteAllDownloads()
     }
 
-    @Query("DELETE FROM movies")
-    abstract suspend fun deleteAllMovies()
+    @Query("DELETE FROM movies") abstract suspend fun deleteAllMovies()
 
-    @Query("DELETE FROM shows")
-    abstract suspend fun deleteAllShows()
+    @Query("DELETE FROM shows") abstract suspend fun deleteAllShows()
 
-    @Query("DELETE FROM seasons")
-    abstract suspend fun deleteAllSeasons()
+    @Query("DELETE FROM seasons") abstract suspend fun deleteAllSeasons()
 
-    @Query("DELETE FROM episodes")
-    abstract suspend fun deleteAllEpisodes()
+    @Query("DELETE FROM episodes") abstract suspend fun deleteAllEpisodes()
 
-    @Query("DELETE FROM sources")
-    abstract suspend fun deleteAllSources()
+    @Query("DELETE FROM sources") abstract suspend fun deleteAllSources()
 
-    @Query("DELETE FROM mediastreams")
-    abstract suspend fun deleteAllMediaStreams()
+    @Query("DELETE FROM mediastreams") abstract suspend fun deleteAllMediaStreams()
 
-    @Query("DELETE FROM trickplayInfos")
-    abstract suspend fun deleteAllTrickplayInfos()
+    @Query("DELETE FROM trickplayInfos") abstract suspend fun deleteAllTrickplayInfos()
 
-    @Query("DELETE FROM segments")
-    abstract suspend fun deleteAllSegments()
+    @Query("DELETE FROM segments") abstract suspend fun deleteAllSegments()
 
-    @Query("DELETE FROM userdata")
-    abstract suspend fun deleteAllUserData()
+    @Query("DELETE FROM userdata") abstract suspend fun deleteAllUserData()
 
-    @Query("DELETE FROM downloads")
-    abstract suspend fun deleteAllDownloads()
+    @Query("DELETE FROM downloads") abstract suspend fun deleteAllDownloads()
 }

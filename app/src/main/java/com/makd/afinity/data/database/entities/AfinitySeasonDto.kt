@@ -10,21 +10,19 @@ import java.util.UUID
 
 @Entity(
     tableName = "seasons",
-    foreignKeys = [
-        ForeignKey(
-            entity = AfinityShowDto::class,
-            parentColumns = arrayOf("id"),
-            childColumns = arrayOf("seriesId"),
-            onDelete = ForeignKey.CASCADE,
-        ),
-    ],
-    indices = [
-        Index("seriesId"),
-    ],
+    foreignKeys =
+        [
+            ForeignKey(
+                entity = AfinityShowDto::class,
+                parentColumns = arrayOf("id"),
+                childColumns = arrayOf("seriesId"),
+                onDelete = ForeignKey.CASCADE,
+            )
+        ],
+    indices = [Index("seriesId")],
 )
 data class AfinitySeasonDto(
-    @PrimaryKey
-    val id: UUID,
+    @PrimaryKey val id: UUID,
     val serverId: String,
     val seriesId: UUID,
     val name: String,

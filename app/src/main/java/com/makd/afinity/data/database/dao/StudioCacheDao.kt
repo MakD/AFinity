@@ -16,7 +16,9 @@ interface StudioCacheDao {
     @Query("SELECT * FROM studio_cache WHERE studioId = :studioId")
     suspend fun getStudioById(studioId: String): StudioCacheEntity?
 
-    @Query("SELECT COUNT(*) > 0 FROM studio_cache WHERE (cachedTimestamp + :ttlMillis) > :currentTime")
+    @Query(
+        "SELECT COUNT(*) > 0 FROM studio_cache WHERE (cachedTimestamp + :ttlMillis) > :currentTime"
+    )
     suspend fun isStudioCacheFresh(ttlMillis: Long, currentTime: Long): Boolean
 
     @Query("SELECT MIN(cachedTimestamp) FROM studio_cache")
@@ -25,8 +27,7 @@ interface StudioCacheDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertStudios(studios: List<StudioCacheEntity>)
 
-    @Query("DELETE FROM studio_cache")
-    suspend fun deleteAllStudios()
+    @Query("DELETE FROM studio_cache") suspend fun deleteAllStudios()
 
     @Transaction
     suspend fun replaceStudios(studios: List<StudioCacheEntity>) {

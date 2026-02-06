@@ -80,13 +80,13 @@ fun RequestConfirmationDialog(
     originalLanguage: String? = null,
     director: String? = null,
     genres: List<String> = emptyList(),
-    ratingsCombined: RatingsCombined? = null
+    ratingsCombined: RatingsCombined? = null,
 ) {
-    val alreadyRequested = existingStatus != null && (
-            mediaType == MediaType.MOVIE ||
-                    existingStatus == MediaStatus.AVAILABLE ||
-                    existingStatus == MediaStatus.PROCESSING
-            )
+    val alreadyRequested =
+        existingStatus != null &&
+            (mediaType == MediaType.MOVIE ||
+                existingStatus == MediaStatus.AVAILABLE ||
+                existingStatus == MediaStatus.PROCESSING)
     val headerImageUrl = mediaBackdropUrl?.takeIf { it.isNotBlank() } ?: mediaPosterUrl
 
     AlertDialog(
@@ -95,59 +95,52 @@ fun RequestConfirmationDialog(
             Text(
                 text = "Request on Seerr",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
             ) {
                 if (!headerImageUrl.isNullOrBlank()) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                        modifier =
+                            Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(12.dp))
                     ) {
                         AsyncImage(
                             imageUrl = headerImageUrl,
                             contentDescription = mediaTitle,
                             blurHash = null,
                             modifier = Modifier.fillMaxWidth(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
                         )
 
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = 0.8f)
-                                        ),
-                                        startY = 100f,
-                                        endY = Float.POSITIVE_INFINITY
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .height(200.dp)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors =
+                                                listOf(
+                                                    Color.Transparent,
+                                                    Color.Black.copy(alpha = 0.8f),
+                                                ),
+                                            startY = 100f,
+                                            endY = Float.POSITIVE_INFINITY,
+                                        )
                                     )
-                                )
                         )
 
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(12.dp)
-                        ) {
+                        Column(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)) {
                             Text(
                                 text = mediaTitle,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
                                 maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
 
                             if (!mediaTagline.isNullOrBlank()) {
@@ -158,7 +151,7 @@ fun RequestConfirmationDialog(
                                     fontStyle = FontStyle.Italic,
                                     color = Color.White.copy(alpha = 0.9f),
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
@@ -169,14 +162,14 @@ fun RequestConfirmationDialog(
                             text = mediaTitle,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         if (!mediaTagline.isNullOrBlank()) {
                             Text(
                                 text = mediaTagline,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontStyle = FontStyle.Italic,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -184,14 +177,14 @@ fun RequestConfirmationDialog(
 
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     data class MetaItem(
                         val icon: Int = 0,
                         val text: String,
                         val contentDesc: String? = null,
                         val tint: Color = Color.Unspecified,
-                        val flagUrl: String? = null
+                        val flagUrl: String? = null,
                     )
 
                     val metadataItems =
@@ -202,20 +195,22 @@ fun RequestConfirmationDialog(
                                         MetaItem(
                                             R.drawable.ic_imdb_logo,
                                             String.format(Locale.US, "%.1f", score),
-                                            "IMDb"
+                                            "IMDb",
                                         )
                                     )
                                 }
 
                                 ratingsCombined?.rt?.criticsScore?.let { score ->
                                     val icon =
-                                        if (score >= 60) R.drawable.ic_rotten_tomato_fresh else R.drawable.ic_rotten_tomato_rotten
+                                        if (score >= 60) R.drawable.ic_rotten_tomato_fresh
+                                        else R.drawable.ic_rotten_tomato_rotten
                                     add(MetaItem(icon, "$score%", "RT Critic"))
                                 }
 
                                 ratingsCombined?.rt?.audienceScore?.let { score ->
                                     val icon =
-                                        if (score >= 60) R.drawable.ic_rt_fresh_popcorn else R.drawable.ic_rt_stale_popcorn
+                                        if (score >= 60) R.drawable.ic_rt_fresh_popcorn
+                                        else R.drawable.ic_rt_stale_popcorn
                                     add(MetaItem(icon, "$score%", "RT Audience"))
                                 }
 
@@ -225,46 +220,51 @@ fun RequestConfirmationDialog(
                                             MetaItem(
                                                 R.drawable.ic_tmdb,
                                                 "${(rating * 10).toInt()}%",
-                                                "TMDB"
+                                                "TMDB",
                                             )
                                         )
                                     }
                                 }
 
-                                originalLanguage?.takeIf { it.isNotBlank() }?.let { lang ->
-                                    add(
-                                        MetaItem(
-                                            icon = R.drawable.ic_language,
-                                            text = lang.uppercase(),
-                                            flagUrl = getAutoFlagUrl(lang),
-                                            contentDesc = "Language"
+                                originalLanguage
+                                    ?.takeIf { it.isNotBlank() }
+                                    ?.let { lang ->
+                                        add(
+                                            MetaItem(
+                                                icon = R.drawable.ic_language,
+                                                text = lang.uppercase(),
+                                                flagUrl = getAutoFlagUrl(lang),
+                                                contentDesc = "Language",
+                                            )
                                         )
-                                    )
-                                }
+                                    }
 
-                                certification?.takeIf { it.isNotBlank() }?.let { cert ->
-                                    add(MetaItem(text = cert))
-                                }
+                                certification
+                                    ?.takeIf { it.isNotBlank() }
+                                    ?.let { cert -> add(MetaItem(text = cert)) }
                             }
                         }
 
                     if (metadataItems.isNotEmpty()) {
                         SeparatedFlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            separator = { MetadataDot() }
+                            separator = { MetadataDot() },
                         ) {
                             metadataItems.forEach { item ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 ) {
                                     if (item.icon != 0) {
-                                        val itemTint = if (item.contentDesc == "Language") MaterialTheme.colorScheme.onSurface else item.tint
+                                        val itemTint =
+                                            if (item.contentDesc == "Language")
+                                                MaterialTheme.colorScheme.onSurface
+                                            else item.tint
                                         Icon(
                                             painter = painterResource(id = item.icon),
                                             contentDescription = null,
                                             tint = itemTint,
-                                            modifier = Modifier.size(14.dp)
+                                            modifier = Modifier.size(14.dp),
                                         )
                                     }
 
@@ -273,24 +273,44 @@ fun RequestConfirmationDialog(
                                     } else if (item.icon == 0) {
                                         androidx.compose.material3.Surface(
                                             shape = RoundedCornerShape(4.dp),
-                                            border = androidx.compose.foundation.BorderStroke(
-                                                width = 1.dp,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                            ),
-                                            color = Color.Transparent
+                                            border =
+                                                androidx.compose.foundation.BorderStroke(
+                                                    width = 1.dp,
+                                                    color =
+                                                        MaterialTheme.colorScheme.onSurface.copy(
+                                                            alpha = 0.5f
+                                                        ),
+                                                ),
+                                            color = Color.Transparent,
                                         ) {
                                             Text(
                                                 text = item.text,
-                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                style =
+                                                    MaterialTheme.typography.labelSmall.copy(
+                                                        fontWeight = FontWeight.Bold
+                                                    ),
+                                                color =
+                                                    MaterialTheme.colorScheme.onSurface.copy(
+                                                        alpha = 0.9f
+                                                    ),
+                                                modifier =
+                                                    Modifier.padding(
+                                                        horizontal = 6.dp,
+                                                        vertical = 2.dp,
+                                                    ),
                                             )
                                         }
                                     } else {
                                         Text(
                                             text = item.text,
-                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+                                            style =
+                                                MaterialTheme.typography.bodyMedium.copy(
+                                                    fontWeight = FontWeight.SemiBold
+                                                ),
+                                            color =
+                                                MaterialTheme.colorScheme.onSurface.copy(
+                                                    alpha = 0.9f
+                                                ),
                                         )
                                     }
                                 }
@@ -306,46 +326,46 @@ fun RequestConfirmationDialog(
                                 text = "Overview",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
                                 text = mediaOverview,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
+                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2,
                             )
                         }
                     }
 
-                    director?.takeIf { it.isNotBlank() }?.let { dir ->
-                        Text(
-                            text = buildAnnotatedString {
-                                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append(
-                                        "Director: "
-                                    )
-                                }
-                                append(dir)
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                        )
-                    }
+                    director
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { dir ->
+                            Text(
+                                text =
+                                    buildAnnotatedString {
+                                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                            append("Director: ")
+                                        }
+                                        append(dir)
+                                    },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                            )
+                        }
 
                     releaseDate?.let { date ->
                         val formattedDate = formatReleaseDate(date)
                         if (formattedDate.isNotBlank()) {
                             Text(
-                                text = buildAnnotatedString {
-                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append(
-                                            "Release Date: "
-                                        )
-                                    }
-                                    append(formattedDate)
-                                },
+                                text =
+                                    buildAnnotatedString {
+                                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                            append("Release Date: ")
+                                        }
+                                        append(formattedDate)
+                                    },
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                             )
                         }
                     }
@@ -353,32 +373,30 @@ fun RequestConfirmationDialog(
                     runtime?.let { minutes ->
                         if (minutes > 0) {
                             Text(
-                                text = buildAnnotatedString {
-                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append(
-                                            "Runtime: "
-                                        )
-                                    }
-                                    append(formatRuntime(minutes))
-                                },
+                                text =
+                                    buildAnnotatedString {
+                                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                            append("Runtime: ")
+                                        }
+                                        append(formatRuntime(minutes))
+                                    },
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                             )
                         }
                     }
 
                     if (genres.isNotEmpty()) {
                         Text(
-                            text = buildAnnotatedString {
-                                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append(
-                                        "Genre: "
-                                    )
-                                }
-                                append(genres.joinToString(", "))
-                            },
+                            text =
+                                buildAnnotatedString {
+                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                        append("Genre: ")
+                                    }
+                                    append(genres.joinToString(", "))
+                                },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                         )
                     }
                 }
@@ -389,7 +407,7 @@ fun RequestConfirmationDialog(
                         text = "Request this ${mediaType.toApiString()} on Seerr?",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
 
@@ -398,7 +416,7 @@ fun RequestConfirmationDialog(
                         availableSeasons = availableSeasons,
                         selectedSeasons = selectedSeasons,
                         onSeasonsChange = onSeasonsChange,
-                        disabledSeasons = disabledSeasons
+                        disabledSeasons = disabledSeasons,
                     )
                 }
             }
@@ -406,13 +424,18 @@ fun RequestConfirmationDialog(
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                enabled = !alreadyRequested && !isLoading && (mediaType == MediaType.MOVIE || selectedSeasons.isNotEmpty() || availableSeasons == 0)
+                enabled =
+                    !alreadyRequested &&
+                        !isLoading &&
+                        (mediaType == MediaType.MOVIE ||
+                            selectedSeasons.isNotEmpty() ||
+                            availableSeasons == 0),
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                 } else {
                     Text(if (alreadyRequested) "Already Requested" else "Request")
@@ -420,14 +443,9 @@ fun RequestConfirmationDialog(
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = !isLoading
-            ) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss, enabled = !isLoading) { Text("Cancel") }
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -436,36 +454,30 @@ private fun MetadataDot() {
     Box(contentAlignment = Alignment.Center) {
         Text(
             text = "•",
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            modifier = Modifier.padding(horizontal = 2.dp)
+            modifier = Modifier.padding(horizontal = 2.dp),
         )
     }
 }
 
 @Composable
-private fun CircleFlagIcon(
-    url: String,
-    modifier: Modifier = Modifier
-) {
+private fun CircleFlagIcon(url: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val model = remember(url) {
-        ImageRequest.Builder(context)
-            .data(url)
-            .decoderFactory(SvgDecoder.Factory())
-            .crossfade(true)
-            .build()
-    }
+    val model =
+        remember(url) {
+            ImageRequest.Builder(context)
+                .data(url)
+                .decoderFactory(SvgDecoder.Factory())
+                .crossfade(true)
+                .build()
+        }
 
     AsyncImage(
         model = model,
         contentDescription = "Flag",
-        modifier = modifier
-            .size(14.dp)
-            .clip(CircleShape),
-        contentScale = ContentScale.Crop
+        modifier = modifier.size(14.dp).clip(CircleShape),
+        contentScale = ContentScale.Crop,
     )
 }
 
@@ -474,7 +486,7 @@ fun SeparatedFlowRow(
     modifier: Modifier = Modifier,
     itemSpacing: Dp = 4.dp,
     separator: @Composable () -> Unit,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     SubcomposeLayout(modifier = modifier) { constraints ->
         val itemMeasurables = subcompose("content", content)
@@ -495,11 +507,12 @@ fun SeparatedFlowRow(
         var currentWidth = 0
 
         itemPlaceables.forEach { placeable ->
-            val addedWidth = if (currentSequence.isEmpty()) {
-                placeable.width
-            } else {
-                separatorWidth + (spacingPx * 2) + placeable.width
-            }
+            val addedWidth =
+                if (currentSequence.isEmpty()) {
+                    placeable.width
+                } else {
+                    separatorWidth + (spacingPx * 2) + placeable.width
+                }
 
             if (currentWidth + addedWidth <= constraints.maxWidth) {
                 currentSequence.add(placeable)
@@ -513,14 +526,15 @@ fun SeparatedFlowRow(
         if (currentSequence.isNotEmpty()) sequences.add(currentSequence)
 
         val totalSeparatorsNeeded = itemPlaceables.size - sequences.size
-        val separatorList = subcompose("separators_real") {
-            repeat(totalSeparatorsNeeded) { separator() }
-        }.map { it.measure(constraints.copy(minWidth = 0)) }
+        val separatorList =
+            subcompose("separators_real") { repeat(totalSeparatorsNeeded) { separator() } }
+                .map { it.measure(constraints.copy(minWidth = 0)) }
 
         var separatorIndex = 0
 
         val verticalGap = 8.dp.roundToPx()
-        val totalHeight = sequences.sumOf { line -> line.maxOf { it.height } } +
+        val totalHeight =
+            sequences.sumOf { line -> line.maxOf { it.height } } +
                 ((sequences.size - 1) * verticalGap)
 
         layout(constraints.maxWidth, totalHeight) {
@@ -555,55 +569,58 @@ fun SeparatedFlowRow(
 private fun getAutoFlagUrl(langCode: String): String? {
     if (langCode.isBlank()) return null
 
-    val manualMapping = when (langCode.lowercase()) {
-        "en" -> "us"
-        "hi" -> "in"
-        "ja" -> "jp"
-        "ko" -> "kr"
-        "zh" -> "cn"
-        "es" -> "es"
-        "fr" -> "fr"
-        "it" -> "it"
-        "de" -> "de"
-        "ru" -> "ru"
-        "pt" -> "br"
-        "tr" -> "tr"
-        "th" -> "th"
-        "id" -> "id"
-        "tl" -> "ph"
-        "vi" -> "vn"
-        "pl" -> "pl"
-        "uk" -> "ua"
-        "ta" -> "in"
-        "te" -> "in"
-        "ml" -> "in"
-        "kn" -> "in"
-        "pa" -> "in"
-        "mr" -> "in"
-        "bn" -> "in"
-        "sv" -> "se"
-        "da" -> "dk"
-        "no" -> "no"
-        "fi" -> "fi"
-        "is" -> "is"
-        "nl" -> "nl"
-        "cs" -> "cz"
-        "hu" -> "hu"
-        "el" -> "gr"
-        "he" -> "il"
-        "ar" -> "sa"
-        "fa" -> "ir"
-        else -> null
-    }
-
-    val countryCode = manualMapping ?: run {
-        val locale = Locale.forLanguageTag(langCode)
-        locale.country.ifBlank {
-            Locale.getAvailableLocales()
-                .firstOrNull { it.language == langCode && it.country.isNotBlank() }
-                ?.country
+    val manualMapping =
+        when (langCode.lowercase()) {
+            "en" -> "us"
+            "hi" -> "in"
+            "ja" -> "jp"
+            "ko" -> "kr"
+            "zh" -> "cn"
+            "es" -> "es"
+            "fr" -> "fr"
+            "it" -> "it"
+            "de" -> "de"
+            "ru" -> "ru"
+            "pt" -> "br"
+            "tr" -> "tr"
+            "th" -> "th"
+            "id" -> "id"
+            "tl" -> "ph"
+            "vi" -> "vn"
+            "pl" -> "pl"
+            "uk" -> "ua"
+            "ta" -> "in"
+            "te" -> "in"
+            "ml" -> "in"
+            "kn" -> "in"
+            "pa" -> "in"
+            "mr" -> "in"
+            "bn" -> "in"
+            "sv" -> "se"
+            "da" -> "dk"
+            "no" -> "no"
+            "fi" -> "fi"
+            "is" -> "is"
+            "nl" -> "nl"
+            "cs" -> "cz"
+            "hu" -> "hu"
+            "el" -> "gr"
+            "he" -> "il"
+            "ar" -> "sa"
+            "fa" -> "ir"
+            else -> null
         }
-    }
+
+    val countryCode =
+        manualMapping
+            ?: run {
+                val locale = Locale.forLanguageTag(langCode)
+                locale.country.ifBlank {
+                    Locale.getAvailableLocales()
+                        .firstOrNull { it.language == langCode && it.country.isNotBlank() }
+                        ?.country
+                }
+            }
 
     return if (!countryCode.isNullOrBlank()) {
         "https://hatscripts.github.io/circle-flags/flags/${countryCode.lowercase()}.svg"

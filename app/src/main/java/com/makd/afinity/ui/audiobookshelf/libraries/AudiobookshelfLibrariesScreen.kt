@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,7 +40,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -58,7 +58,7 @@ fun AudiobookshelfLibrariesScreen(
     navController: NavController,
     mainUiState: MainUiState,
     widthSizeClass: WindowWidthSizeClass,
-    viewModel: AudiobookshelfLibrariesViewModel = hiltViewModel()
+    viewModel: AudiobookshelfLibrariesViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val libraries by viewModel.libraries.collectAsStateWithLifecycle()
@@ -92,49 +92,37 @@ fun AudiobookshelfLibrariesScreen(
                 title = {
                     Text(
                         text = "Audiobooks",
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground
+                        style =
+                            MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                 },
-                onSearchClick = {
-                    navController.navigate(Destination.createSearchRoute())
-                },
-                onProfileClick = {
-                    navController.navigate(Destination.createSettingsRoute())
-                },
-                userProfileImageUrl = mainUiState.userProfileImageUrl
+                onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
+                onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
+                userProfileImageUrl = mainUiState.userProfileImageUrl,
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (libraries.isEmpty() && !uiState.isRefreshing) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     if (uiState.isRefreshing) {
                         CircularProgressIndicator()
                     } else {
                         Text(
                             text = "No libraries found",
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     }
                 }
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
                     LazyRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         item {
                             NavigationChip(
@@ -142,10 +130,8 @@ fun AudiobookshelfLibrariesScreen(
                                 label = "Home",
                                 iconResId = R.drawable.ic_book_series,
                                 onClick = {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(0)
-                                    }
-                                }
+                                    coroutineScope.launch { pagerState.animateScrollToPage(0) }
+                                },
                             )
                         }
                         item {
@@ -154,18 +140,17 @@ fun AudiobookshelfLibrariesScreen(
                                 label = "Series",
                                 iconResId = R.drawable.ic_collection,
                                 onClick = {
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(1)
-                                    }
-                                }
+                                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                                },
                             )
                         }
                         itemsIndexed(libraries) { index, library ->
-                            val iconRes = when (library.mediaType.lowercase()) {
-                                "podcast" -> R.drawable.ic_apple_podcast
-                                "book" -> R.drawable.ic_book_audio
-                                else -> R.drawable.ic_book
-                            }
+                            val iconRes =
+                                when (library.mediaType.lowercase()) {
+                                    "podcast" -> R.drawable.ic_apple_podcast
+                                    "book" -> R.drawable.ic_book_audio
+                                    else -> R.drawable.ic_book
+                                }
 
                             NavigationChip(
                                 selected = pagerState.currentPage == index + 2,
@@ -175,15 +160,12 @@ fun AudiobookshelfLibrariesScreen(
                                     coroutineScope.launch {
                                         pagerState.animateScrollToPage(index + 2)
                                     }
-                                }
+                                },
                             )
                         }
                     }
 
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize()
-                    ) { page ->
+                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                         when (page) {
                             0 -> {
                                 AudiobookshelfHomeTab(
@@ -191,7 +173,7 @@ fun AudiobookshelfLibrariesScreen(
                                     serverUrl = config?.serverUrl,
                                     onItemClick = { item -> onNavigateToItem(item.id) },
                                     isLoading = uiState.isLoadingPersonalized,
-                                    widthSizeClass = widthSizeClass
+                                    widthSizeClass = widthSizeClass,
                                 )
                             }
 
@@ -201,7 +183,7 @@ fun AudiobookshelfLibrariesScreen(
                                     serverUrl = config?.serverUrl,
                                     onItemClick = { item -> onNavigateToItem(item.id) },
                                     isLoading = uiState.isLoadingSeries,
-                                    widthSizeClass = widthSizeClass
+                                    widthSizeClass = widthSizeClass,
                                 )
                             }
 
@@ -214,19 +196,19 @@ fun AudiobookshelfLibrariesScreen(
                                     if (items == null) {
                                         Box(
                                             modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = Alignment.Center
+                                            contentAlignment = Alignment.Center,
                                         ) {
                                             CircularProgressIndicator()
                                         }
                                     } else if (items.isEmpty()) {
                                         Box(
                                             modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = Alignment.Center
+                                            contentAlignment = Alignment.Center,
                                         ) {
                                             Text(
                                                 text = "No items in library",
                                                 style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
                                         }
                                     } else {
@@ -235,13 +217,13 @@ fun AudiobookshelfLibrariesScreen(
                                             modifier = Modifier.fillMaxSize(),
                                             contentPadding = PaddingValues(16.dp),
                                             horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                                            verticalArrangement = Arrangement.spacedBy(12.dp),
                                         ) {
                                             items(items, key = { it.id }) { item ->
                                                 AudiobookCard(
                                                     item = item,
                                                     serverUrl = config?.serverUrl,
-                                                    onClick = { onNavigateToItem(item.id) }
+                                                    onClick = { onNavigateToItem(item.id) },
                                                 )
                                             }
                                         }
@@ -257,20 +239,19 @@ fun AudiobookshelfLibrariesScreen(
                 visible = uiState.error != null,
                 enter = fadeIn(),
                 exit = fadeOut(),
-                modifier = Modifier.align(Alignment.BottomCenter)
+                modifier = Modifier.align(Alignment.BottomCenter),
             ) {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
                 ) {
                     Text(
                         text = uiState.error ?: "",
                         modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                 }
             }
@@ -280,46 +261,44 @@ fun AudiobookshelfLibrariesScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NavigationChip(
-    selected: Boolean,
-    label: String,
-    iconResId: Int,
-    onClick: () -> Unit
-) {
+private fun NavigationChip(selected: Boolean, label: String, iconResId: Int, onClick: () -> Unit) {
     FilterChip(
         selected = selected,
         onClick = onClick,
         label = {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                )
+                style =
+                    MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                    ),
             )
         },
         leadingIcon = {
             Icon(
                 painter = painterResource(id = iconResId),
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
         },
         shape = CircleShape,
-        border = FilterChipDefaults.filterChipBorder(
-            enabled = true,
-            selected = selected,
-            borderColor = if (selected) Color.Transparent else MaterialTheme.colorScheme.outline.copy(
-                alpha = 0.3f
+        border =
+            FilterChipDefaults.filterChipBorder(
+                enabled = true,
+                selected = selected,
+                borderColor =
+                    if (selected) Color.Transparent
+                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                selectedBorderColor = Color.Transparent,
             ),
-            selectedBorderColor = Color.Transparent
-        ),
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = Color.Transparent,
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer
-        )
+        colors =
+            FilterChipDefaults.filterChipColors(
+                containerColor = Color.Transparent,
+                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
     )
 }

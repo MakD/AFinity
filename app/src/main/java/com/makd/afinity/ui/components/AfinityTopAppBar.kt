@@ -41,13 +41,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import timber.log.Timber
 import javax.inject.Inject
+import timber.log.Timber
 
 @HiltViewModel
-class AfinityTopAppBarViewModel @Inject constructor(
-    offlineModeManager: OfflineModeManager
-) : ViewModel() {
+class AfinityTopAppBarViewModel @Inject constructor(offlineModeManager: OfflineModeManager) :
+    ViewModel() {
     val isOffline = offlineModeManager.isOffline
 }
 
@@ -61,7 +60,7 @@ fun AfinityTopAppBar(
     userProfileImageUrl: String? = null,
     backgroundOpacity: Float = 0f,
     actions: @Composable (RowScope.() -> Unit) = {},
-    viewModel: AfinityTopAppBarViewModel = hiltViewModel()
+    viewModel: AfinityTopAppBarViewModel = hiltViewModel(),
 ) {
     val isOffline by viewModel.isOffline.collectAsStateWithLifecycle(initialValue = false)
 
@@ -71,35 +70,31 @@ fun AfinityTopAppBar(
             if (onSearchClick != null) {
                 Button(
                     onClick = onSearchClick,
-                    modifier = Modifier
-                        .height(48.dp)
-                        .width(120.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black.copy(alpha = 0.3f)
-                    ),
+                    modifier = Modifier.height(48.dp).width(120.dp),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = Color.Black.copy(alpha = 0.3f)
+                        ),
                     shape = RoundedCornerShape(24.dp),
-                    contentPadding = PaddingValues(0.dp)
+                    contentPadding = PaddingValues(0.dp),
                 ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_search),
                                 contentDescription = stringResource(R.string.cd_search_icon),
                                 tint = Color.White,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
                             )
                             Text(
                                 text = stringResource(R.string.top_bar_search_hint),
                                 color = Color.White,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontSize = 20.sp,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                     }
@@ -109,19 +104,13 @@ fun AfinityTopAppBar(
 
             if (onProfileClick != null) {
                 Box {
-                    IconButton(
-                        onClick = onProfileClick,
-                        modifier = Modifier.size(48.dp)
-                    ) {
+                    IconButton(onClick = onProfileClick, modifier = Modifier.size(48.dp)) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Color.Black.copy(alpha = 0.3f),
-                                    CircleShape
-                                )
-                                .clip(CircleShape),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier.fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                                    .clip(CircleShape),
+                            contentAlignment = Alignment.Center,
                         ) {
                             if (userProfileImageUrl != null) {
                                 AsyncImage(
@@ -130,14 +119,14 @@ fun AfinityTopAppBar(
                                     targetWidth = 48.dp,
                                     targetHeight = 48.dp,
                                     modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
+                                    contentScale = ContentScale.Crop,
                                 )
                             } else {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_user_circle),
                                     contentDescription = stringResource(R.string.cd_profile_icon),
                                     tint = Color.White,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(32.dp),
                                 )
                             }
                         }
@@ -146,21 +135,21 @@ fun AfinityTopAppBar(
                     if (isOffline) {
                         Timber.d("OfflineMode Toggled, icon to be shown")
                         Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(20.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                                    shape = CircleShape
-                                )
-                                .padding(4.dp),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier.align(Alignment.BottomEnd)
+                                    .size(20.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                                        shape = CircleShape,
+                                    )
+                                    .padding(4.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_cloud_off),
                                 contentDescription = stringResource(R.string.cd_offline_mode),
                                 tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(14.dp),
                             )
                         }
                     }
@@ -169,9 +158,10 @@ fun AfinityTopAppBar(
             }
             actions()
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = backgroundOpacity)
-        ),
-        modifier = modifier
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = backgroundOpacity)
+            ),
+        modifier = modifier,
     )
 }

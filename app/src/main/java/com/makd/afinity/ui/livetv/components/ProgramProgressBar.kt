@@ -12,20 +12,14 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.livetv.AfinityProgram
 
 @Composable
-fun ProgramProgressBar(
-    program: AfinityProgram,
-    modifier: Modifier = Modifier
-) {
+fun ProgramProgressBar(program: AfinityProgram, modifier: Modifier = Modifier) {
     val progress = program.getProgressPercent() / 100f
 
     LinearProgressIndicator(
         progress = { progress },
-        modifier = modifier
-            .fillMaxWidth()
-            .height(3.dp)
-            .clip(MaterialTheme.shapes.small),
+        modifier = modifier.fillMaxWidth().height(3.dp).clip(MaterialTheme.shapes.small),
         color = MaterialTheme.colorScheme.primary,
         trackColor = MaterialTheme.colorScheme.surfaceVariant,
-        strokeCap = StrokeCap.Round
+        strokeCap = StrokeCap.Round,
     )
 }

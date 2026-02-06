@@ -9,14 +9,15 @@ import java.util.UUID
 @Entity(
     tableName = "segments",
     primaryKeys = ["itemId", "type"],
-    foreignKeys = [
-        ForeignKey(
-            entity = AfinityEpisodeDto::class,
-            parentColumns = arrayOf("id"),
-            childColumns = arrayOf("itemId"),
-            onDelete = ForeignKey.CASCADE,
-        ),
-    ],
+    foreignKeys =
+        [
+            ForeignKey(
+                entity = AfinityEpisodeDto::class,
+                parentColumns = arrayOf("id"),
+                childColumns = arrayOf("itemId"),
+                onDelete = ForeignKey.CASCADE,
+            )
+        ],
 )
 data class AfinitySegmentDto(
     val itemId: UUID,

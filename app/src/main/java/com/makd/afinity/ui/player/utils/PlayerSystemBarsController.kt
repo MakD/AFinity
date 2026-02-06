@@ -12,9 +12,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 
 @ComposableTarget("androidx.compose.ui.UiComposable")
 @Composable
-fun PlayerSystemBarsController(
-    isControlsVisible: Boolean = false
-) {
+fun PlayerSystemBarsController(isControlsVisible: Boolean = false) {
     val context = LocalContext.current
     val activity = context as? Activity
 

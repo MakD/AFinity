@@ -33,16 +33,16 @@ import com.makd.afinity.data.database.entities.AfinitySegmentDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
+import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
 import com.makd.afinity.data.database.entities.BoxSetCacheEntity
 import com.makd.afinity.data.database.entities.BoxSetCacheMetadata
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.database.entities.GenreCacheEntity
 import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
 import com.makd.afinity.data.database.entities.GenreShowCacheEntity
-import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
-import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
-import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
-import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
 import com.makd.afinity.data.database.entities.LibraryCacheEntity
@@ -57,118 +57,126 @@ import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 
 @Database(
-    entities = [
-
-        Server::class,
-        ServerAddress::class,
-        User::class,
-
-        LibraryCacheEntity::class,
-        BoxSetCacheEntity::class,
-        BoxSetCacheMetadata::class,
-
-        GenreCacheEntity::class,
-        GenreMovieCacheEntity::class,
-
-        ShowGenreCacheEntity::class,
-        GenreShowCacheEntity::class,
-
-        StudioCacheEntity::class,
-
-        TopPeopleCacheEntity::class,
-        PersonSectionCacheEntity::class,
-        MovieSectionCacheEntity::class,
-
-        AfinityMovieDto::class,
-        AfinityShowDto::class,
-        AfinitySeasonDto::class,
-        AfinityEpisodeDto::class,
-
-        AfinitySourceDto::class,
-        AfinityMediaStreamDto::class,
-        AfinityTrickplayInfoDto::class,
-        AfinitySegmentDto::class,
-
-        AfinityUserDataDto::class,
-
-        DownloadDto::class,
-
-        JellyseerrRequestEntity::class,
-        JellyseerrConfigEntity::class,
-
-        AudiobookshelfConfigEntity::class,
-        AudiobookshelfLibraryEntity::class,
-        AudiobookshelfItemEntity::class,
-        AudiobookshelfProgressEntity::class,
-    ],
+    entities =
+        [
+            Server::class,
+            ServerAddress::class,
+            User::class,
+            LibraryCacheEntity::class,
+            BoxSetCacheEntity::class,
+            BoxSetCacheMetadata::class,
+            GenreCacheEntity::class,
+            GenreMovieCacheEntity::class,
+            ShowGenreCacheEntity::class,
+            GenreShowCacheEntity::class,
+            StudioCacheEntity::class,
+            TopPeopleCacheEntity::class,
+            PersonSectionCacheEntity::class,
+            MovieSectionCacheEntity::class,
+            AfinityMovieDto::class,
+            AfinityShowDto::class,
+            AfinitySeasonDto::class,
+            AfinityEpisodeDto::class,
+            AfinitySourceDto::class,
+            AfinityMediaStreamDto::class,
+            AfinityTrickplayInfoDto::class,
+            AfinitySegmentDto::class,
+            AfinityUserDataDto::class,
+            DownloadDto::class,
+            JellyseerrRequestEntity::class,
+            JellyseerrConfigEntity::class,
+            AudiobookshelfConfigEntity::class,
+            AudiobookshelfLibraryEntity::class,
+            AudiobookshelfItemEntity::class,
+            AudiobookshelfProgressEntity::class,
+        ],
     version = 26,
-    exportSchema = false
+    exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
 abstract class AfinityDatabase : RoomDatabase() {
 
     abstract fun serverDao(): ServerDao
+
     abstract fun serverAddressDao(): ServerAddressDao
+
     abstract fun userDao(): UserDao
 
     abstract fun movieDao(): MovieDao
+
     abstract fun showDao(): ShowDao
+
     abstract fun seasonDao(): SeasonDao
+
     abstract fun episodeDao(): EpisodeDao
 
     abstract fun sourceDao(): SourceDao
+
     abstract fun mediaStreamDao(): MediaStreamDao
+
     abstract fun userDataDao(): UserDataDao
 
     abstract fun serverDatabaseDao(): ServerDatabaseDao
 
     abstract fun libraryCacheDao(): LibraryCacheDao
+
     abstract fun boxSetCacheDao(): BoxSetCacheDao
+
     abstract fun genreCacheDao(): GenreCacheDao
+
     abstract fun studioCacheDao(): StudioCacheDao
+
     abstract fun topPeopleDao(): TopPeopleDao
+
     abstract fun personSectionDao(): PersonSectionDao
+
     abstract fun movieSectionDao(): MovieSectionDao
+
     abstract fun jellyseerrDao(): JellyseerrDao
+
     abstract fun audiobookshelfDao(): AudiobookshelfDao
 
     companion object {
-        @Volatile
-        private var INSTANCE: AfinityDatabase? = null
+        @Volatile private var INSTANCE: AfinityDatabase? = null
 
         fun getDatabase(context: Context): AfinityDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AfinityDatabase::class.java,
-                    "afinity_database"
-                )
-                    .addMigrations(*DatabaseMigrations.ALL_MIGRATIONS)
-                    .build()
-                INSTANCE = instance
-                instance
-            }
+            return INSTANCE
+                ?: synchronized(this) {
+                    val instance =
+                        Room.databaseBuilder(
+                                context.applicationContext,
+                                AfinityDatabase::class.java,
+                                "afinity_database",
+                            )
+                            .addMigrations(*DatabaseMigrations.ALL_MIGRATIONS)
+                            .build()
+                    INSTANCE = instance
+                    instance
+                }
         }
 
         fun getProductionDatabase(context: Context): AfinityDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AfinityDatabase::class.java,
-                    "afinity_database"
-                )
-                    .addMigrations(*DatabaseMigrations.ALL_MIGRATIONS)
-                    .build()
-                INSTANCE = instance
-                instance
-            }
+            return INSTANCE
+                ?: synchronized(this) {
+                    val instance =
+                        Room.databaseBuilder(
+                                context.applicationContext,
+                                AfinityDatabase::class.java,
+                                "afinity_database",
+                            )
+                            .addMigrations(*DatabaseMigrations.ALL_MIGRATIONS)
+                            .build()
+                    INSTANCE = instance
+                    instance
+                }
         }
 
         fun createInMemoryDatabase(context: Context): AfinityDatabase {
             return Room.inMemoryDatabaseBuilder(
-                context.applicationContext,
-                AfinityDatabase::class.java
-            ).build()
+                    context.applicationContext,
+                    AfinityDatabase::class.java,
+                )
+                .build()
         }
 
         fun clearInstance() {

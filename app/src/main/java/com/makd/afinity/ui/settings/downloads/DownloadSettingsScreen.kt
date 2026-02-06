@@ -67,7 +67,7 @@ fun DownloadSettingsScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DownloadsViewModel = hiltViewModel(),
-    offlineModeManager: OfflineModeManager
+    offlineModeManager: OfflineModeManager,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
@@ -86,30 +86,34 @@ fun DownloadSettingsScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.downloads_title),
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                        style =
+                            MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = stringResource(R.string.cd_back)
+                            contentDescription = stringResource(R.string.cd_back),
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surface,
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentPadding = PaddingValues(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             item {
                 StatusHub(
@@ -121,18 +125,19 @@ fun DownloadSettingsScreen(
                     deviceStats = uiState.deviceStorageStats,
                     onWifiOnlyChanged = viewModel::setDownloadOverWifiOnly,
                     formatSize = viewModel::formatStorageSize,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
 
             if (uiState.activeDownloads.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = stringResource(
-                            R.string.active_downloads_header_fmt,
-                            uiState.activeDownloads.size
-                        ),
-                        modifier = Modifier.padding(horizontal = 24.dp)
+                        title =
+                            stringResource(
+                                R.string.active_downloads_header_fmt,
+                                uiState.activeDownloads.size,
+                            ),
+                        modifier = Modifier.padding(horizontal = 24.dp),
                     )
                 }
 
@@ -143,7 +148,7 @@ fun DownloadSettingsScreen(
                         onResume = viewModel::resumeDownload,
                         onCancel = viewModel::cancelDownload,
                         formatSize = viewModel::formatStorageSize,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     )
                 }
             }
@@ -151,11 +156,12 @@ fun DownloadSettingsScreen(
             if (uiState.completedDownloads.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = stringResource(
-                            R.string.completed_downloads_header_fmt,
-                            uiState.completedDownloads.size
-                        ),
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                        title =
+                            stringResource(
+                                R.string.completed_downloads_header_fmt,
+                                uiState.completedDownloads.size,
+                            ),
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                     )
                 }
 
@@ -163,15 +169,13 @@ fun DownloadSettingsScreen(
                     CompletedDownloadRow(
                         download = download,
                         onDelete = viewModel::deleteDownload,
-                        formatSize = viewModel::formatStorageSize
+                        formatSize = viewModel::formatStorageSize,
                     )
                 }
             }
 
             if (uiState.activeDownloads.isEmpty() && uiState.completedDownloads.isEmpty()) {
-                item {
-                    EmptyDownloadsState()
-                }
+                item { EmptyDownloadsState() }
             }
         }
     }
@@ -187,7 +191,7 @@ fun StatusHub(
     deviceStats: DownloadsViewModel.DeviceStorageStats?,
     onWifiOnlyChanged: (Boolean) -> Unit,
     formatSize: (Long) -> String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -197,12 +201,9 @@ fun StatusHub(
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(72.dp)
-                ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(72.dp)) {
                     CircularProgressIndicator(
                         progress = { 1f },
                         modifier = Modifier.fillMaxSize(),
@@ -215,16 +216,18 @@ fun StatusHub(
                     CircularProgressIndicator(
                         progress = { progress },
                         modifier = Modifier.fillMaxSize(),
-                        color = if (progress > 0.9f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        color =
+                            if (progress > 0.9f) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.primary,
                         strokeWidth = 6.dp,
-                        strokeCap = StrokeCap.Round
+                        strokeCap = StrokeCap.Round,
                     )
 
                     Icon(
                         painter = painterResource(id = R.drawable.ic_storage),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                 }
 
@@ -234,41 +237,43 @@ fun StatusHub(
                     Text(
                         text = stringResource(R.string.storage_this_server),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = formatSize(totalStorageUsed),
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp,
-                            letterSpacing = (-1).sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
+                        style =
+                            MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 32.sp,
+                                letterSpacing = (-1).sp,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
 
                     if (totalStorageUsedAllServers > totalStorageUsed) {
                         Text(
-                            text = stringResource(
-                                R.string.storage_all_servers_fmt,
-                                formatSize(totalStorageUsedAllServers)
-                            ),
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text =
+                                stringResource(
+                                    R.string.storage_all_servers_fmt,
+                                    formatSize(totalStorageUsedAllServers),
+                                ),
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
                     val freeSpaceText = deviceStats?.freeBytes?.let { formatSize(it) } ?: "..."
                     Text(
                         text = stringResource(R.string.storage_free_on_device_fmt, freeSpaceText),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = if ((deviceStats?.usagePercentage ?: 0f) > 0.9f)
-                            MaterialTheme.colorScheme.error
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                        color =
+                            if ((deviceStats?.usagePercentage ?: 0f) > 0.9f)
+                                MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -280,29 +285,43 @@ fun StatusHub(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
                     shape = RoundedCornerShape(100),
-                    color = if (isOffline) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.secondaryContainer
+                    color =
+                        if (isOffline) MaterialTheme.colorScheme.tertiaryContainer
+                        else MaterialTheme.colorScheme.secondaryContainer,
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Icon(
-                            painter = painterResource(id = if (isOffline) R.drawable.ic_wifi_off else R.drawable.ic_wifi),
+                            painter =
+                                painterResource(
+                                    id =
+                                        if (isOffline) R.drawable.ic_wifi_off
+                                        else R.drawable.ic_wifi
+                                ),
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
-                            tint = if (isOffline) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                            tint =
+                                if (isOffline) MaterialTheme.colorScheme.onTertiaryContainer
+                                else MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (isOffline) stringResource(R.string.network_status_offline) else stringResource(
-                                R.string.network_status_online
-                            ),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = if (isOffline) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                            text =
+                                if (isOffline) stringResource(R.string.network_status_offline)
+                                else stringResource(R.string.network_status_online),
+                            style =
+                                MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                            color =
+                                if (isOffline) MaterialTheme.colorScheme.onTertiaryContainer
+                                else MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                     }
                 }
@@ -310,21 +329,26 @@ fun StatusHub(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = stringResource(R.string.pref_download_wifi_only_title),
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                        style =
+                            MaterialTheme.typography.labelLarge.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(end = 8.dp)
+                        modifier = Modifier.padding(end = 8.dp),
                     )
                     Switch(
                         checked = wifiOnly,
                         onCheckedChange = onWifiOnlyChanged,
                         modifier = Modifier.scale(0.8f),
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primary,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            uncheckedBorderColor = MaterialTheme.colorScheme.outline
-                        ),
+                        colors =
+                            SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                                uncheckedTrackColor =
+                                    MaterialTheme.colorScheme.surfaceContainerHighest,
+                                uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                            ),
                     )
                 }
             }
@@ -339,53 +363,52 @@ fun ActiveDownloadCard(
     onResume: (UUID) -> Unit,
     onCancel: (UUID) -> Unit,
     formatSize: (Long) -> String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 4.dp
+        tonalElevation = 4.dp,
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 16.dp)
-                ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                     Text(
                         text = download.itemName,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = download.sourceName,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 ) {
                     Text(
-                        text = stringResource(
-                            R.string.download_progress_size_fmt,
-                            formatSize(download.bytesDownloaded),
-                            formatSize(download.totalBytes)
-                        ),
-                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                        text =
+                            stringResource(
+                                R.string.download_progress_size_fmt,
+                                formatSize(download.bytesDownloaded),
+                                formatSize(download.totalBytes),
+                            ),
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = FontFamily.Monospace
+                            ),
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -395,11 +418,11 @@ fun ActiveDownloadCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LinearProgressIndicator(
                     progress = { download.progress },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(6.dp)),
-                    color = if (download.status == DownloadStatus.FAILED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f).height(12.dp).clip(RoundedCornerShape(6.dp)),
+                    color =
+                        if (download.status == DownloadStatus.FAILED)
+                            MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     strokeCap = StrokeCap.Round,
                 )
@@ -410,47 +433,60 @@ fun ActiveDownloadCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = when (download.status) {
-                        DownloadStatus.QUEUED -> stringResource(R.string.download_status_queued).uppercase()
-                        DownloadStatus.DOWNLOADING -> stringResource(R.string.download_status_downloading).uppercase()
-                        DownloadStatus.PAUSED -> stringResource(R.string.download_status_paused).uppercase()
-                        DownloadStatus.FAILED -> stringResource(
-                            R.string.download_status_failed_fmt,
-                            download.error ?: ""
-                        ).uppercase()
+                    text =
+                        when (download.status) {
+                            DownloadStatus.QUEUED ->
+                                stringResource(R.string.download_status_queued).uppercase()
+                            DownloadStatus.DOWNLOADING ->
+                                stringResource(R.string.download_status_downloading).uppercase()
+                            DownloadStatus.PAUSED ->
+                                stringResource(R.string.download_status_paused).uppercase()
+                            DownloadStatus.FAILED ->
+                                stringResource(
+                                        R.string.download_status_failed_fmt,
+                                        download.error ?: "",
+                                    )
+                                    .uppercase()
 
-                        else -> ""
-                    },
+                            else -> ""
+                        },
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = if (download.status == DownloadStatus.FAILED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                        alpha = 0.7f
-                    )
+                    color =
+                        if (download.status == DownloadStatus.FAILED)
+                            MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 )
 
                 Row {
-                    if (download.status == DownloadStatus.DOWNLOADING || download.status == DownloadStatus.QUEUED) {
+                    if (
+                        download.status == DownloadStatus.DOWNLOADING ||
+                            download.status == DownloadStatus.QUEUED
+                    ) {
                         IconButton(
                             onClick = { onPause(download.id) },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(32.dp),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_pause_outline),
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
-                    } else if (download.status == DownloadStatus.PAUSED || download.status == DownloadStatus.FAILED) {
+                    } else if (
+                        download.status == DownloadStatus.PAUSED ||
+                            download.status == DownloadStatus.FAILED
+                    ) {
                         IconButton(
                             onClick = { onResume(download.id) },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(32.dp),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_play_arrow),
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }
@@ -459,12 +495,12 @@ fun ActiveDownloadCard(
 
                     IconButton(
                         onClick = { onCancel(download.id) },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(32.dp),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_cancel),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -477,7 +513,7 @@ fun ActiveDownloadCard(
 fun CompletedDownloadRow(
     download: DownloadInfo,
     onDelete: (UUID) -> Unit,
-    formatSize: (Long) -> String
+    formatSize: (Long) -> String,
 ) {
     ListItem(
         headlineContent = {
@@ -485,28 +521,28 @@ fun CompletedDownloadRow(
                 text = download.itemName,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         },
         supportingContent = {
             Text(
                 text = formatSize(download.totalBytes),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
         leadingContent = {
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(40.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_check),
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                 }
             }
@@ -517,11 +553,11 @@ fun CompletedDownloadRow(
                     painter = painterResource(id = R.drawable.ic_delete),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
             }
         },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
 }
 
@@ -532,30 +568,28 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Bold,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
 @Composable
 fun EmptyDownloadsState() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 64.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 64.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
-            modifier = Modifier.size(120.dp)
+            modifier = Modifier.size(120.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_download),
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 )
             }
         }
@@ -563,14 +597,14 @@ fun EmptyDownloadsState() {
         Text(
             text = stringResource(R.string.empty_downloads_title),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = stringResource(R.string.empty_downloads_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = 8.dp),
         )
     }
 }

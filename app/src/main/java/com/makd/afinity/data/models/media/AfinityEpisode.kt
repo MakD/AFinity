@@ -5,11 +5,11 @@ import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
 import com.makd.afinity.data.models.extensions.logoBlurHash
 import com.makd.afinity.data.repository.JellyfinRepository
+import java.util.UUID
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.LocationType
 import org.jellyfin.sdk.model.api.PlayAccess
-import java.util.UUID
 
 data class AfinityEpisode(
     override val id: UUID,
@@ -53,17 +53,18 @@ suspend fun BaseItemDto.toAfinityEpisode(
     if (database != null) {
         sources.addAll(database.getSources(id).map { it.toAfinitySource(database) })
     }
-    val seriesLogoInfo = try {
-        if (seriesId != null) {
-            val seriesItem = jellyfinRepository.getItem(seriesId!!)
-            val seriesImages = seriesItem?.toAfinityImages(jellyfinRepository)
-            Pair(seriesImages?.logo, seriesImages?.logoBlurHash)
-        } else {
+    val seriesLogoInfo =
+        try {
+            if (seriesId != null) {
+                val seriesItem = jellyfinRepository.getItem(seriesId!!)
+                val seriesImages = seriesItem?.toAfinityImages(jellyfinRepository)
+                Pair(seriesImages?.logo, seriesImages?.logoBlurHash)
+            } else {
+                Pair(null, null)
+            }
+        } catch (e: Exception) {
             Pair(null, null)
         }
-    } catch (e: Exception) {
-        Pair(null, null)
-    }
     return try {
         AfinityEpisode(
             id = id,
@@ -92,18 +93,21 @@ suspend fun BaseItemDto.toAfinityEpisode(
             missing = locationType == LocationType.VIRTUAL,
             images = toAfinityImages(jellyfinRepository),
             chapters = toAfinityChapters(),
-            trickplayInfo = trickplay?.mapValues { it.value[it.value.keys.max()]!!.toAfinityTrickplayInfo() },
-            providerIds = providerIds?.mapNotNull { (key, value) ->
-                value?.let { key to it }
-            }?.toMap(),
-            externalUrls = externalUrls?.map { it.toAfinityExternalUrl() }
+            trickplayInfo =
+                trickplay?.mapValues { it.value[it.value.keys.max()]!!.toAfinityTrickplayInfo() },
+            providerIds =
+                providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+            externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
         )
     } catch (_: NullPointerException) {
         null
     }
 }
 
-suspend fun AfinityEpisodeDto.toAfinityEpisode(database: ServerDatabaseDao, userId: UUID): AfinityEpisode {
+suspend fun AfinityEpisodeDto.toAfinityEpisode(
+    database: ServerDatabaseDao,
+    userId: UUID,
+): AfinityEpisode {
     val userData = database.getUserDataOrCreateNew(id, userId, serverId)
     val sources = database.getSources(id).map { it.toAfinitySource(database) }
     val trickplayInfos = mutableMapOf<String, AfinityTrickplayInfo>()
@@ -140,6 +144,6 @@ suspend fun AfinityEpisodeDto.toAfinityEpisode(database: ServerDatabaseDao, user
         chapters = chapters ?: emptyList(),
         trickplayInfo = trickplayInfos,
         providerIds = null,
-        externalUrls = null
+        externalUrls = null,
     )
 }

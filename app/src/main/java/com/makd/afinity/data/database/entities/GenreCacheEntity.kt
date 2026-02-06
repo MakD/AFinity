@@ -5,8 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "genre_cache")
 data class GenreCacheEntity(
-    @PrimaryKey
-    val genreName: String,
+    @PrimaryKey val genreName: String,
     val lastFetchedTimestamp: Long,
-    val movieCount: Int = 0
+    val movieCount: Int = 0,
 )

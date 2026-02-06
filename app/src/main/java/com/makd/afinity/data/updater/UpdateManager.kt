@@ -14,6 +14,9 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.models.GitHubRelease
 import com.makd.afinity.data.updater.models.UpdateState
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,15 +27,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.File
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
-class UpdateManager @Inject constructor(
+class UpdateManager
+@Inject
+constructor(
     @ApplicationContext private val context: Context,
     private val gitHubApiService: GitHubApiService,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
 ) {
     private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
@@ -44,24 +46,29 @@ class UpdateManager @Inject constructor(
     private var progressJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
-    private val downloadReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-            Timber.d("BroadcastReceiver.onReceive called! Download ID: $id, currentDownloadId: $currentDownloadId")
-            if (id == currentDownloadId) {
-                Timber.d("IDs match, calling handleDownloadComplete")
-                handleDownloadComplete(id)
-            } else {
-                Timber.w("Received download complete for different ID: $id vs $currentDownloadId")
+    private val downloadReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                Timber.d(
+                    "BroadcastReceiver.onReceive called! Download ID: $id, currentDownloadId: $currentDownloadId"
+                )
+                if (id == currentDownloadId) {
+                    Timber.d("IDs match, calling handleDownloadComplete")
+                    handleDownloadComplete(id)
+                } else {
+                    Timber.w(
+                        "Received download complete for different ID: $id vs $currentDownloadId"
+                    )
+                }
             }
         }
-    }
 
     init {
         context.registerReceiver(
             downloadReceiver,
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            Context.RECEIVER_NOT_EXPORTED
+            Context.RECEIVER_NOT_EXPORTED,
         )
         Timber.d("UpdateManager initialized, download receiver registered")
     }
@@ -94,7 +101,7 @@ class UpdateManager @Inject constructor(
                 Timber.e(error, "Failed to check for updates")
                 _updateState.value = UpdateState.Error(error.message ?: "Unknown error")
                 null
-            }
+            },
         )
     }
 
@@ -107,11 +114,14 @@ class UpdateManager @Inject constructor(
         }
 
         val currentAbi = getCurrentAbi()
-        val apkAsset = release.assets.firstOrNull { asset ->
-            asset.name.endsWith(".apk") && asset.name.contains(currentAbi)
-        } ?: release.assets.firstOrNull { asset ->
-            asset.name.endsWith(".apk") && asset.name.contains("arm64-v8a")
-        } ?: release.assets.firstOrNull { it.name.endsWith(".apk") }
+        val apkAsset =
+            release.assets.firstOrNull { asset ->
+                asset.name.endsWith(".apk") && asset.name.contains(currentAbi)
+            }
+                ?: release.assets.firstOrNull { asset ->
+                    asset.name.endsWith(".apk") && asset.name.contains("arm64-v8a")
+                }
+                ?: release.assets.firstOrNull { it.name.endsWith(".apk") }
 
         if (apkAsset == null) {
             _updateState.value = UpdateState.Error("No compatible APK found")
@@ -119,15 +129,18 @@ class UpdateManager @Inject constructor(
         }
 
         try {
-            val request = DownloadManager.Request(Uri.parse(apkAsset.downloadUrl))
-                .setTitle("AFinity Update")
-                .setDescription("Downloading version ${release.tagName}")
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationInExternalPublicDir(
-                    Environment.DIRECTORY_DOWNLOADS,
-                    apkAsset.name
-                )
-                .setMimeType("application/vnd.android.package-archive")
+            val request =
+                DownloadManager.Request(Uri.parse(apkAsset.downloadUrl))
+                    .setTitle("AFinity Update")
+                    .setDescription("Downloading version ${release.tagName}")
+                    .setNotificationVisibility(
+                        DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                    )
+                    .setDestinationInExternalPublicDir(
+                        Environment.DIRECTORY_DOWNLOADS,
+                        apkAsset.name,
+                    )
+                    .setMimeType("application/vnd.android.package-archive")
 
             currentDownloadId = downloadManager.enqueue(request)
             _updateState.value = UpdateState.Downloading(0)
@@ -143,81 +156,92 @@ class UpdateManager @Inject constructor(
 
     private fun trackDownloadProgress() {
         progressJob?.cancel()
-        progressJob = coroutineScope.launch {
-            while (isActive && currentDownloadId != null) {
-                val query = DownloadManager.Query().setFilterById(currentDownloadId!!)
-                val cursor = downloadManager.query(query)
+        progressJob =
+            coroutineScope.launch {
+                while (isActive && currentDownloadId != null) {
+                    val query = DownloadManager.Query().setFilterById(currentDownloadId!!)
+                    val cursor = downloadManager.query(query)
 
-                if (cursor.moveToFirst()) {
-                    val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
-                    val status = cursor.getInt(statusIndex)
+                    if (cursor.moveToFirst()) {
+                        val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                        val status = cursor.getInt(statusIndex)
 
-                    val bytesDownloadedIndex =
-                        cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                    val totalBytesIndex =
-                        cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
-                    val bytesDownloaded = cursor.getLong(bytesDownloadedIndex)
-                    val totalBytes = cursor.getLong(totalBytesIndex)
+                        val bytesDownloadedIndex =
+                            cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                        val totalBytesIndex =
+                            cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                        val bytesDownloaded = cursor.getLong(bytesDownloadedIndex)
+                        val totalBytes = cursor.getLong(totalBytesIndex)
 
-                    Timber.d("Download status: $status, bytes: $bytesDownloaded / $totalBytes")
+                        Timber.d("Download status: $status, bytes: $bytesDownloaded / $totalBytes")
 
-                    when (status) {
-                        DownloadManager.STATUS_RUNNING -> {
-                            if (totalBytes > 0) {
-                                val progress =
-                                    ((bytesDownloaded * 100) / totalBytes).toInt().coerceIn(0, 99)
-                                _updateState.value = UpdateState.Downloading(progress)
-                                Timber.d("Download progress: $progress%")
+                        when (status) {
+                            DownloadManager.STATUS_RUNNING -> {
+                                if (totalBytes > 0) {
+                                    val progress =
+                                        ((bytesDownloaded * 100) / totalBytes)
+                                            .toInt()
+                                            .coerceIn(0, 99)
+                                    _updateState.value = UpdateState.Downloading(progress)
+                                    Timber.d("Download progress: $progress%")
+                                }
+                            }
+
+                            DownloadManager.STATUS_SUCCESSFUL -> {
+                                Timber.d("Download successful, stopping progress tracking")
+                                cursor.close()
+                                delay(1000)
+                                if (_updateState.value is UpdateState.Downloading) {
+                                    Timber.w(
+                                        "Broadcast receiver didn't fire, handling completion manually"
+                                    )
+                                    handleDownloadComplete(currentDownloadId!!)
+                                }
+                                return@launch
+                            }
+
+                            DownloadManager.STATUS_FAILED -> {
+                                val reasonIndex =
+                                    cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                                val reason = cursor.getInt(reasonIndex)
+                                Timber.e("Download failed with reason: $reason")
+                                _updateState.value = UpdateState.Error("Download failed: $reason")
+                                cursor.close()
+                                return@launch
                             }
                         }
-
-                        DownloadManager.STATUS_SUCCESSFUL -> {
-                            Timber.d("Download successful, stopping progress tracking")
-                            cursor.close()
-                            delay(1000)
-                            if (_updateState.value is UpdateState.Downloading) {
-                                Timber.w("Broadcast receiver didn't fire, handling completion manually")
-                                handleDownloadComplete(currentDownloadId!!)
-                            }
-                            return@launch
-                        }
-
-                        DownloadManager.STATUS_FAILED -> {
-                            val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
-                            val reason = cursor.getInt(reasonIndex)
-                            Timber.e("Download failed with reason: $reason")
-                            _updateState.value = UpdateState.Error("Download failed: $reason")
-                            cursor.close()
-                            return@launch
-                        }
+                    } else {
+                        cursor.close()
+                        return@launch
                     }
-                } else {
                     cursor.close()
-                    return@launch
+                    delay(500)
                 }
-                cursor.close()
-                delay(500)
             }
-        }
     }
 
     fun installUpdate(file: File) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            val intent =
+                Intent(Intent.ACTION_VIEW).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    val uri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.fileprovider",
-                        file
-                    )
-                    setDataAndType(uri, "application/vnd.android.package-archive")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                } else {
-                    setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive")
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        val uri =
+                            FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.fileprovider",
+                                file,
+                            )
+                        setDataAndType(uri, "application/vnd.android.package-archive")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    } else {
+                        setDataAndType(
+                            Uri.fromFile(file),
+                            "application/vnd.android.package-archive",
+                        )
+                    }
                 }
-            }
 
             context.startActivity(intent)
         } catch (e: Exception) {
@@ -245,18 +269,19 @@ class UpdateManager @Inject constructor(
                     Timber.d("Download URI: $uriString")
 
                     if (uriString != null) {
-                        val file = if (uriString.startsWith("file://")) {
-                            File(Uri.parse(uriString).path ?: "")
-                        } else {
-                            val localFileIndex =
-                                cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME)
-                            if (localFileIndex >= 0) {
-                                val localFile = cursor.getString(localFileIndex)
-                                if (localFile != null) File(localFile) else null
+                        val file =
+                            if (uriString.startsWith("file://")) {
+                                File(Uri.parse(uriString).path ?: "")
                             } else {
-                                null
+                                val localFileIndex =
+                                    cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME)
+                                if (localFileIndex >= 0) {
+                                    val localFile = cursor.getString(localFileIndex)
+                                    if (localFile != null) File(localFile) else null
+                                } else {
+                                    null
+                                }
                             }
-                        }
 
                         if (file?.exists() == true) {
                             _updateState.value = UpdateState.Downloaded(file, currentRelease!!)
@@ -287,11 +312,14 @@ class UpdateManager @Inject constructor(
 
     private fun getDownloadedApkFile(release: GitHubRelease): File? {
         val currentAbi = getCurrentAbi()
-        val apkAsset = release.assets.firstOrNull { asset ->
-            asset.name.endsWith(".apk") && asset.name.contains(currentAbi)
-        } ?: release.assets.firstOrNull { asset ->
-            asset.name.endsWith(".apk") && asset.name.contains("arm64-v8a")
-        } ?: release.assets.firstOrNull { it.name.endsWith(".apk") }
+        val apkAsset =
+            release.assets.firstOrNull { asset ->
+                asset.name.endsWith(".apk") && asset.name.contains(currentAbi)
+            }
+                ?: release.assets.firstOrNull { asset ->
+                    asset.name.endsWith(".apk") && asset.name.contains("arm64-v8a")
+                }
+                ?: release.assets.firstOrNull { it.name.endsWith(".apk") }
 
         if (apkAsset == null) return null
 
@@ -301,14 +329,15 @@ class UpdateManager @Inject constructor(
 
         val allFiles = downloadDir.listFiles() ?: return null
 
-        val matchingFiles = allFiles.filter { file ->
-            file.name == apkAsset.name ||
-                    file.name.matches(Regex("$baseFileName(-\\d+)?\\.apk"))
-        }.sortedByDescending { it.lastModified() }
+        val matchingFiles =
+            allFiles
+                .filter { file ->
+                    file.name == apkAsset.name ||
+                        file.name.matches(Regex("$baseFileName(-\\d+)?\\.apk"))
+                }
+                .sortedByDescending { it.lastModified() }
 
-        return matchingFiles.firstOrNull()?.also {
-            Timber.d("Found existing download: ${it.name}")
-        }
+        return matchingFiles.firstOrNull()?.also { Timber.d("Found existing download: ${it.name}") }
     }
 
     private fun isNewerVersion(remoteVersion: String): Boolean {
@@ -325,7 +354,8 @@ class UpdateManager @Inject constructor(
 
     private fun parseVersion(version: String): Int {
         val cleanVersion = version.removePrefix("v").split("-")[0]
-        return cleanVersion.split(".")
+        return cleanVersion
+            .split(".")
             .take(3)
             .map { it.toIntOrNull() ?: 0 }
             .fold(0) { acc, num -> acc * 1000 + num }

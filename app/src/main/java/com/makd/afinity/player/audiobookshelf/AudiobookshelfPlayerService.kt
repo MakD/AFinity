@@ -21,6 +21,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,19 +31,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class AudiobookshelfPlayerService : MediaSessionService() {
 
-    @Inject
-    lateinit var playbackManager: AudiobookshelfPlaybackManager
-    @Inject
-    lateinit var progressSyncer: AudiobookshelfProgressSyncer
-    @Inject
-    lateinit var securePreferencesRepository: SecurePreferencesRepository
-    @Inject
-    lateinit var networkConnectivityMonitor: NetworkConnectivityMonitor
+    @Inject lateinit var playbackManager: AudiobookshelfPlaybackManager
+    @Inject lateinit var progressSyncer: AudiobookshelfProgressSyncer
+    @Inject lateinit var securePreferencesRepository: SecurePreferencesRepository
+    @Inject lateinit var networkConnectivityMonitor: NetworkConnectivityMonitor
 
     private var mediaSession: MediaSession? = null
     private var exoPlayer: ExoPlayer? = null
@@ -55,70 +51,77 @@ class AudiobookshelfPlayerService : MediaSessionService() {
         super.onCreate()
 
         val token = securePreferencesRepository.getCachedAudiobookshelfToken()
-        val dataSourceFactory = DefaultHttpDataSource.Factory()
-            .setAllowCrossProtocolRedirects(true)
-            .setDefaultRequestProperties(buildMap {
-                if (token != null) put("Authorization", "Bearer $token")
-            })
+        val dataSourceFactory =
+            DefaultHttpDataSource.Factory()
+                .setAllowCrossProtocolRedirects(true)
+                .setDefaultRequestProperties(
+                    buildMap { if (token != null) put("Authorization", "Bearer $token") }
+                )
 
-        exoPlayer = ExoPlayer.Builder(this)
-            .setAudioAttributes(AudioAttributes.DEFAULT, true)
-            .setHandleAudioBecomingNoisy(true)
-            .setWakeMode(C.WAKE_MODE_NETWORK)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
-            .build()
+        exoPlayer =
+            ExoPlayer.Builder(this)
+                .setAudioAttributes(AudioAttributes.DEFAULT, true)
+                .setHandleAudioBecomingNoisy(true)
+                .setWakeMode(C.WAKE_MODE_NETWORK)
+                .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
+                .build()
 
-        exoPlayer?.addListener(object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                playbackManager.updatePlayingState(isPlaying)
-                if (isPlaying) {
-                    startPositionUpdates()
-                    progressSyncer.startSyncing()
-                } else {
-                    stopPositionUpdates()
-                    serviceScope.launch { progressSyncer.syncNow() }
-                    progressSyncer.stopSyncing()
-                }
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                when (playbackState) {
-                    Player.STATE_BUFFERING -> playbackManager.updateBufferingState(true)
-                    Player.STATE_READY -> playbackManager.updateBufferingState(false)
-                    Player.STATE_ENDED -> {
-                        playbackManager.updatePlayingState(false)
+        exoPlayer?.addListener(
+            object : Player.Listener {
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    playbackManager.updatePlayingState(isPlaying)
+                    if (isPlaying) {
+                        startPositionUpdates()
+                        progressSyncer.startSyncing()
+                    } else {
                         stopPositionUpdates()
                         serviceScope.launch { progressSyncer.syncNow() }
+                        progressSyncer.stopSyncing()
                     }
+                }
 
-                    else -> {}
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    when (playbackState) {
+                        Player.STATE_BUFFERING -> playbackManager.updateBufferingState(true)
+                        Player.STATE_READY -> playbackManager.updateBufferingState(false)
+                        Player.STATE_ENDED -> {
+                            playbackManager.updatePlayingState(false)
+                            stopPositionUpdates()
+                            serviceScope.launch { progressSyncer.syncNow() }
+                        }
+
+                        else -> {}
+                    }
+                }
+
+                override fun onPlayerError(error: PlaybackException) {
+                    Timber.e(error, "Player error")
+                    playbackManager.updatePlayingState(false)
                 }
             }
-
-            override fun onPlayerError(error: PlaybackException) {
-                Timber.e(error, "Player error")
-                playbackManager.updatePlayingState(false)
-            }
-        })
-
-        val sessionIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, sessionIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        mediaSession = MediaSession.Builder(this, exoPlayer!!)
-            .setSessionActivity(pendingIntent)
-            .setCallback(CustomMediaSessionCallback())
-            .build()
+        val sessionIntent = Intent(this, MainActivity::class.java)
+        val pendingIntent =
+            PendingIntent.getActivity(
+                this,
+                0,
+                sessionIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+
+        mediaSession =
+            MediaSession.Builder(this, exoPlayer!!)
+                .setSessionActivity(pendingIntent)
+                .setCallback(CustomMediaSessionCallback())
+                .build()
 
         setMediaNotificationProvider(
             DefaultMediaNotificationProvider.Builder(this)
                 .setChannelId("afinity_audiobook_playback")
                 .setChannelName(R.string.playback_channel_name)
-                .build().apply {
-                    setSmallIcon(R.drawable.ic_launcher_monochrome)
-                }
+                .build()
+                .apply { setSmallIcon(R.drawable.ic_launcher_monochrome) }
         )
     }
 
@@ -131,45 +134,42 @@ class AudiobookshelfPlayerService : MediaSessionService() {
         @UnstableApi
         override fun onConnect(
             session: MediaSession,
-            controller: MediaSession.ControllerInfo
+            controller: MediaSession.ControllerInfo,
         ): MediaSession.ConnectionResult {
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session).build()
         }
 
         override fun onPlaybackResumption(
             mediaSession: MediaSession,
-            controller: MediaSession.ControllerInfo
+            controller: MediaSession.ControllerInfo,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
             Timber.d("System requested playback resumption")
             return Futures.immediateFuture(
-                MediaSession.MediaItemsWithStartPosition(
-                    emptyList(),
-                    0,
-                    0L
-                )
+                MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L)
             )
         }
     }
 
     private fun startPositionUpdates() {
         stopPositionUpdates()
-        positionUpdateJob = serviceScope.launch {
-            while (isActive) {
-                val player = exoPlayer ?: break
+        positionUpdateJob =
+            serviceScope.launch {
+                while (isActive) {
+                    val player = exoPlayer ?: break
 
-                val currentMediaItemIndex = player.currentMediaItemIndex
-                val audioTracks = playbackManager.playbackState.value.audioTracks
-                var totalPosition = 0.0
+                    val currentMediaItemIndex = player.currentMediaItemIndex
+                    val audioTracks = playbackManager.playbackState.value.audioTracks
+                    var totalPosition = 0.0
 
-                for (i in 0 until currentMediaItemIndex) {
-                    totalPosition += audioTracks.getOrNull(i)?.duration ?: 0.0
+                    for (i in 0 until currentMediaItemIndex) {
+                        totalPosition += audioTracks.getOrNull(i)?.duration ?: 0.0
+                    }
+                    totalPosition += player.currentPosition / 1000.0
+
+                    playbackManager.updatePosition(totalPosition)
+                    delay(1000)
                 }
-                totalPosition += player.currentPosition / 1000.0
-
-                playbackManager.updatePosition(totalPosition)
-                delay(1000)
             }
-        }
     }
 
     private fun stopPositionUpdates() {

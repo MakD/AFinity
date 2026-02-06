@@ -61,7 +61,7 @@ import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 @Composable
 fun AudiobookshelfPlayerScreen(
     onNavigateBack: () -> Unit,
-    viewModel: AudiobookshelfPlayerViewModel = hiltViewModel()
+    viewModel: AudiobookshelfPlayerViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val playbackState by viewModel.playbackState.collectAsState()
@@ -69,11 +69,12 @@ fun AudiobookshelfPlayerScreen(
 
     val defaultColor = MaterialTheme.colorScheme.surface
     val dominantColor = rememberDominantColor(playbackState.coverUrl, defaultColor)
-    val animatedColor by animateColorAsState(
-        targetValue = dominantColor,
-        animationSpec = tween(durationMillis = 800),
-        label = "color"
-    )
+    val animatedColor by
+        animateColorAsState(
+            targetValue = dominantColor,
+            animationSpec = tween(durationMillis = 800),
+            label = "color",
+        )
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -87,20 +88,21 @@ fun AudiobookshelfPlayerScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = Color.Transparent
+        containerColor = Color.Transparent,
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            animatedColor.copy(alpha = 0.8f),
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
-                            Color.Black.copy(alpha = 0.9f)
+            modifier =
+                Modifier.fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    animatedColor.copy(alpha = 0.8f),
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
+                                    Color.Black.copy(alpha = 0.9f),
+                                )
                         )
                     )
-                )
         ) {
             if (isLandscape) {
                 LandscapePlayerContent(
@@ -108,7 +110,7 @@ fun AudiobookshelfPlayerScreen(
                     viewModel = viewModel,
                     animatedColor = animatedColor,
                     onNavigateBack = onNavigateBack,
-                    paddingValues = paddingValues
+                    paddingValues = paddingValues,
                 )
             } else {
                 PortraitPlayerContent(
@@ -116,7 +118,7 @@ fun AudiobookshelfPlayerScreen(
                     viewModel = viewModel,
                     animatedColor = animatedColor,
                     onNavigateBack = onNavigateBack,
-                    paddingValues = paddingValues
+                    paddingValues = paddingValues,
                 )
             }
         }
@@ -125,7 +127,7 @@ fun AudiobookshelfPlayerScreen(
                 chapters = playbackState.chapters,
                 currentChapterIndex = playbackState.currentChapterIndex,
                 onChapterSelected = viewModel::seekToChapter,
-                onDismiss = viewModel::dismissChapterSelector
+                onDismiss = viewModel::dismissChapterSelector,
             )
         }
 
@@ -133,7 +135,7 @@ fun AudiobookshelfPlayerScreen(
             PlaybackSpeedSelector(
                 currentSpeed = playbackState.playbackSpeed,
                 onSpeedSelected = viewModel::setPlaybackSpeed,
-                onDismiss = viewModel::dismissSpeedSelector
+                onDismiss = viewModel::dismissSpeedSelector,
             )
         }
 
@@ -142,7 +144,7 @@ fun AudiobookshelfPlayerScreen(
                 currentTimerEndTime = playbackState.sleepTimerEndTime,
                 onTimerSelected = viewModel::setSleepTimer,
                 onCancelTimer = viewModel::cancelSleepTimer,
-                onDismiss = viewModel::dismissSleepTimerDialog
+                onDismiss = viewModel::dismissSleepTimerDialog,
             )
         }
     }
@@ -154,28 +156,23 @@ fun PortraitPlayerContent(
     viewModel: AudiobookshelfPlayerViewModel,
     animatedColor: Color,
     onNavigateBack: () -> Unit,
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     painterResource(id = R.drawable.ic_keyboard_arrow_down),
                     contentDescription = "Minimize",
                     tint = Color.White,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp),
                 )
             }
 
@@ -183,44 +180,39 @@ fun PortraitPlayerContent(
                 "NOW PLAYING",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.7f),
-                letterSpacing = 2.sp
+                letterSpacing = 2.sp,
             )
 
             IconButton(onClick = { /* Option Menu */ }) {
                 Icon(
                     painterResource(id = R.drawable.ic_options),
                     contentDescription = "Options",
-                    tint = Color.White
+                    tint = Color.White,
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .shadow(
-                        elevation = 24.dp,
-                        shape = RoundedCornerShape(32.dp),
-                        spotColor = Color.Black
-                    ),
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .aspectRatio(1f)
+                        .shadow(
+                            elevation = 24.dp,
+                            shape = RoundedCornerShape(32.dp),
+                            spotColor = Color.Black,
+                        ),
                 shape = RoundedCornerShape(32.dp),
-                color = Color.Transparent
+                color = Color.Transparent,
             ) {
                 if (playbackState.coverUrl != null) {
                     AsyncImage(
                         model = playbackState.coverUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
@@ -231,12 +223,11 @@ fun PortraitPlayerContent(
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = playbackState.displayTitle.ifEmpty { "Unknown Title" },
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.ExtraBold
-                ),
+                style =
+                    MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
                 color = Color.White,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -246,7 +237,7 @@ fun PortraitPlayerContent(
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White.copy(alpha = 0.7f),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             if (playbackState.currentChapter != null) {
@@ -256,7 +247,7 @@ fun PortraitPlayerContent(
                     style = MaterialTheme.typography.labelLarge,
                     color = animatedColor,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -272,43 +263,48 @@ fun PortraitPlayerContent(
             onSkipForward = viewModel::skipForward,
             onSkipBackward = viewModel::skipBackward,
             onSeek = viewModel::seekTo,
-            onPreviousChapter = if (playbackState.chapters.isNotEmpty() && playbackState.currentChapterIndex > 0) {
-                { viewModel.seekToChapter(playbackState.currentChapterIndex - 1) }
-            } else null,
-            onNextChapter = if (playbackState.chapters.isNotEmpty() && playbackState.currentChapterIndex < playbackState.chapters.lastIndex) {
-                { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
-            } else null,
-            accentColor = animatedColor
+            onPreviousChapter =
+                if (playbackState.chapters.isNotEmpty() && playbackState.currentChapterIndex > 0) {
+                    { viewModel.seekToChapter(playbackState.currentChapterIndex - 1) }
+                } else null,
+            onNextChapter =
+                if (
+                    playbackState.chapters.isNotEmpty() &&
+                        playbackState.currentChapterIndex < playbackState.chapters.lastIndex
+                ) {
+                    { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
+                } else null,
+            accentColor = animatedColor,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .padding(bottom = 50.dp)
-                .clip(RoundedCornerShape(50))
-                .background(Color.White.copy(alpha = 0.1f))
-                .padding(vertical = 4.dp),
+            modifier =
+                Modifier.fillMaxWidth(0.5f)
+                    .padding(bottom = 50.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.1f))
+                    .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = viewModel::showSpeedSelector) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         painterResource(id = R.drawable.ic_speed),
                         null,
-                        tint = Color.White.copy(alpha = 0.8f)
+                        tint = Color.White.copy(alpha = 0.8f),
                     )
                     if (playbackState.playbackSpeed != 1.0f) {
                         Box(
-                            modifier = Modifier
-                                .size(4.dp)
-                                .background(
-                                    Color.White,
-                                    androidx.compose.foundation.shape.CircleShape
-                                )
-                                .align(Alignment.TopEnd)
+                            modifier =
+                                Modifier.size(4.dp)
+                                    .background(
+                                        Color.White,
+                                        androidx.compose.foundation.shape.CircleShape,
+                                    )
+                                    .align(Alignment.TopEnd)
                         )
                     }
                 }
@@ -316,15 +312,14 @@ fun PortraitPlayerContent(
 
             IconButton(onClick = viewModel::showSleepTimerDialog) {
                 Icon(
-                    painter = if (playbackState.sleepTimerEndTime != null) painterResource(
-                        id = R.drawable.ic_moon_filled
-                    ) else painterResource(
-                        id = R.drawable.ic_moon
-                    ),
+                    painter =
+                        if (playbackState.sleepTimerEndTime != null)
+                            painterResource(id = R.drawable.ic_moon_filled)
+                        else painterResource(id = R.drawable.ic_moon),
                     contentDescription = null,
-                    tint = if (playbackState.sleepTimerEndTime != null) animatedColor else Color.White.copy(
-                        alpha = 0.8f
-                    )
+                    tint =
+                        if (playbackState.sleepTimerEndTime != null) animatedColor
+                        else Color.White.copy(alpha = 0.8f),
                 )
             }
 
@@ -332,7 +327,7 @@ fun PortraitPlayerContent(
                 Icon(
                     painterResource(id = R.drawable.ic_playlist_alt),
                     null,
-                    tint = Color.White.copy(alpha = 0.8f)
+                    tint = Color.White.copy(alpha = 0.8f),
                 )
             }
         }
@@ -345,76 +340,67 @@ fun LandscapePlayerContent(
     viewModel: AudiobookshelfPlayerViewModel,
     animatedColor: Color,
     onNavigateBack: () -> Unit,
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .padding(horizontal = 32.dp, vertical = 16.dp),
+        modifier =
+            Modifier.fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 32.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(32.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .weight(0.45f)
-                .fillMaxHeight(),
-            contentAlignment = Alignment.Center
+            modifier = Modifier.weight(0.45f).fillMaxHeight(),
+            contentAlignment = Alignment.Center,
         ) {
             Surface(
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .shadow(
-                        elevation = 16.dp,
-                        shape = RoundedCornerShape(24.dp),
-                        spotColor = Color.Black
-                    ),
+                modifier =
+                    Modifier.aspectRatio(1f)
+                        .shadow(
+                            elevation = 16.dp,
+                            shape = RoundedCornerShape(24.dp),
+                            spotColor = Color.Black,
+                        ),
                 shape = RoundedCornerShape(24.dp),
-                color = Color.Transparent
+                color = Color.Transparent,
             ) {
                 if (playbackState.coverUrl != null) {
                     AsyncImage(
                         model = playbackState.coverUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
         }
 
         Column(
-            modifier = Modifier
-                .weight(0.55f)
-                .fillMaxHeight()
-                .verticalScroll(rememberScrollState()),
+            modifier = Modifier.weight(0.55f).fillMaxHeight().verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         painterResource(id = R.drawable.ic_keyboard_arrow_down),
                         "Minimize",
-                        tint = Color.White
+                        tint = Color.White,
                     )
                 }
                 Text(
                     "NOW PLAYING",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.7f),
-                    letterSpacing = 2.sp
+                    letterSpacing = 2.sp,
                 )
-                IconButton(onClick = { }) {
-                    Icon(
-                        painterResource(id = R.drawable.ic_options),
-                        "Options",
-                        tint = Color.White
-                    )
+                IconButton(onClick = {}) {
+                    Icon(painterResource(id = R.drawable.ic_options), "Options", tint = Color.White)
                 }
             }
 
@@ -425,14 +411,14 @@ fun LandscapePlayerContent(
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = Color.White,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = playbackState.displayAuthor ?: "Unknown Author",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.7f),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             if (playbackState.currentChapter != null) {
@@ -442,7 +428,7 @@ fun LandscapePlayerContent(
                     style = MaterialTheme.typography.labelLarge,
                     color = animatedColor,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -457,48 +443,55 @@ fun LandscapePlayerContent(
                 onSkipForward = viewModel::skipForward,
                 onSkipBackward = viewModel::skipBackward,
                 onSeek = viewModel::seekTo,
-                onPreviousChapter = if (playbackState.chapters.isNotEmpty() && playbackState.currentChapterIndex > 0) {
-                    { viewModel.seekToChapter(playbackState.currentChapterIndex - 1) }
-                } else null,
-                onNextChapter = if (playbackState.chapters.isNotEmpty() && playbackState.currentChapterIndex < playbackState.chapters.lastIndex) {
-                    { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
-                } else null,
-                accentColor = animatedColor
+                onPreviousChapter =
+                    if (
+                        playbackState.chapters.isNotEmpty() && playbackState.currentChapterIndex > 0
+                    ) {
+                        { viewModel.seekToChapter(playbackState.currentChapterIndex - 1) }
+                    } else null,
+                onNextChapter =
+                    if (
+                        playbackState.chapters.isNotEmpty() &&
+                            playbackState.currentChapterIndex < playbackState.chapters.lastIndex
+                    ) {
+                        { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
+                    } else null,
+                accentColor = animatedColor,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(0.5f)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.1f))
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                modifier =
+                    Modifier.fillMaxWidth(0.5f)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.White.copy(alpha = 0.1f))
+                        .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 IconButton(onClick = viewModel::showSpeedSelector) {
                     Icon(
                         painterResource(id = R.drawable.ic_speed),
                         null,
-                        tint = Color.White.copy(alpha = 0.8f)
+                        tint = Color.White.copy(alpha = 0.8f),
                     )
                 }
                 IconButton(onClick = viewModel::showSleepTimerDialog) {
                     Icon(
-                        if (playbackState.sleepTimerEndTime != null) painterResource(id = R.drawable.ic_moon_filled) else painterResource(
-                            id = R.drawable.ic_moon
-                        ),
+                        if (playbackState.sleepTimerEndTime != null)
+                            painterResource(id = R.drawable.ic_moon_filled)
+                        else painterResource(id = R.drawable.ic_moon),
                         null,
-                        tint = if (playbackState.sleepTimerEndTime != null) animatedColor else Color.White.copy(
-                            alpha = 0.8f
-                        )
+                        tint =
+                            if (playbackState.sleepTimerEndTime != null) animatedColor
+                            else Color.White.copy(alpha = 0.8f),
                     )
                 }
                 IconButton(onClick = viewModel::showChapterSelector) {
                     Icon(
                         painterResource(id = R.drawable.ic_playlist_alt),
                         null,
-                        tint = Color.White.copy(alpha = 0.8f)
+                        tint = Color.White.copy(alpha = 0.8f),
                     )
                 }
             }

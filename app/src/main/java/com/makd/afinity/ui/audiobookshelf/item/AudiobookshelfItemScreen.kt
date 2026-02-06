@@ -52,7 +52,7 @@ import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
 fun AudiobookshelfItemScreen(
     onNavigateBack: () -> Unit,
     onNavigateToPlayer: (String, String?) -> Unit,
-    viewModel: AudiobookshelfItemViewModel = hiltViewModel()
+    viewModel: AudiobookshelfItemViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val item by viewModel.item.collectAsStateWithLifecycle()
@@ -79,30 +79,31 @@ fun AudiobookshelfItemScreen(
                     ItemHeroBackground(coverUrl = coverUrl)
 
                     Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .windowInsetsPadding(WindowInsets.displayCutout)
+                        modifier =
+                            Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout)
                     ) {
                         Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .verticalScroll(rememberScrollState())
-                                .padding(bottom = 24.dp)
+                            modifier =
+                                Modifier.weight(1f)
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(bottom = 24.dp)
                         ) {
                             ItemHeaderContent(
                                 item = item!!,
                                 progress = progress,
                                 coverUrl = coverUrl,
-                                onPlay = { onNavigateToPlayer(viewModel.itemId, null) }
+                                onPlay = { onNavigateToPlayer(viewModel.itemId, null) },
                             )
                         }
 
                         Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
+                            modifier =
+                                Modifier.weight(1f)
+                                    .fillMaxHeight()
+                                    .background(
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                                    )
                         ) {
                             Spacer(modifier = Modifier.statusBarsPadding())
 
@@ -115,20 +116,20 @@ fun AudiobookshelfItemScreen(
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(
-                                            start = 20.dp,
-                                            end = 16.dp,
-                                            top = 20.dp,
-                                            bottom = 12.dp
-                                        )
+                                    modifier =
+                                        Modifier.fillMaxWidth()
+                                            .padding(
+                                                start = 20.dp,
+                                                end = 16.dp,
+                                                top = 20.dp,
+                                                bottom = 12.dp,
+                                            ),
                                 )
                             }
 
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = WindowInsets.navigationBars.asPaddingValues()
+                                contentPadding = WindowInsets.navigationBars.asPaddingValues(),
                             ) {
                                 if (isPodcast && uiState.episodes.isNotEmpty()) {
                                     item {
@@ -138,7 +139,7 @@ fun AudiobookshelfItemScreen(
                                             onEpisodePlay = { episode ->
                                                 onNavigateToPlayer(viewModel.itemId, episode.id)
                                             },
-                                            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
+                                            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
                                         )
                                     }
                                 } else if (!isPodcast && uiState.chapters.isNotEmpty()) {
@@ -149,24 +150,20 @@ fun AudiobookshelfItemScreen(
                                             onChapterClick = { chapter ->
                                                 onNavigateToPlayer(viewModel.itemId, null)
                                             },
-                                            modifier = Modifier.padding(bottom = 16.dp)
+                                            modifier = Modifier.padding(bottom = 16.dp),
                                         )
                                     }
                                 }
                             }
                         }
                     }
-
                 } else {
                     Column(modifier = Modifier.fillMaxSize()) {
-
                         ItemHeader(
                             item = item!!,
                             progress = progress,
                             serverUrl = config?.serverUrl,
-                            onPlay = {
-                                onNavigateToPlayer(viewModel.itemId, null)
-                            }
+                            onPlay = { onNavigateToPlayer(viewModel.itemId, null) },
                         )
 
                         val showEpisodesHeader = isPodcast && uiState.episodes.isNotEmpty()
@@ -178,23 +175,21 @@ fun AudiobookshelfItemScreen(
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.surface)
-                                    .padding(
-                                        start = 20.dp,
-                                        end = 16.dp,
-                                        top = 12.dp,
-                                        bottom = 12.dp
-                                    )
+                                modifier =
+                                    Modifier.fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surface)
+                                        .padding(
+                                            start = 20.dp,
+                                            end = 16.dp,
+                                            top = 12.dp,
+                                            bottom = 12.dp,
+                                        ),
                             )
                         }
 
                         LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            contentPadding = WindowInsets.navigationBars.asPaddingValues()
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            contentPadding = WindowInsets.navigationBars.asPaddingValues(),
                         ) {
                             if (isPodcast && uiState.episodes.isNotEmpty()) {
                                 item {
@@ -204,7 +199,7 @@ fun AudiobookshelfItemScreen(
                                         onEpisodePlay = { episode ->
                                             onNavigateToPlayer(viewModel.itemId, episode.id)
                                         },
-                                        modifier = Modifier.padding(top = 16.dp, bottom = 16.dp)
+                                        modifier = Modifier.padding(top = 16.dp, bottom = 16.dp),
                                     )
                                 }
                             } else if (!isPodcast && uiState.chapters.isNotEmpty()) {
@@ -215,7 +210,7 @@ fun AudiobookshelfItemScreen(
                                         onChapterClick = { chapter ->
                                             onNavigateToPlayer(viewModel.itemId, null)
                                         },
-                                        modifier = Modifier.padding(bottom = 16.dp)
+                                        modifier = Modifier.padding(bottom = 16.dp),
                                     )
                                 }
                             } else {
@@ -230,26 +225,24 @@ fun AudiobookshelfItemScreen(
                 Text(
                     text = "Failed to load item",
                     modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
         }
 
         IconButton(
             onClick = onNavigateBack,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .statusBarsPadding()
-                .padding(8.dp),
-            colors = IconButtonDefaults.iconButtonColors(
-                containerColor = Color.Black.copy(alpha = 0.5f),
-                contentColor = Color.White
-            )
+            modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(8.dp),
+            colors =
+                IconButtonDefaults.iconButtonColors(
+                    containerColor = Color.Black.copy(alpha = 0.5f),
+                    contentColor = Color.White,
+                ),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_chevron_left),
                 contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground
+                tint = MaterialTheme.colorScheme.onBackground,
             )
         }
 
@@ -257,19 +250,22 @@ fun AudiobookshelfItemScreen(
             visible = uiState.error != null,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .padding(WindowInsets.navigationBars.asPaddingValues()),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(16.dp)
+                        .padding(WindowInsets.navigationBars.asPaddingValues()),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
             ) {
                 Text(
                     text = uiState.error ?: "",
                     modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    color = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
         }

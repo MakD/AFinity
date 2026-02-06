@@ -4,7 +4,7 @@ import androidx.room.Entity
 
 @Entity(
     tableName = "audiobookshelf_progress",
-    primaryKeys = ["id", "jellyfinServerId", "jellyfinUserId"]
+    primaryKeys = ["id", "jellyfinServerId", "jellyfinUserId"],
 )
 data class AudiobookshelfProgressEntity(
     val id: String,
@@ -19,5 +19,5 @@ data class AudiobookshelfProgressEntity(
     val lastUpdate: Long,
     val startedAt: Long,
     val finishedAt: Long?,
-    val pendingSync: Boolean
+    val pendingSync: Boolean,
 )

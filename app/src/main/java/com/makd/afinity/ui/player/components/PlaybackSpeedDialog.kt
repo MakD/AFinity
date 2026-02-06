@@ -48,48 +48,41 @@ import kotlin.math.absoluteValue
 fun PlaybackSpeedDialog(
     currentSpeed: Float,
     onSpeedChange: (Float) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var sliderSpeed by remember(currentSpeed) { mutableFloatStateOf(currentSpeed) }
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            dismissOnClickOutside = true
-        )
+        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = true),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .pointerInput(Unit) {
+            modifier =
+                Modifier.fillMaxSize().padding(16.dp).pointerInput(Unit) {
                     detectTapGestures(onTap = { onDismiss() })
                 },
-            contentAlignment = Alignment.BottomCenter
+            contentAlignment = Alignment.BottomCenter,
         ) {
             Card(
-                modifier = Modifier
-                    .fillMaxWidth(0.5f)
-                    .pointerInput(Unit) {
+                modifier =
+                    Modifier.fillMaxWidth(0.5f).pointerInput(Unit) {
                         detectTapGestures(onTap = { /* Consume tap - prevent dismissal */ })
                     },
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = stringResource(R.string.player_speed_title_fmt, sliderSpeed),
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 20.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -97,43 +90,38 @@ fun PlaybackSpeedDialog(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         IconButton(
                             onClick = {
                                 sliderSpeed = (sliderSpeed - 0.25f).coerceIn(0.25f, 2.0f)
                                 onSpeedChange(sliderSpeed)
                             },
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                            modifier =
+                                Modifier.size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_remove),
                                 contentDescription = stringResource(R.string.cd_speed_decrease),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
 
                         Slider(
                             value = sliderSpeed,
-                            onValueChange = { newSpeed ->
-                                sliderSpeed = newSpeed
-                            },
-                            onValueChangeFinished = {
-                                onSpeedChange(sliderSpeed)
-                            },
+                            onValueChange = { newSpeed -> sliderSpeed = newSpeed },
+                            onValueChangeFinished = { onSpeedChange(sliderSpeed) },
                             valueRange = 0.25f..2.0f,
                             steps = 6,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 16.dp),
-                            colors = SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary,
-                                activeTrackColor = MaterialTheme.colorScheme.primary,
-                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
+                            modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                            colors =
+                                SliderDefaults.colors(
+                                    thumbColor = MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                ),
                         )
 
                         IconButton(
@@ -141,15 +129,15 @@ fun PlaybackSpeedDialog(
                                 sliderSpeed = (sliderSpeed + 0.25f).coerceIn(0.25f, 2.0f)
                                 onSpeedChange(sliderSpeed)
                             },
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                            modifier =
+                                Modifier.size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_add),
                                 contentDescription = stringResource(R.string.cd_speed_increase),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }
@@ -158,7 +146,7 @@ fun PlaybackSpeedDialog(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                     ) {
                         SpeedChip(
                             speed = 0.25f,
@@ -166,7 +154,7 @@ fun PlaybackSpeedDialog(
                             onClick = {
                                 sliderSpeed = 0.25f
                                 onSpeedChange(0.25f)
-                            }
+                            },
                         )
                         SpeedChip(
                             speed = 0.50f,
@@ -174,7 +162,7 @@ fun PlaybackSpeedDialog(
                             onClick = {
                                 sliderSpeed = 0.50f
                                 onSpeedChange(0.50f)
-                            }
+                            },
                         )
                         SpeedChip(
                             speed = 1.00f,
@@ -182,7 +170,7 @@ fun PlaybackSpeedDialog(
                             onClick = {
                                 sliderSpeed = 1.00f
                                 onSpeedChange(1.00f)
-                            }
+                            },
                         )
                         SpeedChip(
                             speed = 1.50f,
@@ -190,7 +178,7 @@ fun PlaybackSpeedDialog(
                             onClick = {
                                 sliderSpeed = 1.50f
                                 onSpeedChange(1.50f)
-                            }
+                            },
                         )
                         SpeedChip(
                             speed = 2.00f,
@@ -198,7 +186,7 @@ fun PlaybackSpeedDialog(
                             onClick = {
                                 sliderSpeed = 2.00f
                                 onSpeedChange(2.00f)
-                            }
+                            },
                         )
                     }
                 }
@@ -208,33 +196,32 @@ fun PlaybackSpeedDialog(
 }
 
 @Composable
-private fun SpeedChip(
-    speed: Float,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+private fun SpeedChip(speed: Float, isSelected: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier.height(40.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-            contentColor = if (isSelected) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-        ),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor =
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+                contentColor =
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+            ),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
             text = stringResource(R.string.player_speed_value_fmt, speed),
             fontSize = 14.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
         )
     }
 }

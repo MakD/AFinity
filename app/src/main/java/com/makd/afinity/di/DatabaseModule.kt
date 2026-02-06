@@ -30,14 +30,12 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideAfinityDatabase(
-        @ApplicationContext context: Context
-    ): AfinityDatabase {
+    fun provideAfinityDatabase(@ApplicationContext context: Context): AfinityDatabase {
         return Room.databaseBuilder(
-            context.applicationContext,
-            AfinityDatabase::class.java,
-            "afinity_database"
-        )
+                context.applicationContext,
+                AfinityDatabase::class.java,
+                "afinity_database",
+            )
             .addMigrations(*DatabaseMigrations.ALL_MIGRATIONS)
             .build()
     }
@@ -106,5 +104,4 @@ object DatabaseModule {
     fun provideBoxSetCacheDao(database: AfinityDatabase): BoxSetCacheDao {
         return database.boxSetCacheDao()
     }
-
 }

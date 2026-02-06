@@ -12,11 +12,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.core.text.HtmlCompat
 
-
-fun htmlToAnnotatedString(
-    html: String,
-    linkColor: Color = Color(0xFF6495ED)
-): AnnotatedString {
+fun htmlToAnnotatedString(html: String, linkColor: Color = Color(0xFF6495ED)): AnnotatedString {
     val spanned = HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT)
     return spannedToAnnotatedString(spanned, linkColor)
 }
@@ -41,12 +37,14 @@ private fun spannedToAnnotatedString(spanned: Spanned, linkColor: Color): Annota
             withLink(
                 LinkAnnotation.Url(
                     url = urlSpan.url,
-                    styles = TextLinkStyles(
-                        style = SpanStyle(
-                            color = linkColor,
-                            textDecoration = TextDecoration.Underline
-                        )
-                    )
+                    styles =
+                        TextLinkStyles(
+                            style =
+                                SpanStyle(
+                                    color = linkColor,
+                                    textDecoration = TextDecoration.Underline,
+                                )
+                        ),
                 )
             ) {
                 append(text.substring(start, end))

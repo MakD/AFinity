@@ -29,9 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
@@ -50,7 +48,7 @@ fun PlayerControls(
     onPreviousChapter: (() -> Unit)? = null,
     onNextChapter: (() -> Unit)? = null,
     accentColor: Color = MaterialTheme.colorScheme.primary,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var sliderPosition by remember(currentTime) { mutableFloatStateOf(currentTime.toFloat()) }
     var isDragging by remember { mutableFloatStateOf(0f) }
@@ -69,48 +67,44 @@ fun PlayerControls(
                 },
                 valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
                 modifier = Modifier.fillMaxWidth(),
-                colors = SliderDefaults.colors(
-                    thumbColor = Color.White,
-                    activeTrackColor = Color.White,
-                    inactiveTrackColor = Color.White.copy(alpha = 0.3f)
-                ),
+                colors =
+                    SliderDefaults.colors(
+                        thumbColor = Color.White,
+                        activeTrackColor = Color.White,
+                        inactiveTrackColor = Color.White.copy(alpha = 0.3f),
+                    ),
                 thumb = {
-                    Box(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .background(Color.White, CircleShape)
-                    )
+                    Box(modifier = Modifier.size(16.dp).background(Color.White, CircleShape))
                 },
                 track = { sliderState ->
                     SliderDefaults.Track(
                         sliderState = sliderState,
                         modifier = Modifier.height(2.dp),
                         thumbTrackGapSize = 0.dp,
-                        colors = SliderDefaults.colors(
-                            activeTrackColor = Color.White,
-                            inactiveTrackColor = Color.White.copy(alpha = 0.2f)
-                        ),
-                        drawStopIndicator = null
+                        colors =
+                            SliderDefaults.colors(
+                                activeTrackColor = Color.White,
+                                inactiveTrackColor = Color.White.copy(alpha = 0.2f),
+                            ),
+                        drawStopIndicator = null,
                     )
-                }
+                },
             )
         }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = formatTime(currentTime),
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.7f)
+                color = Color.White.copy(alpha = 0.7f),
             )
             Text(
                 text = formatTime(duration),
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.7f)
+                color = Color.White.copy(alpha = 0.7f),
             )
         }
 
@@ -119,17 +113,17 @@ fun PlayerControls(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
                 onClick = { onPreviousChapter?.invoke() },
-                enabled = onPreviousChapter != null
+                enabled = onPreviousChapter != null,
             ) {
                 Icon(
                     painterResource(id = R.drawable.ic_player_skip_back),
                     null,
                     tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
                 )
             }
 
@@ -138,7 +132,7 @@ fun PlayerControls(
                     painterResource(id = R.drawable.ic_rewind_backward_30),
                     null,
                     tint = Color.White,
-                    modifier = Modifier.size(34.dp)
+                    modifier = Modifier.size(34.dp),
                 )
             }
 
@@ -147,21 +141,24 @@ fun PlayerControls(
                 shape = RoundedCornerShape(28.dp),
                 color = Color.White,
                 modifier = Modifier.size(76.dp),
-                shadowElevation = 8.dp
+                shadowElevation = 8.dp,
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     if (isBuffering) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(32.dp),
                             color = accentColor,
-                            strokeWidth = 3.dp
+                            strokeWidth = 3.dp,
                         )
                     } else {
                         Icon(
-                            painter = if (isPlaying) painterResource(id = R.drawable.ic_player_pause_filled) else painterResource(id = R.drawable.ic_player_play_filled),
+                            painter =
+                                if (isPlaying)
+                                    painterResource(id = R.drawable.ic_player_pause_filled)
+                                else painterResource(id = R.drawable.ic_player_play_filled),
                             contentDescription = null,
                             tint = Color.Black,
-                            modifier = Modifier.size(38.dp)
+                            modifier = Modifier.size(38.dp),
                         )
                     }
                 }
@@ -172,19 +169,16 @@ fun PlayerControls(
                     painterResource(id = R.drawable.ic_rewind_forward_30),
                     null,
                     tint = Color.White,
-                    modifier = Modifier.size(34.dp)
+                    modifier = Modifier.size(34.dp),
                 )
             }
 
-            IconButton(
-                onClick = { onNextChapter?.invoke() },
-                enabled = onNextChapter != null
-            ) {
+            IconButton(onClick = { onNextChapter?.invoke() }, enabled = onNextChapter != null) {
                 Icon(
                     painterResource(id = R.drawable.ic_player_skip_forward),
                     null,
                     tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
                 )
             }
         }
@@ -196,10 +190,6 @@ private fun formatTime(seconds: Double): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val secs = totalSeconds % 60
-    return if (hours > 0) String.format(
-        "%d:%02d:%02d",
-        hours,
-        minutes,
-        secs
-    ) else String.format("%d:%02d", minutes, secs)
+    return if (hours > 0) String.format("%d:%02d:%02d", hours, minutes, secs)
+    else String.format("%d:%02d", minutes, secs)
 }

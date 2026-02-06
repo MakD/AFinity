@@ -21,7 +21,7 @@ data class AfinityProgram(
     val productionYear: Int?,
     val genres: List<String>,
     val officialRating: String?,
-    val communityRating: Float?
+    val communityRating: Float?,
 ) {
     val durationMinutes: Long?
         get() {

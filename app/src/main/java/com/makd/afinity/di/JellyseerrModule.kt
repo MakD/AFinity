@@ -17,9 +17,7 @@ abstract class JellyseerrModule {
 
     @Binds
     @Singleton
-    abstract fun bindJellyseerrRepository(
-        impl: JellyseerrRepositoryImpl
-    ): JellyseerrRepository
+    abstract fun bindJellyseerrRepository(impl: JellyseerrRepositoryImpl): JellyseerrRepository
 
     companion object {
         @Provides

@@ -25,13 +25,11 @@ fun BoxSetDetailContent(
     item: AfinityBoxSet,
     boxSetItems: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         TaglineSection(item = item)
 
         OverviewSection(item = item)
@@ -42,11 +40,7 @@ fun BoxSetDetailContent(
 
         ExternalLinksSection(item = item)
 
-        BoxSetItemsSection(
-            items = boxSetItems,
-            onItemClick = onItemClick,
-            cardWidth = cardWidth
-        )
+        BoxSetItemsSection(items = boxSetItems, onItemClick = onItemClick, cardWidth = cardWidth)
     }
 }
 
@@ -54,29 +48,21 @@ fun BoxSetDetailContent(
 internal fun BoxSetItemsSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = stringResource(R.string.boxset_items_in_collection),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items) { item ->
-                MediaItemCard(
-                    item = item,
-                    onClick = { onItemClick(item) },
-                    cardWidth = cardWidth
-                )
+                MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
             }
         }
     }

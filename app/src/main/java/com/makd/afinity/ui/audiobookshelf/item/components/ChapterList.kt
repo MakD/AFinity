@@ -32,31 +32,23 @@ fun ChapterList(
     chapters: List<BookChapter>,
     currentPosition: Double?,
     onChapterClick: (BookChapter) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             chapters.forEachIndexed { index, chapter ->
-                val isCurrentChapter = currentPosition?.let { pos ->
-                    pos >= chapter.start && pos < chapter.end
-                } ?: false
+                val isCurrentChapter =
+                    currentPosition?.let { pos -> pos >= chapter.start && pos < chapter.end }
+                        ?: false
 
-                val isCompleted = currentPosition?.let { pos ->
-                    pos >= chapter.end
-                } ?: false
+                val isCompleted = currentPosition?.let { pos -> pos >= chapter.end } ?: false
 
                 ChapterItem(
                     chapter = chapter,
                     index = index + 1,
                     isCurrentChapter = isCurrentChapter,
                     isCompleted = isCompleted,
-                    onClick = { onChapterClick(chapter) }
+                    onClick = { onChapterClick(chapter) },
                 )
             }
         }
@@ -69,54 +61,54 @@ private fun ChapterItem(
     index: Int,
     isCurrentChapter: Boolean,
     isCompleted: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    val backgroundColor = if (isCurrentChapter) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        Color.Transparent
-    }
+    val backgroundColor =
+        if (isCurrentChapter) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            Color.Transparent
+        }
 
-    val textColor = if (isCurrentChapter) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
+    val textColor =
+        if (isCurrentChapter) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
 
-    val iconTint = if (isCurrentChapter) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val iconTint =
+        if (isCurrentChapter) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
     val contentAlpha = if (isCompleted && !isCurrentChapter) 0.5f else 1f
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(backgroundColor)
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(backgroundColor)
+                .clickable(onClick = onClick)
+                .padding(vertical = 12.dp, horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier.width(32.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
+        Box(modifier = Modifier.width(32.dp), contentAlignment = Alignment.CenterStart) {
             if (isCurrentChapter) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_audio),
                     contentDescription = "Playing",
                     tint = iconTint,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
             } else if (isCompleted) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_check),
                     contentDescription = "Completed",
                     tint = iconTint.copy(alpha = 0.5f),
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             } else {
                 Text(
@@ -124,7 +116,7 @@ private fun ChapterItem(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     fontWeight = FontWeight.Medium,
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier.align(Alignment.Center),
                 )
             }
         }
@@ -138,7 +130,7 @@ private fun ChapterItem(
                 fontWeight = if (isCurrentChapter) FontWeight.Bold else FontWeight.Normal,
                 color = textColor.copy(alpha = contentAlpha),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
 
@@ -147,10 +139,10 @@ private fun ChapterItem(
         Text(
             text = formatChapterDuration(chapter.end - chapter.start),
             style = MaterialTheme.typography.labelSmall,
-            color = if (isCurrentChapter) textColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                alpha = contentAlpha
-            ),
-            fontWeight = FontWeight.Medium
+            color =
+                if (isCurrentChapter) textColor.copy(alpha = 0.8f)
+                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
+            fontWeight = FontWeight.Medium,
         )
     }
 }

@@ -13,6 +13,10 @@ import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,17 +25,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 @Singleton
-class AudiobookshelfPlayer @Inject constructor(
+class AudiobookshelfPlayer
+@Inject
+constructor(
     @ApplicationContext private val context: Context,
     private val playbackManager: AudiobookshelfPlaybackManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
-    private val audiobookshelfRepository: AudiobookshelfRepository
+    private val audiobookshelfRepository: AudiobookshelfRepository,
 ) {
     private var mediaController: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -42,10 +44,8 @@ class AudiobookshelfPlayer @Inject constructor(
     private suspend fun getConnectedController(): MediaController? {
         if (mediaController != null) return mediaController
 
-        val sessionToken = SessionToken(
-            context,
-            ComponentName(context, AudiobookshelfPlayerService::class.java)
-        )
+        val sessionToken =
+            SessionToken(context, ComponentName(context, AudiobookshelfPlayerService::class.java))
 
         val future = MediaController.Builder(context, sessionToken).buildAsync()
         controllerFuture = future
@@ -69,86 +69,96 @@ class AudiobookshelfPlayer @Inject constructor(
                 session.audioTracks.isNullOrEmpty() && session.mediaType == "podcast"
             val episodes = session.libraryItem?.media?.episodes ?: emptyList()
 
-            val audioTracks = if (isPodcastWithoutEpisode) {
-                val allTracks = episodes.mapNotNull { episode ->
-                    episode.audioTrack?.let { track ->
-                        track.copy(title = episode.title)
+            val audioTracks =
+                if (isPodcastWithoutEpisode) {
+                    val allTracks =
+                        episodes.mapNotNull { episode ->
+                            episode.audioTrack?.let { track -> track.copy(title = episode.title) }
+                        }
+                    if (allTracks.isNotEmpty()) {
+                        Timber.d("Loading ${allTracks.size} episodes for podcast playlist")
+                        allTracks
+                    } else {
+                        Timber.e("No audio tracks found in any episodes")
+                        return@launch
                     }
-                }
-                if (allTracks.isNotEmpty()) {
-                    Timber.d("Loading ${allTracks.size} episodes for podcast playlist")
-                    allTracks
-                } else {
-                    Timber.e("No audio tracks found in any episodes")
+                } else if (session.audioTracks.isNullOrEmpty()) {
+                    Timber.e("No audio tracks found in session. Session data: $session")
                     return@launch
+                } else {
+                    session.audioTracks
                 }
-            } else if (session.audioTracks.isNullOrEmpty()) {
-                Timber.e("No audio tracks found in session. Session data: $session")
-                return@launch
-            } else {
-                session.audioTracks
-            }
 
-            val enhancedSession = if (isPodcastWithoutEpisode && episodes.isNotEmpty()) {
-                var accumulatedTime = 0.0
-                val episodeChapters = episodes.mapNotNull { episode ->
-                    episode.audioTrack?.let {
-                        val chapter = com.makd.afinity.data.models.audiobookshelf.BookChapter(
-                            id = episodes.indexOf(episode),
-                            start = accumulatedTime,
-                            end = accumulatedTime + (episode.duration ?: 0.0),
-                            title = episode.title
-                        )
-                        accumulatedTime += episode.duration ?: 0.0
-                        chapter
-                    }
+            val enhancedSession =
+                if (isPodcastWithoutEpisode && episodes.isNotEmpty()) {
+                    var accumulatedTime = 0.0
+                    val episodeChapters =
+                        episodes.mapNotNull { episode ->
+                            episode.audioTrack?.let {
+                                val chapter =
+                                    com.makd.afinity.data.models.audiobookshelf.BookChapter(
+                                        id = episodes.indexOf(episode),
+                                        start = accumulatedTime,
+                                        end = accumulatedTime + (episode.duration ?: 0.0),
+                                        title = episode.title,
+                                    )
+                                accumulatedTime += episode.duration ?: 0.0
+                                chapter
+                            }
+                        }
+                    val totalDuration = episodes.sumOf { it.duration ?: 0.0 }
+
+                    session.copy(
+                        audioTracks = audioTracks,
+                        displayTitle =
+                            session.mediaMetadata?.title ?: session.displayTitle ?: "Podcast",
+                        displayAuthor = session.mediaMetadata?.authorName ?: session.displayAuthor,
+                        duration = totalDuration,
+                        chapters = episodeChapters,
+                    )
+                } else {
+                    session
                 }
-                val totalDuration = episodes.sumOf { it.duration ?: 0.0 }
-
-                session.copy(
-                    audioTracks = audioTracks,
-                    displayTitle = session.mediaMetadata?.title ?: session.displayTitle
-                    ?: "Podcast",
-                    displayAuthor = session.mediaMetadata?.authorName ?: session.displayAuthor,
-                    duration = totalDuration,
-                    chapters = episodeChapters
-                )
-            } else {
-                session
-            }
 
             playbackManager.setSession(enhancedSession, baseUrl, token)
 
-            val mediaItems = audioTracks.mapIndexed { index, track ->
-                val url = if (track.contentUrl?.startsWith("http") == true) track.contentUrl
-                else "$baseUrl${track.contentUrl}"
+            val mediaItems =
+                audioTracks.mapIndexed { index, track ->
+                    val url =
+                        if (track.contentUrl?.startsWith("http") == true) track.contentUrl
+                        else "$baseUrl${track.contentUrl}"
 
-                val artUrl = if (baseUrl.isNotEmpty()) {
-                    "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?token=$token"
-                } else enhancedSession.coverPath
+                    val artUrl =
+                        if (baseUrl.isNotEmpty()) {
+                            "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?token=$token"
+                        } else enhancedSession.coverPath
 
-                val itemTitle = if (isPodcastWithoutEpisode && track.title != null) {
-                    track.title
-                } else {
-                    enhancedSession.displayTitle ?: enhancedSession.mediaMetadata?.title
-                    ?: "Unknown"
+                    val itemTitle =
+                        if (isPodcastWithoutEpisode && track.title != null) {
+                            track.title
+                        } else {
+                            enhancedSession.displayTitle
+                                ?: enhancedSession.mediaMetadata?.title
+                                ?: "Unknown"
+                        }
+
+                    val metadata =
+                        MediaMetadata.Builder()
+                            .setTitle(itemTitle)
+                            .setArtist(
+                                enhancedSession.displayAuthor
+                                    ?: enhancedSession.mediaMetadata?.authorName
+                                    ?: ""
+                            )
+                            .setArtworkUri(Uri.parse(artUrl))
+                            .build()
+
+                    MediaItem.Builder()
+                        .setUri(url)
+                        .setMediaId(index.toString())
+                        .setMediaMetadata(metadata)
+                        .build()
                 }
-
-                val metadata = MediaMetadata.Builder()
-                    .setTitle(itemTitle)
-                    .setArtist(
-                        enhancedSession.displayAuthor ?: enhancedSession.mediaMetadata?.authorName
-                        ?: ""
-                    )
-                    .setArtworkUri(Uri.parse(artUrl))
-                    .build()
-
-                MediaItem.Builder()
-                    .setUri(url)
-                    .setMediaId(index.toString())
-                    .setMediaMetadata(metadata)
-                    .build()
-            }
 
             Timber.d("Sending ${mediaItems.size} items to player")
 
@@ -216,12 +226,13 @@ class AudiobookshelfPlayer @Inject constructor(
         val endTime = System.currentTimeMillis() + (durationMinutes * 60 * 1000L)
         playbackManager.setSleepTimer(endTime)
 
-        sleepTimerJob = scope.launch {
-            delay(durationMinutes * 60 * 1000L)
-            pause()
-            playbackManager.setSleepTimer(null)
-            Timber.d("Sleep timer triggered")
-        }
+        sleepTimerJob =
+            scope.launch {
+                delay(durationMinutes * 60 * 1000L)
+                pause()
+                playbackManager.setSleepTimer(null)
+                Timber.d("Sleep timer triggered")
+            }
     }
 
     fun cancelSleepTimer() {
@@ -237,16 +248,19 @@ class AudiobookshelfPlayer @Inject constructor(
         if (sessionId != null) {
             scope.launch {
                 try {
-                    val result = audiobookshelfRepository.closePlaybackSession(
-                        sessionId = sessionId,
-                        currentTime = state.currentTime,
-                        timeListened = state.currentTime,
-                        duration = state.duration
-                    )
+                    val result =
+                        audiobookshelfRepository.closePlaybackSession(
+                            sessionId = sessionId,
+                            currentTime = state.currentTime,
+                            timeListened = state.currentTime,
+                            duration = state.duration,
+                        )
                     if (result.isSuccess) {
                         Timber.d("Session closed on server: $sessionId")
                     } else {
-                        Timber.e("Failed to close session on server: ${result.exceptionOrNull()?.message}")
+                        Timber.e(
+                            "Failed to close session on server: ${result.exceptionOrNull()?.message}"
+                        )
                     }
                 } catch (e: Exception) {
                     Timber.e(e, "Error closing session on server")
@@ -284,11 +298,9 @@ private suspend fun <T> ListenableFuture<T>.await(): T {
                     }
                 }
             },
-            MoreExecutors.directExecutor()
+            MoreExecutors.directExecutor(),
         )
 
-        continuation.invokeOnCancellation {
-            cancel(false)
-        }
+        continuation.invokeOnCancellation { cancel(false) }
     }
 }

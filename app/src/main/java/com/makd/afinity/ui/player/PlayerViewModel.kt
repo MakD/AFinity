@@ -18,7 +18,6 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
@@ -52,6 +51,8 @@ import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -66,12 +67,12 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
 @HiltViewModel
-class PlayerViewModel @Inject constructor(
+class PlayerViewModel
+@Inject
+constructor(
     @ApplicationContext private val context: Context,
     private val application: Application,
     private val playbackRepository: PlaybackRepository,
@@ -84,7 +85,7 @@ class PlayerViewModel @Inject constructor(
     private val downloadRepository: JellyfinDownloadRepository,
     private val appDataRepository: AppDataRepository,
     private val apiClient: ApiClient,
-    private val audiobookshelfPlayer: AudiobookshelfPlayer
+    private val audiobookshelfPlayer: AudiobookshelfPlayer,
 ) : ViewModel(), Player.Listener {
 
     lateinit var player: Player
@@ -172,19 +173,21 @@ class PlayerViewModel @Inject constructor(
 
     private fun getSystemBrightness(): Float {
         return try {
-            val brightnessMode = Settings.System.getInt(
-                context.contentResolver,
-                Settings.System.SCREEN_BRIGHTNESS_MODE
-            )
+            val brightnessMode =
+                Settings.System.getInt(
+                    context.contentResolver,
+                    Settings.System.SCREEN_BRIGHTNESS_MODE,
+                )
 
             if (brightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC) {
                 Timber.d("System brightness is in automatic mode. Returning default brightness.")
                 0.5f
             } else {
-                val brightness = Settings.System.getInt(
-                    context.contentResolver,
-                    Settings.System.SCREEN_BRIGHTNESS
-                )
+                val brightness =
+                    Settings.System.getInt(
+                        context.contentResolver,
+                        Settings.System.SCREEN_BRIGHTNESS,
+                    )
                 brightness / 255.0f
             }
         } catch (e: Settings.SettingNotFoundException) {
@@ -210,82 +213,88 @@ class PlayerViewModel @Inject constructor(
 
     private fun startProgressReporting() {
         progressReportingJob?.cancel()
-        progressReportingJob = viewModelScope.launch {
-            while (true) {
-                delay(5000L)
-                if (_uiState.value.isLiveChannel) continue
+        progressReportingJob =
+            viewModelScope.launch {
+                while (true) {
+                    delay(5000L)
+                    if (_uiState.value.isLiveChannel) continue
 
-                currentItem?.let { item ->
-                    currentSessionId?.let { sessionId ->
-                        try {
-                            val positionTicks = player.currentPosition * 10000
-                            val isPaused = !player.isPlaying
+                    currentItem?.let { item ->
+                        currentSessionId?.let { sessionId ->
+                            try {
+                                val positionTicks = player.currentPosition * 10000
+                                val isPaused = !player.isPlaying
 
-                            playbackStateManager.updatePlaybackPosition(player.currentPosition)
+                                playbackStateManager.updatePlaybackPosition(player.currentPosition)
 
-                            playbackRepository.reportPlaybackProgress(
-                                itemId = item.id,
-                                sessionId = sessionId,
-                                positionTicks = positionTicks,
-                                isPaused = isPaused,
-                                playMethod = "DirectPlay"
-                            )
-                            Timber.d("Reported progress: ${player.currentPosition}ms, paused: $isPaused")
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to report periodic progress")
+                                playbackRepository.reportPlaybackProgress(
+                                    itemId = item.id,
+                                    sessionId = sessionId,
+                                    positionTicks = positionTicks,
+                                    isPaused = isPaused,
+                                    playMethod = "DirectPlay",
+                                )
+                                Timber.d(
+                                    "Reported progress: ${player.currentPosition}ms, paused: $isPaused"
+                                )
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to report periodic progress")
+                            }
                         }
                     }
                 }
             }
-        }
     }
 
     private fun initializePlayer() {
-        val useExoPlayer = kotlinx.coroutines.runBlocking {
-            preferencesRepository.useExoPlayer.first()
-        }
+        val useExoPlayer =
+            kotlinx.coroutines.runBlocking { preferencesRepository.useExoPlayer.first() }
 
-        player = if (useExoPlayer) {
-            createExoPlayer()
-        } else {
-            createMPVPlayer()
-        }
+        player =
+            if (useExoPlayer) {
+                createExoPlayer()
+            } else {
+                createMPVPlayer()
+            }
 
         player.addListener(this@PlayerViewModel)
         Timber.d("Player initialized: ${player.javaClass.simpleName}")
     }
 
     private fun createExoPlayer(): ExoPlayer {
-        val audioAttributes = AudioAttributes.Builder()
-            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-            .setUsage(C.USAGE_MEDIA)
-            .build()
+        val audioAttributes =
+            AudioAttributes.Builder()
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .setUsage(C.USAGE_MEDIA)
+                .build()
 
-        val (preferredAudioLang, preferredSubLang) = kotlinx.coroutines.runBlocking {
-            Pair(
-                preferencesRepository.getPreferredAudioLanguage(),
-                preferencesRepository.getPreferredSubtitleLanguage()
-            )
-        }
+        val (preferredAudioLang, preferredSubLang) =
+            kotlinx.coroutines.runBlocking {
+                Pair(
+                    preferencesRepository.getPreferredAudioLanguage(),
+                    preferencesRepository.getPreferredSubtitleLanguage(),
+                )
+            }
 
         val trackSelector = DefaultTrackSelector(context)
         trackSelector.setParameters(
-            trackSelector.buildUponParameters()
-                .setTunnelingEnabled(true)
-                .apply {
-                    if (preferredAudioLang.isNotEmpty()) {
-                        setPreferredAudioLanguage(preferredAudioLang)
-                    }
-                    if (preferredSubLang.isNotEmpty()) {
-                        setPreferredTextLanguage(preferredSubLang)
-                    }
+            trackSelector.buildUponParameters().setTunnelingEnabled(true).apply {
+                if (preferredAudioLang.isNotEmpty()) {
+                    setPreferredAudioLanguage(preferredAudioLang)
                 }
+                if (preferredSubLang.isNotEmpty()) {
+                    setPreferredTextLanguage(preferredSubLang)
+                }
+            }
         )
 
-        Timber.d("ExoPlayer preferences: preferredAudioLang=$preferredAudioLang, preferredSubLang=$preferredSubLang")
+        Timber.d(
+            "ExoPlayer preferences: preferredAudioLang=$preferredAudioLang, preferredSubLang=$preferredSubLang"
+        )
 
-        val renderersFactory = DefaultRenderersFactory(context)
-            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+        val renderersFactory =
+            DefaultRenderersFactory(context)
+                .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
 
         return ExoPlayer.Builder(context, renderersFactory)
             .setAudioAttributes(audioAttributes, true)
@@ -300,34 +309,45 @@ class PlayerViewModel @Inject constructor(
         private set
 
     private fun createMPVPlayer(): MPVPlayer {
-        val audioAttributes = AudioAttributes.Builder()
-            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-            .setUsage(C.USAGE_MEDIA)
-            .build()
+        val audioAttributes =
+            AudioAttributes.Builder()
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .setUsage(C.USAGE_MEDIA)
+                .build()
 
-        val (mpvHwDec, mpvVideoOutput, mpvAudioOutput, subtitlePrefs, preferredAudioLang, preferredSubLang) = kotlinx.coroutines.runBlocking {
-            val hwDec = preferencesRepository.getMpvHwDec()
-            val vo = preferencesRepository.getMpvVideoOutput()
-            val ao = preferencesRepository.getMpvAudioOutput()
-            val subs = preferencesRepository.getSubtitlePreferences()
-            val audioLang = preferencesRepository.getPreferredAudioLanguage()
-            val subLang = preferencesRepository.getPreferredSubtitleLanguage()
-            MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang, subLang)
-        }
+        val (
+            mpvHwDec,
+            mpvVideoOutput,
+            mpvAudioOutput,
+            subtitlePrefs,
+            preferredAudioLang,
+            preferredSubLang) =
+            kotlinx.coroutines.runBlocking {
+                val hwDec = preferencesRepository.getMpvHwDec()
+                val vo = preferencesRepository.getMpvVideoOutput()
+                val ao = preferencesRepository.getMpvAudioOutput()
+                val subs = preferencesRepository.getSubtitlePreferences()
+                val audioLang = preferencesRepository.getPreferredAudioLanguage()
+                val subLang = preferencesRepository.getPreferredSubtitleLanguage()
+                MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang, subLang)
+            }
 
         mpvVideoOutputValue = mpvVideoOutput
 
-        Timber.d("MPV preferences: hwdec=$mpvHwDec, vo=$mpvVideoOutput, ao=$mpvAudioOutput, alang=$preferredAudioLang, slang=$preferredSubLang")
+        Timber.d(
+            "MPV preferences: hwdec=$mpvHwDec, vo=$mpvVideoOutput, ao=$mpvAudioOutput, alang=$preferredAudioLang, slang=$preferredSubLang"
+        )
 
-        val mpvPlayer = MPVPlayer.Builder(application)
-            .setAudioAttributes(audioAttributes, true)
-            .setSeekBackIncrementMs(10000)
-            .setSeekForwardIncrementMs(10000)
-            .setPauseAtEndOfMediaItems(true)
-            .setVideoOutput(mpvVideoOutput)
-            .setAudioOutput(mpvAudioOutput)
-            .setHwDec(mpvHwDec)
-            .build()
+        val mpvPlayer =
+            MPVPlayer.Builder(application)
+                .setAudioAttributes(audioAttributes, true)
+                .setSeekBackIncrementMs(10000)
+                .setSeekForwardIncrementMs(10000)
+                .setPauseAtEndOfMediaItems(true)
+                .setVideoOutput(mpvVideoOutput)
+                .setAudioOutput(mpvAudioOutput)
+                .setHwDec(mpvHwDec)
+                .build()
 
         mpvPlayer.setOption("sub-ass-override", "strip")
         mpvPlayer.setOption("sub-use-margins", "yes")
@@ -342,7 +362,7 @@ class PlayerViewModel @Inject constructor(
                 mpvPlayer.setOption("sub-border-size", subtitlePrefs.outlineSize.toString())
                 mpvPlayer.setOption(
                     "sub-border-color",
-                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor)
+                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor),
                 )
                 mpvPlayer.setOption("sub-shadow-offset", "0")
                 mpvPlayer.setOption("sub-shadow-color", "#00000000")
@@ -355,7 +375,7 @@ class PlayerViewModel @Inject constructor(
                 mpvPlayer.setOption("sub-shadow-offset", subtitlePrefs.outlineSize.toString())
                 mpvPlayer.setOption(
                     "sub-shadow-color",
-                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor)
+                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.outlineColor),
                 )
             }
 
@@ -363,7 +383,7 @@ class PlayerViewModel @Inject constructor(
                 mpvPlayer.setOption("sub-border-style", "background-box")
                 mpvPlayer.setOption(
                     "sub-back-color",
-                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.backgroundColor)
+                    SubtitlePreferences.colorToMpvHex(subtitlePrefs.backgroundColor),
                 )
                 mpvPlayer.setOption("sub-spacing", "0.5")
             }
@@ -434,23 +454,30 @@ class PlayerViewModel @Inject constructor(
         val isMpv = player is MPVPlayer
         val wasActuallyPlaying = _uiState.value.isPlaying
 
-        val isActuallyPlaying = if (isMpv && isLiveChannel) {
-            val positionAdvancing = position > lastKnownPosition && position > 0
-            val durationAdvancing = duration > lastKnownDuration && duration > 0
-            val streamActive = positionAdvancing || durationAdvancing
+        val isActuallyPlaying =
+            if (isMpv && isLiveChannel) {
+                val positionAdvancing = position > lastKnownPosition && position > 0
+                val durationAdvancing = duration > lastKnownDuration && duration > 0
+                val streamActive = positionAdvancing || durationAdvancing
 
-            if (streamActive || isPlaying) {
-                mpvStreamActiveTime = System.currentTimeMillis()
-                true
+                if (streamActive || isPlaying) {
+                    mpvStreamActiveTime = System.currentTimeMillis()
+                    true
+                } else {
+                    val recentlyActive = System.currentTimeMillis() - mpvStreamActiveTime < 10000
+                    recentlyActive && duration > 0
+                }
             } else {
-                val recentlyActive = System.currentTimeMillis() - mpvStreamActiveTime < 10000
-                recentlyActive && duration > 0
+                isPlaying
             }
-        } else {
-            isPlaying
-        }
 
-        if (isMpv && isLiveChannel && isActuallyPlaying && !wasActuallyPlaying && !mpvLiveAutoHideTriggered) {
+        if (
+            isMpv &&
+                isLiveChannel &&
+                isActuallyPlaying &&
+                !wasActuallyPlaying &&
+                !mpvLiveAutoHideTriggered
+        ) {
             mpvLiveAutoHideTriggered = true
             if (_uiState.value.showControls) {
                 startControlsAutoHide()
@@ -462,13 +489,14 @@ class PlayerViewModel @Inject constructor(
         lastKnownPosition = position
         lastKnownDuration = duration
 
-        _uiState.value = _uiState.value.copy(
-            isPlaying = isActuallyPlaying,
-            isPaused = !isActuallyPlaying && playbackState == Player.STATE_READY,
-            isBuffering = isBuffering,
-            currentPosition = position,
-            duration = duration
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                isPlaying = isActuallyPlaying,
+                isPaused = !isActuallyPlaying && playbackState == Player.STATE_READY,
+                isBuffering = isBuffering,
+                currentPosition = position,
+                duration = duration,
+            )
     }
 
     fun handlePlayerEvent(event: PlayerEvent) {
@@ -488,20 +516,19 @@ class PlayerViewModel @Inject constructor(
                     volumeManager.setVolume(event.volume)
 
                     updateUiState {
-                        it.copy(
-                            showVolumeIndicator = true,
-                            volumeLevel = event.volume
-                        )
+                        it.copy(showVolumeIndicator = true, volumeLevel = event.volume)
                     }
 
                     volumeHideJob?.cancel()
-                    volumeHideJob = viewModelScope.launch {
-                        delay(2000)
-                        updateUiState { it.copy(showVolumeIndicator = false) }
-                    }
+                    volumeHideJob =
+                        viewModelScope.launch {
+                            delay(2000)
+                            updateUiState { it.copy(showVolumeIndicator = false) }
+                        }
                 }
 
-                is PlayerEvent.SetBrightness -> { /* Handle at UI level */
+                is PlayerEvent.SetBrightness -> {
+                    /* Handle at UI level */
                 }
 
                 is PlayerEvent.SetPlaybackSpeed -> {
@@ -512,7 +539,8 @@ class PlayerViewModel @Inject constructor(
                 is PlayerEvent.SwitchToTrack -> switchToTrack(event.trackType, event.index)
                 is PlayerEvent.ToggleControls -> toggleControls()
                 is PlayerEvent.ToggleLock -> onLockToggle()
-                is PlayerEvent.ToggleFullscreen -> { /* Handled at UI level */
+                is PlayerEvent.ToggleFullscreen -> {
+                    /* Handled at UI level */
                 }
 
                 is PlayerEvent.EnterPictureInPicture -> enterPictureInPicture()
@@ -523,17 +551,13 @@ class PlayerViewModel @Inject constructor(
                         event.mediaSourceId,
                         event.audioStreamIndex,
                         event.subtitleStreamIndex,
-                        event.startPositionMs
+                        event.startPositionMs,
                     )
                 }
 
                 is PlayerEvent.LoadLiveChannel -> {
                     updateUiState { it.copy(isLoading = true, isLiveChannel = true) }
-                    loadLiveChannel(
-                        event.channelId,
-                        event.channelName,
-                        event.streamUrl
-                    )
+                    loadLiveChannel(event.channelId, event.channelName, event.streamUrl)
                 }
 
                 is PlayerEvent.SkipSegment -> {
@@ -554,11 +578,7 @@ class PlayerViewModel @Inject constructor(
 
                 is PlayerEvent.Stop -> player.stop()
                 is PlayerEvent.OnSeekBarDragStart -> {
-                    updateUiState {
-                        it.copy(
-                            isSeeking = true,
-                        )
-                    }
+                    updateUiState { it.copy(isSeeking = true) }
                     onSeekBarPreview(player.currentPosition, true)
                 }
 
@@ -576,7 +596,7 @@ class PlayerViewModel @Inject constructor(
                             showTrickplayPreview = false,
                             trickplayPreviewImage = null,
                             trickplayPreviewPosition = 0L,
-                            currentPosition = finalPos
+                            currentPosition = finalPos,
                         )
                     }
                     onSeekBarPreview(0, false)
@@ -649,9 +669,7 @@ class PlayerViewModel @Inject constructor(
         if (audiobookshelfPlayer.isPlaying()) {
             Timber.d("Stopping Audiobookshelf playback before starting Jellyfin playback")
             audiobookshelfPlayer.pause()
-            viewModelScope.launch {
-                audiobookshelfPlayer.closeSession()
-            }
+            viewModelScope.launch { audiobookshelfPlayer.closeSession() }
         }
     }
 
@@ -660,29 +678,31 @@ class PlayerViewModel @Inject constructor(
         mediaSourceId: String,
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
-        startPositionMs: Long
+        startPositionMs: Long,
     ) {
         stopAudiobookshelfIfPlaying()
         try {
-            val fullItem: AfinityItem = if (item.sources.isEmpty()) {
-                Timber.d("Item ${item.name} has no sources, fetching full details...")
-                try {
-                    (jellyfinRepository.getItemById(item.id) as? AfinityItem) ?: item
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to fetch full item details")
+            val fullItem: AfinityItem =
+                if (item.sources.isEmpty()) {
+                    Timber.d("Item ${item.name} has no sources, fetching full details...")
+                    try {
+                        (jellyfinRepository.getItemById(item.id) as? AfinityItem) ?: item
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to fetch full item details")
+                        item
+                    }
+                } else {
                     item
                 }
-            } else {
-                item
-            }
 
             currentItem = fullItem
 
             val chapters = fullItem.chapters
             updateUiState { it.copy(chapters = chapters) }
-            val mediaSource = fullItem.sources.firstOrNull {
-                if (mediaSourceId.isBlank()) true else it.id == mediaSourceId
-            } ?: fullItem.sources.firstOrNull()
+            val mediaSource =
+                fullItem.sources.firstOrNull {
+                    if (mediaSourceId.isBlank()) true else it.id == mediaSourceId
+                } ?: fullItem.sources.firstOrNull()
 
             val actualMediaSourceId = mediaSource?.id
 
@@ -692,27 +712,25 @@ class PlayerViewModel @Inject constructor(
                     it.copy(
                         isLoading = false,
                         showError = true,
-                        errorMessage = context.getString(R.string.error_no_media_sources)
+                        errorMessage = context.getString(R.string.error_no_media_sources),
                     )
                 }
                 return
             }
 
-            val audioStreams = mediaSource.mediaStreams.filter {
-                it.type == MediaStreamType.AUDIO
-            }
-            val audioPosition = if (audioStreamIndex != null) {
-                audioStreams.indexOfFirst { it.index == audioStreamIndex }
-                    .takeIf { it >= 0 }
-            } else {
-                null
-            }
+            val audioStreams = mediaSource.mediaStreams.filter { it.type == MediaStreamType.AUDIO }
+            val audioPosition =
+                if (audioStreamIndex != null) {
+                    audioStreams.indexOfFirst { it.index == audioStreamIndex }.takeIf { it >= 0 }
+                } else {
+                    null
+                }
 
             updateUiState {
                 it.copy(
                     currentItem = fullItem,
                     audioStreamIndex = audioPosition,
-                    subtitleStreamIndex = subtitleStreamIndex
+                    subtitleStreamIndex = subtitleStreamIndex,
                 )
             }
             currentSessionId = UUID.randomUUID().toString()
@@ -720,36 +738,38 @@ class PlayerViewModel @Inject constructor(
             playbackStateManager.trackPlaybackSession(
                 sessionId = currentSessionId!!,
                 itemId = fullItem.id,
-                mediaSourceId = actualMediaSourceId
+                mediaSourceId = actualMediaSourceId,
             )
             playbackStateManager.trackCurrentItem(fullItem.id)
 
             coroutineScope {
                 val useLocalSource = mediaSource.type == AfinitySourceType.LOCAL
 
-                val streamUrlDeferred = async(Dispatchers.IO) {
-                    if (useLocalSource) {
-                        mediaSource.path?.let { "file://$it" }
-                    } else {
-                        playbackRepository.getStreamUrl(
-                            itemId = fullItem.id,
-                            mediaSourceId = actualMediaSourceId,
-                            audioStreamIndex = audioStreamIndex,
-                            subtitleStreamIndex = null,
-                            videoStreamIndex = null,
-                            maxStreamingBitrate = null,
-                            startTimeTicks = null
-                        )
+                val streamUrlDeferred =
+                    async(Dispatchers.IO) {
+                        if (useLocalSource) {
+                            mediaSource.path?.let { "file://$it" }
+                        } else {
+                            playbackRepository.getStreamUrl(
+                                itemId = fullItem.id,
+                                mediaSourceId = actualMediaSourceId,
+                                audioStreamIndex = audioStreamIndex,
+                                subtitleStreamIndex = null,
+                                videoStreamIndex = null,
+                                maxStreamingBitrate = null,
+                                startTimeTicks = null,
+                            )
+                        }
                     }
-                }
 
                 val segmentsJob = launch(Dispatchers.IO) { loadSegments(fullItem.id) }
                 val trickplayJob = launch(Dispatchers.IO) { loadTrickplayData() }
-                val reportStartJob = launch(Dispatchers.IO) {
-                    if (!useLocalSource) {
-                        reportPlaybackStart(fullItem)
+                val reportStartJob =
+                    launch(Dispatchers.IO) {
+                        if (!useLocalSource) {
+                            reportPlaybackStart(fullItem)
+                        }
                     }
-                }
 
                 val streamUrl = streamUrlDeferred.await()
                 if (streamUrl.isNullOrBlank()) {
@@ -758,79 +778,82 @@ class PlayerViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             showError = true,
-                            errorMessage = context.getString(R.string.error_load_stream)
+                            errorMessage = context.getString(R.string.error_load_stream),
                         )
                     }
                     return@coroutineScope
                 }
 
-                val externalSubtitles = if (useLocalSource) {
-                    val itemDir = downloadRepository.getItemDownloadDirectory(fullItem.id)
-                    val subtitlesDir = java.io.File(itemDir, "subtitles")
-                    if (subtitlesDir.exists()) {
-                        val files = subtitlesDir.listFiles()
-                        files?.mapNotNull { subtitleFile ->
-                            try {
-                                val extension = subtitleFile.extension
-                                val mimeType = when (extension.lowercase()) {
-                                    "srt" -> MimeTypes.APPLICATION_SUBRIP
-                                    "vtt" -> MimeTypes.TEXT_VTT
-                                    "ass", "ssa" -> MimeTypes.TEXT_SSA
-                                    else -> MimeTypes.TEXT_UNKNOWN
-                                }
+                val externalSubtitles =
+                    if (useLocalSource) {
+                        val itemDir = downloadRepository.getItemDownloadDirectory(fullItem.id)
+                        val subtitlesDir = java.io.File(itemDir, "subtitles")
+                        if (subtitlesDir.exists()) {
+                            val files = subtitlesDir.listFiles()
+                            files?.mapNotNull { subtitleFile ->
+                                try {
+                                    val extension = subtitleFile.extension
+                                    val mimeType =
+                                        when (extension.lowercase()) {
+                                            "srt" -> MimeTypes.APPLICATION_SUBRIP
+                                            "vtt" -> MimeTypes.TEXT_VTT
+                                            "ass",
+                                            "ssa" -> MimeTypes.TEXT_SSA
+                                            else -> MimeTypes.TEXT_UNKNOWN
+                                        }
 
-                                val language =
-                                    subtitleFile.nameWithoutExtension.split("_").firstOrNull()
-                                        ?: context.getString(R.string.track_unknown)
+                                    val language =
+                                        subtitleFile.nameWithoutExtension.split("_").firstOrNull()
+                                            ?: context.getString(R.string.track_unknown)
 
-                                MediaItem.SubtitleConfiguration.Builder("file://${subtitleFile.absolutePath}".toUri())
-                                    .setLabel(language)
-                                    .setMimeType(mimeType)
-                                    .setLanguage(language)
-                                    .build()
-                            } catch (_: Exception) {
-                                null
-                            }
-                        } ?: emptyList()
-                    } else {
-                        emptyList()
-                    }
-                } else {
-                    mediaSource.mediaStreams
-                        .filter { stream ->
-                            stream.type == MediaStreamType.SUBTITLE && stream.isExternal
-                        }
-                        .mapNotNull { stream ->
-                            try {
-                                val subtitleUrl =
-                                    "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.srt"
-                                MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
-                                    .setLabel(
-                                        stream.displayTitle ?: stream.language
-                                        ?: context.getString(
-                                            R.string.track_number_fmt,
-                                            stream.index
+                                    MediaItem.SubtitleConfiguration.Builder(
+                                            "file://${subtitleFile.absolutePath}".toUri()
                                         )
-                                    )
-                                    .setMimeType(MimeTypes.APPLICATION_SUBRIP)
-                                    .setLanguage(stream.language ?: "eng")
-                                    .build()
-                            } catch (_: Exception) {
-                                null
-                            }
+                                        .setLabel(language)
+                                        .setMimeType(mimeType)
+                                        .setLanguage(language)
+                                        .build()
+                                } catch (_: Exception) {
+                                    null
+                                }
+                            } ?: emptyList()
+                        } else {
+                            emptyList()
                         }
-                }
+                    } else {
+                        mediaSource.mediaStreams
+                            .filter { stream ->
+                                stream.type == MediaStreamType.SUBTITLE && stream.isExternal
+                            }
+                            .mapNotNull { stream ->
+                                try {
+                                    val subtitleUrl =
+                                        "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.srt"
+                                    MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
+                                        .setLabel(
+                                            stream.displayTitle
+                                                ?: stream.language
+                                                ?: context.getString(
+                                                    R.string.track_number_fmt,
+                                                    stream.index,
+                                                )
+                                        )
+                                        .setMimeType(MimeTypes.APPLICATION_SUBRIP)
+                                        .setLanguage(stream.language ?: "eng")
+                                        .build()
+                                } catch (_: Exception) {
+                                    null
+                                }
+                            }
+                    }
 
-                val mediaItem = MediaItem.Builder()
-                    .setMediaId(fullItem.id.toString())
-                    .setUri(streamUrl)
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle(fullItem.name)
-                            .build()
-                    )
-                    .setSubtitleConfigurations(externalSubtitles)
-                    .build()
+                val mediaItem =
+                    MediaItem.Builder()
+                        .setMediaId(fullItem.id.toString())
+                        .setUri(streamUrl)
+                        .setMediaMetadata(MediaMetadata.Builder().setTitle(fullItem.name).build())
+                        .setSubtitleConfigurations(externalSubtitles)
+                        .build()
 
                 withContext(Dispatchers.Main) {
                     player.setMediaItems(listOf(mediaItem), 0, startPositionMs)
@@ -849,18 +872,14 @@ class PlayerViewModel @Inject constructor(
                 it.copy(
                     isLoading = false,
                     showError = true,
-                    errorMessage = context.getString(R.string.error_unexpected)
+                    errorMessage = context.getString(R.string.error_unexpected),
                 )
             }
         }
         updateCurrentTrackSelections()
     }
 
-    private suspend fun loadLiveChannel(
-        channelId: UUID,
-        channelName: String,
-        streamUrl: String
-    ) {
+    private suspend fun loadLiveChannel(channelId: UUID, channelName: String, streamUrl: String) {
         stopAudiobookshelfIfPlaying()
         mpvLiveAutoHideTriggered = false
 
@@ -876,11 +895,12 @@ class PlayerViewModel @Inject constructor(
                 mpv.setOption("http-header-fields", "allow-cross-protocol-redirects: true")
 
                 withContext(Dispatchers.Main) {
-                    val mediaItem = MediaItem.Builder()
-                        .setMediaId(channelId.toString())
-                        .setUri(streamUrl)
-                        .setMediaMetadata(MediaMetadata.Builder().setTitle(channelName).build())
-                        .build()
+                    val mediaItem =
+                        MediaItem.Builder()
+                            .setMediaId(channelId.toString())
+                            .setUri(streamUrl)
+                            .setMediaMetadata(MediaMetadata.Builder().setTitle(channelName).build())
+                            .build()
 
                     player.setMediaItem(mediaItem)
                     player.prepare()
@@ -888,19 +908,21 @@ class PlayerViewModel @Inject constructor(
                     showControls()
                 }
             } else if (player is ExoPlayer) {
-                val dataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                    .setUserAgent(userAgent)
-                    .setAllowCrossProtocolRedirects(true)
-                    .setKeepPostFor302Redirects(true)
-                    .setConnectTimeoutMs(15000)
-                    .setReadTimeoutMs(15000)
+                val dataSourceFactory =
+                    androidx.media3.datasource.DefaultHttpDataSource.Factory()
+                        .setUserAgent(userAgent)
+                        .setAllowCrossProtocolRedirects(true)
+                        .setKeepPostFor302Redirects(true)
+                        .setConnectTimeoutMs(15000)
+                        .setReadTimeoutMs(15000)
 
-                val mediaItem = MediaItem.Builder()
-                    .setMediaId(channelId.toString())
-                    .setUri(streamUrl)
-                    .setMimeType(MimeTypes.APPLICATION_M3U8)
-                    .setMediaMetadata(MediaMetadata.Builder().setTitle(channelName).build())
-                    .build()
+                val mediaItem =
+                    MediaItem.Builder()
+                        .setMediaId(channelId.toString())
+                        .setUri(streamUrl)
+                        .setMimeType(MimeTypes.APPLICATION_M3U8)
+                        .setMediaMetadata(MediaMetadata.Builder().setTitle(channelName).build())
+                        .build()
 
                 val hlsMediaSource =
                     androidx.media3.exoplayer.hls.HlsMediaSource.Factory(dataSourceFactory)
@@ -915,23 +937,20 @@ class PlayerViewModel @Inject constructor(
                 }
             }
 
-            val channelItem = AfinityChannel(
-                id = channelId,
-                name = channelName,
-                images = AfinityImages(),
-                channelType = ChannelType.TV,
-                channelNumber = null,
-                serviceName = null
-            )
+            val channelItem =
+                AfinityChannel(
+                    id = channelId,
+                    name = channelName,
+                    images = AfinityImages(),
+                    channelType = ChannelType.TV,
+                    channelNumber = null,
+                    serviceName = null,
+                )
 
             currentItem = channelItem
 
             updateUiState {
-                it.copy(
-                    isLoading = false,
-                    isLiveChannel = true,
-                    currentItem = channelItem
-                )
+                it.copy(isLoading = false, isLiveChannel = true, currentItem = channelItem)
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load live channel")
@@ -939,7 +958,7 @@ class PlayerViewModel @Inject constructor(
                 it.copy(
                     isLoading = false,
                     showError = true,
-                    errorMessage = context.getString(R.string.error_load_live_channel)
+                    errorMessage = context.getString(R.string.error_load_live_channel),
                 )
             }
         }
@@ -948,23 +967,24 @@ class PlayerViewModel @Inject constructor(
     private fun loadTrickplayData() {
         val currentItem = uiState.value.currentItem ?: return
 
-        val trickplayInfo = when (currentItem) {
-            is AfinityEpisode -> {
-                currentItem.trickplayInfo?.values?.firstOrNull()
-            }
-
-            is com.makd.afinity.data.models.media.AfinityMovie -> {
-                currentItem.trickplayInfo?.values?.firstOrNull()
-            }
-
-            else -> {
-                if (currentItem is com.makd.afinity.data.models.media.AfinitySources) {
+        val trickplayInfo =
+            when (currentItem) {
+                is AfinityEpisode -> {
                     currentItem.trickplayInfo?.values?.firstOrNull()
-                } else {
-                    null
+                }
+
+                is com.makd.afinity.data.models.media.AfinityMovie -> {
+                    currentItem.trickplayInfo?.values?.firstOrNull()
+                }
+
+                else -> {
+                    if (currentItem is com.makd.afinity.data.models.media.AfinitySources) {
+                        currentItem.trickplayInfo?.values?.firstOrNull()
+                    } else {
+                        null
+                    }
                 }
             }
-        }
 
         trickplayInfo?.let { info ->
             viewModelScope.launch {
@@ -972,34 +992,42 @@ class PlayerViewModel @Inject constructor(
                     withContext(Dispatchers.Default) {
                         val thumbnailsPerTile = info.tileWidth * info.tileHeight
                         val maxTileIndex =
-                            kotlin.math.ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile)
+                            kotlin.math
+                                .ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile)
                                 .toInt()
 
                         val individualThumbnails = mutableListOf<ImageBitmap>()
 
                         for (tileIndex in 0..maxTileIndex) {
-                            val imageData = mediaRepository.getTrickplayData(
-                                currentItem.id,
-                                info.width,
-                                tileIndex
-                            )
+                            val imageData =
+                                mediaRepository.getTrickplayData(
+                                    currentItem.id,
+                                    info.width,
+                                    tileIndex,
+                                )
                             if (imageData != null) {
                                 val tileBitmap =
                                     BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
-                                for (offsetY in 0 until (info.height * info.tileHeight) step info.height) {
-                                    for (offsetX in 0 until (info.width * info.tileWidth) step info.width) {
+                                for (offsetY in
+                                    0 until (info.height * info.tileHeight) step info.height) {
+                                    for (offsetX in
+                                        0 until (info.width * info.tileWidth) step info.width) {
                                         try {
-                                            val thumbnail = Bitmap.createBitmap(
-                                                tileBitmap,
-                                                offsetX,
-                                                offsetY,
-                                                info.width,
-                                                info.height
-                                            )
+                                            val thumbnail =
+                                                Bitmap.createBitmap(
+                                                    tileBitmap,
+                                                    offsetX,
+                                                    offsetY,
+                                                    info.width,
+                                                    info.height,
+                                                )
                                             individualThumbnails.add(thumbnail.asImageBitmap())
-                                            if (individualThumbnails.size >= info.thumbnailCount) break
+                                            if (individualThumbnails.size >= info.thumbnailCount)
+                                                break
                                         } catch (_: Exception) {
-                                            Timber.w("Failed to crop thumbnail at offset ($offsetX, $offsetY)")
+                                            Timber.w(
+                                                "Failed to crop thumbnail at offset ($offsetX, $offsetY)"
+                                            )
                                         }
                                     }
                                     if (individualThumbnails.size >= info.thumbnailCount) break
@@ -1013,12 +1041,12 @@ class PlayerViewModel @Inject constructor(
                         }
 
                         if (individualThumbnails.isNotEmpty()) {
-                            currentTrickplay = Trickplay(
-                                interval = info.interval,
-                                images = individualThumbnails
-                            )
+                            currentTrickplay =
+                                Trickplay(interval = info.interval, images = individualThumbnails)
                         } else {
-                            Timber.d("No trickplay thumbnails could be extracted for ${currentItem.name}")
+                            Timber.d(
+                                "No trickplay thumbnails could be extracted for ${currentItem.name}"
+                            )
                         }
                     }
                 } catch (e: Exception) {
@@ -1035,44 +1063,47 @@ class PlayerViewModel @Inject constructor(
 
     fun switchToTrack(trackType: @C.TrackType Int, index: Int) {
         if (index == -1) {
-            player.trackSelectionParameters = player.trackSelectionParameters
-                .buildUpon()
-                .clearOverridesOfType(trackType)
-                .setTrackTypeDisabled(trackType, true)
-                .build()
+            player.trackSelectionParameters =
+                player.trackSelectionParameters
+                    .buildUpon()
+                    .clearOverridesOfType(trackType)
+                    .setTrackTypeDisabled(trackType, true)
+                    .build()
         } else {
-            val tracksGroups = player.currentTracks.groups.filter {
-                it.type == trackType && it.isSupported
-            }
+            val tracksGroups =
+                player.currentTracks.groups.filter { it.type == trackType && it.isSupported }
 
             if (index < tracksGroups.size) {
-                player.trackSelectionParameters = player.trackSelectionParameters
-                    .buildUpon()
-                    .setOverrideForType(
-                        TrackSelectionOverride(tracksGroups[index].mediaTrackGroup, 0)
-                    )
-                    .setTrackTypeDisabled(trackType, false)
-                    .build()
+                player.trackSelectionParameters =
+                    player.trackSelectionParameters
+                        .buildUpon()
+                        .setOverrideForType(
+                            TrackSelectionOverride(tracksGroups[index].mediaTrackGroup, 0)
+                        )
+                        .setTrackTypeDisabled(trackType, false)
+                        .build()
             }
         }
         updateCurrentTrackSelections()
     }
 
     private fun updateCurrentTrackSelections() {
-        val currentAudioTrackIndex = player.currentTracks.groups
-            .filter { it.type == C.TRACK_TYPE_AUDIO && it.isSupported }
-            .indexOfFirst { it.isSelected }
-            .takeIf { it != -1 }
+        val currentAudioTrackIndex =
+            player.currentTracks.groups
+                .filter { it.type == C.TRACK_TYPE_AUDIO && it.isSupported }
+                .indexOfFirst { it.isSelected }
+                .takeIf { it != -1 }
 
-        val currentSubtitleTrackIndex = player.currentTracks.groups
-            .filter { it.type == C.TRACK_TYPE_TEXT && it.isSupported }
-            .indexOfFirst { it.isSelected }
-            .takeIf { it != -1 }
+        val currentSubtitleTrackIndex =
+            player.currentTracks.groups
+                .filter { it.type == C.TRACK_TYPE_TEXT && it.isSupported }
+                .indexOfFirst { it.isSelected }
+                .takeIf { it != -1 }
 
         updateUiState {
             it.copy(
                 audioStreamIndex = currentAudioTrackIndex,
-                subtitleStreamIndex = currentSubtitleTrackIndex
+                subtitleStreamIndex = currentSubtitleTrackIndex,
             )
         }
     }
@@ -1087,7 +1118,7 @@ class PlayerViewModel @Inject constructor(
                     audioStreamIndex = 0,
                     subtitleStreamIndex = null,
                     playMethod = "DirectPlay",
-                    canSeek = true
+                    canSeek = true,
                 )
             }
         } catch (e: Exception) {
@@ -1096,12 +1127,13 @@ class PlayerViewModel @Inject constructor(
     }
 
     private suspend fun loadSegments(itemId: UUID) {
-        currentMediaSegments = try {
-            segmentsRepository.getSegments(itemId)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load segments for item $itemId")
-            emptyList()
-        }
+        currentMediaSegments =
+            try {
+                segmentsRepository.getSegments(itemId)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load segments for item $itemId")
+                emptyList()
+            }
 
         if (currentMediaSegments.isNotEmpty()) {
             startSegmentMonitoring()
@@ -1112,13 +1144,14 @@ class PlayerViewModel @Inject constructor(
 
     private fun startSegmentMonitoring() {
         segmentCheckingJob?.cancel()
-        segmentCheckingJob = viewModelScope.launch {
-            delay(2000L)
-            while (true) {
-                updateCurrentSegment()
-                delay(1000L)
+        segmentCheckingJob =
+            viewModelScope.launch {
+                delay(2000L)
+                while (true) {
+                    updateCurrentSegment()
+                    delay(1000L)
+                }
             }
-        }
     }
 
     private suspend fun updateCurrentSegment() {
@@ -1126,19 +1159,21 @@ class PlayerViewModel @Inject constructor(
 
         val currentPositionMs = uiState.value.currentPosition
 
-        val currentSegment = currentMediaSegments.find { segment ->
-            currentPositionMs in segment.startTicks..<(segment.endTicks - 100L)
-        }
+        val currentSegment =
+            currentMediaSegments.find { segment ->
+                currentPositionMs in segment.startTicks..<(segment.endTicks - 100L)
+            }
 
         currentSegment?.let { segment ->
             val skipIntroEnabled = preferencesRepository.getSkipIntroEnabled()
             val skipOutroEnabled = preferencesRepository.getSkipOutroEnabled()
 
-            val shouldShowSkipButton = when (segment.type) {
-                AfinitySegmentType.INTRO -> skipIntroEnabled
-                AfinitySegmentType.OUTRO -> skipOutroEnabled
-                else -> false
-            }
+            val shouldShowSkipButton =
+                when (segment.type) {
+                    AfinitySegmentType.INTRO -> skipIntroEnabled
+                    AfinitySegmentType.OUTRO -> skipOutroEnabled
+                    else -> false
+                }
 
             if (shouldShowSkipButton) {
                 val skipButtonText = getSkipButtonText(segment)
@@ -1146,25 +1181,13 @@ class PlayerViewModel @Inject constructor(
                     it.copy(
                         currentSegment = segment,
                         skipButtonText = skipButtonText,
-                        showSkipButton = true
+                        showSkipButton = true,
                     )
                 }
             } else {
-                updateUiState {
-                    it.copy(
-                        currentSegment = null,
-                        showSkipButton = false
-                    )
-                }
+                updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
             }
-        } ?: run {
-            updateUiState {
-                it.copy(
-                    currentSegment = null,
-                    showSkipButton = false
-                )
-            }
-        }
+        } ?: run { updateUiState { it.copy(currentSegment = null, showSkipButton = false) } }
     }
 
     private fun getSkipButtonText(segment: AfinitySegment): String {
@@ -1237,9 +1260,7 @@ class PlayerViewModel @Inject constructor(
 
     fun jumpToEpisode(episodeId: UUID) {
         viewModelScope.launch {
-            playlistManager.jumpToItem(episodeId)?.let { targetItem ->
-                playQueueItem(targetItem)
-            }
+            playlistManager.jumpToItem(episodeId)?.let { targetItem -> playQueueItem(targetItem) }
         }
     }
 
@@ -1265,13 +1286,14 @@ class PlayerViewModel @Inject constructor(
 
             if (currentChapterIndex != -1) {
                 val currentChapter = chapters[currentChapterIndex]
-                val targetPosition = if (currentPos - currentChapter.startPosition > 3000) {
-                    currentChapter.startPosition
-                } else if (currentChapterIndex > 0) {
-                    chapters[currentChapterIndex - 1].startPosition
-                } else {
-                    0L
-                }
+                val targetPosition =
+                    if (currentPos - currentChapter.startPosition > 3000) {
+                        currentChapter.startPosition
+                    } else if (currentChapterIndex > 0) {
+                        chapters[currentChapterIndex - 1].startPosition
+                    } else {
+                        0L
+                    }
                 handlePlayerEvent(PlayerEvent.Seek(targetPosition))
                 return
             }
@@ -1286,7 +1308,7 @@ class PlayerViewModel @Inject constructor(
                 mediaSourceId = item.sources.firstOrNull()?.id ?: "",
                 audioStreamIndex = null,
                 subtitleStreamIndex = null,
-                startPositionMs = 0L
+                startPositionMs = 0L,
             )
         )
     }
@@ -1297,24 +1319,21 @@ class PlayerViewModel @Inject constructor(
         var currentLevel = _uiState.value.brightnessLevel
         if (currentLevel < 0f) currentLevel = getSystemBrightness()
 
-        val newBrightness = if (isAbsolute) {
-            value.coerceIn(0.0f, 1.0f)
-        } else {
-            (currentLevel + value * gestureConfig.brightnessStepSize).coerceIn(0.0f, 1.0f)
-        }
+        val newBrightness =
+            if (isAbsolute) {
+                value.coerceIn(0.0f, 1.0f)
+            } else {
+                (currentLevel + value * gestureConfig.brightnessStepSize).coerceIn(0.0f, 1.0f)
+            }
 
-        updateUiState {
-            it.copy(
-                showBrightnessIndicator = true,
-                brightnessLevel = newBrightness
-            )
-        }
+        updateUiState { it.copy(showBrightnessIndicator = true, brightnessLevel = newBrightness) }
 
         brightnessHideJob?.cancel()
-        brightnessHideJob = viewModelScope.launch {
-            delay(2000)
-            updateUiState { it.copy(showBrightnessIndicator = false) }
-        }
+        brightnessHideJob =
+            viewModelScope.launch {
+                delay(2000)
+                updateUiState { it.copy(showBrightnessIndicator = false) }
+            }
     }
 
     private var volumeHideJob: Job? = null
@@ -1332,7 +1351,7 @@ class PlayerViewModel @Inject constructor(
                 it.copy(
                     showTrickplayPreview = false,
                     trickplayPreviewImage = null,
-                    trickplayPreviewPosition = 0L
+                    trickplayPreviewPosition = 0L,
                 )
             }
             return
@@ -1348,7 +1367,7 @@ class PlayerViewModel @Inject constructor(
                 it.copy(
                     showTrickplayPreview = true,
                     trickplayPreviewImage = trickplay.images[index],
-                    trickplayPreviewPosition = position
+                    trickplayPreviewPosition = position,
                 )
             }
         }
@@ -1383,10 +1402,7 @@ class PlayerViewModel @Inject constructor(
 
     fun showControls() {
         updateUiState {
-            it.copy(
-                showControls = true,
-                showPlayButton = !uiState.value.isControlsLocked
-            )
+            it.copy(showControls = true, showPlayButton = !uiState.value.isControlsLocked)
         }
         startControlsAutoHide()
     }
@@ -1396,17 +1412,21 @@ class PlayerViewModel @Inject constructor(
         controlsHideJob?.cancel()
     }
 
-
     private fun startControlsAutoHide() {
         controlsHideJob?.cancel()
-        controlsHideJob = viewModelScope.launch {
-            delay(3000)
-            if (uiState.value.isPlaying && uiState.value.showControls && !uiState.value.isSeeking) {
-                hideControls()
-            } else if (uiState.value.isSeeking) {
-                startControlsAutoHide()
+        controlsHideJob =
+            viewModelScope.launch {
+                delay(3000)
+                if (
+                    uiState.value.isPlaying &&
+                        uiState.value.showControls &&
+                        !uiState.value.isSeeking
+                ) {
+                    hideControls()
+                } else if (uiState.value.isSeeking) {
+                    startControlsAutoHide()
+                }
             }
-        }
     }
 
     override fun onCleared() {
@@ -1423,9 +1443,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun onPipModeChanged(isInPictureInPictureMode: Boolean) {
-        _uiState.value = _uiState.value.copy(
-            isInPictureInPictureMode = isInPictureInPictureMode
-        )
+        _uiState.value = _uiState.value.copy(isInPictureInPictureMode = isInPictureInPictureMode)
 
         if (isInPictureInPictureMode) {
             hideControls()
@@ -1480,7 +1498,7 @@ class PlayerViewModel @Inject constructor(
         val isControlsVisible: Boolean = true,
         val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
         val logoAutoHide: Boolean = false,
-        val isLiveChannel: Boolean = false
+        val isLiveChannel: Boolean = false,
     )
 }
 
@@ -1490,5 +1508,5 @@ private data class MpvPrefsSnapshot(
     val audioOutput: String,
     val subtitlePrefs: SubtitlePreferences,
     val preferredAudioLanguage: String,
-    val preferredSubtitleLanguage: String
+    val preferredSubtitleLanguage: String,
 )

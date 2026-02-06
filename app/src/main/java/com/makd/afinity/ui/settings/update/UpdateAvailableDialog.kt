@@ -52,7 +52,7 @@ fun UpdateAvailableDialog(
     isDownloading: Boolean,
     onDownload: () -> Unit,
     onInstall: (File) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -62,20 +62,19 @@ fun UpdateAvailableDialog(
                 painter = painterResource(id = R.drawable.ic_system_update),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             )
         },
-
         title = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
                     text = stringResource(R.string.update_available_title),
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -83,17 +82,17 @@ fun UpdateAvailableDialog(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                    modifier =
+                        Modifier.background(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(16.dp),
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.update_version_fmt, currentVersionName),
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -102,7 +101,7 @@ fun UpdateAvailableDialog(
                         painter = painterResource(id = R.drawable.ic_chevron_right),
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -111,7 +110,7 @@ fun UpdateAvailableDialog(
                         text = release.tagName,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -119,32 +118,27 @@ fun UpdateAvailableDialog(
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
                     text = stringResource(R.string.update_whats_new),
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
 
                 Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = false)
-                        .height(400.dp),
+                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false).height(400.dp),
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp)
-                            .verticalScroll(rememberScrollState())
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .padding(12.dp)
+                                .verticalScroll(rememberScrollState())
                     ) {
                         ProvideTextStyle(value = MaterialTheme.typography.bodyMedium) {
-                            RichText(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                            RichText(modifier = Modifier.fillMaxWidth()) {
                                 Markdown(content = formatChangelog(release.body ?: ""))
                             }
                         }
@@ -162,30 +156,31 @@ fun UpdateAvailableDialog(
                     }
                 },
                 enabled = downloadedFile != null || !isDownloading,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 AnimatedContent(
-                    targetState = when {
-                        downloadedFile != null -> UpdateButtonState.INSTALL
-                        isDownloading -> UpdateButtonState.DOWNLOADING
-                        else -> UpdateButtonState.DOWNLOAD
-                    },
+                    targetState =
+                        when {
+                            downloadedFile != null -> UpdateButtonState.INSTALL
+                            isDownloading -> UpdateButtonState.DOWNLOADING
+                            else -> UpdateButtonState.DOWNLOAD
+                        },
                     label = "ButtonAnimation",
                     transitionSpec = {
                         slideInVertically { height -> height } + fadeIn() togetherWith
-                                slideOutVertically { height -> -height } + fadeOut()
-                    }
+                            slideOutVertically { height -> -height } + fadeOut()
+                    },
                 ) { state ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.Center,
                     ) {
                         when (state) {
                             UpdateButtonState.INSTALL -> {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_system_update),
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(18.dp),
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.btn_install_restart))
@@ -195,7 +190,7 @@ fun UpdateAvailableDialog(
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(16.dp),
                                     strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.btn_downloading))
@@ -205,7 +200,7 @@ fun UpdateAvailableDialog(
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_download_arrow),
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(18.dp),
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.btn_download_update))
@@ -216,49 +211,53 @@ fun UpdateAvailableDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_not_now))
-            }
-        }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_not_now)) }
+        },
     )
 }
 
 private enum class UpdateButtonState {
-    DOWNLOAD, DOWNLOADING, INSTALL
+    DOWNLOAD,
+    DOWNLOADING,
+    INSTALL,
 }
 
 private fun formatChangelog(text: String): String {
     var formatted = text
 
     val issueRegex = "https://github\\.com/[^/]+/[^/]+/(?:pull|issues)/(\\d+)".toRegex()
-    formatted = issueRegex.replace(formatted) { matchResult ->
-        val url = matchResult.value
-        val number = matchResult.groupValues[1]
-        "[$number]($url)"
-    }
+    formatted =
+        issueRegex.replace(formatted) { matchResult ->
+            val url = matchResult.value
+            val number = matchResult.groupValues[1]
+            "[$number]($url)"
+        }
 
     val commitRegex = "https://github\\.com/[^/]+/[^/]+/commit/([0-9a-f]{7})[0-9a-f]*".toRegex()
-    formatted = commitRegex.replace(formatted) { matchResult ->
-        val url = matchResult.value
-        val shortHash = matchResult.groupValues[1]
-        "[`$shortHash`]($url)"
-    }
+    formatted =
+        commitRegex.replace(formatted) { matchResult ->
+            val url = matchResult.value
+            val shortHash = matchResult.groupValues[1]
+            "[`$shortHash`]($url)"
+        }
 
     val compareRegex =
         "https://github\\.com/[^/]+/[^/]+/compare/([\\w\\d\\.-]+)\\.\\.\\.([\\w\\d\\.-]+)".toRegex()
-    formatted = compareRegex.replace(formatted) { matchResult ->
-        val url = matchResult.value
-        val oldVersion = matchResult.groupValues[1]
-        val newVersion = matchResult.groupValues[2]
-        "[$oldVersion...$newVersion]($url)"
-    }
+    formatted =
+        compareRegex.replace(formatted) { matchResult ->
+            val url = matchResult.value
+            val oldVersion = matchResult.groupValues[1]
+            val newVersion = matchResult.groupValues[2]
+            "[$oldVersion...$newVersion]($url)"
+        }
 
     val userRegex = "https://github\\.com/([a-zA-Z0-9-]+)(?=[\\s)]|$)".toRegex()
-    formatted = userRegex.replace(formatted) { matchResult ->
-        val url = matchResult.value
-        val user = matchResult.groupValues[1]
-        "[@$user]($url)"
-    }
+    formatted =
+        userRegex.replace(formatted) { matchResult ->
+            val url = matchResult.value
+            val user = matchResult.groupValues[1]
+            "[@$user]($url)"
+        }
 
     return formatted
 }

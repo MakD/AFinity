@@ -23,50 +23,64 @@ data class PlayerState(
     val isFullscreen: Boolean = true,
     val sessionId: String? = null,
     val isControlsLocked: Boolean = false,
-    val isInPictureInPictureMode: Boolean = false
+    val isInPictureInPictureMode: Boolean = false,
 )
 
-data class PlayerError(
-    val code: Int,
-    val message: String,
-    val cause: Throwable? = null
-)
+data class PlayerError(val code: Int, val message: String, val cause: Throwable? = null)
 
 sealed class PlayerEvent {
     object Play : PlayerEvent()
+
     object Pause : PlayerEvent()
+
     object Stop : PlayerEvent()
+
     data class Seek(val positionMs: Long) : PlayerEvent()
+
     data class SeekRelative(val deltaMs: Long) : PlayerEvent()
+
     data class SetVolume(val volume: Int) : PlayerEvent()
+
     data class SetBrightness(val brightness: Float) : PlayerEvent()
+
     data class SetPlaybackSpeed(val speed: Float) : PlayerEvent()
+
     data class SwitchToTrack(val trackType: Int, val index: Int) : PlayerEvent()
+
     object ToggleControls : PlayerEvent()
+
     object ToggleLock : PlayerEvent()
+
     object ToggleFullscreen : PlayerEvent()
+
     object EnterPictureInPicture : PlayerEvent()
+
     data class LoadMedia(
         val item: AfinityItem,
         val mediaSourceId: String,
         val audioStreamIndex: Int? = null,
         val subtitleStreamIndex: Int? = null,
-        val startPositionMs: Long = 0L
+        val startPositionMs: Long = 0L,
     ) : PlayerEvent()
 
     data class LoadLiveChannel(
         val channelId: UUID,
         val channelName: String,
-        val streamUrl: String
+        val streamUrl: String,
     ) : PlayerEvent()
 
     data class SkipSegment(val segment: AfinitySegment) : PlayerEvent()
 
     object OnSeekBarDragStart : PlayerEvent()
+
     data class OnSeekBarValueChange(val positionMs: Long) : PlayerEvent()
+
     object OnSeekBarDragFinished : PlayerEvent()
+
     object ToggleRemainingTime : PlayerEvent()
+
     data class SetVideoZoomMode(val mode: VideoZoomMode) : PlayerEvent()
+
     data object CycleVideoZoomMode : PlayerEvent()
 }
 
@@ -79,5 +93,5 @@ data class GestureConfig(
     val gestureExclusionAreaVertical: Float = 48f,
     val gestureExclusionAreaHorizontal: Float = 24f,
     val minimumDragThreshold: Float = 15f,
-    val gestureAccumulationThreshold: Float = 30f
+    val gestureAccumulationThreshold: Float = 30f,
 )

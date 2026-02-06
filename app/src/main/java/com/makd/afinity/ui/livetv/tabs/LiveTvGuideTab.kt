@@ -48,21 +48,23 @@ fun LiveTvGuideTab(
     onJumpToNow: () -> Unit,
     onNavigateTime: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact
+    widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
 ) {
-    val channelCellWidth: Dp = when (widthSizeClass) {
-        WindowWidthSizeClass.Compact -> 100.dp
-        WindowWidthSizeClass.Medium -> 120.dp
-        WindowWidthSizeClass.Expanded -> 150.dp
-        else -> 100.dp
-    }
+    val channelCellWidth: Dp =
+        when (widthSizeClass) {
+            WindowWidthSizeClass.Compact -> 100.dp
+            WindowWidthSizeClass.Medium -> 120.dp
+            WindowWidthSizeClass.Expanded -> 150.dp
+            else -> 100.dp
+        }
 
-    val hourWidth: Dp = when (widthSizeClass) {
-        WindowWidthSizeClass.Compact -> 180.dp
-        WindowWidthSizeClass.Medium -> 200.dp
-        WindowWidthSizeClass.Expanded -> 240.dp
-        else -> 180.dp
-    }
+    val hourWidth: Dp =
+        when (widthSizeClass) {
+            WindowWidthSizeClass.Compact -> 180.dp
+            WindowWidthSizeClass.Medium -> 200.dp
+            WindowWidthSizeClass.Expanded -> 240.dp
+            else -> 180.dp
+        }
 
     val rowHeight: Dp = 70.dp
     val headerHeight: Dp = 40.dp
@@ -72,10 +74,7 @@ fun LiveTvGuideTab(
     val dateFormatter = remember(datePattern) { DateTimeFormatter.ofPattern(datePattern) }
 
     if (uiState.isEpgLoading && uiState.epgChannels.isEmpty()) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
@@ -83,42 +82,39 @@ fun LiveTvGuideTab(
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             IconButton(onClick = { onNavigateTime(-3) }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_chevron_left),
-                    contentDescription = stringResource(R.string.cd_guide_previous_time)
+                    contentDescription = stringResource(R.string.cd_guide_previous_time),
                 )
             }
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = uiState.epgStartTime.format(dateFormatter),
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 val startHour = uiState.epgStartTime.hour
                 val endHour = uiState.epgStartTime.plusHours(uiState.epgVisibleHours.toLong()).hour
                 Text(
                     text = stringResource(R.string.livetv_guide_time_range_fmt, startHour, endHour),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             Button(
                 onClick = onJumpToNow,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+                colors =
+                    ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             ) {
                 Text(stringResource(R.string.action_now))
             }
@@ -126,63 +122,46 @@ fun LiveTvGuideTab(
             IconButton(onClick = { onNavigateTime(3) }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_chevron_right),
-                    contentDescription = stringResource(R.string.cd_guide_next_time)
+                    contentDescription = stringResource(R.string.cd_guide_next_time),
                 )
             }
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             stickyHeader {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(headerHeight)
-                        .background(MaterialTheme.colorScheme.surface)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(channelCellWidth)
+                    modifier =
+                        Modifier.fillMaxWidth()
                             .height(headerHeight)
                             .background(MaterialTheme.colorScheme.surface)
-                    )
+                ) {
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .horizontalScroll(horizontalScrollState)
-                    ) {
+                        modifier =
+                            Modifier.width(channelCellWidth)
+                                .height(headerHeight)
+                                .background(MaterialTheme.colorScheme.surface)
+                    )
+                    Box(modifier = Modifier.weight(1f).horizontalScroll(horizontalScrollState)) {
                         EpgTimeHeader(
                             startTime = uiState.epgStartTime,
                             visibleHours = uiState.epgVisibleHours,
-                            hourWidth = hourWidth
+                            hourWidth = hourWidth,
                         )
                     }
                 }
             }
 
-            items(
-                items = uiState.epgChannels,
-                key = { it.id }
-            ) { channel ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(rowHeight)
-                ) {
+            items(items = uiState.epgChannels, key = { it.id }) { channel ->
+                Row(modifier = Modifier.fillMaxWidth().height(rowHeight)) {
                     EpgChannelCell(
                         channel = channel,
                         onClick = { onChannelClick(channel) },
                         cellWidth = channelCellWidth,
-                        cellHeight = rowHeight
+                        cellHeight = rowHeight,
                     )
 
                     val channelPrograms = uiState.epgPrograms[channel.id] ?: emptyList()
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .horizontalScroll(horizontalScrollState)
-                    ) {
+                    Box(modifier = Modifier.weight(1f).horizontalScroll(horizontalScrollState)) {
                         EpgProgramRow(
                             channel = channel,
                             programs = channelPrograms,
@@ -190,9 +169,7 @@ fun LiveTvGuideTab(
                             visibleHours = uiState.epgVisibleHours,
                             hourWidth = hourWidth,
                             cellHeight = rowHeight,
-                            onProgramClick = {
-                                onChannelClick(channel)
-                            }
+                            onProgramClick = { onChannelClick(channel) },
                         )
                     }
                 }

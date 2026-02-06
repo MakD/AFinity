@@ -34,34 +34,28 @@ fun ErrorIndicator(
     isVisible: Boolean,
     errorMessage: String?,
     onRetryClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = isVisible,
         enter = scaleIn(animationSpec = tween(200)) + fadeIn(),
         exit = scaleOut(animationSpec = tween(200)) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Card(
-            modifier = Modifier
-                .widthIn(max = 300.dp)
-                .clip(RoundedCornerShape(16.dp)),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Black.copy(alpha = 0.9f)
-            )
+            modifier = Modifier.widthIn(max = 300.dp).clip(RoundedCornerShape(16.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.9f)),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
+                modifier = Modifier.fillMaxWidth().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
                     text = stringResource(R.string.player_error_title),
                     color = Color.White,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
 
                 if (errorMessage != null) {
@@ -69,20 +63,21 @@ fun ErrorIndicator(
                         text = errorMessage,
                         color = Color.White.copy(alpha = 0.8f),
                         fontSize = 14.sp,
-                        lineHeight = 20.sp
+                        lineHeight = 20.sp,
                     )
                 }
 
                 Button(
                     onClick = onRetryClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
                 ) {
                     Text(
                         text = stringResource(R.string.action_retry),
                         color = Color.White,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
             }

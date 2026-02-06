@@ -7,19 +7,21 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
-class AudiobookshelfPlayerViewModel @Inject constructor(
+class AudiobookshelfPlayerViewModel
+@Inject
+constructor(
     savedStateHandle: SavedStateHandle,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val audiobookshelfPlayer: AudiobookshelfPlayer,
-    val playbackManager: AudiobookshelfPlaybackManager
+    val playbackManager: AudiobookshelfPlaybackManager,
 ) : ViewModel() {
 
     private val itemId: String = savedStateHandle.get<String>("itemId") ?: ""
@@ -56,19 +58,17 @@ class AudiobookshelfPlayerViewModel @Inject constructor(
                         _uiState.value = _uiState.value.copy(isLoading = false)
                         Timber.d("Started playback session: ${session.id}")
                     } else {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "Server URL not available"
-                        )
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoading = false,
+                                error = "Server URL not available",
+                            )
                     }
                 },
                 onFailure = { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = error.message
-                    )
+                    _uiState.value = _uiState.value.copy(isLoading = false, error = error.message)
                     Timber.e(error, "Failed to start playback session")
-                }
+                },
             )
         }
     }
@@ -156,5 +156,5 @@ data class AudiobookshelfPlayerUiState(
     val showChapterSelector: Boolean = false,
     val showSpeedSelector: Boolean = false,
     val showSleepTimerDialog: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )

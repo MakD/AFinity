@@ -12,12 +12,14 @@ interface MovieSectionDao {
     @Query("SELECT * FROM movie_section_cache WHERE sectionId = :id")
     suspend fun getCachedSection(id: String): MovieSectionCacheEntity?
 
-    @Query("""
+    @Query(
+        """
         SELECT COUNT(*) > 0
         FROM movie_section_cache
         WHERE sectionId = :id
         AND (cachedTimestamp + :ttlMillis) > :currentTime
-    """)
+    """
+    )
     suspend fun isSectionCacheFresh(id: String, ttlMillis: Long, currentTime: Long): Boolean
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -29,6 +31,5 @@ interface MovieSectionDao {
     @Query("DELETE FROM movie_section_cache WHERE sectionType = :type")
     suspend fun deleteSectionsByType(type: String)
 
-    @Query("DELETE FROM movie_section_cache")
-    suspend fun clearAllCache()
+    @Query("DELETE FROM movie_section_cache") suspend fun clearAllCache()
 }

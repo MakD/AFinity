@@ -4,26 +4,24 @@ import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.JellyfinRepository
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 data class PlaylistState(
     val queue: List<AfinityItem> = emptyList(),
     val currentIndex: Int = -1,
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false,
-    val currentItem: AfinityItem? = null
+    val currentItem: AfinityItem? = null,
 )
 
 @Singleton
-class PlaylistManager @Inject constructor(
-    private val jellyfinRepository: JellyfinRepository
-) {
+class PlaylistManager @Inject constructor(private val jellyfinRepository: JellyfinRepository) {
     private val _playlistState = MutableStateFlow(PlaylistState())
     val playlistState: StateFlow<PlaylistState> = _playlistState.asStateFlow()
 
@@ -32,7 +30,11 @@ class PlaylistManager @Inject constructor(
     private var currentSeriesId: UUID? = null
 
     suspend fun initializePlaylist(startingItem: AfinityItem, seasonId: UUID? = null): Boolean {
-        if (startingItem is AfinityEpisode && currentSeriesId == startingItem.seriesId && currentQueue.isNotEmpty()) {
+        if (
+            startingItem is AfinityEpisode &&
+                currentSeriesId == startingItem.seriesId &&
+                currentQueue.isNotEmpty()
+        ) {
             val existingIndex = currentQueue.indexOfFirst { it.id == startingItem.id }
             if (existingIndex != -1) {
                 currentIndex = existingIndex
@@ -42,17 +44,18 @@ class PlaylistManager @Inject constructor(
         }
 
         return try {
-            val result = when (startingItem) {
-                is AfinityEpisode -> {
-                    currentSeriesId = startingItem.seriesId
-                    initializeEpisodeQueue(startingItem, seasonId)
-                }
+            val result =
+                when (startingItem) {
+                    is AfinityEpisode -> {
+                        currentSeriesId = startingItem.seriesId
+                        initializeEpisodeQueue(startingItem, seasonId)
+                    }
 
-                else -> {
-                    currentSeriesId = null
-                    initializeSingleItemQueue(startingItem)
+                    else -> {
+                        currentSeriesId = null
+                        initializeSingleItemQueue(startingItem)
+                    }
                 }
-            }
             result
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize playlist")
@@ -62,7 +65,7 @@ class PlaylistManager @Inject constructor(
 
     private suspend fun initializeEpisodeQueue(
         startingEpisode: AfinityEpisode,
-        seasonId: UUID? = null
+        seasonId: UUID? = null,
     ): Boolean {
         return try {
             if (seasonId != null) {
@@ -89,11 +92,12 @@ class PlaylistManager @Inject constructor(
             }
 
             Timber.d("Loading episodes for entire series")
-            val seasons = jellyfinRepository.getSeasons(
-                startingEpisode.seriesId,
-                SortBy.NAME,
-                sortDescending = false
-            )
+            val seasons =
+                jellyfinRepository.getSeasons(
+                    startingEpisode.seriesId,
+                    SortBy.NAME,
+                    sortDescending = false,
+                )
 
             if (seasons.isEmpty()) {
                 setQueue(listOf(startingEpisode), 0)
@@ -114,11 +118,11 @@ class PlaylistManager @Inject constructor(
                     if (allEpisodes.isNotEmpty()) {
                         setQueue(
                             allEpisodes.map { it as AfinityItem },
-                            allEpisodes.indexOfFirst { it.id == startingEpisode.id }
-                                .coerceAtLeast(0)
+                            allEpisodes
+                                .indexOfFirst { it.id == startingEpisode.id }
+                                .coerceAtLeast(0),
                         )
                     }
-
                 } catch (_: Exception) {
                     Timber.w("Failed to load episodes for season ${season.indexNumber}")
                 }
@@ -243,33 +247,38 @@ class PlaylistManager @Inject constructor(
             return
         }
 
-        val resumableIndex = currentQueue.indexOfFirst { item ->
-            item.playbackPositionTicks > 0 && item.playbackPositionTicks < item.runtimeTicks
-        }
-
-        val unwatchedIndex = if (resumableIndex == -1) {
+        val resumableIndex =
             currentQueue.indexOfFirst { item ->
-                !item.played && item.playbackPositionTicks == 0L
+                item.playbackPositionTicks > 0 && item.playbackPositionTicks < item.runtimeTicks
             }
-        } else {
-            -1
-        }
+
+        val unwatchedIndex =
+            if (resumableIndex == -1) {
+                currentQueue.indexOfFirst { item ->
+                    !item.played && item.playbackPositionTicks == 0L
+                }
+            } else {
+                -1
+            }
 
         val priorityIndex = if (resumableIndex != -1) resumableIndex else unwatchedIndex
 
         if (priorityIndex != -1) {
             val priorityEpisode = currentQueue[priorityIndex]
-            val remainingEpisodes = currentQueue.toMutableList().apply {
-                removeAt(priorityIndex)
-                shuffle()
-            }
+            val remainingEpisodes =
+                currentQueue.toMutableList().apply {
+                    removeAt(priorityIndex)
+                    shuffle()
+                }
 
             currentQueue.clear()
             currentQueue.add(priorityEpisode)
             currentQueue.addAll(remainingEpisodes)
             currentIndex = 0
 
-            Timber.d("Queue shuffled with priority episode: ${priorityEpisode.name} (${currentQueue.size} total items)")
+            Timber.d(
+                "Queue shuffled with priority episode: ${priorityEpisode.name} (${currentQueue.size} total items)"
+            )
         } else {
             currentQueue.shuffle()
             currentIndex = 0
@@ -281,14 +290,17 @@ class PlaylistManager @Inject constructor(
     }
 
     private fun updatePlaylistState() {
-        _playlistState.value = PlaylistState(
-            queue = currentQueue.toList(),
-            currentIndex = currentIndex,
-            hasNext = hasNext(),
-            hasPrevious = hasPrevious(),
-            currentItem = getCurrentItem()
-        )
+        _playlistState.value =
+            PlaylistState(
+                queue = currentQueue.toList(),
+                currentIndex = currentIndex,
+                hasNext = hasNext(),
+                hasPrevious = hasPrevious(),
+                currentItem = getCurrentItem(),
+            )
 
-        Timber.d("Playlist state updated: index=$currentIndex, hasNext=${hasNext()}, hasPrevious=${hasPrevious()}")
+        Timber.d(
+            "Playlist state updated: index=$currentIndex, hasNext=${hasNext()}, hasPrevious=${hasPrevious()}"
+        )
     }
 }

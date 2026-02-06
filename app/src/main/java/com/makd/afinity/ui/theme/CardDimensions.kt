@@ -24,28 +24,31 @@ object CardDimensions {
     }
 
     val WindowWidthSizeClass.portraitWidth: Dp
-        get() = when (this) {
-            WindowWidthSizeClass.Compact -> Values.PortraitCompact
-            WindowWidthSizeClass.Medium -> Values.PortraitMedium
-            WindowWidthSizeClass.Expanded -> Values.PortraitExpanded
-            else -> Values.PortraitCompact
-        }
+        get() =
+            when (this) {
+                WindowWidthSizeClass.Compact -> Values.PortraitCompact
+                WindowWidthSizeClass.Medium -> Values.PortraitMedium
+                WindowWidthSizeClass.Expanded -> Values.PortraitExpanded
+                else -> Values.PortraitCompact
+            }
 
     val WindowWidthSizeClass.landscapeWidth: Dp
-        get() = when (this) {
-            WindowWidthSizeClass.Compact -> Values.LandscapeCompact
-            WindowWidthSizeClass.Medium -> Values.LandscapeMedium
-            WindowWidthSizeClass.Expanded -> Values.LandscapeExpanded
-            else -> Values.LandscapeCompact
-        }
+        get() =
+            when (this) {
+                WindowWidthSizeClass.Compact -> Values.LandscapeCompact
+                WindowWidthSizeClass.Medium -> Values.LandscapeMedium
+                WindowWidthSizeClass.Expanded -> Values.LandscapeExpanded
+                else -> Values.LandscapeCompact
+            }
 
     val WindowWidthSizeClass.gridMinSize: Dp
-        get() = when (this) {
-            WindowWidthSizeClass.Compact -> Values.GridCompact
-            WindowWidthSizeClass.Medium -> Values.GridMedium
-            WindowWidthSizeClass.Expanded -> Values.GridExpanded
-            else -> Values.GridCompact
-        }
+        get() =
+            when (this) {
+                WindowWidthSizeClass.Compact -> Values.GridCompact
+                WindowWidthSizeClass.Medium -> Values.GridMedium
+                WindowWidthSizeClass.Expanded -> Values.GridExpanded
+                else -> Values.GridCompact
+            }
 
     fun calculateHeight(width: Dp, aspectRatio: Float): Dp = width / aspectRatio
 }

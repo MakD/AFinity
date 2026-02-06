@@ -9,20 +9,22 @@ import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.File
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.File
-import java.util.UUID
-import javax.inject.Inject
 
 @HiltViewModel
-class DownloadsViewModel @Inject constructor(
+class DownloadsViewModel
+@Inject
+constructor(
     private val downloadRepository: DownloadRepository,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DownloadsUiState())
@@ -59,14 +61,11 @@ class DownloadsViewModel @Inject constructor(
     private fun observeDownloads() {
         viewModelScope.launch {
             try {
-                downloadRepository.getActiveDownloadsFlow()
-                    .catch { e ->
-                        Timber.e(e, "Error observing active downloads")
-                    }
+                downloadRepository
+                    .getActiveDownloadsFlow()
+                    .catch { e -> Timber.e(e, "Error observing active downloads") }
                     .collect { activeDownloads ->
-                        _uiState.value = _uiState.value.copy(
-                            activeDownloads = activeDownloads
-                        )
+                        _uiState.value = _uiState.value.copy(activeDownloads = activeDownloads)
                     }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to observe active downloads")
@@ -75,14 +74,12 @@ class DownloadsViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                downloadRepository.getCompletedDownloadsFlow()
-                    .catch { e ->
-                        Timber.e(e, "Error observing completed downloads")
-                    }
+                downloadRepository
+                    .getCompletedDownloadsFlow()
+                    .catch { e -> Timber.e(e, "Error observing completed downloads") }
                     .collect { completedDownloads ->
-                        _uiState.value = _uiState.value.copy(
-                            completedDownloads = completedDownloads
-                        )
+                        _uiState.value =
+                            _uiState.value.copy(completedDownloads = completedDownloads)
                     }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to observe completed downloads")
@@ -96,11 +93,12 @@ class DownloadsViewModel @Inject constructor(
                 val appStorageUsed = downloadRepository.getTotalStorageUsed()
                 val allServersStorageUsed = downloadRepository.getTotalStorageUsedAllServers()
                 val deviceStats = getDeviceStorageStats()
-                _uiState.value = _uiState.value.copy(
-                    totalStorageUsed = appStorageUsed,
-                    totalStorageUsedAllServers = allServersStorageUsed,
-                    deviceStorageStats = deviceStats
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        totalStorageUsed = appStorageUsed,
+                        totalStorageUsedAllServers = allServersStorageUsed,
+                        deviceStorageStats = deviceStats,
+                    )
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load storage info")
             }
@@ -113,9 +111,8 @@ class DownloadsViewModel @Inject constructor(
                 val result = downloadRepository.pauseDownload(downloadId)
                 result.onFailure { error ->
                     Timber.e(error, "Failed to pause download")
-                    _uiState.value = _uiState.value.copy(
-                        error = "Failed to pause download: ${error.message}"
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(error = "Failed to pause download: ${error.message}")
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error pausing download")
@@ -129,9 +126,8 @@ class DownloadsViewModel @Inject constructor(
                 val result = downloadRepository.resumeDownload(downloadId)
                 result.onFailure { error ->
                     Timber.e(error, "Failed to resume download")
-                    _uiState.value = _uiState.value.copy(
-                        error = "Failed to resume download: ${error.message}"
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(error = "Failed to resume download: ${error.message}")
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error resuming download")
@@ -143,15 +139,18 @@ class DownloadsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val result = downloadRepository.cancelDownload(downloadId)
-                result.onSuccess {
-                    Timber.i("Download cancelled successfully")
-                    loadStorageInfo()
-                }.onFailure { error ->
-                    Timber.e(error, "Failed to cancel download")
-                    _uiState.value = _uiState.value.copy(
-                        error = "Failed to cancel download: ${error.message}"
-                    )
-                }
+                result
+                    .onSuccess {
+                        Timber.i("Download cancelled successfully")
+                        loadStorageInfo()
+                    }
+                    .onFailure { error ->
+                        Timber.e(error, "Failed to cancel download")
+                        _uiState.value =
+                            _uiState.value.copy(
+                                error = "Failed to cancel download: ${error.message}"
+                            )
+                    }
             } catch (e: Exception) {
                 Timber.e(e, "Error cancelling download")
             }
@@ -162,15 +161,18 @@ class DownloadsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val result = downloadRepository.deleteDownload(downloadId)
-                result.onSuccess {
-                    Timber.i("Download deleted successfully")
-                    loadStorageInfo()
-                }.onFailure { error ->
-                    Timber.e(error, "Failed to delete download")
-                    _uiState.value = _uiState.value.copy(
-                        error = "Failed to delete download: ${error.message}"
-                    )
-                }
+                result
+                    .onSuccess {
+                        Timber.i("Download deleted successfully")
+                        loadStorageInfo()
+                    }
+                    .onFailure { error ->
+                        Timber.e(error, "Failed to delete download")
+                        _uiState.value =
+                            _uiState.value.copy(
+                                error = "Failed to delete download: ${error.message}"
+                            )
+                    }
             } catch (e: Exception) {
                 Timber.e(e, "Error deleting download")
             }
@@ -209,7 +211,7 @@ class DownloadsViewModel @Inject constructor(
         val totalBytes: Long,
         val freeBytes: Long,
         val usedBytes: Long,
-        val usagePercentage: Float
+        val usagePercentage: Float,
     )
 
     fun getDeviceStorageStats(): DeviceStorageStats {
@@ -224,7 +226,7 @@ class DownloadsViewModel @Inject constructor(
             totalBytes = totalBytes,
             freeBytes = availableBytes,
             usedBytes = usedBytes,
-            usagePercentage = usedBytes.toFloat() / totalBytes.toFloat()
+            usagePercentage = usedBytes.toFloat() / totalBytes.toFloat(),
         )
     }
 }
@@ -236,5 +238,5 @@ data class DownloadsUiState(
     val totalStorageUsedAllServers: Long = 0L,
     val downloadOverWifiOnly: Boolean = true,
     val deviceStorageStats: DownloadsViewModel.DeviceStorageStats? = null,
-    val error: String? = null
+    val error: String? = null,
 )

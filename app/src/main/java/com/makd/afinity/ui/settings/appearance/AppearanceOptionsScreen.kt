@@ -56,7 +56,7 @@ import com.makd.afinity.ui.theme.ThemeMode
 fun AppearanceOptionsScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val combineLibrarySections by viewModel.combineLibrarySections.collectAsState()
@@ -69,39 +69,39 @@ fun AppearanceOptionsScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.appearance_title),
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        )
+                        style =
+                            MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = stringResource(R.string.cd_back)
+                            contentDescription = stringResource(R.string.cd_back),
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
             )
         },
         containerColor = MaterialTheme.colorScheme.surface,
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentPadding = PaddingValues(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             item {
                 SettingsGroup(title = stringResource(R.string.settings_group_theme)) {
                     ThemeSelectorItem(
                         currentThemeMode = uiState.themeMode,
-                        onThemeModeChange = viewModel::setThemeMode
+                        onThemeModeChange = viewModel::setThemeMode,
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
@@ -109,7 +109,7 @@ fun AppearanceOptionsScreen(
                         title = stringResource(R.string.pref_dynamic_colors_title),
                         subtitle = stringResource(R.string.pref_dynamic_colors_summary),
                         checked = uiState.dynamicColors,
-                        onCheckedChange = viewModel::toggleDynamicColors
+                        onCheckedChange = viewModel::toggleDynamicColors,
                     )
                 }
             }
@@ -121,7 +121,7 @@ fun AppearanceOptionsScreen(
                         title = stringResource(R.string.pref_combine_library_title),
                         subtitle = stringResource(R.string.pref_combine_library_summary),
                         checked = combineLibrarySections,
-                        onCheckedChange = viewModel::toggleCombineLibrarySections
+                        onCheckedChange = viewModel::toggleCombineLibrarySections,
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
@@ -129,7 +129,7 @@ fun AppearanceOptionsScreen(
                         title = stringResource(R.string.pref_sort_date_added_title),
                         subtitle = stringResource(R.string.pref_sort_date_added_summary),
                         checked = homeSortByDateAdded,
-                        onCheckedChange = viewModel::toggleHomeSortByDateAdded
+                        onCheckedChange = viewModel::toggleHomeSortByDateAdded,
                     )
                 }
             }
@@ -138,7 +138,7 @@ fun AppearanceOptionsScreen(
                 SettingsGroup(title = stringResource(R.string.settings_group_content_layout)) {
                     EpisodeLayoutSelectorItem(
                         selectedLayout = episodeLayout,
-                        onLayoutSelected = viewModel::setEpisodeLayout
+                        onLayoutSelected = viewModel::setEpisodeLayout,
                     )
                 }
             }
@@ -150,30 +150,24 @@ fun AppearanceOptionsScreen(
 private fun SettingsGroup(
     title: String? = null,
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         if (title != null) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
             )
         }
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                content()
-            }
+            Column(modifier = Modifier.padding(vertical = 4.dp)) { content() }
         }
     }
 }
@@ -182,7 +176,7 @@ private fun SettingsGroup(
 private fun SettingsDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = 56.dp, end = 16.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
     )
 }
 
@@ -193,32 +187,30 @@ private fun SettingsItem(
     subtitle: String,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
-    trailing: @Composable (() -> Unit)? = null
+    trailing: @Composable (() -> Unit)? = null,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             painter = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(24.dp),
         )
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
             if (subtitle.isNotBlank()) {
                 Text(
@@ -227,7 +219,7 @@ private fun SettingsItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
@@ -246,39 +238,38 @@ private fun SettingsSwitchItem(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     SettingsItem(
         icon = icon,
         title = title,
         subtitle = subtitle,
-        onClick = if (enabled) {
-            { onCheckedChange(!checked) }
-        } else null,
+        onClick =
+            if (enabled) {
+                { onCheckedChange(!checked) }
+            } else null,
         modifier = modifier,
         trailing = {
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 enabled = enabled,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    uncheckedBorderColor = MaterialTheme.colorScheme.outline
-                ),
-                modifier = Modifier.scale(0.8f)
+                colors =
+                    SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                    ),
+                modifier = Modifier.scale(0.8f),
             )
-        }
+        },
     )
 }
 
 @Composable
-private fun ThemeSelectorItem(
-    currentThemeMode: String,
-    onThemeModeChange: (String) -> Unit
-) {
+private fun ThemeSelectorItem(currentThemeMode: String, onThemeModeChange: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val currentTheme = ThemeMode.fromString(currentThemeMode)
 
@@ -293,34 +284,34 @@ private fun ThemeSelectorItem(
                     painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
-            }
+            },
         )
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             ThemeMode.entries.forEach { mode ->
                 DropdownMenuItem(
                     text = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
                                 text = getThemeModeDisplayName(mode),
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                             if (mode.name == currentThemeMode) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_check),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(18.dp),
                                 )
                             }
                         }
@@ -328,7 +319,7 @@ private fun ThemeSelectorItem(
                     onClick = {
                         onThemeModeChange(mode.name)
                         expanded = false
-                    }
+                    },
                 )
             }
         }
@@ -338,7 +329,7 @@ private fun ThemeSelectorItem(
 @Composable
 private fun EpisodeLayoutSelectorItem(
     selectedLayout: EpisodeLayout,
-    onLayoutSelected: (EpisodeLayout) -> Unit
+    onLayoutSelected: (EpisodeLayout) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val layouts = listOf(EpisodeLayout.HORIZONTAL, EpisodeLayout.VERTICAL)
@@ -354,34 +345,34 @@ private fun EpisodeLayoutSelectorItem(
                     painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
-            }
+            },
         )
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             layouts.forEach { layout ->
                 DropdownMenuItem(
                     text = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
                                 text = getEpisodeLayoutDisplayName(layout),
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                             if (layout == selectedLayout) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_check),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(18.dp),
                                 )
                             }
                         }
@@ -389,7 +380,7 @@ private fun EpisodeLayoutSelectorItem(
                     onClick = {
                         onLayoutSelected(layout)
                         expanded = false
-                    }
+                    },
                 )
             }
         }

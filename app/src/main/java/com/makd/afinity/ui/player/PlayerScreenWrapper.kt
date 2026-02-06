@@ -37,7 +37,7 @@ fun PlayerScreenWrapper(
     navController: androidx.navigation.NavController? = null,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: PlayerWrapperViewModel = hiltViewModel()
+    viewModel: PlayerWrapperViewModel = hiltViewModel(),
 ) {
     val item by viewModel.item.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -58,21 +58,23 @@ fun PlayerScreenWrapper(
     when {
         isLoading || (isLiveChannel && effectiveStreamUrl == null && streamError == null) -> {
             Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(Color.Black),
-                contentAlignment = Alignment.Center
+                modifier = modifier.fillMaxSize().background(Color.Black),
+                contentAlignment = Alignment.Center,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     CircularProgressIndicator(color = Color.White)
                     if (isLiveChannel && item != null) {
                         Text(
-                            text = stringResource(R.string.player_live_tuning_fmt, item?.name ?: channelName ?: ""),
+                            text =
+                                stringResource(
+                                    R.string.player_live_tuning_fmt,
+                                    item?.name ?: channelName ?: "",
+                                ),
                             color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
@@ -81,14 +83,12 @@ fun PlayerScreenWrapper(
 
         streamError != null -> {
             Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(Color.Black),
-                contentAlignment = Alignment.Center
+                modifier = modifier.fillMaxSize().background(Color.Black),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = streamError ?: stringResource(R.string.player_error_stream_load),
-                    color = Color.White
+                    color = Color.White,
                 )
             }
         }
@@ -106,21 +106,16 @@ fun PlayerScreenWrapper(
                 liveStreamUrl = effectiveStreamUrl,
                 navController = navController,
                 onBackPressed = onBackPressed,
-                modifier = modifier
+                modifier = modifier,
             )
         }
 
         else -> {
             Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(Color.Black),
-                contentAlignment = Alignment.Center
+                modifier = modifier.fillMaxSize().background(Color.Black),
+                contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = stringResource(R.string.player_error_media_load),
-                    color = Color.White
-                )
+                Text(text = stringResource(R.string.player_error_media_load), color = Color.White)
             }
         }
     }

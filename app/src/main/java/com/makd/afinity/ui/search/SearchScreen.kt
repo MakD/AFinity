@@ -80,19 +80,21 @@ fun SearchScreen(
     onGenreClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isJellyseerrAuthenticated by viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
+    val isJellyseerrAuthenticated by
+        viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     LocalFocusManager.current
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .safeDrawingPadding()
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .safeDrawingPadding()
     ) {
         SearchTopBar(
             searchQuery = uiState.searchQuery,
@@ -106,7 +108,7 @@ fun SearchScreen(
                 } else {
                     viewModel.performSearch()
                 }
-            }
+            },
         )
 
         if (uiState.libraries.isNotEmpty() || isJellyseerrAuthenticated) {
@@ -117,28 +119,24 @@ fun SearchScreen(
                 isJellyseerrSearchMode = uiState.isJellyseerrSearchMode,
                 onLibrarySelected = viewModel::selectLibrary,
                 onJellyseerrSearchSelected = viewModel::selectJellyseerrSearchMode,
-                onJellyfinSearchSelected = viewModel::selectJellyfinSearchMode
+                onJellyfinSearchSelected = viewModel::selectJellyfinSearchMode,
             )
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             when {
-                uiState.searchQuery.isEmpty() && !uiState.isSearching && !uiState.isJellyseerrSearching -> {
+                uiState.searchQuery.isEmpty() &&
+                    !uiState.isSearching &&
+                    !uiState.isJellyseerrSearching -> {
                     SearchHomeContent(
                         genres = uiState.genres,
                         onGenreClick = onGenreClick,
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 uiState.isSearching || uiState.isJellyseerrSearching -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
@@ -154,39 +152,33 @@ fun SearchScreen(
                                     title = item.getDisplayTitle(),
                                     posterUrl = item.getPosterUrl(),
                                     availableSeasons = 0,
-                                    existingStatus = item.getDisplayStatus()
+                                    existingStatus = item.getDisplayStatus(),
                                 )
                             }
-                        }
+                        },
                     )
                 }
 
                 uiState.searchResults.isNotEmpty() -> {
-                    SearchResultsContent(
-                        results = uiState.searchResults,
-                        onItemClick = onItemClick
-                    )
+                    SearchResultsContent(results = uiState.searchResults, onItemClick = onItemClick)
                 }
 
                 else -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_search),
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 text = stringResource(R.string.search_no_results),
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -217,7 +209,7 @@ fun SearchScreen(
                 originalLanguage = uiState.pendingRequest!!.originalLanguage,
                 director = uiState.pendingRequest!!.director,
                 genres = uiState.pendingRequest!!.genres,
-                ratingsCombined = uiState.pendingRequest!!.ratingsCombined
+                ratingsCombined = uiState.pendingRequest!!.ratingsCombined,
             )
         }
     }
@@ -229,40 +221,36 @@ private fun SearchTopBar(
     onSearchQueryChange: (String) -> Unit,
     onBackClick: () -> Unit,
     focusRequester: FocusRequester,
-    onSearch: () -> Unit
+    onSearch: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         IconButton(onClick = onBackClick) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_chevron_left),
                 contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground
+                tint = MaterialTheme.colorScheme.onBackground,
             )
         }
 
         TextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            modifier = Modifier
-                .weight(1f)
-                .focusRequester(focusRequester),
+            modifier = Modifier.weight(1f).focusRequester(focusRequester),
             placeholder = {
                 Text(
                     text = stringResource(R.string.search_placeholder),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             },
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_search),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             },
             trailingIcon = {
@@ -271,7 +259,7 @@ private fun SearchTopBar(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_clear),
                             contentDescription = stringResource(R.string.cd_clear),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -279,13 +267,14 @@ private fun SearchTopBar(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { onSearch() }),
             singleLine = true,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent
-            ),
-            shape = RoundedCornerShape(28.dp)
+            colors =
+                TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
+            shape = RoundedCornerShape(28.dp),
         )
     }
 }
@@ -298,15 +287,12 @@ private fun HorizontalLibraryFilters(
     isJellyseerrSearchMode: Boolean,
     onLibrarySelected: (AfinityCollection?) -> Unit,
     onJellyseerrSearchSelected: () -> Unit,
-    onJellyfinSearchSelected: () -> Unit
+    onJellyfinSearchSelected: () -> Unit,
 ) {
     LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 4.dp)
+        contentPadding = PaddingValues(horizontal = 4.dp),
     ) {
         item {
             LibraryFilterChip(
@@ -316,7 +302,7 @@ private fun HorizontalLibraryFilters(
                     onJellyfinSearchSelected()
                     onLibrarySelected(null)
                 },
-                showCheckIcon = true
+                showCheckIcon = true,
             )
         }
 
@@ -326,7 +312,7 @@ private fun HorizontalLibraryFilters(
                     text = stringResource(R.string.filter_request),
                     isSelected = isJellyseerrSearchMode,
                     onClick = onJellyseerrSearchSelected,
-                    showCheckIcon = false
+                    showCheckIcon = false,
                 )
             }
         }
@@ -339,7 +325,7 @@ private fun HorizontalLibraryFilters(
                     onJellyfinSearchSelected()
                     onLibrarySelected(library)
                 },
-                showCheckIcon = false
+                showCheckIcon = false,
             )
         }
     }
@@ -349,20 +335,16 @@ private fun HorizontalLibraryFilters(
 private fun SearchHomeContent(
     genres: List<String>,
     onGenreClick: (String) -> Unit,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = stringResource(R.string.explore_genres),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         LazyVerticalGrid(
@@ -370,44 +352,30 @@ private fun SearchHomeContent(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 16.dp)
+            contentPadding = PaddingValues(bottom = 16.dp),
         ) {
-            items(genres) { genre ->
-                GenreCard(
-                    genre = genre,
-                    onClick = { onGenreClick(genre) }
-                )
-            }
+            items(genres) { genre -> GenreCard(genre = genre, onClick = { onGenreClick(genre) }) }
         }
     }
 }
 
 @Composable
-private fun SearchResultsContent(
-    results: List<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit
-) {
+private fun SearchResultsContent(results: List<AfinityItem>, onItemClick: (AfinityItem) -> Unit) {
     LocalSoftwareKeyboardController.current
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             Text(
                 text = stringResource(R.string.search_results_count_fmt, results.size),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
-        items(results) { item ->
-            SearchResultItem(
-                item = item,
-                onClick = { onItemClick(item) }
-            )
-        }
+        items(results) { item -> SearchResultItem(item = item, onClick = { onItemClick(item) }) }
     }
 }
 
@@ -416,7 +384,7 @@ private fun LibraryFilterChip(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    showCheckIcon: Boolean = false
+    showCheckIcon: Boolean = false,
 ) {
     FilterChip(
         onClick = onClick,
@@ -425,64 +393,55 @@ private fun LibraryFilterChip(
                 text = text,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelMedium
+                style = MaterialTheme.typography.labelMedium,
             )
         },
         selected = isSelected,
-        leadingIcon = if (isSelected && showCheckIcon) {
-            {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_check),
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        } else null,
+        leadingIcon =
+            if (isSelected && showCheckIcon) {
+                {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_check),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            } else null,
         shape = RoundedCornerShape(20.dp),
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primary,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
-        )
+        colors =
+            FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
+            ),
     )
 }
 
 @Composable
-private fun GenreCard(
-    genre: String,
-    onClick: () -> Unit
-) {
+private fun GenreCard(genre: String, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        modifier = Modifier.fillMaxWidth().height(80.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Icon(
                     painter = getGenreIcon(genre),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     text = genre,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -490,91 +449,72 @@ private fun GenreCard(
 }
 
 @Composable
-private fun SearchResultItem(
-    item: AfinityItem,
-    onClick: () -> Unit
-) {
+private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .width(80.dp)
-                    .height(120.dp)
-            ) {
-                Card(
-                    modifier = Modifier.fillMaxSize(),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
+            Box(modifier = Modifier.width(80.dp).height(120.dp)) {
+                Card(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(8.dp)) {
                     AsyncImage(
                         imageUrl = item.images.primaryImageUrl,
                         contentDescription = item.name,
                         blurHash = item.images.primaryBlurHash,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
                     )
                 }
 
                 if (item.played) {
                     Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .size(24.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primary,
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier.align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .size(24.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_check),
                             contentDescription = stringResource(R.string.cd_watched),
                             tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }
             }
 
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = item.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
-                        text = when (item) {
-                            is AfinityMovie -> stringResource(R.string.media_type_movie)
-                            is AfinityShow -> stringResource(R.string.media_type_tv_show)
-                            else -> stringResource(R.string.media_type_media)
-                        },
+                        text =
+                            when (item) {
+                                is AfinityMovie -> stringResource(R.string.media_type_movie)
+                                is AfinityShow -> stringResource(R.string.media_type_tv_show)
+                                else -> stringResource(R.string.media_type_media)
+                            },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
                     when (item) {
@@ -585,12 +525,12 @@ private fun SearchResultItem(
                         Text(
                             text = "•",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = year.toString(),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
@@ -602,18 +542,18 @@ private fun SearchResultItem(
                         Text(
                             text = "•",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Icon(
                             painter = painterResource(id = R.drawable.ic_imdb_logo),
                             contentDescription = stringResource(R.string.cd_imdb),
                             tint = Color.Unspecified,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         Text(
                             text = String.format(Locale.US, "%.1f", rating),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
@@ -622,24 +562,26 @@ private fun SearchResultItem(
                             Text(
                                 text = "•",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Icon(
-                                painter = painterResource(
-                                    id = if (rtRating > 60) {
-                                        R.drawable.ic_rotten_tomato_fresh
-                                    } else {
-                                        R.drawable.ic_rotten_tomato_rotten
-                                    }
-                                ),
+                                painter =
+                                    painterResource(
+                                        id =
+                                            if (rtRating > 60) {
+                                                R.drawable.ic_rotten_tomato_fresh
+                                            } else {
+                                                R.drawable.ic_rotten_tomato_rotten
+                                            }
+                                    ),
                                 contentDescription = stringResource(R.string.cd_rotten_tomatoes),
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(14.dp),
                             )
                             Text(
                                 text = "${rtRating.toInt()}%",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -651,7 +593,7 @@ private fun SearchResultItem(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -662,87 +604,73 @@ private fun SearchResultItem(
 @Composable
 private fun JellyseerrSearchResultsContent(
     results: List<SearchResultItem>,
-    onRequestClick: (SearchResultItem) -> Unit
+    onRequestClick: (SearchResultItem) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             Text(
                 text = stringResource(R.string.search_results_count_fmt, results.size),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         items(results) { item ->
-            JellyseerrSearchResultItem(
-                item = item,
-                onRequestClick = { onRequestClick(item) }
-            )
+            JellyseerrSearchResultItem(item = item, onRequestClick = { onRequestClick(item) })
         }
     }
 }
 
 @Composable
-private fun JellyseerrSearchResultItem(
-    item: SearchResultItem,
-    onRequestClick: () -> Unit
-) {
+private fun JellyseerrSearchResultItem(item: SearchResultItem, onRequestClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Card(
-                modifier = Modifier
-                    .width(80.dp)
-                    .height(120.dp),
-                shape = RoundedCornerShape(8.dp)
+                modifier = Modifier.width(80.dp).height(120.dp),
+                shape = RoundedCornerShape(8.dp),
             ) {
                 AsyncImage(
                     imageUrl = item.getPosterUrl(),
                     contentDescription = item.getDisplayTitle(),
                     blurHash = null,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
             }
 
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = item.getDisplayTitle(),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
-                        text = item.getMediaType()?.name
-                            ?: stringResource(R.string.media_type_unknown),
+                        text =
+                            item.getMediaType()?.name
+                                ?: stringResource(R.string.media_type_unknown),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
                     item.releaseDate?.let { releaseDate ->
@@ -751,12 +679,12 @@ private fun JellyseerrSearchResultItem(
                             Text(
                                 text = "•",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 text = year,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -769,7 +697,7 @@ private fun JellyseerrSearchResultItem(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -778,40 +706,49 @@ private fun JellyseerrSearchResultItem(
             val status = item.getDisplayStatus()
             val canRequest = !item.hasExistingRequest() || status == MediaStatus.PARTIALLY_AVAILABLE
 
-            if (item.hasExistingRequest() && status != null && status != MediaStatus.PARTIALLY_AVAILABLE) {
+            if (
+                item.hasExistingRequest() &&
+                    status != null &&
+                    status != MediaStatus.PARTIALLY_AVAILABLE
+            ) {
                 Surface(
                     modifier = Modifier.align(Alignment.CenterVertically),
                     shape = RoundedCornerShape(16.dp),
-                    color = when (status) {
-                        MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
-                        MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
-                        MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
-                        MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.secondary
-                        MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
-                        MediaStatus.DELETED -> MaterialTheme.colorScheme.error
-                    }
+                    color =
+                        when (status) {
+                            MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
+                            MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
+                            MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
+                            MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.secondary
+                            MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
+                            MediaStatus.DELETED -> MaterialTheme.colorScheme.error
+                        },
                 ) {
-                    val statusText = when (status) {
-                        MediaStatus.PENDING -> stringResource(R.string.status_pending)
-                        MediaStatus.PROCESSING -> stringResource(R.string.status_processing)
-                        MediaStatus.PARTIALLY_AVAILABLE -> stringResource(R.string.status_partially_available)
-                        MediaStatus.AVAILABLE -> stringResource(R.string.status_available)
-                        MediaStatus.DELETED -> stringResource(R.string.status_deleted)
-                        else -> stringResource(R.string.status_unknown)
-                    }
+                    val statusText =
+                        when (status) {
+                            MediaStatus.PENDING -> stringResource(R.string.status_pending)
+                            MediaStatus.PROCESSING -> stringResource(R.string.status_processing)
+                            MediaStatus.PARTIALLY_AVAILABLE ->
+                                stringResource(R.string.status_partially_available)
+                            MediaStatus.AVAILABLE -> stringResource(R.string.status_available)
+                            MediaStatus.DELETED -> stringResource(R.string.status_deleted)
+                            else -> stringResource(R.string.status_unknown)
+                        }
 
                     Text(
                         text = statusText,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelMedium,
-                        color = when (status) {
-                            MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
-                            MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
-                            MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
-                            MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.onSecondary
-                            MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
-                            MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
-                        }
+                        color =
+                            when (status) {
+                                MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
+                                MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
+                                MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
+                                MediaStatus.PARTIALLY_AVAILABLE ->
+                                    MaterialTheme.colorScheme.onSecondary
+                                MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
+                                MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
+                            },
                     )
                 }
             }
@@ -819,12 +756,12 @@ private fun JellyseerrSearchResultItem(
             if (canRequest) {
                 IconButton(
                     onClick = onRequestClick,
-                    modifier = Modifier.align(Alignment.CenterVertically)
+                    modifier = Modifier.align(Alignment.CenterVertically),
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_add),
                         contentDescription = stringResource(R.string.cd_request_add),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -841,7 +778,8 @@ private fun getGenreIcon(genre: String): Painter {
         "horror" -> painterResource(id = R.drawable.ic_horror)
         "thriller" -> painterResource(id = R.drawable.ic_bolt)
         "romance" -> painterResource(id = R.drawable.ic_favorite)
-        "sci-fi", "science fiction" -> painterResource(id = R.drawable.ic_alien)
+        "sci-fi",
+        "science fiction" -> painterResource(id = R.drawable.ic_alien)
         "fantasy" -> painterResource(id = R.drawable.ic_auto_awesome)
         "documentary" -> painterResource(id = R.drawable.ic_article)
         "animation" -> painterResource(id = R.drawable.ic_animation)

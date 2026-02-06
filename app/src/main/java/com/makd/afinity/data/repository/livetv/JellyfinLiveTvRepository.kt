@@ -7,6 +7,10 @@ import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import java.time.LocalDateTime
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.LiveTvApi
@@ -18,15 +22,13 @@ import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.PlaybackInfoDto
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
-import java.time.LocalDateTime
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
-class JellyfinLiveTvRepository @Inject constructor(
+class JellyfinLiveTvRepository
+@Inject
+constructor(
     private val sessionManager: SessionManager,
-    private val userDataRepository: UserDataRepository
+    private val userDataRepository: UserDataRepository,
 ) : LiveTvRepository {
 
     private fun getBaseUrl(): String = sessionManager.getCurrentApiClient()?.baseUrl ?: ""
@@ -44,44 +46,48 @@ class JellyfinLiveTvRepository @Inject constructor(
         isNews: Boolean?,
         isKids: Boolean?,
         isSports: Boolean?,
-        limit: Int?
-    ): List<AfinityChannel> = withContext(Dispatchers.IO) {
-        try {
-            val liveTvApi = getLiveTvApi() ?: return@withContext emptyList()
-            val baseUrl = getBaseUrl()
+        limit: Int?,
+    ): List<AfinityChannel> =
+        withContext(Dispatchers.IO) {
+            try {
+                val liveTvApi = getLiveTvApi() ?: return@withContext emptyList()
+                val baseUrl = getBaseUrl()
 
-            val response = liveTvApi.getLiveTvChannels(
-                type = type?.let {
-                    when (it) {
-                        ChannelType.TV -> org.jellyfin.sdk.model.api.ChannelType.TV
-                        ChannelType.RADIO -> org.jellyfin.sdk.model.api.ChannelType.RADIO
-                    }
-                },
-                isFavorite = isFavorite,
-                isMovie = isMovie,
-                isSeries = isSeries,
-                isNews = isNews,
-                isKids = isKids,
-                isSports = isSports,
-                limit = limit,
-                sortBy = listOf(ItemSortBy.SORT_NAME),
-                sortOrder = SortOrder.ASCENDING,
-                enableImages = true,
-                imageTypeLimit = 1,
-                enableImageTypes = listOf(ImageType.PRIMARY, ImageType.THUMB),
-                fields = listOf(ItemFields.CHANNEL_INFO),
-                addCurrentProgram = true
-            )
+                val response =
+                    liveTvApi.getLiveTvChannels(
+                        type =
+                            type?.let {
+                                when (it) {
+                                    ChannelType.TV -> org.jellyfin.sdk.model.api.ChannelType.TV
+                                    ChannelType.RADIO ->
+                                        org.jellyfin.sdk.model.api.ChannelType.RADIO
+                                }
+                            },
+                        isFavorite = isFavorite,
+                        isMovie = isMovie,
+                        isSeries = isSeries,
+                        isNews = isNews,
+                        isKids = isKids,
+                        isSports = isSports,
+                        limit = limit,
+                        sortBy = listOf(ItemSortBy.SORT_NAME),
+                        sortOrder = SortOrder.ASCENDING,
+                        enableImages = true,
+                        imageTypeLimit = 1,
+                        enableImageTypes = listOf(ImageType.PRIMARY, ImageType.THUMB),
+                        fields = listOf(ItemFields.CHANNEL_INFO),
+                        addCurrentProgram = true,
+                    )
 
-            response.content.items?.mapNotNull { channelDto ->
-                val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
-                channelDto.toAfinityChannel(baseUrl, currentProgram)
-            } ?: emptyList()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get Live TV channels")
-            emptyList()
+                response.content.items?.mapNotNull { channelDto ->
+                    val currentProgram = channelDto.currentProgram?.toAfinityProgram(baseUrl)
+                    channelDto.toAfinityChannel(baseUrl, currentProgram)
+                } ?: emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get Live TV channels")
+                emptyList()
+            }
         }
-    }
 
     override suspend fun getChannel(channelId: UUID): AfinityChannel? =
         withContext(Dispatchers.IO) {
@@ -109,50 +115,54 @@ class JellyfinLiveTvRepository @Inject constructor(
         isNews: Boolean?,
         isKids: Boolean?,
         isSports: Boolean?,
-        limit: Int?
-    ): List<AfinityProgram> = withContext(Dispatchers.IO) {
-        try {
-            val liveTvApi = getLiveTvApi() ?: return@withContext emptyList()
-            val baseUrl = getBaseUrl()
+        limit: Int?,
+    ): List<AfinityProgram> =
+        withContext(Dispatchers.IO) {
+            try {
+                val liveTvApi = getLiveTvApi() ?: return@withContext emptyList()
+                val baseUrl = getBaseUrl()
 
-            val response = liveTvApi.getLiveTvPrograms(
-                channelIds = channelIds,
-                minStartDate = minStartDate,
-                maxEndDate = maxEndDate,
-                hasAired = hasAired,
-                isMovie = isMovie,
-                isSeries = isSeries,
-                isNews = isNews,
-                isKids = isKids,
-                isSports = isSports,
-                limit = limit,
-                sortBy = listOf(ItemSortBy.START_DATE),
-                sortOrder = listOf(SortOrder.ASCENDING),
-                enableImages = true,
-                imageTypeLimit = 1,
-                enableImageTypes = listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
-                fields = listOf(ItemFields.OVERVIEW, ItemFields.GENRES, ItemFields.CHANNEL_INFO)
-            )
+                val response =
+                    liveTvApi.getLiveTvPrograms(
+                        channelIds = channelIds,
+                        minStartDate = minStartDate,
+                        maxEndDate = maxEndDate,
+                        hasAired = hasAired,
+                        isMovie = isMovie,
+                        isSeries = isSeries,
+                        isNews = isNews,
+                        isKids = isKids,
+                        isSports = isSports,
+                        limit = limit,
+                        sortBy = listOf(ItemSortBy.START_DATE),
+                        sortOrder = listOf(SortOrder.ASCENDING),
+                        enableImages = true,
+                        imageTypeLimit = 1,
+                        enableImageTypes =
+                            listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
+                        fields =
+                            listOf(ItemFields.OVERVIEW, ItemFields.GENRES, ItemFields.CHANNEL_INFO),
+                    )
 
-            response.content.items?.map { programDto ->
-                programDto.toAfinityProgram(baseUrl)
-            } ?: emptyList()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get programs")
-            emptyList()
+                response.content.items?.map { programDto -> programDto.toAfinityProgram(baseUrl) }
+                    ?: emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get programs")
+                emptyList()
+            }
         }
-    }
 
     override suspend fun getCurrentProgram(channelId: UUID): AfinityProgram? =
         withContext(Dispatchers.IO) {
             try {
                 val now = LocalDateTime.now()
-                val programs = getPrograms(
-                    channelIds = listOf(channelId),
-                    minStartDate = now.minusHours(2),
-                    maxEndDate = now.plusHours(1),
-                    limit = 5
-                )
+                val programs =
+                    getPrograms(
+                        channelIds = listOf(channelId),
+                        minStartDate = now.minusHours(2),
+                        maxEndDate = now.plusHours(1),
+                        limit = 5,
+                    )
 
                 programs.find { it.isCurrentlyAiring() }
             } catch (e: Exception) {
@@ -163,29 +173,31 @@ class JellyfinLiveTvRepository @Inject constructor(
 
     override suspend fun getRecommendedPrograms(
         isAiring: Boolean,
-        limit: Int
-    ): List<AfinityProgram> = withContext(Dispatchers.IO) {
-        try {
-            val liveTvApi = getLiveTvApi() ?: return@withContext emptyList()
-            val baseUrl = getBaseUrl()
+        limit: Int,
+    ): List<AfinityProgram> =
+        withContext(Dispatchers.IO) {
+            try {
+                val liveTvApi = getLiveTvApi() ?: return@withContext emptyList()
+                val baseUrl = getBaseUrl()
 
-            val response = liveTvApi.getRecommendedPrograms(
-                isAiring = isAiring,
-                limit = limit,
-                enableImages = true,
-                imageTypeLimit = 1,
-                enableImageTypes = listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
-                fields = listOf(ItemFields.OVERVIEW, ItemFields.GENRES)
-            )
+                val response =
+                    liveTvApi.getRecommendedPrograms(
+                        isAiring = isAiring,
+                        limit = limit,
+                        enableImages = true,
+                        imageTypeLimit = 1,
+                        enableImageTypes =
+                            listOf(ImageType.PRIMARY, ImageType.THUMB, ImageType.BACKDROP),
+                        fields = listOf(ItemFields.OVERVIEW, ItemFields.GENRES),
+                    )
 
-            response.content.items?.map { programDto ->
-                programDto.toAfinityProgram(baseUrl)
-            } ?: emptyList()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get recommended programs")
-            emptyList()
+                response.content.items?.map { programDto -> programDto.toAfinityProgram(baseUrl) }
+                    ?: emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get recommended programs")
+                emptyList()
+            }
         }
-    }
 
     override suspend fun getChannelStreamUrl(channelId: UUID): String? =
         withContext(Dispatchers.IO) {
@@ -195,8 +207,7 @@ class JellyfinLiveTvRepository @Inject constructor(
                 val accessToken = apiClient.accessToken
                 val deviceId = apiClient.deviceInfo.id
 
-                val userId = sessionManager.currentSession.value?.userId
-                    ?: return@withContext null
+                val userId = sessionManager.currentSession.value?.userId ?: return@withContext null
 
                 if (baseUrl.isBlank() || accessToken.isNullOrBlank()) {
                     Timber.e("Missing baseUrl or accessToken")
@@ -207,41 +218,43 @@ class JellyfinLiveTvRepository @Inject constructor(
 
                 val maxBitrate = 140_000_000
 
-                val deviceProfile = DeviceProfile(
-                    name = "AFinity Live TV",
-                    maxStreamingBitrate = maxBitrate,
-                    maxStaticBitrate = maxBitrate,
-                    codecProfiles = emptyList(),
-                    containerProfiles = emptyList(),
-                    directPlayProfiles = emptyList(),
-                    transcodingProfiles = emptyList(),
-                    subtitleProfiles = emptyList()
-                )
+                val deviceProfile =
+                    DeviceProfile(
+                        name = "AFinity Live TV",
+                        maxStreamingBitrate = maxBitrate,
+                        maxStaticBitrate = maxBitrate,
+                        codecProfiles = emptyList(),
+                        containerProfiles = emptyList(),
+                        directPlayProfiles = emptyList(),
+                        transcodingProfiles = emptyList(),
+                        subtitleProfiles = emptyList(),
+                    )
 
-                val playbackInfoDto = PlaybackInfoDto(
-                    userId = userId,
-                    maxStreamingBitrate = maxBitrate,
-                    startTimeTicks = 0L,
-                    deviceProfile = deviceProfile,
-                    enableDirectPlay = true,
-                    enableDirectStream = true,
-                    enableTranscoding = true,
-                    allowVideoStreamCopy = true,
-                    allowAudioStreamCopy = true,
-                    autoOpenLiveStream = true,
-                    liveStreamId = null,
-                    mediaSourceId = null,
-                    audioStreamIndex = null,
-                    subtitleStreamIndex = null
-                )
+                val playbackInfoDto =
+                    PlaybackInfoDto(
+                        userId = userId,
+                        maxStreamingBitrate = maxBitrate,
+                        startTimeTicks = 0L,
+                        deviceProfile = deviceProfile,
+                        enableDirectPlay = true,
+                        enableDirectStream = true,
+                        enableTranscoding = true,
+                        allowVideoStreamCopy = true,
+                        allowAudioStreamCopy = true,
+                        autoOpenLiveStream = true,
+                        liveStreamId = null,
+                        mediaSourceId = null,
+                        audioStreamIndex = null,
+                        subtitleStreamIndex = null,
+                    )
 
-                val playbackResponse = mediaInfoApi.getPostedPlaybackInfo(
-                    itemId = channelId,
-                    data = playbackInfoDto
-                )
+                val playbackResponse =
+                    mediaInfoApi.getPostedPlaybackInfo(itemId = channelId, data = playbackInfoDto)
                 val playbackInfo = playbackResponse.content
 
-                Timber.d("PlaybackInfo: playSessionId=${playbackInfo.playSessionId}, mediaSources=${playbackInfo.mediaSources?.size ?: 0}")
+                Timber.d(
+                    "PlaybackInfo: playSessionId=${playbackInfo.playSessionId}, mediaSources=${playbackInfo.mediaSources?.size ?: 0}"
+                )
 
                 val sources = playbackInfo.mediaSources
                 if (sources.isNullOrEmpty()) {
@@ -254,27 +267,32 @@ class JellyfinLiveTvRepository @Inject constructor(
                 val mediaSourceId = source.id
                 val directStreamPath = source.path
 
-                Timber.d("Source: id=$mediaSourceId, liveStreamId=$liveStreamId, path=$directStreamPath, supportsDirectPlay=${source.supportsDirectPlay}, supportsDirectStream=${source.supportsDirectStream}, transcodingUrl=${source.transcodingUrl}")
+                Timber.d(
+                    "Source: id=$mediaSourceId, liveStreamId=$liveStreamId, path=$directStreamPath, supportsDirectPlay=${source.supportsDirectPlay}, supportsDirectStream=${source.supportsDirectStream}, transcodingUrl=${source.transcodingUrl}"
+                )
 
-                if (!directStreamPath.isNullOrBlank() &&
-                    (directStreamPath.contains(".m3u8") || directStreamPath.contains(".m3u"))
+                if (
+                    !directStreamPath.isNullOrBlank() &&
+                        (directStreamPath.contains(".m3u8") || directStreamPath.contains(".m3u"))
                 ) {
-                    val directUrl = if (directStreamPath.startsWith("http")) {
-                        directStreamPath
-                    } else {
-                        "$baseUrl$directStreamPath"
-                    }
+                    val directUrl =
+                        if (directStreamPath.startsWith("http")) {
+                            directStreamPath
+                        } else {
+                            "$baseUrl$directStreamPath"
+                        }
                     Timber.d("Using direct stream URL (IPTV): $directUrl")
                     return@withContext directUrl
                 }
 
                 if (!source.transcodingUrl.isNullOrBlank()) {
                     val transcodingUrl = source.transcodingUrl!!
-                    val fullUrl = if (transcodingUrl.startsWith("http")) {
-                        transcodingUrl
-                    } else {
-                        "$baseUrl$transcodingUrl"
-                    }
+                    val fullUrl =
+                        if (transcodingUrl.startsWith("http")) {
+                            transcodingUrl
+                        } else {
+                            "$baseUrl$transcodingUrl"
+                        }
                     Timber.d("Using server-provided transcoding URL: $fullUrl")
                     return@withContext fullUrl
                 }
@@ -317,7 +335,6 @@ class JellyfinLiveTvRepository @Inject constructor(
 
                 Timber.d("Generated stream URL: $streamUrl")
                 streamUrl
-
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get stream URL for channel: $channelId")
                 null
@@ -340,19 +357,21 @@ class JellyfinLiveTvRepository @Inject constructor(
             }
         }
 
-    override suspend fun hasLiveTvAccess(): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val liveTvApi = getLiveTvApi() ?: return@withContext false
-            val channelsResponse = liveTvApi.getLiveTvChannels(
-                limit = 1,
-                enableImages = false,
-                enableUserData = false,
-                addCurrentProgram = false
-            )
-            val channelCount = channelsResponse.content.items?.size ?: 0
-            return@withContext channelCount > 0
-        } catch (e: Exception) {
-            false
+    override suspend fun hasLiveTvAccess(): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val liveTvApi = getLiveTvApi() ?: return@withContext false
+                val channelsResponse =
+                    liveTvApi.getLiveTvChannels(
+                        limit = 1,
+                        enableImages = false,
+                        enableUserData = false,
+                        addCurrentProgram = false,
+                    )
+                val channelCount = channelsResponse.content.items?.size ?: 0
+                return@withContext channelCount > 0
+            } catch (e: Exception) {
+                false
+            }
         }
-    }
 }

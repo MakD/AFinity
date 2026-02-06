@@ -8,15 +8,15 @@ enum class RequestStatus(val value: Int) {
     PARTIALLY_AVAILABLE(5);
 
     companion object {
-        fun fromValue(value: Int): RequestStatus =
-            values().find { it.value == value } ?: PENDING
+        fun fromValue(value: Int): RequestStatus = values().find { it.value == value } ?: PENDING
 
-        fun getDisplayName(status: RequestStatus): String = when (status) {
-            PENDING -> "Pending"
-            APPROVED -> "Approved"
-            DECLINED -> "Declined"
-            AVAILABLE -> "Available"
-            PARTIALLY_AVAILABLE -> "Partially Available"
-        }
+        fun getDisplayName(status: RequestStatus): String =
+            when (status) {
+                PENDING -> "Pending"
+                APPROVED -> "Approved"
+                DECLINED -> "Declined"
+                AVAILABLE -> "Available"
+                PARTIALLY_AVAILABLE -> "Partially Available"
+            }
     }
 }

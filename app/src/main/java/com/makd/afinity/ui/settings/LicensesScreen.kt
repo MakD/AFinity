@@ -38,10 +38,7 @@ import com.mikepenz.aboutlibraries.ui.compose.m3.libraryColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LicensesScreen(
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
     val libraries by produceLibraries(R.raw.aboutlibraries)
 
     Scaffold(
@@ -50,76 +47,73 @@ fun LicensesScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.licenses_title),
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        )
+                        style =
+                            MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = stringResource(R.string.cd_back)
+                            contentDescription = stringResource(R.string.cd_back),
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
             )
         },
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         LibrariesContainer(
             libraries = libraries,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            libraryModifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                    shape = RoundedCornerShape(16.dp)
-                ),
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            libraryModifier =
+                Modifier.clip(RoundedCornerShape(16.dp))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(16.dp),
+                    ),
             contentPadding = PaddingValues(16.dp),
-            colors = LibraryDefaults.libraryColors(
-                libraryBackgroundColor = MaterialTheme.colorScheme.surface,
-                libraryContentColor = MaterialTheme.colorScheme.onSurface
-            ),
-            padding = LibraryDefaults.libraryPadding(
-                contentPadding = PaddingValues(16.dp)
-            ),
+            colors =
+                LibraryDefaults.libraryColors(
+                    libraryBackgroundColor = MaterialTheme.colorScheme.surface,
+                    libraryContentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+            padding = LibraryDefaults.libraryPadding(contentPadding = PaddingValues(16.dp)),
             header = {
                 item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Column(
                             modifier = Modifier.padding(horizontal = 16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_launcher_foreground),
                                 contentDescription = null,
                                 modifier = Modifier.size(120.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
                                 text = stringResource(R.string.licenses_header_title),
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                )
+                                style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = stringResource(R.string.licenses_header_subtitle),
                                 style = MaterialTheme.typography.bodyLarge,
                                 textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalDivider()
@@ -128,34 +122,31 @@ fun LicensesScreen(
                     }
                 }
             },
-            divider = {
-                Spacer(modifier = Modifier.height(12.dp))
-            },
+            divider = { Spacer(modifier = Modifier.height(12.dp)) },
             footer = {
                 item {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider()
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = stringResource(R.string.licenses_footer_built_with),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
                             textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = stringResource(R.string.licenses_footer_terms),
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }

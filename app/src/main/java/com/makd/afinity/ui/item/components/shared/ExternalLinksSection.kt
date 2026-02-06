@@ -37,43 +37,38 @@ fun ExternalLinksSection(item: AfinityItem) {
     val externalLinks = remember(item) { getExternalLinks(item, defaultLinkName) }
 
     if (externalLinks.isNotEmpty()) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = stringResource(R.string.external_links_title),
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                contentPadding = PaddingValues(horizontal = 0.dp)
+                contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
                 items(externalLinks) { link ->
                     Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link.url))
-                                    context.startActivity(intent)
-                                }
-                            )
-                            .padding(8.dp),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier.clip(CircleShape)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link.url))
+                                        context.startActivity(intent)
+                                    },
+                                )
+                                .padding(8.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Image(
                             painter = painterResource(id = link.iconRes),
                             contentDescription = link.name,
                             contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .height(16.dp)
+                            modifier = Modifier.height(16.dp),
                         )
                     }
                 }
@@ -82,11 +77,7 @@ fun ExternalLinksSection(item: AfinityItem) {
     }
 }
 
-private data class ExternalLink(
-    val name: String,
-    val url: String,
-    val iconRes: Int
-)
+private data class ExternalLink(val name: String, val url: String, val iconRes: Int)
 
 private fun getExternalLinks(item: AfinityItem, defaultName: String): List<ExternalLink> {
     val links = mutableListOf<ExternalLink>()
@@ -97,23 +88,20 @@ private fun getExternalLinks(item: AfinityItem, defaultName: String): List<Exter
         val url = externalUrl.url ?: return@forEach
         val lowerUrl = url.lowercase()
 
-        val iconRes = when {
-            "imdb" in lowerUrl -> R.drawable.ic_imdb_logo
-            "themoviedb.org/collection" in lowerUrl -> R.drawable.ic_tmdb_collection
-            "themoviedb.org/movie" in lowerUrl -> R.drawable.ic_tmdb
-            "themoviedb.org" in lowerUrl -> R.drawable.ic_tmdb
-            "tvdb" in lowerUrl -> R.drawable.ic_tvdb
-            "trakt" in lowerUrl -> R.drawable.ic_trakt
-            "tvmaze" in lowerUrl -> R.drawable.ic_tvmaze
-            else -> R.drawable.ic_link
-        }
+        val iconRes =
+            when {
+                "imdb" in lowerUrl -> R.drawable.ic_imdb_logo
+                "themoviedb.org/collection" in lowerUrl -> R.drawable.ic_tmdb_collection
+                "themoviedb.org/movie" in lowerUrl -> R.drawable.ic_tmdb
+                "themoviedb.org" in lowerUrl -> R.drawable.ic_tmdb
+                "tvdb" in lowerUrl -> R.drawable.ic_tvdb
+                "trakt" in lowerUrl -> R.drawable.ic_trakt
+                "tvmaze" in lowerUrl -> R.drawable.ic_tvmaze
+                else -> R.drawable.ic_link
+            }
 
         links.add(
-            ExternalLink(
-                name = externalUrl.name ?: defaultName,
-                url = url,
-                iconRes = iconRes
-            )
+            ExternalLink(name = externalUrl.name ?: defaultName, url = url, iconRes = iconRes)
         )
     }
 

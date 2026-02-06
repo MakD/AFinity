@@ -1,9 +1,9 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.repository.JellyfinRepository
-import org.jellyfin.sdk.model.api.BaseItemDto
 import java.time.LocalDateTime
 import java.util.UUID
+import org.jellyfin.sdk.model.api.BaseItemDto
 
 data class AfinityPersonDetail(
     val id: UUID,
@@ -15,9 +15,7 @@ data class AfinityPersonDetail(
     val externalUrls: List<AfinityExternalUrl>?,
 )
 
-fun BaseItemDto.toAfinityPersonDetail(
-    repository: JellyfinRepository,
-): AfinityPersonDetail {
+fun BaseItemDto.toAfinityPersonDetail(repository: JellyfinRepository): AfinityPersonDetail {
     return AfinityPersonDetail(
         id = id,
         name = name.orEmpty(),

@@ -22,52 +22,39 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.Library
 
 @Composable
-fun LibraryCard(
-    library: Library,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun LibraryCard(library: Library, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                painter = when (library.mediaType.lowercase()) {
-                    "podcast" -> painterResource(id = R.drawable.ic_apple_podcast)
-                    else -> painterResource(id = R.drawable.ic_book)
-                },
+                painter =
+                    when (library.mediaType.lowercase()) {
+                        "podcast" -> painterResource(id = R.drawable.ic_apple_podcast)
+                        else -> painterResource(id = R.drawable.ic_book)
+                    },
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = library.name,
-                    style = MaterialTheme.typography.titleMedium
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = library.name, style = MaterialTheme.typography.titleMedium)
 
                 Text(
-                    text = when (library.mediaType.lowercase()) {
-                        "podcast" -> "Podcasts"
-                        else -> "Audiobooks"
-                    },
+                    text =
+                        when (library.mediaType.lowercase()) {
+                            "podcast" -> "Podcasts"
+                            else -> "Audiobooks"
+                        },
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 library.stats?.let { stats ->
@@ -75,7 +62,7 @@ fun LibraryCard(
                         Text(
                             text = "$count items",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -84,7 +71,7 @@ fun LibraryCard(
             Icon(
                 painter = painterResource(id = R.drawable.ic_chevron_right),
                 contentDescription = "Open library",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

@@ -30,10 +30,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import org.jellyfin.sdk.api.client.ApiClient
 import javax.inject.Singleton
+import org.jellyfin.sdk.api.client.ApiClient
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "afinity_preferences")
+private val Context.dataStore: DataStore<Preferences> by
+    preferencesDataStore(name = "afinity_preferences")
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -41,9 +42,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindAuthRepository(
-        jellyfinAuthRepository: JellyfinAuthRepository
-    ): AuthRepository
+    abstract fun bindAuthRepository(jellyfinAuthRepository: JellyfinAuthRepository): AuthRepository
 
     @Binds
     @Singleton
@@ -111,7 +110,7 @@ abstract class RepositoryModule {
         fun provideWebSocketManager(
             apiClient: ApiClient,
             mediaRepository: MediaRepository,
-            userDataRepository: UserDataRepository
+            userDataRepository: UserDataRepository,
         ): JellyfinWebSocketManager {
             return JellyfinWebSocketManager(apiClient, mediaRepository, userDataRepository)
         }

@@ -5,10 +5,9 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "person_section_cache")
 data class PersonSectionCacheEntity(
-    @PrimaryKey
-    val cacheKey: String,
+    @PrimaryKey val cacheKey: String,
     val personData: String,
     val itemsData: String,
     val sectionType: String,
-    val cachedTimestamp: Long
+    val cachedTimestamp: Long,
 )

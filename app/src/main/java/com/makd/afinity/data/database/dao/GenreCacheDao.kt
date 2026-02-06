@@ -31,8 +31,7 @@ interface GenreCacheDao {
     @Query("DELETE FROM genre_cache WHERE genreName = :genreName")
     suspend fun deleteGenreCache(genreName: String)
 
-    @Query("DELETE FROM genre_cache")
-    suspend fun clearAllGenreCaches()
+    @Query("DELETE FROM genre_cache") suspend fun clearAllGenreCaches()
 
     @Query("SELECT * FROM genre_movie_cache WHERE genreName = :genreName ORDER BY position ASC")
     suspend fun getCachedMoviesForGenre(genreName: String): List<GenreMovieCacheEntity>
@@ -43,22 +42,25 @@ interface GenreCacheDao {
     @Query("DELETE FROM genre_movie_cache WHERE genreName = :genreName")
     suspend fun deleteMoviesForGenre(genreName: String)
 
-    @Query("DELETE FROM genre_movie_cache")
-    suspend fun clearAllGenreMovies()
+    @Query("DELETE FROM genre_movie_cache") suspend fun clearAllGenreMovies()
 
-    @Query("""
+    @Query(
+        """
         SELECT COUNT(*) > 0
         FROM genre_cache
         WHERE genreName = :genreName
         AND (lastFetchedTimestamp + :ttlMillis) > :currentTime
-    """)
+    """
+    )
     suspend fun isGenreCacheFresh(genreName: String, ttlMillis: Long, currentTime: Long): Boolean
 
-    @Query("""
+    @Query(
+        """
         SELECT COUNT(*) > 0
         FROM genre_cache
         WHERE (lastFetchedTimestamp + :ttlMillis) > :currentTime
-    """)
+    """
+    )
     suspend fun hasAnyFreshGenre(ttlMillis: Long, currentTime: Long): Boolean
 
     @Query("SELECT MIN(lastFetchedTimestamp) FROM genre_cache")
@@ -68,13 +70,13 @@ interface GenreCacheDao {
     suspend fun cacheGenreWithMovies(
         genreName: String,
         movies: List<GenreMovieCacheEntity>,
-        timestamp: Long
+        timestamp: Long,
     ) {
         insertGenreCache(
             GenreCacheEntity(
                 genreName = genreName,
                 lastFetchedTimestamp = timestamp,
-                movieCount = movies.size
+                movieCount = movies.size,
             )
         )
 
@@ -111,8 +113,7 @@ interface GenreCacheDao {
     @Query("DELETE FROM show_genre_cache WHERE genreName = :genreName")
     suspend fun deleteShowGenreCache(genreName: String)
 
-    @Query("DELETE FROM show_genre_cache")
-    suspend fun clearAllShowGenreCaches()
+    @Query("DELETE FROM show_genre_cache") suspend fun clearAllShowGenreCaches()
 
     @Query("SELECT * FROM genre_show_cache WHERE genreName = :genreName ORDER BY position ASC")
     suspend fun getCachedShowsForGenre(genreName: String): List<GenreShowCacheEntity>
@@ -123,22 +124,29 @@ interface GenreCacheDao {
     @Query("DELETE FROM genre_show_cache WHERE genreName = :genreName")
     suspend fun deleteShowsForGenre(genreName: String)
 
-    @Query("DELETE FROM genre_show_cache")
-    suspend fun clearAllGenreShows()
+    @Query("DELETE FROM genre_show_cache") suspend fun clearAllGenreShows()
 
-    @Query("""
+    @Query(
+        """
         SELECT COUNT(*) > 0
         FROM show_genre_cache
         WHERE genreName = :genreName
         AND (lastFetchedTimestamp + :ttlMillis) > :currentTime
-    """)
-    suspend fun isShowGenreCacheFresh(genreName: String, ttlMillis: Long, currentTime: Long): Boolean
+    """
+    )
+    suspend fun isShowGenreCacheFresh(
+        genreName: String,
+        ttlMillis: Long,
+        currentTime: Long,
+    ): Boolean
 
-    @Query("""
+    @Query(
+        """
         SELECT COUNT(*) > 0
         FROM show_genre_cache
         WHERE (lastFetchedTimestamp + :ttlMillis) > :currentTime
-    """)
+    """
+    )
     suspend fun hasAnyFreshShowGenre(ttlMillis: Long, currentTime: Long): Boolean
 
     @Query("SELECT MIN(lastFetchedTimestamp) FROM show_genre_cache")
@@ -148,13 +156,13 @@ interface GenreCacheDao {
     suspend fun cacheGenreWithShows(
         genreName: String,
         shows: List<GenreShowCacheEntity>,
-        timestamp: Long
+        timestamp: Long,
     ) {
         insertShowGenreCache(
             ShowGenreCacheEntity(
                 genreName = genreName,
                 lastFetchedTimestamp = timestamp,
-                showCount = shows.size
+                showCount = shows.size,
             )
         )
 

@@ -42,14 +42,10 @@ enum class FilterType {
     POPULAR_MOVIES,
     UPCOMING_MOVIES,
     POPULAR_TV,
-    UPCOMING_TV
+    UPCOMING_TV,
 }
 
-data class FilterParams(
-    val type: FilterType,
-    val id: Int,
-    val name: String
-)
+data class FilterParams(val type: FilterType, val id: Int, val name: String)
 
 @Composable
 fun FilteredMediaScreen(
@@ -61,14 +57,12 @@ fun FilteredMediaScreen(
     modifier: Modifier = Modifier,
     viewModel: FilteredMediaViewModel = hiltViewModel(),
     requestsViewModel: RequestsViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val requestsUiState by requestsViewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(filterParams) {
-        viewModel.loadContent(filterParams)
-    }
+    LaunchedEffect(filterParams) { viewModel.loadContent(filterParams) }
 
     val cardWidth = widthSizeClass.portraitWidth
 
@@ -78,62 +72,55 @@ fun FilteredMediaScreen(
                 title = {
                     Text(
                         text = filterParams.name,
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground
+                        style =
+                            MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                 },
                 onSearchClick = onSearchClick,
                 onProfileClick = onProfileClick,
-                userProfileImageUrl = mainUiState.userProfileImageUrl
+                userProfileImageUrl = mainUiState.userProfileImageUrl,
             )
         },
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         when {
             uiState.isLoading && uiState.items.isEmpty() -> {
-                LoadingView(modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding))
+                LoadingView(modifier = Modifier.fillMaxSize().padding(innerPadding))
             }
 
             uiState.error != null && uiState.items.isEmpty() -> {
                 ErrorView(
                     message = uiState.error!!,
                     onRetry = { viewModel.loadContent(filterParams) },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
                 )
             }
 
             uiState.items.isEmpty() -> {
-                EmptyView(modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding))
+                EmptyView(modifier = Modifier.fillMaxSize().padding(innerPadding))
             }
 
             else -> {
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    items(
-                        count = uiState.items.size,
-                        key = { index -> uiState.items[index].id }
-                    ) { index ->
+                    items(count = uiState.items.size, key = { index -> uiState.items[index].id }) {
+                        index ->
                         val item = uiState.items[index]
 
-                        if (index >= uiState.items.size - 5 && !uiState.isLoading && !uiState.hasReachedEnd) {
-                            LaunchedEffect(Unit) {
-                                viewModel.loadNextPage()
-                            }
+                        if (
+                            index >= uiState.items.size - 5 &&
+                                !uiState.isLoading &&
+                                !uiState.hasReachedEnd
+                        ) {
+                            LaunchedEffect(Unit) { viewModel.loadNextPage() }
                         }
 
                         DiscoverMediaCard(
@@ -151,22 +138,20 @@ fun FilteredMediaScreen(
                                             title = item.getDisplayTitle(),
                                             posterUrl = item.getPosterUrl(),
                                             availableSeasons = 0,
-                                            existingStatus = item.getDisplayStatus()
+                                            existingStatus = item.getDisplayStatus(),
                                         )
                                     }
                                 }
                             },
-                            cardWidth = cardWidth
+                            cardWidth = cardWidth,
                         )
                     }
 
                     if (uiState.isLoading && uiState.items.isNotEmpty()) {
                         item {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 CircularProgressIndicator()
                             }
@@ -200,72 +185,51 @@ fun FilteredMediaScreen(
             originalLanguage = requestsUiState.pendingRequest!!.originalLanguage,
             director = requestsUiState.pendingRequest!!.director,
             genres = requestsUiState.pendingRequest!!.genres,
-            ratingsCombined = requestsUiState.pendingRequest!!.ratingsCombined
+            ratingsCombined = requestsUiState.pendingRequest!!.ratingsCombined,
         )
     }
 }
 
 @Composable
 private fun LoadingView(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator()
-    }
+    Box(modifier = modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
 }
 
 @Composable
-private fun ErrorView(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
+private fun ErrorView(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier.padding(32.dp),
         ) {
             Text(
                 text = stringResource(R.string.error_title),
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
-            Button(onClick = onRetry) {
-                Text(text = stringResource(R.string.action_retry))
-            }
+            Button(onClick = onRetry) { Text(text = stringResource(R.string.action_retry)) }
         }
     }
 }
 
 @Composable
 private fun EmptyView(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = stringResource(R.string.error_no_content),
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

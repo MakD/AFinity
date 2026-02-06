@@ -1,11 +1,11 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.repository.JellyfinRepository
+import java.time.LocalDateTime
+import java.util.UUID
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.PlayAccess
-import java.time.LocalDateTime
-import java.util.UUID
 
 data class AfinityShow(
     override val id: UUID,
@@ -43,9 +43,7 @@ data class AfinityShow(
     override val externalUrls: List<AfinityExternalUrl>?,
 ) : AfinityItem
 
-fun BaseItemDto.toAfinityShow(
-    jellyfinRepository: JellyfinRepository,
-): AfinityShow {
+fun BaseItemDto.toAfinityShow(jellyfinRepository: JellyfinRepository): AfinityShow {
     return AfinityShow(
         id = id,
         name = name.orEmpty(),
@@ -75,9 +73,7 @@ fun BaseItemDto.toAfinityShow(
         seasonCount = childCount,
         episodeCount = recursiveItemCount,
         images = toAfinityImages(jellyfinRepository),
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
-        externalUrls = externalUrls?.map { it.toAfinityExternalUrl() }
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
     )
 }

@@ -56,7 +56,7 @@ import com.makd.afinity.data.repository.AudiobookshelfConfig
 fun AudiobookshelfLoginScreen(
     onNavigateBack: () -> Unit,
     onLoginSuccess: () -> Unit,
-    viewModel: AudiobookshelfLoginViewModel = hiltViewModel()
+    viewModel: AudiobookshelfLoginViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
@@ -76,20 +76,20 @@ fun AudiobookshelfLoginScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = "Back"
+                            contentDescription = "Back",
                         )
                     }
-                }
+                },
             )
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -97,7 +97,7 @@ fun AudiobookshelfLoginScreen(
                 ConnectedCard(
                     config = currentConfig!!,
                     onLogout = viewModel::logout,
-                    isLoggingOut = uiState.isLoggingIn
+                    isLoggingOut = uiState.isLoggingIn,
                 )
             } else {
                 LoginForm(
@@ -106,27 +106,26 @@ fun AudiobookshelfLoginScreen(
                     onUsernameChange = viewModel::updateUsername,
                     onPasswordChange = viewModel::updatePassword,
                     onTestConnection = viewModel::testConnection,
-                    onLogin = viewModel::login
+                    onLogin = viewModel::login,
                 )
             }
 
             AnimatedVisibility(
                 visible = uiState.error != null,
                 enter = fadeIn(),
-                exit = fadeOut()
+                exit = fadeOut(),
             ) {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
                 ) {
                     Text(
                         text = uiState.error ?: "",
                         modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                 }
             }
@@ -140,31 +139,26 @@ fun AudiobookshelfLoginScreen(
 private fun ConnectedCard(
     config: AudiobookshelfConfig,
     onLogout: () -> Unit,
-    isLoggingOut: Boolean
+    isLoggingOut: Boolean,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        colors =
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     painterResource(id = R.drawable.ic_circle_check),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Connected",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
 
@@ -173,13 +167,13 @@ private fun ConnectedCard(
             Text(
                 text = "Server: ${config.serverUrl}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
 
             Text(
                 text = "User: ${config.username}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -187,13 +181,10 @@ private fun ConnectedCard(
             OutlinedButton(
                 onClick = onLogout,
                 enabled = !isLoggingOut,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 if (isLoggingOut) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.width(8.dp))
                 }
                 Text("Disconnect")
@@ -209,27 +200,23 @@ private fun LoginForm(
     onUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onTestConnection: () -> Unit,
-    onLogin: () -> Unit
+    onLogin: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = "Connect to Audiobookshelf",
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text(text = "Connect to Audiobookshelf", style = MaterialTheme.typography.titleMedium)
 
             Text(
-                text = "Enter your Audiobookshelf server details to access your audiobooks and podcasts.",
+                text =
+                    "Enter your Audiobookshelf server details to access your audiobooks and podcasts.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -241,22 +228,19 @@ private fun LoginForm(
                 placeholder = { Text("http://192.168.1.100:13378") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Uri,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                ),
+                keyboardOptions =
+                    KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                keyboardActions =
+                    KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 trailingIcon = {
                     if (uiState.connectionTestSuccess) {
                         Icon(
                             painterResource(id = R.drawable.ic_check),
                             contentDescription = "Connected",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
-                }
+                },
             )
 
             OutlinedTextField(
@@ -265,13 +249,10 @@ private fun LoginForm(
                 label = { Text("Username") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                )
+                keyboardOptions =
+                    KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                keyboardActions =
+                    KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
             )
 
             OutlinedTextField(
@@ -280,41 +261,49 @@ private fun LoginForm(
                 label = { Text("Password") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        focusManager.clearFocus()
-                        onLogin()
-                    }
-                ),
+                visualTransformation =
+                    if (passwordVisible) VisualTransformation.None
+                    else PasswordVisualTransformation(),
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            onLogin()
+                        }
+                    ),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            painter = if (passwordVisible) painterResource(id = R.drawable.ic_visibility) else painterResource(
-                                id = R.drawable.ic_visibility_off
-                            ),
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            painter =
+                                if (passwordVisible) painterResource(id = R.drawable.ic_visibility)
+                                else painterResource(id = R.drawable.ic_visibility_off),
+                            contentDescription =
+                                if (passwordVisible) "Hide password" else "Show password",
                         )
                     }
-                }
+                },
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = onLogin,
-                enabled = !uiState.isLoggingIn && uiState.serverUrl.isNotBlank() && uiState.username.isNotBlank(),
-                modifier = Modifier.fillMaxWidth()
+                enabled =
+                    !uiState.isLoggingIn &&
+                        uiState.serverUrl.isNotBlank() &&
+                        uiState.username.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 if (uiState.isLoggingIn) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }

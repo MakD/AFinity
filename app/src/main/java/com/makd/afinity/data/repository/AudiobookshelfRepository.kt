@@ -8,14 +8,11 @@ import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.models.audiobookshelf.SearchResponse
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import java.util.UUID
 
-data class ItemWithProgress(
-    val item: LibraryItem,
-    val progress: MediaProgress?
-)
+data class ItemWithProgress(val item: LibraryItem, val progress: MediaProgress?)
 
 interface AudiobookshelfRepository {
 
@@ -32,7 +29,7 @@ interface AudiobookshelfRepository {
     suspend fun login(
         serverUrl: String,
         username: String,
-        password: String
+        password: String,
     ): Result<AudiobookshelfUser>
 
     suspend fun logout(): Result<Unit>
@@ -56,14 +53,18 @@ interface AudiobookshelfRepository {
     suspend fun refreshLibraryItems(
         libraryId: String,
         limit: Int = 100,
-        page: Int = 0
+        page: Int = 0,
     ): Result<List<LibraryItem>>
 
     suspend fun getItemDetails(itemId: String): Result<LibraryItem>
 
     suspend fun searchLibrary(libraryId: String, query: String): Result<SearchResponse>
 
-    suspend fun getSeries(libraryId: String, limit: Int = 100, page: Int = 0): Result<List<AudiobookshelfSeries>>
+    suspend fun getSeries(
+        libraryId: String,
+        limit: Int = 100,
+        page: Int = 0,
+    ): Result<List<AudiobookshelfSeries>>
 
     suspend fun getPersonalized(libraryId: String): Result<List<PersonalizedView>>
 
@@ -76,7 +77,7 @@ interface AudiobookshelfRepository {
         episodeId: String?,
         currentTime: Double,
         duration: Double,
-        isFinished: Boolean
+        isFinished: Boolean,
     ): Result<MediaProgress>
 
     fun getProgressForItemFlow(itemId: String): Flow<MediaProgress?>
@@ -87,21 +88,17 @@ interface AudiobookshelfRepository {
         sessionId: String,
         timeListened: Double,
         currentTime: Double,
-        duration: Double
+        duration: Double,
     ): Result<Unit>
 
     suspend fun closePlaybackSession(
         sessionId: String,
         currentTime: Double,
         timeListened: Double,
-        duration: Double
+        duration: Double,
     ): Result<Unit>
 
     suspend fun syncPendingProgress(): Result<Int>
 }
 
-data class AudiobookshelfConfig(
-    val serverUrl: String,
-    val absUserId: String,
-    val username: String
-)
+data class AudiobookshelfConfig(val serverUrl: String, val absUserId: String, val username: String)

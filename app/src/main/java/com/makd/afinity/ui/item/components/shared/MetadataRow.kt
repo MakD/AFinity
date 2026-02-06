@@ -31,107 +31,124 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
-import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
+import org.jellyfin.sdk.model.api.MediaStreamType
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun MetadataRow(
-    item: AfinityItem
-) {
+fun MetadataRow(item: AfinityItem) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val horizontalAlignment = if (isLandscape) Alignment.Start else Alignment.CenterHorizontally
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         if (item !is AfinityBoxSet && item.sources.isNotEmpty()) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
                 verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 val source = item.sources.firstOrNull()
 
-                source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                source
+                    ?.mediaStreams
+                    ?.firstOrNull { it.type == MediaStreamType.VIDEO }
                     ?.let { videoStream ->
-                        val resolution = when {
-                            (videoStream.height ?: 0) <= 2160 && (videoStream.width
-                                ?: 0) <= 3840 &&
-                                    ((videoStream.height ?: 0) > 1080 || (videoStream.width
-                                        ?: 0) > 1920) -> stringResource(R.string.meta_res_4k)
+                        val resolution =
+                            when {
+                                (videoStream.height ?: 0) <= 2160 &&
+                                    (videoStream.width ?: 0) <= 3840 &&
+                                    ((videoStream.height ?: 0) > 1080 ||
+                                        (videoStream.width ?: 0) > 1920) ->
+                                    stringResource(R.string.meta_res_4k)
 
-                            (videoStream.height ?: 0) <= 1080 && (videoStream.width
-                                ?: 0) <= 1920 &&
-                                    ((videoStream.height ?: 0) > 720 || (videoStream.width
-                                        ?: 0) > 1280) -> stringResource(R.string.meta_res_hd)
+                                (videoStream.height ?: 0) <= 1080 &&
+                                    (videoStream.width ?: 0) <= 1920 &&
+                                    ((videoStream.height ?: 0) > 720 ||
+                                        (videoStream.width ?: 0) > 1280) ->
+                                    stringResource(R.string.meta_res_hd)
 
-                            else -> stringResource(R.string.meta_res_sd)
-                        }
+                                else -> stringResource(R.string.meta_res_sd)
+                            }
 
                         VideoMetadataChip(text = resolution)
                     }
 
-                source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.codec?.takeIf { it.isNotEmpty() }
-                    ?.let { codec ->
-                        VideoMetadataChip(text = codec.uppercase())
-                    }
+                source
+                    ?.mediaStreams
+                    ?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                    ?.codec
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { codec -> VideoMetadataChip(text = codec.uppercase()) }
 
-                source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                source
+                    ?.mediaStreams
+                    ?.firstOrNull { it.type == MediaStreamType.VIDEO }
                     ?.let { videoStream ->
                         if (videoStream.videoDoViTitle != null) {
                             VideoMetadataChipWithIcon(
                                 text = stringResource(R.string.meta_vision),
-                                iconRes = R.drawable.ic_brand_dolby_digital
+                                iconRes = R.drawable.ic_brand_dolby_digital,
                             )
                         } else {
                             videoStream.videoRangeType?.let { rangeType ->
-                                val hdrType = when (rangeType.name) {
-                                    "HDR10" -> "HDR10"
-                                    "HDR10Plus" -> "HDR10+"
-                                    "HLG" -> "HLG"
-                                    else -> null
-                                }
+                                val hdrType =
+                                    when (rangeType.name) {
+                                        "HDR10" -> "HDR10"
+                                        "HDR10Plus" -> "HDR10+"
+                                        "HLG" -> "HLG"
+                                        else -> null
+                                    }
                                 hdrType?.let { VideoMetadataChip(text = it) }
                             }
                         }
                     }
 
-                source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.codec?.takeIf { it.isNotEmpty() }
+                source
+                    ?.mediaStreams
+                    ?.firstOrNull { it.type == MediaStreamType.AUDIO }
+                    ?.codec
+                    ?.takeIf { it.isNotEmpty() }
                     ?.let { codec ->
                         when (codec.lowercase()) {
-                            "ac3" -> VideoMetadataChipWithIcon(
-                                text = stringResource(R.string.meta_digital),
-                                iconRes = R.drawable.ic_brand_dolby_digital
-                            )
+                            "ac3" ->
+                                VideoMetadataChipWithIcon(
+                                    text = stringResource(R.string.meta_digital),
+                                    iconRes = R.drawable.ic_brand_dolby_digital,
+                                )
 
-                            "eac3" -> VideoMetadataChipWithIcon(
-                                text = stringResource(R.string.meta_digital_plus),
-                                iconRes = R.drawable.ic_brand_dolby_digital
-                            )
+                            "eac3" ->
+                                VideoMetadataChipWithIcon(
+                                    text = stringResource(R.string.meta_digital_plus),
+                                    iconRes = R.drawable.ic_brand_dolby_digital,
+                                )
 
-                            "truehd" -> VideoMetadataChipWithIcon(
-                                text = stringResource(R.string.meta_truehd),
-                                iconRes = R.drawable.ic_brand_dolby_digital
-                            )
+                            "truehd" ->
+                                VideoMetadataChipWithIcon(
+                                    text = stringResource(R.string.meta_truehd),
+                                    iconRes = R.drawable.ic_brand_dolby_digital,
+                                )
 
                             "dts" -> VideoMetadataChip(text = "DTS")
                             else -> VideoMetadataChip(text = codec.uppercase())
                         }
                     }
 
-                source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.channelLayout?.let { layout ->
-                    val channels = when {
-                        layout.contains("7.1") -> "7.1"
-                        layout.contains("5.1") -> "5.1"
-                        layout.contains("2.1") -> "2.1"
-                        layout.contains("2.0") || layout.contains("stereo") -> "2.0"
-                        else -> null
+                source
+                    ?.mediaStreams
+                    ?.firstOrNull { it.type == MediaStreamType.AUDIO }
+                    ?.channelLayout
+                    ?.let { layout ->
+                        val channels =
+                            when {
+                                layout.contains("7.1") -> "7.1"
+                                layout.contains("5.1") -> "5.1"
+                                layout.contains("2.1") -> "2.1"
+                                layout.contains("2.0") || layout.contains("stereo") -> "2.0"
+                                else -> null
+                            }
+                        channels?.let { VideoMetadataChip(text = it) }
                     }
-                    channels?.let { VideoMetadataChip(text = it) }
-                }
 
                 val hasSubtitles =
                     source?.mediaStreams?.any { it.type == MediaStreamType.SUBTITLE } == true
@@ -147,45 +164,46 @@ fun MetadataRow(
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
             verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             var needsSeparator = false
 
             if (item !is AfinityBoxSet && item.playbackPositionTicks > 0 && item.runtimeTicks > 0) {
-                val progress =
-                    item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()
+                val progress = item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()
                 val remainingTicks = item.runtimeTicks - item.playbackPositionTicks
                 val remainingHours = (remainingTicks / 10_000_000 / 3600).toInt()
                 val remainingMinutes = ((remainingTicks / 10_000_000 % 3600) / 60).toInt()
 
-                val remainingText = if (remainingHours > 0) {
-                    stringResource(
-                        R.string.meta_time_remaining_hours_minutes,
-                        remainingHours,
-                        remainingMinutes
-                    )
-                } else {
-                    stringResource(R.string.meta_time_remaining_minutes, remainingMinutes)
-                }
+                val remainingText =
+                    if (remainingHours > 0) {
+                        stringResource(
+                            R.string.meta_time_remaining_hours_minutes,
+                            remainingHours,
+                            remainingMinutes,
+                        )
+                    } else {
+                        stringResource(R.string.meta_time_remaining_minutes, remainingMinutes)
+                    }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     CircularProgressIndicator(
                         progress = { progress },
                         modifier = Modifier.size(16.dp),
                         color = Color(0xFFFFC107),
                         strokeWidth = 2.dp,
-                        trackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                        trackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
                     )
 
                     Text(
                         text = remainingText,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                     )
                 }
                 needsSeparator = true
@@ -195,76 +213,83 @@ fun MetadataRow(
                 item.itemCount?.let { count ->
                     Text(
                         text = stringResource(R.string.meta_boxset_count, count),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                     )
                     needsSeparator = true
                 }
             }
 
-            val communityRating = when (item) {
-                is AfinityMovie -> item.communityRating
-                is AfinityShow -> item.communityRating
-                is AfinityBoxSet -> item.communityRating
-                else -> null
-            }
+            val communityRating =
+                when (item) {
+                    is AfinityMovie -> item.communityRating
+                    is AfinityShow -> item.communityRating
+                    is AfinityBoxSet -> item.communityRating
+                    else -> null
+                }
 
             communityRating?.let { imdbRating ->
                 if (needsSeparator) MetadataDot()
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_imdb_logo),
                         contentDescription = stringResource(R.string.cd_imdb),
                         tint = Color.Unspecified,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
                     )
                     Text(
                         text = String.format(Locale.US, "%.1f", imdbRating),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                     )
                 }
                 needsSeparator = true
             }
 
-            val criticRating = when (item) {
-                is AfinityMovie -> item.criticRating
-                else -> null
-            }
+            val criticRating =
+                when (item) {
+                    is AfinityMovie -> item.criticRating
+                    else -> null
+                }
 
             criticRating?.let { rtRating ->
                 if (needsSeparator) MetadataDot()
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Icon(
-                        painter = painterResource(
-                            id = if (rtRating > 60) {
-                                R.drawable.ic_rotten_tomato_fresh
-                            } else {
-                                R.drawable.ic_rotten_tomato_rotten
-                            }
-                        ),
+                        painter =
+                            painterResource(
+                                id =
+                                    if (rtRating > 60) {
+                                        R.drawable.ic_rotten_tomato_fresh
+                                    } else {
+                                        R.drawable.ic_rotten_tomato_rotten
+                                    }
+                            ),
                         contentDescription = stringResource(R.string.cd_rotten_tomatoes),
                         tint = Color.Unspecified,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(14.dp),
                     )
                     Text(
                         text = "${rtRating.toInt()}%",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                     )
                 }
                 needsSeparator = true
@@ -280,10 +305,9 @@ fun MetadataRow(
 
                 Text(
                     text = year,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                 )
                 needsSeparator = true
             }
@@ -292,19 +316,18 @@ fun MetadataRow(
                 val hours = (item.runtimeTicks / 10_000_000 / 3600).toInt()
                 val minutes = ((item.runtimeTicks / 10_000_000 % 3600) / 60).toInt()
 
-                val runtimeText = if (hours > 0)
-                    stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
-                else
-                    stringResource(R.string.meta_runtime_minutes, minutes)
+                val runtimeText =
+                    if (hours > 0)
+                        stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
+                    else stringResource(R.string.meta_runtime_minutes, minutes)
 
                 if (needsSeparator) MetadataDot()
 
                 Text(
                     text = runtimeText,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                 )
                 needsSeparator = true
             }
@@ -319,30 +342,29 @@ fun MetadataRow(
 
                 Text(
                     text = rating,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                 )
                 needsSeparator = true
             }
 
-            val genres = when (item) {
-                is AfinityMovie -> item.genres
-                is AfinityShow -> item.genres
-                is AfinityBoxSet -> item.genres
-                else -> emptyList()
-            }
+            val genres =
+                when (item) {
+                    is AfinityMovie -> item.genres
+                    is AfinityShow -> item.genres
+                    is AfinityBoxSet -> item.genres
+                    else -> emptyList()
+                }
 
             if (genres.isNotEmpty()) {
                 if (needsSeparator) MetadataDot()
 
                 Text(
                     text = genres.take(2).joinToString(", "),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f)
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                 )
             }
         }
@@ -353,10 +375,8 @@ fun MetadataRow(
 private fun MetadataDot() {
     Text(
         text = "•",
-        style = MaterialTheme.typography.bodyMedium.copy(
-            fontWeight = FontWeight.SemiBold
-        ),
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
     )
 }
 
@@ -364,16 +384,14 @@ private fun MetadataDot() {
 private fun VideoMetadataChip(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.bodyMedium.copy(
-            fontWeight = FontWeight.SemiBold
-        ),
+        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-        modifier = Modifier
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
-                RoundedCornerShape(4.dp)
-            )
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+        modifier =
+            Modifier.background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                    RoundedCornerShape(4.dp),
+                )
+                .padding(horizontal = 6.dp, vertical = 2.dp),
     )
 }
 
@@ -382,27 +400,23 @@ private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
-                RoundedCornerShape(4.dp)
-            )
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+        modifier =
+            Modifier.background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                    RoundedCornerShape(4.dp),
+                )
+                .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Icon(
             painter = painterResource(id = iconRes),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .size(16.dp)
-                .padding(bottom = 1.dp)
+            modifier = Modifier.size(16.dp).padding(bottom = 1.dp),
         )
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
         )
     }
 }

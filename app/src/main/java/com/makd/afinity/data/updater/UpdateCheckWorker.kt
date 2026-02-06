@@ -10,11 +10,13 @@ import dagger.assisted.AssistedInject
 import timber.log.Timber
 
 @HiltWorker
-class UpdateCheckWorker @AssistedInject constructor(
+class UpdateCheckWorker
+@AssistedInject
+constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val updateManager: UpdateManager,
-    private val notificationManager: UpdateNotificationManager
+    private val notificationManager: UpdateNotificationManager,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {

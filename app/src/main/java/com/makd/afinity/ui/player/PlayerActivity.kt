@@ -32,10 +32,9 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
-import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
-
+import timber.log.Timber
 
 @UnstableApi
 @AndroidEntryPoint
@@ -43,8 +42,7 @@ class PlayerActivity : ComponentActivity() {
 
     private val viewModel: PlayerViewModel by viewModels()
 
-    @Inject
-    lateinit var preferencesRepository: PreferencesRepository
+    @Inject lateinit var preferencesRepository: PreferencesRepository
 
     private var wasPip: Boolean = false
     private var isResumed: Boolean = false
@@ -54,29 +52,30 @@ class PlayerActivity : ComponentActivity() {
         private const val REQUEST_PLAY_PAUSE = 1001
     }
 
-    private val pipReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            Timber.d("PIP Receiver - Action received: ${intent?.action}")
+    private val pipReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                Timber.d("PIP Receiver - Action received: ${intent?.action}")
 
-            when (intent?.action) {
-                ACTION_PLAY_PAUSE -> {
-                    Timber.d("PIP Control: Play/Pause clicked")
-                    if (viewModel.player.isPlaying) {
-                        viewModel.handlePlayerEvent(PlayerEvent.Pause)
-                    } else {
-                        viewModel.handlePlayerEvent(PlayerEvent.Play)
+                when (intent?.action) {
+                    ACTION_PLAY_PAUSE -> {
+                        Timber.d("PIP Control: Play/Pause clicked")
+                        if (viewModel.player.isPlaying) {
+                            viewModel.handlePlayerEvent(PlayerEvent.Pause)
+                        } else {
+                            viewModel.handlePlayerEvent(PlayerEvent.Play)
+                        }
+                        if (isInPictureInPictureMode) {
+                            setPictureInPictureParams(buildPipParams())
+                        }
                     }
-                    if (isInPictureInPictureMode) {
-                        setPictureInPictureParams(buildPipParams())
-                    }
-                }
 
-                else -> {
-                    Timber.w("PIP Receiver - Unknown action: ${intent?.action}")
+                    else -> {
+                        Timber.w("PIP Receiver - Unknown action: ${intent?.action}")
+                    }
                 }
             }
         }
-    }
 
     private val isPipSupported by lazy {
         if (!packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
@@ -91,13 +90,10 @@ class PlayerActivity : ComponentActivity() {
         ) == AppOpsManager.MODE_ALLOWED
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val filter = IntentFilter().apply {
-            addAction(ACTION_PLAY_PAUSE)
-        }
+        val filter = IntentFilter().apply { addAction(ACTION_PLAY_PAUSE) }
 
         try {
             registerReceiver(pipReceiver, filter, RECEIVER_EXPORTED)
@@ -109,11 +105,13 @@ class PlayerActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         hideSystemUI()
 
-        val itemId = intent.getStringExtra("itemId")?.let { UUID.fromString(it) } ?: run {
-            Timber.e("PlayerActivity: No itemId provided")
-            finish()
-            return
-        }
+        val itemId =
+            intent.getStringExtra("itemId")?.let { UUID.fromString(it) }
+                ?: run {
+                    Timber.e("PlayerActivity: No itemId provided")
+                    finish()
+                    return
+                }
         val mediaSourceId = intent.getStringExtra("mediaSourceId") ?: ""
         val audioStreamIndex = intent.getIntExtra("audioStreamIndex", -1).takeIf { it != -1 }
         val subtitleStreamIndex = intent.getIntExtra("subtitleStreamIndex", -1).takeIf { it != -1 }
@@ -124,18 +122,18 @@ class PlayerActivity : ComponentActivity() {
         val channelName = intent.getStringExtra("channelName")
         val liveStreamUrl = intent.getStringExtra("liveStreamUrl")
 
-        Timber.d("PlayerActivity: Starting playback for item $itemId, seasonId=$seasonId, shuffle=$shuffle, isLive=$isLiveChannel")
+        Timber.d(
+            "PlayerActivity: Starting playback for item $itemId, seasonId=$seasonId, shuffle=$shuffle, isLive=$isLiveChannel"
+        )
 
         setContent {
-            val themeMode by preferencesRepository.getThemeModeFlow()
-                .collectAsState(initial = "SYSTEM")
-            val dynamicColors by preferencesRepository.getDynamicColorsFlow()
-                .collectAsState(initial = true)
+            val themeMode by
+                preferencesRepository.getThemeModeFlow().collectAsState(initial = "SYSTEM")
+            val dynamicColors by
+                preferencesRepository.getDynamicColorsFlow().collectAsState(initial = true)
 
             LaunchedEffect(Unit) {
-                viewModel.enterPictureInPicture = {
-                    enterPictureInPicture()
-                }
+                viewModel.enterPictureInPicture = { enterPictureInPicture() }
                 viewModel.updatePipParams = {
                     if (isPipSupported) {
                         setPictureInPictureParams(buildPipParams())
@@ -143,10 +141,7 @@ class PlayerActivity : ComponentActivity() {
                 }
             }
 
-            AFinityTheme(
-                themeMode = themeMode,
-                dynamicColor = dynamicColors
-            ) {
+            AFinityTheme(themeMode = themeMode, dynamicColor = dynamicColors) {
                 PlayerScreenWrapper(
                     itemId = itemId,
                     mediaSourceId = mediaSourceId,
@@ -159,7 +154,7 @@ class PlayerActivity : ComponentActivity() {
                     channelName = channelName,
                     liveStreamUrl = liveStreamUrl,
                     onBackPressed = { finish() },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }
@@ -195,34 +190,36 @@ class PlayerActivity : ComponentActivity() {
         val displayAspectRatio = Rational(viewWidth, viewHeight)
 
         val videoSize = viewModel.player.videoSize
-        val aspectRatio = if (videoSize.width > 0 && videoSize.height > 0) {
-            Rational(
-                videoSize.width.coerceAtMost((videoSize.height * 2.39f).toInt()),
-                videoSize.height.coerceAtMost((videoSize.width * 2.39f).toInt())
-            )
-        } else {
-            Rational(16, 9)
-        }
+        val aspectRatio =
+            if (videoSize.width > 0 && videoSize.height > 0) {
+                Rational(
+                    videoSize.width.coerceAtMost((videoSize.height * 2.39f).toInt()),
+                    videoSize.height.coerceAtMost((videoSize.width * 2.39f).toInt()),
+                )
+            } else {
+                Rational(16, 9)
+            }
 
-        val sourceRectHint = if (displayAspectRatio < aspectRatio) {
-            val space = ((viewHeight -
-                    (viewWidth.toFloat() / aspectRatio.toFloat())) / 2).toInt()
-            android.graphics.Rect(
-                0,
-                space,
-                viewWidth,
-                (viewWidth.toFloat() / aspectRatio.toFloat()).toInt() + space
-            )
-        } else {
-            val space = ((viewWidth -
-                    (viewHeight.toFloat() * aspectRatio.toFloat())) / 2).toInt()
-            android.graphics.Rect(
-                space,
-                0,
-                (viewHeight.toFloat() * aspectRatio.toFloat()).toInt() + space,
-                viewHeight
-            )
-        }
+        val sourceRectHint =
+            if (displayAspectRatio < aspectRatio) {
+                val space =
+                    ((viewHeight - (viewWidth.toFloat() / aspectRatio.toFloat())) / 2).toInt()
+                android.graphics.Rect(
+                    0,
+                    space,
+                    viewWidth,
+                    (viewWidth.toFloat() / aspectRatio.toFloat()).toInt() + space,
+                )
+            } else {
+                val space =
+                    ((viewWidth - (viewHeight.toFloat() * aspectRatio.toFloat())) / 2).toInt()
+                android.graphics.Rect(
+                    space,
+                    0,
+                    (viewHeight.toFloat() * aspectRatio.toFloat()).toInt() + space,
+                    viewHeight,
+                )
+            }
 
         val actions = buildPipActions()
 
@@ -236,19 +233,22 @@ class PlayerActivity : ComponentActivity() {
 
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
-        newConfig: Configuration
+        newConfig: Configuration,
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
 
         viewModel.onPipModeChanged(isInPictureInPictureMode)
 
         if (!isInPictureInPictureMode) {
-            window.decorView.postDelayed({
-                if (!isResumed) {
-                    viewModel.stopPlayback()
-                    finish()
-                }
-            }, 100)
+            window.decorView.postDelayed(
+                {
+                    if (!isResumed) {
+                        viewModel.stopPlayback()
+                        finish()
+                    }
+                },
+                100,
+            )
         }
     }
 
@@ -319,27 +319,24 @@ class PlayerActivity : ComponentActivity() {
     private fun buildPipActions(): List<RemoteAction> {
         val actions = mutableListOf<RemoteAction>()
 
-        val playPauseIntent = Intent(ACTION_PLAY_PAUSE).apply {
-            setPackage(packageName)
-        }
-        val playPausePendingIntent = PendingIntent.getBroadcast(
-            this,
-            REQUEST_PLAY_PAUSE,
-            playPauseIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        val playPauseIcon = if (viewModel.player.isPlaying) {
-            Icon.createWithResource(this, R.drawable.ic_player_pause_filled)
-        } else {
-            Icon.createWithResource(this, R.drawable.ic_player_play_filled)
-        }
-        val title = if (viewModel.player.isPlaying) getString(R.string.cd_pause) else getString(R.string.cd_play)
-        val playPauseAction = RemoteAction(
-            playPauseIcon,
-            title,
-            title,
-            playPausePendingIntent
-        )
+        val playPauseIntent = Intent(ACTION_PLAY_PAUSE).apply { setPackage(packageName) }
+        val playPausePendingIntent =
+            PendingIntent.getBroadcast(
+                this,
+                REQUEST_PLAY_PAUSE,
+                playPauseIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+        val playPauseIcon =
+            if (viewModel.player.isPlaying) {
+                Icon.createWithResource(this, R.drawable.ic_player_pause_filled)
+            } else {
+                Icon.createWithResource(this, R.drawable.ic_player_play_filled)
+            }
+        val title =
+            if (viewModel.player.isPlaying) getString(R.string.cd_pause)
+            else getString(R.string.cd_play)
+        val playPauseAction = RemoteAction(playPauseIcon, title, title, playPausePendingIntent)
         actions.add(playPauseAction)
 
         return actions

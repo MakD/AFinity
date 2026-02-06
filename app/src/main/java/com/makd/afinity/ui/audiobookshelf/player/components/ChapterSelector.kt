@@ -44,7 +44,7 @@ fun ChapterSelector(
     currentChapterIndex: Int,
     onChapterSelected: (Int) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val listState = rememberLazyListState()
@@ -60,21 +60,16 @@ fun ChapterSelector(
         sheetState = sheetState,
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = null
+        dragHandle = null,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.85f)
-                .padding(top = 24.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f).padding(top = 24.dp)) {
             Text(
                 text = "CHAPTERS",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
-                letterSpacing = 2.sp
+                letterSpacing = 2.sp,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -82,7 +77,7 @@ fun ChapterSelector(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.weight(1f),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp)
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp),
             ) {
                 itemsIndexed(chapters) { index, chapter ->
                     val isCurrent = index == currentChapterIndex
@@ -90,7 +85,7 @@ fun ChapterSelector(
                         chapter = chapter,
                         index = index + 1,
                         isCurrent = isCurrent,
-                        onClick = { onChapterSelected(index) }
+                        onClick = { onChapterSelected(index) },
                     )
                 }
             }
@@ -99,44 +94,40 @@ fun ChapterSelector(
 }
 
 @Composable
-private fun ChapterRow(
-    chapter: BookChapter,
-    index: Int,
-    isCurrent: Boolean,
-    onClick: () -> Unit
-) {
+private fun ChapterRow(chapter: BookChapter, index: Int, isCurrent: Boolean, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .background(
-                if (isCurrent) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                else MaterialTheme.colorScheme.surface
-            )
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable(onClick = onClick)
+                .background(
+                    if (isCurrent) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    else MaterialTheme.colorScheme.surface
+                )
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(
-                    if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer
-                ),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier.size(32.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isCurrent) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceContainer
+                    ),
+            contentAlignment = Alignment.Center,
         ) {
             if (isCurrent) {
                 Icon(
                     painterResource(id = R.drawable.ic_player_play_filled),
                     contentDescription = "Playing",
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(16.dp),
                 )
             } else {
                 Text(
                     text = index.toString(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -146,12 +137,15 @@ private fun ChapterRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = chapter.title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
-                ),
-                color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                style =
+                    MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
+                    ),
+                color =
+                    if (isCurrent) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             Spacer(modifier = Modifier.height(2.dp))
@@ -159,20 +153,20 @@ private fun ChapterRow(
             Text(
                 text = "${formatTime(chapter.start)} - ${formatTime(chapter.end)}",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             )
         }
 
         Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+            modifier =
+                Modifier.clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             Text(
                 text = formatDuration(chapter.end - chapter.start),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -183,7 +177,8 @@ private fun formatTime(seconds: Double): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val secs = totalSeconds % 60
-    return if (hours > 0) String.format("%d:%02d:%02d", hours, minutes, secs) else String.format("%d:%02d", minutes, secs)
+    return if (hours > 0) String.format("%d:%02d:%02d", hours, minutes, secs)
+    else String.format("%d:%02d", minutes, secs)
 }
 
 private fun formatDuration(seconds: Double): String {

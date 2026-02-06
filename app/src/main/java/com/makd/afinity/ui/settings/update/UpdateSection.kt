@@ -1,12 +1,6 @@
 package com.makd.afinity.ui.settings.update
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -38,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -53,10 +46,7 @@ import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.models.UpdateState
 
 @Composable
-fun UpdateSection(
-    modifier: Modifier = Modifier,
-    viewModel: UpdateViewModel = hiltViewModel()
-) {
+fun UpdateSection(modifier: Modifier = Modifier, viewModel: UpdateViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
@@ -77,7 +67,10 @@ fun UpdateSection(
         UpdateAvailableDialog(
             currentVersionName = BuildConfig.VERSION_NAME,
             release = pendingRelease!!,
-            downloadedFile = if (updateState is UpdateState.Downloaded) (updateState as UpdateState.Downloaded).file else null,
+            downloadedFile =
+                if (updateState is UpdateState.Downloaded)
+                    (updateState as UpdateState.Downloaded).file
+                else null,
             isDownloading = updateState is UpdateState.Downloading,
             onDownload = { viewModel.downloadUpdate(pendingRelease!!) },
             onInstall = { file ->
@@ -90,7 +83,7 @@ fun UpdateSection(
                 showUpdateDialog = false
                 viewModel.dismissUpdate()
                 pendingRelease = null
-            }
+            },
         )
     }
 
@@ -98,14 +91,14 @@ fun UpdateSection(
         CheckForUpdatesItem(
             updateState = updateState,
             lastCheckTime = uiState.lastCheckTime,
-            onCheckClick = { viewModel.checkForUpdates() }
+            onCheckClick = { viewModel.checkForUpdates() },
         )
 
         SettingsDivider()
 
         UpdateFrequencySelector(
             currentFrequency = uiState.checkFrequency,
-            onFrequencySelected = { viewModel.setCheckFrequency(it) }
+            onFrequencySelected = { viewModel.setCheckFrequency(it) },
         )
     }
 }
@@ -114,30 +107,24 @@ fun UpdateSection(
 private fun SettingsGroup(
     title: String? = null,
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         if (title != null) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
             )
         }
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                content()
-            }
+            Column(modifier = Modifier.padding(vertical = 4.dp)) { content() }
         }
     }
 }
@@ -146,7 +133,7 @@ private fun SettingsGroup(
 private fun SettingsDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = 56.dp, end = 16.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
     )
 }
 
@@ -155,68 +142,65 @@ private fun CheckForUpdatesItem(
     updateState: UpdateState,
     lastCheckTime: String,
     onCheckClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val isChecking = updateState is UpdateState.Checking
     val isDownloading = updateState is UpdateState.Downloading
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(enabled = !isChecking && !isDownloading) { onCheckClick() }
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(enabled = !isChecking && !isDownloading) { onCheckClick() }
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_system_update),
             contentDescription = null,
-            tint = if (isChecking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .size(24.dp)
+            tint =
+                if (isChecking) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp),
         )
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
             Text(
                 text = stringResource(R.string.pref_check_updates_title),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             AnimatedVisibility(
                 visible = updateState is UpdateState.Downloading,
                 enter = fadeIn(),
-                exit = fadeOut()
+                exit = fadeOut(),
             ) {
                 Column(modifier = Modifier.padding(top = 4.dp)) {
                     val progress = (updateState as? UpdateState.Downloading)?.progress ?: 0
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
                             text = stringResource(R.string.update_status_downloading),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                         Text(
                             text = stringResource(R.string.update_progress_fmt, progress),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     LinearProgressIndicator(
                         progress = { progress / 100f },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(4.dp),
+                        modifier = Modifier.fillMaxWidth().height(4.dp),
                         trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -224,33 +208,33 @@ private fun CheckForUpdatesItem(
             AnimatedVisibility(
                 visible = updateState !is UpdateState.Downloading,
                 enter = fadeIn(),
-                exit = fadeOut()
+                exit = fadeOut(),
             ) {
                 Text(
-                    text = when (updateState) {
-                        is UpdateState.Checking -> stringResource(R.string.update_status_checking)
-                        is UpdateState.UpToDate -> stringResource(
-                            R.string.update_status_uptodate_fmt,
-                            lastCheckTime
-                        )
+                    text =
+                        when (updateState) {
+                            is UpdateState.Checking ->
+                                stringResource(R.string.update_status_checking)
+                            is UpdateState.UpToDate ->
+                                stringResource(R.string.update_status_uptodate_fmt, lastCheckTime)
 
-                        is UpdateState.Error -> stringResource(
-                            R.string.update_status_failed_fmt,
-                            lastCheckTime
-                        )
+                            is UpdateState.Error ->
+                                stringResource(R.string.update_status_failed_fmt, lastCheckTime)
 
-                        else -> stringResource(R.string.update_status_last_check_fmt, lastCheckTime)
-                    },
+                            else ->
+                                stringResource(R.string.update_status_last_check_fmt, lastCheckTime)
+                        },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = when (updateState) {
-                        is UpdateState.Checking -> MaterialTheme.colorScheme.primary
-                        is UpdateState.UpToDate -> MaterialTheme.colorScheme.tertiary
-                        is UpdateState.Error -> MaterialTheme.colorScheme.error
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    color =
+                        when (updateState) {
+                            is UpdateState.Checking -> MaterialTheme.colorScheme.primary
+                            is UpdateState.UpToDate -> MaterialTheme.colorScheme.tertiary
+                            is UpdateState.Error -> MaterialTheme.colorScheme.error
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
@@ -261,41 +245,38 @@ private fun CheckForUpdatesItem(
 private fun UpdateFrequencySelector(
     currentFrequency: UpdateCheckFrequency,
     onFrequencySelected: (UpdateCheckFrequency) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier.fillMaxWidth()
+                    .clickable { expanded = true }
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_schedule),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
                 Text(
                     text = stringResource(R.string.pref_check_frequency_title),
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = getUpdateCheckFrequencyDisplayName(currentFrequency),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
@@ -303,26 +284,26 @@ private fun UpdateFrequencySelector(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             UpdateCheckFrequency.entries.forEach { frequency ->
                 DropdownMenuItem(
                     text = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
                                 text = getUpdateCheckFrequencyDisplayName(frequency),
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                             if (frequency == currentFrequency) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_circle_check),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(18.dp),
                                 )
                             }
                         }
@@ -330,7 +311,7 @@ private fun UpdateFrequencySelector(
                     onClick = {
                         onFrequencySelected(frequency)
                         expanded = false
-                    }
+                    },
                 )
             }
         }

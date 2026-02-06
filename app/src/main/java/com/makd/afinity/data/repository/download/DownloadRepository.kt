@@ -2,8 +2,8 @@ package com.makd.afinity.data.repository.download
 
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
-import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 interface DownloadRepository {
 

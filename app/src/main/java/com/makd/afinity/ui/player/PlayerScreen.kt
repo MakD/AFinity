@@ -43,8 +43,8 @@ import com.makd.afinity.ui.player.components.TrickplayPreview
 import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
-import timber.log.Timber
 import java.util.UUID
+import timber.log.Timber
 
 @UnstableApi
 @Composable
@@ -61,24 +61,24 @@ fun PlayerScreen(
     onBackPressed: () -> Unit,
     navController: NavController? = null,
     modifier: Modifier = Modifier,
-    viewModel: PlayerViewModel = hiltViewModel()
+    viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val playlistState by viewModel.playlistState.collectAsStateWithLifecycle(
-        initialValue = PlaylistState()
-    )
+    val playlistState by
+        viewModel.playlistState.collectAsStateWithLifecycle(initialValue = PlaylistState())
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val preferencesRepository = remember {
         dagger.hilt.android.EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            com.makd.afinity.di.PreferencesEntryPoint::class.java
-        ).preferencesRepository()
+                context.applicationContext,
+                com.makd.afinity.di.PreferencesEntryPoint::class.java,
+            )
+            .preferencesRepository()
     }
-    val subtitlePrefs by preferencesRepository.getSubtitlePreferencesFlow()
-        .collectAsStateWithLifecycle(
-            initialValue = SubtitlePreferences.DEFAULT
-        )
+    val subtitlePrefs by
+        preferencesRepository
+            .getSubtitlePreferencesFlow()
+            .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
     var seekOriginTime by remember { mutableLongStateOf(0L) }
     var dragStartVolume by remember { mutableStateOf(-1) }
     var dragStartBrightness by remember { mutableFloatStateOf(-1f) }
@@ -91,7 +91,7 @@ fun PlayerScreen(
                 PlayerEvent.LoadLiveChannel(
                     channelId = item.id,
                     channelName = item.name,
-                    streamUrl = liveStreamUrl
+                    streamUrl = liveStreamUrl,
                 )
             )
         } else {
@@ -102,7 +102,7 @@ fun PlayerScreen(
                     mediaSourceId = mediaSourceId,
                     audioStreamIndex = audioStreamIndex,
                     subtitleStreamIndex = subtitleStreamIndex,
-                    startPositionMs = startPositionMs
+                    startPositionMs = startPositionMs,
                 )
             )
         }
@@ -110,7 +110,9 @@ fun PlayerScreen(
 
     LaunchedEffect(item, seasonId, shuffle, isLiveChannel) {
         if (!isLiveChannel) {
-            Timber.d("Initializing playlist for item: ${item.name} (${item.id}), seasonId=$seasonId, shuffle=$shuffle")
+            Timber.d(
+                "Initializing playlist for item: ${item.name} (${item.id}), seasonId=$seasonId, shuffle=$shuffle"
+            )
             viewModel.initializePlaylist(item, seasonId, shuffle)
         }
     }
@@ -134,7 +136,7 @@ fun PlayerScreen(
                         mediaSourceId = mediaSourceId,
                         audioStreamIndex = null,
                         subtitleStreamIndex = null,
-                        startPositionMs = 0L
+                        startPositionMs = 0L,
                     )
                 )
             } catch (e: Exception) {
@@ -152,11 +154,7 @@ fun PlayerScreen(
             onBackPressed()
         }
     }
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
+    Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
         GestureHandler(
             onSingleTap = { viewModel.onSingleTap() },
             onDoubleTap = { isForward ->
@@ -208,7 +206,7 @@ fun PlayerScreen(
                     viewModel.updateTrickplayPreview(targetTime)
                 }
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) {
             when (val player = viewModel.player) {
                 is ExoPlayer -> {
@@ -222,7 +220,7 @@ fun PlayerScreen(
                                     viewModel.setPlayerView(this)
                                 }
                             },
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                 }
@@ -231,12 +229,8 @@ fun PlayerScreen(
                     MpvSurface(
                         modifier = Modifier.fillMaxSize(),
                         videoOutput = viewModel.mpvVideoOutputValue,
-                        onSurfaceCreated = {
-                            Timber.d("MPV surface created in player screen")
-                        },
-                        onSurfaceDestroyed = {
-                            Timber.d("MPV surface destroyed in player screen")
-                        }
+                        onSurfaceCreated = { Timber.d("MPV surface created in player screen") },
+                        onSurfaceDestroyed = { Timber.d("MPV surface destroyed in player screen") },
                     )
                 }
             }
@@ -246,7 +240,7 @@ fun PlayerScreen(
             ExoPlayerSubtitles(
                 player = viewModel.player as ExoPlayer,
                 subtitlePrefs = subtitlePrefs,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
@@ -263,12 +257,10 @@ fun PlayerScreen(
             },
             onNextClick = viewModel::onNextChapterOrEpisode,
             onPreviousClick = viewModel::onPreviousChapterOrEpisode,
-            onPipToggle = {
-                viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture)
-            },
+            onPipToggle = { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) },
             playlistQueue = playlistState.queue,
             currentPlaylistIndex = playlistState.currentIndex,
-            onJumpToEpisode = viewModel::jumpToEpisode
+            onJumpToEpisode = viewModel::jumpToEpisode,
         )
 
         TrickplayPreview(
@@ -277,13 +269,10 @@ fun PlayerScreen(
             positionMs = uiState.trickplayPreviewPosition,
             durationMs = uiState.duration,
             chapters = uiState.chapters,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
 
-        PlayerIndicators(
-            uiState = uiState,
-            modifier = Modifier.fillMaxSize()
-        )
+        PlayerIndicators(uiState = uiState, modifier = Modifier.fillMaxSize())
 
         ErrorIndicator(
             isVisible = uiState.showError,
@@ -295,11 +284,11 @@ fun PlayerScreen(
                         mediaSourceId = mediaSourceId,
                         audioStreamIndex = audioStreamIndex,
                         subtitleStreamIndex = subtitleStreamIndex,
-                        startPositionMs = startPositionMs
+                        startPositionMs = startPositionMs,
                     )
                 )
             },
-            modifier = Modifier.align(Alignment.Center)
+            modifier = Modifier.align(Alignment.Center),
         )
     }
 
@@ -313,11 +302,9 @@ fun PlayerScreen(
 private fun ExoPlayerSubtitles(
     player: ExoPlayer,
     subtitlePrefs: SubtitlePreferences,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    var subtitleView: SubtitleView? by remember {
-        mutableStateOf(null)
-    }
+    var subtitleView: SubtitleView? by remember { mutableStateOf(null) }
     AndroidView(
         factory = { ctx ->
             SubtitleView(ctx).apply {
@@ -328,34 +315,35 @@ private fun ExoPlayerSubtitles(
         },
         update = { view ->
             val baseTypeface = Typeface.SANS_SERIF
-            val typeface = if (subtitlePrefs.bold) {
-                Typeface.create(baseTypeface, Typeface.BOLD)
-            } else {
-                baseTypeface
-            }
+            val typeface =
+                if (subtitlePrefs.bold) {
+                    Typeface.create(baseTypeface, Typeface.BOLD)
+                } else {
+                    baseTypeface
+                }
 
-            val customStyle = CaptionStyleCompat(
-                subtitlePrefs.textColor,
-                subtitlePrefs.backgroundColor,
-                subtitlePrefs.windowColor,
-                subtitlePrefs.outlineStyle.toExoPlayerEdgeType(),
-                subtitlePrefs.outlineColor,
-                typeface
-            )
+            val customStyle =
+                CaptionStyleCompat(
+                    subtitlePrefs.textColor,
+                    subtitlePrefs.backgroundColor,
+                    subtitlePrefs.windowColor,
+                    subtitlePrefs.outlineStyle.toExoPlayerEdgeType(),
+                    subtitlePrefs.outlineColor,
+                    typeface,
+                )
             view.setStyle(customStyle)
             view.setFractionalTextSize(subtitlePrefs.toExoPlayerFractionalSize())
         },
-        modifier = modifier
+        modifier = modifier,
     )
 
     DisposableEffect(player) {
-        val listener = object : Player.Listener {
-            override fun onCues(
-                cueGroup: CueGroup
-            ) {
-                subtitleView?.setCues(cueGroup.cues)
+        val listener =
+            object : Player.Listener {
+                override fun onCues(cueGroup: CueGroup) {
+                    subtitleView?.setCues(cueGroup.cues)
+                }
             }
-        }
 
         player.addListener(listener)
 

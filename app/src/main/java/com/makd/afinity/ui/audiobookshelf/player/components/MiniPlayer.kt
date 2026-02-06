@@ -42,59 +42,51 @@ fun MiniPlayer(
     onPlayPauseClick: () -> Unit,
     onCloseClick: () -> Unit,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val progress = if (duration > 0) (currentTime / duration).toFloat().coerceIn(0f, 1f) else 0f
 
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shadowElevation = 8.dp,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         Column {
             LinearProgressIndicator(
                 progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(2.dp),
+                modifier = Modifier.fillMaxWidth().height(2.dp),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
             )
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                    modifier =
+                        Modifier.size(48.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     if (coverUrl != null) {
                         AsyncImage(
                             model = coverUrl,
                             contentDescription = title,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.matchParentSize()
+                            modifier = Modifier.matchParentSize(),
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
 
                     if (author != null) {
@@ -103,7 +95,7 @@ fun MiniPlayer(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -114,15 +106,16 @@ fun MiniPlayer(
                     if (isBuffering) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
                         )
                     } else {
                         Icon(
-                            painter = if (isPlaying) painterResource(id = R.drawable.ic_player_pause_filled) else painterResource(
-                                id = R.drawable.ic_player_play_filled
-                            ),
+                            painter =
+                                if (isPlaying)
+                                    painterResource(id = R.drawable.ic_player_pause_filled)
+                                else painterResource(id = R.drawable.ic_player_play_filled),
                             contentDescription = if (isPlaying) "Pause" else "Play",
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(28.dp),
                         )
                     }
                 }
@@ -131,7 +124,7 @@ fun MiniPlayer(
                     Icon(
                         painter = painterResource(id = R.drawable.ic_close),
                         contentDescription = "Close player",
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }

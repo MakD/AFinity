@@ -33,46 +33,38 @@ import com.makd.afinity.R
 fun AfinitySplashScreen(
     statusText: String,
     modifier: Modifier = Modifier,
-    progress: Float? = null
+    progress: Float? = null,
 ) {
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState())
+            modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_launcher_monochrome),
                 contentDescription = stringResource(R.string.cd_app_logo),
                 modifier = Modifier.size(160.dp),
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
                 text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = stringResource(R.string.splash_powered_by),
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -80,7 +72,7 @@ fun AfinitySplashScreen(
             Text(
                 text = statusText,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -90,22 +82,23 @@ fun AfinitySplashScreen(
 
             LinearProgressIndicator(
                 progress = { currentProgress },
-                modifier = Modifier
-                    .width(240.dp)
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .alpha(if (showProgress) 1f else 0f),
+                modifier =
+                    Modifier.width(240.dp)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .alpha(if (showProgress) 1f else 0f),
                 color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = stringResource(R.string.splash_progress_fmt, (currentProgress * 100).toInt()),
+                text =
+                    stringResource(R.string.splash_progress_fmt, (currentProgress * 100).toInt()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.alpha(if (showProgress) 1f else 0f)
+                modifier = Modifier.alpha(if (showProgress) 1f else 0f),
             )
         }
     }

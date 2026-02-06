@@ -7,7 +7,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Alignment
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -38,6 +38,12 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.updater.UpdateManager
+import com.makd.afinity.ui.audiobookshelf.item.AudiobookshelfItemScreen
+import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibrariesScreen
+import com.makd.afinity.ui.audiobookshelf.library.AudiobookshelfLibraryScreen
+import com.makd.afinity.ui.audiobookshelf.login.AudiobookshelfLoginScreen
+import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
+import com.makd.afinity.ui.audiobookshelf.player.components.MiniPlayer
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.favorites.FavoritesScreen
 import com.makd.afinity.ui.home.HomeScreen
@@ -54,12 +60,6 @@ import com.makd.afinity.ui.requests.FilteredMediaScreen
 import com.makd.afinity.ui.requests.RequestsScreen
 import com.makd.afinity.ui.search.GenreResultsScreen
 import com.makd.afinity.ui.search.SearchScreen
-import com.makd.afinity.ui.audiobookshelf.item.AudiobookshelfItemScreen
-import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibrariesScreen
-import com.makd.afinity.ui.audiobookshelf.library.AudiobookshelfLibraryScreen
-import com.makd.afinity.ui.audiobookshelf.login.AudiobookshelfLoginScreen
-import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
-import com.makd.afinity.ui.audiobookshelf.player.components.MiniPlayer
 import com.makd.afinity.ui.settings.LicensesScreen
 import com.makd.afinity.ui.settings.SettingsScreen
 import com.makd.afinity.ui.settings.appearance.AppearanceOptionsScreen
@@ -80,26 +80,26 @@ fun MainNavigation(
     viewModel: MainNavigationViewModel = hiltViewModel(),
     updateManager: UpdateManager,
     offlineModeManager: OfflineModeManager,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val watchlistRepository: WatchlistRepository =
         hiltViewModel<MainNavigationViewModel>().watchlistRepository
-    val watchlistCount by watchlistRepository.getWatchlistCountFlow()
-        .collectAsStateWithLifecycle(initialValue = 0)
+    val watchlistCount by
+        watchlistRepository.getWatchlistCountFlow().collectAsStateWithLifecycle(initialValue = 0)
     val jellyseerrRepository: JellyseerrRepository =
         hiltViewModel<MainNavigationViewModel>().jellyseerrRepository
-    val isJellyseerrAuthenticated by jellyseerrRepository.isAuthenticated
-        .collectAsStateWithLifecycle()
+    val isJellyseerrAuthenticated by
+        jellyseerrRepository.isAuthenticated.collectAsStateWithLifecycle()
     val audiobookshelfRepository: AudiobookshelfRepository =
         hiltViewModel<MainNavigationViewModel>().audiobookshelfRepository
-    val isAudiobookshelfAuthenticated by audiobookshelfRepository.isAuthenticated
-        .collectAsStateWithLifecycle()
+    val isAudiobookshelfAuthenticated by
+        audiobookshelfRepository.isAuthenticated.collectAsStateWithLifecycle()
     val hasLiveTvAccess by viewModel.hasLiveTvAccess.collectAsStateWithLifecycle()
     val appLoadingState by viewModel.appLoadingState.collectAsStateWithLifecycle()
     val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
-    val audiobookshelfPlaybackState by viewModel.audiobookshelfPlaybackManager.playbackState
-        .collectAsStateWithLifecycle()
+    val audiobookshelfPlaybackState by
+        viewModel.audiobookshelfPlaybackManager.playbackState.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -109,13 +109,14 @@ fun MainNavigation(
         AfinitySplashScreen(
             statusText = appLoadingState.loadingPhase.ifEmpty { "Loading..." },
             progress = appLoadingState.loadingProgress,
-            modifier = modifier
+            modifier = modifier,
         )
         return
     }
 
-    val shouldShowNavigation = currentDestination?.route?.let { route ->
-        !route.startsWith("library_content/") &&
+    val shouldShowNavigation =
+        currentDestination?.route?.let { route ->
+            !route.startsWith("library_content/") &&
                 !route.startsWith("studio_content/") &&
                 !route.startsWith("item_detail/") &&
                 !route.startsWith("episodes/") &&
@@ -136,7 +137,7 @@ fun MainNavigation(
                 !route.startsWith("audiobookshelf/library/") &&
                 !route.startsWith("audiobookshelf/item/") &&
                 !route.startsWith("audiobookshelf/player/")
-    } ?: true
+        } ?: true
 
     val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
 
@@ -156,9 +157,7 @@ fun MainNavigation(
             if (currentRoute != Destination.HOME.route) {
                 Timber.d("Switching to offline mode, navigating to HOME")
                 navController.navigate(Destination.HOME.route) {
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        saveState = true
-                    }
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }
@@ -167,7 +166,9 @@ fun MainNavigation(
     }
 
     NavigationSuiteScaffold(
-        layoutType = if (useNavRail) NavigationSuiteType.NavigationRail else NavigationSuiteType.NavigationBar,
+        layoutType =
+            if (useNavRail) NavigationSuiteType.NavigationRail
+            else NavigationSuiteType.NavigationBar,
         navigationSuiteItems = {
             Destination.entries.forEach { destination ->
                 if (isOffline && destination != Destination.HOME) {
@@ -190,9 +191,8 @@ fun MainNavigation(
                     return@forEach
                 }
 
-                val selected = currentDestination?.hierarchy?.any {
-                    it.route == destination.route
-                } == true
+                val selected =
+                    currentDestination?.hierarchy?.any { it.route == destination.route } == true
 
                 item(
                     selected = selected,
@@ -207,25 +207,26 @@ fun MainNavigation(
                     },
                     icon = {
                         Icon(
-                            painter = painterResource(
-                                id = if (selected) {
-                                    destination.selectedIconRes
-                                } else {
-                                    destination.unselectedIconRes
-                                }
-                            ),
-                            contentDescription = destination.title
+                            painter =
+                                painterResource(
+                                    id =
+                                        if (selected) {
+                                            destination.selectedIconRes
+                                        } else {
+                                            destination.unselectedIconRes
+                                        }
+                                ),
+                            contentDescription = destination.title,
                         )
-
                     },
                     label = {
                         if (selected) {
                             Text(
                                 text = destination.title,
-                                style = MaterialTheme.typography.labelSmall
+                                style = MaterialTheme.typography.labelSmall,
                             )
                         }
-                    }
+                    },
                 )
             }
         },
@@ -233,13 +234,14 @@ fun MainNavigation(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        navigationSuiteColors = androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults.colors(
-            navigationBarContainerColor = MaterialTheme.colorScheme.surface,
-            navigationRailContainerColor = MaterialTheme.colorScheme.surface
-        )
+        navigationSuiteColors =
+            androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults.colors(
+                navigationBarContainerColor = MaterialTheme.colorScheme.surface,
+                navigationRailContainerColor = MaterialTheme.colorScheme.surface,
+            ),
     ) {
-        val isOnAudiobookshelfPlayer = currentDestination?.route
-            ?.startsWith("audiobookshelf/player/") == true
+        val isOnAudiobookshelfPlayer =
+            currentDestination?.route?.startsWith("audiobookshelf/player/") == true
         val showMiniPlayer =
             audiobookshelfPlaybackState.sessionId != null && !isOnAudiobookshelfPlayer
 
@@ -247,7 +249,7 @@ fun MainNavigation(
             NavHost(
                 navController = navController,
                 startDestination = Destination.HOME.route,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) {
                 composable(Destination.HOME.route) {
                     HomeScreen(
@@ -261,18 +263,20 @@ fun MainNavigation(
                                     val playableItem = viewModel.resolvePlayableItem(item)
 
                                     if (playableItem == null) {
-                                        Timber.w("Could not resolve playable item for: ${item.name}")
+                                        Timber.w(
+                                            "Could not resolve playable item for: ${item.name}"
+                                        )
                                         return@launch
                                     }
 
                                     PlayerLauncher.launch(
                                         context = navController.context,
                                         itemId = playableItem.id,
-                                        mediaSourceId = playableItem.sources.firstOrNull()?.id
-                                            ?: "",
+                                        mediaSourceId =
+                                            playableItem.sources.firstOrNull()?.id ?: "",
                                         audioStreamIndex = null,
                                         subtitleStreamIndex = null,
-                                        startPositionMs = 0L
+                                        startPositionMs = 0L,
                                     )
                                 } catch (e: Exception) {
                                     Timber.e(e, "Failed to handle play click for: ${item.name}")
@@ -286,17 +290,18 @@ fun MainNavigation(
                         navController = navController,
                         mainUiState = mainUiState,
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(Destination.LIBRARIES.route) {
                     LibrariesScreen(
                         onLibraryClick = { library ->
-                            val route = Destination.createLibraryContentRoute(
-                                libraryId = library.id.toString(),
-                                libraryName = library.name
-                            )
+                            val route =
+                                Destination.createLibraryContentRoute(
+                                    libraryId = library.id.toString(),
+                                    libraryName = library.name,
+                                )
                             navController.navigate(route)
                         },
                         onProfileClick = {
@@ -306,16 +311,17 @@ fun MainNavigation(
                         navController = navController,
                         mainUiState = mainUiState,
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(
                     route = Destination.LIBRARY_CONTENT_ROUTE,
-                    arguments = listOf(
-                        navArgument("libraryId") { type = NavType.StringType },
-                        navArgument("libraryName") { type = NavType.StringType }
-                    )
+                    arguments =
+                        listOf(
+                            navArgument("libraryId") { type = NavType.StringType },
+                            navArgument("libraryName") { type = NavType.StringType },
+                        ),
                 ) {
                     LibraryContentScreen(
                         onItemClick = { item ->
@@ -328,15 +334,13 @@ fun MainNavigation(
                         },
                         navController = navController,
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(
                     route = Destination.STUDIO_CONTENT_ROUTE,
-                    arguments = listOf(
-                        navArgument("studioName") { type = NavType.StringType }
-                    )
+                    arguments = listOf(navArgument("studioName") { type = NavType.StringType }),
                 ) {
                     LibraryContentScreen(
                         onItemClick = { item ->
@@ -349,15 +353,13 @@ fun MainNavigation(
                         },
                         navController = navController,
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(
                     route = Destination.ITEM_DETAIL_ROUTE,
-                    arguments = listOf(
-                        navArgument("itemId") { type = NavType.StringType }
-                    )
+                    arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
                 ) {
                     ItemDetailScreen(
                         navController = navController,
@@ -365,24 +367,27 @@ fun MainNavigation(
                             PlayerLauncher.launch(
                                 context = navController.context,
                                 itemId = item.id,
-                                mediaSourceId = selection?.mediaSourceId
-                                    ?: item.sources.firstOrNull()?.id ?: "",
+                                mediaSourceId =
+                                    selection?.mediaSourceId
+                                        ?: item.sources.firstOrNull()?.id
+                                        ?: "",
                                 audioStreamIndex = selection?.audioStreamIndex,
                                 subtitleStreamIndex = selection?.subtitleStreamIndex,
-                                startPositionMs = selection?.startPositionMs ?: 0L
+                                startPositionMs = selection?.startPositionMs ?: 0L,
                             )
                         },
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(
                     route = Destination.EPISODE_LIST_ROUTE,
-                    arguments = listOf(
-                        navArgument("seasonId") { type = NavType.StringType },
-                        navArgument("seasonName") { type = NavType.StringType }
-                    )
+                    arguments =
+                        listOf(
+                            navArgument("seasonId") { type = NavType.StringType },
+                            navArgument("seasonName") { type = NavType.StringType },
+                        ),
                 ) { backStackEntry ->
                     ItemDetailScreen(
                         onPlayClick = { item, selection ->
@@ -393,25 +398,23 @@ fun MainNavigation(
                                     mediaSourceId = selection.mediaSourceId,
                                     audioStreamIndex = selection.audioStreamIndex,
                                     subtitleStreamIndex = selection.subtitleStreamIndex,
-                                    startPositionMs = selection.startPositionMs
+                                    startPositionMs = selection.startPositionMs,
                                 )
                             }
                         },
                         navController = navController,
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(
                     route = Destination.PERSON_ROUTE,
-                    arguments = listOf(
-                        navArgument("personId") { type = NavType.StringType }
-                    )
+                    arguments = listOf(navArgument("personId") { type = NavType.StringType }),
                 ) {
                     PersonScreen(
                         navController = navController,
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
@@ -428,7 +431,7 @@ fun MainNavigation(
                         modifier = Modifier.fillMaxSize(),
                         mainUiState = mainUiState,
                         navController = navController,
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
@@ -441,26 +444,25 @@ fun MainNavigation(
                         modifier = Modifier.fillMaxSize(),
                         mainUiState = mainUiState,
                         navController = navController,
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(Destination.REQUESTS.route) {
                     RequestsScreen(
-                        onSearchClick = {
-                            navController.navigate(Destination.SEARCH_ROUTE)
-                        },
+                        onSearchClick = { navController.navigate(Destination.SEARCH_ROUTE) },
                         onProfileClick = {
                             val route = Destination.createSettingsRoute()
                             navController.navigate(route)
                         },
                         mainUiState = mainUiState,
                         onNavigateToFilteredMedia = { filterParams ->
-                            val route = Destination.createFilteredMediaRoute(
-                                filterType = filterParams.type.name,
-                                filterId = filterParams.id,
-                                filterName = filterParams.name
-                            )
+                            val route =
+                                Destination.createFilteredMediaRoute(
+                                    filterType = filterParams.type.name,
+                                    filterId = filterParams.id,
+                                    filterName = filterParams.name,
+                                )
                             navController.navigate(route)
                         },
                         onItemClick = { jellyfinItemId ->
@@ -468,7 +470,7 @@ fun MainNavigation(
                             navController.navigate(route)
                         },
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
@@ -477,17 +479,18 @@ fun MainNavigation(
                         navController = navController,
                         mainUiState = mainUiState,
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(
                     route = Destination.FILTERED_MEDIA_ROUTE,
-                    arguments = listOf(
-                        navArgument("filterType") { type = NavType.StringType },
-                        navArgument("filterId") { type = NavType.IntType },
-                        navArgument("filterName") { type = NavType.StringType }
-                    )
+                    arguments =
+                        listOf(
+                            navArgument("filterType") { type = NavType.StringType },
+                            navArgument("filterId") { type = NavType.IntType },
+                            navArgument("filterName") { type = NavType.StringType },
+                        ),
                 ) { backStackEntry ->
                     val filterTypeString =
                         backStackEntry.arguments?.getString("filterType") ?: return@composable
@@ -500,9 +503,7 @@ fun MainNavigation(
 
                     FilteredMediaScreen(
                         filterParams = filterParams,
-                        onSearchClick = {
-                            navController.navigate(Destination.SEARCH_ROUTE)
-                        },
+                        onSearchClick = { navController.navigate(Destination.SEARCH_ROUTE) },
                         onProfileClick = {
                             val route = Destination.createSettingsRoute()
                             navController.navigate(route)
@@ -513,15 +514,13 @@ fun MainNavigation(
                             navController.navigate(route)
                         },
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(Destination.SEARCH_ROUTE) {
                     SearchScreen(
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
+                        onBackClick = { navController.popBackStack() },
                         onItemClick = { item ->
                             val route = Destination.createItemDetailRoute(item.id.toString())
                             navController.navigate(route)
@@ -531,36 +530,30 @@ fun MainNavigation(
                             navController.navigate(route)
                         },
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(
                     route = Destination.GENRE_RESULTS_ROUTE,
-                    arguments = listOf(
-                        navArgument("genre") { type = NavType.StringType }
-                    )
+                    arguments = listOf(navArgument("genre") { type = NavType.StringType }),
                 ) {
                     GenreResultsScreen(
                         genre = it.arguments?.getString("genre") ?: "",
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
+                        onBackClick = { navController.popBackStack() },
                         onItemClick = { item ->
                             val route = Destination.createItemDetailRoute(item.id.toString())
                             navController.navigate(route)
                         },
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(Destination.SETTINGS_ROUTE) {
                     SettingsScreen(
                         navController = navController,
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
+                        onBackClick = { navController.popBackStack() },
                         onLogoutComplete = {
                             // Logout handled by MainActivity observing auth state
                         },
@@ -586,50 +579,36 @@ fun MainNavigation(
                         },
                         onAudiobookshelfClick = {
                             navController.navigate(Destination.createAudiobookshelfLoginRoute())
-                        }
+                        },
                     )
                 }
 
                 composable(Destination.DOWNLOAD_SETTINGS_ROUTE) {
                     DownloadSettingsScreen(
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
+                        onBackClick = { navController.popBackStack() },
                         offlineModeManager = offlineModeManager,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
 
                 composable(Destination.PLAYER_OPTIONS_ROUTE) {
                     PlayerOptionsScreen(
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
-                        modifier = Modifier.fillMaxSize()
+                        onBackClick = { navController.popBackStack() },
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
 
                 composable(Destination.APPEARANCE_OPTIONS_ROUTE) {
-                    AppearanceOptionsScreen(
-                        onBackClick = {
-                            navController.popBackStack()
-                        }
-                    )
+                    AppearanceOptionsScreen(onBackClick = { navController.popBackStack() })
                 }
 
                 composable(Destination.LICENSES_ROUTE) {
-                    LicensesScreen(
-                        onBackClick = {
-                            navController.popBackStack()
-                        }
-                    )
+                    LicensesScreen(onBackClick = { navController.popBackStack() })
                 }
 
                 composable(Destination.SERVER_MANAGEMENT_ROUTE) {
                     ServerManagementScreen(
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
+                        onBackClick = { navController.popBackStack() },
                         onAddServerClick = {
                             val route = Destination.createAddEditServerRoute(serverId = null)
                             navController.navigate(route)
@@ -637,36 +616,34 @@ fun MainNavigation(
                         onEditServerClick = { serverId ->
                             val route = Destination.createAddEditServerRoute(serverId = serverId)
                             navController.navigate(route)
-                        }
+                        },
                     )
                 }
 
                 composable(
                     route = Destination.ADD_EDIT_SERVER_ROUTE,
-                    arguments = listOf(
-                        navArgument("serverId") {
-                            type = NavType.StringType
-                            nullable = true
-                            defaultValue = null
-                        }
-                    )
+                    arguments =
+                        listOf(
+                            navArgument("serverId") {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            }
+                        ),
                 ) {
-                    AddEditServerScreen(
-                        onBackClick = {
-                            navController.popBackStack()
-                        }
-                    )
+                    AddEditServerScreen(onBackClick = { navController.popBackStack() })
                 }
 
                 composable(
                     route = Destination.LOGIN_ROUTE,
-                    arguments = listOf(
-                        navArgument("serverUrl") {
-                            type = NavType.StringType
-                            nullable = true
-                            defaultValue = null
-                        }
-                    )
+                    arguments =
+                        listOf(
+                            navArgument("serverUrl") {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            }
+                        ),
                 ) {
                     LoginScreen(
                         onLoginSuccess = {
@@ -675,7 +652,7 @@ fun MainNavigation(
                             }
                         },
                         modifier = Modifier.fillMaxSize(),
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
@@ -683,46 +660,48 @@ fun MainNavigation(
                     AudiobookshelfLoginScreen(
                         onNavigateBack = { navController.popBackStack() },
                         onLoginSuccess = {
-                            navController.navigate(Destination.createAudiobookshelfLibrariesRoute()) {
+                            navController.navigate(
+                                Destination.createAudiobookshelfLibrariesRoute()
+                            ) {
                                 popUpTo(Destination.AUDIOBOOKSHELF_LOGIN_ROUTE) { inclusive = true }
                             }
-                        }
+                        },
                     )
                 }
 
                 composable(Destination.AUDIOBOOKSHELF_LIBRARIES_ROUTE) {
                     AudiobookshelfLibrariesScreen(
                         onNavigateToItem = { itemId ->
-                            navController.navigate(Destination.createAudiobookshelfItemRoute(itemId))
+                            navController.navigate(
+                                Destination.createAudiobookshelfItemRoute(itemId)
+                            )
                         },
                         onNavigateToLogin = {
                             navController.navigate(Destination.createAudiobookshelfLoginRoute())
                         },
                         navController = navController,
                         mainUiState = mainUiState,
-                        widthSizeClass = widthSizeClass
+                        widthSizeClass = widthSizeClass,
                     )
                 }
 
                 composable(
                     route = Destination.AUDIOBOOKSHELF_LIBRARY_ROUTE,
-                    arguments = listOf(
-                        navArgument("libraryId") { type = NavType.StringType }
-                    )
+                    arguments = listOf(navArgument("libraryId") { type = NavType.StringType }),
                 ) {
                     AudiobookshelfLibraryScreen(
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToItem = { itemId ->
-                            navController.navigate(Destination.createAudiobookshelfItemRoute(itemId))
-                        }
+                            navController.navigate(
+                                Destination.createAudiobookshelfItemRoute(itemId)
+                            )
+                        },
                     )
                 }
 
                 composable(
                     route = Destination.AUDIOBOOKSHELF_ITEM_ROUTE,
-                    arguments = listOf(
-                        navArgument("itemId") { type = NavType.StringType }
-                    )
+                    arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
                 ) {
                     AudiobookshelfItemScreen(
                         onNavigateBack = { navController.popBackStack() },
@@ -730,24 +709,23 @@ fun MainNavigation(
                             navController.navigate(
                                 Destination.createAudiobookshelfPlayerRoute(itemId, episodeId)
                             )
-                        }
+                        },
                     )
                 }
 
                 composable(
                     route = Destination.AUDIOBOOKSHELF_PLAYER_ROUTE,
-                    arguments = listOf(
-                        navArgument("itemId") { type = NavType.StringType },
-                        navArgument("episodeId") {
-                            type = NavType.StringType
-                            nullable = true
-                            defaultValue = null
-                        }
-                    )
+                    arguments =
+                        listOf(
+                            navArgument("itemId") { type = NavType.StringType },
+                            navArgument("episodeId") {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            },
+                        ),
                 ) {
-                    AudiobookshelfPlayerScreen(
-                        onNavigateBack = { navController.popBackStack() }
-                    )
+                    AudiobookshelfPlayerScreen(onNavigateBack = { navController.popBackStack() })
                 }
             }
 
@@ -755,7 +733,7 @@ fun MainNavigation(
                 visible = showMiniPlayer,
                 enter = slideInVertically { it },
                 exit = slideOutVertically { it },
-                modifier = Modifier.align(Alignment.BottomCenter)
+                modifier = Modifier.align(Alignment.BottomCenter),
             ) {
                 MiniPlayer(
                     title = audiobookshelfPlaybackState.displayTitle,
@@ -774,9 +752,7 @@ fun MainNavigation(
                     },
                     onCloseClick = {
                         viewModel.audiobookshelfPlayer.pause()
-                        coroutineScope.launch {
-                            viewModel.audiobookshelfPlayer.closeSession()
-                        }
+                        coroutineScope.launch { viewModel.audiobookshelfPlayer.closeSession() }
                     },
                     onClick = {
                         val itemId = audiobookshelfPlaybackState.itemId
@@ -786,7 +762,7 @@ fun MainNavigation(
                                 Destination.createAudiobookshelfPlayerRoute(itemId, episodeId)
                             )
                         }
-                    }
+                    },
                 )
             }
         }

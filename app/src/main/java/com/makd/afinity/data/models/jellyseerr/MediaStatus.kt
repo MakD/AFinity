@@ -9,16 +9,16 @@ enum class MediaStatus(val value: Int) {
     DELETED(6);
 
     companion object {
-        fun fromValue(value: Int): MediaStatus =
-            values().find { it.value == value } ?: UNKNOWN
+        fun fromValue(value: Int): MediaStatus = values().find { it.value == value } ?: UNKNOWN
 
-        fun getDisplayName(status: MediaStatus): String = when (status) {
-            UNKNOWN -> "Unknown"
-            PENDING -> "Pending"
-            PROCESSING -> "Processing"
-            PARTIALLY_AVAILABLE -> "Partially Available"
-            AVAILABLE -> "Available"
-            DELETED -> "Deleted"
-        }
+        fun getDisplayName(status: MediaStatus): String =
+            when (status) {
+                UNKNOWN -> "Unknown"
+                PENDING -> "Pending"
+                PROCESSING -> "Processing"
+                PARTIALLY_AVAILABLE -> "Partially Available"
+                AVAILABLE -> "Available"
+                DELETED -> "Deleted"
+            }
     }
 }

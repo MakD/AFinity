@@ -19,6 +19,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,17 +27,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
-class WatchlistViewModel @Inject constructor(
+class WatchlistViewModel
+@Inject
+constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val watchlistRepository: WatchlistRepository,
     private val userDataRepository: UserDataRepository,
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
     private val mediaRepository: MediaRepository,
-    private val playbackStateManager: PlaybackStateManager
+    private val playbackStateManager: PlaybackStateManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WatchlistUiState())
@@ -92,25 +94,26 @@ class WatchlistViewModel @Inject constructor(
                     val seasons = seasonsDeferred.await()
                     val episodes = episodesDeferred.await()
 
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        movies = movies.sortedBy { it.name },
-                        shows = shows.sortedBy { it.name },
-                        seasons = seasons.sortedBy { it.name },
-                        episodes = episodes.sortedBy { it.name },
-                        error = null,
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoading = false,
+                            movies = movies.sortedBy { it.name },
+                            shows = shows.sortedBy { it.name },
+                            seasons = seasons.sortedBy { it.name },
+                            episodes = episodes.sortedBy { it.name },
+                            error = null,
+                        )
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load watchlist")
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Failed to load watchlist: ${e.message}"
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoading = false,
+                        error = "Failed to load watchlist: ${e.message}",
+                    )
             }
         }
     }
-
 
     fun onItemClick(item: AfinityItem) {
         Timber.d("Watchlist item clicked: ${item.name} (${item.id})")
@@ -121,10 +124,10 @@ class WatchlistViewModel @Inject constructor(
             try {
                 _isLoadingEpisode.value = true
 
-                val fullEpisode = jellyfinRepository.getItem(
-                    episode.id,
-                    fields = FieldSets.ITEM_DETAIL
-                )?.toAfinityEpisode(jellyfinRepository, null)
+                val fullEpisode =
+                    jellyfinRepository
+                        .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
+                        ?.toAfinityEpisode(jellyfinRepository, null)
 
                 if (fullEpisode != null) {
                     _selectedEpisode.value = fullEpisode
@@ -154,11 +157,12 @@ class WatchlistViewModel @Inject constructor(
     fun toggleEpisodeFavorite(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
-                val success = if (episode.favorite) {
-                    userDataRepository.removeFromFavorites(episode.id)
-                } else {
-                    userDataRepository.addToFavorites(episode.id)
-                }
+                val success =
+                    if (episode.favorite) {
+                        userDataRepository.removeFromFavorites(episode.id)
+                    } else {
+                        userDataRepository.addToFavorites(episode.id)
+                    }
 
                 if (success) {
                     _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
@@ -175,11 +179,12 @@ class WatchlistViewModel @Inject constructor(
                 val isInWatchlist = _selectedEpisodeWatchlistStatus.value
                 _selectedEpisodeWatchlistStatus.value = !isInWatchlist
 
-                val success = if (isInWatchlist) {
-                    watchlistRepository.removeFromWatchlist(episode.id)
-                } else {
-                    watchlistRepository.addToWatchlist(episode.id, "EPISODE")
-                }
+                val success =
+                    if (isInWatchlist) {
+                        watchlistRepository.removeFromWatchlist(episode.id)
+                    } else {
+                        watchlistRepository.addToWatchlist(episode.id, "EPISODE")
+                    }
 
                 if (!success) {
                     _selectedEpisodeWatchlistStatus.value = isInWatchlist
@@ -202,11 +207,12 @@ class WatchlistViewModel @Inject constructor(
     fun toggleEpisodeWatched(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
-                val success = if (episode.played) {
-                    userDataRepository.markUnwatched(episode.id)
-                } else {
-                    userDataRepository.markWatched(episode.id)
-                }
+                val success =
+                    if (episode.played) {
+                        userDataRepository.markUnwatched(episode.id)
+                    } else {
+                        userDataRepository.markWatched(episode.id)
+                    }
 
                 if (success) {
                     _selectedEpisode.value = episode.copy(played = !episode.played)
@@ -223,22 +229,27 @@ class WatchlistViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val episode = _selectedEpisode.value ?: return@launch
-                val sources = episode.sources.filter {
-                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
-                }
+                val sources =
+                    episode.sources.filter {
+                        it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
+                    }
 
                 if (sources.isEmpty()) {
-                    Timber.w("No remote sources available for download for episode: ${episode.name}")
+                    Timber.w(
+                        "No remote sources available for download for episode: ${episode.name}"
+                    )
                     return@launch
                 }
 
                 if (sources.size == 1) {
                     val result = downloadRepository.startDownload(episode.id, sources.first().id)
-                    result.onSuccess {
-                        Timber.i("Download started successfully for episode: ${episode.name}")
-                    }.onFailure { error ->
-                        Timber.e(error, "Failed to start download for episode: ${episode.name}")
-                    }
+                    result
+                        .onSuccess {
+                            Timber.i("Download started successfully for episode: ${episode.name}")
+                        }
+                        .onFailure { error ->
+                            Timber.e(error, "Failed to start download for episode: ${episode.name}")
+                        }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error starting download")
@@ -251,9 +262,7 @@ class WatchlistViewModel @Inject constructor(
             try {
                 val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
                 val result = downloadRepository.pauseDownload(downloadInfo.id)
-                result.onFailure { error ->
-                    Timber.e(error, "Failed to pause download")
-                }
+                result.onFailure { error -> Timber.e(error, "Failed to pause download") }
             } catch (e: Exception) {
                 Timber.e(e, "Error pausing download")
             }
@@ -265,9 +274,7 @@ class WatchlistViewModel @Inject constructor(
             try {
                 val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
                 val result = downloadRepository.resumeDownload(downloadInfo.id)
-                result.onFailure { error ->
-                    Timber.e(error, "Failed to resume download")
-                }
+                result.onFailure { error -> Timber.e(error, "Failed to resume download") }
             } catch (e: Exception) {
                 Timber.e(e, "Error resuming download")
             }
@@ -279,11 +286,9 @@ class WatchlistViewModel @Inject constructor(
             try {
                 val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
                 val result = downloadRepository.cancelDownload(downloadInfo.id)
-                result.onSuccess {
-                    Timber.i("Download cancelled successfully")
-                }.onFailure { error ->
-                    Timber.e(error, "Failed to cancel download")
-                }
+                result
+                    .onSuccess { Timber.i("Download cancelled successfully") }
+                    .onFailure { error -> Timber.e(error, "Failed to cancel download") }
             } catch (e: Exception) {
                 Timber.e(e, "Error cancelling download")
             }
@@ -298,5 +303,5 @@ data class WatchlistUiState(
     val episodes: List<AfinityEpisode> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val userProfileImageUrl: String? = null
+    val userProfileImageUrl: String? = null,
 )

@@ -11,6 +11,12 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.io.File
+import java.io.IOException
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
+import javax.inject.Singleton
 import okhttp3.Cache
 import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
@@ -28,24 +34,12 @@ import org.jellyfin.sdk.model.DeviceInfo
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import timber.log.Timber
-import java.io.File
-import java.io.IOException
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import javax.inject.Qualifier
-import javax.inject.Singleton
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class DownloadClient
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class DownloadClient
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class JellyseerrClient
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class JellyseerrClient
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class AudiobookshelfRetrofit
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class AudiobookshelfRetrofit
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -53,10 +47,8 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideClientInfo(): ClientInfo = ClientInfo(
-        name = AppConstants.APP_NAME,
-        version = AppConstants.VERSION_NAME
-    )
+    fun provideClientInfo(): ClientInfo =
+        ClientInfo(name = AppConstants.APP_NAME, version = AppConstants.VERSION_NAME)
 
     @Provides
     @Singleton
@@ -65,49 +57,55 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideBaseOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
-        val dispatcher = Dispatcher(Executors.newCachedThreadPool { runnable ->
-            Thread(runnable, "Jellyfin-OkHttp").apply {
-                isDaemon = false
-            }
-        }).apply {
-            maxRequests = 45
-            maxRequestsPerHost = 10
-        }
-
-        val connectionPool = ConnectionPool(
-            maxIdleConnections = 10,
-            keepAliveDuration = 30,
-            timeUnit = TimeUnit.SECONDS
-        )
-
-        val builder = OkHttpClient.Builder()
-            .dispatcher(dispatcher)
-            .connectionPool(connectionPool)
-            .cache(
-                Cache(
-                    directory = File(context.cacheDir, "http_cache"),
-                    maxSize = 50L * 1024L * 1024L
+        val dispatcher =
+            Dispatcher(
+                    Executors.newCachedThreadPool { runnable ->
+                        Thread(runnable, "Jellyfin-OkHttp").apply { isDaemon = false }
+                    }
                 )
+                .apply {
+                    maxRequests = 45
+                    maxRequestsPerHost = 10
+                }
+
+        val connectionPool =
+            ConnectionPool(
+                maxIdleConnections = 10,
+                keepAliveDuration = 30,
+                timeUnit = TimeUnit.SECONDS,
             )
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .callTimeout(45, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(true)
-            .followRedirects(true)
-            .followSslRedirects(true)
+
+        val builder =
+            OkHttpClient.Builder()
+                .dispatcher(dispatcher)
+                .connectionPool(connectionPool)
+                .cache(
+                    Cache(
+                        directory = File(context.cacheDir, "http_cache"),
+                        maxSize = 50L * 1024L * 1024L,
+                    )
+                )
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .callTimeout(45, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
+                .followRedirects(true)
+                .followSslRedirects(true)
 
         if (BuildConfig.DEBUG) {
-            val loggingInterceptor = HttpLoggingInterceptor { message ->
-                if (message.contains("ERROR") || message.contains("FAILED") || message.contains("-->") || message.contains(
-                        "<--"
-                    )
-                ) {
-                    Timber.tag("Jellyfin-HTTP").d(message)
-                }
-            }.apply {
-                level = HttpLoggingInterceptor.Level.BASIC
-            }
+            val loggingInterceptor =
+                HttpLoggingInterceptor { message ->
+                        if (
+                            message.contains("ERROR") ||
+                                message.contains("FAILED") ||
+                                message.contains("-->") ||
+                                message.contains("<--")
+                        ) {
+                            Timber.tag("Jellyfin-HTTP").d(message)
+                        }
+                    }
+                    .apply { level = HttpLoggingInterceptor.Level.BASIC }
             builder.addInterceptor(loggingInterceptor)
         }
 
@@ -118,43 +116,49 @@ object NetworkModule {
     @Singleton
     @DownloadClient
     fun provideDownloadOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
-        val dispatcher = Dispatcher(Executors.newCachedThreadPool { runnable ->
-            Thread(runnable, "Download-OkHttp").apply {
-                isDaemon = false
-            }
-        }).apply {
-            maxRequests = 5
-            maxRequestsPerHost = 2
-        }
+        val dispatcher =
+            Dispatcher(
+                    Executors.newCachedThreadPool { runnable ->
+                        Thread(runnable, "Download-OkHttp").apply { isDaemon = false }
+                    }
+                )
+                .apply {
+                    maxRequests = 5
+                    maxRequestsPerHost = 2
+                }
 
-        val connectionPool = ConnectionPool(
-            maxIdleConnections = 5,
-            keepAliveDuration = 5,
-            timeUnit = TimeUnit.MINUTES
-        )
+        val connectionPool =
+            ConnectionPool(
+                maxIdleConnections = 5,
+                keepAliveDuration = 5,
+                timeUnit = TimeUnit.MINUTES,
+            )
 
-        val builder = OkHttpClient.Builder()
-            .dispatcher(dispatcher)
-            .connectionPool(connectionPool)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(5, TimeUnit.MINUTES)
-            .writeTimeout(5, TimeUnit.MINUTES)
-            .callTimeout(0, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(true)
-            .followRedirects(true)
-            .followSslRedirects(true)
+        val builder =
+            OkHttpClient.Builder()
+                .dispatcher(dispatcher)
+                .connectionPool(connectionPool)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(5, TimeUnit.MINUTES)
+                .writeTimeout(5, TimeUnit.MINUTES)
+                .callTimeout(0, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
+                .followRedirects(true)
+                .followSslRedirects(true)
 
         if (BuildConfig.DEBUG) {
-            val loggingInterceptor = HttpLoggingInterceptor { message ->
-                if (message.contains("ERROR") || message.contains("FAILED") || message.contains("-->") || message.contains(
-                        "<--"
-                    )
-                ) {
-                    Timber.tag("Download-HTTP").d(message)
-                }
-            }.apply {
-                level = HttpLoggingInterceptor.Level.BASIC
-            }
+            val loggingInterceptor =
+                HttpLoggingInterceptor { message ->
+                        if (
+                            message.contains("ERROR") ||
+                                message.contains("FAILED") ||
+                                message.contains("-->") ||
+                                message.contains("<--")
+                        ) {
+                            Timber.tag("Download-HTTP").d(message)
+                        }
+                    }
+                    .apply { level = HttpLoggingInterceptor.Level.BASIC }
             builder.addInterceptor(loggingInterceptor)
         }
 
@@ -173,7 +177,7 @@ object NetworkModule {
         @ApplicationContext context: Context,
         clientInfo: ClientInfo,
         deviceInfo: DeviceInfo,
-        okHttpFactory: OkHttpFactory
+        okHttpFactory: OkHttpFactory,
     ): Jellyfin {
         return createJellyfin {
             this.context = context
@@ -213,67 +217,72 @@ object NetworkModule {
     @JellyseerrClient
     fun provideJellyseerrOkHttpClient(
         baseOkHttpClient: OkHttpClient,
-        securePreferencesRepository: SecurePreferencesRepository
+        securePreferencesRepository: SecurePreferencesRepository,
     ): OkHttpClient {
-        return baseOkHttpClient.newBuilder()
+        return baseOkHttpClient
+            .newBuilder()
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
 
                 val savedUrl = securePreferencesRepository.getCachedJellyseerrServerUrl()
-                val currentBaseUrl = try {
-                    if (!savedUrl.isNullOrBlank()) {
-                        normalizeJellyseerrUrl(savedUrl)
-                    } else {
+                val currentBaseUrl =
+                    try {
+                        if (!savedUrl.isNullOrBlank()) {
+                            normalizeJellyseerrUrl(savedUrl)
+                        } else {
+                            null
+                        }
+                    } catch (e: Exception) {
                         null
                     }
-                } catch (e: Exception) {
-                    null
-                }
 
                 if (currentBaseUrl == null) {
-                    throw IOException("Jellyseerr server URL not configured. Please configure the server URL first.")
+                    throw IOException(
+                        "Jellyseerr server URL not configured. Please configure the server URL first."
+                    )
                 }
 
-                val newUrl = currentBaseUrl.toHttpUrlOrNull()?.newBuilder()
-                    ?.addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
-                    ?.apply {
-                        for (i in 0 until originalRequest.url.querySize) {
-                            addQueryParameter(
-                                originalRequest.url.queryParameterName(i),
-                                originalRequest.url.queryParameterValue(i)
-                            )
+                val newUrl =
+                    currentBaseUrl
+                        .toHttpUrlOrNull()
+                        ?.newBuilder()
+                        ?.addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
+                        ?.apply {
+                            for (i in 0 until originalRequest.url.querySize) {
+                                addQueryParameter(
+                                    originalRequest.url.queryParameterName(i),
+                                    originalRequest.url.queryParameterValue(i),
+                                )
+                            }
                         }
-                    }
-                    ?.build()
-                    ?: throw IOException("Failed to build Jellyseerr URL")
+                        ?.build() ?: throw IOException("Failed to build Jellyseerr URL")
 
-                val newRequest = originalRequest.newBuilder()
-                    .url(newUrl)
-                    .apply {
-                        val cookie = securePreferencesRepository.getCachedJellyseerrCookie()
-                        cookie?.let {
-                            addHeader("Cookie", it)
+                val newRequest =
+                    originalRequest
+                        .newBuilder()
+                        .url(newUrl)
+                        .apply {
+                            val cookie = securePreferencesRepository.getCachedJellyseerrCookie()
+                            cookie?.let { addHeader("Cookie", it) }
+                            addHeader("Content-Type", "application/json")
                         }
-                        addHeader("Content-Type", "application/json")
-                    }
-                    .build()
+                        .build()
 
                 chain.proceed(newRequest)
             }
             .build()
     }
 
-    private val jellyseerrJson = kotlinx.serialization.json.Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = true
-    }
+    private val jellyseerrJson =
+        kotlinx.serialization.json.Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            encodeDefaults = true
+        }
 
     @Provides
     @Singleton
-    fun provideJellyseerrRetrofit(
-        @JellyseerrClient okHttpClient: OkHttpClient
-    ): Retrofit {
+    fun provideJellyseerrRetrofit(@JellyseerrClient okHttpClient: OkHttpClient): Retrofit {
         val contentType = "application/json".toMediaType()
         val baseUrl = "http://placeholder.jellyseerr/"
 
@@ -313,50 +322,56 @@ object NetworkModule {
     @AudiobookshelfClient
     fun provideAudiobookshelfOkHttpClient(
         baseOkHttpClient: OkHttpClient,
-        securePreferencesRepository: SecurePreferencesRepository
+        securePreferencesRepository: SecurePreferencesRepository,
     ): OkHttpClient {
-        return baseOkHttpClient.newBuilder()
+        return baseOkHttpClient
+            .newBuilder()
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
 
                 val savedUrl = securePreferencesRepository.getCachedAudiobookshelfServerUrl()
-                val currentBaseUrl = try {
-                    if (!savedUrl.isNullOrBlank()) {
-                        normalizeAudiobookshelfUrl(savedUrl)
-                    } else {
+                val currentBaseUrl =
+                    try {
+                        if (!savedUrl.isNullOrBlank()) {
+                            normalizeAudiobookshelfUrl(savedUrl)
+                        } else {
+                            null
+                        }
+                    } catch (e: Exception) {
                         null
                     }
-                } catch (e: Exception) {
-                    null
-                }
 
                 if (currentBaseUrl == null) {
-                    throw IOException("Audiobookshelf server URL not configured. Please configure the server URL first.")
+                    throw IOException(
+                        "Audiobookshelf server URL not configured. Please configure the server URL first."
+                    )
                 }
 
-                val newUrl = currentBaseUrl.toHttpUrlOrNull()?.newBuilder()
-                    ?.addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
-                    ?.apply {
-                        for (i in 0 until originalRequest.url.querySize) {
-                            addQueryParameter(
-                                originalRequest.url.queryParameterName(i),
-                                originalRequest.url.queryParameterValue(i)
-                            )
+                val newUrl =
+                    currentBaseUrl
+                        .toHttpUrlOrNull()
+                        ?.newBuilder()
+                        ?.addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
+                        ?.apply {
+                            for (i in 0 until originalRequest.url.querySize) {
+                                addQueryParameter(
+                                    originalRequest.url.queryParameterName(i),
+                                    originalRequest.url.queryParameterValue(i),
+                                )
+                            }
                         }
-                    }
-                    ?.build()
-                    ?: throw IOException("Failed to build Audiobookshelf URL")
+                        ?.build() ?: throw IOException("Failed to build Audiobookshelf URL")
 
-                val newRequest = originalRequest.newBuilder()
-                    .url(newUrl)
-                    .apply {
-                        val token = securePreferencesRepository.getCachedAudiobookshelfToken()
-                        token?.let {
-                            addHeader("Authorization", "Bearer $it")
+                val newRequest =
+                    originalRequest
+                        .newBuilder()
+                        .url(newUrl)
+                        .apply {
+                            val token = securePreferencesRepository.getCachedAudiobookshelfToken()
+                            token?.let { addHeader("Authorization", "Bearer $it") }
+                            addHeader("Content-Type", "application/json")
                         }
-                        addHeader("Content-Type", "application/json")
-                    }
-                    .build()
+                        .build()
 
                 val response = chain.proceed(newRequest)
                 if (newUrl.encodedPath.contains("/play")) {
@@ -373,18 +388,17 @@ object NetworkModule {
             .build()
     }
 
-    private val audiobookshelfJson = kotlinx.serialization.json.Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = true
-    }
+    private val audiobookshelfJson =
+        kotlinx.serialization.json.Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            encodeDefaults = true
+        }
 
     @Provides
     @Singleton
     @AudiobookshelfRetrofit
-    fun provideAudiobookshelfRetrofit(
-        @AudiobookshelfClient okHttpClient: OkHttpClient
-    ): Retrofit {
+    fun provideAudiobookshelfRetrofit(@AudiobookshelfClient okHttpClient: OkHttpClient): Retrofit {
         val contentType = "application/json".toMediaType()
         val baseUrl = "http://placeholder.audiobookshelf/"
 

@@ -14,22 +14,24 @@ import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 @HiltViewModel
-class PlayerWrapperViewModel @Inject constructor(
+class PlayerWrapperViewModel
+@Inject
+constructor(
     @ApplicationContext private val context: Context,
     private val jellyfinRepository: JellyfinRepository,
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
-    private val liveTvRepository: LiveTvRepository
+    private val liveTvRepository: LiveTvRepository,
 ) : ViewModel() {
 
     private val _item = MutableStateFlow<AfinityItem?>(null)
@@ -50,33 +52,36 @@ class PlayerWrapperViewModel @Inject constructor(
             _streamError.value = null
             Timber.d("PlayerWrapperViewModel: Loading live channel $channelId ($channelName)")
 
-            val placeholderChannel = AfinityChannel(
-                id = channelId,
-                name = channelName,
-                images = AfinityImages(),
-                channelNumber = null,
-                channelType = ChannelType.TV,
-                serviceName = null
-            )
+            val placeholderChannel =
+                AfinityChannel(
+                    id = channelId,
+                    name = channelName,
+                    images = AfinityImages(),
+                    channelNumber = null,
+                    channelType = ChannelType.TV,
+                    serviceName = null,
+                )
             _item.value = placeholderChannel
 
             try {
-                val channelDeferred = viewModelScope.async {
-                    try {
-                        liveTvRepository.getChannel(channelId)
-                    } catch (e: Exception) {
-                        Timber.w(e, "Failed to load channel details, using placeholder")
-                        null
+                val channelDeferred =
+                    viewModelScope.async {
+                        try {
+                            liveTvRepository.getChannel(channelId)
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to load channel details, using placeholder")
+                            null
+                        }
                     }
-                }
 
-                val streamUrlDeferred = viewModelScope.async {
-                    liveTvRepository.getChannelStreamUrl(channelId)
-                }
+                val streamUrlDeferred =
+                    viewModelScope.async { liveTvRepository.getChannelStreamUrl(channelId) }
 
                 val channel = channelDeferred.await()
                 if (channel != null) {
-                    Timber.d("PlayerWrapperViewModel: Loaded live channel from API: ${channel.name}")
+                    Timber.d(
+                        "PlayerWrapperViewModel: Loaded live channel from API: ${channel.name}"
+                    )
                     _item.value = channel
                 }
 
@@ -104,20 +109,27 @@ class PlayerWrapperViewModel @Inject constructor(
             try {
                 var loadedItem: AfinityItem? = null
 
-                val userId = sessionManager.currentSession.value?.userId ?: run {
-                    Timber.w("No active session found in PlayerWrapperViewModel, trying DB fallback")
-                    databaseRepository.getAllUsers().firstOrNull()?.id
-                }
+                val userId =
+                    sessionManager.currentSession.value?.userId
+                        ?: run {
+                            Timber.w(
+                                "No active session found in PlayerWrapperViewModel, trying DB fallback"
+                            )
+                            databaseRepository.getAllUsers().firstOrNull()?.id
+                        }
 
                 if (userId != null) {
                     Timber.d("PlayerWrapperViewModel: Using userId: $userId")
 
                     try {
-                        loadedItem = databaseRepository.getMovie(itemId, userId)
-                            ?: databaseRepository.getEpisode(itemId, userId)
+                        loadedItem =
+                            databaseRepository.getMovie(itemId, userId)
+                                ?: databaseRepository.getEpisode(itemId, userId)
 
                         if (loadedItem != null) {
-                            Timber.d("PlayerWrapperViewModel: Loaded item from database: ${loadedItem.name}")
+                            Timber.d(
+                                "PlayerWrapperViewModel: Loaded item from database: ${loadedItem.name}"
+                            )
                         }
                     } catch (e: Exception) {
                         Timber.w(e, "PlayerWrapperViewModel: Database lookup failed")
@@ -131,7 +143,9 @@ class PlayerWrapperViewModel @Inject constructor(
                     try {
                         loadedItem = jellyfinRepository.getItemById(itemId)
                         if (loadedItem != null) {
-                            Timber.d("PlayerWrapperViewModel: Loaded item from API: ${loadedItem.name}")
+                            Timber.d(
+                                "PlayerWrapperViewModel: Loaded item from API: ${loadedItem.name}"
+                            )
                         } else {
                             Timber.w("PlayerWrapperViewModel: Item not found via API")
                         }
@@ -141,7 +155,9 @@ class PlayerWrapperViewModel @Inject constructor(
                 }
 
                 if (loadedItem == null) {
-                    Timber.e("PlayerWrapperViewModel: Failed to load item from both database and API")
+                    Timber.e(
+                        "PlayerWrapperViewModel: Failed to load item from both database and API"
+                    )
                 }
 
                 _item.value = loadedItem

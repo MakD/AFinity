@@ -17,6 +17,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,22 +25,17 @@ import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltAndroidApp
 class AfinityApplication : Application(), Configuration.Provider, SingletonImageLoader.Factory {
 
-    @Inject
-    lateinit var workerFactory: HiltWorkerFactory
+    @Inject lateinit var workerFactory: HiltWorkerFactory
 
-    @Inject
-    lateinit var updateScheduler: UpdateScheduler
+    @Inject lateinit var updateScheduler: UpdateScheduler
 
-    @Inject
-    lateinit var preferencesRepository: PreferencesRepository
+    @Inject lateinit var preferencesRepository: PreferencesRepository
 
-    @Inject
-    lateinit var okHttpClient: OkHttpClient
+    @Inject lateinit var okHttpClient: OkHttpClient
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -60,9 +56,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     }
 
     override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .build()
+        get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
     override fun newImageLoader(context: PlatformContext): ImageLoader {
         return ImageLoader.Builder(context)

@@ -16,11 +16,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ServerDao {
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertServer(server: Server): Long
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertServer(server: Server): Long
 
-    @Update
-    suspend fun updateServer(server: Server)
+    @Update suspend fun updateServer(server: Server)
 
     @Transaction
     suspend fun upsertServer(server: Server) {
@@ -30,8 +28,7 @@ interface ServerDao {
         }
     }
 
-    @Delete
-    suspend fun deleteServer(server: Server)
+    @Delete suspend fun deleteServer(server: Server)
 
     @Query("DELETE FROM servers WHERE id = :serverId")
     suspend fun deleteServerById(serverId: String)
@@ -39,11 +36,9 @@ interface ServerDao {
     @Query("SELECT * FROM servers WHERE id = :serverId")
     suspend fun getServer(serverId: String): Server?
 
-    @Query("SELECT * FROM servers")
-    suspend fun getAllServers(): List<Server>
+    @Query("SELECT * FROM servers") suspend fun getAllServers(): List<Server>
 
-    @Query("SELECT * FROM servers")
-    fun getAllServersFlow(): Flow<List<Server>>
+    @Query("SELECT * FROM servers") fun getAllServersFlow(): Flow<List<Server>>
 
     @Transaction
     @Query("SELECT * FROM servers WHERE id = :serverId")

@@ -53,14 +53,14 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
-import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.main.MainUiState
+import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -73,18 +73,18 @@ fun FavoritesScreen(
     onPersonClick: (String) -> Unit = {},
     navController: NavController,
     viewModel: FavoritesViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
     val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
-    val selectedEpisodeWatchlistStatus by viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
-    val selectedEpisodeDownloadInfo by viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+    val selectedEpisodeWatchlistStatus by
+        viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
+    val selectedEpisodeDownloadInfo by
+        viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadFavorites()
-    }
+    LaunchedEffect(Unit) { viewModel.loadFavorites() }
 
     val portraitWidth = widthSizeClass.portraitWidth
     val landscapeWidth = widthSizeClass.landscapeWidth
@@ -95,10 +95,11 @@ fun FavoritesScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.favorites_title),
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground
+                        style =
+                            MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                 },
                 onSearchClick = {
@@ -109,46 +110,39 @@ fun FavoritesScreen(
                     val route = Destination.createSettingsRoute()
                     navController.navigate(route)
                 },
-                userProfileImageUrl = mainUiState.userProfileImageUrl
+                userProfileImageUrl = mainUiState.userProfileImageUrl,
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             when {
                 uiState.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
 
                 uiState.error != null -> {
                     Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(32.dp),
+                        modifier = Modifier.align(Alignment.Center).padding(32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Text(
                             text = stringResource(R.string.home_error_title),
                             style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onBackground
+                            color = MaterialTheme.colorScheme.onBackground,
                         )
                         Text(
                             text = uiState.error ?: stringResource(R.string.error_unknown),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
 
                 else -> {
-                    val hasAnyFavorites = uiState.movies.isNotEmpty() ||
+                    val hasAnyFavorites =
+                        uiState.movies.isNotEmpty() ||
                             uiState.shows.isNotEmpty() ||
                             uiState.seasons.isNotEmpty() ||
                             uiState.episodes.isNotEmpty() ||
@@ -158,38 +152,40 @@ fun FavoritesScreen(
 
                     if (!hasAnyFavorites) {
                         Column(
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .padding(32.dp),
+                            modifier = Modifier.align(Alignment.Center).padding(32.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             Text(
                                 text = stringResource(R.string.favorites_empty_title),
                                 style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onBackground
+                                color = MaterialTheme.colorScheme.onBackground,
                             )
                             Text(
                                 text = stringResource(R.string.favorites_empty_message),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(24.dp)
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
                         ) {
                             if (uiState.movies.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = stringResource(R.string.favorites_header_movies, uiState.movies.size)
+                                        title =
+                                            stringResource(
+                                                R.string.favorites_header_movies,
+                                                uiState.movies.size,
+                                            )
                                     ) {
                                         FavoriteMoviesRow(
                                             movies = uiState.movies,
                                             onItemClick = onItemClick,
-                                            cardWidth = portraitWidth
+                                            cardWidth = portraitWidth,
                                         )
                                     }
                                 }
@@ -198,12 +194,16 @@ fun FavoritesScreen(
                             if (uiState.boxSets.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = stringResource(R.string.favorites_header_boxsets, uiState.boxSets.size)
+                                        title =
+                                            stringResource(
+                                                R.string.favorites_header_boxsets,
+                                                uiState.boxSets.size,
+                                            )
                                     ) {
                                         FavoriteBoxSetsRow(
                                             boxSets = uiState.boxSets,
                                             onItemClick = onItemClick,
-                                            cardWidth = portraitWidth
+                                            cardWidth = portraitWidth,
                                         )
                                     }
                                 }
@@ -212,12 +212,16 @@ fun FavoritesScreen(
                             if (uiState.shows.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = stringResource(R.string.favorites_header_shows, uiState.shows.size)
+                                        title =
+                                            stringResource(
+                                                R.string.favorites_header_shows,
+                                                uiState.shows.size,
+                                            )
                                     ) {
                                         FavoriteShowsRow(
                                             shows = uiState.shows,
                                             onItemClick = onItemClick,
-                                            cardWidth = portraitWidth
+                                            cardWidth = portraitWidth,
                                         )
                                     }
                                 }
@@ -226,12 +230,16 @@ fun FavoritesScreen(
                             if (uiState.seasons.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = stringResource(R.string.favorites_header_seasons, uiState.seasons.size)
+                                        title =
+                                            stringResource(
+                                                R.string.favorites_header_seasons,
+                                                uiState.seasons.size,
+                                            )
                                     ) {
                                         FavoriteSeasonsRow(
                                             seasons = uiState.seasons,
                                             onItemClick = onItemClick,
-                                            cardWidth = portraitWidth
+                                            cardWidth = portraitWidth,
                                         )
                                     }
                                 }
@@ -240,14 +248,18 @@ fun FavoritesScreen(
                             if (uiState.episodes.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = stringResource(R.string.favorites_header_episodes, uiState.episodes.size)
+                                        title =
+                                            stringResource(
+                                                R.string.favorites_header_episodes,
+                                                uiState.episodes.size,
+                                            )
                                     ) {
                                         FavoriteEpisodesRow(
                                             episodes = uiState.episodes,
                                             onEpisodeClick = { episode ->
                                                 viewModel.selectEpisode(episode)
                                             },
-                                            cardWidth = landscapeWidth
+                                            cardWidth = landscapeWidth,
                                         )
                                     }
                                 }
@@ -256,7 +268,11 @@ fun FavoritesScreen(
                             if (uiState.channels.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = stringResource(R.string.favorites_header_channels, uiState.channels.size)
+                                        title =
+                                            stringResource(
+                                                R.string.favorites_header_channels,
+                                                uiState.channels.size,
+                                            )
                                     ) {
                                         FavoriteChannelsRow(
                                             channels = uiState.channels,
@@ -264,10 +280,10 @@ fun FavoritesScreen(
                                                 PlayerLauncher.launchLiveChannel(
                                                     context = context,
                                                     channelId = channel.id,
-                                                    channelName = channel.name
+                                                    channelName = channel.name,
                                                 )
                                             },
-                                            cardWidth = landscapeWidth
+                                            cardWidth = landscapeWidth,
                                         )
                                     }
                                 }
@@ -276,11 +292,15 @@ fun FavoritesScreen(
                             if (uiState.people.isNotEmpty()) {
                                 item {
                                     FavoriteSection(
-                                        title = stringResource(R.string.favorites_header_people, uiState.people.size)
+                                        title =
+                                            stringResource(
+                                                R.string.favorites_header_people,
+                                                uiState.people.size,
+                                            )
                                     ) {
                                         FavoritePeopleRow(
                                             people = uiState.people,
-                                            onPersonClick = onPersonClick
+                                            onPersonClick = onPersonClick,
                                         )
                                     }
                                 }
@@ -297,9 +317,7 @@ fun FavoritesScreen(
             episode = episode,
             isInWatchlist = selectedEpisodeWatchlistStatus,
             downloadInfo = selectedEpisodeDownloadInfo,
-            onDismiss = {
-                viewModel.clearSelectedEpisode()
-            },
+            onDismiss = { viewModel.clearSelectedEpisode() },
             onPlayClick = { episodeToPlay, selection ->
                 viewModel.clearSelectedEpisode()
                 com.makd.afinity.ui.player.PlayerLauncher.launch(
@@ -308,37 +326,23 @@ fun FavoritesScreen(
                     mediaSourceId = selection.mediaSourceId,
                     audioStreamIndex = selection.audioStreamIndex,
                     subtitleStreamIndex = selection.subtitleStreamIndex,
-                    startPositionMs = selection.startPositionMs
+                    startPositionMs = selection.startPositionMs,
                 )
             },
-            onToggleFavorite = {
-                viewModel.toggleEpisodeFavorite(episode)
-            },
-            onToggleWatchlist = {
-                viewModel.toggleEpisodeWatchlist(episode)
-            },
-            onToggleWatched = {
-                viewModel.toggleEpisodeWatched(episode)
-            },
-            onDownloadClick = {
-                viewModel.onDownloadClick()
-            },
-            onPauseDownload = {
-                viewModel.pauseDownload()
-            },
-            onResumeDownload = {
-                viewModel.resumeDownload()
-            },
-            onCancelDownload = {
-                viewModel.cancelDownload()
-            },
+            onToggleFavorite = { viewModel.toggleEpisodeFavorite(episode) },
+            onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(episode) },
+            onToggleWatched = { viewModel.toggleEpisodeWatched(episode) },
+            onDownloadClick = { viewModel.onDownloadClick() },
+            onPauseDownload = { viewModel.pauseDownload() },
+            onResumeDownload = { viewModel.resumeDownload() },
+            onCancelDownload = { viewModel.cancelDownload() },
             onGoToSeries = {
                 viewModel.clearSelectedEpisode()
                 episode.seriesId?.let { seriesId ->
                     val route = Destination.createItemDetailRoute(seriesId.toString())
                     navController.navigate(route)
                 }
-            }
+            },
         )
     }
 }
@@ -347,18 +351,13 @@ fun FavoritesScreen(
 private fun FavoriteSection(
     title: String,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
         )
         content()
     }
@@ -368,18 +367,14 @@ private fun FavoriteSection(
 private fun FavoriteMoviesRow(
     movies: List<AfinityMovie>,
     onItemClick: (AfinityItem) -> Unit,
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
         items(movies) { movie ->
-            MediaItemCard(
-                item = movie,
-                onClick = { onItemClick(movie) },
-                cardWidth = cardWidth
-            )
+            MediaItemCard(item = movie, onClick = { onItemClick(movie) }, cardWidth = cardWidth)
         }
     }
 }
@@ -388,18 +383,14 @@ private fun FavoriteMoviesRow(
 private fun FavoriteShowsRow(
     shows: List<AfinityShow>,
     onItemClick: (AfinityItem) -> Unit,
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
         items(shows) { show ->
-            MediaItemCard(
-                item = show,
-                onClick = { onItemClick(show) },
-                cardWidth = cardWidth
-            )
+            MediaItemCard(item = show, onClick = { onItemClick(show) }, cardWidth = cardWidth)
         }
     }
 }
@@ -408,18 +399,14 @@ private fun FavoriteShowsRow(
 private fun FavoriteBoxSetsRow(
     boxSets: List<AfinityBoxSet>,
     onItemClick: (AfinityItem) -> Unit,
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
         items(boxSets) { boxSet ->
-            MediaItemCard(
-                item = boxSet,
-                onClick = { onItemClick(boxSet) },
-                cardWidth = cardWidth
-            )
+            MediaItemCard(item = boxSet, onClick = { onItemClick(boxSet) }, cardWidth = cardWidth)
         }
     }
 }
@@ -428,18 +415,14 @@ private fun FavoriteBoxSetsRow(
 private fun FavoriteSeasonsRow(
     seasons: List<AfinitySeason>,
     onItemClick: (AfinityItem) -> Unit,
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
         items(seasons) { season ->
-            MediaItemCard(
-                item = season,
-                onClick = { onItemClick(season) },
-                cardWidth = cardWidth
-            )
+            MediaItemCard(item = season, onClick = { onItemClick(season) }, cardWidth = cardWidth)
         }
     }
 }
@@ -448,62 +431,47 @@ private fun FavoriteSeasonsRow(
 private fun FavoriteEpisodesRow(
     episodes: List<AfinityEpisode>,
     onEpisodeClick: (AfinityEpisode) -> Unit,
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
         items(episodes) { episode ->
             ContinueWatchingCard(
                 item = episode,
                 onClick = { onEpisodeClick(episode) },
-                cardWidth = cardWidth
+                cardWidth = cardWidth,
             )
         }
     }
 }
 
 @Composable
-private fun FavoritePeopleRow(
-    people: List<AfinityPersonDetail>,
-    onPersonClick: (String) -> Unit
-) {
+private fun FavoritePeopleRow(people: List<AfinityPersonDetail>, onPersonClick: (String) -> Unit) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
         items(people) { person ->
-            FavoritePersonCard(
-                person = person,
-                onClick = { onPersonClick(person.id.toString()) }
-            )
+            FavoritePersonCard(person = person, onClick = { onPersonClick(person.id.toString()) })
         }
     }
 }
 
 @Composable
-private fun FavoritePersonCard(
-    person: AfinityPersonDetail,
-    onClick: () -> Unit
-) {
+private fun FavoritePersonCard(person: AfinityPersonDetail, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .width(80.dp)
-            .clip(RoundedCornerShape(8.dp))
+        modifier = Modifier.width(80.dp).clip(RoundedCornerShape(8.dp)),
     ) {
-        Card(
-            onClick = onClick,
-            shape = CircleShape,
-            modifier = Modifier.size(64.dp)
-        ) {
+        Card(onClick = onClick, shape = CircleShape, modifier = Modifier.size(64.dp)) {
             AsyncImage(
                 imageUrl = person.images.primaryImageUrl,
                 blurHash = person.images.primaryBlurHash,
                 contentDescription = person.name,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
             )
         }
 
@@ -514,7 +482,7 @@ private fun FavoritePersonCard(
             style = MaterialTheme.typography.bodySmall,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -523,62 +491,48 @@ private fun FavoritePersonCard(
 private fun FavoriteChannelsRow(
     channels: List<AfinityChannel>,
     onChannelClick: (AfinityChannel) -> Unit,
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
         items(channels) { channel ->
             FavoriteChannelCard(
                 channel = channel,
                 onClick = { onChannelClick(channel) },
-                cardWidth = cardWidth
+                cardWidth = cardWidth,
             )
         }
     }
 }
 
 @Composable
-private fun FavoriteChannelCard(
-    channel: AfinityChannel,
-    onClick: () -> Unit,
-    cardWidth: Dp
-) {
-    Column(
-        modifier = Modifier.width(cardWidth)
-    ) {
+private fun FavoriteChannelCard(channel: AfinityChannel, onClick: () -> Unit, cardWidth: Dp) {
+    Column(modifier = Modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
+            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            shape = MaterialTheme.shapes.medium
+            shape = MaterialTheme.shapes.medium,
         ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 val imageUrl = channel.images.primary ?: channel.images.thumb
                 if (imageUrl != null) {
                     AsyncImage(
                         imageUrl = imageUrl.toString(),
                         contentDescription = channel.name,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentScale = ContentScale.Fit
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        contentScale = ContentScale.Fit,
                     )
                 } else {
                     Text(
                         text = channel.channelNumber ?: channel.name.take(3),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -592,18 +546,16 @@ private fun FavoriteChannelCard(
                     text = number,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Spacer(modifier = Modifier.width(6.dp))
             }
             Text(
                 text = channel.name,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

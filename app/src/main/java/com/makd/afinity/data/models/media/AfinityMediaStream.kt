@@ -32,11 +32,12 @@ fun MediaStream.toAfinityMediaStream(jellyfinRepository: JellyfinRepository): Af
         type = type,
         codec = codec.orEmpty(),
         isExternal = isExternal,
-        path = if (isExternal && !deliveryUrl.isNullOrBlank()) {
-            jellyfinRepository.getBaseUrl() + deliveryUrl
-        } else {
-            null
-        },
+        path =
+            if (isExternal && !deliveryUrl.isNullOrBlank()) {
+                jellyfinRepository.getBaseUrl() + deliveryUrl
+            } else {
+                null
+            },
         channelLayout = channelLayout,
         videoRangeType = videoRangeType,
         height = height,

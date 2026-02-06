@@ -16,6 +16,10 @@ import com.makd.afinity.data.repository.AudiobookshelfAuthData
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.ServerUserToken
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Base64
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,17 +28,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.Base64
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_settings")
+private val Context.dataStore: DataStore<Preferences> by
+    preferencesDataStore(name = "secure_settings")
 
 @Singleton
-class SecurePreferencesRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context
-) : SecurePreferencesRepository {
+class SecurePreferencesRepositoryImpl
+@Inject
+constructor(@ApplicationContext private val context: Context) : SecurePreferencesRepository {
 
     private companion object {
         private const val MASTER_KEY_URI = "android-keystore://_androidx_security_master_key_"
@@ -60,15 +61,19 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
         try {
             AeadConfig.register()
 
-            AndroidKeysetManager.Builder().withSharedPref(context, TINK_KEYSET_NAME, PREF_FILE_NAME)
+            AndroidKeysetManager.Builder()
+                .withSharedPref(context, TINK_KEYSET_NAME, PREF_FILE_NAME)
                 .withKeyTemplate(KeyTemplate.createFrom(PredefinedAeadParameters.AES256_GCM))
-                .withMasterKeyUri(MASTER_KEY_URI).build().keysetHandle.getPrimitive(
-                    RegistryConfiguration.get(),
-                    Aead::class.java
-                )
+                .withMasterKeyUri(MASTER_KEY_URI)
+                .build()
+                .keysetHandle
+                .getPrimitive(RegistryConfiguration.get(), Aead::class.java)
         } catch (e: Exception) {
             Timber.e(e, "CRITICAL: Tink Init failed. Clearing broken keys.")
-            context.getSharedPreferences(PREF_FILE_NAME, Context.MODE_PRIVATE).edit().clear()
+            context
+                .getSharedPreferences(PREF_FILE_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .clear()
                 .apply()
             throw RuntimeException("Crypto Init Failed", e)
         }
@@ -86,33 +91,24 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
         }
     }
 
-    @Volatile
-    private var cachedJellyseerrUrl: String? = null
+    @Volatile private var cachedJellyseerrUrl: String? = null
 
-    @Volatile
-    private var cachedJellyseerrCookie: String? = null
+    @Volatile private var cachedJellyseerrCookie: String? = null
 
-    @Volatile
-    private var cachedJellyseerrUsername: String? = null
+    @Volatile private var cachedJellyseerrUsername: String? = null
 
-    @Volatile
-    private var cachedAudiobookshelfUrl: String? = null
+    @Volatile private var cachedAudiobookshelfUrl: String? = null
 
-    @Volatile
-    private var cachedAudiobookshelfToken: String? = null
+    @Volatile private var cachedAudiobookshelfToken: String? = null
 
-    @Volatile
-    private var cachedAudiobookshelfUserId: String? = null
+    @Volatile private var cachedAudiobookshelfUserId: String? = null
 
-    @Volatile
-    private var cachedAudiobookshelfUsername: String? = null
+    @Volatile private var cachedAudiobookshelfUsername: String? = null
 
     private val _authenticationState = MutableStateFlow(false)
 
     init {
-        runBlocking(Dispatchers.IO) {
-            _authenticationState.value = hasValidAuthData()
-        }
+        runBlocking(Dispatchers.IO) { _authenticationState.value = hasValidAuthData() }
     }
 
     private fun encrypt(plainText: String): String {
@@ -126,7 +122,11 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveAuthenticationData(
-        accessToken: String, userId: UUID, serverId: String, serverUrl: String, username: String
+        accessToken: String,
+        userId: UUID,
+        serverId: String,
+        serverUrl: String,
+        username: String,
     ) {
         context.dataStore.edit { prefs ->
             prefs[KEY_ACCESS_TOKEN] = encrypt(accessToken)
@@ -141,9 +141,13 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAccessToken(): String? = getDecryptedString(KEY_ACCESS_TOKEN)
+
     override suspend fun getSavedUserId(): String? = getDecryptedString(KEY_USER_ID)
+
     override suspend fun getSavedServerId(): String? = getDecryptedString(KEY_SERVER_ID)
+
     override suspend fun getSavedServerUrl(): String? = getDecryptedString(KEY_SERVER_URL)
+
     override suspend fun getSavedUsername(): String? = getDecryptedString(KEY_USERNAME)
 
     override suspend fun clearAuthenticationData() {
@@ -193,7 +197,9 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     private fun getJellyseerrKey(
-        prefix: String, serverId: String, userId: UUID
+        prefix: String,
+        serverId: String,
+        userId: UUID,
     ): Preferences.Key<String> {
         return stringPreferencesKey("${prefix}_${serverId}_$userId")
     }
@@ -203,7 +209,7 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
         jellyfinUserId: UUID,
         url: String,
         cookie: String,
-        username: String
+        username: String,
     ) {
         context.dataStore.edit { prefs ->
             prefs[getJellyseerrKey("jsr_url", jellyfinServerId, jellyfinUserId)] = encrypt(url)
@@ -221,7 +227,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun switchJellyseerrContext(
-        jellyfinServerId: String, jellyfinUserId: UUID
+        jellyfinServerId: String,
+        jellyfinUserId: UUID,
     ): Boolean {
         return withContext(Dispatchers.IO) {
             val prefs = context.dataStore.data.first()
@@ -238,7 +245,9 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
             cachedJellyseerrCookie = cookie
             cachedJellyseerrUsername = username
 
-            Timber.d("Switched Jellyseerr context. Valid: ${!url.isNullOrBlank() && !cookie.isNullOrBlank()}")
+            Timber.d(
+                "Switched Jellyseerr context. Valid: ${!url.isNullOrBlank() && !cookie.isNullOrBlank()}"
+            )
 
             !url.isNullOrBlank() && !cookie.isNullOrBlank()
         }
@@ -251,7 +260,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getJellyseerrAuthForUser(
-        jellyfinServerId: String, jellyfinUserId: UUID
+        jellyfinServerId: String,
+        jellyfinUserId: UUID,
     ): Triple<String?, String?, String?> {
         return withContext(Dispatchers.IO) {
             val prefs = context.dataStore.data.first()
@@ -265,7 +275,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun clearJellyseerrAuthForUser(
-        jellyfinServerId: String, jellyfinUserId: UUID
+        jellyfinServerId: String,
+        jellyfinUserId: UUID,
     ) {
         context.dataStore.edit { prefs ->
             prefs.remove(getJellyseerrKey("jsr_url", jellyfinServerId, jellyfinUserId))
@@ -312,7 +323,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun hasValidJellyseerrAuth(): Boolean {
-        if (!cachedJellyseerrCookie.isNullOrBlank() && !cachedJellyseerrUrl.isNullOrBlank()) return true
+        if (!cachedJellyseerrCookie.isNullOrBlank() && !cachedJellyseerrUrl.isNullOrBlank())
+            return true
 
         val cookie = getJellyseerrCookie()
         val url = getJellyseerrServerUrl()
@@ -332,7 +344,11 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveServerUserToken(
-        serverId: String, userId: UUID, accessToken: String, username: String, serverUrl: String
+        serverId: String,
+        userId: UUID,
+        accessToken: String,
+        username: String,
+        serverUrl: String,
     ) {
         context.dataStore.edit { prefs ->
             val tokenKey = stringPreferencesKey("token_${serverId}_$userId")
@@ -369,35 +385,43 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
             val preferences = context.dataStore.data.first()
             val tokens = mutableListOf<ServerUserToken>()
 
-            preferences.asMap().keys.filter { it.name.startsWith("token_") }.forEach { key ->
-                try {
-                    val parts = key.name.removePrefix("token_").split("_")
-                    if (parts.size == 2) {
-                        val serverId = parts[0]
-                        val userId = UUID.fromString(parts[1])
+            preferences
+                .asMap()
+                .keys
+                .filter { it.name.startsWith("token_") }
+                .forEach { key ->
+                    try {
+                        val parts = key.name.removePrefix("token_").split("_")
+                        if (parts.size == 2) {
+                            val serverId = parts[0]
+                            val userId = UUID.fromString(parts[1])
 
-                        val token = decrypt(preferences[key] as? String)
-                        val username =
-                            getDecryptedString(stringPreferencesKey("username_${serverId}_$userId"))
-                        val serverUrl =
-                            getDecryptedString(stringPreferencesKey("serverUrl_${serverId}_$userId"))
-
-                        if (token != null && username != null && serverUrl != null) {
-                            tokens.add(
-                                ServerUserToken(
-                                    serverId = serverId,
-                                    userId = userId,
-                                    accessToken = token,
-                                    username = username,
-                                    serverUrl = serverUrl
+                            val token = decrypt(preferences[key] as? String)
+                            val username =
+                                getDecryptedString(
+                                    stringPreferencesKey("username_${serverId}_$userId")
                                 )
-                            )
+                            val serverUrl =
+                                getDecryptedString(
+                                    stringPreferencesKey("serverUrl_${serverId}_$userId")
+                                )
+
+                            if (token != null && username != null && serverUrl != null) {
+                                tokens.add(
+                                    ServerUserToken(
+                                        serverId = serverId,
+                                        userId = userId,
+                                        accessToken = token,
+                                        username = username,
+                                        serverUrl = serverUrl,
+                                    )
+                                )
+                            }
                         }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to parse token key: ${key.name}")
                     }
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to parse token key: ${key.name}")
                 }
-            }
 
             tokens
         }
@@ -418,9 +442,10 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun clearAllServerTokens(serverId: String) {
         context.dataStore.edit { prefs ->
-            val keysToRemove = prefs.asMap().keys.filter { key ->
-                key.name.contains("_${serverId}_") || key.name == "lastUser_$serverId"
-            }
+            val keysToRemove =
+                prefs.asMap().keys.filter { key ->
+                    key.name.contains("_${serverId}_") || key.name == "lastUser_$serverId"
+                }
 
             keysToRemove.forEach { prefs.remove(it) }
         }
@@ -428,7 +453,9 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     private fun getAudiobookshelfKey(
-        prefix: String, serverId: String, userId: UUID
+        prefix: String,
+        serverId: String,
+        userId: UUID,
     ): Preferences.Key<String> {
         return stringPreferencesKey("${prefix}_${serverId}_$userId")
     }
@@ -439,7 +466,7 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
         serverUrl: String,
         accessToken: String,
         absUserId: String,
-        username: String
+        username: String,
     ) {
         context.dataStore.edit { prefs ->
             prefs[getAudiobookshelfKey("abs_url", jellyfinServerId, jellyfinUserId)] =
@@ -461,7 +488,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun switchAudiobookshelfContext(
-        jellyfinServerId: String, jellyfinUserId: UUID
+        jellyfinServerId: String,
+        jellyfinUserId: UUID,
     ): Boolean {
         return withContext(Dispatchers.IO) {
             val prefs = context.dataStore.data.first()
@@ -481,7 +509,9 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
             cachedAudiobookshelfUserId = absUserId
             cachedAudiobookshelfUsername = username
 
-            Timber.d("Switched Audiobookshelf context. Valid: ${!url.isNullOrBlank() && !token.isNullOrBlank()}")
+            Timber.d(
+                "Switched Audiobookshelf context. Valid: ${!url.isNullOrBlank() && !token.isNullOrBlank()}"
+            )
 
             !url.isNullOrBlank() && !token.isNullOrBlank()
         }
@@ -495,7 +525,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAudiobookshelfAuthForUser(
-        jellyfinServerId: String, jellyfinUserId: UUID
+        jellyfinServerId: String,
+        jellyfinUserId: UUID,
     ): AudiobookshelfAuthData? {
         return withContext(Dispatchers.IO) {
             val prefs = context.dataStore.data.first()
@@ -513,7 +544,7 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
                     serverUrl = url,
                     accessToken = token,
                     absUserId = absUserId,
-                    username = username
+                    username = username,
                 )
             } else {
                 null
@@ -522,7 +553,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun clearAudiobookshelfAuthForUser(
-        jellyfinServerId: String, jellyfinUserId: UUID
+        jellyfinServerId: String,
+        jellyfinUserId: UUID,
     ) {
         context.dataStore.edit { prefs ->
             prefs.remove(getAudiobookshelfKey("abs_url", jellyfinServerId, jellyfinUserId))
@@ -539,7 +571,8 @@ class SecurePreferencesRepositoryImpl @Inject constructor(
     override fun getCachedAudiobookshelfToken(): String? = cachedAudiobookshelfToken
 
     override suspend fun hasValidAudiobookshelfAuth(): Boolean {
-        if (!cachedAudiobookshelfToken.isNullOrBlank() && !cachedAudiobookshelfUrl.isNullOrBlank()) return true
+        if (!cachedAudiobookshelfToken.isNullOrBlank() && !cachedAudiobookshelfUrl.isNullOrBlank())
+            return true
         return false
     }
 }

@@ -35,20 +35,21 @@ import androidx.media3.common.util.ListenerSet
 import androidx.media3.common.util.Size
 import androidx.media3.common.util.Util
 import dev.jdtech.mpv.MPVLib
+import java.io.File
+import java.io.FileOutputStream
+import java.util.concurrent.CopyOnWriteArraySet
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
-import java.util.concurrent.CopyOnWriteArraySet
 
 @androidx.media3.common.util.UnstableApi
 class MPVPlayer(
     context: Context,
     private val audioAttributes: AudioAttributes = AudioAttributes.DEFAULT,
     private val handleAudioFocus: Boolean = true,
-    private var trackSelectionParameters: TrackSelectionParameters = TrackSelectionParameters.DEFAULT,
+    private var trackSelectionParameters: TrackSelectionParameters =
+        TrackSelectionParameters.DEFAULT,
     private val seekBackIncrement: Long = C.DEFAULT_SEEK_BACK_INCREMENT_MS,
     private val seekForwardIncrement: Long = C.DEFAULT_SEEK_FORWARD_INCREMENT_MS,
     private val pauseAtEndOfMediaItems: Boolean = false,
@@ -62,7 +63,9 @@ class MPVPlayer(
     private lateinit var audioFocusRequest: AudioFocusRequestCompat
     private val handler = Handler(context.mainLooper)
 
-    private constructor(builder: Builder) : this(
+    private constructor(
+        builder: Builder
+    ) : this(
         context = builder.context,
         audioAttributes = builder.audioAttributes,
         handleAudioFocus = builder.handleAudioFocus,
@@ -75,9 +78,7 @@ class MPVPlayer(
         hwDec = builder.hwDec,
     )
 
-    class Builder(
-        val context: Context,
-    ) {
+    class Builder(val context: Context) {
         var audioAttributes: AudioAttributes = AudioAttributes.DEFAULT
             private set
 
@@ -128,17 +129,11 @@ class MPVPlayer(
             this.pauseAtEndOfMediaItems = pauseAtEndOfMediaItems
         }
 
-        fun setVideoOutput(videoOutput: String) = apply {
-            this.videoOutput = videoOutput
-        }
+        fun setVideoOutput(videoOutput: String) = apply { this.videoOutput = videoOutput }
 
-        fun setAudioOutput(audioOutput: String) = apply {
-            this.audioOutput = audioOutput
-        }
+        fun setAudioOutput(audioOutput: String) = apply { this.audioOutput = audioOutput }
 
-        fun setHwDec(hwDec: String) = apply {
-            this.hwDec = hwDec
-        }
+        fun setHwDec(hwDec: String) = apply { this.hwDec = hwDec }
 
         fun build() = MPVPlayer(this)
     }
@@ -153,7 +148,8 @@ class MPVPlayer(
             val file = File(mpvDir, fileName)
             if (file.exists()) return@forEach
             try {
-                context.assets.open(fileName, AssetManager.ACCESS_STREAMING)
+                context.assets
+                    .open(fileName, AssetManager.ACCESS_STREAMING)
                     .copyTo(FileOutputStream(file))
             } catch (e: Exception) {
                 Timber.w("Could not copy $fileName: ${e.message}")
@@ -202,26 +198,26 @@ class MPVPlayer(
         MPVLib.addObserver(this)
 
         arrayOf(
-            Property("track-list", MPVLib.MPV_FORMAT_STRING),
-            Property("paused", MPVLib.MPV_FORMAT_FLAG),
-            Property("paused-for-cache", MPVLib.MPV_FORMAT_FLAG),
-            Property("eof-reached", MPVLib.MPV_FORMAT_FLAG),
-            Property("seekable", MPVLib.MPV_FORMAT_FLAG),
-            Property("time-pos", MPVLib.MPV_FORMAT_INT64),
-            Property("duration", MPVLib.MPV_FORMAT_INT64),
-            Property("demuxer-cache-time", MPVLib.MPV_FORMAT_INT64),
-            Property("speed", MPVLib.MPV_FORMAT_DOUBLE),
-            Property("playlist-count", MPVLib.MPV_FORMAT_INT64),
-            Property("playlist-current-pos", MPVLib.MPV_FORMAT_INT64),
-        ).forEach { (name, format) ->
-            MPVLib.observeProperty(name, format)
-        }
+                Property("track-list", MPVLib.MPV_FORMAT_STRING),
+                Property("paused", MPVLib.MPV_FORMAT_FLAG),
+                Property("paused-for-cache", MPVLib.MPV_FORMAT_FLAG),
+                Property("eof-reached", MPVLib.MPV_FORMAT_FLAG),
+                Property("seekable", MPVLib.MPV_FORMAT_FLAG),
+                Property("time-pos", MPVLib.MPV_FORMAT_INT64),
+                Property("duration", MPVLib.MPV_FORMAT_INT64),
+                Property("demuxer-cache-time", MPVLib.MPV_FORMAT_INT64),
+                Property("speed", MPVLib.MPV_FORMAT_DOUBLE),
+                Property("playlist-count", MPVLib.MPV_FORMAT_INT64),
+                Property("playlist-current-pos", MPVLib.MPV_FORMAT_INT64),
+            )
+            .forEach { (name, format) -> MPVLib.observeProperty(name, format) }
 
         if (handleAudioFocus) {
-            audioFocusRequest = AudioFocusRequestCompat.Builder(AudioManagerCompat.AUDIOFOCUS_GAIN)
-                .setAudioAttributes(audioAttributes)
-                .setOnAudioFocusChangeListener(this)
-                .build()
+            audioFocusRequest =
+                AudioFocusRequestCompat.Builder(AudioManagerCompat.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(audioAttributes)
+                    .setOnAudioFocusChangeListener(this)
+                    .build()
             val res = AudioManagerCompat.requestAudioFocus(audioManager, audioFocusRequest)
             if (res != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                 MPVLib.setPropertyBoolean("pause", true)
@@ -229,22 +225,19 @@ class MPVPlayer(
         }
     }
 
-    private val listeners: ListenerSet<Player.Listener> = ListenerSet(
-        context.mainLooper,
-        Clock.DEFAULT,
-    ) { listener: Player.Listener, flags: FlagSet ->
-        listener.onEvents(this, Player.Events(flags))
-    }
+    private val listeners: ListenerSet<Player.Listener> =
+        ListenerSet(context.mainLooper, Clock.DEFAULT) { listener: Player.Listener, flags: FlagSet
+            ->
+            listener.onEvents(this, Player.Events(flags))
+        }
     private val videoListeners = CopyOnWriteArraySet<Player.Listener>()
 
     private var internalMediaItems = mutableListOf<MediaItem>()
 
-    @Player.State
-    private var playbackState: Int = STATE_IDLE
+    @Player.State private var playbackState: Int = STATE_IDLE
     private var currentPlayWhenReady: Boolean = false
 
-    @Player.RepeatMode
-    private val repeatMode: Int = REPEAT_MODE_OFF
+    @Player.RepeatMode private val repeatMode: Int = REPEAT_MODE_OFF
     private var currentTracks: Tracks = Tracks.EMPTY
     private var playbackParameters: PlaybackParameters = PlaybackParameters.DEFAULT
 
@@ -282,7 +275,7 @@ class MPVPlayer(
                     if (isPlayerReady) {
                         setPlayerStateAndNotifyIfChanged(
                             playWhenReady = !value,
-                            playWhenReadyChangeReason = PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST
+                            playWhenReadyChangeReason = PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST,
                         )
                     }
                 }
@@ -293,7 +286,8 @@ class MPVPlayer(
                             if (pauseAtEndOfMediaItems) {
                                 setPlayerStateAndNotifyIfChanged(
                                     playWhenReady = false,
-                                    playWhenReadyChangeReason = PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM,
+                                    playWhenReadyChangeReason =
+                                        PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM,
                                     playbackState = STATE_READY,
                                 )
                             } else {
@@ -303,7 +297,8 @@ class MPVPlayer(
                         } else {
                             setPlayerStateAndNotifyIfChanged(
                                 playWhenReady = false,
-                                playWhenReadyChangeReason = PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM,
+                                playWhenReadyChangeReason =
+                                    PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM,
                                 playbackState = STATE_ENDED,
                             )
                             resetInternalState()
@@ -350,7 +345,7 @@ class MPVPlayer(
                         listeners.sendEvent(EVENT_TIMELINE_CHANGED) { listener ->
                             listener.onTimelineChanged(
                                 currentTimeline,
-                                TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED
+                                TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED,
                             )
                         }
                     }
@@ -423,7 +418,8 @@ class MPVPlayer(
 
     private fun setPlayerStateAndNotifyIfChanged(
         playWhenReady: Boolean = getPlayWhenReady(),
-        @Player.PlayWhenReadyChangeReason playWhenReadyChangeReason: Int = PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST,
+        @Player.PlayWhenReadyChangeReason
+        playWhenReadyChangeReason: Int = PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST,
         @Player.State playbackState: Int = getPlaybackState(),
     ) {
         var playerStateChanged = false
@@ -455,44 +451,45 @@ class MPVPlayer(
         listeners.flushEvents()
     }
 
-    private val timeline: Timeline = object : Timeline() {
-        override fun getWindowCount(): Int = internalMediaItems.size
+    private val timeline: Timeline =
+        object : Timeline() {
+            override fun getWindowCount(): Int = internalMediaItems.size
 
-        override fun getWindow(
-            windowIndex: Int,
-            window: Window,
-            defaultPositionProjectionUs: Long
-        ): Window {
-            val currentMediaItem =
-                internalMediaItems.getOrNull(windowIndex) ?: MediaItem.Builder().build()
-            return window.set(
-                windowIndex,
-                currentMediaItem,
-                null,
-                C.TIME_UNSET,
-                C.TIME_UNSET,
-                C.TIME_UNSET,
-                isSeekable,
-                !isSeekable,
-                currentMediaItem.liveConfiguration,
-                C.TIME_UNSET,
-                Util.msToUs(currentDurationMs ?: C.TIME_UNSET),
-                windowIndex,
-                windowIndex,
-                C.TIME_UNSET,
-            )
+            override fun getWindow(
+                windowIndex: Int,
+                window: Window,
+                defaultPositionProjectionUs: Long,
+            ): Window {
+                val currentMediaItem =
+                    internalMediaItems.getOrNull(windowIndex) ?: MediaItem.Builder().build()
+                return window.set(
+                    windowIndex,
+                    currentMediaItem,
+                    null,
+                    C.TIME_UNSET,
+                    C.TIME_UNSET,
+                    C.TIME_UNSET,
+                    isSeekable,
+                    !isSeekable,
+                    currentMediaItem.liveConfiguration,
+                    C.TIME_UNSET,
+                    Util.msToUs(currentDurationMs ?: C.TIME_UNSET),
+                    windowIndex,
+                    windowIndex,
+                    C.TIME_UNSET,
+                )
+            }
+
+            override fun getPeriodCount(): Int = internalMediaItems.size
+
+            override fun getPeriod(periodIndex: Int, period: Period, setIds: Boolean): Period {
+                return period.set(null, null, periodIndex, C.TIME_UNSET, 0)
+            }
+
+            override fun getIndexOfPeriod(uid: Any): Int = C.INDEX_UNSET
+
+            override fun getUidOfPeriod(periodIndex: Int): Any = periodIndex as Any
         }
-
-        override fun getPeriodCount(): Int = internalMediaItems.size
-
-        override fun getPeriod(periodIndex: Int, period: Period, setIds: Boolean): Period {
-            return period.set(null, null, periodIndex, C.TIME_UNSET, 0)
-        }
-
-        override fun getIndexOfPeriod(uid: Any): Int = C.INDEX_UNSET
-
-        override fun getUidOfPeriod(periodIndex: Int): Any = periodIndex as Any
-    }
 
     override fun getApplicationLooper(): Looper = Looper.getMainLooper()
 
@@ -515,7 +512,7 @@ class MPVPlayer(
     override fun setMediaItems(
         mediaItems: MutableList<MediaItem>,
         startIndex: Int,
-        startPositionMs: Long
+        startPositionMs: Long,
     ) {
         MPVLib.command(arrayOf("playlist-clear"))
         MPVLib.command(arrayOf("playlist-remove", "current"))
@@ -532,19 +529,19 @@ class MPVPlayer(
                     "loadfile",
                     "${mediaItem.localConfiguration?.uri}",
                     "insert-at",
-                    index.toString()
+                    index.toString(),
                 )
             )
         }
     }
 
     override fun moveMediaItems(fromIndex: Int, toIndex: Int, newIndex: Int) {}
+
     override fun replaceMediaItems(
         fromIndex: Int,
         toIndex: Int,
-        mediaItems: MutableList<MediaItem>
-    ) {
-    }
+        mediaItems: MutableList<MediaItem>,
+    ) {}
 
     override fun removeMediaItems(fromIndex: Int, toIndex: Int) {}
 
@@ -554,7 +551,7 @@ class MPVPlayer(
                 arrayOf(
                     "loadfile",
                     "${mediaItem.localConfiguration?.uri}",
-                    if (index == 0) "replace" else "append"
+                    if (index == 0) "replace" else "append",
                 )
             )
         }
@@ -569,7 +566,7 @@ class MPVPlayer(
                         "auto",
                         "${subtitle.label}",
                         "${subtitle.language}",
-                    ),
+                    )
                 )
             }
             if (initialIndex > 0) {
@@ -590,7 +587,7 @@ class MPVPlayer(
                         "auto",
                         "${subtitle.label}",
                         "${subtitle.language}",
-                    ),
+                    )
                 )
             }
             if (currentMediaItemIndex != index) {
@@ -601,7 +598,9 @@ class MPVPlayer(
     }
 
     override fun getPlaybackState(): Int = playbackState
+
     override fun getPlaybackSuppressionReason(): Int = PLAYBACK_SUPPRESSION_REASON_NONE
+
     override fun getPlayerError(): PlaybackException? = null
 
     override fun setPlayWhenReady(playWhenReady: Boolean) {
@@ -628,9 +627,11 @@ class MPVPlayer(
     override fun getPlayWhenReady(): Boolean = currentPlayWhenReady
 
     override fun setRepeatMode(repeatMode: Int) {}
+
     override fun getRepeatMode(): Int = repeatMode
 
     override fun setShuffleModeEnabled(shuffleModeEnabled: Boolean) {}
+
     override fun getShuffleModeEnabled(): Boolean = false
 
     override fun isLoading(): Boolean = playbackState == STATE_BUFFERING
@@ -643,29 +644,32 @@ class MPVPlayer(
     ) {
         if (mediaItemIndex == currentMediaItemIndex) {
 
-            val seekToSeconds = if (positionMs != C.TIME_UNSET) {
-                positionMs / C.MILLIS_PER_SECOND
-            } else {
-                initialSeekTo
-            }
+            val seekToSeconds =
+                if (positionMs != C.TIME_UNSET) {
+                    positionMs / C.MILLIS_PER_SECOND
+                } else {
+                    initialSeekTo
+                }
 
-            val targetMs = if (positionMs != C.TIME_UNSET) {
-                positionMs
-            } else {
-                initialSeekTo * 1000
-            }
+            val targetMs =
+                if (positionMs != C.TIME_UNSET) {
+                    positionMs
+                } else {
+                    initialSeekTo * 1000
+                }
 
-            initialSeekTo = if (isPlayerReady) {
-                MPVLib.command(arrayOf("seek", "$seekToSeconds", "absolute"))
+            initialSeekTo =
+                if (isPlayerReady) {
+                    MPVLib.command(arrayOf("seek", "$seekToSeconds", "absolute"))
 
-                currentPositionMs = targetMs
+                    currentPositionMs = targetMs
 
-                Timber.d("MPV seeking to $seekToSeconds seconds")
-                0L
-            } else {
-                Timber.d("MPV not ready, storing initial seek: $seekToSeconds seconds")
-                seekToSeconds
-            }
+                    Timber.d("MPV seeking to $seekToSeconds seconds")
+                    0L
+                } else {
+                    Timber.d("MPV not ready, storing initial seek: $seekToSeconds seconds")
+                    seekToSeconds
+                }
         } else {
             prepareMediaItem(mediaItemIndex)
             play()
@@ -673,7 +677,9 @@ class MPVPlayer(
     }
 
     override fun getSeekBackIncrement(): Long = seekBackIncrement
+
     override fun getSeekForwardIncrement(): Long = seekForwardIncrement
+
     override fun getMaxSeekToPreviousPosition(): Long = 0
 
     override fun setPlaybackParameters(playbackParameters: PlaybackParameters) {
@@ -695,6 +701,7 @@ class MPVPlayer(
     }
 
     override fun getCurrentTracks(): Tracks = currentTracks
+
     override fun getTrackSelectionParameters(): TrackSelectionParameters = trackSelectionParameters
 
     override fun setTrackSelectionParameters(parameters: TrackSelectionParameters) {
@@ -725,10 +732,7 @@ class MPVPlayer(
         }
     }
 
-    private fun selectTrack(
-        trackType: MPVTrackType,
-        id: String,
-    ) {
+    private fun selectTrack(trackType: MPVTrackType, id: String) {
         MPVLib.setPropertyString(trackType.type, id)
     }
 
@@ -736,14 +740,19 @@ class MPVPlayer(
         currentMediaItem?.mediaMetadata ?: MediaMetadata.EMPTY
 
     override fun getPlaylistMetadata(): MediaMetadata = MediaMetadata.EMPTY
+
     override fun setPlaylistMetadata(mediaMetadata: MediaMetadata) {}
 
     override fun getCurrentTimeline(): Timeline = timeline
+
     override fun getCurrentPeriodIndex(): Int = currentMediaItemIndex
+
     override fun getCurrentMediaItemIndex(): Int = currentMediaItemIndex
 
     override fun getDuration(): Long = currentDurationMs ?: C.TIME_UNSET
+
     override fun getCurrentPosition(): Long = currentPositionMs ?: C.TIME_UNSET
+
     override fun getBufferedPosition(): Long =
         (currentCacheDurationMs ?: getCurrentPosition()).coerceAtMost(duration)
 
@@ -751,9 +760,13 @@ class MPVPlayer(
         (bufferedPosition - currentPosition).coerceAtLeast(0)
 
     override fun isPlayingAd(): Boolean = false
+
     override fun getCurrentAdGroupIndex(): Int = C.INDEX_UNSET
+
     override fun getCurrentAdIndexInAdGroup(): Int = C.INDEX_UNSET
+
     override fun getContentPosition(): Long = currentPosition
+
     override fun getContentBufferedPosition(): Long = bufferedPosition
 
     override fun getAudioAttributes(): AudioAttributes = audioAttributes
@@ -765,9 +778,13 @@ class MPVPlayer(
     override fun getVolume(): Float = MPVLib.getPropertyInt("volume") / 100F
 
     override fun clearVideoSurface() {}
+
     override fun clearVideoSurface(surface: Surface?) {}
+
     override fun setVideoSurface(surface: Surface?) {}
+
     override fun setVideoSurfaceHolder(surfaceHolder: SurfaceHolder?) {}
+
     override fun clearVideoSurfaceHolder(surfaceHolder: SurfaceHolder?) {}
 
     override fun setVideoSurfaceView(surfaceView: SurfaceView?) {
@@ -779,6 +796,7 @@ class MPVPlayer(
     }
 
     override fun setVideoTextureView(textureView: TextureView?) {}
+
     override fun clearVideoTextureView(textureView: TextureView?) {}
 
     override fun getVideoSize(): VideoSize {
@@ -807,6 +825,7 @@ class MPVPlayer(
     }
 
     override fun getDeviceVolume(): Int = MPVLib.getPropertyInt("volume")
+
     override fun isDeviceMuted(): Boolean = MPVLib.getPropertyBoolean("mute")
 
     override fun mute() {
@@ -860,12 +879,18 @@ class MPVPlayer(
             .addIf(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM, hasPreviousMediaItem() && !isPlayingAd)
             .addIf(
                 COMMAND_SEEK_TO_PREVIOUS,
-                !currentTimeline.isEmpty && (hasPreviousMediaItem() || !isCurrentMediaItemLive || isCurrentMediaItemSeekable) && !isPlayingAd
+                !currentTimeline.isEmpty &&
+                    (hasPreviousMediaItem() ||
+                        !isCurrentMediaItemLive ||
+                        isCurrentMediaItemSeekable) &&
+                    !isPlayingAd,
             )
             .addIf(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM, hasNextMediaItem() && !isPlayingAd)
             .addIf(
                 COMMAND_SEEK_TO_NEXT,
-                !currentTimeline.isEmpty && (hasNextMediaItem() || (isCurrentMediaItemLive && isCurrentMediaItemDynamic)) && !isPlayingAd
+                !currentTimeline.isEmpty &&
+                    (hasNextMediaItem() || (isCurrentMediaItemLive && isCurrentMediaItemDynamic)) &&
+                    !isPlayingAd,
             )
             .addIf(COMMAND_SEEK_TO_MEDIA_ITEM, !isPlayingAd)
             .addIf(COMMAND_SEEK_BACK, isCurrentMediaItemSeekable && !isPlayingAd)
@@ -888,7 +913,8 @@ class MPVPlayer(
 
     override fun onAudioFocusChange(focusChange: Int) {
         when (focusChange) {
-            AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+            AudioManager.AUDIOFOCUS_LOSS,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 audioFocusCallback = {
                     if (getPlayWhenReady()) {
                         playWhenReady = true
@@ -912,25 +938,31 @@ class MPVPlayer(
         }
     }
 
-    private val surfaceHolder = object : SurfaceHolder.Callback {
-        override fun surfaceCreated(holder: SurfaceHolder) {
-            MPVLib.attachSurface(holder.surface)
-            MPVLib.setOptionString("force-window", "yes")
-            MPVLib.setOptionString("vo", videoOutput)
-            MPVLib.setOptionString("vid", "auto")
-        }
+    private val surfaceHolder =
+        object : SurfaceHolder.Callback {
+            override fun surfaceCreated(holder: SurfaceHolder) {
+                MPVLib.attachSurface(holder.surface)
+                MPVLib.setOptionString("force-window", "yes")
+                MPVLib.setOptionString("vo", videoOutput)
+                MPVLib.setOptionString("vid", "auto")
+            }
 
-        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-            MPVLib.setPropertyString("android-surface-size", "${width}x$height")
-        }
+            override fun surfaceChanged(
+                holder: SurfaceHolder,
+                format: Int,
+                width: Int,
+                height: Int,
+            ) {
+                MPVLib.setPropertyString("android-surface-size", "${width}x$height")
+            }
 
-        override fun surfaceDestroyed(holder: SurfaceHolder) {
-            MPVLib.setOptionString("vid", "no")
-            MPVLib.setOptionString("vo", "null")
-            MPVLib.setOptionString("force-window", "no")
-            MPVLib.detachSurface()
+            override fun surfaceDestroyed(holder: SurfaceHolder) {
+                MPVLib.setOptionString("vid", "no")
+                MPVLib.setOptionString("vo", "null")
+                MPVLib.setOptionString("force-window", "no")
+                MPVLib.detachSurface()
+            }
         }
-    }
 
     fun setOption(name: String, value: String) {
         try {
@@ -944,18 +976,19 @@ class MPVPlayer(
     companion object {
         private const val AUDIO_FOCUS_DUCKING = 0.5f
 
-        private val permanentAvailableCommands: Player.Commands = Player.Commands.Builder()
-            .addAll(
-                COMMAND_PLAY_PAUSE,
-                COMMAND_SET_SPEED_AND_PITCH,
-                COMMAND_GET_CURRENT_MEDIA_ITEM,
-                COMMAND_GET_METADATA,
-                COMMAND_CHANGE_MEDIA_ITEMS,
-                COMMAND_SET_VIDEO_SURFACE,
-                COMMAND_GET_TRACKS,
-                COMMAND_SET_TRACK_SELECTION_PARAMETERS,
-            )
-            .build()
+        private val permanentAvailableCommands: Player.Commands =
+            Player.Commands.Builder()
+                .addAll(
+                    COMMAND_PLAY_PAUSE,
+                    COMMAND_SET_SPEED_AND_PITCH,
+                    COMMAND_GET_CURRENT_MEDIA_ITEM,
+                    COMMAND_GET_METADATA,
+                    COMMAND_CHANGE_MEDIA_ITEMS,
+                    COMMAND_SET_VIDEO_SURFACE,
+                    COMMAND_GET_TRACKS,
+                    COMMAND_SET_TRACK_SELECTION_PARAMETERS,
+                )
+                .build()
 
         private fun JSONObject.optNullableString(name: String): String? {
             return if (this.has(name) && !this.isNull(name)) {
@@ -976,40 +1009,47 @@ class MPVPlayer(
         private fun createTracksGroupfromMpvJson(json: JSONObject): Tracks.Group {
             val trackType = MPVTrackType.entries.first { it.type == json.optString("type") }
 
-            val baseFormat = Format.Builder()
-                .setId(json.optInt("id"))
-                .setLabel(json.optNullableString("title"))
-                .setLanguage(json.optNullableString("lang"))
-                .setSelectionFlags(if (json.optBoolean("default")) C.SELECTION_FLAG_DEFAULT else 0)
-                .setCodecs(json.optNullableString("codec"))
-                .build()
+            val baseFormat =
+                Format.Builder()
+                    .setId(json.optInt("id"))
+                    .setLabel(json.optNullableString("title"))
+                    .setLanguage(json.optNullableString("lang"))
+                    .setSelectionFlags(
+                        if (json.optBoolean("default")) C.SELECTION_FLAG_DEFAULT else 0
+                    )
+                    .setCodecs(json.optNullableString("codec"))
+                    .build()
 
-            val format = when (trackType) {
-                MPVTrackType.VIDEO -> {
-                    baseFormat.buildUpon()
-                        .setSampleMimeType("video/${baseFormat.codecs}")
-                        .setWidth(json.optInt("demux-w", Format.NO_VALUE))
-                        .setHeight(json.optInt("demux-h", Format.NO_VALUE))
-                        .setFrameRate(
-                            (json.optNullableDouble("demux-fps") ?: Format.NO_VALUE).toFloat()
-                        )
-                        .build()
-                }
+            val format =
+                when (trackType) {
+                    MPVTrackType.VIDEO -> {
+                        baseFormat
+                            .buildUpon()
+                            .setSampleMimeType("video/${baseFormat.codecs}")
+                            .setWidth(json.optInt("demux-w", Format.NO_VALUE))
+                            .setHeight(json.optInt("demux-h", Format.NO_VALUE))
+                            .setFrameRate(
+                                (json.optNullableDouble("demux-fps") ?: Format.NO_VALUE).toFloat()
+                            )
+                            .build()
+                    }
 
-                MPVTrackType.AUDIO -> {
-                    baseFormat.buildUpon()
-                        .setSampleMimeType("audio/${baseFormat.codecs}")
-                        .setChannelCount(json.optInt("demux-channel-count", Format.NO_VALUE))
-                        .setSampleRate(json.optInt("demux-samplerate", Format.NO_VALUE))
-                        .build()
-                }
+                    MPVTrackType.AUDIO -> {
+                        baseFormat
+                            .buildUpon()
+                            .setSampleMimeType("audio/${baseFormat.codecs}")
+                            .setChannelCount(json.optInt("demux-channel-count", Format.NO_VALUE))
+                            .setSampleRate(json.optInt("demux-samplerate", Format.NO_VALUE))
+                            .build()
+                    }
 
-                MPVTrackType.SUBTITLE -> {
-                    baseFormat.buildUpon()
-                        .setSampleMimeType("text/${baseFormat.codecs}")
-                        .build()
+                    MPVTrackType.SUBTITLE -> {
+                        baseFormat
+                            .buildUpon()
+                            .setSampleMimeType("text/${baseFormat.codecs}")
+                            .build()
+                    }
                 }
-            }
 
             val trackGroup = TrackGroup(format)
 
@@ -1034,14 +1074,10 @@ class MPVPlayer(
                 if (trackGroups.isNotEmpty()) {
                     tracks = Tracks(trackGroups)
                 }
-            } catch (_: JSONException) {
-            }
+            } catch (_: JSONException) {}
             return tracks
         }
     }
 
-    data class Property(
-        val name: String,
-        val format: Int,
-    )
+    data class Property(val name: String, val format: Int)
 }

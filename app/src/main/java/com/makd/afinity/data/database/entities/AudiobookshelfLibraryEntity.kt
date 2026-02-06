@@ -4,7 +4,7 @@ import androidx.room.Entity
 
 @Entity(
     tableName = "audiobookshelf_libraries",
-    primaryKeys = ["id", "jellyfinServerId", "jellyfinUserId"]
+    primaryKeys = ["id", "jellyfinServerId", "jellyfinUserId"],
 )
 data class AudiobookshelfLibraryEntity(
     val id: String,
@@ -17,5 +17,5 @@ data class AudiobookshelfLibraryEntity(
     val totalItems: Int,
     val totalDuration: Double?,
     val lastUpdated: Long,
-    val cachedAt: Long
+    val cachedAt: Long,
 )

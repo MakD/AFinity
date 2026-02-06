@@ -67,9 +67,7 @@ internal fun OverviewSection(item: AfinityItem) {
         Column {
             Text(
                 text = item.overview,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = if (isExpanded) Int.MAX_VALUE else 3,
                 overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis,
@@ -78,7 +76,7 @@ internal fun OverviewSection(item: AfinityItem) {
                     if (!isExpanded) {
                         isEllipsized = result.hasVisualOverflow
                     }
-                }
+                },
             )
 
             if (isEllipsized || isExpanded) {
@@ -86,34 +84,32 @@ internal fun OverviewSection(item: AfinityItem) {
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) {
-                            isExpanded = !isExpanded
-                        }
-                        .padding(vertical = 4.dp)
+                    modifier =
+                        Modifier.clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() },
+                            ) {
+                                isExpanded = !isExpanded
+                            }
+                            .padding(vertical = 4.dp),
                 ) {
                     Text(
-                        text = if (isExpanded)
-                            stringResource(R.string.action_see_less)
-                        else
-                            stringResource(R.string.action_see_more),
+                        text =
+                            if (isExpanded) stringResource(R.string.action_see_less)
+                            else stringResource(R.string.action_see_more),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
 
                     Icon(
-                        painter = if (isExpanded) painterResource(id = R.drawable.ic_keyboard_arrow_up) else painterResource(
-                            id = R.drawable.ic_keyboard_arrow_down
-                        ),
-                        contentDescription = if (isExpanded)
-                            stringResource(R.string.cd_collapse)
-                        else
-                            stringResource(R.string.cd_expand),
+                        painter =
+                            if (isExpanded) painterResource(id = R.drawable.ic_keyboard_arrow_up)
+                            else painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                        contentDescription =
+                            if (isExpanded) stringResource(R.string.cd_collapse)
+                            else stringResource(R.string.cd_expand),
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
@@ -123,59 +119,62 @@ internal fun OverviewSection(item: AfinityItem) {
 
 @Composable
 internal fun TaglineSection(item: AfinityItem) {
-    val tagline = when (item) {
-        is AfinityMovie -> item.tagline
-        is AfinityShow -> item.tagline
-        else -> null
-    }
+    val tagline =
+        when (item) {
+            is AfinityMovie -> item.tagline
+            is AfinityShow -> item.tagline
+            else -> null
+        }
 
-    tagline?.takeIf { it.isNotBlank() }?.let { taglineText ->
-        Text(
-            text = taglineText,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontStyle = FontStyle.Italic,
-                fontWeight = FontWeight.Medium
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(vertical = 4.dp)
-        )
-    }
+    tagline
+        ?.takeIf { it.isNotBlank() }
+        ?.let { taglineText ->
+            Text(
+                text = taglineText,
+                style =
+                    MaterialTheme.typography.bodyLarge.copy(
+                        fontStyle = FontStyle.Italic,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 4.dp),
+            )
+        }
 }
 
 @Composable
 internal fun DirectorSection(item: AfinityItem) {
-    val directors = when (item) {
-        is AfinityMovie -> item.people.filter { it.type == PersonKind.DIRECTOR }
-        is AfinityShow -> item.people.filter { it.type == PersonKind.DIRECTOR }
-        else -> emptyList()
-    }
+    val directors =
+        when (item) {
+            is AfinityMovie -> item.people.filter { it.type == PersonKind.DIRECTOR }
+            is AfinityShow -> item.people.filter { it.type == PersonKind.DIRECTOR }
+            else -> emptyList()
+        }
 
     if (directors.isNotEmpty()) {
         Text(
-            text = stringResource(R.string.director_prefix, directors.joinToString(", ") { it.name }),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text =
+                stringResource(R.string.director_prefix, directors.joinToString(", ") { it.name }),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
 @Composable
 internal fun WriterSection(item: AfinityItem) {
-    val writers = when (item) {
-        is AfinityMovie -> item.people.filter { it.type == PersonKind.WRITER }
-        is AfinityShow -> item.people.filter { it.type == PersonKind.WRITER }
-        else -> emptyList()
-    }
+    val writers =
+        when (item) {
+            is AfinityMovie -> item.people.filter { it.type == PersonKind.WRITER }
+            is AfinityShow -> item.people.filter { it.type == PersonKind.WRITER }
+            else -> emptyList()
+        }
 
     if (writers.isNotEmpty()) {
         Text(
             text = stringResource(R.string.writers_prefix, writers.joinToString(", ") { it.name }),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -184,24 +183,20 @@ internal fun WriterSection(item: AfinityItem) {
 internal fun SeasonsSection(
     seasons: List<AfinitySeason>,
     navController: NavController,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = stringResource(R.string.seasons_title),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         val cardWidth = widthSizeClass.portraitWidth
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(seasons) { season ->
                 SeasonCard(
@@ -210,33 +205,23 @@ internal fun SeasonsSection(
                         val route = Destination.createItemDetailRoute(season.id.toString())
                         navController.navigate(route)
                     },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }
     }
 }
 
-
 @Composable
-internal fun SeasonCard(
-    season: AfinitySeason,
-    onClick: () -> Unit,
-    cardWidth: Dp
-) {
+internal fun SeasonCard(season: AfinitySeason, onClick: () -> Unit, cardWidth: Dp) {
 
-    Column(
-        modifier = Modifier.width(cardWidth)
-    ) {
+    Column(modifier = Modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
@@ -246,48 +231,48 @@ internal fun SeasonCard(
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 3f / 2f,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
 
                 if (season.played) {
                     Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .size(24.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primary,
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier.align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .size(24.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_check),
                             contentDescription = stringResource(R.string.cd_watched_status),
                             tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 } else {
                     season.unplayedItemCount?.let { unwatchedCount ->
                         if (unwatchedCount > 0) {
                             Surface(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(8.dp),
+                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                                 shape = RoundedCornerShape(4.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
                             ) {
                                 Text(
-                                    text = if (unwatchedCount > 99)
-                                        stringResource(R.string.home_episode_count_plus)
-                                    else
-                                        stringResource(R.string.home_episode_count_fmt, unwatchedCount),
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
+                                    text =
+                                        if (unwatchedCount > 99)
+                                            stringResource(R.string.home_episode_count_plus)
+                                        else
+                                            stringResource(
+                                                R.string.home_episode_count_fmt,
+                                                unwatchedCount,
+                                            ),
+                                    style =
+                                        MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Bold
+                                        ),
                                     color = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 )
                             }
                         }
@@ -300,20 +285,18 @@ internal fun SeasonCard(
 
         Text(
             text = season.name,
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontWeight = FontWeight.Medium
-            ),
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Start,
         )
 
         season.productionYear?.let { year ->
             Text(
                 text = year.toString(),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

@@ -8,18 +8,20 @@ import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.repository.JellyseerrRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
-class FilteredMediaViewModel @Inject constructor(
+class FilteredMediaViewModel
+@Inject
+constructor(
     @ApplicationContext private val context: Context,
-    private val jellyseerrRepository: JellyseerrRepository
+    private val jellyseerrRepository: JellyseerrRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FilteredMediaUiState())
@@ -35,16 +37,19 @@ class FilteredMediaViewModel @Inject constructor(
 
                 _uiState.update { state ->
                     state.copy(
-                        items = state.items.map { item ->
-                            if (item.id == updatedRequest.media.tmdbId) {
-                                item.copy(mediaInfo = updatedRequest.media)
-                            } else {
-                                item
+                        items =
+                            state.items.map { item ->
+                                if (item.id == updatedRequest.media.tmdbId) {
+                                    item.copy(mediaInfo = updatedRequest.media)
+                                } else {
+                                    item
+                                }
                             }
-                        }
                     )
                 }
-                Timber.d("Updated media item ${updatedRequest.media.tmdbId} with new request status")
+                Timber.d(
+                    "Updated media item ${updatedRequest.media.tmdbId} with new request status"
+                )
             }
         }
 
@@ -90,29 +95,27 @@ class FilteredMediaViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val result = when (params.type) {
-                    FilterType.GENRE_MOVIE -> jellyseerrRepository.getMoviesByGenre(
-                        params.id,
-                        currentPage
-                    )
+                val result =
+                    when (params.type) {
+                        FilterType.GENRE_MOVIE ->
+                            jellyseerrRepository.getMoviesByGenre(params.id, currentPage)
 
-                    FilterType.GENRE_TV -> jellyseerrRepository.getTvByGenre(params.id, currentPage)
-                    FilterType.STUDIO -> jellyseerrRepository.getMoviesByStudio(
-                        params.id,
-                        currentPage
-                    )
+                        FilterType.GENRE_TV ->
+                            jellyseerrRepository.getTvByGenre(params.id, currentPage)
+                        FilterType.STUDIO ->
+                            jellyseerrRepository.getMoviesByStudio(params.id, currentPage)
 
-                    FilterType.NETWORK -> jellyseerrRepository.getTvByNetwork(
-                        params.id,
-                        currentPage
-                    )
+                        FilterType.NETWORK ->
+                            jellyseerrRepository.getTvByNetwork(params.id, currentPage)
 
-                    FilterType.TRENDING -> jellyseerrRepository.getTrending(currentPage)
-                    FilterType.POPULAR_MOVIES -> jellyseerrRepository.getDiscoverMovies(currentPage)
-                    FilterType.UPCOMING_MOVIES -> jellyseerrRepository.getUpcomingMovies(currentPage)
-                    FilterType.POPULAR_TV -> jellyseerrRepository.getDiscoverTv(currentPage)
-                    FilterType.UPCOMING_TV -> jellyseerrRepository.getUpcomingTv(currentPage)
-                }
+                        FilterType.TRENDING -> jellyseerrRepository.getTrending(currentPage)
+                        FilterType.POPULAR_MOVIES ->
+                            jellyseerrRepository.getDiscoverMovies(currentPage)
+                        FilterType.UPCOMING_MOVIES ->
+                            jellyseerrRepository.getUpcomingMovies(currentPage)
+                        FilterType.POPULAR_TV -> jellyseerrRepository.getDiscoverTv(currentPage)
+                        FilterType.UPCOMING_TV -> jellyseerrRepository.getUpcomingTv(currentPage)
+                    }
 
                 result.fold(
                     onSuccess = { searchResult ->
@@ -127,7 +130,7 @@ class FilteredMediaViewModel @Inject constructor(
                             state.copy(
                                 items = uniqueList,
                                 isLoading = false,
-                                hasReachedEnd = hasReachedEnd
+                                hasReachedEnd = hasReachedEnd,
                             )
                         }
                         Timber.d("Loaded page $currentPage for ${params.name}")
@@ -136,17 +139,19 @@ class FilteredMediaViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                error = error.message ?: context.getString(R.string.error_load_content_generic)
+                                error =
+                                    error.message
+                                        ?: context.getString(R.string.error_load_content_generic),
                             )
                         }
                         Timber.e(error, "Failed to load content for ${params.name}")
-                    }
+                    },
                 )
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: context.getString(R.string.error_unknown)
+                        error = e.message ?: context.getString(R.string.error_unknown),
                     )
                 }
                 Timber.e(e, "Error loading content")
@@ -159,5 +164,5 @@ data class FilteredMediaUiState(
     val items: List<SearchResultItem> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val hasReachedEnd: Boolean = false
+    val hasReachedEnd: Boolean = false,
 )

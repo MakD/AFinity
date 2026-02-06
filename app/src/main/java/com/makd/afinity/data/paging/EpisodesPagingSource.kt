@@ -5,13 +5,13 @@ import androidx.paging.PagingState
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
-import timber.log.Timber
 import java.util.UUID
+import timber.log.Timber
 
 class EpisodesPagingSource(
     private val mediaRepository: MediaRepository,
     private val seasonId: UUID,
-    private val seriesId: UUID
+    private val seriesId: UUID,
 ) : PagingSource<Int, AfinityEpisode>() {
 
     companion object {
@@ -29,24 +29,29 @@ class EpisodesPagingSource(
 
             if (allEpisodes == null) {
                 Timber.d("EpisodesPagingSource: Loading all episodes from API")
-                allEpisodes = mediaRepository.getEpisodes(
-                    seasonId = seasonId,
-                    seriesId = seriesId,
-                    fields = FieldSets.EPISODE_LIST
-                ).sortedBy { it.indexNumber ?: 0 }
+                allEpisodes =
+                    mediaRepository
+                        .getEpisodes(
+                            seasonId = seasonId,
+                            seriesId = seriesId,
+                            fields = FieldSets.EPISODE_LIST,
+                        )
+                        .sortedBy { it.indexNumber ?: 0 }
                 Timber.d("EpisodesPagingSource: Loaded ${allEpisodes?.size} total episodes")
             }
 
-            val paginatedEpisodes = allEpisodes!!
-                .drop(startIndex)
-                .take(PAGE_SIZE)
+            val paginatedEpisodes = allEpisodes!!.drop(startIndex).take(PAGE_SIZE)
 
-            Timber.d("EpisodesPagingSource: Returning page $page with ${paginatedEpisodes.size} episodes")
+            Timber.d(
+                "EpisodesPagingSource: Returning page $page with ${paginatedEpisodes.size} episodes"
+            )
 
             LoadResult.Page(
                 data = paginatedEpisodes,
                 prevKey = if (page == 0) null else page - 1,
-                nextKey = if (startIndex + paginatedEpisodes.size >= allEpisodes!!.size) null else page + 1
+                nextKey =
+                    if (startIndex + paginatedEpisodes.size >= allEpisodes!!.size) null
+                    else page + 1,
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to load episodes page")

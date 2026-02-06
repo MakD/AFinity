@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -50,7 +49,7 @@ fun PlaybackSpeedSelector(
     currentSpeed: Float,
     onSpeedSelected: (Float) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberModalBottomSheetState()
 
@@ -69,14 +68,11 @@ fun PlaybackSpeedSelector(
         sheetState = sheetState,
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        dragHandle = null
+        dragHandle = null,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp)
-                .padding(bottom = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "PLAYBACK SPEED",
@@ -84,38 +80,38 @@ fun PlaybackSpeedSelector(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
-                letterSpacing = 2.sp
+                letterSpacing = 2.sp,
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "${formatSpeed(currentSpeed)}x",
                 style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 FilledIconButton(
                     onClick = {
-                        val prev = presets.lastOrNull { it < currentSpeed - 0.01f } ?: presets.first()
+                        val prev =
+                            presets.lastOrNull { it < currentSpeed - 0.01f } ?: presets.first()
                         onSpeedSelected(prev)
                     },
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    modifier = Modifier.size(48.dp)
+                    colors =
+                        IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_minus),
-                        contentDescription = "Previous preset"
+                        contentDescription = "Previous preset",
                     )
                 }
 
@@ -127,26 +123,29 @@ fun PlaybackSpeedSelector(
                     },
                     valueRange = presets.first()..presets.last(),
                     modifier = Modifier.weight(1f),
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.onSurface,
-                        activeTrackColor = MaterialTheme.colorScheme.onSurface,
-                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                    colors =
+                        SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.onSurface,
+                            activeTrackColor = MaterialTheme.colorScheme.onSurface,
+                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        ),
                 )
                 FilledIconButton(
                     onClick = {
-                        val next = presets.firstOrNull { it > currentSpeed + 0.01f } ?: presets.last()
+                        val next =
+                            presets.firstOrNull { it > currentSpeed + 0.01f } ?: presets.last()
                         onSpeedSelected(next)
                     },
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    modifier = Modifier.size(48.dp)
+                    colors =
+                        IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_plus),
-                        contentDescription = "Next preset"
+                        contentDescription = "Next preset",
                     )
                 }
             }
@@ -157,13 +156,13 @@ fun PlaybackSpeedSelector(
                 state = listState,
                 contentPadding = PaddingValues(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 items(presets) { speed ->
                     PresetSpeedItem(
                         speed = speed,
                         isSelected = speed == currentSpeed,
-                        onClick = { onSpeedSelected(speed) }
+                        onClick = { onSpeedSelected(speed) },
                     )
                 }
             }
@@ -172,37 +171,33 @@ fun PlaybackSpeedSelector(
 }
 
 @Composable
-private fun PresetSpeedItem(
-    speed: Float,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+private fun PresetSpeedItem(speed: Float, isSelected: Boolean, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            modifier = Modifier
-                .width(64.dp)
-                .height(36.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(
-                    if (isSelected) MaterialTheme.colorScheme.onSurface
-                    else Color.Transparent
-                )
-                .border(
-                    BorderStroke(
-                        1.dp,
-                        if (isSelected) Color.Transparent
-                        else MaterialTheme.colorScheme.outlineVariant
-                    ),
-                    RoundedCornerShape(8.dp)
-                )
-                .clickable(onClick = onClick),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier.width(64.dp)
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent
+                    )
+                    .border(
+                        BorderStroke(
+                            1.dp,
+                            if (isSelected) Color.Transparent
+                            else MaterialTheme.colorScheme.outlineVariant,
+                        ),
+                        RoundedCornerShape(8.dp),
+                    )
+                    .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = formatSpeed(speed),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                color = if (isSelected) MaterialTheme.colorScheme.inverseOnSurface
-                else MaterialTheme.colorScheme.onSurface
+                color =
+                    if (isSelected) MaterialTheme.colorScheme.inverseOnSurface
+                    else MaterialTheme.colorScheme.onSurface,
             )
         }
 
@@ -211,7 +206,7 @@ private fun PresetSpeedItem(
             Text(
                 text = "Normal",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
             Text(text = " ", style = MaterialTheme.typography.labelSmall)

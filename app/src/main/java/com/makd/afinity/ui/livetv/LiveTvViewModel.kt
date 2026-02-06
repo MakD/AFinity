@@ -7,6 +7,10 @@ import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -19,15 +23,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
-import java.util.UUID
-import javax.inject.Inject
 
 @HiltViewModel
-class LiveTvViewModel @Inject constructor(
-    private val liveTvRepository: LiveTvRepository
-) : ViewModel() {
+class LiveTvViewModel @Inject constructor(private val liveTvRepository: LiveTvRepository) :
+    ViewModel() {
 
     private val _uiState = MutableStateFlow(LiveTvUiState())
     val uiState: StateFlow<LiveTvUiState> = _uiState.asStateFlow()
@@ -58,18 +57,19 @@ class LiveTvViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.Default) {
             val currentCache = allChannelsCache
 
-            val filteredList = if (letter == null) {
-                currentCache
-            } else {
-                currentCache.filter { channel ->
-                    val firstChar = channel.name.firstOrNull()?.uppercase() ?: ""
-                    if (letter == "#") {
-                        firstChar.isNotEmpty() && !firstChar[0].isLetter()
-                    } else {
-                        firstChar == letter
+            val filteredList =
+                if (letter == null) {
+                    currentCache
+                } else {
+                    currentCache.filter { channel ->
+                        val firstChar = channel.name.firstOrNull()?.uppercase() ?: ""
+                        if (letter == "#") {
+                            firstChar.isNotEmpty() && !firstChar[0].isLetter()
+                        } else {
+                            firstChar == letter
+                        }
                     }
                 }
-            }
 
             _uiState.update { it.copy(channels = filteredList) }
         }
@@ -103,17 +103,10 @@ class LiveTvViewModel @Inject constructor(
                 allChannelsCache = channels
                 applyFilterToCache(_selectedLetter.value)
 
-                _uiState.update {
-                    it.copy(
-                        epgChannels = channels,
-                        isLoading = false
-                    )
-                }
+                _uiState.update { it.copy(epgChannels = channels, isLoading = false) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load channels")
-                _uiState.update {
-                    it.copy(isLoading = false, error = "Failed to load channels")
-                }
+                _uiState.update { it.copy(isLoading = false, error = "Failed to load channels") }
             }
         }
     }
@@ -124,37 +117,66 @@ class LiveTvViewModel @Inject constructor(
                 _uiState.update { it.copy(isCategoriesLoading = true) }
                 val channels = liveTvRepository.getChannels()
                 val channelsMap = channels.associateBy { it.id }
-                val categorizedPrograms = awaitAll(
-                    async(Dispatchers.IO) {
-                        LiveTvCategory.ON_NOW to liveTvRepository.getPrograms(hasAired = false, limit = 20)
-                    },
-                    async(Dispatchers.IO) {
-                        LiveTvCategory.MOVIES to liveTvRepository.getPrograms(hasAired = false, isMovie = true, limit = 20)
-                    },
-                    async(Dispatchers.IO) {
-                        LiveTvCategory.SHOWS to liveTvRepository.getPrograms(hasAired = false, isSeries = true, limit = 20)
-                    },
-                    async(Dispatchers.IO) {
-                        LiveTvCategory.SPORTS to liveTvRepository.getPrograms(hasAired = false, isSports = true, limit = 20)
-                    },
-                    async(Dispatchers.IO) {
-                        LiveTvCategory.KIDS to liveTvRepository.getPrograms(hasAired = false, isKids = true, limit = 20)
-                    },
-                    async(Dispatchers.IO) {
-                        LiveTvCategory.NEWS to liveTvRepository.getPrograms(hasAired = false, isNews = true, limit = 20)
-                    }
-                )
+                val categorizedPrograms =
+                    awaitAll(
+                        async(Dispatchers.IO) {
+                            LiveTvCategory.ON_NOW to
+                                liveTvRepository.getPrograms(hasAired = false, limit = 20)
+                        },
+                        async(Dispatchers.IO) {
+                            LiveTvCategory.MOVIES to
+                                liveTvRepository.getPrograms(
+                                    hasAired = false,
+                                    isMovie = true,
+                                    limit = 20,
+                                )
+                        },
+                        async(Dispatchers.IO) {
+                            LiveTvCategory.SHOWS to
+                                liveTvRepository.getPrograms(
+                                    hasAired = false,
+                                    isSeries = true,
+                                    limit = 20,
+                                )
+                        },
+                        async(Dispatchers.IO) {
+                            LiveTvCategory.SPORTS to
+                                liveTvRepository.getPrograms(
+                                    hasAired = false,
+                                    isSports = true,
+                                    limit = 20,
+                                )
+                        },
+                        async(Dispatchers.IO) {
+                            LiveTvCategory.KIDS to
+                                liveTvRepository.getPrograms(
+                                    hasAired = false,
+                                    isKids = true,
+                                    limit = 20,
+                                )
+                        },
+                        async(Dispatchers.IO) {
+                            LiveTvCategory.NEWS to
+                                liveTvRepository.getPrograms(
+                                    hasAired = false,
+                                    isNews = true,
+                                    limit = 20,
+                                )
+                        },
+                    )
                 val categorized = mutableMapOf<LiveTvCategory, MutableList<ProgramWithChannel>>()
 
                 categorizedPrograms.forEach { (category, programs) ->
-                    val programsWithChannel = programs
-                        .filter { program ->
-                            program.isCurrentlyAiring() && channelsMap.containsKey(program.channelId)
-                        }
-                        .map { program ->
-                            ProgramWithChannel(program, channelsMap[program.channelId]!!)
-                        }
-                        .toMutableList()
+                    val programsWithChannel =
+                        programs
+                            .filter { program ->
+                                program.isCurrentlyAiring() &&
+                                    channelsMap.containsKey(program.channelId)
+                            }
+                            .map { program ->
+                                ProgramWithChannel(program, channelsMap[program.channelId]!!)
+                            }
+                            .toMutableList()
 
                     when (category) {
                         LiveTvCategory.ON_NOW -> {
@@ -169,15 +191,13 @@ class LiveTvViewModel @Inject constructor(
 
                     categorized[category] = programsWithChannel
                 }
-                val filteredCategories = categorized.filter { (category, programs) ->
-                    category == LiveTvCategory.ON_NOW || programs.isNotEmpty()
-                }
+                val filteredCategories =
+                    categorized.filter { (category, programs) ->
+                        category == LiveTvCategory.ON_NOW || programs.isNotEmpty()
+                    }
 
                 _uiState.update {
-                    it.copy(
-                        categorizedPrograms = filteredCategories,
-                        isCategoriesLoading = false
-                    )
+                    it.copy(categorizedPrograms = filteredCategories, isCategoriesLoading = false)
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load categorized programs")
@@ -192,7 +212,8 @@ class LiveTvViewModel @Inject constructor(
                 _uiState.update { it.copy(isEpgLoading = true) }
 
                 val channels =
-                    if (allChannelsCache.isNotEmpty()) allChannelsCache else liveTvRepository.getChannels()
+                    if (allChannelsCache.isNotEmpty()) allChannelsCache
+                    else liveTvRepository.getChannels()
 
                 if (channels.isEmpty()) {
                     Timber.w("EPG: No channels found.")
@@ -203,19 +224,24 @@ class LiveTvViewModel @Inject constructor(
                 val startTime = _uiState.value.epgStartTime
                 val endTime = startTime.plusHours(_uiState.value.epgVisibleHours.toLong() + 1)
 
-                val allPrograms = channels.chunked(100).map { batch ->
-                    async(Dispatchers.IO) {
-                        try {
-                            liveTvRepository.getPrograms(
-                                channelIds = batch.map { it.id },
-                                minStartDate = startTime,
-                                maxEndDate = endTime
-                            )
-                        } catch (e: Exception) {
-                            emptyList()
+                val allPrograms =
+                    channels
+                        .chunked(100)
+                        .map { batch ->
+                            async(Dispatchers.IO) {
+                                try {
+                                    liveTvRepository.getPrograms(
+                                        channelIds = batch.map { it.id },
+                                        minStartDate = startTime,
+                                        maxEndDate = endTime,
+                                    )
+                                } catch (e: Exception) {
+                                    emptyList()
+                                }
+                            }
                         }
-                    }
-                }.awaitAll().flatten()
+                        .awaitAll()
+                        .flatten()
 
                 val programsByChannel = allPrograms.groupBy { it.channelId }
 
@@ -223,7 +249,7 @@ class LiveTvViewModel @Inject constructor(
                     it.copy(
                         epgChannels = channels,
                         epgPrograms = programsByChannel,
-                        isEpgLoading = false
+                        isEpgLoading = false,
                     )
                 }
             } catch (e: Exception) {
@@ -263,12 +289,13 @@ class LiveTvViewModel @Inject constructor(
 
     private fun startPeriodicRefresh() {
         refreshJob?.cancel()
-        refreshJob = viewModelScope.launch {
-            while (isActive) {
-                delay(60000L)
-                refreshCurrentTabData()
+        refreshJob =
+            viewModelScope.launch {
+                while (isActive) {
+                    delay(60000L)
+                    refreshCurrentTabData()
+                }
             }
-        }
     }
 
     private suspend fun refreshCurrentTabData() {
@@ -292,9 +319,11 @@ class LiveTvViewModel @Inject constructor(
             try {
                 val success = liveTvRepository.toggleChannelFavorite(channelId)
                 if (success) {
-                    allChannelsCache = allChannelsCache.map { channel ->
-                        if (channel.id == channelId) channel.copy(favorite = !channel.favorite) else channel
-                    }
+                    allChannelsCache =
+                        allChannelsCache.map { channel ->
+                            if (channel.id == channelId) channel.copy(favorite = !channel.favorite)
+                            else channel
+                        }
                     applyFilterToCache(_selectedLetter.value)
                 }
             } catch (e: Exception) {

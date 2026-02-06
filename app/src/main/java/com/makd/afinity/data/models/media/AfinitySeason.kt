@@ -1,10 +1,10 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.repository.JellyfinRepository
-import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.PlayAccess
 import java.time.LocalDateTime
 import java.util.UUID
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.PlayAccess
 
 data class AfinitySeason(
     override val id: UUID,
@@ -34,9 +34,7 @@ data class AfinitySeason(
     override val externalUrls: List<AfinityExternalUrl>?,
 ) : AfinityItem
 
-fun BaseItemDto.toAfinitySeason(
-    jellyfinRepository: JellyfinRepository,
-): AfinitySeason {
+fun BaseItemDto.toAfinitySeason(jellyfinRepository: JellyfinRepository): AfinitySeason {
     return AfinitySeason(
         id = id,
         name = name.orEmpty(),
@@ -58,9 +56,7 @@ fun BaseItemDto.toAfinitySeason(
         productionYear = productionYear,
         premiereDate = premiereDate,
         people = people?.map { it.toAfinityPerson(jellyfinRepository) } ?: emptyList(),
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
-        externalUrls = externalUrls?.map { it.toAfinityExternalUrl() }
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
+        externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
     )
 }
