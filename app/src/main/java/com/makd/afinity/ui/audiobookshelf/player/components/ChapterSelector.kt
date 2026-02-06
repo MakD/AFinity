@@ -127,7 +127,7 @@ private fun ChapterRow(
         ) {
             if (isCurrent) {
                 Icon(
-                    painterResource(id = R.drawable.ic_speed),
+                    painterResource(id = R.drawable.ic_player_play_filled),
                     contentDescription = "Playing",
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(16.dp)

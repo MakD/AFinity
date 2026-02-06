@@ -140,7 +140,7 @@ fun AudiobookshelfLibrariesScreen(
                             NavigationChip(
                                 selected = pagerState.currentPage == 0,
                                 label = "Home",
-                                iconResId = R.drawable.ic_home_filled,
+                                iconResId = R.drawable.ic_book_series,
                                 onClick = {
                                     coroutineScope.launch {
                                         pagerState.animateScrollToPage(0)
@@ -152,7 +152,7 @@ fun AudiobookshelfLibrariesScreen(
                             NavigationChip(
                                 selected = pagerState.currentPage == 1,
                                 label = "Series",
-                                iconResId = R.drawable.ic_books_filled,
+                                iconResId = R.drawable.ic_collection,
                                 onClick = {
                                     coroutineScope.launch {
                                         pagerState.animateScrollToPage(1)
@@ -161,10 +161,16 @@ fun AudiobookshelfLibrariesScreen(
                             )
                         }
                         itemsIndexed(libraries) { index, library ->
+                            val iconRes = when (library.mediaType.lowercase()) {
+                                "podcast" -> R.drawable.ic_apple_podcast
+                                "book" -> R.drawable.ic_book_audio
+                                else -> R.drawable.ic_book
+                            }
+
                             NavigationChip(
                                 selected = pagerState.currentPage == index + 2,
                                 label = library.name,
-                                iconResId = R.drawable.ic_headphones_filled,
+                                iconResId = iconRes,
                                 onClick = {
                                     coroutineScope.launch {
                                         pagerState.animateScrollToPage(index + 2)
