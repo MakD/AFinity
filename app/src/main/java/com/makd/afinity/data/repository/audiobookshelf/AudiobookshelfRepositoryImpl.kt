@@ -354,7 +354,8 @@ class AudiobookshelfRepositoryImpl @Inject constructor(
                         id = libraryId,
                         limit = limit,
                         page = currentPage,
-                        include = "progress"
+                        include = "progress",
+                        sort =  "media.metadata.title"
                     )
 
                     if (response.isSuccessful && response.body() != null) {

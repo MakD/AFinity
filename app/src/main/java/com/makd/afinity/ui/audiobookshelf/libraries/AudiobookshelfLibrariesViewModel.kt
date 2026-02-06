@@ -183,7 +183,7 @@ class AudiobookshelfLibrariesViewModel @Inject constructor(
             val result = audiobookshelfRepository.refreshLibraryItems(libraryId)
             result.fold(
                 onSuccess = { items ->
-                    _libraryItems.value = _libraryItems.value + (libraryId to items)
+                    _libraryItems.value += (libraryId to items)
                 },
                 onFailure = { error ->
                     Timber.e(error, "Failed to load items for library $libraryId")
