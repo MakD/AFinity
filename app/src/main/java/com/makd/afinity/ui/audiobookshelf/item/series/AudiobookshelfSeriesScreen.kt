@@ -28,7 +28,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +35,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
@@ -54,7 +52,6 @@ import com.makd.afinity.ui.audiobookshelf.item.components.SeriesCoverGrid
 
 @Composable
 fun AudiobookshelfSeriesScreen(
-    onNavigateBack: () -> Unit,
     onNavigateToPlayer: (String, String?, Double?) -> Unit,
     viewModel: AudiobookshelfSeriesViewModel = hiltViewModel(),
 ) {
@@ -96,9 +93,9 @@ fun AudiobookshelfSeriesScreen(
                                     .padding(horizontal = 16.dp)
                                     .padding(bottom = 24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
                         ) {
                             Spacer(modifier = Modifier.statusBarsPadding())
+                            Spacer(modifier = Modifier.height(60.dp))
 
                             SeriesCoverGrid(
                                 coverUrls = coverUrls,
@@ -202,21 +199,6 @@ fun AudiobookshelfSeriesScreen(
             }
         }
 
-        IconButton(
-            onClick = onNavigateBack,
-            modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(8.dp),
-            colors =
-                IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.Black.copy(alpha = 0.5f),
-                    contentColor = Color.White,
-                ),
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_chevron_left),
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground,
-            )
-        }
     }
 }
 

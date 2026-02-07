@@ -705,7 +705,6 @@ fun MainNavigation(
                     arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
                 ) {
                     AudiobookshelfItemScreen(
-                        onNavigateBack = { navController.popBackStack() },
                         onNavigateToPlayer = { itemId, episodeId, startPosition ->
                             navController.navigate(
                                 Destination.createAudiobookshelfPlayerRoute(
@@ -737,7 +736,6 @@ fun MainNavigation(
                         ),
                 ) {
                     AudiobookshelfSeriesScreen(
-                        onNavigateBack = { navController.popBackStack() },
                         onNavigateToPlayer = { itemId, episodeId, startPosition ->
                             navController.navigate(
                                 Destination.createAudiobookshelfPlayerRoute(

@@ -33,8 +33,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +42,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -65,7 +62,6 @@ import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
 
 @Composable
 fun AudiobookshelfItemScreen(
-    onNavigateBack: () -> Unit,
     onNavigateToPlayer: (String, String?, Double?) -> Unit,
     onNavigateToSeries: (seriesId: String, libraryId: String, seriesName: String) -> Unit =
         { _, _, _ ->
@@ -327,22 +323,6 @@ fun AudiobookshelfItemScreen(
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
-        }
-
-        IconButton(
-            onClick = onNavigateBack,
-            modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(8.dp),
-            colors =
-                IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.Black.copy(alpha = 0.5f),
-                    contentColor = Color.White,
-                ),
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_chevron_left),
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground,
-            )
         }
 
         AnimatedVisibility(
