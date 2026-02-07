@@ -2,10 +2,7 @@ package com.makd.afinity.data.database.entities
 
 import androidx.room.Entity
 
-@Entity(
-    tableName = "library_cache",
-    primaryKeys = ["libraryId", "itemId"]
-)
+@Entity(tableName = "library_cache", primaryKeys = ["libraryId", "itemId"])
 data class LibraryCacheEntity(
     val libraryId: String,
     val itemId: String,
@@ -40,5 +37,5 @@ data class LibraryCacheEntity(
     val cacheTimestamp: Long,
     val sortBy: String,
     val sortDescending: Boolean,
-    val filterType: String
+    val filterType: String,
 )

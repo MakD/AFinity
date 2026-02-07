@@ -13,6 +13,8 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,32 +23,37 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
 
 enum class FilterType {
-    ALL, WATCHED, UNWATCHED, WATCHLIST, FAVORITES
+    ALL,
+    WATCHED,
+    UNWATCHED,
+    WATCHLIST,
+    FAVORITES,
 }
 
 @HiltViewModel
-class LibraryContentViewModel @Inject constructor(
+class LibraryContentViewModel
+@Inject
+constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val appDataRepository: AppDataRepository,
     private val playbackStateManager: PlaybackStateManager,
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val libraryId: String? = savedStateHandle["libraryId"]
     private val libraryName: String? = savedStateHandle["libraryName"]
     private val studioName: String? = savedStateHandle["studioName"]
 
-    private val _uiState = MutableStateFlow(
-        LibraryContentUiState(
-            libraryId = libraryId?.let { UUID.fromString(it) },
-            libraryName = (libraryName ?: studioName ?: "Content").replace("%2F", "/"),
-            isStudioMode = studioName != null
+    private val _uiState =
+        MutableStateFlow(
+            LibraryContentUiState(
+                libraryId = libraryId?.let { UUID.fromString(it) },
+                libraryName = (libraryName ?: studioName ?: "Content").replace("%2F", "/"),
+                isStudioMode = studioName != null,
+            )
         )
-    )
     val uiState: StateFlow<LibraryContentUiState> = _uiState.asStateFlow()
 
     private val _pagingData = MutableStateFlow<Flow<PagingData<AfinityItem>>>(emptyFlow())
@@ -70,11 +77,7 @@ class LibraryContentViewModel @Inject constructor(
                     loadLibraryContent()
                 } else {
                     _uiState.update {
-                        it.copy(
-                            isLoading = true,
-                            error = null,
-                            userProfileImageUrl = null
-                        )
+                        it.copy(isLoading = true, error = null, userProfileImageUrl = null)
                     }
                     _pagingData.value = emptyFlow()
                 }
@@ -114,8 +117,8 @@ class LibraryContentViewModel @Inject constructor(
             val name = libraryName ?: ""
             when {
                 name.contains("TV", ignoreCase = true) ||
-                        name.contains("Shows", ignoreCase = true) ||
-                        name.contains("Series", ignoreCase = true) -> CollectionType.TvShows
+                    name.contains("Shows", ignoreCase = true) ||
+                    name.contains("Series", ignoreCase = true) -> CollectionType.TvShows
 
                 name.contains("Movie", ignoreCase = true) -> CollectionType.Movies
                 else -> CollectionType.Mixed
@@ -126,15 +129,18 @@ class LibraryContentViewModel @Inject constructor(
     private fun loadItems() {
         val type = libraryType ?: return
 
-        _pagingData.value = jellyfinRepository.getItemsPaging(
-            parentId = libraryId?.let { UUID.fromString(it) },
-            libraryType = type,
-            sortBy = currentSortBy,
-            sortDescending = currentSortDescending,
-            filter = currentFilter,
-            nameStartsWith = null,
-            studioName = studioName
-        ).cachedIn(viewModelScope)
+        _pagingData.value =
+            jellyfinRepository
+                .getItemsPaging(
+                    parentId = libraryId?.let { UUID.fromString(it) },
+                    libraryType = type,
+                    sortBy = currentSortBy,
+                    sortDescending = currentSortDescending,
+                    filter = currentFilter,
+                    nameStartsWith = null,
+                    studioName = studioName,
+                )
+                .cachedIn(viewModelScope)
     }
 
     private fun loadLibraryContent() {
@@ -146,22 +152,24 @@ class LibraryContentViewModel @Inject constructor(
                 val type = determineLibraryType()
                 libraryType = type
 
-                _uiState.value = _uiState.value.copy(
-                    libraryType = type,
-                    userProfileImageUrl = userProfileImageUrl,
-                    currentSortBy = currentSortBy,
-                    currentSortDescending = currentSortDescending,
-                    currentFilter = currentFilter,
-                    isLoading = false
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        libraryType = type,
+                        userProfileImageUrl = userProfileImageUrl,
+                        currentSortBy = currentSortBy,
+                        currentSortDescending = currentSortDescending,
+                        currentFilter = currentFilter,
+                        isLoading = false,
+                    )
 
                 loadItems()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load library content")
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Content not available on this server"
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoading = false,
+                        error = "Content not available on this server",
+                    )
             }
         }
     }
@@ -178,10 +186,11 @@ class LibraryContentViewModel @Inject constructor(
         if (currentSortBy != sortBy || currentSortDescending != descending) {
             currentSortBy = sortBy
             currentSortDescending = descending
-            _uiState.value = _uiState.value.copy(
-                currentSortBy = currentSortBy,
-                currentSortDescending = currentSortDescending
-            )
+            _uiState.value =
+                _uiState.value.copy(
+                    currentSortBy = currentSortBy,
+                    currentSortDescending = currentSortDescending,
+                )
             loadItems()
         }
     }
@@ -205,25 +214,28 @@ class LibraryContentViewModel @Inject constructor(
             try {
                 val type = libraryType ?: return@launch
 
-                val letterFilter = when (letter) {
-                    "#" -> "0"
-                    else -> letter
-                }
+                val letterFilter =
+                    when (letter) {
+                        "#" -> "0"
+                        else -> letter
+                    }
 
                 _uiState.value = _uiState.value.copy(selectedLetter = letter)
 
-                _pagingData.value = jellyfinRepository.getItemsPaging(
-                    parentId = libraryId?.let { UUID.fromString(it) },
-                    libraryType = type,
-                    sortBy = currentSortBy,
-                    sortDescending = currentSortDescending,
-                    filter = currentFilter,
-                    nameStartsWith = letterFilter,
-                    studioName = studioName
-                ).cachedIn(viewModelScope)
+                _pagingData.value =
+                    jellyfinRepository
+                        .getItemsPaging(
+                            parentId = libraryId?.let { UUID.fromString(it) },
+                            libraryType = type,
+                            sortBy = currentSortBy,
+                            sortDescending = currentSortDescending,
+                            filter = currentFilter,
+                            nameStartsWith = letterFilter,
+                            studioName = studioName,
+                        )
+                        .cachedIn(viewModelScope)
 
                 Timber.d("Alphabet scroll: Created new paging source for letter '$letter'")
-
             } catch (e: Exception) {
                 Timber.e(e, "Failed to scroll to letter $letter")
             }
@@ -247,5 +259,5 @@ data class LibraryContentUiState(
     val currentSortDescending: Boolean = false,
     val currentFilter: FilterType = FilterType.ALL,
     val isStudioMode: Boolean = false,
-    val selectedLetter: String? = null
+    val selectedLetter: String? = null,
 )

@@ -18,31 +18,28 @@ import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 fun NextUpSection(
     episode: AfinityEpisode,
     onEpisodeClick: (AfinityEpisode) -> Unit,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val isInProgress = episode.playbackPositionTicks > 0 && !episode.played
-    val sectionTitle = if (isInProgress) {
-        stringResource(R.string.home_continue_watching)
-    } else {
-        stringResource(R.string.home_next_up)
-    }
+    val sectionTitle =
+        if (isInProgress) {
+            stringResource(R.string.home_continue_watching)
+        } else {
+            stringResource(R.string.home_next_up)
+        }
 
     val cardWidth = widthSizeClass.landscapeWidth
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = sectionTitle,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
         )
         ContinueWatchingCard(
             item = episode,
             onClick = { onEpisodeClick(episode) },
-            cardWidth = cardWidth
+            cardWidth = cardWidth,
         )
     }
 }

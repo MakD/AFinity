@@ -32,14 +32,11 @@ import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.LocationType
 import org.jellyfin.sdk.model.api.PlayAccess
 
-
 fun BaseItemDto.toAfinityExternalUrls(): List<AfinityExternalUrl>? {
     return externalUrls?.map { it.toAfinityExternalUrl() }
 }
 
-fun BaseItemDto.toAfinityItem(
-    baseUrl: String,
-): AfinityItem? {
+fun BaseItemDto.toAfinityItem(baseUrl: String): AfinityItem? {
     return when (type) {
         BaseItemKind.MOVIE -> toAfinityMovie(baseUrl)
         BaseItemKind.EPISODE -> toAfinityEpisode(baseUrl)
@@ -52,46 +49,50 @@ fun BaseItemDto.toAfinityItem(
     }
 }
 
-fun BaseItemDto.toAfinityMovie(
-    baseUrl: String,
-): AfinityMovie {
+fun BaseItemDto.toAfinityMovie(baseUrl: String): AfinityMovie {
     return AfinityMovie(
         id = id,
         name = name.orEmpty(),
         originalTitle = originalTitle,
         overview = overview.orEmpty(),
-        sources = mediaSources?.map { mediaSource ->
-            AfinitySource(
-                id = mediaSource.id.orEmpty(),
-                name = mediaSource.name.orEmpty(),
-                type = AfinitySourceType.REMOTE,
-                path = mediaSource.path.orEmpty(),
-                size = mediaSource.size ?: 0L,
-                mediaStreams = mediaSource.mediaStreams?.map { mediaStream ->
-                    AfinityMediaStream(
-                        title = mediaStream.title.orEmpty(),
-                        displayTitle = mediaStream.displayTitle,
-                        language = mediaStream.language.orEmpty(),
-                        type = mediaStream.type,
-                        codec = mediaStream.codec.orEmpty(),
-                        isExternal = mediaStream.isExternal,
-                        path = if (mediaStream.isExternal && !mediaStream.deliveryUrl.isNullOrBlank()) {
-                            baseUrl + mediaStream.deliveryUrl
-                        } else {
-                            null
-                        },
-                        channelLayout = mediaStream.channelLayout,
-                        videoRangeType = mediaStream.videoRangeType,
-                        height = mediaStream.height,
-                        width = mediaStream.width,
-                        videoDoViTitle = mediaStream.videoDoViTitle,
-                        index = mediaStream.index,
-                        channels = mediaStream.channels,
-                        isDefault = mediaStream.isDefault,
-                    )
-                } ?: emptyList()
-            )
-        } ?: emptyList(),
+        sources =
+            mediaSources?.map { mediaSource ->
+                AfinitySource(
+                    id = mediaSource.id.orEmpty(),
+                    name = mediaSource.name.orEmpty(),
+                    type = AfinitySourceType.REMOTE,
+                    path = mediaSource.path.orEmpty(),
+                    size = mediaSource.size ?: 0L,
+                    mediaStreams =
+                        mediaSource.mediaStreams?.map { mediaStream ->
+                            AfinityMediaStream(
+                                title = mediaStream.title.orEmpty(),
+                                displayTitle = mediaStream.displayTitle,
+                                language = mediaStream.language.orEmpty(),
+                                type = mediaStream.type,
+                                codec = mediaStream.codec.orEmpty(),
+                                isExternal = mediaStream.isExternal,
+                                path =
+                                    if (
+                                        mediaStream.isExternal &&
+                                            !mediaStream.deliveryUrl.isNullOrBlank()
+                                    ) {
+                                        baseUrl + mediaStream.deliveryUrl
+                                    } else {
+                                        null
+                                    },
+                                channelLayout = mediaStream.channelLayout,
+                                videoRangeType = mediaStream.videoRangeType,
+                                height = mediaStream.height,
+                                width = mediaStream.width,
+                                videoDoViTitle = mediaStream.videoDoViTitle,
+                                index = mediaStream.index,
+                                channels = mediaStream.channels,
+                                isDefault = mediaStream.isDefault,
+                            )
+                        } ?: emptyList(),
+                )
+            } ?: emptyList(),
         played = userData?.played == true,
         favorite = userData?.isFavorite == true,
         canPlay = playAccess != PlayAccess.NONE,
@@ -112,59 +113,64 @@ fun BaseItemDto.toAfinityMovie(
         tagline = taglines?.firstOrNull(),
         images = toAfinityImages(baseUrl),
         chapters = toAfinityChapters(),
-        trickplayInfo = trickplay?.flatMap { (_, widthMap) ->
-            widthMap.map { (width, info) ->
-                width.toString() to info.toAfinityTrickplayInfo()
-            }
-        }?.toMap(),
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
+        trickplayInfo =
+            trickplay
+                ?.flatMap { (_, widthMap) ->
+                    widthMap.map { (width, info) ->
+                        width.toString() to info.toAfinityTrickplayInfo()
+                    }
+                }
+                ?.toMap(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
     )
 }
 
-fun BaseItemDto.toAfinityShow(
-    baseUrl: String,
-): AfinityShow {
+fun BaseItemDto.toAfinityShow(baseUrl: String): AfinityShow {
     return AfinityShow(
         id = id,
         name = name.orEmpty(),
         originalTitle = originalTitle,
         overview = overview.orEmpty(),
-        sources = mediaSources?.map { mediaSource ->
-            AfinitySource(
-                id = mediaSource.id.orEmpty(),
-                name = mediaSource.name.orEmpty(),
-                type = AfinitySourceType.REMOTE,
-                path = mediaSource.path.orEmpty(),
-                size = mediaSource.size ?: 0L,
-                mediaStreams = mediaSource.mediaStreams?.map { mediaStream ->
-                    AfinityMediaStream(
-                        title = mediaStream.title.orEmpty(),
-                        displayTitle = mediaStream.displayTitle,
-                        language = mediaStream.language.orEmpty(),
-                        type = mediaStream.type,
-                        codec = mediaStream.codec.orEmpty(),
-                        isExternal = mediaStream.isExternal,
-                        path = if (mediaStream.isExternal && !mediaStream.deliveryUrl.isNullOrBlank()) {
-                            baseUrl + mediaStream.deliveryUrl
-                        } else {
-                            null
-                        },
-                        channelLayout = mediaStream.channelLayout,
-                        videoRangeType = mediaStream.videoRangeType,
-                        height = mediaStream.height,
-                        width = mediaStream.width,
-                        videoDoViTitle = mediaStream.videoDoViTitle,
-                        index = mediaStream.index,
-                        channels = mediaStream.channels,
-                        isDefault = mediaStream.isDefault,
-                    )
-                } ?: emptyList()
-            )
-        } ?: emptyList(),
+        sources =
+            mediaSources?.map { mediaSource ->
+                AfinitySource(
+                    id = mediaSource.id.orEmpty(),
+                    name = mediaSource.name.orEmpty(),
+                    type = AfinitySourceType.REMOTE,
+                    path = mediaSource.path.orEmpty(),
+                    size = mediaSource.size ?: 0L,
+                    mediaStreams =
+                        mediaSource.mediaStreams?.map { mediaStream ->
+                            AfinityMediaStream(
+                                title = mediaStream.title.orEmpty(),
+                                displayTitle = mediaStream.displayTitle,
+                                language = mediaStream.language.orEmpty(),
+                                type = mediaStream.type,
+                                codec = mediaStream.codec.orEmpty(),
+                                isExternal = mediaStream.isExternal,
+                                path =
+                                    if (
+                                        mediaStream.isExternal &&
+                                            !mediaStream.deliveryUrl.isNullOrBlank()
+                                    ) {
+                                        baseUrl + mediaStream.deliveryUrl
+                                    } else {
+                                        null
+                                    },
+                                channelLayout = mediaStream.channelLayout,
+                                videoRangeType = mediaStream.videoRangeType,
+                                height = mediaStream.height,
+                                width = mediaStream.width,
+                                videoDoViTitle = mediaStream.videoDoViTitle,
+                                index = mediaStream.index,
+                                channels = mediaStream.channels,
+                                isDefault = mediaStream.isDefault,
+                            )
+                        } ?: emptyList(),
+                )
+            } ?: emptyList(),
         seasons = emptyList(),
         played = userData?.played == true,
         favorite = userData?.isFavorite == true,
@@ -187,17 +193,13 @@ fun BaseItemDto.toAfinityShow(
         seasonCount = childCount,
         episodeCount = recursiveItemCount,
         images = toAfinityImages(baseUrl),
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
     )
 }
 
-fun BaseItemDto.toAfinitySeason(
-    baseUrl: String,
-): AfinitySeason {
+fun BaseItemDto.toAfinitySeason(baseUrl: String): AfinitySeason {
     return AfinitySeason(
         id = id,
         name = name.orEmpty(),
@@ -218,17 +220,13 @@ fun BaseItemDto.toAfinitySeason(
         productionYear = productionYear,
         premiereDate = premiereDate,
         people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
     )
 }
 
-fun BaseItemDto.toAfinityEpisode(
-    baseUrl: String,
-): AfinityEpisode? {
+fun BaseItemDto.toAfinityEpisode(baseUrl: String): AfinityEpisode? {
     return try {
         AfinityEpisode(
             id = id,
@@ -238,38 +236,44 @@ fun BaseItemDto.toAfinityEpisode(
             indexNumber = indexNumber ?: 0,
             indexNumberEnd = indexNumberEnd,
             parentIndexNumber = parentIndexNumber ?: 0,
-            sources = mediaSources?.map { mediaSource ->
-                AfinitySource(
-                    id = mediaSource.id.orEmpty(),
-                    name = mediaSource.name.orEmpty(),
-                    type = AfinitySourceType.REMOTE,
-                    path = mediaSource.path.orEmpty(),
-                    size = mediaSource.size ?: 0L,
-                    mediaStreams = mediaSource.mediaStreams?.map { mediaStream ->
-                        AfinityMediaStream(
-                            title = mediaStream.title.orEmpty(),
-                            displayTitle = mediaStream.displayTitle,
-                            language = mediaStream.language.orEmpty(),
-                            type = mediaStream.type,
-                            codec = mediaStream.codec.orEmpty(),
-                            isExternal = mediaStream.isExternal,
-                            path = if (mediaStream.isExternal && !mediaStream.deliveryUrl.isNullOrBlank()) {
-                                baseUrl + mediaStream.deliveryUrl
-                            } else {
-                                null
-                            },
-                            channelLayout = mediaStream.channelLayout,
-                            videoRangeType = mediaStream.videoRangeType,
-                            height = mediaStream.height,
-                            width = mediaStream.width,
-                            videoDoViTitle = mediaStream.videoDoViTitle,
-                            index = mediaStream.index,
-                            channels = mediaStream.channels,
-                            isDefault = mediaStream.isDefault,
-                        )
-                    } ?: emptyList()
-                )
-            } ?: emptyList(),
+            sources =
+                mediaSources?.map { mediaSource ->
+                    AfinitySource(
+                        id = mediaSource.id.orEmpty(),
+                        name = mediaSource.name.orEmpty(),
+                        type = AfinitySourceType.REMOTE,
+                        path = mediaSource.path.orEmpty(),
+                        size = mediaSource.size ?: 0L,
+                        mediaStreams =
+                            mediaSource.mediaStreams?.map { mediaStream ->
+                                AfinityMediaStream(
+                                    title = mediaStream.title.orEmpty(),
+                                    displayTitle = mediaStream.displayTitle,
+                                    language = mediaStream.language.orEmpty(),
+                                    type = mediaStream.type,
+                                    codec = mediaStream.codec.orEmpty(),
+                                    isExternal = mediaStream.isExternal,
+                                    path =
+                                        if (
+                                            mediaStream.isExternal &&
+                                                !mediaStream.deliveryUrl.isNullOrBlank()
+                                        ) {
+                                            baseUrl + mediaStream.deliveryUrl
+                                        } else {
+                                            null
+                                        },
+                                    channelLayout = mediaStream.channelLayout,
+                                    videoRangeType = mediaStream.videoRangeType,
+                                    height = mediaStream.height,
+                                    width = mediaStream.width,
+                                    videoDoViTitle = mediaStream.videoDoViTitle,
+                                    index = mediaStream.index,
+                                    channels = mediaStream.channels,
+                                    isDefault = mediaStream.isDefault,
+                                )
+                            } ?: emptyList(),
+                    )
+                } ?: emptyList(),
             played = userData?.played == true,
             favorite = userData?.isFavorite == true,
             canPlay = playAccess != PlayAccess.NONE,
@@ -287,14 +291,16 @@ fun BaseItemDto.toAfinityEpisode(
             missing = locationType == LocationType.VIRTUAL,
             images = toAfinityImages(baseUrl),
             chapters = toAfinityChapters(),
-            trickplayInfo = trickplay?.flatMap { (_, widthMap) ->
-                widthMap.map { (width, info) ->
-                    width.toString() to info.toAfinityTrickplayInfo()
-                }
-            }?.toMap(),
-            providerIds = providerIds?.mapNotNull { (key, value) ->
-                value?.let { key to it }
-            }?.toMap(),
+            trickplayInfo =
+                trickplay
+                    ?.flatMap { (_, widthMap) ->
+                        widthMap.map { (width, info) ->
+                            width.toString() to info.toAfinityTrickplayInfo()
+                        }
+                    }
+                    ?.toMap(),
+            providerIds =
+                providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
             externalUrls = toAfinityExternalUrls(),
             liked = userData?.likes == true,
         )
@@ -303,9 +309,7 @@ fun BaseItemDto.toAfinityEpisode(
     }
 }
 
-fun BaseItemDto.toAfinityBoxSet(
-    baseUrl: String,
-): AfinityBoxSet {
+fun BaseItemDto.toAfinityBoxSet(baseUrl: String): AfinityBoxSet {
     return AfinityBoxSet(
         id = id,
         name = name.orEmpty(),
@@ -327,17 +331,13 @@ fun BaseItemDto.toAfinityBoxSet(
         communityRating = communityRating,
         officialRating = officialRating,
         people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
     )
 }
 
-fun BaseItemDto.toAfinityFolder(
-    baseUrl: String,
-): AfinityFolder {
+fun BaseItemDto.toAfinityFolder(baseUrl: String): AfinityFolder {
     return AfinityFolder(
         id = id,
         name = name.orEmpty(),
@@ -345,17 +345,13 @@ fun BaseItemDto.toAfinityFolder(
         favorite = userData?.isFavorite == true,
         unplayedItemCount = userData?.unplayedItemCount,
         images = toAfinityImages(baseUrl),
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
     )
 }
 
-fun BaseItemDto.toAfinityCollection(
-    baseUrl: String,
-): AfinityCollection? {
+fun BaseItemDto.toAfinityCollection(baseUrl: String): AfinityCollection? {
     val type = CollectionType.fromString(collectionType?.serialName)
 
     if (type !in CollectionType.supported) {
@@ -367,16 +363,12 @@ fun BaseItemDto.toAfinityCollection(
         name = name.orEmpty(),
         type = type,
         images = toAfinityImages(baseUrl),
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
     )
 }
 
-fun BaseItemDto.toAfinityPersonDetail(
-    baseUrl: String,
-): AfinityPersonDetail {
+fun BaseItemDto.toAfinityPersonDetail(baseUrl: String): AfinityPersonDetail {
     return AfinityPersonDetail(
         id = id,
         name = name.orEmpty(),
@@ -388,58 +380,70 @@ fun BaseItemDto.toAfinityPersonDetail(
     )
 }
 
-fun BaseItemDto.toAfinityImages(
-    baseUrl: String,
-): AfinityImages {
+fun BaseItemDto.toAfinityImages(baseUrl: String): AfinityImages {
     val baseUri = baseUrl.toUri()
 
     return AfinityImages(
-        primary = imageTags?.get(ImageType.PRIMARY)?.let { tag ->
-            baseUri.buildUpon()
-                .appendEncodedPath("Items/$id/Images/Primary")
-                .appendQueryParameter("tag", tag)
-                .build()
-        },
-        thumb = imageTags?.get(ImageType.THUMB)?.let { tag ->
-            baseUri.buildUpon()
-                .appendEncodedPath("Items/$id/Images/Thumb")
-                .appendQueryParameter("tag", tag)
-                .build()
-        },
-        backdrop = backdropImageTags?.firstOrNull()?.let { tag ->
-            baseUri.buildUpon()
-                .appendEncodedPath("Items/$id/Images/Backdrop/0")
-                .appendQueryParameter("tag", tag)
-                .build()
-        },
-        logo = imageTags?.get(ImageType.LOGO)?.let { tag ->
-            baseUri.buildUpon()
-                .appendEncodedPath("Items/$id/Images/Logo")
-                .appendQueryParameter("tag", tag)
-                .build()
-        },
-        showPrimary = seriesPrimaryImageTag?.let { tag ->
-            baseUri.buildUpon()
-                .appendEncodedPath("Items/$seriesId/Images/Primary")
-                .appendQueryParameter("tag", tag)
-                .build()
-        },
-        showBackdrop = seriesPrimaryImageTag?.let { tag ->
-            baseUri.buildUpon()
-                .appendEncodedPath("Items/$seriesId/Images/Backdrop/0")
-                .appendQueryParameter("tag", tag)
-                .build()
-        },
-        showLogo = seriesPrimaryImageTag?.let { tag ->
-            baseUri.buildUpon()
-                .appendEncodedPath("Items/$seriesId/Images/Logo")
-                .appendQueryParameter("tag", tag)
-                .build()
-        },
+        primary =
+            imageTags?.get(ImageType.PRIMARY)?.let { tag ->
+                baseUri
+                    .buildUpon()
+                    .appendEncodedPath("Items/$id/Images/Primary")
+                    .appendQueryParameter("tag", tag)
+                    .build()
+            },
+        thumb =
+            imageTags?.get(ImageType.THUMB)?.let { tag ->
+                baseUri
+                    .buildUpon()
+                    .appendEncodedPath("Items/$id/Images/Thumb")
+                    .appendQueryParameter("tag", tag)
+                    .build()
+            },
+        backdrop =
+            backdropImageTags?.firstOrNull()?.let { tag ->
+                baseUri
+                    .buildUpon()
+                    .appendEncodedPath("Items/$id/Images/Backdrop/0")
+                    .appendQueryParameter("tag", tag)
+                    .build()
+            },
+        logo =
+            imageTags?.get(ImageType.LOGO)?.let { tag ->
+                baseUri
+                    .buildUpon()
+                    .appendEncodedPath("Items/$id/Images/Logo")
+                    .appendQueryParameter("tag", tag)
+                    .build()
+            },
+        showPrimary =
+            seriesPrimaryImageTag?.let { tag ->
+                baseUri
+                    .buildUpon()
+                    .appendEncodedPath("Items/$seriesId/Images/Primary")
+                    .appendQueryParameter("tag", tag)
+                    .build()
+            },
+        showBackdrop =
+            seriesPrimaryImageTag?.let { tag ->
+                baseUri
+                    .buildUpon()
+                    .appendEncodedPath("Items/$seriesId/Images/Backdrop/0")
+                    .appendQueryParameter("tag", tag)
+                    .build()
+            },
+        showLogo =
+            seriesPrimaryImageTag?.let { tag ->
+                baseUri
+                    .buildUpon()
+                    .appendEncodedPath("Items/$seriesId/Images/Logo")
+                    .appendQueryParameter("tag", tag)
+                    .build()
+            },
         primaryImageBlurHash = imageBlurHashes?.get(ImageType.PRIMARY)?.values?.firstOrNull(),
         backdropImageBlurHash = imageBlurHashes?.get(ImageType.BACKDROP)?.values?.firstOrNull(),
         thumbImageBlurHash = imageBlurHashes?.get(ImageType.THUMB)?.values?.firstOrNull(),
-        logoImageBlurHash = imageBlurHashes?.get(ImageType.LOGO)?.values?.firstOrNull()
+        logoImageBlurHash = imageBlurHashes?.get(ImageType.LOGO)?.values?.firstOrNull(),
     )
 }
 
@@ -448,14 +452,12 @@ fun BaseItemDto.toAfinityChapters(): List<AfinityChapter> {
         AfinityChapter(
             startPosition = chapter.startPositionTicks / 10000,
             name = chapter.name,
-            imageIndex = index
+            imageIndex = index,
         )
     } ?: emptyList()
 }
 
-fun BaseItemDto.toAfinityVideo(
-    baseUrl: String,
-): AfinityVideo {
+fun BaseItemDto.toAfinityVideo(baseUrl: String): AfinityVideo {
     return AfinityVideo(
         id = id,
         name = name.orEmpty(),
@@ -483,28 +485,27 @@ fun BaseItemDto.toAfinityVideo(
         images = toAfinityImages(baseUrl),
         chapters = toAfinityChapters(),
         trickplayInfo = null,
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
     )
 }
 
-fun BaseItemPerson.toAfinityPerson(
-    baseUrl: String,
-): AfinityPerson {
+fun BaseItemPerson.toAfinityPerson(baseUrl: String): AfinityPerson {
     val baseUri = baseUrl.toUri()
 
-    val personImage = AfinityPersonImage(
-        uri = primaryImageTag?.let { tag ->
-            baseUri.buildUpon()
-                .appendEncodedPath("Items/$id/Images/Primary")
-                .appendQueryParameter("tag", tag)
-                .build()
-        },
-        blurHash = imageBlurHashes?.get(ImageType.PRIMARY)?.get(primaryImageTag),
-    )
+    val personImage =
+        AfinityPersonImage(
+            uri =
+                primaryImageTag?.let { tag ->
+                    baseUri
+                        .buildUpon()
+                        .appendEncodedPath("Items/$id/Images/Primary")
+                        .appendQueryParameter("tag", tag)
+                        .build()
+                },
+            blurHash = imageBlurHashes?.get(ImageType.PRIMARY)?.get(primaryImageTag),
+        )
 
     return AfinityPerson(
         id = id,
@@ -517,13 +518,14 @@ fun BaseItemPerson.toAfinityPerson(
 
 fun BaseItemDto.toAfinityChannel(
     baseUrl: String,
-    currentProgram: AfinityProgram? = null
+    currentProgram: AfinityProgram? = null,
 ): AfinityChannel {
-    val afinityChannelType = when (channelType) {
-        org.jellyfin.sdk.model.api.ChannelType.RADIO -> ChannelType.RADIO
-        org.jellyfin.sdk.model.api.ChannelType.TV -> ChannelType.TV
-        else -> ChannelType.TV
-    }
+    val afinityChannelType =
+        when (channelType) {
+            org.jellyfin.sdk.model.api.ChannelType.RADIO -> ChannelType.RADIO
+            org.jellyfin.sdk.model.api.ChannelType.TV -> ChannelType.TV
+            else -> ChannelType.TV
+        }
 
     return AfinityChannel(
         id = id,
@@ -535,17 +537,13 @@ fun BaseItemDto.toAfinityChannel(
         channelType = afinityChannelType,
         currentProgram = currentProgram,
         serviceName = null,
-        providerIds = providerIds?.mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }?.toMap(),
+        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
     )
 }
 
-fun BaseItemDto.toAfinityProgram(
-    baseUrl: String,
-): AfinityProgram {
+fun BaseItemDto.toAfinityProgram(baseUrl: String): AfinityProgram {
     return AfinityProgram(
         id = id,
         channelId = channelId ?: id,
@@ -563,6 +561,6 @@ fun BaseItemDto.toAfinityProgram(
         productionYear = productionYear,
         genres = genres ?: emptyList(),
         officialRating = officialRating,
-        communityRating = communityRating
+        communityRating = communityRating,
     )
 }

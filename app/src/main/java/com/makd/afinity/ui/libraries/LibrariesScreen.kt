@@ -64,7 +64,7 @@ fun LibrariesScreen(
     modifier: Modifier = Modifier,
     navController: NavController,
     viewModel: LibrariesViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyGridState = rememberLazyGridState()
@@ -77,58 +77,42 @@ fun LibrariesScreen(
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         when {
             uiState.isLoading && uiState.libraries.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
 
             uiState.error != null -> {
-                ErrorMessage(
-                    message = uiState.error!!,
-                    modifier = Modifier.fillMaxSize()
-                )
+                ErrorMessage(message = uiState.error!!, modifier = Modifier.fillMaxSize())
             }
 
             uiState.libraries.isEmpty() -> {
-                EmptyLibrariesMessage(
-                    modifier = Modifier.fillMaxSize()
-                )
+                EmptyLibrariesMessage(modifier = Modifier.fillMaxSize())
             }
 
             else -> {
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
                     state = lazyGridState,
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 180.dp,
-                        bottom = 16.dp
-                    ),
+                    contentPadding =
+                        PaddingValues(start = 16.dp, end = 16.dp, top = 180.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     items(
                         items = sortLibraries(uiState.libraries),
-                        key = { library -> library.id }
+                        key = { library -> library.id },
                     ) { library ->
                         LibraryCard(
                             library = library,
                             onClick = {
                                 viewModel.onLibraryClick(library)
                                 onLibraryClick(library)
-                            }
+                            },
                         )
                     }
                 }
@@ -139,10 +123,9 @@ fun LibrariesScreen(
             title = {
                 Text(
                     text = stringResource(R.string.libraries_title),
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onBackground
+                    style =
+                        MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
             },
             backgroundOpacity = topBarOpacity,
@@ -151,7 +134,7 @@ fun LibrariesScreen(
                 navController.navigate(route)
             },
             onProfileClick = onProfileClick,
-            userProfileImageUrl = mainUiState.userProfileImageUrl
+            userProfileImageUrl = mainUiState.userProfileImageUrl,
         )
     }
 }
@@ -160,54 +143,47 @@ fun LibrariesScreen(
 private fun LibraryCard(
     library: AfinityCollection,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = { onClick() }),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
+        modifier =
+            modifier
                 .fillMaxWidth()
-                .aspectRatio(16f / 9f)
-        ) {
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { onClick() },
+                ),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
             Card(
                 modifier = Modifier.fillMaxSize(),
                 shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     AsyncImage(
-                        imageUrl = library.images.primaryImageUrl
-                            ?: library.images.backdropImageUrl,
+                        imageUrl =
+                            library.images.primaryImageUrl ?: library.images.backdropImageUrl,
                         contentDescription = library.name,
-                        blurHash = library.images.primaryBlurHash
-                            ?: library.images.backdropBlurHash,
+                        blurHash =
+                            library.images.primaryBlurHash ?: library.images.backdropBlurHash,
                         targetWidth = 160.dp,
                         targetHeight = 90.dp,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
                     )
-
                 }
             }
 
             if (library.type != CollectionType.Unknown) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(6.dp)
-                ) {
+                Box(modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)) {
                     Icon(
                         painter = getLibraryIcon(library.type),
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = Color.White
+                        tint = Color.White,
                     )
                 }
             }
@@ -215,75 +191,68 @@ private fun LibraryCard(
 
         Column(
             modifier = Modifier.padding(top = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
                 text = library.name,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
 
 @Composable
-private fun ErrorMessage(
-    message: String,
-    modifier: Modifier = Modifier
-) {
+private fun ErrorMessage(message: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = stringResource(R.string.home_error_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Text(
             text = stringResource(R.string.home_error_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
 
 @Composable
-private fun EmptyLibrariesMessage(
-    modifier: Modifier = Modifier
-) {
+private fun EmptyLibrariesMessage(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = stringResource(R.string.libraries_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Text(
             text = stringResource(R.string.libraries_empty_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -305,20 +274,19 @@ private fun getLibraryIcon(type: CollectionType): Painter {
 }
 
 private fun sortLibraries(libraries: List<AfinityCollection>): List<AfinityCollection> {
-    val sortOrder = mapOf(
-        CollectionType.BoxSets to 1,
-        CollectionType.Movies to 2,
-        CollectionType.TvShows to 3,
-        CollectionType.Music to 4,
-        CollectionType.HomeVideos to 5,
-        CollectionType.Books to 6,
-        CollectionType.Playlists to 7,
-        CollectionType.LiveTv to 8,
-        CollectionType.Mixed to 9,
-        CollectionType.Unknown to 10
-    )
+    val sortOrder =
+        mapOf(
+            CollectionType.BoxSets to 1,
+            CollectionType.Movies to 2,
+            CollectionType.TvShows to 3,
+            CollectionType.Music to 4,
+            CollectionType.HomeVideos to 5,
+            CollectionType.Books to 6,
+            CollectionType.Playlists to 7,
+            CollectionType.LiveTv to 8,
+            CollectionType.Mixed to 9,
+            CollectionType.Unknown to 10,
+        )
 
-    return libraries.sortedBy { library ->
-        sortOrder[library.type] ?: 999
-    }
+    return libraries.sortedBy { library -> sortOrder[library.type] ?: 999 }
 }

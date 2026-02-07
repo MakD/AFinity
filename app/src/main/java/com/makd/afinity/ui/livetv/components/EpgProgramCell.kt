@@ -37,7 +37,7 @@ fun EpgProgramCell(
     hourWidth: Dp,
     cellHeight: Dp,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val timePattern = stringResource(R.string.livetv_time_pattern)
     val timeFormatter = DateTimeFormatter.ofPattern(timePattern)
@@ -58,28 +58,27 @@ fun EpgProgramCell(
     val widthDp = (visibleDurationMinutes.toFloat() / 60f * hourWidth.value).dp.coerceAtLeast(50.dp)
 
     Box(
-        modifier = modifier
-            .offset(x = offsetDp)
-            .width(widthDp - 2.dp)
-            .height(cellHeight - 2.dp)
-            .padding(1.dp)
-            .clip(MaterialTheme.shapes.small)
-            .background(
-                if (isLive) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.surfaceVariant
-            )
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                shape = MaterialTheme.shapes.small
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+        modifier =
+            modifier
+                .offset(x = offsetDp)
+                .width(widthDp - 2.dp)
+                .height(cellHeight - 2.dp)
+                .padding(1.dp)
+                .clip(MaterialTheme.shapes.small)
+                .background(
+                    if (isLive) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceVariant
+                )
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    shape = MaterialTheme.shapes.small,
+                )
+                .clickable(onClick = onClick)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Column {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 if (isLive) {
                     LiveBadge()
                     Spacer(modifier = Modifier.width(4.dp))
@@ -90,30 +89,29 @@ fun EpgProgramCell(
                     fontWeight = if (isLive) FontWeight.Bold else FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = if (isLive) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.onSurfaceVariant
+                    color =
+                        if (isLive) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             Text(
-                text = stringResource(
-                    R.string.livetv_epg_time_range,
-                    programStart.format(timeFormatter),
-                    programEnd.format(timeFormatter)
-                ),
+                text =
+                    stringResource(
+                        R.string.livetv_epg_time_range,
+                        programStart.format(timeFormatter),
+                        programEnd.format(timeFormatter),
+                    ),
                 style = MaterialTheme.typography.labelSmall,
-                color = if (isLive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                maxLines = 1
+                color =
+                    if (isLive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                maxLines = 1,
             )
 
             if (isLive) {
                 Spacer(modifier = Modifier.height(2.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(3.dp)
-                ) {
+                Box(modifier = Modifier.fillMaxWidth().height(3.dp)) {
                     ProgramProgressBar(program = program)
                 }
             }
@@ -122,4 +120,5 @@ fun EpgProgramCell(
 }
 
 private fun maxOf(a: LocalDateTime, b: LocalDateTime): LocalDateTime = if (a.isAfter(b)) a else b
+
 private fun minOf(a: LocalDateTime, b: LocalDateTime): LocalDateTime = if (a.isBefore(b)) a else b

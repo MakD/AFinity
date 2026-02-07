@@ -3,6 +3,10 @@ package com.makd.afinity.data.repository.server
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.DatabaseRepository
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Provider
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,17 +23,15 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.SystemApi
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Provider
-import javax.inject.Singleton
 
 @Singleton
-class JellyfinServerRepository @Inject constructor(
+class JellyfinServerRepository
+@Inject
+constructor(
     private val jellyfin: Jellyfin,
     private val apiClient: ApiClient,
     private val sessionManagerProvider: Provider<SessionManager>,
-    private val databaseRepository: DatabaseRepository
+    private val databaseRepository: DatabaseRepository,
 ) : ServerRepository {
 
     private val sessionManager: SessionManager
@@ -56,9 +58,13 @@ class JellyfinServerRepository @Inject constructor(
                             _currentServer.value = server
                             _currentBaseUrl.value = server.address
                             _isConnected.value = true
-                            Timber.d("JellyfinServerRepository: Updated current server to ${server.name} (${server.id})")
+                            Timber.d(
+                                "JellyfinServerRepository: Updated current server to ${server.name} (${server.id})"
+                            )
                         } else {
-                            Timber.w("JellyfinServerRepository: Session changed but server ${session.serverId} not found in database")
+                            Timber.w(
+                                "JellyfinServerRepository: Session changed but server ${session.serverId} not found in database"
+                            )
                         }
                     } catch (e: Exception) {
                         Timber.e(e, "JellyfinServerRepository: Failed to load server for session")
@@ -96,23 +102,20 @@ class JellyfinServerRepository @Inject constructor(
             val discoveredServers = mutableListOf<Server>()
 
             withTimeoutOrNull(5000) {
-                jellyfin.discovery.discoverLocalServers(
-                    timeout = 3000,
-                    maxServers = 10
-                ).collect { serverInfo ->
+                jellyfin.discovery.discoverLocalServers(timeout = 3000, maxServers = 10).collect {
+                    serverInfo ->
                     Timber.d("Discovered server: ${serverInfo.name} at ${serverInfo.address}")
 
-                    val server = Server(
-                        id = serverInfo.id ?: UUID.randomUUID().toString(),
-                        name = serverInfo.name ?: "Jellyfin Server",
-                        version = null,
-                        address = serverInfo.address ?: ""
-                    )
+                    val server =
+                        Server(
+                            id = serverInfo.id ?: UUID.randomUUID().toString(),
+                            name = serverInfo.name ?: "Jellyfin Server",
+                            version = null,
+                            address = serverInfo.address ?: "",
+                        )
                     discoveredServers.add(server)
                 }
-            } ?: run {
-                Timber.w("Server discovery timed out after 5 seconds")
-            }
+            } ?: run { Timber.w("Server discovery timed out after 5 seconds") }
 
             Timber.d("Discovered ${discoveredServers.size} local servers")
             discoveredServers
@@ -127,18 +130,17 @@ class JellyfinServerRepository @Inject constructor(
             val discoveredServers = mutableListOf<Server>()
             emit(emptyList())
 
-            jellyfin.discovery.discoverLocalServers(
-                timeout = 5000,
-                maxServers = 10
-            ).collect { serverInfo ->
+            jellyfin.discovery.discoverLocalServers(timeout = 5000, maxServers = 10).collect {
+                serverInfo ->
                 Timber.d("Discovered server: ${serverInfo.name} at ${serverInfo.address}")
 
-                val server = Server(
-                    id = serverInfo.id ?: UUID.randomUUID().toString(),
-                    name = serverInfo.name ?: "Jellyfin Server",
-                    version = null,
-                    address = serverInfo.address ?: ""
-                )
+                val server =
+                    Server(
+                        id = serverInfo.id ?: UUID.randomUUID().toString(),
+                        name = serverInfo.name ?: "Jellyfin Server",
+                        version = null,
+                        address = serverInfo.address ?: "",
+                    )
                 discoveredServers.add(server)
                 emit(discoveredServers.toList())
             }
@@ -166,12 +168,13 @@ class JellyfinServerRepository @Inject constructor(
                     val systemInfo = response.content
 
                     if (systemInfo != null) {
-                        val server = Server(
-                            id = systemInfo.id ?: UUID.randomUUID().toString(),
-                            name = systemInfo.serverName ?: "Jellyfin Server",
-                            version = systemInfo.version,
-                            address = serverAddress
-                        )
+                        val server =
+                            Server(
+                                id = systemInfo.id ?: UUID.randomUUID().toString(),
+                                name = systemInfo.serverName ?: "Jellyfin Server",
+                                version = systemInfo.version,
+                                address = serverAddress,
+                            )
 
                         apiClient.update(baseUrl = originalUrl)
                         _currentBaseUrl.value = originalUrl
@@ -182,7 +185,7 @@ class JellyfinServerRepository @Inject constructor(
                             server = server,
                             serverAddress = serverAddress,
                             version = systemInfo.version ?: "Unknown",
-                            isQuickConnectEnabled = systemInfo.startupWizardCompleted == true
+                            isQuickConnectEnabled = systemInfo.startupWizardCompleted == true,
                         )
                     } else {
                         apiClient.update(baseUrl = originalUrl)
@@ -204,7 +207,9 @@ class JellyfinServerRepository @Inject constructor(
                 ServerConnectionResult.Error("Server error: ${e.message ?: "Unknown API error"}")
             } catch (e: Exception) {
                 Timber.e(e, "Network error testing server connection")
-                ServerConnectionResult.Error("Failed to connect: ${e.message ?: "Check server address and network connection"}")
+                ServerConnectionResult.Error(
+                    "Failed to connect: ${e.message ?: "Check server address and network connection"}"
+                )
             }
         }
     }
@@ -221,7 +226,7 @@ class JellyfinServerRepository @Inject constructor(
                         id = it.id ?: UUID.randomUUID().toString(),
                         name = it.serverName ?: "Jellyfin Server",
                         version = it.version,
-                        address = _currentBaseUrl.value
+                        address = _currentBaseUrl.value,
                     )
                 }
             } catch (e: Exception) {
@@ -239,12 +244,13 @@ class JellyfinServerRepository @Inject constructor(
                 val systemInfo = response.content
 
                 if (systemInfo != null) {
-                    val server = Server(
-                        id = systemInfo.id ?: UUID.randomUUID().toString(),
-                        name = systemInfo.serverName ?: "Jellyfin Server",
-                        version = systemInfo.version,
-                        address = _currentBaseUrl.value
-                    )
+                    val server =
+                        Server(
+                            id = systemInfo.id ?: UUID.randomUUID().toString(),
+                            name = systemInfo.serverName ?: "Jellyfin Server",
+                            version = systemInfo.version,
+                            address = _currentBaseUrl.value,
+                        )
                     _currentServer.value = server
                     _isConnected.value = true
                     Timber.d("Server info refreshed: ${server.name}")
@@ -274,7 +280,7 @@ class JellyfinServerRepository @Inject constructor(
         tag: String?,
         maxWidth: Int?,
         maxHeight: Int?,
-        quality: Int?
+        quality: Int?,
     ): String {
         val baseUrl = _currentBaseUrl.value
         if (baseUrl.isBlank()) return ""
@@ -298,7 +304,7 @@ class JellyfinServerRepository @Inject constructor(
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         videoStreamIndex: Int?,
-        accessToken: String?
+        accessToken: String?,
     ): String {
         val baseUrl = _currentBaseUrl.value
         if (baseUrl.isBlank()) return ""
@@ -321,7 +327,7 @@ class JellyfinServerRepository @Inject constructor(
             val server: Server,
             val serverAddress: String,
             val version: String,
-            val isQuickConnectEnabled: Boolean
+            val isQuickConnectEnabled: Boolean,
         ) : ServerConnectionResult()
 
         data class Error(val message: String) : ServerConnectionResult()

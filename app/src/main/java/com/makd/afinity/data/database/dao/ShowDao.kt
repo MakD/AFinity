@@ -7,26 +7,22 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.makd.afinity.data.database.entities.AfinityShowDto
-import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ShowDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertShow(show: AfinityShowDto)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertShow(show: AfinityShowDto)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertShows(shows: List<AfinityShowDto>)
 
-    @Update
-    suspend fun updateShow(show: AfinityShowDto)
+    @Update suspend fun updateShow(show: AfinityShowDto)
 
-    @Delete
-    suspend fun deleteShow(show: AfinityShowDto)
+    @Delete suspend fun deleteShow(show: AfinityShowDto)
 
-    @Query("DELETE FROM shows WHERE id = :showId")
-    suspend fun deleteShowById(showId: UUID)
+    @Query("DELETE FROM shows WHERE id = :showId") suspend fun deleteShowById(showId: UUID)
 
     @Query("DELETE FROM shows WHERE serverId = :serverId")
     suspend fun deleteShowsByServerId(serverId: String)
@@ -40,12 +36,14 @@ interface ShowDao {
     @Query("SELECT * FROM shows WHERE serverId = :serverId ORDER BY name ASC")
     fun getShowsFlow(serverId: String): Flow<List<AfinityShowDto>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM shows
         WHERE serverId = :serverId
         AND (name LIKE '%' || :query || '%' OR originalTitle LIKE '%' || :query || '%')
         ORDER BY name ASC
-    """)
+    """
+    )
     suspend fun searchShows(query: String, serverId: String): List<AfinityShowDto>
 
     @Query("SELECT * FROM shows WHERE serverId = :serverId ORDER BY name ASC")
@@ -54,6 +52,5 @@ interface ShowDao {
     @Query("SELECT COUNT(*) FROM shows WHERE serverId = :serverId")
     suspend fun getShowCount(serverId: String): Int
 
-    @Query("DELETE FROM shows")
-    suspend fun deleteAllShows()
+    @Query("DELETE FROM shows") suspend fun deleteAllShows()
 }

@@ -15,6 +15,9 @@ import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.di.DownloadClient
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -25,12 +28,11 @@ import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
-import java.util.UUID
 
 @HiltWorker
-class TrickplayDownloadWorker @AssistedInject constructor(
+class TrickplayDownloadWorker
+@AssistedInject
+constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val sessionManager: SessionManager,
@@ -46,118 +48,147 @@ class TrickplayDownloadWorker @AssistedInject constructor(
         const val BUFFER_SIZE = 8192
     }
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val downloadIdString = inputData.getString(KEY_DOWNLOAD_ID)
-            ?: return@withContext Result.failure(workDataOf("error" to "Missing download ID"))
-
-        val itemIdString = inputData.getString(KEY_ITEM_ID)
-            ?: return@withContext Result.failure(workDataOf("error" to "Missing item ID"))
-
-        val itemId = try {
-            UUID.fromString(itemIdString)
-        } catch (e: IllegalArgumentException) {
-            return@withContext Result.failure(workDataOf("error" to "Invalid item ID"))
-        }
-
-        val sourceId = inputData.getString(KEY_SOURCE_ID)
-            ?: return@withContext Result.failure(workDataOf("error" to "Missing source ID"))
-
-        try {
-            Timber.d("Starting trickplay download for item: $itemId")
-
-            val download: DownloadDto = databaseRepository.getDownloadByItemId(itemId)
-                ?: return@withContext Result.failure(workDataOf("error" to "Download not found"))
-
-            val apiClient = sessionManager.getOrRestoreApiClient(download.serverId)
-                ?: return@withContext Result.failure(workDataOf("error" to "Could not restore session for server ${download.serverId}"))
-
-            val userId = try {
-                apiClient.userApi.getCurrentUser().content?.id
-            } catch (e: Exception) {
-                null
-            } ?: return@withContext Result.failure(workDataOf("error" to "User not authenticated"))
-
-            val baseUrl = apiClient.baseUrl ?: ""
-
-            val itemsApi = ItemsApi(apiClient)
-            val baseItemDto = try {
-                itemsApi.getItems(
-                    userId = userId,
-                    ids = listOf(itemId),
-                    fields = listOf(ItemFields.TRICKPLAY, ItemFields.OVERVIEW),
-                    enableImages = false,
-                    enableUserData = false
-                ).content?.items?.firstOrNull()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to fetch item details for trickplay")
-                null
-            } ?: return@withContext Result.failure(workDataOf("error" to "Item not found"))
-
-            val item = when (baseItemDto.type) {
-                BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
-                BaseItemKind.EPISODE -> baseItemDto.toAfinityEpisode(baseUrl)
-                    ?: return@withContext Result.failure(workDataOf("error" to "Failed to convert episode"))
-
-                else -> return@withContext Result.failure(
-                    workDataOf("error" to "Unsupported item type: ${baseItemDto.type}")
-                )
-            }
-
-            val trickplayInfo = item.trickplayInfo
-            if (trickplayInfo.isNullOrEmpty()) {
-                Timber.d("No trickplay info available for item: $itemId")
-                return@withContext Result.success()
-            }
-
-            val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
-            val trickplayDir = File(itemDir, "trickplay").also { it.mkdirs() }
-            Timber.d("Trickplay download base directory: ${trickplayDir.absolutePath}")
-            Timber.d("Trickplay resolutions available: ${trickplayInfo.keys.joinToString()}")
-
-            trickplayInfo.forEach { (resolution, info) ->
-                Timber.d("Processing trickplay resolution: key='$resolution', info.width=${info.width}")
-                try {
-                    downloadTrickplayTiles(
-                        apiClient = apiClient,
-                        itemId = itemId,
-                        resolution = resolution,
-                        info = info,
-                        baseUrl = baseUrl,
-                        outputDir = trickplayDir
+    override suspend fun doWork(): Result =
+        withContext(Dispatchers.IO) {
+            val downloadIdString =
+                inputData.getString(KEY_DOWNLOAD_ID)
+                    ?: return@withContext Result.failure(
+                        workDataOf("error" to "Missing download ID")
                     )
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to download trickplay for resolution: $resolution")
-                }
-            }
 
-            val localSourceId = "${sourceId}_local"
-            trickplayInfo.forEach { (_, info) ->
+            val itemIdString =
+                inputData.getString(KEY_ITEM_ID)
+                    ?: return@withContext Result.failure(workDataOf("error" to "Missing item ID"))
+
+            val itemId =
                 try {
-                    databaseRepository.insertTrickplayInfo(info, localSourceId)
-                } catch (e: Exception) {
-                    Timber.w(e, "Failed to save trickplay info to database")
+                    UUID.fromString(itemIdString)
+                } catch (e: IllegalArgumentException) {
+                    return@withContext Result.failure(workDataOf("error" to "Invalid item ID"))
                 }
+
+            val sourceId =
+                inputData.getString(KEY_SOURCE_ID)
+                    ?: return@withContext Result.failure(workDataOf("error" to "Missing source ID"))
+
+            try {
+                Timber.d("Starting trickplay download for item: $itemId")
+
+                val download: DownloadDto =
+                    databaseRepository.getDownloadByItemId(itemId)
+                        ?: return@withContext Result.failure(
+                            workDataOf("error" to "Download not found")
+                        )
+
+                val apiClient =
+                    sessionManager.getOrRestoreApiClient(download.serverId)
+                        ?: return@withContext Result.failure(
+                            workDataOf(
+                                "error" to
+                                    "Could not restore session for server ${download.serverId}"
+                            )
+                        )
+
+                val userId =
+                    try {
+                        apiClient.userApi.getCurrentUser().content?.id
+                    } catch (e: Exception) {
+                        null
+                    }
+                        ?: return@withContext Result.failure(
+                            workDataOf("error" to "User not authenticated")
+                        )
+
+                val baseUrl = apiClient.baseUrl ?: ""
+
+                val itemsApi = ItemsApi(apiClient)
+                val baseItemDto =
+                    try {
+                        itemsApi
+                            .getItems(
+                                userId = userId,
+                                ids = listOf(itemId),
+                                fields = listOf(ItemFields.TRICKPLAY, ItemFields.OVERVIEW),
+                                enableImages = false,
+                                enableUserData = false,
+                            )
+                            .content
+                            ?.items
+                            ?.firstOrNull()
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to fetch item details for trickplay")
+                        null
+                    } ?: return@withContext Result.failure(workDataOf("error" to "Item not found"))
+
+                val item =
+                    when (baseItemDto.type) {
+                        BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
+                        BaseItemKind.EPISODE ->
+                            baseItemDto.toAfinityEpisode(baseUrl)
+                                ?: return@withContext Result.failure(
+                                    workDataOf("error" to "Failed to convert episode")
+                                )
+
+                        else ->
+                            return@withContext Result.failure(
+                                workDataOf("error" to "Unsupported item type: ${baseItemDto.type}")
+                            )
+                    }
+
+                val trickplayInfo = item.trickplayInfo
+                if (trickplayInfo.isNullOrEmpty()) {
+                    Timber.d("No trickplay info available for item: $itemId")
+                    return@withContext Result.success()
+                }
+
+                val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
+                val trickplayDir = File(itemDir, "trickplay").also { it.mkdirs() }
+                Timber.d("Trickplay download base directory: ${trickplayDir.absolutePath}")
+                Timber.d("Trickplay resolutions available: ${trickplayInfo.keys.joinToString()}")
+
+                trickplayInfo.forEach { (resolution, info) ->
+                    Timber.d(
+                        "Processing trickplay resolution: key='$resolution', info.width=${info.width}"
+                    )
+                    try {
+                        downloadTrickplayTiles(
+                            apiClient = apiClient,
+                            itemId = itemId,
+                            resolution = resolution,
+                            info = info,
+                            baseUrl = baseUrl,
+                            outputDir = trickplayDir,
+                        )
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to download trickplay for resolution: $resolution")
+                    }
+                }
+
+                val localSourceId = "${sourceId}_local"
+                trickplayInfo.forEach { (_, info) ->
+                    try {
+                        databaseRepository.insertTrickplayInfo(info, localSourceId)
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to save trickplay info to database")
+                    }
+                }
+
+                Timber.i("Trickplay download completed for item: $itemId")
+
+                return@withContext Result.success(
+                    workDataOf(
+                        KEY_DOWNLOAD_ID to downloadIdString,
+                        KEY_ITEM_ID to itemIdString,
+                        KEY_SOURCE_ID to sourceId,
+                    )
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Trickplay download failed")
+                return@withContext Result.failure(
+                    workDataOf("error" to (e.message ?: "Unknown error"))
+                )
             }
-
-            Timber.i("Trickplay download completed for item: $itemId")
-
-            return@withContext Result.success(
-                workDataOf(
-                    KEY_DOWNLOAD_ID to downloadIdString,
-                    KEY_ITEM_ID to itemIdString,
-                    KEY_SOURCE_ID to sourceId
-                )
-            )
-
-        } catch (e: Exception) {
-            Timber.e(e, "Trickplay download failed")
-            return@withContext Result.failure(
-                workDataOf(
-                    "error" to (e.message ?: "Unknown error")
-                )
-            )
         }
-    }
 
     private suspend fun downloadTrickplayTiles(
         apiClient: ApiClient,
@@ -165,7 +196,7 @@ class TrickplayDownloadWorker @AssistedInject constructor(
         resolution: String,
         info: AfinityTrickplayInfo,
         baseUrl: String,
-        outputDir: File
+        outputDir: File,
     ) {
         val resolutionDir = File(outputDir, resolution).also { it.mkdirs() }
 
@@ -175,7 +206,9 @@ class TrickplayDownloadWorker @AssistedInject constructor(
         val totalTiles =
             kotlin.math.ceil(info.thumbnailCount.toDouble() / thumbnailsPerTile).toInt()
 
-        Timber.d("Downloading trickplay: ${info.thumbnailCount} thumbnails across $totalTiles tiled images (${info.tileWidth}x${info.tileHeight} grid per tile)")
+        Timber.d(
+            "Downloading trickplay: ${info.thumbnailCount} thumbnails across $totalTiles tiled images (${info.tileWidth}x${info.tileHeight} grid per tile)"
+        )
 
         for (tileIndex in 0 until totalTiles) {
             try {
@@ -190,10 +223,11 @@ class TrickplayDownloadWorker @AssistedInject constructor(
                     continue
                 }
 
-                val request = Request.Builder()
-                    .url(tileUrl)
-                    .header("X-Emby-Token", apiClient.accessToken ?: "")
-                    .build()
+                val request =
+                    Request.Builder()
+                        .url(tileUrl)
+                        .header("X-Emby-Token", apiClient.accessToken ?: "")
+                        .build()
 
                 okHttpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
@@ -212,8 +246,9 @@ class TrickplayDownloadWorker @AssistedInject constructor(
                     }
                 }
 
-                Timber.i("Downloaded trickplay tiled image: $resolution/$tileIndex.jpg (${outputFile.length()} bytes)")
-
+                Timber.i(
+                    "Downloaded trickplay tiled image: $resolution/$tileIndex.jpg (${outputFile.length()} bytes)"
+                )
             } catch (e: Exception) {
                 Timber.w(e, "Failed to download trickplay tile $tileIndex")
             }

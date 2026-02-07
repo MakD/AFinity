@@ -7,6 +7,7 @@ enum class MpvHwDec(val value: String) {
 
     companion object {
         val default = MEDIACODEC_COPY
+
         fun fromValue(value: String): MpvHwDec {
             return entries.find { it.value == value } ?: default
         }
@@ -27,6 +28,7 @@ enum class MpvVideoOutput(val value: String) {
 
     companion object {
         val default = GPU_NEXT
+
         fun fromValue(value: String): MpvVideoOutput {
             return entries.find { it.value == value } ?: default
         }
@@ -47,6 +49,7 @@ enum class MpvAudioOutput(val value: String) {
 
     companion object {
         val default = AUDIOTRACK
+
         fun fromValue(value: String): MpvAudioOutput {
             return entries.find { it.value == value } ?: default
         }

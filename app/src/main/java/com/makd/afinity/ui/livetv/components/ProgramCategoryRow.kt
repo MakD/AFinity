@@ -28,7 +28,7 @@ fun ProgramCategoryRow(
     onProgramClick: (ProgramWithChannel) -> Unit,
     modifier: Modifier = Modifier,
     widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
-    now: LocalDateTime
+    now: LocalDateTime,
 ) {
     if (programs.isEmpty()) return
 
@@ -37,32 +37,26 @@ fun ProgramCategoryRow(
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
-    Column(
-        modifier = modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(category.displayNameRes),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = programs,
-                key = { "${it.program.id}_${it.channel.id}" }
-            ) { programWithChannel ->
+            items(items = programs, key = { "${it.program.id}_${it.channel.id}" }) {
+                programWithChannel ->
                 ProgramCard(
                     programWithChannel = programWithChannel,
                     onClick = { onProgramClick(programWithChannel) },
                     cardWidth = cardWidth,
-                    now = now
+                    now = now,
                 )
             }
         }

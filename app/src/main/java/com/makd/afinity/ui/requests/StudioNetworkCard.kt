@@ -20,8 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.Studio
@@ -30,30 +30,16 @@ import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.util.BackdropTracker
 
 @Composable
-fun StudioCard(
-    studio: Studio,
-    onClick: () -> Unit,
-    cardWidth: Dp,
-    modifier: Modifier = Modifier
-) {
+fun StudioCard(studio: Studio, onClick: () -> Unit, cardWidth: Dp, modifier: Modifier = Modifier) {
 
-    Column(
-        modifier = modifier.width(cardWidth)
-    ) {
+    Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF1C1C1C)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1C)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 AsyncImage(
                     imageUrl = studio.getImageUrl(),
                     contentDescription = studio.name,
@@ -61,9 +47,7 @@ fun StudioCard(
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 9f / 16f,
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
                 )
             }
         }
@@ -75,26 +59,17 @@ fun NetworkCard(
     network: Network,
     onClick: () -> Unit,
     cardWidth: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
 
-    Column(
-        modifier = modifier.width(cardWidth)
-    ) {
+    Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF1C1C1C)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1C)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 AsyncImage(
                     imageUrl = network.getImageUrl(),
                     contentDescription = network.name,
@@ -102,9 +77,7 @@ fun NetworkCard(
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 9f / 16f,
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
                 )
             }
         }
@@ -118,26 +91,18 @@ fun GenreCard(
     cardWidth: Dp,
     modifier: Modifier = Modifier,
     backdropTracker: BackdropTracker? = null,
-    isMovie: Boolean = true
+    isMovie: Boolean = true,
 ) {
 
-    Column(
-        modifier = modifier.width(cardWidth)
-    ) {
+    Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 genre.getDuotoneBackdropUrl(backdropTracker, isMovie)?.let { backdropUrl ->
                     AsyncImage(
                         imageUrl = backdropUrl,
@@ -146,35 +111,30 @@ fun GenreCard(
                         targetWidth = cardWidth,
                         targetHeight = cardWidth * 9f / 16f,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
 
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.7f)
-                                ),
-                                startY = 0f,
-                                endY = Float.POSITIVE_INFINITY
+                    modifier =
+                        Modifier.fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors =
+                                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                                    startY = 0f,
+                                    endY = Float.POSITIVE_INFINITY,
+                                )
                             )
-                        )
                 )
 
                 Text(
                     text = genre.name,
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
+                    style =
+                        MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                     color = Color.White,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(12.dp)
+                    modifier = Modifier.align(Alignment.Center).padding(12.dp),
                 )
             }
         }

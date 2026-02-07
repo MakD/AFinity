@@ -12,12 +12,14 @@ interface PersonSectionDao {
     @Query("SELECT * FROM person_section_cache WHERE cacheKey = :key")
     suspend fun getCachedSection(key: String): PersonSectionCacheEntity?
 
-    @Query("""
+    @Query(
+        """
         SELECT COUNT(*) > 0
         FROM person_section_cache
         WHERE cacheKey = :key
         AND (cachedTimestamp + :ttlMillis) > :currentTime
-    """)
+    """
+    )
     suspend fun isSectionCacheFresh(key: String, ttlMillis: Long, currentTime: Long): Boolean
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -29,6 +31,5 @@ interface PersonSectionDao {
     @Query("DELETE FROM person_section_cache WHERE sectionType = :type")
     suspend fun deleteSectionsByType(type: String)
 
-    @Query("DELETE FROM person_section_cache")
-    suspend fun clearAllCache()
+    @Query("DELETE FROM person_section_cache") suspend fun clearAllCache()
 }

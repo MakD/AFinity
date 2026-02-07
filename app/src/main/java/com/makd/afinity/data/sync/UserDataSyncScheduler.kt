@@ -8,31 +8,26 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.data.workers.UserDataSyncWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
+import timber.log.Timber
 
 @Singleton
-class UserDataSyncScheduler @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class UserDataSyncScheduler @Inject constructor(@ApplicationContext private val context: Context) {
 
     fun scheduleSyncNow() {
         try {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
+            val constraints =
+                Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
-            val syncRequest = OneTimeWorkRequestBuilder<UserDataSyncWorker>()
-                .setConstraints(constraints)
-                .addTag(SYNC_WORK_TAG)
-                .build()
+            val syncRequest =
+                OneTimeWorkRequestBuilder<UserDataSyncWorker>()
+                    .setConstraints(constraints)
+                    .addTag(SYNC_WORK_TAG)
+                    .build()
 
-            WorkManager.getInstance(context).enqueueUniqueWork(
-                SYNC_WORK_NAME,
-                ExistingWorkPolicy.REPLACE,
-                syncRequest
-            )
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(SYNC_WORK_NAME, ExistingWorkPolicy.REPLACE, syncRequest)
 
             Timber.d("User data sync scheduled (will run when network is available)")
         } catch (e: Exception) {

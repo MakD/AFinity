@@ -3,7 +3,6 @@ package com.makd.afinity.ui.livetv.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -25,38 +24,36 @@ fun EpgTimeHeader(
     startTime: LocalDateTime,
     visibleHours: Int,
     hourWidth: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val timePattern = stringResource(R.string.livetv_time_header_pattern)
     val timeFormatter = DateTimeFormatter.ofPattern(timePattern)
 
-    Row(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.surface)
-            .height(40.dp)
-    ) {
+    Row(modifier = modifier.background(MaterialTheme.colorScheme.surface).height(40.dp)) {
         repeat(visibleHours + 1) { hourOffset ->
             val time = startTime.plusHours(hourOffset.toLong())
-            val isNow = LocalDateTime.now().hour == time.hour &&
+            val isNow =
+                LocalDateTime.now().hour == time.hour &&
                     LocalDateTime.now().toLocalDate() == time.toLocalDate()
 
             Box(
-                modifier = Modifier
-                    .width(hourWidth)
-                    .height(40.dp)
-                    .background(
-                        if (isNow) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                        else MaterialTheme.colorScheme.surface
-                    )
-                    .padding(horizontal = 8.dp),
-                contentAlignment = Alignment.CenterStart
+                modifier =
+                    Modifier.width(hourWidth)
+                        .height(40.dp)
+                        .background(
+                            if (isNow) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                            else MaterialTheme.colorScheme.surface
+                        )
+                        .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.CenterStart,
             ) {
                 Text(
                     text = time.format(timeFormatter),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = if (isNow) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isNow) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
+                    color =
+                        if (isNow) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

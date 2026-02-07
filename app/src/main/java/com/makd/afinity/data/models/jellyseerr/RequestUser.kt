@@ -5,10 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RequestUser(
-    @SerialName("id")
-    val id: Int,
-    @SerialName("displayName")
-    val displayName: String?,
-    @SerialName("avatar")
-    val avatar: String?
+    @SerialName("id") val id: Int,
+    @SerialName("displayName") val displayName: String?,
+    @SerialName("avatar") val avatar: String?,
 )

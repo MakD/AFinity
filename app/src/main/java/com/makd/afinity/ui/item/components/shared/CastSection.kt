@@ -35,45 +35,42 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
-import org.jellyfin.sdk.model.api.PersonKind
 import java.util.UUID
+import org.jellyfin.sdk.model.api.PersonKind
 
 @Composable
 fun CastSection(
     item: AfinityItem,
     onPersonClick: (UUID) -> Unit = {},
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
-    val cast = when (item) {
-        is AfinityMovie -> item.people.filter { it.type == PersonKind.ACTOR }
-        is AfinityShow -> item.people.filter { it.type == PersonKind.ACTOR }
-        is AfinitySeason -> item.people.filter { it.type == PersonKind.ACTOR }
-        else -> emptyList()
-    }
+    val cast =
+        when (item) {
+            is AfinityMovie -> item.people.filter { it.type == PersonKind.ACTOR }
+            is AfinityShow -> item.people.filter { it.type == PersonKind.ACTOR }
+            is AfinitySeason -> item.people.filter { it.type == PersonKind.ACTOR }
+            else -> emptyList()
+        }
 
     val cardWidth = widthSizeClass.portraitWidth
 
     if (cast.isNotEmpty()) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = stringResource(R.string.cast_section_title),
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 0.dp)
+                contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
                 items(cast.take(10)) { person ->
                     CastMemberCard(
                         person = person,
                         onPersonClick = onPersonClick,
-                        cardWidth = cardWidth
+                        cardWidth = cardWidth,
                     )
                 }
             }
@@ -85,19 +82,18 @@ fun CastSection(
 private fun CastMemberCard(
     person: AfinityPerson,
     onPersonClick: (UUID) -> Unit = {},
-    cardWidth: Dp
+    cardWidth: Dp,
 ) {
     Column(
-        modifier = Modifier
-            .width(cardWidth)
-            .clickable(
+        modifier =
+            Modifier.width(cardWidth).clickable(
                 indication = null,
-                interactionSource = remember { MutableInteractionSource() }
+                interactionSource = remember { MutableInteractionSource() },
             ) {
                 onPersonClick(person.id)
             },
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         AsyncImage(
             imageUrl = person.image.uri?.toString(),
@@ -105,12 +101,10 @@ private fun CastMemberCard(
             blurHash = person.image.blurHash,
             targetWidth = cardWidth,
             targetHeight = cardWidth,
-            modifier = Modifier
-                .size(cardWidth)
-                .clip(CircleShape),
+            modifier = Modifier.size(cardWidth).clip(CircleShape),
             contentScale = ContentScale.Crop,
             placeholder = painterResource(id = R.drawable.ic_person_placeholder),
-            error = painterResource(id = R.drawable.ic_person_placeholder)
+            error = painterResource(id = R.drawable.ic_person_placeholder),
         )
 
         Text(
@@ -119,17 +113,19 @@ private fun CastMemberCard(
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Text(
-            text = if (person.role.isNotEmpty()) stringResource(R.string.cast_role_format, person.role) else "",
+            text =
+                if (person.role.isNotEmpty()) stringResource(R.string.cast_role_format, person.role)
+                else "",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            modifier = Modifier.height(16.dp)
+            modifier = Modifier.height(16.dp),
         )
     }
 }

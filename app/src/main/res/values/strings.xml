@@ -275,6 +275,7 @@
     <string name="track_none">None</string>
     <string name="track_number_fmt">Track %1$d</string>
     <string name="audio_channel_fmt"> (%1$dch)</string>
+    <string name="playback_channel_name">AFinity Audiobook Playback</string>
 
     <string name="cd_logo">Logo</string>
     <string name="cd_series_logo">Series Logo</string>
@@ -377,15 +378,21 @@
     <string name="tab_tv_shows">TV Shows</string>
     <string name="empty_genre_movies">No movies found in this genre</string>
     <string name="empty_genre_tv">No TV shows found in this genre</string>
+    <string name="empty_genre_audiobooks">No audiobooks found in this genre</string>
+    <string name="empty_genre_podcasts">No podcasts found in this genre</string>
     <string name="error_unknown_occurred">Unknown error occurred</string>
 
     <string name="search_no_results">No results found</string>
     <string name="search_placeholder">Search movies and TV shows</string>
     <string name="cd_clear">Clear</string>
     <string name="filter_request">Request</string>
+    <string name="filter_audiobooks">Audiobooks</string>
     <string name="explore_genres">Explore Genres</string>
     <string name="search_results_count_fmt">%1$d results found</string>
     <string name="cd_watched">Watched</string>
+    <string name="cd_finished">Finished</string>
+    <string name="media_type_book">Book</string>
+    <string name="media_type_podcast">Podcast</string>
 
     <string name="media_type_movie">Movie</string>
     <string name="media_type_tv_show">TV Show</string>
@@ -645,6 +652,18 @@
     <string name="pref_discovery_requests">Discovery &amp; Requests</string>
     <string name="discovery_connected">Connected via Seerr</string>
     <string name="discovery_connect">Connect to request content</string>
+
+    <string name="pref_audiobookshelf">Audiobookshelf</string>
+    <string name="audiobookshelf_connected">Connected to Audiobookshelf</string>
+    <string name="audiobookshelf_connect">Connect to browse audiobooks</string>
+    <string name="dialog_disconnect_audiobookshelf_title">Disconnect Audiobookshelf</string>
+    <string name="dialog_disconnect_audiobookshelf_message">Disconnecting will remove your Audiobookshelf configuration. You can reconnect at any time.</string>
+    <string name="error_audiobookshelf_logout_failed_fmt">Failed to disconnect from Audiobookshelf: %1$s</string>
+
+    <string name="notification_permission_title">Enable Notifications</string>
+    <string name="notification_permission_message">AFinity needs notification permission to show the media player in your notification panel and lock screen while playing audiobooks or podcasts.\n\nIf you change your mind later, you can enable it manually from App Info → Permissions → Notifications.</string>
+    <string name="notification_permission_yes">Allow</string>
+    <string name="notification_permission_no">No Thanks</string>
 
     <string name="pref_downloads">Downloads</string>
     <string name="pref_downloads_summary">Manage offline content</string>

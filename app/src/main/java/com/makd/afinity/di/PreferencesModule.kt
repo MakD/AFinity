@@ -12,21 +12,18 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class AppPreferences
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class AppPreferences
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class UserPreferences
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class UserPreferences
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class ServerPreferences
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class ServerPreferences
 
-private val Context.appPreferencesDataStore: DataStore<Preferences> by preferencesDataStore(name = "app_preferences")
-private val Context.userPreferencesDataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
-private val Context.serverPreferencesDataStore: DataStore<Preferences> by preferencesDataStore(name = "server_preferences")
+private val Context.appPreferencesDataStore: DataStore<Preferences> by
+    preferencesDataStore(name = "app_preferences")
+private val Context.userPreferencesDataStore: DataStore<Preferences> by
+    preferencesDataStore(name = "user_preferences")
+private val Context.serverPreferencesDataStore: DataStore<Preferences> by
+    preferencesDataStore(name = "server_preferences")
 
 @Module
 @InstallIn(SingletonComponent::class)

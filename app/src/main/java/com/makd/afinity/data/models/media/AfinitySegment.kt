@@ -5,30 +5,28 @@ import org.jellyfin.sdk.model.api.MediaSegmentDto
 import org.jellyfin.sdk.model.api.MediaSegmentType
 
 enum class AfinitySegmentType {
-    INTRO, OUTRO, RECAP, PREVIEW, COMMERCIAL, UNKNOWN
+    INTRO,
+    OUTRO,
+    RECAP,
+    PREVIEW,
+    COMMERCIAL,
+    UNKNOWN,
 }
 
-private fun MediaSegmentType.toAfinitySegmentType(): AfinitySegmentType = when (this) {
-    MediaSegmentType.UNKNOWN -> AfinitySegmentType.UNKNOWN
-    MediaSegmentType.INTRO -> AfinitySegmentType.INTRO
-    MediaSegmentType.OUTRO -> AfinitySegmentType.OUTRO
-    MediaSegmentType.RECAP -> AfinitySegmentType.RECAP
-    MediaSegmentType.PREVIEW -> AfinitySegmentType.PREVIEW
-    MediaSegmentType.COMMERCIAL -> AfinitySegmentType.COMMERCIAL
-}
+private fun MediaSegmentType.toAfinitySegmentType(): AfinitySegmentType =
+    when (this) {
+        MediaSegmentType.UNKNOWN -> AfinitySegmentType.UNKNOWN
+        MediaSegmentType.INTRO -> AfinitySegmentType.INTRO
+        MediaSegmentType.OUTRO -> AfinitySegmentType.OUTRO
+        MediaSegmentType.RECAP -> AfinitySegmentType.RECAP
+        MediaSegmentType.PREVIEW -> AfinitySegmentType.PREVIEW
+        MediaSegmentType.COMMERCIAL -> AfinitySegmentType.COMMERCIAL
+    }
 
-data class AfinitySegment(
-    val type: AfinitySegmentType,
-    val startTicks: Long,
-    val endTicks: Long,
-)
+data class AfinitySegment(val type: AfinitySegmentType, val startTicks: Long, val endTicks: Long)
 
 fun AfinitySegmentDto.toAfinitySegment(): AfinitySegment {
-    return AfinitySegment(
-        type = type,
-        startTicks = startTicks,
-        endTicks = endTicks,
-    )
+    return AfinitySegment(type = type, startTicks = startTicks, endTicks = endTicks)
 }
 
 fun MediaSegmentDto.toAfinitySegment(): AfinitySegment {

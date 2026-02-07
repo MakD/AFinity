@@ -18,11 +18,9 @@ interface SourceDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSources(sources: List<AfinitySourceDto>)
 
-    @Update
-    suspend fun updateSource(source: AfinitySourceDto)
+    @Update suspend fun updateSource(source: AfinitySourceDto)
 
-    @Delete
-    suspend fun deleteSource(source: AfinitySourceDto)
+    @Delete suspend fun deleteSource(source: AfinitySourceDto)
 
     @Query("DELETE FROM sources WHERE id = :sourceId")
     suspend fun deleteSourceById(sourceId: String)
@@ -48,6 +46,5 @@ interface SourceDao {
     @Query("SELECT SUM(length(path)) FROM sources WHERE type = 'LOCAL'")
     suspend fun getTotalLocalStorageSize(): Long?
 
-    @Query("DELETE FROM sources")
-    suspend fun deleteAllSources()
+    @Query("DELETE FROM sources") suspend fun deleteAllSources()
 }

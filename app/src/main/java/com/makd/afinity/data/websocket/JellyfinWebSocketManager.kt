@@ -2,6 +2,8 @@ package com.makd.afinity.data.websocket
 
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,14 +21,14 @@ import org.jellyfin.sdk.model.api.ServerShuttingDownMessage
 import org.jellyfin.sdk.model.api.SessionsMessage
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
-class JellyfinWebSocketManager @Inject constructor(
+class JellyfinWebSocketManager
+@Inject
+constructor(
     private val apiClient: ApiClient,
     private val mediaRepository: MediaRepository,
-    private val userDataRepository: UserDataRepository
+    private val userDataRepository: UserDataRepository,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -39,12 +41,13 @@ class JellyfinWebSocketManager @Inject constructor(
                 _connectionState.value = WebSocketState.CONNECTING
 
                 apiClient.webSocket.state.collect { socketState ->
-                    _connectionState.value = when (socketState) {
-                        is SocketApiState.Connected -> WebSocketState.CONNECTED
-                        is SocketApiState.Connecting -> WebSocketState.CONNECTING
-                        is SocketApiState.Disconnected -> WebSocketState.DISCONNECTED
-                        else -> WebSocketState.DISCONNECTED
-                    }
+                    _connectionState.value =
+                        when (socketState) {
+                            is SocketApiState.Connected -> WebSocketState.CONNECTED
+                            is SocketApiState.Connecting -> WebSocketState.CONNECTING
+                            is SocketApiState.Disconnected -> WebSocketState.DISCONNECTED
+                            else -> WebSocketState.DISCONNECTED
+                        }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to monitor WebSocket state")

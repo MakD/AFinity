@@ -21,6 +21,7 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,10 +29,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
-class FavoritesViewModel @Inject constructor(
+class FavoritesViewModel
+@Inject
+constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
@@ -39,7 +41,7 @@ class FavoritesViewModel @Inject constructor(
     private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
-    private val liveTvRepository: LiveTvRepository
+    private val liveTvRepository: LiveTvRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FavoritesUiState())
@@ -106,25 +108,26 @@ class FavoritesViewModel @Inject constructor(
                     val boxSets = boxSetsDeferred.await()
                     val channels = channelsDeferred.await()
 
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        movies = movies.sortedBy { it.name },
-                        shows = shows.sortedBy { it.name },
-                        seasons = seasons.sortedBy { it.name },
-                        episodes = episodes.sortedBy { it.name },
-                        boxSets = boxSets.sortedBy { it.name },
-                        channels = channels.sortedBy { it.channelNumber ?: it.name },
-                        people = emptyList(),
-                        error = null
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoading = false,
+                            movies = movies.sortedBy { it.name },
+                            shows = shows.sortedBy { it.name },
+                            seasons = seasons.sortedBy { it.name },
+                            episodes = episodes.sortedBy { it.name },
+                            boxSets = boxSets.sortedBy { it.name },
+                            channels = channels.sortedBy { it.channelNumber ?: it.name },
+                            people = emptyList(),
+                            error = null,
+                        )
                 }
-
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load favorites")
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Failed to load favorites: ${e.message}"
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoading = false,
+                        error = "Failed to load favorites: ${e.message}",
+                    )
             }
         }
     }
@@ -138,10 +141,10 @@ class FavoritesViewModel @Inject constructor(
             try {
                 _isLoadingEpisode.value = true
 
-                val fullEpisode = jellyfinRepository.getItem(
-                    episode.id,
-                    fields = FieldSets.ITEM_DETAIL
-                )?.toAfinityEpisode(jellyfinRepository, null)
+                val fullEpisode =
+                    jellyfinRepository
+                        .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
+                        ?.toAfinityEpisode(jellyfinRepository, null)
 
                 if (fullEpisode != null) {
                     _selectedEpisode.value = fullEpisode
@@ -171,11 +174,12 @@ class FavoritesViewModel @Inject constructor(
     fun toggleEpisodeFavorite(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
-                val success = if (episode.favorite) {
-                    userDataRepository.removeFromFavorites(episode.id)
-                } else {
-                    userDataRepository.addToFavorites(episode.id)
-                }
+                val success =
+                    if (episode.favorite) {
+                        userDataRepository.removeFromFavorites(episode.id)
+                    } else {
+                        userDataRepository.addToFavorites(episode.id)
+                    }
 
                 if (success) {
                     _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
@@ -193,11 +197,12 @@ class FavoritesViewModel @Inject constructor(
                 val isInWatchlist = _selectedEpisodeWatchlistStatus.value
                 _selectedEpisodeWatchlistStatus.value = !isInWatchlist
 
-                val success = if (isInWatchlist) {
-                    watchlistRepository.removeFromWatchlist(episode.id)
-                } else {
-                    watchlistRepository.addToWatchlist(episode.id, "EPISODE")
-                }
+                val success =
+                    if (isInWatchlist) {
+                        watchlistRepository.removeFromWatchlist(episode.id)
+                    } else {
+                        watchlistRepository.addToWatchlist(episode.id, "EPISODE")
+                    }
 
                 if (!success) {
                     _selectedEpisodeWatchlistStatus.value = isInWatchlist
@@ -218,11 +223,12 @@ class FavoritesViewModel @Inject constructor(
     fun toggleEpisodeWatched(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
-                val success = if (episode.played) {
-                    userDataRepository.markUnwatched(episode.id)
-                } else {
-                    userDataRepository.markWatched(episode.id)
-                }
+                val success =
+                    if (episode.played) {
+                        userDataRepository.markUnwatched(episode.id)
+                    } else {
+                        userDataRepository.markWatched(episode.id)
+                    }
 
                 if (success) {
                     _selectedEpisode.value = episode.copy(played = !episode.played)
@@ -239,22 +245,27 @@ class FavoritesViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val episode = _selectedEpisode.value ?: return@launch
-                val sources = episode.sources.filter {
-                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
-                }
+                val sources =
+                    episode.sources.filter {
+                        it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
+                    }
 
                 if (sources.isEmpty()) {
-                    Timber.w("No remote sources available for download for episode: ${episode.name}")
+                    Timber.w(
+                        "No remote sources available for download for episode: ${episode.name}"
+                    )
                     return@launch
                 }
 
                 if (sources.size == 1) {
                     val result = downloadRepository.startDownload(episode.id, sources.first().id)
-                    result.onSuccess {
-                        Timber.i("Download started successfully for episode: ${episode.name}")
-                    }.onFailure { error ->
-                        Timber.e(error, "Failed to start download for episode: ${episode.name}")
-                    }
+                    result
+                        .onSuccess {
+                            Timber.i("Download started successfully for episode: ${episode.name}")
+                        }
+                        .onFailure { error ->
+                            Timber.e(error, "Failed to start download for episode: ${episode.name}")
+                        }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error starting download")
@@ -267,9 +278,7 @@ class FavoritesViewModel @Inject constructor(
             try {
                 val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
                 val result = downloadRepository.pauseDownload(downloadInfo.id)
-                result.onFailure { error ->
-                    Timber.e(error, "Failed to pause download")
-                }
+                result.onFailure { error -> Timber.e(error, "Failed to pause download") }
             } catch (e: Exception) {
                 Timber.e(e, "Error pausing download")
             }
@@ -281,9 +290,7 @@ class FavoritesViewModel @Inject constructor(
             try {
                 val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
                 val result = downloadRepository.resumeDownload(downloadInfo.id)
-                result.onFailure { error ->
-                    Timber.e(error, "Failed to resume download")
-                }
+                result.onFailure { error -> Timber.e(error, "Failed to resume download") }
             } catch (e: Exception) {
                 Timber.e(e, "Error resuming download")
             }
@@ -295,11 +302,9 @@ class FavoritesViewModel @Inject constructor(
             try {
                 val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
                 val result = downloadRepository.cancelDownload(downloadInfo.id)
-                result.onSuccess {
-                    Timber.i("Download cancelled successfully")
-                }.onFailure { error ->
-                    Timber.e(error, "Failed to cancel download")
-                }
+                result
+                    .onSuccess { Timber.i("Download cancelled successfully") }
+                    .onFailure { error -> Timber.e(error, "Failed to cancel download") }
             } catch (e: Exception) {
                 Timber.e(e, "Error cancelling download")
             }
@@ -316,5 +321,5 @@ data class FavoritesUiState(
     val people: List<com.makd.afinity.data.models.media.AfinityPersonDetail> = emptyList(),
     val channels: List<com.makd.afinity.data.models.livetv.AfinityChannel> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )

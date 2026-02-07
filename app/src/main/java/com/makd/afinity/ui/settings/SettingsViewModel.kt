@@ -12,13 +12,16 @@ import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,10 +32,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
+class SettingsViewModel
+@Inject
+constructor(
     @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository,
     private val preferencesRepository: PreferencesRepository,
@@ -40,7 +44,9 @@ class SettingsViewModel @Inject constructor(
     private val serverRepository: ServerRepository,
     private val offlineModeManager: OfflineModeManager,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
-    private val jellyseerrRepository: JellyseerrRepository
+    private val jellyseerrRepository: JellyseerrRepository,
+    private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val audiobookshelfPlayer: AudiobookshelfPlayer,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -52,12 +58,14 @@ class SettingsViewModel @Inject constructor(
     private val _homeSortByDateAdded = MutableStateFlow(true)
     val homeSortByDateAdded: StateFlow<Boolean> = _homeSortByDateAdded.asStateFlow()
 
-    val episodeLayout: StateFlow<EpisodeLayout> = preferencesRepository.getEpisodeLayoutFlow()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = EpisodeLayout.HORIZONTAL
-        )
+    val episodeLayout: StateFlow<EpisodeLayout> =
+        preferencesRepository
+            .getEpisodeLayoutFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = EpisodeLayout.HORIZONTAL,
+            )
 
     private val _manualOfflineMode = MutableStateFlow(false)
     val manualOfflineMode: StateFlow<Boolean> = _manualOfflineMode.asStateFlow()
@@ -65,15 +73,25 @@ class SettingsViewModel @Inject constructor(
     private val _isNetworkAvailable = MutableStateFlow(true)
     val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
 
-    val effectiveOfflineMode: StateFlow<Boolean> = combine(
-        _manualOfflineMode,
-        _isNetworkAvailable
-    ) { manual, networkAvailable ->
-        manual || !networkAvailable
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val effectiveOfflineMode: StateFlow<Boolean> =
+        combine(_manualOfflineMode, _isNetworkAvailable) { manual, networkAvailable ->
+                manual || !networkAvailable
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    val isJellyseerrAuthenticated: StateFlow<Boolean> = jellyseerrRepository.isAuthenticated
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val isJellyseerrAuthenticated: StateFlow<Boolean> =
+        jellyseerrRepository.isAuthenticated.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            false,
+        )
+
+    val isAudiobookshelfAuthenticated: StateFlow<Boolean> =
+        audiobookshelfRepository.isAuthenticated.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            false,
+        )
 
     init {
         loadSettings()
@@ -82,22 +100,26 @@ class SettingsViewModel @Inject constructor(
     private fun loadSettings() {
         viewModelScope.launch {
             combine(
-                authRepository.currentUser,
-                appDataRepository.userProfileImageUrl,
-                serverRepository.currentServer
-            ) { user, profileImageUrl, server ->
-                Triple(user, profileImageUrl, server)
-            }.collect { (user, profileImageUrl, server) ->
-                _uiState.value = _uiState.value.copy(
-                    currentUser = user,
-                    userProfileImageUrl = profileImageUrl,
-                    serverName = server?.name,
-                    serverVersion = server?.version,
-                    serverUrl = serverRepository.getBaseUrl().ifEmpty { null },
-                    isLoading = false
-                )
-                Timber.d("SettingsViewModel - Updated uiState: user=${_uiState.value.currentUser?.name}, server=${_uiState.value.serverName}")
-            }
+                    authRepository.currentUser,
+                    appDataRepository.userProfileImageUrl,
+                    serverRepository.currentServer,
+                ) { user, profileImageUrl, server ->
+                    Triple(user, profileImageUrl, server)
+                }
+                .collect { (user, profileImageUrl, server) ->
+                    _uiState.value =
+                        _uiState.value.copy(
+                            currentUser = user,
+                            userProfileImageUrl = profileImageUrl,
+                            serverName = server?.name,
+                            serverVersion = server?.version,
+                            serverUrl = serverRepository.getBaseUrl().ifEmpty { null },
+                            isLoading = false,
+                        )
+                    Timber.d(
+                        "SettingsViewModel - Updated uiState: user=${_uiState.value.currentUser?.name}, server=${_uiState.value.serverName}"
+                    )
+                }
         }
 
         viewModelScope.launch {
@@ -113,28 +135,33 @@ class SettingsViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            preferencesRepository.getThemeModeFlow()
-                .collect { _uiState.value = _uiState.value.copy(themeMode = it) }
+            preferencesRepository.getThemeModeFlow().collect {
+                _uiState.value = _uiState.value.copy(themeMode = it)
+            }
         }
 
         viewModelScope.launch {
-            preferencesRepository.getDynamicColorsFlow()
-                .collect { _uiState.value = _uiState.value.copy(dynamicColors = it) }
+            preferencesRepository.getDynamicColorsFlow().collect {
+                _uiState.value = _uiState.value.copy(dynamicColors = it)
+            }
         }
 
         viewModelScope.launch {
-            preferencesRepository.getAutoPlayFlow()
-                .collect { _uiState.value = _uiState.value.copy(autoPlay = it) }
+            preferencesRepository.getAutoPlayFlow().collect {
+                _uiState.value = _uiState.value.copy(autoPlay = it)
+            }
         }
 
         viewModelScope.launch {
-            preferencesRepository.getSkipIntroEnabledFlow()
-                .collect { _uiState.value = _uiState.value.copy(skipIntroEnabled = it) }
+            preferencesRepository.getSkipIntroEnabledFlow().collect {
+                _uiState.value = _uiState.value.copy(skipIntroEnabled = it)
+            }
         }
 
         viewModelScope.launch {
-            preferencesRepository.getSkipOutroEnabledFlow()
-                .collect { _uiState.value = _uiState.value.copy(skipOutroEnabled = it) }
+            preferencesRepository.getSkipOutroEnabledFlow().collect {
+                _uiState.value = _uiState.value.copy(skipOutroEnabled = it)
+            }
         }
 
         viewModelScope.launch {
@@ -156,9 +183,7 @@ class SettingsViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            preferencesRepository.getOfflineModeFlow().collect {
-                _manualOfflineMode.value = it
-            }
+            preferencesRepository.getOfflineModeFlow().collect { _manualOfflineMode.value = it }
         }
 
         viewModelScope.launch {
@@ -234,15 +259,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun toggleCombineLibrarySections(enabled: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setCombineLibrarySections(enabled)
-        }
+        viewModelScope.launch { preferencesRepository.setCombineLibrarySections(enabled) }
     }
 
     fun toggleHomeSortByDateAdded(sortByDateAdded: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.setHomeSortByDateAdded(sortByDateAdded)
-        }
+        viewModelScope.launch { preferencesRepository.setHomeSortByDateAdded(sortByDateAdded) }
     }
 
     fun toggleAutoPlay(enabled: Boolean) {
@@ -283,25 +304,37 @@ class SettingsViewModel @Inject constructor(
             try {
                 val currentSubtitlePrefs = preferencesRepository.getSubtitlePreferences()
 
-                val updatedPrefs = when {
-                    enabled && currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.BACKGROUND_BOX -> {
-                        Timber.d("Switching to ExoPlayer: Resetting BACKGROUND_BOX to NONE")
-                        currentSubtitlePrefs.copy(
-                            outlineStyle = com.makd.afinity.data.models.player.SubtitleOutlineStyle.NONE,
-                            outlineSize = 0f
-                        )
-                    }
+                val updatedPrefs =
+                    when {
+                        enabled &&
+                            currentSubtitlePrefs.outlineStyle ==
+                                com.makd.afinity.data.models.player.SubtitleOutlineStyle
+                                    .BACKGROUND_BOX -> {
+                            Timber.d("Switching to ExoPlayer: Resetting BACKGROUND_BOX to NONE")
+                            currentSubtitlePrefs.copy(
+                                outlineStyle =
+                                    com.makd.afinity.data.models.player.SubtitleOutlineStyle.NONE,
+                                outlineSize = 0f,
+                            )
+                        }
 
-                    !enabled && (currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.RAISED ||
-                            currentSubtitlePrefs.outlineStyle == com.makd.afinity.data.models.player.SubtitleOutlineStyle.DEPRESSED) -> {
-                        Timber.d("Switching to MPV: Resetting ${currentSubtitlePrefs.outlineStyle} to NONE")
-                        currentSubtitlePrefs.copy(
-                            outlineStyle = com.makd.afinity.data.models.player.SubtitleOutlineStyle.NONE
-                        )
-                    }
+                        !enabled &&
+                            (currentSubtitlePrefs.outlineStyle ==
+                                com.makd.afinity.data.models.player.SubtitleOutlineStyle.RAISED ||
+                                currentSubtitlePrefs.outlineStyle ==
+                                    com.makd.afinity.data.models.player.SubtitleOutlineStyle
+                                        .DEPRESSED) -> {
+                            Timber.d(
+                                "Switching to MPV: Resetting ${currentSubtitlePrefs.outlineStyle} to NONE"
+                            )
+                            currentSubtitlePrefs.copy(
+                                outlineStyle =
+                                    com.makd.afinity.data.models.player.SubtitleOutlineStyle.NONE
+                            )
+                        }
 
-                    else -> null
-                }
+                        else -> null
+                    }
 
                 updatedPrefs?.let { preferencesRepository.setSubtitlePreferences(it) }
 
@@ -449,15 +482,23 @@ class SettingsViewModel @Inject constructor(
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to logout from Jellyseerr during AFinity logout")
                     }
+
+                    try {
+                        audiobookshelfPlayer.release()
+                        audiobookshelfRepository.logout()
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to logout from Audiobookshelf during AFinity logout")
+                    }
                 }
 
                 onLogoutComplete()
             } catch (e: Exception) {
                 Timber.e(e, "Logout failed")
-                _uiState.value = _uiState.value.copy(
-                    isLoggingOut = false,
-                    error = context.getString(R.string.error_logout_failed_fmt, e.message)
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoggingOut = false,
+                        error = context.getString(R.string.error_logout_failed_fmt, e.message),
+                    )
             }
         }
     }
@@ -469,12 +510,34 @@ class SettingsViewModel @Inject constructor(
                 Timber.d("Jellyseerr logout successful")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to logout from Jellyseerr")
-                _uiState.value = _uiState.value.copy(
-                    error = context.getString(
-                        R.string.error_jellyseerr_logout_failed_fmt,
-                        e.message
+                _uiState.value =
+                    _uiState.value.copy(
+                        error =
+                            context.getString(
+                                R.string.error_jellyseerr_logout_failed_fmt,
+                                e.message,
+                            )
                     )
-                )
+            }
+        }
+    }
+
+    fun logoutFromAudiobookshelf() {
+        viewModelScope.launch {
+            try {
+                audiobookshelfPlayer.release()
+                audiobookshelfRepository.logout()
+                Timber.d("Audiobookshelf logout successful")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to logout from Audiobookshelf")
+                _uiState.value =
+                    _uiState.value.copy(
+                        error =
+                            context.getString(
+                                R.string.error_audiobookshelf_logout_failed_fmt,
+                                e.message,
+                            )
+                    )
             }
         }
     }
@@ -507,5 +570,5 @@ data class SettingsUiState(
     val preferredSubtitleLanguage: String = "",
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )

@@ -7,9 +7,9 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LoginRequest
 import com.makd.afinity.data.models.jellyseerr.LoginResponse
-import com.makd.afinity.data.models.jellyseerr.RequestsResponse
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
+import com.makd.afinity.data.models.jellyseerr.RequestsResponse
 import com.makd.afinity.data.models.jellyseerr.RottenTomatoesRating
 import retrofit2.Response
 import retrofit2.http.Body
@@ -27,11 +27,9 @@ interface JellyseerrApiService {
     @POST("api/v1/auth/jellyfin")
     suspend fun loginJellyfin(@Body request: JellyfinLoginRequest): Response<LoginResponse>
 
-    @GET("api/v1/auth/me")
-    suspend fun getCurrentUser(): Response<JellyseerrUser>
+    @GET("api/v1/auth/me") suspend fun getCurrentUser(): Response<JellyseerrUser>
 
-    @POST("api/v1/auth/logout")
-    suspend fun logout(): Response<Unit>
+    @POST("api/v1/auth/logout") suspend fun logout(): Response<Unit>
 
     @POST("api/v1/request")
     suspend fun createRequest(@Body request: CreateRequestBody): Response<JellyseerrRequest>
@@ -41,7 +39,7 @@ interface JellyseerrApiService {
         @Query("take") take: Int = 20,
         @Query("skip") skip: Int = 0,
         @Query("filter") filter: String? = null,
-        @Query("sort") sort: String? = "added"
+        @Query("sort") sort: String? = "added",
     ): Response<RequestsResponse>
 
     @GET("api/v1/request/{requestId}")
@@ -60,14 +58,14 @@ interface JellyseerrApiService {
     suspend fun search(
         @Query("query") query: String,
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en"
+        @Query("language") language: String = "en",
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/search/multi")
     suspend fun searchMulti(
         @Query("query") query: String,
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en"
+        @Query("language") language: String = "en",
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/movie/{movieId}")
@@ -85,7 +83,7 @@ interface JellyseerrApiService {
     @GET("api/v1/discover/trending")
     suspend fun getTrending(
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en"
+        @Query("language") language: String = "en",
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/movies")
@@ -93,7 +91,7 @@ interface JellyseerrApiService {
         @Query("page") page: Int = 1,
         @Query("language") language: String = "en",
         @Query("sortBy") sortBy: String = "popularity.desc",
-        @Query("studio") studio: Int? = null
+        @Query("studio") studio: Int? = null,
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/tv")
@@ -101,19 +99,19 @@ interface JellyseerrApiService {
         @Query("page") page: Int = 1,
         @Query("language") language: String = "en",
         @Query("sortBy") sortBy: String = "popularity.desc",
-        @Query("network") network: Int? = null
+        @Query("network") network: Int? = null,
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/movies/upcoming")
     suspend fun getUpcomingMovies(
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en"
+        @Query("language") language: String = "en",
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/tv/upcoming")
     suspend fun getUpcomingTv(
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en"
+        @Query("language") language: String = "en",
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/genres/movie")
@@ -140,13 +138,13 @@ interface JellyseerrApiService {
     suspend fun getMoviesByGenre(
         @Path("genreId") genreId: Int,
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en"
+        @Query("language") language: String = "en",
     ): Response<JellyseerrSearchResult>
 
     @GET("api/v1/discover/tv/genre/{genreId}")
     suspend fun getTvByGenre(
         @Path("genreId") genreId: Int,
         @Query("page") page: Int = 1,
-        @Query("language") language: String = "en"
+        @Query("language") language: String = "en",
     ): Response<JellyseerrSearchResult>
 }

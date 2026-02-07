@@ -11,16 +11,13 @@ data class SubtitlePreferences(
     val textSize: Float = 1.0f,
     val bold: Boolean = false,
     val italic: Boolean = false,
-
     val outlineStyle: SubtitleOutlineStyle = SubtitleOutlineStyle.NONE,
     val outlineColor: Int = Color.BLACK,
     val outlineSize: Float = 0f,
-
     val backgroundColor: Int = Color.TRANSPARENT,
     val windowColor: Int = Color.TRANSPARENT,
-
     val verticalPosition: SubtitleVerticalPosition = SubtitleVerticalPosition.BOTTOM,
-    val horizontalAlignment: SubtitleHorizontalAlignment = SubtitleHorizontalAlignment.CENTER
+    val horizontalAlignment: SubtitleHorizontalAlignment = SubtitleHorizontalAlignment.CENTER,
 ) {
     companion object {
         val DEFAULT = SubtitlePreferences()

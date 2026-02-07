@@ -7,5 +7,5 @@ enum class WebSocketState {
     DISCONNECTING,
     ERROR,
     SERVER_RESTARTING,
-    SERVER_SHUTDOWN
+    SERVER_SHUTDOWN,
 }

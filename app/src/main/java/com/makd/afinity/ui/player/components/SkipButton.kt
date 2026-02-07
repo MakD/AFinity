@@ -33,46 +33,36 @@ fun SkipButton(
     segment: AfinitySegment,
     skipButtonText: String,
     onClick: (AfinitySegment) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = true,
-        enter = slideInVertically(
-            initialOffsetY = { it },
-            animationSpec = tween(300)
-        ) + fadeIn(animationSpec = tween(300)),
-        exit = slideOutVertically(
-            targetOffsetY = { it },
-            animationSpec = tween(300)
-        ) + fadeOut(animationSpec = tween(300)),
-        modifier = modifier
+        enter =
+            slideInVertically(initialOffsetY = { it }, animationSpec = tween(300)) +
+                fadeIn(animationSpec = tween(300)),
+        exit =
+            slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)) +
+                fadeOut(animationSpec = tween(300)),
+        modifier = modifier,
     ) {
         FilledTonalButton(
             onClick = { onClick(segment) },
-            modifier = Modifier
-                .wrapContentSize()
-                .padding(16.dp),
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = Color.Black.copy(alpha = 0.8f),
-                contentColor = Color.White
-            ),
+            modifier = Modifier.wrapContentSize().padding(16.dp),
+            colors =
+                ButtonDefaults.filledTonalButtonColors(
+                    containerColor = Color.Black.copy(alpha = 0.8f),
+                    contentColor = Color.White,
+                ),
             shape = RoundedCornerShape(8.dp),
-            contentPadding = PaddingValues(
-                horizontal = 16.dp,
-                vertical = 12.dp
-            )
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_skip_next),
                 contentDescription = stringResource(R.string.cd_skip_button_icon),
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = skipButtonText,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            )
+            Text(text = skipButtonText, fontSize = 16.sp, fontWeight = FontWeight.Medium)
         }
     }
 }

@@ -21,22 +21,26 @@ fun EpgProgramRow(
     hourWidth: Dp,
     cellHeight: Dp,
     onProgramClick: (AfinityProgram) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val totalWidth = hourWidth * (visibleHours + 1)
     val epgEndTime = epgStartTime.plusHours(visibleHours.toLong() + 1)
 
     Box(
-        modifier = modifier
-            .width(totalWidth)
-            .height(cellHeight)
-            .background(MaterialTheme.colorScheme.surface)
+        modifier =
+            modifier
+                .width(totalWidth)
+                .height(cellHeight)
+                .background(MaterialTheme.colorScheme.surface)
     ) {
-        val visiblePrograms = programs.filter { program ->
-            val programStart = program.startDate ?: return@filter false
-            val programEnd = program.endDate ?: return@filter false
-            programStart.isBefore(epgEndTime) && programEnd.isAfter(epgStartTime)
-        }.sortedBy { it.startDate }
+        val visiblePrograms =
+            programs
+                .filter { program ->
+                    val programStart = program.startDate ?: return@filter false
+                    val programEnd = program.endDate ?: return@filter false
+                    programStart.isBefore(epgEndTime) && programEnd.isAfter(epgStartTime)
+                }
+                .sortedBy { it.startDate }
 
         visiblePrograms.forEach { program ->
             EpgProgramCell(
@@ -45,7 +49,7 @@ fun EpgProgramRow(
                 epgEndTime = epgEndTime,
                 hourWidth = hourWidth,
                 cellHeight = cellHeight,
-                onClick = { onProgramClick(program) }
+                onClick = { onProgramClick(program) },
             )
         }
     }

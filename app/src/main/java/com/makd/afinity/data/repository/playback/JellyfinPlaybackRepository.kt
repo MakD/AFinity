@@ -4,6 +4,9 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
@@ -19,15 +22,14 @@ import org.jellyfin.sdk.model.api.RepeatMode
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
-class JellyfinPlaybackRepository @Inject constructor(
+class JellyfinPlaybackRepository
+@Inject
+constructor(
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
 ) : PlaybackRepository {
 
     private suspend fun getCurrentUserId(): UUID? {
@@ -40,7 +42,7 @@ class JellyfinPlaybackRepository @Inject constructor(
         maxAudioChannels: Int?,
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
-        mediaSourceId: String?
+        mediaSourceId: String?,
     ): PlaybackInfoDto? {
         return withContext(Dispatchers.IO) {
             try {
@@ -48,45 +50,48 @@ class JellyfinPlaybackRepository @Inject constructor(
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val mediaInfoApi = MediaInfoApi(apiClient)
 
-                val deviceProfile = DeviceProfile(
-                    name = "Direct play all",
-                    maxStaticBitrate = maxStreamingBitrate ?: 1_000_000_000,
-                    maxStreamingBitrate = maxStreamingBitrate ?: 1_000_000_000,
-                    codecProfiles = emptyList(),
-                    containerProfiles = emptyList(),
-                    directPlayProfiles = emptyList(),
-                    transcodingProfiles = emptyList(),
-                    subtitleProfiles = listOf(
-                        SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
-                        SubtitleProfile("ass", SubtitleDeliveryMethod.EXTERNAL),
-                        SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
-                        SubtitleProfile("sub", SubtitleDeliveryMethod.EXTERNAL),
-                        SubtitleProfile("idx", SubtitleDeliveryMethod.EXTERNAL)
-                    ),
-                )
+                val deviceProfile =
+                    DeviceProfile(
+                        name = "Direct play all",
+                        maxStaticBitrate = maxStreamingBitrate ?: 1_000_000_000,
+                        maxStreamingBitrate = maxStreamingBitrate ?: 1_000_000_000,
+                        codecProfiles = emptyList(),
+                        containerProfiles = emptyList(),
+                        directPlayProfiles = emptyList(),
+                        transcodingProfiles = emptyList(),
+                        subtitleProfiles =
+                            listOf(
+                                SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
+                                SubtitleProfile("ass", SubtitleDeliveryMethod.EXTERNAL),
+                                SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
+                                SubtitleProfile("sub", SubtitleDeliveryMethod.EXTERNAL),
+                                SubtitleProfile("idx", SubtitleDeliveryMethod.EXTERNAL),
+                            ),
+                    )
 
-                val playbackInfoDto = PlaybackInfoDto(
-                    userId = userId,
-                    maxStreamingBitrate = maxStreamingBitrate,
-                    startTimeTicks = 0L,
-                    audioStreamIndex = audioStreamIndex,
-                    subtitleStreamIndex = subtitleStreamIndex,
-                    maxAudioChannels = maxAudioChannels,
-                    mediaSourceId = mediaSourceId,
-                    deviceProfile = deviceProfile,
-                    enableDirectPlay = true,
-                    enableDirectStream = true,
-                    enableTranscoding = true,
-                    allowVideoStreamCopy = true,
-                    allowAudioStreamCopy = true
-                )
+                val playbackInfoDto =
+                    PlaybackInfoDto(
+                        userId = userId,
+                        maxStreamingBitrate = maxStreamingBitrate,
+                        startTimeTicks = 0L,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = subtitleStreamIndex,
+                        maxAudioChannels = maxAudioChannels,
+                        mediaSourceId = mediaSourceId,
+                        deviceProfile = deviceProfile,
+                        enableDirectPlay = true,
+                        enableDirectStream = true,
+                        enableTranscoding = true,
+                        allowVideoStreamCopy = true,
+                        allowAudioStreamCopy = true,
+                    )
 
-                val response = mediaInfoApi.getPostedPlaybackInfo(
-                    itemId = itemId,
-                    data = playbackInfoDto
-                )
+                val response =
+                    mediaInfoApi.getPostedPlaybackInfo(itemId = itemId, data = playbackInfoDto)
 
-                Timber.d("Got playback info response with ${response.content.mediaSources?.size ?: 0} media sources")
+                Timber.d(
+                    "Got playback info response with ${response.content.mediaSources?.size ?: 0} media sources"
+                )
 
                 playbackInfoDto
             } catch (e: ApiClientException) {
@@ -99,60 +104,63 @@ class JellyfinPlaybackRepository @Inject constructor(
         }
     }
 
-
     override suspend fun getMediaSources(
         itemId: UUID,
         maxStreamingBitrate: Int?,
         maxAudioChannels: Int?,
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
-        mediaSourceId: String?
+        mediaSourceId: String?,
     ): List<MediaSourceInfo> {
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val mediaInfoApi = MediaInfoApi(apiClient)
 
-                val deviceProfile = DeviceProfile(
-                    name = "Direct play all",
-                    maxStaticBitrate = maxStreamingBitrate ?: 1_000_000_000,
-                    maxStreamingBitrate = maxStreamingBitrate ?: 1_000_000_000,
-                    codecProfiles = emptyList(),
-                    containerProfiles = emptyList(),
-                    directPlayProfiles = emptyList(),
-                    transcodingProfiles = emptyList(),
-                    subtitleProfiles = listOf(
-                        SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
-                        SubtitleProfile("ass", SubtitleDeliveryMethod.EXTERNAL),
-                        SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
-                        SubtitleProfile("sub", SubtitleDeliveryMethod.EXTERNAL),
-                        SubtitleProfile("idx", SubtitleDeliveryMethod.EXTERNAL)
-                    ),
-                )
+                val deviceProfile =
+                    DeviceProfile(
+                        name = "Direct play all",
+                        maxStaticBitrate = maxStreamingBitrate ?: 1_000_000_000,
+                        maxStreamingBitrate = maxStreamingBitrate ?: 1_000_000_000,
+                        codecProfiles = emptyList(),
+                        containerProfiles = emptyList(),
+                        directPlayProfiles = emptyList(),
+                        transcodingProfiles = emptyList(),
+                        subtitleProfiles =
+                            listOf(
+                                SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
+                                SubtitleProfile("ass", SubtitleDeliveryMethod.EXTERNAL),
+                                SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
+                                SubtitleProfile("sub", SubtitleDeliveryMethod.EXTERNAL),
+                                SubtitleProfile("idx", SubtitleDeliveryMethod.EXTERNAL),
+                            ),
+                    )
 
-                val playbackInfoDto = PlaybackInfoDto(
-                    userId = userId,
-                    maxStreamingBitrate = maxStreamingBitrate,
-                    startTimeTicks = 0L,
-                    audioStreamIndex = audioStreamIndex,
-                    subtitleStreamIndex = subtitleStreamIndex,
-                    maxAudioChannels = maxAudioChannels,
-                    mediaSourceId = mediaSourceId,
-                    deviceProfile = deviceProfile,
-                    enableDirectPlay = true,
-                    enableDirectStream = true,
-                    enableTranscoding = true,
-                    allowVideoStreamCopy = true,
-                    allowAudioStreamCopy = true
-                )
+                val playbackInfoDto =
+                    PlaybackInfoDto(
+                        userId = userId,
+                        maxStreamingBitrate = maxStreamingBitrate,
+                        startTimeTicks = 0L,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = subtitleStreamIndex,
+                        maxAudioChannels = maxAudioChannels,
+                        mediaSourceId = mediaSourceId,
+                        deviceProfile = deviceProfile,
+                        enableDirectPlay = true,
+                        enableDirectStream = true,
+                        enableTranscoding = true,
+                        allowVideoStreamCopy = true,
+                        allowAudioStreamCopy = true,
+                    )
 
-                val response = mediaInfoApi.getPostedPlaybackInfo(
-                    itemId = itemId,
-                    data = playbackInfoDto
-                )
+                val response =
+                    mediaInfoApi.getPostedPlaybackInfo(itemId = itemId, data = playbackInfoDto)
 
-                Timber.d("Got ${response.content.mediaSources?.size ?: 0} media sources for item: $itemId")
+                Timber.d(
+                    "Got ${response.content.mediaSources?.size ?: 0} media sources for item: $itemId"
+                )
                 response.content.mediaSources ?: emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get media sources for item: $itemId")
@@ -168,28 +176,31 @@ class JellyfinPlaybackRepository @Inject constructor(
         subtitleStreamIndex: Int?,
         videoStreamIndex: Int?,
         maxStreamingBitrate: Int?,
-        startTimeTicks: Long?
+        startTimeTicks: Long?,
     ): String? {
         return withContext(Dispatchers.IO) {
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val videosApi = VideosApi(apiClient)
 
-                val streamUrl = videosApi.getVideoStreamUrl(
-                    itemId = itemId,
-                    static = true,
-                    mediaSourceId = mediaSourceId,
-                    audioStreamIndex = audioStreamIndex,
-                    subtitleStreamIndex = subtitleStreamIndex,
-                    videoStreamIndex = videoStreamIndex,
-                    startTimeTicks = null
-                )
+                val streamUrl =
+                    videosApi.getVideoStreamUrl(
+                        itemId = itemId,
+                        static = true,
+                        mediaSourceId = mediaSourceId,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = subtitleStreamIndex,
+                        videoStreamIndex = videoStreamIndex,
+                        startTimeTicks = null,
+                    )
 
                 Timber.d("Generated stream URL: $streamUrl")
                 streamUrl
-
             } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get stream URL for item: $itemId, mediaSource: $mediaSourceId")
+                Timber.e(
+                    e,
+                    "Failed to get stream URL for item: $itemId, mediaSource: $mediaSourceId",
+                )
                 null
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting stream URL for item: $itemId")
@@ -205,7 +216,7 @@ class JellyfinPlaybackRepository @Inject constructor(
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         playMethod: String,
-        canSeek: Boolean
+        canSeek: Boolean,
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -219,7 +230,7 @@ class JellyfinPlaybackRepository @Inject constructor(
                     subtitleStreamIndex = subtitleStreamIndex,
                     PlayMethod.fromName(playMethod),
                     playSessionId = sessionId,
-                    canSeek = canSeek
+                    canSeek = canSeek,
                 )
                 true
             } catch (e: ApiClientException) {
@@ -242,7 +253,7 @@ class JellyfinPlaybackRepository @Inject constructor(
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         playMethod: String,
-        repeatMode: String
+        repeatMode: String,
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -259,7 +270,7 @@ class JellyfinPlaybackRepository @Inject constructor(
                     playSessionId = sessionId,
                     repeatMode = RepeatMode.fromName(repeatMode),
                     isPaused = isPaused,
-                    isMuted = isMuted
+                    isMuted = isMuted,
                 )
                 true
             } catch (e: ApiClientException) {
@@ -267,7 +278,10 @@ class JellyfinPlaybackRepository @Inject constructor(
                 savePlaybackProgressLocally(itemId, positionTicks)
                 false
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error reporting playback progress for item: $itemId, saving locally")
+                Timber.e(
+                    e,
+                    "Unexpected error reporting playback progress for item: $itemId, saving locally",
+                )
                 savePlaybackProgressLocally(itemId, positionTicks)
                 false
             }
@@ -280,7 +294,7 @@ class JellyfinPlaybackRepository @Inject constructor(
         positionTicks: Long,
         mediaSourceId: String,
         nextMediaType: String?,
-        playlistItemId: String?
+        playlistItemId: String?,
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -292,7 +306,7 @@ class JellyfinPlaybackRepository @Inject constructor(
                     mediaSourceId = mediaSourceId,
                     nextMediaType = nextMediaType,
                     positionTicks = positionTicks,
-                    playSessionId = sessionId
+                    playSessionId = sessionId,
                 )
                 true
             } catch (e: ApiClientException) {
@@ -300,7 +314,10 @@ class JellyfinPlaybackRepository @Inject constructor(
                 savePlaybackProgressLocally(itemId, positionTicks)
                 false
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error reporting playback stop for item: $itemId, saving locally")
+                Timber.e(
+                    e,
+                    "Unexpected error reporting playback stop for item: $itemId, saving locally",
+                )
                 savePlaybackProgressLocally(itemId, positionTicks)
                 false
             }
@@ -309,17 +326,22 @@ class JellyfinPlaybackRepository @Inject constructor(
 
     private suspend fun savePlaybackProgressLocally(itemId: UUID, positionTicks: Long) {
         try {
-            val userIdString = preferencesRepository.getCurrentUserId() ?: run {
-                Timber.w("Cannot save playback progress locally: no current user ID in preferences")
-                return
-            }
+            val userIdString =
+                preferencesRepository.getCurrentUserId()
+                    ?: run {
+                        Timber.w(
+                            "Cannot save playback progress locally: no current user ID in preferences"
+                        )
+                        return
+                    }
 
-            val userId = try {
-                UUID.fromString(userIdString)
-            } catch (e: IllegalArgumentException) {
-                Timber.w("Cannot save playback progress locally: invalid user ID format")
-                return
-            }
+            val userId =
+                try {
+                    UUID.fromString(userIdString)
+                } catch (e: IllegalArgumentException) {
+                    Timber.w("Cannot save playback progress locally: invalid user ID format")
+                    return
+                }
 
             val serverId = sessionManager.currentSession.value?.serverId
             if (serverId == null) {
@@ -329,18 +351,21 @@ class JellyfinPlaybackRepository @Inject constructor(
 
             val existingData = databaseRepository.getUserData(userId, itemId)
 
-            val updatedData = AfinityUserDataDto(
-                userId = userId,
-                itemId = itemId,
-                serverId = serverId,
-                played = existingData?.played ?: false,
-                favorite = existingData?.favorite ?: false,
-                playbackPositionTicks = positionTicks,
-                toBeSynced = true
-            )
+            val updatedData =
+                AfinityUserDataDto(
+                    userId = userId,
+                    itemId = itemId,
+                    serverId = serverId,
+                    played = existingData?.played ?: false,
+                    favorite = existingData?.favorite ?: false,
+                    playbackPositionTicks = positionTicks,
+                    toBeSynced = true,
+                )
 
             databaseRepository.insertUserData(updatedData)
-            Timber.i("Saved playback progress locally for item $itemId: ${positionTicks / 10000}ms (will sync when online)")
+            Timber.i(
+                "Saved playback progress locally for item $itemId: ${positionTicks / 10000}ms (will sync when online)"
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to save playback progress locally for item: $itemId")
         }
@@ -369,9 +394,9 @@ class JellyfinPlaybackRepository @Inject constructor(
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val sessionApi = SessionApi(apiClient)
                 val response = sessionApi.getSessions()
-                response.content?.firstOrNull { session ->
-                    session.deviceId == apiClient.deviceInfo?.id
-                }?.id
+                response.content
+                    ?.firstOrNull { session -> session.deviceId == apiClient.deviceInfo?.id }
+                    ?.id
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get active session")
                 null

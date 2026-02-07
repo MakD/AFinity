@@ -3,15 +3,12 @@ package com.makd.afinity.data.database.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.makd.afinity.data.models.media.AfinityMediaStream
-import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.UUID
+import org.jellyfin.sdk.model.api.MediaStreamType
 
-@Entity(
-    tableName = "mediastreams",
-)
+@Entity(tableName = "mediastreams")
 data class AfinityMediaStreamDto(
-    @PrimaryKey
-    val id: UUID,
+    @PrimaryKey val id: UUID,
     val sourceId: String,
     val title: String,
     val displayTitle: String?,
@@ -31,7 +28,11 @@ data class AfinityMediaStreamDto(
     val downloadId: Long? = null,
 )
 
-fun AfinityMediaStream.toAfinityMediaStreamDto(id: UUID, sourceId: String, path: String): AfinityMediaStreamDto {
+fun AfinityMediaStream.toAfinityMediaStreamDto(
+    id: UUID,
+    sourceId: String,
+    path: String,
+): AfinityMediaStreamDto {
     return AfinityMediaStreamDto(
         id = id,
         sourceId = sourceId,

@@ -5,18 +5,18 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.repository.JellyseerrRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
-class JellyseerrLoginViewModel @Inject constructor(
-    private val jellyseerrRepository: JellyseerrRepository
-) : ViewModel() {
+class JellyseerrLoginViewModel
+@Inject
+constructor(private val jellyseerrRepository: JellyseerrRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(JellyseerrLoginUiState())
     val uiState: StateFlow<JellyseerrLoginUiState> = _uiState.asStateFlow()
@@ -31,15 +31,15 @@ class JellyseerrLoginViewModel @Inject constructor(
             try {
                 val isAuthenticated = jellyseerrRepository.isLoggedIn()
                 if (isAuthenticated) {
-                    jellyseerrRepository.getCurrentUser().fold(
-                        onSuccess = { user ->
-                            _uiState.update { it.copy(currentUser = user) }
-                        },
-                        onFailure = { error ->
-                            Timber.e(error, "Failed to load current user")
-                            _uiState.update { it.copy(currentUser = null) }
-                        }
-                    )
+                    jellyseerrRepository
+                        .getCurrentUser()
+                        .fold(
+                            onSuccess = { user -> _uiState.update { it.copy(currentUser = user) } },
+                            onFailure = { error ->
+                                Timber.e(error, "Failed to load current user")
+                                _uiState.update { it.copy(currentUser = null) }
+                            },
+                        )
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check auth status")
@@ -81,7 +81,7 @@ class JellyseerrLoginViewModel @Inject constructor(
                 email = "",
                 password = "",
                 emailError = null,
-                passwordError = null
+                passwordError = null,
             )
         }
     }
@@ -97,38 +97,34 @@ class JellyseerrLoginViewModel @Inject constructor(
 
                 jellyseerrRepository.setServerUrl(_uiState.value.serverUrl.trim())
 
-                jellyseerrRepository.login(
-                    email = _uiState.value.email.trim(),
-                    password = _uiState.value.password,
-                    useJellyfinAuth = _uiState.value.useJellyfinAuth
-                ).fold(
-                    onSuccess = { user ->
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                loginSuccess = true,
-                                loggedInUser = user.displayName ?: user.username ?: user.email,
-                                currentUser = user
-                            )
-                        }
-                        Timber.d("Login successful for user: ${user.username}")
-                    },
-                    onFailure = { error ->
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                error = parseErrorMessage(error.message)
-                            )
-                        }
-                        Timber.e(error, "Login failed")
-                    }
-                )
+                jellyseerrRepository
+                    .login(
+                        email = _uiState.value.email.trim(),
+                        password = _uiState.value.password,
+                        useJellyfinAuth = _uiState.value.useJellyfinAuth,
+                    )
+                    .fold(
+                        onSuccess = { user ->
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    loginSuccess = true,
+                                    loggedInUser = user.displayName ?: user.username ?: user.email,
+                                    currentUser = user,
+                                )
+                            }
+                            Timber.d("Login successful for user: ${user.username}")
+                        },
+                        onFailure = { error ->
+                            _uiState.update {
+                                it.copy(isLoading = false, error = parseErrorMessage(error.message))
+                            }
+                            Timber.e(error, "Login failed")
+                        },
+                    )
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = "An unexpected error occurred: ${e.message}"
-                    )
+                    it.copy(isLoading = false, error = "An unexpected error occurred: ${e.message}")
                 }
                 Timber.e(e, "Error during login")
             }
@@ -180,15 +176,11 @@ class JellyseerrLoginViewModel @Inject constructor(
             message.contains("401") -> "Invalid email or password"
             message.contains("403") -> "Access forbidden. Check your permissions."
             message.contains("404") -> "Server not found. Check your server URL."
-            message.contains(
-                "network",
-                ignoreCase = true
-            ) -> "Network error. Check your connection."
+            message.contains("network", ignoreCase = true) ->
+                "Network error. Check your connection."
 
-            message.contains(
-                "timeout",
-                ignoreCase = true
-            ) -> "Connection timeout. Please try again."
+            message.contains("timeout", ignoreCase = true) ->
+                "Connection timeout. Please try again."
 
             else -> message
         }
@@ -207,34 +199,33 @@ class JellyseerrLoginViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isLoading = true) }
 
-                jellyseerrRepository.logout().fold(
-                    onSuccess = {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                currentUser = null,
-                                email = "",
-                                password = ""
-                            )
-                        }
-                        Timber.d("Logout successful")
-                    },
-                    onFailure = { error ->
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                error = "Logout failed: ${error.message}"
-                            )
-                        }
-                        Timber.e(error, "Logout failed")
-                    }
-                )
+                jellyseerrRepository
+                    .logout()
+                    .fold(
+                        onSuccess = {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    currentUser = null,
+                                    email = "",
+                                    password = "",
+                                )
+                            }
+                            Timber.d("Logout successful")
+                        },
+                        onFailure = { error ->
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = "Logout failed: ${error.message}",
+                                )
+                            }
+                            Timber.e(error, "Logout failed")
+                        },
+                    )
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = "An unexpected error occurred: ${e.message}"
-                    )
+                    it.copy(isLoading = false, error = "An unexpected error occurred: ${e.message}")
                 }
                 Timber.e(e, "Error during logout")
             }
@@ -254,5 +245,5 @@ data class JellyseerrLoginUiState(
     val error: String? = null,
     val loginSuccess: Boolean = false,
     val loggedInUser: String? = null,
-    val currentUser: JellyseerrUser? = null
+    val currentUser: JellyseerrUser? = null,
 )

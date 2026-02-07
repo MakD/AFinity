@@ -19,8 +19,6 @@ interface PreferencesRepositoryEntryPoint {
 fun rememberPreferencesRepository(
     context: Context = LocalContext.current.applicationContext
 ): PreferencesRepository {
-    return EntryPointAccessors.fromApplication(
-        context,
-        PreferencesRepositoryEntryPoint::class.java
-    ).preferencesRepository()
+    return EntryPointAccessors.fromApplication(context, PreferencesRepositoryEntryPoint::class.java)
+        .preferencesRepository()
 }

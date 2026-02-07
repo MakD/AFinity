@@ -45,40 +45,34 @@ fun MyRequestsSection(
     onApprove: (Int) -> Unit,
     onDecline: (Int) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
-    Column(
-        modifier = modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(R.string.section_recent_requests),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = requests,
-                key = { request -> "request_${request.id}" }
-            ) { request ->
+            items(items = requests, key = { request -> "request_${request.id}" }) { request ->
                 RequestCard(
                     request = request,
                     isAdmin = isAdmin,
                     onClick = { onRequestClick(request) },
                     onApprove = { onApprove(request.id) },
                     onDecline = { onDecline(request.id) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -92,47 +86,41 @@ fun DiscoverSection(
     onItemClick: (SearchResultItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
-    onViewAllClick: (() -> Unit)? = null
+    onViewAllClick: (() -> Unit)? = null,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
     val headerBottomPadding = if (onViewAllClick != null) 4.dp else 16.dp
 
-    Column(
-        modifier = modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = headerBottomPadding),
+            modifier = Modifier.fillMaxWidth().padding(bottom = headerBottomPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.Top,
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             if (onViewAllClick != null) {
                 Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onViewAllClick
-                        ),
-                    contentAlignment = Alignment.TopEnd
+                    modifier =
+                        Modifier.size(40.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onViewAllClick,
+                            ),
+                    contentAlignment = Alignment.TopEnd,
                 ) {
                     Icon(
                         painter = painterResource(id = drawable.ic_chevron_right),
                         contentDescription = stringResource(R.string.cd_view_all),
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             }
@@ -141,16 +129,14 @@ fun DiscoverSection(
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = items,
-                key = { item -> "${title.replace(" ", "_")}_${item.id}" }
-            ) { item ->
+            items(items = items, key = { item -> "${title.replace(" ", "_")}_${item.id}" }) { item
+                ->
                 DiscoverMediaCard(
                     item = item,
                     onClick = { onItemClick(item) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -162,37 +148,31 @@ fun StudiosSection(
     studios: List<Studio>,
     onStudioClick: (Studio) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 10.dp
 
-    Column(
-        modifier = modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(R.string.section_studios),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = studios,
-                key = { studio -> "studio_${studio.id}" }
-            ) { studio ->
+            items(items = studios, key = { studio -> "studio_${studio.id}" }) { studio ->
                 StudioCard(
                     studio = studio,
                     onClick = { onStudioClick(studio) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -204,36 +184,30 @@ fun NetworksSection(
     networks: List<Network>,
     onNetworkClick: (Network) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
 
-    Column(
-        modifier = modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(R.string.section_networks),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         LazyRow(
             modifier = Modifier.height(cardHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = networks,
-                key = { network -> "network_${network.id}" }
-            ) { network ->
+            items(items = networks, key = { network -> "network_${network.id}" }) { network ->
                 NetworkCard(
                     network = network,
                     onClick = { onNetworkClick(network) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -246,39 +220,33 @@ fun MovieGenresSection(
     onGenreClick: (GenreSliderItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
-    backdropTracker: BackdropTracker? = null
+    backdropTracker: BackdropTracker? = null,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 10.dp
 
-    Column(
-        modifier = modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(R.string.section_movie_genres),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = genres,
-                key = { genre -> "movie_genre_${genre.id}" }
-            ) { genre ->
+            items(items = genres, key = { genre -> "movie_genre_${genre.id}" }) { genre ->
                 GenreCard(
                     genre = genre,
                     onClick = { onGenreClick(genre) },
                     backdropTracker = backdropTracker,
                     isMovie = true,
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -291,39 +259,33 @@ fun TvGenresSection(
     onGenreClick: (GenreSliderItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
-    backdropTracker: BackdropTracker? = null
+    backdropTracker: BackdropTracker? = null,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
+    val cardHeight =
+        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 10.dp
 
-    Column(
-        modifier = modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(R.string.section_tv_genres),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(
-                items = genres,
-                key = { genre -> "tv_genre_${genre.id}" }
-            ) { genre ->
+            items(items = genres, key = { genre -> "tv_genre_${genre.id}" }) { genre ->
                 GenreCard(
                     genre = genre,
                     onClick = { onGenreClick(genre) },
                     backdropTracker = backdropTracker,
                     isMovie = false,
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }

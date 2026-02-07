@@ -14,42 +14,44 @@ fun MpvSurface(
     modifier: Modifier = Modifier,
     videoOutput: String = "gpu",
     onSurfaceCreated: () -> Unit = {},
-    onSurfaceDestroyed: () -> Unit = {}
+    onSurfaceDestroyed: () -> Unit = {},
 ) {
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = { context ->
             SurfaceView(context).apply {
-                holder.addCallback(object : SurfaceHolder.Callback {
-                    override fun surfaceCreated(holder: SurfaceHolder) {
-                        MPVLib.attachSurface(holder.surface)
-                        MPVLib.setOptionString("force-window", "yes")
-                        MPVLib.setOptionString("vo", videoOutput)
-                        MPVLib.setOptionString("vid", "auto")
-                        onSurfaceCreated()
-                        Timber.d("MPV surface created and attached")
-                    }
+                holder.addCallback(
+                    object : SurfaceHolder.Callback {
+                        override fun surfaceCreated(holder: SurfaceHolder) {
+                            MPVLib.attachSurface(holder.surface)
+                            MPVLib.setOptionString("force-window", "yes")
+                            MPVLib.setOptionString("vo", videoOutput)
+                            MPVLib.setOptionString("vid", "auto")
+                            onSurfaceCreated()
+                            Timber.d("MPV surface created and attached")
+                        }
 
-                    override fun surfaceChanged(
-                        holder: SurfaceHolder,
-                        format: Int,
-                        width: Int,
-                        height: Int
-                    ) {
-                        MPVLib.setPropertyString("android-surface-size", "${width}x$height")
-                        Timber.d("MPV surface changed: ${width}x${height}")
-                    }
+                        override fun surfaceChanged(
+                            holder: SurfaceHolder,
+                            format: Int,
+                            width: Int,
+                            height: Int,
+                        ) {
+                            MPVLib.setPropertyString("android-surface-size", "${width}x$height")
+                            Timber.d("MPV surface changed: ${width}x${height}")
+                        }
 
-                    override fun surfaceDestroyed(holder: SurfaceHolder) {
-                        MPVLib.setOptionString("vid", "no")
-                        MPVLib.setOptionString("vo", "null")
-                        MPVLib.setOptionString("force-window", "no")
-                        MPVLib.detachSurface()
-                        onSurfaceDestroyed()
-                        Timber.d("MPV surface destroyed and detached")
+                        override fun surfaceDestroyed(holder: SurfaceHolder) {
+                            MPVLib.setOptionString("vid", "no")
+                            MPVLib.setOptionString("vo", "null")
+                            MPVLib.setOptionString("force-window", "no")
+                            MPVLib.detachSurface()
+                            onSurfaceDestroyed()
+                            Timber.d("MPV surface destroyed and detached")
+                        }
                     }
-                })
+                )
             }
-        }
+        },
     )
 }

@@ -4,7 +4,7 @@ import androidx.room.Entity
 
 @Entity(
     tableName = "jellyseerr_requests",
-    primaryKeys = ["id", "jellyfinServerId", "jellyfinUserId"]
+    primaryKeys = ["id", "jellyfinServerId", "jellyfinUserId"],
 )
 data class JellyseerrRequestEntity(
     val id: Int,
@@ -26,5 +26,5 @@ data class JellyseerrRequestEntity(
     val mediaBackdropPath: String? = null,
     val mediaReleaseDate: String? = null,
     val mediaFirstAirDate: String? = null,
-    val mediaStatus: Int? = null
+    val mediaStatus: Int? = null,
 )

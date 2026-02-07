@@ -30,60 +30,55 @@ import com.makd.afinity.ui.components.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HeroSection(
-    item: AfinityItem,
-    onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit
-) {
+fun HeroSection(item: AfinityItem, onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val heightMultiplier = if (isLandscape) 0.9f else 0.5f
 
-    val backdropUrl = if (item is AfinitySeason) {
-        item.images.backdropImageUrl ?: item.images.showBackdropImageUrl
-        ?: item.images.primaryImageUrl
-    } else {
-        item.images.backdropImageUrl ?: item.images.primaryImageUrl
-    }
+    val backdropUrl =
+        if (item is AfinitySeason) {
+            item.images.backdropImageUrl
+                ?: item.images.showBackdropImageUrl
+                ?: item.images.primaryImageUrl
+        } else {
+            item.images.backdropImageUrl ?: item.images.primaryImageUrl
+        }
 
-    val backdropBlur = if (item is AfinitySeason) {
-        item.images.backdropBlurHash ?: item.images.showBackdropBlurHash
-        ?: item.images.primaryBlurHash
-    } else {
-        item.images.backdropBlurHash ?: item.images.primaryBlurHash
-    }
+    val backdropBlur =
+        if (item is AfinitySeason) {
+            item.images.backdropBlurHash
+                ?: item.images.showBackdropBlurHash
+                ?: item.images.primaryBlurHash
+        } else {
+            item.images.backdropBlurHash ?: item.images.primaryBlurHash
+        }
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(screenHeight * heightMultiplier)
-    ) {
+    Box(modifier = Modifier.fillMaxWidth().height(screenHeight * heightMultiplier)) {
         AsyncImage(
             imageUrl = backdropUrl,
             contentDescription = null,
             blurHash = backdropBlur,
             targetWidth = configuration.screenWidthDp.dp,
             targetHeight = screenHeight * heightMultiplier,
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { alpha = 0.99f }
-                .drawWithCache {
-                    val gradient = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black,
-                            Color.Transparent
-                        ),
-                        startY = size.height * 0.75f,
-                        endY = size.height
-                    )
-                    onDrawWithContent {
-                        drawContent()
-                        drawRect(gradient, blendMode = BlendMode.DstIn)
-                    }
-                },
+            modifier =
+                Modifier.fillMaxSize()
+                    .graphicsLayer { alpha = 0.99f }
+                    .drawWithCache {
+                        val gradient =
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Black, Color.Transparent),
+                                startY = size.height * 0.75f,
+                                endY = size.height,
+                            )
+                        onDrawWithContent {
+                            drawContent()
+                            drawRect(gradient, blendMode = BlendMode.DstIn)
+                        }
+                    },
             contentScale = ContentScale.Crop,
-            alignment = Alignment.Center
+            alignment = Alignment.Center,
         )
     }
 }

@@ -31,15 +31,15 @@ import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.ProgramCategoryRow
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
-import kotlinx.coroutines.delay
 import java.time.LocalDateTime
+import kotlinx.coroutines.delay
 
 @Composable
 fun LiveTvHomeTab(
     uiState: LiveTvUiState,
     onProgramClick: (ProgramWithChannel) -> Unit,
     modifier: Modifier = Modifier,
-    widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact
+    widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
 ) {
     var currentTime by remember { mutableStateOf(LocalDateTime.now()) }
 
@@ -50,54 +50,50 @@ fun LiveTvHomeTab(
         }
     }
     if (uiState.isCategoriesLoading && uiState.categorizedPrograms.isEmpty()) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
     }
 
-    val orderedCategories = listOf(
-        LiveTvCategory.ON_NOW,
-        LiveTvCategory.MOVIES,
-        LiveTvCategory.SHOWS,
-        LiveTvCategory.SPORTS,
-        LiveTvCategory.KIDS,
-        LiveTvCategory.NEWS
-    )
+    val orderedCategories =
+        listOf(
+            LiveTvCategory.ON_NOW,
+            LiveTvCategory.MOVIES,
+            LiveTvCategory.SHOWS,
+            LiveTvCategory.SPORTS,
+            LiveTvCategory.KIDS,
+            LiveTvCategory.NEWS,
+        )
 
-    val categoriesWithPrograms = orderedCategories.mapNotNull { category ->
-        uiState.categorizedPrograms[category]?.takeIf { it.isNotEmpty() }?.let { programs ->
-            category to programs
+    val categoriesWithPrograms =
+        orderedCategories.mapNotNull { category ->
+            uiState.categorizedPrograms[category]
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { programs -> category to programs }
         }
-    }
 
     if (categoriesWithPrograms.isEmpty()) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_live_tv_nav),
                     contentDescription = null,
                     modifier = Modifier.padding(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 )
                 Text(
                     text = stringResource(R.string.livetv_home_empty_title),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
                 Text(
                     text = stringResource(R.string.livetv_home_empty_message),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 )
             }
         }
@@ -106,18 +102,15 @@ fun LiveTvHomeTab(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 16.dp)
+        contentPadding = PaddingValues(vertical = 16.dp),
     ) {
-        items(
-            items = categoriesWithPrograms,
-            key = { it.first.name }
-        ) { (category, programs) ->
+        items(items = categoriesWithPrograms, key = { it.first.name }) { (category, programs) ->
             ProgramCategoryRow(
                 category = category,
                 programs = programs,
                 now = currentTime,
                 onProgramClick = onProgramClick,
-                widthSizeClass = widthSizeClass
+                widthSizeClass = widthSizeClass,
             )
             Spacer(modifier = Modifier.height(24.dp))
         }

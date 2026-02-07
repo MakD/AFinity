@@ -11,7 +11,7 @@ object DatabaseUtils {
 
     fun getDatabaseSizeFormatted(
         context: Context,
-        databaseName: String = "afinity_database"
+        databaseName: String = "afinity_database",
     ): String {
         val sizeInBytes = getDatabaseSize(context, databaseName)
         return formatBytes(sizeInBytes)
@@ -59,7 +59,7 @@ object DatabaseUtils {
         val movieCount: Int,
         val showCount: Int,
         val episodeCount: Int,
-        val downloadedItemCount: Int
+        val downloadedItemCount: Int,
     )
 
     suspend fun getDatabaseStats(context: Context, database: AfinityDatabase): DatabaseStats {
@@ -70,7 +70,7 @@ object DatabaseUtils {
             movieCount = serverDao.getMovieCount(),
             showCount = serverDao.getShowCount(),
             episodeCount = serverDao.getEpisodeCount(),
-            downloadedItemCount = serverDao.getDownloadedItemCount()
+            downloadedItemCount = serverDao.getDownloadedItemCount(),
         )
     }
 }

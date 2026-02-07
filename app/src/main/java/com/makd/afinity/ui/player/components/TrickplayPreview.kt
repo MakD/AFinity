@@ -38,7 +38,7 @@ fun TrickplayPreview(
     positionMs: Long,
     durationMs: Long,
     chapters: List<AfinityChapter>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -49,7 +49,7 @@ fun TrickplayPreview(
         visible = isVisible && previewImage != null,
         enter = fadeIn(),
         exit = fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         if (previewImage != null) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -59,29 +59,34 @@ fun TrickplayPreview(
                 val endPadding = 78.dp
 
                 val actualSliderWidth = screenWidth - startPadding - endPadding
-                val progress = if (durationMs > 0) (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
+                val progress =
+                    if (durationMs > 0)
+                        (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                    else 0f
                 val targetX = startPadding + (actualSliderWidth * progress)
 
-                val constrainedX = when {
-                    targetX - previewWidth / 2 < 8.dp -> 8.dp
-                    targetX + previewWidth / 2 > screenWidth - 8.dp -> screenWidth - previewWidth - 8.dp
-                    else -> targetX - previewWidth / 2
-                }
+                val constrainedX =
+                    when {
+                        targetX - previewWidth / 2 < 8.dp -> 8.dp
+                        targetX + previewWidth / 2 > screenWidth - 8.dp ->
+                            screenWidth - previewWidth - 8.dp
+                        else -> targetX - previewWidth / 2
+                    }
 
                 Card(
-                    modifier = Modifier
-                        .offset(x = constrainedX, y = seekBarY - previewHeight - 8.dp)
-                        .size(previewWidth, previewHeight),
+                    modifier =
+                        Modifier.offset(x = constrainedX, y = seekBarY - previewHeight - 8.dp)
+                            .size(previewWidth, previewHeight),
                     colors = CardDefaults.cardColors(containerColor = Color.Black),
                     shape = RoundedCornerShape(8.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         Image(
                             bitmap = previewImage,
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
                         )
 
                         val currentChapter = chapters.lastOrNull { it.startPosition <= positionMs }
@@ -90,23 +95,21 @@ fun TrickplayPreview(
                             targetState = currentChapter?.name,
                             transitionSpec = {
                                 fadeIn(animationSpec = tween(200)) togetherWith
-                                        fadeOut(animationSpec = tween(200)) using
-                                        SizeTransform(clip = false)
+                                    fadeOut(animationSpec = tween(200)) using
+                                    SizeTransform(clip = false)
                             },
                             contentAlignment = Alignment.CenterStart,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(8.dp),
-                            label = "ChapterNameAnimation"
+                            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
+                            label = "ChapterNameAnimation",
                         ) { chapterName ->
                             if (!chapterName.isNullOrEmpty()) {
                                 Box(
-                                    modifier = Modifier
-                                        .background(
-                                            color = Color.Black.copy(alpha = 0.75f),
-                                            shape = RoundedCornerShape(4.dp)
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    modifier =
+                                        Modifier.background(
+                                                color = Color.Black.copy(alpha = 0.75f),
+                                                shape = RoundedCornerShape(4.dp),
+                                            )
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Text(
                                         text = chapterName,
@@ -114,7 +117,7 @@ fun TrickplayPreview(
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                        overflow = TextOverflow.Ellipsis,
                                     )
                                 }
                             }

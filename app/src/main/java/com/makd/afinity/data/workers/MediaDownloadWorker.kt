@@ -1,9 +1,9 @@
 package com.makd.afinity.data.workers
 
 import android.app.NotificationChannel
-import android.content.pm.ServiceInfo
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -34,6 +34,9 @@ import com.makd.afinity.data.repository.segments.SegmentsRepository
 import com.makd.afinity.di.DownloadClient
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -45,12 +48,11 @@ import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
-import java.util.UUID
 
 @HiltWorker
-class MediaDownloadWorker @AssistedInject constructor(
+class MediaDownloadWorker
+@AssistedInject
+constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val sessionManager: SessionManager,
@@ -71,248 +73,303 @@ class MediaDownloadWorker @AssistedInject constructor(
         const val BUFFER_SIZE = 8192
     }
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val downloadIdString = inputData.getString(KEY_DOWNLOAD_ID)
-            ?: return@withContext Result.failure(workDataOf("error" to "Missing download ID"))
+    override suspend fun doWork(): Result =
+        withContext(Dispatchers.IO) {
+            val downloadIdString =
+                inputData.getString(KEY_DOWNLOAD_ID)
+                    ?: return@withContext Result.failure(
+                        workDataOf("error" to "Missing download ID")
+                    )
 
-        val downloadId = try {
-            UUID.fromString(downloadIdString)
-        } catch (e: IllegalArgumentException) {
-            return@withContext Result.failure(workDataOf("error" to "Invalid download ID"))
-        }
-
-        val itemIdString = inputData.getString(KEY_ITEM_ID)
-            ?: return@withContext Result.failure(workDataOf("error" to "Missing item ID"))
-
-        val itemId = try {
-            UUID.fromString(itemIdString)
-        } catch (e: IllegalArgumentException) {
-            return@withContext Result.failure(workDataOf("error" to "Invalid item ID"))
-        }
-
-        val sourceId = inputData.getString(KEY_SOURCE_ID)
-            ?: return@withContext Result.failure(workDataOf("error" to "Missing source ID"))
-
-        val itemName = inputData.getString(KEY_ITEM_NAME) ?: "Unknown"
-        val itemType = inputData.getString(KEY_ITEM_TYPE) ?: "Unknown"
-
-        try {
-            val foregroundInfo = createForegroundInfo(downloadId.hashCode(), itemName, 0, 0)
-            setForeground(foregroundInfo)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to promote to foreground service")
-        }
-
-        try {
-            Timber.d("Starting media download for item: $itemName ($itemType)")
-
-            val download: DownloadDto = databaseRepository.getDownload(downloadId)
-                ?: return@withContext Result.failure(workDataOf("error" to "Download not found"))
-
-            val apiClient = sessionManager.getOrRestoreApiClient(download.serverId)
-                ?: return@withContext Result.failure(workDataOf("error" to "Could not restore session for server ${download.serverId}"))
-
-            databaseRepository.insertDownload(
-                download.copy(
-                    status = DownloadStatus.DOWNLOADING,
-                    updatedAt = System.currentTimeMillis()
-                )
-            )
-
-            val userId = try {
-                apiClient.userApi.getCurrentUser().content?.id
-            } catch (e: Exception) {
-                null
-            } ?: return@withContext Result.failure(workDataOf("error" to "User not authenticated"))
-
-            if (userId != download.userId) {
-                Timber.w("User ID mismatch. Download started by ${download.userId}, active token is for $userId")
-            }
-
-            val baseUrl = apiClient.baseUrl ?: ""
-
-            val itemsApi = ItemsApi(apiClient)
-            val baseItemDto = try {
-                itemsApi.getItems(
-                    userId = userId,
-                    ids = listOf(itemId),
-                    fields = listOf(
-                        ItemFields.MEDIA_SOURCES,
-                        ItemFields.MEDIA_STREAMS,
-                        ItemFields.OVERVIEW
-                    ),
-                    enableImages = true,
-                    enableUserData = true
-                ).content?.items?.firstOrNull()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to fetch item details")
-                null
-            } ?: return@withContext Result.failure(workDataOf("error" to "Item not found"))
-
-            val item = when (baseItemDto.type) {
-                BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
-                BaseItemKind.EPISODE -> baseItemDto.toAfinityEpisode(baseUrl)
-                    ?: return@withContext Result.failure(workDataOf("error" to "Failed to convert episode"))
-
-                else -> return@withContext Result.failure(
-                    workDataOf("error" to "Unsupported item type: ${baseItemDto.type}")
-                )
-            }
-
-            val source = item.sources.find { it.id == sourceId }
-                ?: return@withContext Result.failure(workDataOf("error" to "Source not found"))
-
-            val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
-            val mediaDir = File(itemDir, "media").also { it.mkdirs() }
-
-            val extension = when {
-                source.path.contains(".mkv") -> "mkv"
-                source.path.contains(".mp4") -> "mp4"
-                source.path.contains(".avi") -> "avi"
-                else -> "mkv"
-            }
-
-            val outputFile = File(mediaDir, "$sourceId.$extension.download")
-            val finalFile = File(mediaDir, "$sourceId.$extension")
-
-            val downloadUrl = apiClient.libraryApi.getDownloadUrl(itemId = itemId)
-
-            val existingFileSize = if (outputFile.exists()) outputFile.length() else 0L
-
-            Timber.d("Downloading from: $downloadUrl")
-            Timber.d("Saving to: ${outputFile.absolutePath}")
-            Timber.d("Resuming from byte: $existingFileSize")
-
-            val requestBuilder = Request.Builder()
-                .url(downloadUrl)
-                .header("X-Emby-Token", apiClient.accessToken ?: "")
-
-            if (existingFileSize > 0) {
-                requestBuilder.header("Range", "bytes=$existingFileSize-")
-            }
-
-            val request = requestBuilder.build()
-
-            okHttpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    if (response.code == 416) {
-                        Timber.w("File already fully downloaded (416). Proceeding to completion.")
-                    } else {
-                        throw Exception("Download failed: ${response.code} ${response.message}")
-                    }
+            val downloadId =
+                try {
+                    UUID.fromString(downloadIdString)
+                } catch (e: IllegalArgumentException) {
+                    return@withContext Result.failure(workDataOf("error" to "Invalid download ID"))
                 }
 
-                val remainingBytes = response.body?.contentLength() ?: -1L
-                val totalBytes = if (remainingBytes != -1L) existingFileSize + remainingBytes else -1L
+            val itemIdString =
+                inputData.getString(KEY_ITEM_ID)
+                    ?: return@withContext Result.failure(workDataOf("error" to "Missing item ID"))
 
-                var downloadedBytes = existingFileSize
-                var lastUpdateTime = 0L
+            val itemId =
+                try {
+                    UUID.fromString(itemIdString)
+                } catch (e: IllegalArgumentException) {
+                    return@withContext Result.failure(workDataOf("error" to "Invalid item ID"))
+                }
 
-                response.body?.byteStream()?.use { input ->
-                    FileOutputStream(outputFile, true).use { output ->
-                        val buffer = ByteArray(BUFFER_SIZE)
-                        var bytes: Int
+            val sourceId =
+                inputData.getString(KEY_SOURCE_ID)
+                    ?: return@withContext Result.failure(workDataOf("error" to "Missing source ID"))
 
-                        while (input.read(buffer).also { bytes = it } != -1) {
-                            if (isStopped) {
-                                Timber.d("Download paused/stopped by user")
-                                try {
-                                    output.close()
-                                } catch (_: Exception) {}
+            val itemName = inputData.getString(KEY_ITEM_NAME) ?: "Unknown"
+            val itemType = inputData.getString(KEY_ITEM_TYPE) ?: "Unknown"
 
-                                return@withContext Result.failure(workDataOf("error" to "Paused"))
-                            }
+            try {
+                val foregroundInfo = createForegroundInfo(downloadId.hashCode(), itemName, 0, 0)
+                setForeground(foregroundInfo)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to promote to foreground service")
+            }
 
-                            output.write(buffer, 0, bytes)
-                            downloadedBytes += bytes
+            try {
+                Timber.d("Starting media download for item: $itemName ($itemType)")
 
-                            if (totalBytes > 0) {
-                                val progress = (downloadedBytes.toFloat() / totalBytes.toFloat())
+                val download: DownloadDto =
+                    databaseRepository.getDownload(downloadId)
+                        ?: return@withContext Result.failure(
+                            workDataOf("error" to "Download not found")
+                        )
 
-                                val currentTime = System.currentTimeMillis()
-                                if (currentTime - lastUpdateTime > 500 || downloadedBytes == totalBytes) {
-                                    lastUpdateTime = currentTime
-                                    updateProgress(downloadId, progress, downloadedBytes, totalBytes)
+                val apiClient =
+                    sessionManager.getOrRestoreApiClient(download.serverId)
+                        ?: return@withContext Result.failure(
+                            workDataOf(
+                                "error" to
+                                    "Could not restore session for server ${download.serverId}"
+                            )
+                        )
 
-                                    setProgressAsync(
-                                        workDataOf(
-                                            PROGRESS_KEY to progress,
-                                            "downloadedBytes" to downloadedBytes,
-                                            "totalBytes" to totalBytes
-                                        )
+                databaseRepository.insertDownload(
+                    download.copy(
+                        status = DownloadStatus.DOWNLOADING,
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                )
+
+                val userId =
+                    try {
+                        apiClient.userApi.getCurrentUser().content?.id
+                    } catch (e: Exception) {
+                        null
+                    }
+                        ?: return@withContext Result.failure(
+                            workDataOf("error" to "User not authenticated")
+                        )
+
+                if (userId != download.userId) {
+                    Timber.w(
+                        "User ID mismatch. Download started by ${download.userId}, active token is for $userId"
+                    )
+                }
+
+                val baseUrl = apiClient.baseUrl ?: ""
+
+                val itemsApi = ItemsApi(apiClient)
+                val baseItemDto =
+                    try {
+                        itemsApi
+                            .getItems(
+                                userId = userId,
+                                ids = listOf(itemId),
+                                fields =
+                                    listOf(
+                                        ItemFields.MEDIA_SOURCES,
+                                        ItemFields.MEDIA_STREAMS,
+                                        ItemFields.OVERVIEW,
+                                    ),
+                                enableImages = true,
+                                enableUserData = true,
+                            )
+                            .content
+                            ?.items
+                            ?.firstOrNull()
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to fetch item details")
+                        null
+                    } ?: return@withContext Result.failure(workDataOf("error" to "Item not found"))
+
+                val item =
+                    when (baseItemDto.type) {
+                        BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(baseUrl)
+                        BaseItemKind.EPISODE ->
+                            baseItemDto.toAfinityEpisode(baseUrl)
+                                ?: return@withContext Result.failure(
+                                    workDataOf("error" to "Failed to convert episode")
+                                )
+
+                        else ->
+                            return@withContext Result.failure(
+                                workDataOf("error" to "Unsupported item type: ${baseItemDto.type}")
+                            )
+                    }
+
+                val source =
+                    item.sources.find { it.id == sourceId }
+                        ?: return@withContext Result.failure(
+                            workDataOf("error" to "Source not found")
+                        )
+
+                val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
+                val mediaDir = File(itemDir, "media").also { it.mkdirs() }
+
+                val extension =
+                    when {
+                        source.path.contains(".mkv") -> "mkv"
+                        source.path.contains(".mp4") -> "mp4"
+                        source.path.contains(".avi") -> "avi"
+                        else -> "mkv"
+                    }
+
+                val outputFile = File(mediaDir, "$sourceId.$extension.download")
+                val finalFile = File(mediaDir, "$sourceId.$extension")
+
+                val downloadUrl = apiClient.libraryApi.getDownloadUrl(itemId = itemId)
+
+                val existingFileSize = if (outputFile.exists()) outputFile.length() else 0L
+
+                Timber.d("Downloading from: $downloadUrl")
+                Timber.d("Saving to: ${outputFile.absolutePath}")
+                Timber.d("Resuming from byte: $existingFileSize")
+
+                val requestBuilder =
+                    Request.Builder()
+                        .url(downloadUrl)
+                        .header("X-Emby-Token", apiClient.accessToken ?: "")
+
+                if (existingFileSize > 0) {
+                    requestBuilder.header("Range", "bytes=$existingFileSize-")
+                }
+
+                val request = requestBuilder.build()
+
+                okHttpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        if (response.code == 416) {
+                            Timber.w(
+                                "File already fully downloaded (416). Proceeding to completion."
+                            )
+                        } else {
+                            throw Exception("Download failed: ${response.code} ${response.message}")
+                        }
+                    }
+
+                    val remainingBytes = response.body?.contentLength() ?: -1L
+                    val totalBytes =
+                        if (remainingBytes != -1L) existingFileSize + remainingBytes else -1L
+
+                    var downloadedBytes = existingFileSize
+                    var lastUpdateTime = 0L
+
+                    response.body?.byteStream()?.use { input ->
+                        FileOutputStream(outputFile, true).use { output ->
+                            val buffer = ByteArray(BUFFER_SIZE)
+                            var bytes: Int
+
+                            while (input.read(buffer).also { bytes = it } != -1) {
+                                if (isStopped) {
+                                    Timber.d("Download paused/stopped by user")
+                                    try {
+                                        output.close()
+                                    } catch (_: Exception) {}
+
+                                    return@withContext Result.failure(
+                                        workDataOf("error" to "Paused")
                                     )
+                                }
 
-                                    setForeground(
-                                        createForegroundInfo(
-                                            downloadId.hashCode(),
-                                            itemName,
+                                output.write(buffer, 0, bytes)
+                                downloadedBytes += bytes
+
+                                if (totalBytes > 0) {
+                                    val progress =
+                                        (downloadedBytes.toFloat() / totalBytes.toFloat())
+
+                                    val currentTime = System.currentTimeMillis()
+                                    if (
+                                        currentTime - lastUpdateTime > 500 ||
+                                            downloadedBytes == totalBytes
+                                    ) {
+                                        lastUpdateTime = currentTime
+                                        updateProgress(
+                                            downloadId,
+                                            progress,
                                             downloadedBytes,
-                                            totalBytes
+                                            totalBytes,
                                         )
-                                    )
+
+                                        setProgressAsync(
+                                            workDataOf(
+                                                PROGRESS_KEY to progress,
+                                                "downloadedBytes" to downloadedBytes,
+                                                "totalBytes" to totalBytes,
+                                            )
+                                        )
+
+                                        setForeground(
+                                            createForegroundInfo(
+                                                downloadId.hashCode(),
+                                                itemName,
+                                                downloadedBytes,
+                                                totalBytes,
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            if (outputFile.exists()) {
-                outputFile.renameTo(finalFile)
-                Timber.d("Download completed: ${finalFile.absolutePath}")
-            }
-
-            val updatedDownload = download.copy(
-                status = DownloadStatus.COMPLETED,
-                progress = 1.0f,
-                bytesDownloaded = finalFile.length(),
-                totalBytes = finalFile.length(),
-                filePath = finalFile.absolutePath,
-                updatedAt = System.currentTimeMillis()
-            )
-            databaseRepository.insertDownload(updatedDownload)
-
-            ensureItemInDatabase(apiClient, download.serverId, itemId, itemType, userId)
-            downloadImages(apiClient, download.serverId, itemId, itemType, userId)
-            downloadSegments(itemId)
-            createLocalSource(itemId, sourceId, source.name, finalFile, source.mediaStreams)
-
-            Timber.i("Media download completed successfully for: $itemName")
-
-            return@withContext Result.success(
-                workDataOf(
-                    KEY_DOWNLOAD_ID to downloadIdString,
-                    KEY_ITEM_ID to itemIdString,
-                    KEY_SOURCE_ID to sourceId,
-                    KEY_FILE_PATH to finalFile.absolutePath
-                )
-            )
-
-        } catch (e: Exception) {
-            Timber.e(e, "Media download failed")
-            try {
-                val download = databaseRepository.getDownload(downloadId)
-                if (download != null) {
-                    databaseRepository.insertDownload(
-                        download.copy(
-                            status = DownloadStatus.FAILED,
-                            error = e.message ?: "Unknown error",
-                            updatedAt = System.currentTimeMillis()
-                        )
-                    )
+                if (outputFile.exists()) {
+                    outputFile.renameTo(finalFile)
+                    Timber.d("Download completed: ${finalFile.absolutePath}")
                 }
-            } catch (dbEx: Exception) {
-                Timber.e(dbEx, "Failed to update download status to FAILED")
+
+                val updatedDownload =
+                    download.copy(
+                        status = DownloadStatus.COMPLETED,
+                        progress = 1.0f,
+                        bytesDownloaded = finalFile.length(),
+                        totalBytes = finalFile.length(),
+                        filePath = finalFile.absolutePath,
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                databaseRepository.insertDownload(updatedDownload)
+
+                ensureItemInDatabase(apiClient, download.serverId, itemId, itemType, userId)
+                downloadImages(apiClient, download.serverId, itemId, itemType, userId)
+                downloadSegments(itemId)
+                createLocalSource(itemId, sourceId, source.name, finalFile, source.mediaStreams)
+
+                Timber.i("Media download completed successfully for: $itemName")
+
+                return@withContext Result.success(
+                    workDataOf(
+                        KEY_DOWNLOAD_ID to downloadIdString,
+                        KEY_ITEM_ID to itemIdString,
+                        KEY_SOURCE_ID to sourceId,
+                        KEY_FILE_PATH to finalFile.absolutePath,
+                    )
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Media download failed")
+                try {
+                    val download = databaseRepository.getDownload(downloadId)
+                    if (download != null) {
+                        databaseRepository.insertDownload(
+                            download.copy(
+                                status = DownloadStatus.FAILED,
+                                error = e.message ?: "Unknown error",
+                                updatedAt = System.currentTimeMillis(),
+                            )
+                        )
+                    }
+                } catch (dbEx: Exception) {
+                    Timber.e(dbEx, "Failed to update download status to FAILED")
+                }
+                return@withContext Result.failure(
+                    workDataOf("error" to (e.message ?: "Unknown error"))
+                )
             }
-            return@withContext Result.failure(workDataOf("error" to (e.message ?: "Unknown error")))
         }
-    }
 
     private suspend fun updateProgress(
         downloadId: UUID,
         progress: Float,
         downloadedBytes: Long,
-        totalBytes: Long
+        totalBytes: Long,
     ) {
         try {
             val download = databaseRepository.getDownload(downloadId)
@@ -322,7 +379,7 @@ class MediaDownloadWorker @AssistedInject constructor(
                         progress = progress,
                         bytesDownloaded = downloadedBytes,
                         totalBytes = totalBytes,
-                        updatedAt = System.currentTimeMillis()
+                        updatedAt = System.currentTimeMillis(),
                     )
                 )
             }
@@ -336,33 +393,39 @@ class MediaDownloadWorker @AssistedInject constructor(
         serverId: String,
         itemId: UUID,
         itemType: String,
-        userId: UUID
+        userId: UUID,
     ) {
         try {
             Timber.d("Ensuring item $itemId is saved to database")
             val baseUrl = apiClient.baseUrl ?: ""
             val itemsApi = ItemsApi(apiClient)
 
-            val baseItemDto = try {
-                itemsApi.getItems(
-                    userId = userId,
-                    ids = listOf(itemId),
-                    fields = listOf(
-                        ItemFields.MEDIA_SOURCES,
-                        ItemFields.MEDIA_STREAMS,
-                        ItemFields.OVERVIEW,
-                        ItemFields.GENRES,
-                        ItemFields.PEOPLE,
-                        ItemFields.TAGLINES,
-                        ItemFields.CHAPTERS,
-                        ItemFields.TRICKPLAY
-                    ),
-                    enableImages = true,
-                    enableUserData = true
-                ).content?.items?.firstOrNull()
-            } catch (e: Exception) {
-                null
-            }
+            val baseItemDto =
+                try {
+                    itemsApi
+                        .getItems(
+                            userId = userId,
+                            ids = listOf(itemId),
+                            fields =
+                                listOf(
+                                    ItemFields.MEDIA_SOURCES,
+                                    ItemFields.MEDIA_STREAMS,
+                                    ItemFields.OVERVIEW,
+                                    ItemFields.GENRES,
+                                    ItemFields.PEOPLE,
+                                    ItemFields.TAGLINES,
+                                    ItemFields.CHAPTERS,
+                                    ItemFields.TRICKPLAY,
+                                ),
+                            enableImages = true,
+                            enableUserData = true,
+                        )
+                        .content
+                        ?.items
+                        ?.firstOrNull()
+                } catch (e: Exception) {
+                    null
+                }
 
             if (baseItemDto == null) return
 
@@ -377,21 +440,27 @@ class MediaDownloadWorker @AssistedInject constructor(
                     if (episode != null) {
                         episode.seriesId?.let { seriesId ->
                             if (databaseRepository.getShow(seriesId, userId) == null) {
-                                val showDto = try {
-                                    itemsApi.getItems(
-                                        userId = userId,
-                                        ids = listOf(seriesId),
-                                        fields = listOf(
-                                            ItemFields.OVERVIEW,
-                                            ItemFields.GENRES,
-                                            ItemFields.PEOPLE
-                                        ),
-                                        enableImages = true,
-                                        enableUserData = true
-                                    ).content?.items?.firstOrNull()
-                                } catch (e: Exception) {
-                                    null
-                                }
+                                val showDto =
+                                    try {
+                                        itemsApi
+                                            .getItems(
+                                                userId = userId,
+                                                ids = listOf(seriesId),
+                                                fields =
+                                                    listOf(
+                                                        ItemFields.OVERVIEW,
+                                                        ItemFields.GENRES,
+                                                        ItemFields.PEOPLE,
+                                                    ),
+                                                enableImages = true,
+                                                enableUserData = true,
+                                            )
+                                            .content
+                                            ?.items
+                                            ?.firstOrNull()
+                                    } catch (e: Exception) {
+                                        null
+                                    }
 
                                 showDto?.toAfinityShow(baseUrl)?.let { show ->
                                     databaseRepository.insertShow(show, serverId)
@@ -402,17 +471,22 @@ class MediaDownloadWorker @AssistedInject constructor(
 
                         episode.seasonId.let { seasonId ->
                             if (databaseRepository.getSeason(seasonId, userId) == null) {
-                                val seasonDto = try {
-                                    itemsApi.getItems(
-                                        userId = userId,
-                                        ids = listOf(seasonId),
-                                        fields = listOf(ItemFields.OVERVIEW),
-                                        enableImages = true,
-                                        enableUserData = true
-                                    ).content?.items?.firstOrNull()
-                                } catch (e: Exception) {
-                                    null
-                                }
+                                val seasonDto =
+                                    try {
+                                        itemsApi
+                                            .getItems(
+                                                userId = userId,
+                                                ids = listOf(seasonId),
+                                                fields = listOf(ItemFields.OVERVIEW),
+                                                enableImages = true,
+                                                enableUserData = true,
+                                            )
+                                            .content
+                                            ?.items
+                                            ?.firstOrNull()
+                                    } catch (e: Exception) {
+                                        null
+                                    }
 
                                 seasonDto?.toAfinitySeason(baseUrl)?.let { season ->
                                     databaseRepository.insertSeason(season, serverId)
@@ -437,14 +511,15 @@ class MediaDownloadWorker @AssistedInject constructor(
         serverId: String,
         itemId: UUID,
         itemType: String,
-        userId: UUID
+        userId: UUID,
     ) {
         try {
-            val item = when (itemType.uppercase()) {
-                "MOVIE" -> databaseRepository.getMovie(itemId, userId)
-                "EPISODE" -> databaseRepository.getEpisode(itemId, userId)
-                else -> null
-            } ?: return
+            val item =
+                when (itemType.uppercase()) {
+                    "MOVIE" -> databaseRepository.getMovie(itemId, userId)
+                    "EPISODE" -> databaseRepository.getEpisode(itemId, userId)
+                    else -> null
+                } ?: return
 
             val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
             val imagesDir = File(itemDir, "images").also { it.mkdirs() }
@@ -470,22 +545,23 @@ class MediaDownloadWorker @AssistedInject constructor(
                 saveImage(images.showLogo, "showLogo")
             }
 
-            val updatedImages = AfinityImages(
-                primary = downloadedImages["primary"] ?: images.primary,
-                backdrop = downloadedImages["backdrop"] ?: images.backdrop,
-                thumb = downloadedImages["thumb"] ?: images.thumb,
-                logo = downloadedImages["logo"] ?: images.logo,
-                showPrimary = downloadedImages["showPrimary"] ?: images.showPrimary,
-                showBackdrop = downloadedImages["showBackdrop"] ?: images.showBackdrop,
-                showLogo = downloadedImages["showLogo"] ?: images.showLogo,
-                primaryImageBlurHash = images.primaryImageBlurHash,
-                backdropImageBlurHash = images.backdropImageBlurHash,
-                thumbImageBlurHash = images.thumbImageBlurHash,
-                logoImageBlurHash = images.logoImageBlurHash,
-                showPrimaryImageBlurHash = images.showPrimaryImageBlurHash,
-                showBackdropImageBlurHash = images.showBackdropImageBlurHash,
-                showLogoImageBlurHash = images.showLogoImageBlurHash
-            )
+            val updatedImages =
+                AfinityImages(
+                    primary = downloadedImages["primary"] ?: images.primary,
+                    backdrop = downloadedImages["backdrop"] ?: images.backdrop,
+                    thumb = downloadedImages["thumb"] ?: images.thumb,
+                    logo = downloadedImages["logo"] ?: images.logo,
+                    showPrimary = downloadedImages["showPrimary"] ?: images.showPrimary,
+                    showBackdrop = downloadedImages["showBackdrop"] ?: images.showBackdrop,
+                    showLogo = downloadedImages["showLogo"] ?: images.showLogo,
+                    primaryImageBlurHash = images.primaryImageBlurHash,
+                    backdropImageBlurHash = images.backdropImageBlurHash,
+                    thumbImageBlurHash = images.thumbImageBlurHash,
+                    logoImageBlurHash = images.logoImageBlurHash,
+                    showPrimaryImageBlurHash = images.showPrimaryImageBlurHash,
+                    showBackdropImageBlurHash = images.showBackdropImageBlurHash,
+                    showLogoImageBlurHash = images.showLogoImageBlurHash,
+                )
 
             when (item) {
                 is AfinityMovie -> {
@@ -506,7 +582,7 @@ class MediaDownloadWorker @AssistedInject constructor(
         apiClient: ApiClient,
         serverId: String,
         showId: UUID,
-        userId: UUID
+        userId: UUID,
     ) {
         try {
             val show = databaseRepository.getShow(showId, userId) ?: return
@@ -525,16 +601,17 @@ class MediaDownloadWorker @AssistedInject constructor(
             saveImage(images.backdrop, "backdrop")
             saveImage(images.logo, "logo")
 
-            val updatedImages = AfinityImages(
-                primary = downloadedImages["primary"] ?: images.primary,
-                backdrop = downloadedImages["backdrop"] ?: images.backdrop,
-                thumb = downloadedImages["thumb"] ?: images.thumb,
-                logo = downloadedImages["logo"] ?: images.logo,
-                primaryImageBlurHash = images.primaryImageBlurHash,
-                backdropImageBlurHash = images.backdropImageBlurHash,
-                thumbImageBlurHash = images.thumbImageBlurHash,
-                logoImageBlurHash = images.logoImageBlurHash
-            )
+            val updatedImages =
+                AfinityImages(
+                    primary = downloadedImages["primary"] ?: images.primary,
+                    backdrop = downloadedImages["backdrop"] ?: images.backdrop,
+                    thumb = downloadedImages["thumb"] ?: images.thumb,
+                    logo = downloadedImages["logo"] ?: images.logo,
+                    primaryImageBlurHash = images.primaryImageBlurHash,
+                    backdropImageBlurHash = images.backdropImageBlurHash,
+                    thumbImageBlurHash = images.thumbImageBlurHash,
+                    logoImageBlurHash = images.logoImageBlurHash,
+                )
             databaseRepository.insertShow(show.copy(images = updatedImages), serverId)
         } catch (e: Exception) {
             Timber.e(e, "Failed to download show images")
@@ -545,7 +622,7 @@ class MediaDownloadWorker @AssistedInject constructor(
         apiClient: ApiClient,
         serverId: String,
         seasonId: UUID,
-        userId: UUID
+        userId: UUID,
     ) {
         try {
             val season = databaseRepository.getSeason(seasonId, userId) ?: return
@@ -563,16 +640,17 @@ class MediaDownloadWorker @AssistedInject constructor(
             saveImage(images.primary, "primary")
             saveImage(images.backdrop, "backdrop")
 
-            val updatedImages = AfinityImages(
-                primary = downloadedImages["primary"] ?: images.primary,
-                backdrop = downloadedImages["backdrop"] ?: images.backdrop,
-                thumb = downloadedImages["thumb"] ?: images.thumb,
-                logo = downloadedImages["logo"] ?: images.logo,
-                primaryImageBlurHash = images.primaryImageBlurHash,
-                backdropImageBlurHash = images.backdropImageBlurHash,
-                thumbImageBlurHash = images.thumbImageBlurHash,
-                logoImageBlurHash = images.logoImageBlurHash
-            )
+            val updatedImages =
+                AfinityImages(
+                    primary = downloadedImages["primary"] ?: images.primary,
+                    backdrop = downloadedImages["backdrop"] ?: images.backdrop,
+                    thumb = downloadedImages["thumb"] ?: images.thumb,
+                    logo = downloadedImages["logo"] ?: images.logo,
+                    primaryImageBlurHash = images.primaryImageBlurHash,
+                    backdropImageBlurHash = images.backdropImageBlurHash,
+                    thumbImageBlurHash = images.thumbImageBlurHash,
+                    logoImageBlurHash = images.logoImageBlurHash,
+                )
             databaseRepository.insertSeason(season.copy(images = updatedImages), serverId)
         } catch (e: Exception) {
             Timber.e(e, "Failed to download season images")
@@ -583,7 +661,7 @@ class MediaDownloadWorker @AssistedInject constructor(
         apiClient: ApiClient,
         serverId: String,
         itemId: UUID,
-        userId: UUID
+        userId: UUID,
     ) {
         try {
             val movie = databaseRepository.getMovie(itemId, userId) ?: return
@@ -592,24 +670,27 @@ class MediaDownloadWorker @AssistedInject constructor(
             val movieDir = downloadRepository.getItemDownloadDirectory(itemId)
             val peopleImagesDir = File(movieDir, "people").also { it.mkdirs() }
 
-            val updatedPeople = movie.people.map { person ->
-                person.image.uri?.let { uri ->
-                    val localPath = downloadImage(
-                        apiClient,
-                        uri.toString(),
-                        peopleImagesDir,
-                        person.id.toString()
-                    )
-                    if (localPath != null) {
-                        person.copy(
-                            image = AfinityPersonImage(
-                                uri = localPath,
-                                blurHash = person.image.blurHash
+            val updatedPeople =
+                movie.people.map { person ->
+                    person.image.uri?.let { uri ->
+                        val localPath =
+                            downloadImage(
+                                apiClient,
+                                uri.toString(),
+                                peopleImagesDir,
+                                person.id.toString(),
                             )
-                        )
-                    } else person
-                } ?: person
-            }
+                        if (localPath != null) {
+                            person.copy(
+                                image =
+                                    AfinityPersonImage(
+                                        uri = localPath,
+                                        blurHash = person.image.blurHash,
+                                    )
+                            )
+                        } else person
+                    } ?: person
+                }
             databaseRepository.insertMovie(movie.copy(people = updatedPeople), serverId)
         } catch (e: Exception) {
             Timber.e(e, "Failed to download person images")
@@ -620,30 +701,30 @@ class MediaDownloadWorker @AssistedInject constructor(
         apiClient: ApiClient,
         imageUrl: String,
         outputDir: File,
-        baseName: String
+        baseName: String,
     ): Uri? {
         var resultUri: Uri? = null
         try {
-            val request = Request.Builder()
-                .url(imageUrl)
-                .header("X-Emby-Token", apiClient.accessToken ?: "")
-                .build()
+            val request =
+                Request.Builder()
+                    .url(imageUrl)
+                    .header("X-Emby-Token", apiClient.accessToken ?: "")
+                    .build()
 
             okHttpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
                     val contentType = response.header("Content-Type") ?: "image/jpeg"
-                    val extension = when {
-                        contentType.contains("png") -> "png"
-                        contentType.contains("webp") -> "webp"
-                        contentType.contains("gif") -> "gif"
-                        else -> "jpg"
-                    }
+                    val extension =
+                        when {
+                            contentType.contains("png") -> "png"
+                            contentType.contains("webp") -> "webp"
+                            contentType.contains("gif") -> "gif"
+                            else -> "jpg"
+                        }
                     val outputFile = File(outputDir, "$baseName.$extension")
 
                     response.body?.byteStream()?.use { input ->
-                        FileOutputStream(outputFile).use { output ->
-                            input.copyTo(output)
-                        }
+                        FileOutputStream(outputFile).use { output -> input.copyTo(output) }
                     }
 
                     if (outputFile.exists() && outputFile.length() > 0) {
@@ -670,18 +751,19 @@ class MediaDownloadWorker @AssistedInject constructor(
         sourceId: String,
         sourceName: String,
         file: File,
-        originalStreams: List<AfinityMediaStream>
+        originalStreams: List<AfinityMediaStream>,
     ) {
         try {
             val localSourceId = "${sourceId}_local"
-            val localSource = AfinitySourceDto(
-                id = localSourceId,
-                itemId = itemId,
-                name = "$sourceName (Downloaded)",
-                type = AfinitySourceType.LOCAL,
-                path = file.absolutePath,
-                downloadId = null
-            )
+            val localSource =
+                AfinitySourceDto(
+                    id = localSourceId,
+                    itemId = itemId,
+                    name = "$sourceName (Downloaded)",
+                    type = AfinitySourceType.LOCAL,
+                    path = file.absolutePath,
+                    downloadId = null,
+                )
             databaseRepository.insertSource(
                 AfinitySource(
                     id = localSource.id,
@@ -690,18 +772,16 @@ class MediaDownloadWorker @AssistedInject constructor(
                     path = localSource.path,
                     size = file.length(),
                     mediaStreams = emptyList(),
-                    downloadId = null
+                    downloadId = null,
                 ),
-                itemId
+                itemId,
             )
             originalStreams.forEach { stream ->
                 if (!stream.isExternal) {
                     try {
                         databaseRepository.insertMediaStream(
-                            stream = stream.copy(
-                                path = file.absolutePath
-                            ),
-                            sourceId = localSourceId
+                            stream = stream.copy(path = file.absolutePath),
+                            sourceId = localSourceId,
                         )
                     } catch (e: Exception) {
                         Timber.w("Failed to copy stream ${stream.type} to local source")
@@ -717,48 +797,46 @@ class MediaDownloadWorker @AssistedInject constructor(
         notificationId: Int,
         itemName: String,
         downloadedBytes: Long,
-        totalBytes: Long
+        totalBytes: Long,
     ): ForegroundInfo {
         val context: Context = applicationContext
         val channelId = "download_channel"
         val title = "Downloading $itemName"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Downloads",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Background download tasks"
-            }
+            val channel =
+                NotificationChannel(channelId, "Downloads", NotificationManager.IMPORTANCE_LOW)
+                    .apply { description = "Background download tasks" }
             val notificationManager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
 
-        val progressText = if (totalBytes > 0) {
-            "${(downloadedBytes * 100 / totalBytes)}%"
-        } else {
-            "Starting..."
-        }
+        val progressText =
+            if (totalBytes > 0) {
+                "${(downloadedBytes * 100 / totalBytes)}%"
+            } else {
+                "Starting..."
+            }
 
-        val notification = NotificationCompat.Builder(context, channelId)
-            .setContentTitle(title)
-            .setContentText(progressText)
-            .setSmallIcon(R.drawable.ic_download)
-            .setOngoing(true)
-            .setProgress(
-                if (totalBytes > 0) totalBytes.toInt() else 0,
-                if (totalBytes > 0) downloadedBytes.toInt() else 0,
-                totalBytes <= 0
-            )
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .build()
+        val notification =
+            NotificationCompat.Builder(context, channelId)
+                .setContentTitle(title)
+                .setContentText(progressText)
+                .setSmallIcon(R.drawable.ic_download)
+                .setOngoing(true)
+                .setProgress(
+                    if (totalBytes > 0) totalBytes.toInt() else 0,
+                    if (totalBytes > 0) downloadedBytes.toInt() else 0,
+                    totalBytes <= 0,
+                )
+                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+                .build()
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ForegroundInfo(
                 notificationId,
                 notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
             )
         } else {
             ForegroundInfo(notificationId, notification)

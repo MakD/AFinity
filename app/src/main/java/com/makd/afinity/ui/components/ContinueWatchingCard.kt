@@ -28,8 +28,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -49,71 +49,61 @@ fun ContinueWatchingCard(
     item: AfinityItem,
     onClick: () -> Unit,
     cardWidth: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
 
-    Column(
-        modifier = modifier.width(cardWidth)
-    ) {
+    Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
-                    imageUrl = item.images.thumbImageUrl ?: item.images.backdropImageUrl
-                    ?: item.images.primaryImageUrl,
+                    imageUrl =
+                        item.images.thumbImageUrl
+                            ?: item.images.backdropImageUrl
+                            ?: item.images.primaryImageUrl,
                     contentDescription = item.name,
-                    blurHash = item.images.thumbBlurHash ?: item.images.backdropBlurHash
-                    ?: item.images.primaryBlurHash,
+                    blurHash =
+                        item.images.thumbBlurHash
+                            ?: item.images.backdropBlurHash
+                            ?: item.images.primaryBlurHash,
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 9f / 16f,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .align(Alignment.Center)
+                    modifier = Modifier.fillMaxSize().align(Alignment.Center),
                 )
 
-                val progressPercentage = if (item.runtimeTicks > 0) {
-                    (item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()).coerceIn(
-                        0f,
-                        1f
-                    )
-                } else 0f
+                val progressPercentage =
+                    if (item.runtimeTicks > 0) {
+                        (item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat())
+                            .coerceIn(0f, 1f)
+                    } else 0f
 
                 LinearProgressIndicator(
                     progress = { progressPercentage },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .align(Alignment.BottomCenter),
+                    modifier = Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
                     color = MaterialTheme.colorScheme.primary,
-                    trackColor = Color.Black.copy(alpha = 0.3f)
+                    trackColor = Color.Black.copy(alpha = 0.3f),
                 )
 
                 if (item.played) {
                     Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .size(24.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primary,
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier.align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .size(24.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_check),
                             contentDescription = "Watched",
                             tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }
@@ -126,24 +116,22 @@ fun ContinueWatchingCard(
             is AfinityEpisode -> {
                 Text(
                     text = item.seriesName,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
             else -> {
                 Text(
                     text = item.name,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -161,7 +149,7 @@ fun ContinueWatchingCard(
                             Text(
                                 text = year.toString(),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -170,18 +158,18 @@ fun ContinueWatchingCard(
                         metadataItems.add {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_imdb_logo),
                                     contentDescription = "IMDB",
                                     tint = Color.Unspecified,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(18.dp),
                                 )
                                 Text(
                                     text = String.format(Locale.US, "%.1f", imdbRating),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -191,22 +179,24 @@ fun ContinueWatchingCard(
                         metadataItems.add {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    painter = painterResource(
-                                        id = if (rtRating > 60) {
-                                            R.drawable.ic_rotten_tomato_fresh
-                                        } else {
-                                            R.drawable.ic_rotten_tomato_rotten
-                                        }
-                                    ),
+                                    painter =
+                                        painterResource(
+                                            id =
+                                                if (rtRating > 60) {
+                                                    R.drawable.ic_rotten_tomato_fresh
+                                                } else {
+                                                    R.drawable.ic_rotten_tomato_rotten
+                                                }
+                                        ),
                                     contentDescription = "Rotten Tomatoes Rating",
                                     modifier = Modifier.size(12.dp),
-                                    tint = Color.Unspecified
+                                    tint = Color.Unspecified,
                                 )
                                 Spacer(modifier = Modifier.width(2.dp))
                                 Text(
                                     text = "${rtRating.toInt()}%",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -218,7 +208,7 @@ fun ContinueWatchingCard(
                             Text(
                                 text = "•",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -228,21 +218,22 @@ fun ContinueWatchingCard(
             is AfinityEpisode -> {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     val metadataItems = mutableListOf<@Composable () -> Unit>()
 
                     if (item.name.isNotBlank()) {
                         metadataItems.add {
-                            val truncatedName = if (item.name.length > 15) {
-                                "S${item.parentIndexNumber}:E${item.indexNumber} • ${
+                            val truncatedName =
+                                if (item.name.length > 15) {
+                                    "S${item.parentIndexNumber}:E${item.indexNumber} • ${
                                     item.name.take(
                                         15
                                     )
                                 }..."
-                            } else {
-                                "S${item.parentIndexNumber}:E${item.indexNumber} • ${item.name}"
-                            }
+                                } else {
+                                    "S${item.parentIndexNumber}:E${item.indexNumber} • ${item.name}"
+                                }
                             Text(
                                 text = truncatedName,
                                 style = MaterialTheme.typography.bodySmall,
@@ -257,18 +248,18 @@ fun ContinueWatchingCard(
                         metadataItems.add {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_imdb_logo),
                                     contentDescription = "IMDB",
                                     tint = Color.Unspecified,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(18.dp),
                                 )
                                 Text(
                                     text = String.format(Locale.US, "%.1f", imdbRating),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -280,7 +271,7 @@ fun ContinueWatchingCard(
                             Text(
                                 text = "•",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -291,18 +282,18 @@ fun ContinueWatchingCard(
                 item.communityRating?.let { rating ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_imdb_logo),
                             contentDescription = "IMDB",
                             tint = Color.Unspecified,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
                         )
                         Text(
                             text = String.format(Locale.US, "%.1f", rating),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }

@@ -28,5 +28,5 @@ data class AfinityChannel(
     val channelNumber: String?,
     val channelType: ChannelType,
     val currentProgram: AfinityProgram? = null,
-    val serviceName: String?
+    val serviceName: String?,
 ) : AfinityItem

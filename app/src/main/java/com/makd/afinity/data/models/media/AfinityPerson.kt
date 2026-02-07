@@ -2,27 +2,24 @@ package com.makd.afinity.data.models.media
 
 import android.net.Uri
 import com.makd.afinity.data.repository.JellyfinRepository
+import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.PersonKind
-import java.util.UUID
 
-data class AfinityPersonImage(
-    val uri: Uri?,
-    val blurHash: String?,
-)
+data class AfinityPersonImage(val uri: Uri?, val blurHash: String?)
 
-fun BaseItemPerson.toAfinityImage(
-    repository: JellyfinRepository,
-): AfinityPersonImage {
+fun BaseItemPerson.toAfinityImage(repository: JellyfinRepository): AfinityPersonImage {
     val baseUrl = Uri.parse(repository.getBaseUrl())
     return AfinityPersonImage(
-        uri = primaryImageTag?.let { tag ->
-            baseUrl.buildUpon()
-                .appendEncodedPath("items/$id/Images/${ImageType.PRIMARY}")
-                .appendQueryParameter("tag", tag)
-                .build()
-        },
+        uri =
+            primaryImageTag?.let { tag ->
+                baseUrl
+                    .buildUpon()
+                    .appendEncodedPath("items/$id/Images/${ImageType.PRIMARY}")
+                    .appendQueryParameter("tag", tag)
+                    .build()
+            },
         blurHash = imageBlurHashes?.get(ImageType.PRIMARY)?.get(primaryImageTag),
     )
 }
@@ -35,9 +32,7 @@ data class AfinityPerson(
     val image: AfinityPersonImage,
 )
 
-fun BaseItemPerson.toAfinityPerson(
-    repository: JellyfinRepository,
-): AfinityPerson {
+fun BaseItemPerson.toAfinityPerson(repository: JellyfinRepository): AfinityPerson {
     return AfinityPerson(
         id = id,
         name = name.orEmpty(),

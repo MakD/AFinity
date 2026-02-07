@@ -60,12 +60,12 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
 import mx.platacard.pagerindicator.PagerWormIndicator
 import timber.log.Timber
-import java.util.Locale
 
 @Composable
 fun HeroCarousel(
@@ -75,7 +75,7 @@ fun HeroCarousel(
     onPlayTrailerClick: (AfinityItem) -> Unit,
     onMoreInformationClick: (AfinityItem) -> Unit,
     modifier: Modifier = Modifier,
-    isScrolling: Boolean = false
+    isScrolling: Boolean = false,
 ) {
     if (items.isEmpty()) return
 
@@ -87,9 +87,7 @@ fun HeroCarousel(
 
     val adjustedStart = if (items.isNotEmpty()) middleStart - (middleStart % items.size) else 0
 
-    val currentPageIndex = rememberSaveable(items.size) {
-        mutableIntStateOf(adjustedStart)
-    }
+    val currentPageIndex = rememberSaveable(items.size) { mutableIntStateOf(adjustedStart) }
 
     if (isLandscape) {
         HeroCarouselLandscape(
@@ -101,7 +99,7 @@ fun HeroCarousel(
             modifier = modifier,
             isScrolling = isScrolling,
             initialPageIndex = currentPageIndex.intValue,
-            onPageChanged = { currentPageIndex.intValue = it }
+            onPageChanged = { currentPageIndex.intValue = it },
         )
     } else {
         HeroCarouselPortrait(
@@ -113,7 +111,7 @@ fun HeroCarousel(
             modifier = modifier,
             isScrolling = isScrolling,
             initialPageIndex = currentPageIndex.intValue,
-            onPageChanged = { currentPageIndex.intValue = it }
+            onPageChanged = { currentPageIndex.intValue = it },
         )
     }
 }
@@ -128,18 +126,14 @@ fun HeroCarouselPortrait(
     modifier: Modifier = Modifier,
     isScrolling: Boolean = false,
     initialPageIndex: Int,
-    onPageChanged: (Int) -> Unit
+    onPageChanged: (Int) -> Unit,
 ) {
     if (items.isEmpty()) return
     val infinitePageCount = Int.MAX_VALUE
-    val pagerState = rememberPagerState(
-        initialPage = initialPageIndex,
-        pageCount = { infinitePageCount }
-    )
+    val pagerState =
+        rememberPagerState(initialPage = initialPageIndex, pageCount = { infinitePageCount })
 
-    LaunchedEffect(pagerState.currentPage) {
-        onPageChanged(pagerState.currentPage)
-    }
+    LaunchedEffect(pagerState.currentPage) { onPageChanged(pagerState.currentPage) }
 
     LaunchedEffect(items.size, isScrolling) {
         if (items.size > 1) {
@@ -154,7 +148,7 @@ fun HeroCarouselPortrait(
                 try {
                     pagerState.animateScrollToPage(
                         page = pagerState.currentPage + 1,
-                        animationSpec = tween(durationMillis = 800)
+                        animationSpec = tween(durationMillis = 800),
                     )
                 } catch (e: Exception) {
                     Timber.w("Hero carousel animation interrupted: ${e.message}")
@@ -180,16 +174,12 @@ fun HeroCarouselPortrait(
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height)
-    ) {
+    Box(modifier = modifier.fillMaxWidth().height(height)) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             beyondViewportPageCount = 1,
-            key = { page -> "hero_page_${page % items.size}" }
+            key = { page -> "hero_page_${page % items.size}" },
         ) { page ->
             val actualIndex = page % items.size
             val item = items[actualIndex]
@@ -200,48 +190,46 @@ fun HeroCarouselPortrait(
                 targetWidth = LocalConfiguration.current.screenWidthDp.dp,
                 targetHeight = height,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer { alpha = 0.99f }
-                    .drawWithCache {
-                        val gradient = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black,
-                                Color.Black.copy(alpha = 0.98f),
-                                Color.Black.copy(alpha = 0.92f),
-                                Color.Black.copy(alpha = 0.78f),
-                                Color.Black.copy(alpha = 0.55f),
-                                Color.Black.copy(alpha = 0.25f),
-                                Color.Transparent
-                            ),
-                            startY = size.height * 0.55f,
-                            endY = size.height
-                        )
-                        onDrawWithContent {
-                            drawContent()
-                            drawRect(Color.Black.copy(alpha = 0.25f))
-                            drawRect(gradient, blendMode = BlendMode.DstIn)
-                        }
-                    }
+                modifier =
+                    Modifier.fillMaxSize()
+                        .graphicsLayer { alpha = 0.99f }
+                        .drawWithCache {
+                            val gradient =
+                                Brush.verticalGradient(
+                                    colors =
+                                        listOf(
+                                            Color.Black,
+                                            Color.Black.copy(alpha = 0.98f),
+                                            Color.Black.copy(alpha = 0.92f),
+                                            Color.Black.copy(alpha = 0.78f),
+                                            Color.Black.copy(alpha = 0.55f),
+                                            Color.Black.copy(alpha = 0.25f),
+                                            Color.Transparent,
+                                        ),
+                                    startY = size.height * 0.55f,
+                                    endY = size.height,
+                                )
+                            onDrawWithContent {
+                                drawContent()
+                                drawRect(Color.Black.copy(alpha = 0.25f))
+                                drawRect(gradient, blendMode = BlendMode.DstIn)
+                            }
+                        },
             )
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
             Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth(0.8f)
-                    .padding(bottom = 144.dp)
-                    .sizeIn(maxHeight = 120.dp)
+                modifier =
+                    Modifier.align(Alignment.BottomCenter)
+                        .fillMaxWidth(0.8f)
+                        .padding(bottom = 144.dp)
+                        .sizeIn(maxHeight = 120.dp)
             ) {
                 Crossfade(
                     targetState = currentItem,
                     animationSpec = tween(durationMillis = 700),
-                    label = "logo_crossfade"
+                    label = "logo_crossfade",
                 ) { item ->
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         item.images.logo?.let { logoUri ->
@@ -251,25 +239,25 @@ fun HeroCarouselPortrait(
                                 blurHash = null,
                                 targetWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp,
                                 targetHeight = 120.dp,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentHeight(),
-                                contentScale = ContentScale.Fit
-                            )
-                        } ?: run {
-                            Text(
-                                text = item.name,
-                                style = MaterialTheme.typography.displaySmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 36.sp
-                                ),
-                                color = Color.White,
-                                textAlign = TextAlign.Center,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                                contentScale = ContentScale.Fit,
                             )
                         }
+                            ?: run {
+                                Text(
+                                    text = item.name,
+                                    style =
+                                        MaterialTheme.typography.displaySmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 36.sp,
+                                        ),
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
                     }
                 }
             }
@@ -277,10 +265,8 @@ fun HeroCarouselPortrait(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 112.dp)
-                    .fillMaxWidth()
+                modifier =
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = 112.dp).fillMaxWidth(),
             ) {
                 Spacer(modifier = Modifier.weight(1f))
                 HeroMetadata(currentItem)
@@ -288,79 +274,82 @@ fun HeroCarouselPortrait(
             }
 
             Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 80.dp)
-                    .fillMaxWidth()
+                modifier =
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp).fillMaxWidth()
             ) {
-                val genres = when (currentItem) {
-                    is AfinityMovie -> (currentItem as AfinityMovie).genres
-                    is AfinityShow -> (currentItem as AfinityShow).genres
-                    else -> emptyList()
-                }
+                val genres =
+                    when (currentItem) {
+                        is AfinityMovie -> (currentItem as AfinityMovie).genres
+                        is AfinityShow -> (currentItem as AfinityShow).genres
+                        else -> emptyList()
+                    }
                 if (genres.isNotEmpty()) {
                     Text(
                         text = genres.take(3).joinToString(" • "),
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                        style =
+                            MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
         }
 
         Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+            modifier =
+                Modifier.align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             IconButton(
                 onClick = { onMoreInformationClick(currentItem) },
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .size(56.dp)
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
+                modifier =
+                    Modifier.align(Alignment.CenterStart)
+                        .size(56.dp)
+                        .background(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            CircleShape,
+                        ),
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_info),
                     contentDescription = stringResource(R.string.hero_btn_more_info),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
             }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.align(Alignment.CenterEnd)
+                modifier = Modifier.align(Alignment.CenterEnd),
             ) {
                 IconButton(
                     onClick = { onPlayTrailerClick(currentItem) },
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                            CircleShape
-                        )
+                    modifier =
+                        Modifier.size(56.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                CircleShape,
+                            ),
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_video),
                         contentDescription = stringResource(R.string.hero_btn_play_trailer),
                         tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                 }
                 IconButton(
                     onClick = { onWatchNowClick(currentItem) },
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    modifier =
+                        Modifier.size(56.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape),
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_play_arrow),
                         contentDescription = stringResource(R.string.hero_btn_play_media),
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             }
@@ -384,14 +373,12 @@ fun HeroCarouselPortrait(
                 currentPageFraction = currentPageFractionState,
                 activeDotColor = MaterialTheme.colorScheme.primary,
                 dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(40.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(40.dp),
                 dotCount = 5,
                 activeDotSize = 8.dp,
                 minDotSize = 4.dp,
                 space = 5.dp,
-                orientation = PagerIndicatorOrientation.Horizontal
+                orientation = PagerIndicatorOrientation.Horizontal,
             )
         }
     }
@@ -407,18 +394,14 @@ private fun HeroCarouselLandscape(
     modifier: Modifier = Modifier,
     isScrolling: Boolean = false,
     initialPageIndex: Int,
-    onPageChanged: (Int) -> Unit
+    onPageChanged: (Int) -> Unit,
 ) {
     if (items.isEmpty()) return
     val infinitePageCount = Int.MAX_VALUE
-    val pagerState = rememberPagerState(
-        initialPage = initialPageIndex,
-        pageCount = { infinitePageCount }
-    )
+    val pagerState =
+        rememberPagerState(initialPage = initialPageIndex, pageCount = { infinitePageCount })
 
-    LaunchedEffect(pagerState.currentPage) {
-        onPageChanged(pagerState.currentPage)
-    }
+    LaunchedEffect(pagerState.currentPage) { onPageChanged(pagerState.currentPage) }
 
     val configuration = LocalConfiguration.current
     val landscapeHeight = (configuration.screenHeightDp * 0.95f).dp
@@ -436,7 +419,7 @@ private fun HeroCarouselLandscape(
                 try {
                     pagerState.animateScrollToPage(
                         page = pagerState.currentPage + 1,
-                        animationSpec = tween(durationMillis = 800)
+                        animationSpec = tween(durationMillis = 800),
                     )
                 } catch (e: Exception) {
                     Timber.w("Hero carousel animation interrupted: ${e.message}")
@@ -462,16 +445,12 @@ private fun HeroCarouselLandscape(
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(landscapeHeight)
-    ) {
+    Box(modifier = modifier.fillMaxWidth().height(landscapeHeight)) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             beyondViewportPageCount = 1,
-            key = { page -> "hero_page_${page % items.size}" }
+            key = { page -> "hero_page_${page % items.size}" },
         ) { page ->
             val actualIndex = page % items.size
             val item = items[actualIndex]
@@ -482,137 +461,126 @@ private fun HeroCarouselLandscape(
                 targetWidth = LocalConfiguration.current.screenWidthDp.dp,
                 targetHeight = landscapeHeight,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer { alpha = 0.99f }
-                    .drawWithCache {
-                        val gradient = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black,
-                                Color.Black.copy(alpha = 0.98f),
-                                Color.Black.copy(alpha = 0.92f),
-                                Color.Black.copy(alpha = 0.78f),
-                                Color.Black.copy(alpha = 0.55f),
-                                Color.Black.copy(alpha = 0.25f),
-                                Color.Transparent
-                            ),
-                            startY = size.height * 0.55f,
-                            endY = size.height
-                        )
+                modifier =
+                    Modifier.fillMaxSize()
+                        .graphicsLayer { alpha = 0.99f }
+                        .drawWithCache {
+                            val gradient =
+                                Brush.verticalGradient(
+                                    colors =
+                                        listOf(
+                                            Color.Black,
+                                            Color.Black.copy(alpha = 0.98f),
+                                            Color.Black.copy(alpha = 0.92f),
+                                            Color.Black.copy(alpha = 0.78f),
+                                            Color.Black.copy(alpha = 0.55f),
+                                            Color.Black.copy(alpha = 0.25f),
+                                            Color.Transparent,
+                                        ),
+                                    startY = size.height * 0.55f,
+                                    endY = size.height,
+                                )
 
-                        onDrawWithContent {
-                            drawContent()
-                            drawRect(Color.Black.copy(alpha = 0.25f))
-                            drawRect(gradient, blendMode = BlendMode.DstIn)
-                        }
-                    }
+                            onDrawWithContent {
+                                drawContent()
+                                drawRect(Color.Black.copy(alpha = 0.25f))
+                                drawRect(gradient, blendMode = BlendMode.DstIn)
+                            }
+                        },
             )
         }
 
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 48.dp, bottom = 48.dp, top = 48.dp, end = 48.dp)
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(start = 48.dp, bottom = 48.dp, top = 48.dp, end = 48.dp)
         ) {
-
             Column(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-
                 Column(
                     modifier = Modifier.fillMaxWidth(0.75f),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.5f)
-                            .height(100.dp),
-                        contentAlignment = Alignment.CenterStart
+                        modifier = Modifier.fillMaxWidth(0.5f).height(100.dp),
+                        contentAlignment = Alignment.CenterStart,
                     ) {
                         Crossfade(
                             targetState = currentItem,
                             animationSpec = tween(durationMillis = 700),
-                            label = "logo_crossfade"
+                            label = "logo_crossfade",
                         ) { item ->
                             Box(
                                 modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.CenterStart
+                                contentAlignment = Alignment.CenterStart,
                             ) {
                                 item.images.logo?.let { logoUri ->
                                     AsyncImage(
                                         imageUrl = item.images.logoImageUrlWithTransparency,
                                         contentDescription = "${item.name} logo",
                                         blurHash = null,
-                                        targetWidth = (LocalConfiguration.current.screenWidthDp * 0.4f).dp,
+                                        targetWidth =
+                                            (LocalConfiguration.current.screenWidthDp * 0.4f).dp,
                                         targetHeight = 100.dp,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .wrapContentHeight(),
+                                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
                                         contentScale = ContentScale.Fit,
-                                        alignment = Alignment.CenterStart
-                                    )
-                                } ?: run {
-                                    Text(
-                                        text = item.name,
-                                        style = MaterialTheme.typography.displayMedium.copy(
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
+                                        alignment = Alignment.CenterStart,
                                     )
                                 }
+                                    ?: run {
+                                        Text(
+                                            text = item.name,
+                                            style =
+                                                MaterialTheme.typography.displayMedium.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                ),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
                             }
                         }
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(28.dp)
-                    ) {
+                    Box(modifier = Modifier.fillMaxWidth().height(28.dp)) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             HeroMetadata(currentItem)
                         }
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(20.dp)
-                    ) {
-                        val genres = when (currentItem) {
-                            is AfinityMovie -> (currentItem as AfinityMovie).genres
-                            is AfinityShow -> (currentItem as AfinityShow).genres
-                            else -> emptyList()
-                        }
+                    Box(modifier = Modifier.fillMaxWidth().height(20.dp)) {
+                        val genres =
+                            when (currentItem) {
+                                is AfinityMovie -> (currentItem as AfinityMovie).genres
+                                is AfinityShow -> (currentItem as AfinityShow).genres
+                                else -> emptyList()
+                            }
                         if (genres.isNotEmpty()) {
                             Text(
                                 text = genres.take(3).joinToString(" • "),
-                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style =
+                                    MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                    ) {
+                    Box(modifier = Modifier.fillMaxWidth().height(40.dp)) {
                         currentItem.overview?.let { overview ->
                             Text(
                                 text = overview,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }
@@ -621,53 +589,52 @@ private fun HeroCarouselLandscape(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-
                     Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                         IconButton(
                             onClick = { onMoreInformationClick(currentItem) },
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                    CircleShape
-                                )
+                            modifier =
+                                Modifier.size(36.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                        CircleShape,
+                                    ),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_info),
                                 contentDescription = stringResource(R.string.hero_btn_more_info),
                                 tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                         IconButton(
                             onClick = { onPlayTrailerClick(currentItem) },
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                    CircleShape
-                                )
+                            modifier =
+                                Modifier.size(36.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                        CircleShape,
+                                    ),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_video),
                                 contentDescription = stringResource(R.string.hero_btn_play_trailer),
                                 tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                         IconButton(
                             onClick = { onWatchNowClick(currentItem) },
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                            modifier =
+                                Modifier.size(36.dp)
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_play_arrow),
                                 contentDescription = stringResource(R.string.hero_btn_watch_now),
                                 tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                     }
@@ -679,11 +646,13 @@ private fun HeroCarouselLandscape(
                                 val pageOffset = pagerState.currentPageOffsetFraction
                                 when {
                                     pageOffset > 0.5f && currentPage == items.size - 1 -> 0f
-                                    pageOffset < -0.5f && currentPage == 0 -> (items.size - 1).toFloat()
-                                    else -> (currentPage + pageOffset).coerceIn(
-                                        0f,
+                                    pageOffset < -0.5f && currentPage == 0 ->
                                         (items.size - 1).toFloat()
-                                    )
+                                    else ->
+                                        (currentPage + pageOffset).coerceIn(
+                                            0f,
+                                            (items.size - 1).toFloat(),
+                                        )
                                 }
                             }
                         }
@@ -692,12 +661,13 @@ private fun HeroCarouselLandscape(
                             pageCount = items.size,
                             currentPageFraction = currentPageFractionState,
                             activeDotColor = MaterialTheme.colorScheme.primary,
-                            dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            dotColor =
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                             dotCount = 5,
                             activeDotSize = 8.dp,
                             minDotSize = 4.dp,
                             space = 5.dp,
-                            orientation = PagerIndicatorOrientation.Horizontal
+                            orientation = PagerIndicatorOrientation.Horizontal,
                         )
                     }
                 }
@@ -708,28 +678,29 @@ private fun HeroCarouselLandscape(
 
 @Composable
 private fun HeroMetadata(item: AfinityItem) {
-    val communityRating = when (item) {
-        is AfinityMovie -> item.communityRating
-        is AfinityShow -> item.communityRating
-        is AfinityEpisode -> item.communityRating
-        else -> null
-    }
+    val communityRating =
+        when (item) {
+            is AfinityMovie -> item.communityRating
+            is AfinityShow -> item.communityRating
+            is AfinityEpisode -> item.communityRating
+            else -> null
+        }
 
     communityRating?.let { rating ->
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_imdb_logo),
                 contentDescription = stringResource(R.string.cd_imdb),
                 tint = Color.Unspecified,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
             Text(
                 text = String.format(Locale.US, "%.1f", rating),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -738,21 +709,23 @@ private fun HeroMetadata(item: AfinityItem) {
         item.criticRating?.let { rtRating ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Icon(
-                    painter = painterResource(
-                        id = if (rtRating > 60) R.drawable.ic_rotten_tomato_fresh
-                        else R.drawable.ic_rotten_tomato_rotten
-                    ),
+                    painter =
+                        painterResource(
+                            id =
+                                if (rtRating > 60) R.drawable.ic_rotten_tomato_fresh
+                                else R.drawable.ic_rotten_tomato_rotten
+                        ),
                     contentDescription = null,
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Text(
                     text = "${rtRating.toInt()}%",
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -760,35 +733,37 @@ private fun HeroMetadata(item: AfinityItem) {
             Text(
                 text = date.year.toString(),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 
-    val officialRating = when (item) {
-        is AfinityMovie -> item.officialRating
-        is AfinityShow -> item.officialRating
-        else -> null
-    }
+    val officialRating =
+        when (item) {
+            is AfinityMovie -> item.officialRating
+            is AfinityShow -> item.officialRating
+            else -> null
+        }
 
     officialRating?.let { rating ->
         Text(
             text = rating,
             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
+            modifier =
+                Modifier.background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
         )
     }
 
     if (item is AfinityShow) {
         item.seasonCount?.let { count ->
             Text(
-                text = if (count == 1) stringResource(R.string.hero_season_single)
-                else stringResource(R.string.hero_season_plural, count),
+                text =
+                    if (count == 1) stringResource(R.string.hero_season_single)
+                    else stringResource(R.string.hero_season_plural, count),
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

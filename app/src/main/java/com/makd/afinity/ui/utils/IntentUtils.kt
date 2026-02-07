@@ -43,10 +43,12 @@ object IntentUtils {
     }
 
     private fun extractYouTubeVideoId(url: String): String? {
-        val patterns = listOf(
-            "(?:youtube\\.com/watch\\?v=|youtu\\.be/|youtube\\.com/embed/)([a-zA-Z0-9_-]{11})".toRegex(),
-            "v=([a-zA-Z0-9_-]{11})".toRegex()
-        )
+        val patterns =
+            listOf(
+                "(?:youtube\\.com/watch\\?v=|youtu\\.be/|youtube\\.com/embed/)([a-zA-Z0-9_-]{11})"
+                    .toRegex(),
+                "v=([a-zA-Z0-9_-]{11})".toRegex(),
+            )
 
         for (pattern in patterns) {
             val matchResult = pattern.find(url)

@@ -13,22 +13,24 @@ import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.data.updater.models.UpdateState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import javax.inject.Inject
 
 @HiltViewModel
-class UpdateViewModel @Inject constructor(
+class UpdateViewModel
+@Inject
+constructor(
     @ApplicationContext private val context: Context,
     private val updateManager: UpdateManager,
     private val updateScheduler: UpdateScheduler,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UpdateUiState())
@@ -43,18 +45,19 @@ class UpdateViewModel @Inject constructor(
     private fun loadUpdatePreferences() {
         viewModelScope.launch {
             preferencesRepository.getUpdateCheckFrequencyFlow().collect { hours ->
-                _uiState.value = _uiState.value.copy(
-                    checkFrequency = UpdateCheckFrequency.fromHours(hours)
-                )
+                _uiState.value =
+                    _uiState.value.copy(checkFrequency = UpdateCheckFrequency.fromHours(hours))
             }
         }
 
         viewModelScope.launch {
             val lastCheck = preferencesRepository.getLastUpdateCheck()
-            _uiState.value = _uiState.value.copy(
-                lastCheckTime = if (lastCheck > 0) formatTimestamp(lastCheck) else context.getString(
-                    R.string.update_never_checked)
-            )
+            _uiState.value =
+                _uiState.value.copy(
+                    lastCheckTime =
+                        if (lastCheck > 0) formatTimestamp(lastCheck)
+                        else context.getString(R.string.update_never_checked)
+                )
         }
     }
 
@@ -63,9 +66,7 @@ class UpdateViewModel @Inject constructor(
             try {
                 val release = updateManager.checkForUpdates()
                 val lastCheck = preferencesRepository.getLastUpdateCheck()
-                _uiState.value = _uiState.value.copy(
-                    lastCheckTime = formatTimestamp(lastCheck)
-                )
+                _uiState.value = _uiState.value.copy(lastCheckTime = formatTimestamp(lastCheck))
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check for updates")
             }
@@ -102,5 +103,5 @@ class UpdateViewModel @Inject constructor(
 data class UpdateUiState(
     val currentVersion: String = BuildConfig.VERSION_NAME,
     val checkFrequency: UpdateCheckFrequency = UpdateCheckFrequency.ON_APP_OPEN,
-    val lastCheckTime: String = ""
+    val lastCheckTime: String = "",
 )

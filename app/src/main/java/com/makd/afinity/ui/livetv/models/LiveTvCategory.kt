@@ -9,5 +9,5 @@ enum class LiveTvCategory(@StringRes val displayNameRes: Int) {
     SHOWS(R.string.livetv_cat_shows),
     SPORTS(R.string.livetv_cat_sports),
     KIDS(R.string.livetv_cat_kids),
-    NEWS(R.string.livetv_cat_news)
+    NEWS(R.string.livetv_cat_news),
 }

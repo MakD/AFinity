@@ -11,9 +11,7 @@ import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.updater.models.UpdateState
 
 @Composable
-fun GlobalUpdateDialog(
-    updateManager: UpdateManager
-) {
+fun GlobalUpdateDialog(updateManager: UpdateManager) {
     val updateState by updateManager.updateState.collectAsStateWithLifecycle()
 
     var showDialog by remember { mutableStateOf(false) }
@@ -34,7 +32,8 @@ fun GlobalUpdateDialog(
             }
         }
 
-        UpdateState.Idle, UpdateState.UpToDate -> {
+        UpdateState.Idle,
+        UpdateState.UpToDate -> {
             hasShownForCurrentUpdate = false
         }
 
@@ -44,16 +43,18 @@ fun GlobalUpdateDialog(
     }
 
     if (showDialog) {
-        val release = when (val state = updateState) {
-            is UpdateState.Available -> state.release
-            is UpdateState.Downloaded -> state.release
-            else -> null
-        }
+        val release =
+            when (val state = updateState) {
+                is UpdateState.Available -> state.release
+                is UpdateState.Downloaded -> state.release
+                else -> null
+            }
 
-        val downloadedFile = when (val state = updateState) {
-            is UpdateState.Downloaded -> state.file
-            else -> null
-        }
+        val downloadedFile =
+            when (val state = updateState) {
+                is UpdateState.Downloaded -> state.file
+                else -> null
+            }
 
         if (release != null) {
             UpdateAvailableDialog(
@@ -61,9 +62,7 @@ fun GlobalUpdateDialog(
                 release = release,
                 downloadedFile = downloadedFile,
                 isDownloading = updateState is UpdateState.Downloading,
-                onDownload = {
-                    updateManager.downloadUpdate(release)
-                },
+                onDownload = { updateManager.downloadUpdate(release) },
                 onInstall = { file ->
                     updateManager.installUpdate(file)
                     showDialog = false
@@ -72,7 +71,7 @@ fun GlobalUpdateDialog(
                 onDismiss = {
                     showDialog = false
                     updateManager.resetState()
-                }
+                },
             )
         }
     }

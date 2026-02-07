@@ -44,10 +44,10 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
-import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import org.jellyfin.sdk.model.api.MediaStreamType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,11 +64,9 @@ fun EpisodeDetailOverlay(
     onPauseDownload: () -> Unit,
     onResumeDownload: () -> Unit,
     onCancelDownload: () -> Unit,
-    onGoToSeries: (() -> Unit)? = null
+    onGoToSeries: (() -> Unit)? = null,
 ) {
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -76,48 +74,49 @@ fun EpisodeDetailOverlay(
         containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = {
             Box(
-                modifier = Modifier
-                    .padding(vertical = 12.dp)
-                    .width(32.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                modifier =
+                    Modifier.padding(vertical = 12.dp)
+                        .width(32.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
             )
-        }
+        },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier =
+                Modifier.fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = episode.seriesName,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             Text(
-                text = stringResource(
-                    R.string.episode_season_episode_fmt,
-                    episode.parentIndexNumber ?: 0,
-                    episode.indexNumber ?: 0,
-                    episode.name
-                ),
+                text =
+                    stringResource(
+                        R.string.episode_season_episode_fmt,
+                        episode.parentIndexNumber ?: 0,
+                        episode.indexNumber ?: 0,
+                        episode.name,
+                    ),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            val imageUrl = remember(episode.id) {
-                episode.images.primaryImageUrl ?: episode.images.thumbImageUrl
-            }
+            val imageUrl =
+                remember(episode.id) {
+                    episode.images.primaryImageUrl ?: episode.images.thumbImageUrl
+                }
 
-            val blurHash = remember(episode.id) {
-                episode.images.primaryBlurHash ?: episode.images.thumbBlurHash
-            }
+            val blurHash =
+                remember(episode.id) {
+                    episode.images.primaryBlurHash ?: episode.images.thumbBlurHash
+                }
 
             AsyncImage(
                 imageUrl = imageUrl,
@@ -125,35 +124,34 @@ fun EpisodeDetailOverlay(
                 blurHash = blurHash,
                 targetWidth = 400.dp,
                 targetHeight = 225.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
+                modifier =
+                    Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop,
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 var needsSeparator = false
 
                 episode.premiereDate?.let { date ->
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_calendar),
                             contentDescription = stringResource(R.string.cd_air_date),
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(14.dp),
                         )
                         Text(
-                            text = date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+                            text =
+                                date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     needsSeparator = true
@@ -164,19 +162,19 @@ fun EpisodeDetailOverlay(
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_clock),
                             contentDescription = stringResource(R.string.cd_duration),
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         val minutes = (episode.runtimeTicks / 600000000).toInt()
                         Text(
                             text = stringResource(R.string.episode_duration_format, minutes),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     needsSeparator = true
@@ -187,18 +185,18 @@ fun EpisodeDetailOverlay(
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_imdb_logo),
                             contentDescription = stringResource(R.string.cd_imdb),
                             tint = Color.Unspecified,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(22.dp),
                         )
                         Text(
                             text = String.format(Locale.US, "%.1f", rating),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -206,92 +204,112 @@ fun EpisodeDetailOverlay(
 
             if (episode.sources.isNotEmpty()) {
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(
-                        8.dp,
-                        Alignment.CenterHorizontally
-                    ),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                     verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     val source = episode.sources.firstOrNull()
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                    source
+                        ?.mediaStreams
+                        ?.firstOrNull { it.type == MediaStreamType.VIDEO }
                         ?.let { videoStream ->
-                            val resolution = when {
-                                (videoStream.height ?: 0) <= 2160 && (videoStream.width
-                                    ?: 0) <= 3840 &&
-                                        ((videoStream.height ?: 0) > 1080 || (videoStream.width
-                                            ?: 0) > 1920) -> stringResource(R.string.meta_res_4k)
+                            val resolution =
+                                when {
+                                    (videoStream.height ?: 0) <= 2160 &&
+                                        (videoStream.width ?: 0) <= 3840 &&
+                                        ((videoStream.height ?: 0) > 1080 ||
+                                            (videoStream.width ?: 0) > 1920) ->
+                                        stringResource(R.string.meta_res_4k)
 
-                                (videoStream.height ?: 0) <= 1080 && (videoStream.width
-                                    ?: 0) <= 1920 &&
-                                        ((videoStream.height ?: 0) > 720 || (videoStream.width
-                                            ?: 0) > 1280) -> stringResource(R.string.meta_res_hd)
+                                    (videoStream.height ?: 0) <= 1080 &&
+                                        (videoStream.width ?: 0) <= 1920 &&
+                                        ((videoStream.height ?: 0) > 720 ||
+                                            (videoStream.width ?: 0) > 1280) ->
+                                        stringResource(R.string.meta_res_hd)
 
-                                else -> stringResource(R.string.meta_res_sd)
-                            }
+                                    else -> stringResource(R.string.meta_res_sd)
+                                }
 
                             VideoMetadataChip(text = resolution)
                         }
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }?.codec?.takeIf { it.isNotEmpty() }
-                        ?.let { codec ->
-                            VideoMetadataChip(text = codec.uppercase())
-                        }
+                    source
+                        ?.mediaStreams
+                        ?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                        ?.codec
+                        ?.takeIf { it.isNotEmpty() }
+                        ?.let { codec -> VideoMetadataChip(text = codec.uppercase()) }
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                    source
+                        ?.mediaStreams
+                        ?.firstOrNull { it.type == MediaStreamType.VIDEO }
                         ?.let { videoStream ->
                             if (videoStream.videoDoViTitle != null) {
                                 VideoMetadataChipWithIcon(
                                     stringResource(R.string.meta_vision),
-                                    iconRes = R.drawable.ic_brand_dolby_digital
+                                    iconRes = R.drawable.ic_brand_dolby_digital,
                                 )
                             } else {
                                 videoStream.videoRangeType?.let { rangeType ->
-                                    val hdrType = when (rangeType.name) {
-                                        "HDR10" -> "HDR10"
-                                        "HDR10Plus" -> "HDR10+"
-                                        "HLG" -> "HLG"
-                                        else -> null
-                                    }
+                                    val hdrType =
+                                        when (rangeType.name) {
+                                            "HDR10" -> "HDR10"
+                                            "HDR10Plus" -> "HDR10+"
+                                            "HLG" -> "HLG"
+                                            else -> null
+                                        }
                                     hdrType?.let { VideoMetadataChip(text = it) }
                                 }
                             }
                         }
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.codec?.takeIf { it.isNotEmpty() }
+                    source
+                        ?.mediaStreams
+                        ?.firstOrNull { it.type == MediaStreamType.AUDIO }
+                        ?.codec
+                        ?.takeIf { it.isNotEmpty() }
                         ?.let { codec ->
                             when (codec.lowercase()) {
-                                "ac3" -> VideoMetadataChipWithIcon(
-                                    text = stringResource(R.string.meta_digital),
-                                    iconRes = R.drawable.ic_brand_dolby_digital
-                                )
+                                "ac3" ->
+                                    VideoMetadataChipWithIcon(
+                                        text = stringResource(R.string.meta_digital),
+                                        iconRes = R.drawable.ic_brand_dolby_digital,
+                                    )
 
-                                "eac3" -> VideoMetadataChipWithIcon(
-                                    text = stringResource(R.string.meta_digital_plus),
-                                    iconRes = R.drawable.ic_brand_dolby_digital
-                                )
+                                "eac3" ->
+                                    VideoMetadataChipWithIcon(
+                                        text = stringResource(R.string.meta_digital_plus),
+                                        iconRes = R.drawable.ic_brand_dolby_digital,
+                                    )
 
-                                "truehd" -> VideoMetadataChipWithIcon(
-                                    text = stringResource(R.string.meta_truehd),
-                                    iconRes = R.drawable.ic_brand_dolby_digital
-                                )
+                                "truehd" ->
+                                    VideoMetadataChipWithIcon(
+                                        text = stringResource(R.string.meta_truehd),
+                                        iconRes = R.drawable.ic_brand_dolby_digital,
+                                    )
 
                                 "dts" -> VideoMetadataChip(text = "DTS")
                                 else -> VideoMetadataChip(text = codec.uppercase())
                             }
                         }
 
-                    source?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }?.channelLayout?.let { layout ->
-                        val channels = when {
-                            layout.contains("7.1") -> "7.1"
-                            layout.contains("5.1") -> "5.1"
-                            layout.contains("2.1") -> "2.1"
-                            layout.contains("2.0") || layout.contains("stereo") -> "2.0"
-                            else -> null
+                    source
+                        ?.mediaStreams
+                        ?.firstOrNull { it.type == MediaStreamType.AUDIO }
+                        ?.channelLayout
+                        ?.let { layout ->
+                            val channels =
+                                when {
+                                    layout.contains("7.1") -> "7.1"
+                                    layout.contains("5.1") -> "5.1"
+                                    layout.contains("2.1") -> "2.1"
+                                    layout.contains("2.0") || layout.contains("stereo") -> "2.0"
+                                    else -> null
+                                }
+                            channels?.let { VideoMetadataChip(text = it) }
                         }
-                        channels?.let { VideoMetadataChip(text = it) }
-                    }
 
                     val hasSubtitles =
                         source?.mediaStreams?.any { it.type == MediaStreamType.SUBTITLE } == true
@@ -309,7 +327,7 @@ fun EpisodeDetailOverlay(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
                     maxLines = 4,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -319,20 +337,18 @@ fun EpisodeDetailOverlay(
             ) {
                 PlaybackSelectionButton(
                     item = episode,
-                    buttonText = if (episode.playbackPositionTicks > 0)
-                        stringResource(R.string.episode_resume)
-                    else
-                        stringResource(R.string.episode_play),
+                    buttonText =
+                        if (episode.playbackPositionTicks > 0)
+                            stringResource(R.string.episode_resume)
+                        else stringResource(R.string.episode_play),
                     buttonIcon = painterResource(id = R.drawable.ic_play_arrow),
-                    onPlayClick = { selection ->
-                        onPlayClick(episode, selection)
-                    },
-                    modifier = Modifier.fillMaxWidth()
+                    onPlayClick = { selection -> onPlayClick(episode, selection) },
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     onGoToSeries?.let { goToSeries ->
                         IconButton(onClick = goToSeries) {
@@ -340,40 +356,48 @@ fun EpisodeDetailOverlay(
                                 painter = painterResource(id = R.drawable.ic_info),
                                 contentDescription = stringResource(R.string.cd_go_to_series),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(28.dp)
+                                modifier = Modifier.size(28.dp),
                             )
                         }
                     }
                     IconButton(onClick = onToggleWatchlist) {
                         Icon(
-                            painter = if (isInWatchlist) painterResource(id = R.drawable.ic_bookmark_filled) else painterResource(
-                                id = R.drawable.ic_bookmark
-                            ),
+                            painter =
+                                if (isInWatchlist)
+                                    painterResource(id = R.drawable.ic_bookmark_filled)
+                                else painterResource(id = R.drawable.ic_bookmark),
                             contentDescription = stringResource(R.string.cd_watchlist),
-                            tint = if (isInWatchlist) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(28.dp)
+                            tint =
+                                if (isInWatchlist) Color(0xFFFF9800)
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp),
                         )
                     }
 
                     IconButton(onClick = onToggleFavorite) {
                         Icon(
-                            painter = if (episode.favorite) painterResource(id = R.drawable.ic_favorite_filled) else painterResource(
-                                id = R.drawable.ic_favorite
-                            ),
+                            painter =
+                                if (episode.favorite)
+                                    painterResource(id = R.drawable.ic_favorite_filled)
+                                else painterResource(id = R.drawable.ic_favorite),
                             contentDescription = stringResource(R.string.cd_favorite),
-                            tint = if (episode.favorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(28.dp)
+                            tint =
+                                if (episode.favorite) Color.Red
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp),
                         )
                     }
 
                     IconButton(onClick = onToggleWatched) {
                         Icon(
-                            painter = if (episode.played) painterResource(id = R.drawable.ic_circle_check) else painterResource(
-                                id = R.drawable.ic_circle_check_outline
-                            ),
+                            painter =
+                                if (episode.played) painterResource(id = R.drawable.ic_circle_check)
+                                else painterResource(id = R.drawable.ic_circle_check_outline),
                             contentDescription = stringResource(R.string.cd_toggle_watched),
-                            tint = if (episode.played) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(28.dp)
+                            tint =
+                                if (episode.played) Color.Green
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp),
                         )
                     }
 
@@ -382,7 +406,7 @@ fun EpisodeDetailOverlay(
                         onDownloadClick = onDownloadClick,
                         onPauseClick = onPauseDownload,
                         onResumeClick = onResumeDownload,
-                        onCancelClick = onCancelDownload
+                        onCancelClick = onCancelDownload,
                     )
                 }
             }
@@ -395,7 +419,7 @@ private fun MetadataDot() {
     Text(
         text = "•",
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
     )
 }
 
@@ -403,16 +427,14 @@ private fun MetadataDot() {
 private fun VideoMetadataChip(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.bodyMedium.copy(
-            fontWeight = FontWeight.SemiBold
-        ),
+        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-        modifier = Modifier
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
-                RoundedCornerShape(4.dp)
-            )
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+        modifier =
+            Modifier.background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                    RoundedCornerShape(4.dp),
+                )
+                .padding(horizontal = 6.dp, vertical = 2.dp),
     )
 }
 
@@ -421,27 +443,23 @@ private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier
-            .background(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
-                RoundedCornerShape(4.dp)
-            )
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+        modifier =
+            Modifier.background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                    RoundedCornerShape(4.dp),
+                )
+                .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Icon(
             painter = painterResource(id = iconRes),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .size(16.dp)
-                .padding(bottom = 1.dp)
+            modifier = Modifier.size(16.dp).padding(bottom = 1.dp),
         )
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
         )
     }
 }

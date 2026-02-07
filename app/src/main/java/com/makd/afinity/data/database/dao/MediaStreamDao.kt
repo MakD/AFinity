@@ -18,11 +18,9 @@ interface MediaStreamDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMediaStreams(streams: List<AfinityMediaStreamDto>)
 
-    @Update
-    suspend fun updateMediaStream(stream: AfinityMediaStreamDto)
+    @Update suspend fun updateMediaStream(stream: AfinityMediaStreamDto)
 
-    @Delete
-    suspend fun deleteMediaStream(stream: AfinityMediaStreamDto)
+    @Delete suspend fun deleteMediaStream(stream: AfinityMediaStreamDto)
 
     @Query("DELETE FROM mediastreams WHERE id = :streamId")
     suspend fun deleteMediaStreamById(streamId: UUID)
@@ -39,9 +37,7 @@ interface MediaStreamDao {
     @Query("SELECT * FROM mediastreams WHERE sourceId = :sourceId AND type = :type")
     suspend fun getMediaStreamsByType(sourceId: String, type: String): List<AfinityMediaStreamDto>
 
-    @Query("SELECT COUNT(*) FROM mediastreams")
-    suspend fun getMediaStreamCount(): Int
+    @Query("SELECT COUNT(*) FROM mediastreams") suspend fun getMediaStreamCount(): Int
 
-    @Query("DELETE FROM mediastreams")
-    suspend fun deleteAllMediaStreams()
+    @Query("DELETE FROM mediastreams") suspend fun deleteAllMediaStreams()
 }

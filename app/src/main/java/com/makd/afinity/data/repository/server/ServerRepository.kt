@@ -9,19 +9,27 @@ interface ServerRepository {
     val currentBaseUrl: StateFlow<String>
     val isConnected: StateFlow<Boolean>
     val currentServer: StateFlow<Server?>
+
     suspend fun refreshServerInfo()
 
     fun getBaseUrl(): String
+
     suspend fun setBaseUrl(baseUrl: String)
 
     suspend fun discoverServers(): List<Server>
+
     fun discoverServersFlow(): Flow<List<Server>>
 
-    suspend fun testServerConnection(serverAddress: String): JellyfinServerRepository.ServerConnectionResult
+    suspend fun testServerConnection(
+        serverAddress: String
+    ): JellyfinServerRepository.ServerConnectionResult
+
     suspend fun getServerInfo(): Server?
 
     fun isConnectedToServer(): Boolean
+
     fun getCurrentServer(): Server?
+
     fun disconnect()
 
     fun buildImageUrl(
@@ -31,7 +39,7 @@ interface ServerRepository {
         tag: String? = null,
         maxWidth: Int? = null,
         maxHeight: Int? = null,
-        quality: Int? = null
+        quality: Int? = null,
     ): String
 
     fun buildStreamUrl(
@@ -41,6 +49,6 @@ interface ServerRepository {
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         videoStreamIndex: Int? = null,
-        accessToken: String? = null
+        accessToken: String? = null,
     ): String
 }

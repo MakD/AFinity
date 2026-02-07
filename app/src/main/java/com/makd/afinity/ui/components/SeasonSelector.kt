@@ -25,35 +25,33 @@ fun SeasonSelector(
     selectedSeasons: List<Int>,
     onSeasonsChange: (List<Int>) -> Unit,
     disabledSeasons: List<Int> = emptyList(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val selectableSeasons = (1..availableSeasons).filter { it !in disabledSeasons }
     val allSelectableSelected = selectableSeasons.all { it in selectedSeasons }
 
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = "Select Seasons",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         if (disabledSeasons.isNotEmpty()) {
             Text(
-                text = "Season${if (disabledSeasons.size > 1) "s" else ""} ${disabledSeasons.joinToString(", ")} already available",
+                text =
+                    "Season${if (disabledSeasons.size > 1) "s" else ""} ${disabledSeasons.joinToString(", ")} already available",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.tertiary,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
         }
 
         if (selectableSeasons.isNotEmpty()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FilterChip(
                     selected = allSelectableSelected && selectableSeasons.isNotEmpty(),
@@ -71,7 +69,7 @@ fun SeasonSelector(
                             if (disabledSeasons.isEmpty()) "All Seasons"
                             else "All Remaining Seasons"
                         )
-                    }
+                    },
                 )
             }
         }
@@ -79,7 +77,7 @@ fun SeasonSelector(
         if (availableSeasons > 0) {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 items(availableSeasons) { index ->
                     val seasonNumber = index + 1
@@ -102,7 +100,7 @@ fun SeasonSelector(
                         label = {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 Text("Season $seasonNumber")
 
@@ -110,11 +108,11 @@ fun SeasonSelector(
                                     Icon(
                                         painter = painterResource(id = R.drawable.ic_check),
                                         contentDescription = "Included",
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(16.dp),
                                     )
                                 }
                             }
-                        }
+                        },
                     )
                 }
             }
@@ -123,7 +121,7 @@ fun SeasonSelector(
                 text = "No season information available. All seasons will be requested.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 4.dp)
+                modifier = Modifier.padding(vertical = 4.dp),
             )
         }
     }

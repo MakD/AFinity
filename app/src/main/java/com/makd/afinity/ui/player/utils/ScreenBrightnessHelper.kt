@@ -8,20 +8,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-fun ScreenBrightnessController(
-    brightness: Float
-) {
+fun ScreenBrightnessController(brightness: Float) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() } ?: return
 
     LaunchedEffect(brightness) {
         val layoutParams = activity.window.attributes
 
-        layoutParams.screenBrightness = if (brightness < 0f) {
-            WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-        } else {
-            brightness.coerceIn(0f, 1f)
-        }
+        layoutParams.screenBrightness =
+            if (brightness < 0f) {
+                WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            } else {
+                brightness.coerceIn(0f, 1f)
+            }
 
         activity.window.attributes = layoutParams
     }

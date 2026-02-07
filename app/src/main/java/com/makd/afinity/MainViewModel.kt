@@ -8,20 +8,22 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(
+class MainViewModel
+@Inject
+constructor(
     private val authRepository: AuthRepository,
     private val playbackStateManager: PlaybackStateManager,
     private val webSocketManager: JellyfinWebSocketManager,
     private val appDataRepository: AppDataRepository,
-    private val offlineModeManager: OfflineModeManager
+    private val offlineModeManager: OfflineModeManager,
 ) : ViewModel() {
 
     private val _authenticationState =
@@ -67,11 +69,17 @@ class MainViewModel @Inject constructor(
     private fun observeAuthenticationChanges() {
         viewModelScope.launch {
             authRepository.isAuthenticated.collect { isAuthenticated ->
-                if (isAuthenticated && _authenticationState.value != AuthenticationState.Authenticated) {
+                if (
+                    isAuthenticated &&
+                        _authenticationState.value != AuthenticationState.Authenticated
+                ) {
                     Timber.d("User authenticated via auth repository")
                     _authenticationState.value = AuthenticationState.Authenticated
                     webSocketManager.connect()
-                } else if (!isAuthenticated && _authenticationState.value == AuthenticationState.Authenticated) {
+                } else if (
+                    !isAuthenticated &&
+                        _authenticationState.value == AuthenticationState.Authenticated
+                ) {
                     Timber.d("User logged out via auth repository")
                     _authenticationState.value = AuthenticationState.NotAuthenticated
                     webSocketManager.disconnect()

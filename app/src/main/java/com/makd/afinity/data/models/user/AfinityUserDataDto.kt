@@ -4,10 +4,7 @@ import androidx.room.Entity
 import com.makd.afinity.data.models.media.AfinityItem
 import java.util.UUID
 
-@Entity(
-    tableName = "userdata",
-    primaryKeys = ["userId", "itemId", "serverId"],
-)
+@Entity(tableName = "userdata", primaryKeys = ["userId", "itemId", "serverId"])
 data class AfinityUserDataDto(
     val userId: UUID,
     val itemId: UUID,

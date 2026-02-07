@@ -21,11 +21,7 @@ class VolumeManager(private val context: Context) {
             val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
             val targetVolume = ((clampedVolume.toFloat() / 100f) * maxVolume).toInt()
 
-            audioManager.setStreamVolume(
-                AudioManager.STREAM_MUSIC,
-                targetVolume,
-                0
-            )
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetVolume, 0)
 
             Timber.d("System volume set to $clampedVolume% (raw: $targetVolume/$maxVolume)")
         } catch (e: Exception) {

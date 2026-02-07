@@ -23,7 +23,7 @@ data class PlaybackSelection(
     val audioStreamIndex: Int?,
     val subtitleStreamIndex: Int?,
     val videoStreamIndex: Int?,
-    val startPositionMs: Long = 0L
+    val startPositionMs: Long = 0L,
 )
 
 data class MediaSourceOption(
@@ -32,7 +32,7 @@ data class MediaSourceOption(
     val quality: String,
     val codec: String,
     val size: Long,
-    val isDefault: Boolean = false
+    val isDefault: Boolean = false,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,19 +42,21 @@ fun PlaybackSelectionButton(
     buttonText: String,
     buttonIcon: Painter,
     onPlayClick: (PlaybackSelection) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = {
-            val startPositionMs = if (item.playbackPositionTicks > 0) {
-                item.playbackPositionTicks / 10000
-            } else {
-                0L
-            }
+            val startPositionMs =
+                if (item.playbackPositionTicks > 0) {
+                    item.playbackPositionTicks / 10000
+                } else {
+                    0L
+                }
 
-            val selectedSource = item.sources.firstOrNull {
-                it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
-            } ?: item.sources.firstOrNull()
+            val selectedSource =
+                item.sources.firstOrNull {
+                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.LOCAL
+                } ?: item.sources.firstOrNull()
 
             onPlayClick(
                 PlaybackSelection(
@@ -62,31 +64,24 @@ fun PlaybackSelectionButton(
                     audioStreamIndex = null,
                     subtitleStreamIndex = null,
                     videoStreamIndex = null,
-                    startPositionMs = startPositionMs
+                    startPositionMs = startPositionMs,
                 )
             )
         },
-        modifier = modifier
-            .fillMaxWidth()
-            .height(56.dp),
+        modifier = modifier.fillMaxWidth().height(56.dp),
         shape = RoundedCornerShape(28.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        )
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(
-                painter = buttonIcon,
-                contentDescription = null
-            )
-            Text(
-                text = buttonText,
-                style = MaterialTheme.typography.labelLarge
-            )
+            Icon(painter = buttonIcon, contentDescription = null)
+            Text(text = buttonText, style = MaterialTheme.typography.labelLarge)
         }
     }
 }

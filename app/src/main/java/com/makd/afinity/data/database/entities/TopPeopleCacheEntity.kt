@@ -5,8 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "top_people_cache")
 data class TopPeopleCacheEntity(
-    @PrimaryKey
-    val personType: String,
+    @PrimaryKey val personType: String,
     val peopleData: String,
-    val cachedTimestamp: Long
+    val cachedTimestamp: Long,
 )

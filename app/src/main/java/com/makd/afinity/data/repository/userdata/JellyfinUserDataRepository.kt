@@ -1,6 +1,9 @@
 package com.makd.afinity.data.repository.userdata
 
 import com.makd.afinity.data.manager.SessionManager
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
@@ -12,14 +15,10 @@ import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.UpdateUserItemDataDto
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
-class JellyfinUserDataRepository @Inject constructor(
-    private val sessionManager: SessionManager
-) : UserDataRepository {
+class JellyfinUserDataRepository @Inject constructor(private val sessionManager: SessionManager) :
+    UserDataRepository {
 
     private suspend fun getCurrentUserId(): UUID? {
         return sessionManager.currentSession.value?.userId
@@ -35,7 +34,7 @@ class JellyfinUserDataRepository @Inject constructor(
                 playStateApi.markPlayedItem(
                     itemId = itemId,
                     userId = userId,
-                    datePlayed = org.jellyfin.sdk.model.DateTime.now()
+                    datePlayed = org.jellyfin.sdk.model.DateTime.now(),
                 )
                 true
             } catch (e: ApiClientException) {
@@ -55,10 +54,7 @@ class JellyfinUserDataRepository @Inject constructor(
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val playStateApi = PlayStateApi(apiClient)
 
-                playStateApi.markUnplayedItem(
-                    itemId = itemId,
-                    userId = userId
-                )
+                playStateApi.markUnplayedItem(itemId = itemId, userId = userId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to mark item as unwatched: $itemId")
@@ -79,7 +75,7 @@ class JellyfinUserDataRepository @Inject constructor(
                 playStateApi.onPlaybackProgress(
                     itemId = itemId,
                     positionTicks = positionTicks,
-                    isPaused = true
+                    isPaused = true,
                 )
                 true
             } catch (e: ApiClientException) {
@@ -99,10 +95,7 @@ class JellyfinUserDataRepository @Inject constructor(
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val itemsApi = ItemsApi(apiClient)
 
-                val response = itemsApi.getItemUserData(
-                    itemId = itemId,
-                    userId = userId
-                )
+                val response = itemsApi.getItemUserData(itemId = itemId, userId = userId)
                 response.content
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get user data for item: $itemId")
@@ -121,10 +114,7 @@ class JellyfinUserDataRepository @Inject constructor(
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val userLibraryApi = UserLibraryApi(apiClient)
 
-                userLibraryApi.markFavoriteItem(
-                    itemId = itemId,
-                    userId = userId
-                )
+                userLibraryApi.markFavoriteItem(itemId = itemId, userId = userId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to add item to favorites: $itemId")
@@ -143,10 +133,7 @@ class JellyfinUserDataRepository @Inject constructor(
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val userLibraryApi = UserLibraryApi(apiClient)
 
-                userLibraryApi.unmarkFavoriteItem(
-                    itemId = itemId,
-                    userId = userId
-                )
+                userLibraryApi.unmarkFavoriteItem(itemId = itemId, userId = userId)
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to remove item from favorites: $itemId")
@@ -161,25 +148,32 @@ class JellyfinUserDataRepository @Inject constructor(
     override suspend fun getFavoriteItems(
         includeItemTypes: List<String>,
         limit: Int?,
-        startIndex: Int
+        startIndex: Int,
     ): List<UUID> {
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
-                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val itemsApi = ItemsApi(apiClient)
 
-                val response = itemsApi.getItems(
-                    userId = userId,
-                    isFavorite = true,
-                    includeItemTypes = includeItemTypes.mapNotNull {
-                        try { BaseItemKind.valueOf(it.uppercase()) } catch (e: Exception) { null }
-                    },
-                    limit = limit,
-                    startIndex = startIndex,
-                    fields = listOf(ItemFields.OVERVIEW),
-                    enableUserData = true
-                )
+                val response =
+                    itemsApi.getItems(
+                        userId = userId,
+                        isFavorite = true,
+                        includeItemTypes =
+                            includeItemTypes.mapNotNull {
+                                try {
+                                    BaseItemKind.valueOf(it.uppercase())
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            },
+                        limit = limit,
+                        startIndex = startIndex,
+                        fields = listOf(ItemFields.OVERVIEW),
+                        enableUserData = true,
+                    )
 
                 response.content?.items?.mapNotNull { it.id } ?: emptyList()
             } catch (e: ApiClientException) {
@@ -204,9 +198,7 @@ class JellyfinUserDataRepository @Inject constructor(
                 itemsApi.updateItemUserData(
                     itemId = itemId,
                     userId = userId,
-                    data = UpdateUserItemDataDto(
-                        rating = jellyfinRating.toDouble()
-                    )
+                    data = UpdateUserItemDataDto(rating = jellyfinRating.toDouble()),
                 )
                 true
             } catch (e: ApiClientException) {
@@ -229,9 +221,7 @@ class JellyfinUserDataRepository @Inject constructor(
                 itemsApi.updateItemUserData(
                     itemId = itemId,
                     userId = userId,
-                    data = UpdateUserItemDataDto(
-                        rating = null
-                    )
+                    data = UpdateUserItemDataDto(rating = null),
                 )
                 true
             } catch (e: ApiClientException) {
@@ -254,9 +244,7 @@ class JellyfinUserDataRepository @Inject constructor(
                 itemsApi.updateItemUserData(
                     itemId = itemId,
                     userId = userId,
-                    data = UpdateUserItemDataDto(
-                        likes = isLiked
-                    )
+                    data = UpdateUserItemDataDto(likes = isLiked),
                 )
                 true
             } catch (e: ApiClientException) {
@@ -283,15 +271,16 @@ class JellyfinUserDataRepository @Inject constructor(
                             itemsApi.updateItemUserData(
                                 itemId = itemId,
                                 userId = userId,
-                                data = UpdateUserItemDataDto(
-                                    rating = userDataDto.rating,
-                                    played = userDataDto.played,
-                                    playbackPositionTicks = userDataDto.playbackPositionTicks,
-                                    playCount = userDataDto.playCount,
-                                    isFavorite = userDataDto.isFavorite,
-                                    likes = userDataDto.likes,
-                                    lastPlayedDate = userDataDto.lastPlayedDate
-                                )
+                                data =
+                                    UpdateUserItemDataDto(
+                                        rating = userDataDto.rating,
+                                        played = userDataDto.played,
+                                        playbackPositionTicks = userDataDto.playbackPositionTicks,
+                                        playCount = userDataDto.playCount,
+                                        isFavorite = userDataDto.isFavorite,
+                                        likes = userDataDto.likes,
+                                        lastPlayedDate = userDataDto.lastPlayedDate,
+                                    ),
                             )
                             successCount++
                         }
@@ -315,9 +304,7 @@ class JellyfinUserDataRepository @Inject constructor(
                 val result = mutableMapOf<UUID, UserItemDataDto>()
 
                 itemIds.forEach { itemId ->
-                    getUserData(itemId)?.let { userData ->
-                        result[itemId] = userData
-                    }
+                    getUserData(itemId)?.let { userData -> result[itemId] = userData }
                 }
 
                 result

@@ -13,23 +13,19 @@ data class LiveTvUiState(
     val hasLiveTvAccess: Boolean = false,
     val error: String? = null,
     val isRefreshing: Boolean = false,
-
     val selectedTab: LiveTvTab = LiveTvTab.HOME,
-
     val categorizedPrograms: Map<LiveTvCategory, List<ProgramWithChannel>> = emptyMap(),
     val isCategoriesLoading: Boolean = false,
-
     val epgChannels: List<AfinityChannel> = emptyList(),
     val epgPrograms: Map<UUID, List<AfinityProgram>> = emptyMap(),
     val epgStartTime: LocalDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS),
     val epgVisibleHours: Int = 3,
     val isEpgLoading: Boolean = false,
-
-    val channels: List<AfinityChannel> = emptyList()
+    val channels: List<AfinityChannel> = emptyList(),
 )
 
 enum class LiveTvTab {
     HOME,
     GUIDE,
-    CHANNELS
+    CHANNELS,
 }

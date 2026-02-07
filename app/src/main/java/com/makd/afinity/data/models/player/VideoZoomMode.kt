@@ -43,7 +43,6 @@ enum class VideoZoomMode(val value: Int) {
         }
     }
 
-
     fun toggle(): VideoZoomMode {
         return when (this) {
             FIT -> ZOOM

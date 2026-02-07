@@ -17,11 +17,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import timber.log.Timber
 import kotlin.math.abs
+import timber.log.Timber
 
 private enum class GestureType {
-    BRIGHTNESS, VOLUME, SEEK
+    BRIGHTNESS,
+    VOLUME,
+    SEEK,
 }
 
 @Composable
@@ -33,7 +35,7 @@ fun GestureHandler(
     onVolumeGesture: (percent: Float, isActive: Boolean) -> Unit,
     onSeekGesture: (delta: Float) -> Unit,
     onSeekPreview: (isActive: Boolean) -> Unit = {},
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
@@ -63,115 +65,127 @@ fun GestureHandler(
     var isSeeking by remember { mutableStateOf(false) }
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .pointerInput(screenWidth) {
-                detectTapGestures(
-                    onDoubleTap = { offset ->
-                        val isForward = offset.x > screenWidth / 2
-                        currentOnDoubleTap(isForward)
-                    },
-                    onTap = { currentOnSingleTap() }
-                )
-            }
-            .pointerInput(screenWidth, screenHeight) {
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        if (offset.y < exclusionVertical ||
-                            offset.y > screenHeight - exclusionVertical ||
-                            offset.x < exclusionHorizontal ||
-                            offset.x > screenWidth - exclusionHorizontal
-                        ) {
-                            return@detectDragGestures
-                        }
+        modifier =
+            modifier
+                .fillMaxSize()
+                .pointerInput(screenWidth) {
+                    detectTapGestures(
+                        onDoubleTap = { offset ->
+                            val isForward = offset.x > screenWidth / 2
+                            currentOnDoubleTap(isForward)
+                        },
+                        onTap = { currentOnSingleTap() },
+                    )
+                }
+                .pointerInput(screenWidth, screenHeight) {
+                    detectDragGestures(
+                        onDragStart = { offset ->
+                            if (
+                                offset.y < exclusionVertical ||
+                                    offset.y > screenHeight - exclusionVertical ||
+                                    offset.x < exclusionHorizontal ||
+                                    offset.x > screenWidth - exclusionHorizontal
+                            ) {
+                                return@detectDragGestures
+                            }
 
-                        isDragging = true
-                        dragStartOffset = offset
-                        totalHorizontalDelta = 0f
-                        totalVerticalDelta = 0f
-                        gestureType = null
-                        isSeeking = false
-                        Timber.d("Drag started at $offset")
-                    },
-                    onDragEnd = {
-                        isDragging = false
-                        if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(0f, false)
-                        if (gestureType == GestureType.BRIGHTNESS) currentOnBrightnessGesture(0f, false)
-                        if (isSeeking) currentOnSeekPreview(false)
+                            isDragging = true
+                            dragStartOffset = offset
+                            totalHorizontalDelta = 0f
+                            totalVerticalDelta = 0f
+                            gestureType = null
+                            isSeeking = false
+                            Timber.d("Drag started at $offset")
+                        },
+                        onDragEnd = {
+                            isDragging = false
+                            if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(0f, false)
+                            if (gestureType == GestureType.BRIGHTNESS)
+                                currentOnBrightnessGesture(0f, false)
+                            if (isSeeking) currentOnSeekPreview(false)
 
-                        gestureType = null
-                        isSeeking = false
-                        Timber.d("Drag ended")
-                    },
-                    onDragCancel = {
-                        isDragging = false
-                        if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(0f, false)
-                        if (gestureType == GestureType.BRIGHTNESS) currentOnBrightnessGesture(0f, false)
-                        if (isSeeking) currentOnSeekPreview(false)
+                            gestureType = null
+                            isSeeking = false
+                            Timber.d("Drag ended")
+                        },
+                        onDragCancel = {
+                            isDragging = false
+                            if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(0f, false)
+                            if (gestureType == GestureType.BRIGHTNESS)
+                                currentOnBrightnessGesture(0f, false)
+                            if (isSeeking) currentOnSeekPreview(false)
 
-                        gestureType = null
-                        isSeeking = false
-                        Timber.d("Drag cancelled")
-                    },
-                    onDrag = { change, dragAmount ->
-                        if (!isDragging) return@detectDragGestures
+                            gestureType = null
+                            isSeeking = false
+                            Timber.d("Drag cancelled")
+                        },
+                        onDrag = { change, dragAmount ->
+                            if (!isDragging) return@detectDragGestures
 
-                        val verticalDrag = -dragAmount.y
-                        val horizontalDrag = dragAmount.x
+                            val verticalDrag = -dragAmount.y
+                            val horizontalDrag = dragAmount.x
 
-                        if (gestureType == null) {
-                            val minimumDragDistance = 20f
+                            if (gestureType == null) {
+                                val minimumDragDistance = 20f
 
-                            if (abs(verticalDrag) > minimumDragDistance || abs(horizontalDrag) > minimumDragDistance) {
-                                gestureType = when {
-                                    abs(verticalDrag) > abs(horizontalDrag) -> {
+                                if (
+                                    abs(verticalDrag) > minimumDragDistance ||
+                                        abs(horizontalDrag) > minimumDragDistance
+                                ) {
+                                    gestureType =
                                         when {
-                                            dragStartOffset.x < leftZoneWidth -> GestureType.BRIGHTNESS
-                                            dragStartOffset.x > rightZoneStart -> GestureType.VOLUME
-                                            else -> null
+                                            abs(verticalDrag) > abs(horizontalDrag) -> {
+                                                when {
+                                                    dragStartOffset.x < leftZoneWidth ->
+                                                        GestureType.BRIGHTNESS
+                                                    dragStartOffset.x > rightZoneStart ->
+                                                        GestureType.VOLUME
+                                                    else -> null
+                                                }
+                                            }
+                                            else -> GestureType.SEEK
                                         }
-                                    }
-                                    else -> GestureType.SEEK
-                                }
 
-                                if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(0f, true)
-                                if (gestureType == GestureType.BRIGHTNESS) currentOnBrightnessGesture(0f, true)
-                            }
-                        }
-
-                        when (gestureType) {
-                            GestureType.BRIGHTNESS -> {
-                                totalVerticalDelta += verticalDrag
-                                val distanceFull = screenHeight * 0.5f
-                                val accumulatedPercent = totalVerticalDelta / distanceFull
-                                currentOnBrightnessGesture(accumulatedPercent, true)
-                            }
-
-                            GestureType.VOLUME -> {
-                                totalVerticalDelta += verticalDrag
-                                val distanceFull = screenHeight * 0.5f
-                                val accumulatedPercent = totalVerticalDelta / distanceFull
-                                currentOnVolumeGesture(accumulatedPercent, true)
-                            }
-
-                            GestureType.SEEK -> {
-                                totalHorizontalDelta += horizontalDrag
-                                val seekActivationThreshold = 20f
-
-                                if (abs(totalHorizontalDelta) > seekActivationThreshold) {
-                                    if (!isSeeking) {
-                                        isSeeking = true
-                                        currentOnSeekPreview(true)
-                                    }
-                                    val normalizedDelta = totalHorizontalDelta / screenWidth
-                                    currentOnSeekGesture(normalizedDelta)
+                                    if (gestureType == GestureType.VOLUME)
+                                        currentOnVolumeGesture(0f, true)
+                                    if (gestureType == GestureType.BRIGHTNESS)
+                                        currentOnBrightnessGesture(0f, true)
                                 }
                             }
-                            null -> { }
-                        }
-                    }
-                )
-            }
+
+                            when (gestureType) {
+                                GestureType.BRIGHTNESS -> {
+                                    totalVerticalDelta += verticalDrag
+                                    val distanceFull = screenHeight * 0.5f
+                                    val accumulatedPercent = totalVerticalDelta / distanceFull
+                                    currentOnBrightnessGesture(accumulatedPercent, true)
+                                }
+
+                                GestureType.VOLUME -> {
+                                    totalVerticalDelta += verticalDrag
+                                    val distanceFull = screenHeight * 0.5f
+                                    val accumulatedPercent = totalVerticalDelta / distanceFull
+                                    currentOnVolumeGesture(accumulatedPercent, true)
+                                }
+
+                                GestureType.SEEK -> {
+                                    totalHorizontalDelta += horizontalDrag
+                                    val seekActivationThreshold = 20f
+
+                                    if (abs(totalHorizontalDelta) > seekActivationThreshold) {
+                                        if (!isSeeking) {
+                                            isSeeking = true
+                                            currentOnSeekPreview(true)
+                                        }
+                                        val normalizedDelta = totalHorizontalDelta / screenWidth
+                                        currentOnSeekGesture(normalizedDelta)
+                                    }
+                                }
+                                null -> {}
+                            }
+                        },
+                    )
+                }
     ) {
         content()
     }

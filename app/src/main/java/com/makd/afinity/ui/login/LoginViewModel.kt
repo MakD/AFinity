@@ -13,6 +13,7 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,16 +23,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
-class LoginViewModel @Inject constructor(
+class LoginViewModel
+@Inject
+constructor(
     private val savedStateHandle: SavedStateHandle,
     private val jellyfinRepository: JellyfinRepository,
     private val authRepository: AuthRepository,
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
-    private val securePreferencesRepository: SecurePreferencesRepository
+    private val securePreferencesRepository: SecurePreferencesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -53,19 +55,17 @@ class LoginViewModel @Inject constructor(
 
     private var quickConnectJob: Job? = null
 
-    val loginState = combine(
-        uiState,
-        serverUrl,
-        publicUsers
-    ) { ui, server, users ->
-        LoginState(
-            uiState = ui,
-            serverUrl = server,
-            publicUsers = users,
-            hasServerUrl = server.isNotBlank(),
-            isConnectedToServer = server.isNotBlank() && !ui.isConnecting && ui.isConnectedToServer
-        )
-    }
+    val loginState =
+        combine(uiState, serverUrl, publicUsers) { ui, server, users ->
+            LoginState(
+                uiState = ui,
+                serverUrl = server,
+                publicUsers = users,
+                hasServerUrl = server.isNotBlank(),
+                isConnectedToServer =
+                    server.isNotBlank() && !ui.isConnecting && ui.isConnectedToServer,
+            )
+        }
 
     init {
         viewModelScope.launch {
@@ -100,10 +100,7 @@ class LoginViewModel @Inject constructor(
             viewModelScope.launch {
                 authRepository.isAuthenticated.collect { isAuthenticated ->
                     if (isAuthenticated) {
-                        _uiState.value = _uiState.value.copy(
-                            isLoggedIn = true,
-                            isLoggingIn = false
-                        )
+                        _uiState.value = _uiState.value.copy(isLoggedIn = true, isLoggingIn = false)
                     }
                 }
             }
@@ -125,22 +122,18 @@ class LoginViewModel @Inject constructor(
 
     private fun isValidUrl(url: String): Boolean {
         return (url.startsWith("http://") || url.startsWith("https://")) &&
-                url.length > 8 &&
-                (url.contains(".") ||
-                        url.contains(":")) &&
-                !url.endsWith("://") &&
-                !url.contains(" ")
+            url.length > 8 &&
+            (url.contains(".") || url.contains(":")) &&
+            !url.endsWith("://") &&
+            !url.contains(" ")
     }
 
     fun connectToServer() {
         val url = _serverUrl.value.trim()
         if (url.isBlank()) return
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isConnecting = true,
-                isConnectedToServer = false,
-                error = null
-            )
+            _uiState.value =
+                _uiState.value.copy(isConnecting = true, isConnectedToServer = false, error = null)
 
             try {
                 Timber.d("Validating Jellyfin server at: $url")
@@ -154,48 +147,49 @@ class LoginViewModel @Inject constructor(
 
                         try {
                             databaseRepository.insertServer(validationResult.server)
-                            Timber.d("Saved server to database: ${validationResult.server.name} (${validationResult.server.id})")
+                            Timber.d(
+                                "Saved server to database: ${validationResult.server.name} (${validationResult.server.id})"
+                            )
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to save server to database, continuing anyway")
                         }
 
                         loadPublicUsers()
 
-                        _uiState.value = _uiState.value.copy(
-                            isConnecting = false,
-                            isConnectedToServer = true
-                        )
+                        _uiState.value =
+                            _uiState.value.copy(isConnecting = false, isConnectedToServer = true)
 
-                        Timber.d("Successfully connected to Jellyfin server: $url (${validationResult.server.name})")
+                        Timber.d(
+                            "Successfully connected to Jellyfin server: $url (${validationResult.server.name})"
+                        )
                     }
 
                     is JellyfinServerRepository.ServerConnectionResult.Error -> {
                         Timber.w("Server validation failed for: $url - ${validationResult.message}")
 
-                        _uiState.value = _uiState.value.copy(
-                            isConnecting = false,
-                            isConnectedToServer = false,
-                            error = "Not a valid Jellyfin server: ${validationResult.message}"
-                        )
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isConnecting = false,
+                                isConnectedToServer = false,
+                                error = "Not a valid Jellyfin server: ${validationResult.message}",
+                            )
                     }
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isConnecting = false,
-                    isConnectedToServer = false,
-                    error = "Failed to connect to server: ${e.message ?: "Unknown error"}"
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isConnecting = false,
+                        isConnectedToServer = false,
+                        error = "Failed to connect to server: ${e.message ?: "Unknown error"}",
+                    )
                 Timber.e(e, "Failed to connect to server: $url")
             }
         }
     }
 
     private fun clearServerConnection() {
-        _uiState.value = _uiState.value.copy(
-            isConnecting = false,
-            isConnectedToServer = false,
-            error = null
-        )
+        _uiState.value =
+            _uiState.value.copy(isConnecting = false, isConnectedToServer = false, error = null)
         _publicUsers.value = emptyList()
         _connectedServerUrl.value = ""
     }
@@ -211,36 +205,28 @@ class LoginViewModel @Inject constructor(
     }
 
     fun updateUsername(username: String) {
-        _uiState.value = _uiState.value.copy(
-            username = username,
-            error = null
-        )
+        _uiState.value = _uiState.value.copy(username = username, error = null)
     }
 
     fun updatePassword(password: String) {
-        _uiState.value = _uiState.value.copy(
-            password = password,
-            error = null
-        )
+        _uiState.value = _uiState.value.copy(password = password, error = null)
     }
 
     fun selectUser(user: User) {
-        _uiState.value = _uiState.value.copy(
-            selectedUser = user,
-            username = user.name,
-            error = null
-        )
+        _uiState.value =
+            _uiState.value.copy(selectedUser = user, username = user.name, error = null)
     }
 
     fun selectServer(server: Server) {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(
-                    selectedServer = server,
-                    showAddServerInput = false,
-                    isConnecting = true,
-                    error = null
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        selectedServer = server,
+                        showAddServerInput = false,
+                        isConnecting = true,
+                        error = null,
+                    )
 
                 Timber.d("Selecting server: ${server.name} (${server.address})")
 
@@ -253,19 +239,18 @@ class LoginViewModel @Inject constructor(
 
                 loadPublicUsers()
 
-                _uiState.value = _uiState.value.copy(
-                    isConnecting = false,
-                    isConnectedToServer = true
-                )
+                _uiState.value =
+                    _uiState.value.copy(isConnecting = false, isConnectedToServer = true)
 
                 Timber.d("Successfully connected to saved server: ${server.name}")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to connect to saved server: ${server.name}")
-                _uiState.value = _uiState.value.copy(
-                    isConnecting = false,
-                    isConnectedToServer = false,
-                    error = "Failed to connect to ${server.name}: ${e.message}"
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isConnecting = false,
+                        isConnectedToServer = false,
+                        error = "Failed to connect to ${server.name}: ${e.message}",
+                    )
             }
         }
     }
@@ -273,16 +258,19 @@ class LoginViewModel @Inject constructor(
     private suspend fun loadSavedUsers(serverId: String) {
         try {
             val allUsers = databaseRepository.getUsersForServer(serverId)
-            val usersWithTokens = allUsers.filter { user ->
-                val hasToken =
-                    securePreferencesRepository.getServerUserToken(serverId, user.id) != null
-                if (!hasToken) {
-                    Timber.d("Excluding user ${user.name} from saved users (no token)")
+            val usersWithTokens =
+                allUsers.filter { user ->
+                    val hasToken =
+                        securePreferencesRepository.getServerUserToken(serverId, user.id) != null
+                    if (!hasToken) {
+                        Timber.d("Excluding user ${user.name} from saved users (no token)")
+                    }
+                    hasToken
                 }
-                hasToken
-            }
             _savedUsers.value = usersWithTokens
-            Timber.d("Loaded ${usersWithTokens.size} saved users with tokens for server $serverId (${allUsers.size} total users)")
+            Timber.d(
+                "Loaded ${usersWithTokens.size} saved users with tokens for server $serverId (${allUsers.size} total users)"
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to load saved users for server $serverId")
             _savedUsers.value = emptyList()
@@ -291,10 +279,7 @@ class LoginViewModel @Inject constructor(
 
     fun loginWithSavedUser(user: User) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isLoggingIn = true,
-                error = null
-            )
+            _uiState.value = _uiState.value.copy(isLoggingIn = true, error = null)
 
             try {
                 Timber.d("Attempting 1-tap login for saved user: ${user.name}")
@@ -304,23 +289,27 @@ class LoginViewModel @Inject constructor(
                 if (token != null) {
                     val server = databaseRepository.getServer(user.serverId)
                     if (server == null) {
-                        _uiState.value = _uiState.value.copy(
-                            isLoggingIn = false,
-                            error = "Server not found. Please login again."
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoggingIn = false,
+                                error = "Server not found. Please login again.",
+                            )
+                        Timber.w(
+                            "Server ${user.serverId} not found in database for user ${user.name}"
                         )
-                        Timber.w("Server ${user.serverId} not found in database for user ${user.name}")
                         return@launch
                     }
 
                     val serverUrl = server.address
                     Timber.d("Using server URL from database: $serverUrl")
 
-                    val result = sessionManager.startSession(
-                        serverUrl = serverUrl,
-                        serverId = user.serverId,
-                        userId = user.id,
-                        accessToken = token
-                    )
+                    val result =
+                        sessionManager.startSession(
+                            serverUrl = serverUrl,
+                            serverId = user.serverId,
+                            userId = user.id,
+                            accessToken = token,
+                        )
 
                     if (result.isSuccess) {
                         securePreferencesRepository.saveAuthenticationData(
@@ -328,49 +317,47 @@ class LoginViewModel @Inject constructor(
                             userId = user.id,
                             serverId = user.serverId,
                             serverUrl = serverUrl,
-                            username = user.name
+                            username = user.name,
                         )
                         Timber.d("Updated active session persistence for: ${user.name}")
 
                         (authRepository as? JellyfinAuthRepository)?.setSessionActive(user)
 
-                        _uiState.value = _uiState.value.copy(
-                            isLoggingIn = false,
-                            isLoggedIn = true
-                        )
+                        _uiState.value = _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
                         Timber.d("Successfully logged in with saved user: ${user.name}")
                     } else {
-                        _uiState.value = _uiState.value.copy(
-                            isLoggingIn = false,
-                            error = "Failed to start session: ${result.exceptionOrNull()?.message}"
-                        )
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoggingIn = false,
+                                error =
+                                    "Failed to start session: ${result.exceptionOrNull()?.message}",
+                            )
                         Timber.e(
                             result.exceptionOrNull(),
-                            "Failed to start session for user: ${user.name}"
+                            "Failed to start session for user: ${user.name}",
                         )
                     }
                 } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoggingIn = false,
-                        error = "Saved session expired. Please login again."
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoggingIn = false,
+                            error = "Saved session expired. Please login again.",
+                        )
                     Timber.w("No saved token found for user: ${user.name}")
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoggingIn = false,
-                    error = "Login failed: ${e.message ?: "Unknown error"}"
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoggingIn = false,
+                        error = "Login failed: ${e.message ?: "Unknown error"}",
+                    )
                 Timber.e(e, "1-tap login failed for user: ${user.name}")
             }
         }
     }
 
     fun showAddNewServer() {
-        _uiState.value = _uiState.value.copy(
-            showAddServerInput = true,
-            selectedServer = null
-        )
+        _uiState.value = _uiState.value.copy(showAddServerInput = true, selectedServer = null)
         clearServerConnection()
     }
 
@@ -383,16 +370,14 @@ class LoginViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.value = currentState.copy(
-                isLoggingIn = true,
-                error = null
-            )
+            _uiState.value = currentState.copy(isLoggingIn = true, error = null)
 
             try {
-                val result = authRepository.authenticateByName(
-                    username = currentState.username,
-                    password = currentState.password
-                )
+                val result =
+                    authRepository.authenticateByName(
+                        username = currentState.username,
+                        password = currentState.password,
+                    )
 
                 when (result) {
                     is AuthRepository.AuthResult.Success -> {
@@ -400,50 +385,53 @@ class LoginViewModel @Inject constructor(
 
                         val token = sdkAuthResult.accessToken
                         val userId = sdkAuthResult.user?.id
-                        val serverId = sdkAuthResult.serverId
-                            ?: _savedServers.value.find { it.address == _serverUrl.value }?.id ?: ""
+                        val serverId =
+                            sdkAuthResult.serverId
+                                ?: _savedServers.value.find { it.address == _serverUrl.value }?.id
+                                ?: ""
 
                         if (token != null && userId != null) {
-                            val sessionResult = sessionManager.startSession(
-                                serverUrl = _serverUrl.value,
-                                serverId = serverId,
-                                userId = userId,
-                                accessToken = token
-                            )
+                            val sessionResult =
+                                sessionManager.startSession(
+                                    serverUrl = _serverUrl.value,
+                                    serverId = serverId,
+                                    userId = userId,
+                                    accessToken = token,
+                                )
 
                             if (sessionResult.isSuccess) {
-                                _uiState.value = _uiState.value.copy(
-                                    isLoggingIn = false,
-                                    isLoggedIn = true
-                                )
+                                _uiState.value =
+                                    _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
                                 Timber.d("Successfully logged in user: ${currentState.username}")
                             } else {
-                                _uiState.value = _uiState.value.copy(
-                                    isLoggingIn = false,
-                                    error = "Session start failed: ${sessionResult.exceptionOrNull()?.message}"
-                                )
+                                _uiState.value =
+                                    _uiState.value.copy(
+                                        isLoggingIn = false,
+                                        error =
+                                            "Session start failed: ${sessionResult.exceptionOrNull()?.message}",
+                                    )
                             }
                         } else {
-                            _uiState.value = _uiState.value.copy(
-                                isLoggingIn = false,
-                                error = "Login succeeded but user ID or token was missing."
-                            )
+                            _uiState.value =
+                                _uiState.value.copy(
+                                    isLoggingIn = false,
+                                    error = "Login succeeded but user ID or token was missing.",
+                                )
                         }
                     }
 
                     is AuthRepository.AuthResult.Error -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoggingIn = false,
-                            error = result.message
-                        )
+                        _uiState.value =
+                            _uiState.value.copy(isLoggingIn = false, error = result.message)
                         Timber.e("Login failed: ${result.message}")
                     }
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoggingIn = false,
-                    error = "Login failed: ${e.message ?: "Unknown error"}"
-                )
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoggingIn = false,
+                        error = "Login failed: ${e.message ?: "Unknown error"}",
+                    )
                 Timber.e(e, "Login failed for user: ${currentState.username}")
             }
         }
@@ -451,38 +439,39 @@ class LoginViewModel @Inject constructor(
 
     fun startQuickConnect() {
         quickConnectJob?.cancel()
-        quickConnectJob = viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isLoggingIn = true,
-                quickConnectCode = null,
-                error = null
-            )
+        quickConnectJob =
+            viewModelScope.launch {
+                _uiState.value =
+                    _uiState.value.copy(isLoggingIn = true, quickConnectCode = null, error = null)
 
-            try {
-                val quickConnectState = authRepository.initiateQuickConnect()
+                try {
+                    val quickConnectState = authRepository.initiateQuickConnect()
 
-                if (quickConnectState != null) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoggingIn = false,
-                        quickConnectCode = quickConnectState.code,
-                        quickConnectSecret = quickConnectState.secret
-                    )
+                    if (quickConnectState != null) {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoggingIn = false,
+                                quickConnectCode = quickConnectState.code,
+                                quickConnectSecret = quickConnectState.secret,
+                            )
 
-                    pollQuickConnectStatus(quickConnectState.secret)
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoggingIn = false,
-                        error = "Failed to start Quick Connect. Please try again."
-                    )
+                        pollQuickConnectStatus(quickConnectState.secret)
+                    } else {
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoggingIn = false,
+                                error = "Failed to start Quick Connect. Please try again.",
+                            )
+                    }
+                } catch (e: Exception) {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoggingIn = false,
+                            error = "Quick Connect error: ${e.message ?: "Unknown error"}",
+                        )
+                    Timber.e(e, "Failed to start QuickConnect")
                 }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoggingIn = false,
-                    error = "Quick Connect error: ${e.message ?: "Unknown error"}"
-                )
-                Timber.e(e, "Failed to start QuickConnect")
             }
-        }
     }
 
     private suspend fun pollQuickConnectStatus(secret: String) {
@@ -498,116 +487,122 @@ class LoginViewModel @Inject constructor(
 
                             val token = sdkAuthResult.accessToken
                             val userId = sdkAuthResult.user?.id
-                            val serverId = sdkAuthResult.serverId
-                                ?: _savedServers.value.find { it.address == _serverUrl.value }?.id
-                                ?: ""
+                            val serverId =
+                                sdkAuthResult.serverId
+                                    ?: _savedServers.value
+                                        .find { it.address == _serverUrl.value }
+                                        ?.id
+                                    ?: ""
 
                             if (token != null && userId != null) {
-                                val sessionResult = sessionManager.startSession(
-                                    serverUrl = _serverUrl.value,
-                                    serverId = serverId,
-                                    userId = userId,
-                                    accessToken = token
-                                )
+                                val sessionResult =
+                                    sessionManager.startSession(
+                                        serverUrl = _serverUrl.value,
+                                        serverId = serverId,
+                                        userId = userId,
+                                        accessToken = token,
+                                    )
 
                                 if (sessionResult.isSuccess) {
-                                    _uiState.value = _uiState.value.copy(
-                                        isLoggingIn = false,
-                                        isLoggedIn = true,
-                                        quickConnectCode = null,
-                                        quickConnectSecret = null
-                                    )
+                                    _uiState.value =
+                                        _uiState.value.copy(
+                                            isLoggingIn = false,
+                                            isLoggedIn = true,
+                                            quickConnectCode = null,
+                                            quickConnectSecret = null,
+                                        )
                                     Timber.d("Successfully authenticated with QuickConnect")
                                     return
                                 } else {
-                                    _uiState.value = _uiState.value.copy(
-                                        isLoggingIn = false,
-                                        error = "Session start failed: ${sessionResult.exceptionOrNull()?.message}"
-                                    )
+                                    _uiState.value =
+                                        _uiState.value.copy(
+                                            isLoggingIn = false,
+                                            error =
+                                                "Session start failed: ${sessionResult.exceptionOrNull()?.message}",
+                                        )
                                     return
                                 }
                             } else {
-                                _uiState.value = _uiState.value.copy(
-                                    isLoggingIn = false,
-                                    error = "QuickConnect succeeded but user ID or token was missing."
-                                )
+                                _uiState.value =
+                                    _uiState.value.copy(
+                                        isLoggingIn = false,
+                                        error =
+                                            "QuickConnect succeeded but user ID or token was missing.",
+                                    )
                                 return
                             }
                         }
 
                         is AuthRepository.AuthResult.Error -> {
-                            _uiState.value = _uiState.value.copy(
-                                isLoggingIn = false,
-                                error = "QuickConnect authentication failed: ${result.message}",
-                                quickConnectCode = null,
-                                quickConnectSecret = null
-                            )
+                            _uiState.value =
+                                _uiState.value.copy(
+                                    isLoggingIn = false,
+                                    error = "QuickConnect authentication failed: ${result.message}",
+                                    quickConnectCode = null,
+                                    quickConnectSecret = null,
+                                )
                             return
                         }
                     }
                 }
             }
 
-            _uiState.value = _uiState.value.copy(
-                isLoggingIn = false,
-                error = "QuickConnect timed out. Please try again.",
-                quickConnectCode = null,
-                quickConnectSecret = null
-            )
+            _uiState.value =
+                _uiState.value.copy(
+                    isLoggingIn = false,
+                    error = "QuickConnect timed out. Please try again.",
+                    quickConnectCode = null,
+                    quickConnectSecret = null,
+                )
         } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                isLoggingIn = false,
-                error = "QuickConnect error: ${e.message ?: "Unknown error"}",
-                quickConnectCode = null,
-                quickConnectSecret = null
-            )
+            _uiState.value =
+                _uiState.value.copy(
+                    isLoggingIn = false,
+                    error = "QuickConnect error: ${e.message ?: "Unknown error"}",
+                    quickConnectCode = null,
+                    quickConnectSecret = null,
+                )
             Timber.e(e, "QuickConnect polling failed")
         }
     }
 
     fun cancelAddServer() {
-        _uiState.update {
-            it.copy(
-                showAddServerInput = false,
-                error = null,
-                isConnecting = false
-            )
-        }
+        _uiState.update { it.copy(showAddServerInput = false, error = null, isConnecting = false) }
         _serverUrl.value = ""
         clearServerConnection()
     }
 
     fun cancelQuickConnect() {
         quickConnectJob?.cancel()
-        _uiState.value = _uiState.value.copy(
-            isLoggingIn = false,
-            quickConnectCode = null,
-            quickConnectSecret = null,
-            error = null
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                isLoggingIn = false,
+                quickConnectCode = null,
+                quickConnectSecret = null,
+                error = null,
+            )
     }
 
     fun discoverServers() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isDiscovering = true,
-                error = null,
-                discoveredServers = emptyList()
-            )
+            _uiState.value =
+                _uiState.value.copy(
+                    isDiscovering = true,
+                    error = null,
+                    discoveredServers = emptyList(),
+                )
 
             try {
                 jellyfinRepository.discoverServersFlow().collect { servers ->
-                    _uiState.value = _uiState.value.copy(
-                        discoveredServers = servers,
-                        isDiscovering = servers.isEmpty()
-                    )
+                    _uiState.value =
+                        _uiState.value.copy(
+                            discoveredServers = servers,
+                            isDiscovering = servers.isEmpty(),
+                        )
                     Timber.d("Updated UI with ${servers.size} discovered servers")
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isDiscovering = false,
-                    error = null
-                )
+                _uiState.value = _uiState.value.copy(isDiscovering = false, error = null)
                 Timber.e(e, "Server discovery failed")
             } finally {
                 _uiState.value = _uiState.value.copy(isDiscovering = false)
@@ -662,7 +657,7 @@ data class LoginUiState(
     val discoveredServers: List<Server> = emptyList(),
     val error: String? = null,
     val quickConnectCode: String? = null,
-    val quickConnectSecret: String? = null
+    val quickConnectSecret: String? = null,
 )
 
 data class LoginState(
@@ -670,5 +665,5 @@ data class LoginState(
     val serverUrl: String,
     val publicUsers: List<User>,
     val hasServerUrl: Boolean,
-    val isConnectedToServer: Boolean
+    val isConnectedToServer: Boolean,
 )

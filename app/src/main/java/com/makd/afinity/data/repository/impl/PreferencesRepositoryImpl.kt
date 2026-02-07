@@ -9,8 +9,8 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvVideoOutput
@@ -21,18 +21,18 @@ import com.makd.afinity.data.models.player.SubtitleVerticalPosition
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.di.AppPreferences
+import java.io.IOException
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import java.io.IOException
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
-class PreferencesRepositoryImpl @Inject constructor(
-    @AppPreferences private val dataStore: DataStore<Preferences>
-) : PreferencesRepository {
+class PreferencesRepositoryImpl
+@Inject
+constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : PreferencesRepository {
 
     private object Keys {
         val CURRENT_SERVER_ID = stringPreferencesKey("current_server_id")
@@ -95,6 +95,9 @@ class PreferencesRepositoryImpl @Inject constructor(
 
         val PREFERRED_AUDIO_LANGUAGE = stringPreferencesKey("preferred_audio_language")
         val PREFERRED_SUBTITLE_LANGUAGE = stringPreferencesKey("preferred_subtitle_language")
+
+        val NOTIFICATION_PERMISSION_DECLINED =
+            booleanPreferencesKey("notification_permission_declined")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -112,9 +115,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override fun getCurrentServerIdFlow(): Flow<String?> {
-        return dataStore.data.map { preferences ->
-            preferences[Keys.CURRENT_SERVER_ID]
-        }
+        return dataStore.data.map { preferences -> preferences[Keys.CURRENT_SERVER_ID] }
     }
 
     override suspend fun setCurrentUserId(userId: String?) {
@@ -132,15 +133,11 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override fun getCurrentUserIdFlow(): Flow<String?> {
-        return dataStore.data.map { preferences ->
-            preferences[Keys.CURRENT_USER_ID]
-        }
+        return dataStore.data.map { preferences -> preferences[Keys.CURRENT_USER_ID] }
     }
 
     override suspend fun setRememberLogin(remember: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.REMEMBER_LOGIN] = remember
-        }
+        dataStore.edit { preferences -> preferences[Keys.REMEMBER_LOGIN] = remember }
     }
 
     override suspend fun getRememberLogin(): Boolean {
@@ -148,9 +145,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setDefaultSortBy(sortBy: SortBy) {
-        dataStore.edit { preferences ->
-            preferences[Keys.DEFAULT_SORT_BY] = sortBy.name
-        }
+        dataStore.edit { preferences -> preferences[Keys.DEFAULT_SORT_BY] = sortBy.name }
     }
 
     override suspend fun getDefaultSortBy(): SortBy {
@@ -163,9 +158,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setSortDescending(descending: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.SORT_DESCENDING] = descending
-        }
+        dataStore.edit { preferences -> preferences[Keys.SORT_DESCENDING] = descending }
     }
 
     override suspend fun getSortDescending(): Boolean {
@@ -173,9 +166,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setItemsPerPage(count: Int) {
-        dataStore.edit { preferences ->
-            preferences[Keys.ITEMS_PER_PAGE] = count
-        }
+        dataStore.edit { preferences -> preferences[Keys.ITEMS_PER_PAGE] = count }
     }
 
     override suspend fun getItemsPerPage(): Int {
@@ -183,9 +174,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setAutoPlay(autoPlay: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.AUTO_PLAY] = autoPlay
-        }
+        dataStore.edit { preferences -> preferences[Keys.AUTO_PLAY] = autoPlay }
     }
 
     override suspend fun getAutoPlay(): Boolean {
@@ -207,9 +196,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setCombineLibrarySections(combine: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.COMBINE_LIBRARY_SECTIONS] = combine
-        }
+        dataStore.edit { preferences -> preferences[Keys.COMBINE_LIBRARY_SECTIONS] = combine }
     }
 
     override suspend fun getCombineLibrarySections(): Boolean {
@@ -239,9 +226,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setSkipIntroEnabled(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.SKIP_INTRO_ENABLED] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.SKIP_INTRO_ENABLED] = enabled }
     }
 
     override suspend fun getSkipIntroEnabled(): Boolean {
@@ -249,9 +234,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setSkipOutroEnabled(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.SKIP_OUTRO_ENABLED] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.SKIP_OUTRO_ENABLED] = enabled }
     }
 
     override suspend fun getSkipOutroEnabled(): Boolean {
@@ -259,9 +242,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setThemeMode(mode: String) {
-        dataStore.edit { preferences ->
-            preferences[Keys.THEME_MODE] = mode
-        }
+        dataStore.edit { preferences -> preferences[Keys.THEME_MODE] = mode }
     }
 
     override suspend fun getThemeMode(): String {
@@ -269,9 +250,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override fun getThemeModeFlow(): Flow<String> {
-        return dataStore.data.map { preferences ->
-            preferences[Keys.THEME_MODE] ?: "SYSTEM"
-        }
+        return dataStore.data.map { preferences -> preferences[Keys.THEME_MODE] ?: "SYSTEM" }
     }
 
     override fun getDynamicColorsFlow(): Flow<Boolean> =
@@ -287,9 +266,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         dataStore.data.map { it[Keys.SKIP_OUTRO_ENABLED] ?: true }
 
     override suspend fun setDynamicColors(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.DYNAMIC_COLORS] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.DYNAMIC_COLORS] = enabled }
     }
 
     override suspend fun getDynamicColors(): Boolean {
@@ -297,9 +274,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setGridLayout(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.GRID_LAYOUT] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.GRID_LAYOUT] = enabled }
     }
 
     override suspend fun getGridLayout(): Boolean {
@@ -307,9 +282,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setDownloadOverWifiOnly(wifiOnly: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.DOWNLOAD_WIFI_ONLY] = wifiOnly
-        }
+        dataStore.edit { preferences -> preferences[Keys.DOWNLOAD_WIFI_ONLY] = wifiOnly }
     }
 
     override suspend fun getDownloadOverWifiOnly(): Boolean {
@@ -317,9 +290,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setDownloadQuality(quality: String) {
-        dataStore.edit { preferences ->
-            preferences[Keys.DOWNLOAD_QUALITY] = quality
-        }
+        dataStore.edit { preferences -> preferences[Keys.DOWNLOAD_QUALITY] = quality }
     }
 
     override suspend fun getDownloadQuality(): String {
@@ -327,9 +298,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setMaxDownloads(maxDownloads: Int) {
-        dataStore.edit { preferences ->
-            preferences[Keys.MAX_DOWNLOADS] = maxDownloads
-        }
+        dataStore.edit { preferences -> preferences[Keys.MAX_DOWNLOADS] = maxDownloads }
     }
 
     override suspend fun getMaxDownloads(): Int {
@@ -337,9 +306,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setSyncEnabled(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.SYNC_ENABLED] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.SYNC_ENABLED] = enabled }
     }
 
     override suspend fun getSyncEnabled(): Boolean {
@@ -347,9 +314,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setSyncInterval(intervalMinutes: Int) {
-        dataStore.edit { preferences ->
-            preferences[Keys.SYNC_INTERVAL] = intervalMinutes
-        }
+        dataStore.edit { preferences -> preferences[Keys.SYNC_INTERVAL] = intervalMinutes }
     }
 
     override suspend fun getSyncInterval(): Int {
@@ -357,9 +322,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setLastSyncTime(timestamp: Long) {
-        dataStore.edit { preferences ->
-            preferences[Keys.LAST_SYNC_TIME] = timestamp
-        }
+        dataStore.edit { preferences -> preferences[Keys.LAST_SYNC_TIME] = timestamp }
     }
 
     override suspend fun getLastSyncTime(): Long {
@@ -367,9 +330,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setCrashReporting(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.CRASH_REPORTING] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.CRASH_REPORTING] = enabled }
     }
 
     override suspend fun getCrashReporting(): Boolean {
@@ -377,9 +338,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setUsageAnalytics(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.USAGE_ANALYTICS] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.USAGE_ANALYTICS] = enabled }
     }
 
     override suspend fun getUsageAnalytics(): Boolean {
@@ -387,9 +346,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setOfflineMode(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.OFFLINE_MODE] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.OFFLINE_MODE] = enabled }
     }
 
     override suspend fun getOfflineMode(): Boolean {
@@ -397,15 +354,21 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override fun getOfflineModeFlow(): Flow<Boolean> {
-        return dataStore.data.map { preferences ->
-            preferences[Keys.OFFLINE_MODE] ?: false
+        return dataStore.data.map { preferences -> preferences[Keys.OFFLINE_MODE] ?: false }
+    }
+
+    override suspend fun setNotificationPermissionDeclined(declined: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.NOTIFICATION_PERMISSION_DECLINED] = declined
         }
     }
 
+    override suspend fun getNotificationPermissionDeclined(): Boolean {
+        return dataStore.data.first()[Keys.NOTIFICATION_PERMISSION_DECLINED] ?: false
+    }
+
     override suspend fun clearAllPreferences() {
-        dataStore.edit { preferences ->
-            preferences.clear()
-        }
+        dataStore.edit { preferences -> preferences.clear() }
     }
 
     override suspend fun clearServerPreferences() {
@@ -423,88 +386,70 @@ class PreferencesRepositoryImpl @Inject constructor(
         }
     }
 
-    override val useExoPlayer: Flow<Boolean> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
+    override val useExoPlayer: Flow<Boolean> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
             }
-        }
-        .map { preferences ->
-            preferences[Keys.USE_EXO_PLAYER] ?: false
-        }
+            .map { preferences -> preferences[Keys.USE_EXO_PLAYER] ?: false }
 
     override suspend fun setUseExoPlayer(value: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.USE_EXO_PLAYER] = value
-        }
+        dataStore.edit { preferences -> preferences[Keys.USE_EXO_PLAYER] = value }
     }
 
     override suspend fun setMpvHwDec(hwDec: MpvHwDec) {
-        dataStore.edit { preferences ->
-            preferences[Keys.MPV_HW_DEC] = hwDec.value
-        }
+        dataStore.edit { preferences -> preferences[Keys.MPV_HW_DEC] = hwDec.value }
     }
 
     override suspend fun getMpvHwDec(): MpvHwDec {
-        return dataStore.data.first()[Keys.MPV_HW_DEC]?.let {
-            MpvHwDec.fromValue(it)
-        } ?: MpvHwDec.default
+        return dataStore.data.first()[Keys.MPV_HW_DEC]?.let { MpvHwDec.fromValue(it) }
+            ?: MpvHwDec.default
     }
 
     override fun getMpvHwDecFlow(): Flow<MpvHwDec> {
         return dataStore.data.map { preferences ->
-            preferences[Keys.MPV_HW_DEC]?.let {
-                MpvHwDec.fromValue(it)
-            } ?: MpvHwDec.default
+            preferences[Keys.MPV_HW_DEC]?.let { MpvHwDec.fromValue(it) } ?: MpvHwDec.default
         }
     }
 
     override suspend fun setMpvVideoOutput(videoOutput: MpvVideoOutput) {
-        dataStore.edit { preferences ->
-            preferences[Keys.MPV_VIDEO_OUTPUT] = videoOutput.value
-        }
+        dataStore.edit { preferences -> preferences[Keys.MPV_VIDEO_OUTPUT] = videoOutput.value }
     }
 
     override suspend fun getMpvVideoOutput(): MpvVideoOutput {
-        return dataStore.data.first()[Keys.MPV_VIDEO_OUTPUT]?.let {
-            MpvVideoOutput.fromValue(it)
-        } ?: MpvVideoOutput.default
+        return dataStore.data.first()[Keys.MPV_VIDEO_OUTPUT]?.let { MpvVideoOutput.fromValue(it) }
+            ?: MpvVideoOutput.default
     }
 
     override fun getMpvVideoOutputFlow(): Flow<MpvVideoOutput> {
         return dataStore.data.map { preferences ->
-            preferences[Keys.MPV_VIDEO_OUTPUT]?.let {
-                MpvVideoOutput.fromValue(it)
-            } ?: MpvVideoOutput.default
+            preferences[Keys.MPV_VIDEO_OUTPUT]?.let { MpvVideoOutput.fromValue(it) }
+                ?: MpvVideoOutput.default
         }
     }
 
     override suspend fun setMpvAudioOutput(audioOutput: MpvAudioOutput) {
-        dataStore.edit { preferences ->
-            preferences[Keys.MPV_AUDIO_OUTPUT] = audioOutput.value
-        }
+        dataStore.edit { preferences -> preferences[Keys.MPV_AUDIO_OUTPUT] = audioOutput.value }
     }
 
     override suspend fun getMpvAudioOutput(): MpvAudioOutput {
-        return dataStore.data.first()[Keys.MPV_AUDIO_OUTPUT]?.let {
-            MpvAudioOutput.fromValue(it)
-        } ?: MpvAudioOutput.default
+        return dataStore.data.first()[Keys.MPV_AUDIO_OUTPUT]?.let { MpvAudioOutput.fromValue(it) }
+            ?: MpvAudioOutput.default
     }
 
     override fun getMpvAudioOutputFlow(): Flow<MpvAudioOutput> {
         return dataStore.data.map { preferences ->
-            preferences[Keys.MPV_AUDIO_OUTPUT]?.let {
-                MpvAudioOutput.fromValue(it)
-            } ?: MpvAudioOutput.default
+            preferences[Keys.MPV_AUDIO_OUTPUT]?.let { MpvAudioOutput.fromValue(it) }
+                ?: MpvAudioOutput.default
         }
     }
 
     override suspend fun setPreferredAudioLanguage(language: String) {
-        dataStore.edit { preferences ->
-            preferences[Keys.PREFERRED_AUDIO_LANGUAGE] = language
-        }
+        dataStore.edit { preferences -> preferences[Keys.PREFERRED_AUDIO_LANGUAGE] = language }
     }
 
     override suspend fun getPreferredAudioLanguage(): String {
@@ -518,9 +463,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setPreferredSubtitleLanguage(language: String) {
-        dataStore.edit { preferences ->
-            preferences[Keys.PREFERRED_SUBTITLE_LANGUAGE] = language
-        }
+        dataStore.edit { preferences -> preferences[Keys.PREFERRED_SUBTITLE_LANGUAGE] = language }
     }
 
     override suspend fun getPreferredSubtitleLanguage(): String {
@@ -534,9 +477,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setPipGestureEnabled(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.PIP_GESTURE_ENABLED] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.PIP_GESTURE_ENABLED] = enabled }
     }
 
     override suspend fun getPipGestureEnabled(): Boolean {
@@ -544,15 +485,11 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override fun getPipGestureEnabledFlow(): Flow<Boolean> {
-        return dataStore.data.map { preferences ->
-            preferences[Keys.PIP_GESTURE_ENABLED] ?: false
-        }
+        return dataStore.data.map { preferences -> preferences[Keys.PIP_GESTURE_ENABLED] ?: false }
     }
 
     override suspend fun setPipBackgroundPlay(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.PIP_BACKGROUND_PLAY] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.PIP_BACKGROUND_PLAY] = enabled }
     }
 
     override suspend fun getPipBackgroundPlay(): Boolean {
@@ -560,15 +497,11 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override fun getPipBackgroundPlayFlow(): Flow<Boolean> {
-        return dataStore.data.map { preferences ->
-            preferences[Keys.PIP_BACKGROUND_PLAY] ?: true
-        }
+        return dataStore.data.map { preferences -> preferences[Keys.PIP_BACKGROUND_PLAY] ?: true }
     }
 
     override suspend fun setUpdateCheckFrequency(hours: Int) {
-        dataStore.edit { preferences ->
-            preferences[Keys.UPDATE_CHECK_FREQUENCY] = hours
-        }
+        dataStore.edit { preferences -> preferences[Keys.UPDATE_CHECK_FREQUENCY] = hours }
     }
 
     override suspend fun getUpdateCheckFrequency(): Int {
@@ -576,15 +509,11 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override fun getUpdateCheckFrequencyFlow(): Flow<Int> {
-        return dataStore.data.map { preferences ->
-            preferences[Keys.UPDATE_CHECK_FREQUENCY] ?: 0
-        }
+        return dataStore.data.map { preferences -> preferences[Keys.UPDATE_CHECK_FREQUENCY] ?: 0 }
     }
 
     override suspend fun setLastUpdateCheck(timestamp: Long) {
-        dataStore.edit { preferences ->
-            preferences[Keys.LAST_UPDATE_CHECK] = timestamp
-        }
+        dataStore.edit { preferences -> preferences[Keys.LAST_UPDATE_CHECK] = timestamp }
     }
 
     override suspend fun getLastUpdateCheck(): Long {
@@ -614,28 +543,21 @@ class PreferencesRepositoryImpl @Inject constructor(
             textSize = prefs[Keys.SUBTITLE_TEXT_SIZE]?.toFloatOrNull() ?: 1.0f,
             bold = prefs[Keys.SUBTITLE_BOLD] ?: false,
             italic = prefs[Keys.SUBTITLE_ITALIC] ?: false,
-            outlineStyle = prefs[Keys.SUBTITLE_OUTLINE_STYLE]?.let {
-                SubtitleOutlineStyle.fromString(
-                    it
-                )
-            }
-                ?: SubtitleOutlineStyle.NONE,
+            outlineStyle =
+                prefs[Keys.SUBTITLE_OUTLINE_STYLE]?.let { SubtitleOutlineStyle.fromString(it) }
+                    ?: SubtitleOutlineStyle.NONE,
             outlineColor = prefs[Keys.SUBTITLE_OUTLINE_COLOR] ?: Color.BLACK,
             outlineSize = prefs[Keys.SUBTITLE_OUTLINE_SIZE]?.toFloatOrNull() ?: 0f,
             backgroundColor = prefs[Keys.SUBTITLE_BACKGROUND_COLOR] ?: Color.TRANSPARENT,
             windowColor = prefs[Keys.SUBTITLE_WINDOW_COLOR] ?: Color.TRANSPARENT,
-            verticalPosition = prefs[Keys.SUBTITLE_VERTICAL_POSITION]?.let {
-                SubtitleVerticalPosition.fromString(
-                    it
-                )
-            }
-                ?: SubtitleVerticalPosition.BOTTOM,
-            horizontalAlignment = prefs[Keys.SUBTITLE_HORIZONTAL_ALIGNMENT]?.let {
-                SubtitleHorizontalAlignment.fromString(
-                    it
-                )
-            }
-                ?: SubtitleHorizontalAlignment.CENTER
+            verticalPosition =
+                prefs[Keys.SUBTITLE_VERTICAL_POSITION]?.let {
+                    SubtitleVerticalPosition.fromString(it)
+                } ?: SubtitleVerticalPosition.BOTTOM,
+            horizontalAlignment =
+                prefs[Keys.SUBTITLE_HORIZONTAL_ALIGNMENT]?.let {
+                    SubtitleHorizontalAlignment.fromString(it)
+                } ?: SubtitleHorizontalAlignment.CENTER,
         )
     }
 
@@ -646,36 +568,27 @@ class PreferencesRepositoryImpl @Inject constructor(
                 textSize = prefs[Keys.SUBTITLE_TEXT_SIZE]?.toFloatOrNull() ?: 1.0f,
                 bold = prefs[Keys.SUBTITLE_BOLD] ?: false,
                 italic = prefs[Keys.SUBTITLE_ITALIC] ?: false,
-                outlineStyle = prefs[Keys.SUBTITLE_OUTLINE_STYLE]?.let {
-                    SubtitleOutlineStyle.fromString(
-                        it
-                    )
-                }
-                    ?: SubtitleOutlineStyle.NONE,
+                outlineStyle =
+                    prefs[Keys.SUBTITLE_OUTLINE_STYLE]?.let { SubtitleOutlineStyle.fromString(it) }
+                        ?: SubtitleOutlineStyle.NONE,
                 outlineColor = prefs[Keys.SUBTITLE_OUTLINE_COLOR] ?: Color.BLACK,
                 outlineSize = prefs[Keys.SUBTITLE_OUTLINE_SIZE]?.toFloatOrNull() ?: 0f,
                 backgroundColor = prefs[Keys.SUBTITLE_BACKGROUND_COLOR] ?: Color.TRANSPARENT,
                 windowColor = prefs[Keys.SUBTITLE_WINDOW_COLOR] ?: Color.TRANSPARENT,
-                verticalPosition = prefs[Keys.SUBTITLE_VERTICAL_POSITION]?.let {
-                    SubtitleVerticalPosition.fromString(
-                        it
-                    )
-                }
-                    ?: SubtitleVerticalPosition.BOTTOM,
-                horizontalAlignment = prefs[Keys.SUBTITLE_HORIZONTAL_ALIGNMENT]?.let {
-                    SubtitleHorizontalAlignment.fromString(
-                        it
-                    )
-                }
-                    ?: SubtitleHorizontalAlignment.CENTER
+                verticalPosition =
+                    prefs[Keys.SUBTITLE_VERTICAL_POSITION]?.let {
+                        SubtitleVerticalPosition.fromString(it)
+                    } ?: SubtitleVerticalPosition.BOTTOM,
+                horizontalAlignment =
+                    prefs[Keys.SUBTITLE_HORIZONTAL_ALIGNMENT]?.let {
+                        SubtitleHorizontalAlignment.fromString(it)
+                    } ?: SubtitleHorizontalAlignment.CENTER,
             )
         }
     }
 
     override suspend fun setLogoAutoHide(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.LOGO_AUTO_HIDE] = enabled
-        }
+        dataStore.edit { preferences -> preferences[Keys.LOGO_AUTO_HIDE] = enabled }
     }
 
     override suspend fun getLogoAutoHide(): Boolean {
@@ -683,48 +596,38 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override fun getLogoAutoHideFlow(): Flow<Boolean> {
-        return dataStore.data.map { preferences ->
-            preferences[Keys.LOGO_AUTO_HIDE] ?: true
-        }
+        return dataStore.data.map { preferences -> preferences[Keys.LOGO_AUTO_HIDE] ?: true }
     }
 
     override suspend fun setDefaultVideoZoomMode(mode: VideoZoomMode) {
-        dataStore.edit { preferences ->
-            preferences[Keys.VIDEO_ZOOM_MODE] = mode.value
-        }
+        dataStore.edit { preferences -> preferences[Keys.VIDEO_ZOOM_MODE] = mode.value }
     }
 
     override suspend fun getDefaultVideoZoomMode(): VideoZoomMode {
-        return dataStore.data.first()[Keys.VIDEO_ZOOM_MODE]?.let {
-            VideoZoomMode.fromInt(it)
-        } ?: VideoZoomMode.FIT
+        return dataStore.data.first()[Keys.VIDEO_ZOOM_MODE]?.let { VideoZoomMode.fromInt(it) }
+            ?: VideoZoomMode.FIT
     }
 
     override fun getDefaultVideoZoomModeFlow(): Flow<VideoZoomMode> {
         return dataStore.data.map { preferences ->
-            preferences[Keys.VIDEO_ZOOM_MODE]?.let {
-                VideoZoomMode.fromInt(it)
-            } ?: VideoZoomMode.FIT
+            preferences[Keys.VIDEO_ZOOM_MODE]?.let { VideoZoomMode.fromInt(it) }
+                ?: VideoZoomMode.FIT
         }
     }
 
     override suspend fun setEpisodeLayout(layout: EpisodeLayout) {
-        dataStore.edit { preferences ->
-            preferences[Keys.EPISODE_LAYOUT] = layout.value
-        }
+        dataStore.edit { preferences -> preferences[Keys.EPISODE_LAYOUT] = layout.value }
     }
 
     override suspend fun getEpisodeLayout(): EpisodeLayout {
-        return dataStore.data.first()[Keys.EPISODE_LAYOUT]?.let {
-            EpisodeLayout.fromValue(it)
-        } ?: EpisodeLayout.HORIZONTAL
+        return dataStore.data.first()[Keys.EPISODE_LAYOUT]?.let { EpisodeLayout.fromValue(it) }
+            ?: EpisodeLayout.HORIZONTAL
     }
 
     override fun getEpisodeLayoutFlow(): Flow<EpisodeLayout> {
         return dataStore.data.map { preferences ->
-            preferences[Keys.EPISODE_LAYOUT]?.let {
-                EpisodeLayout.fromValue(it)
-            } ?: EpisodeLayout.HORIZONTAL
+            preferences[Keys.EPISODE_LAYOUT]?.let { EpisodeLayout.fromValue(it) }
+                ?: EpisodeLayout.HORIZONTAL
         }
     }
 }

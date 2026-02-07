@@ -1,8 +1,8 @@
 package com.makd.afinity.data.models.media
 
+import java.util.UUID
 import kotlinx.serialization.Serializable
 import org.jellyfin.sdk.model.api.BaseItemDto
-import java.util.UUID
 
 @Serializable
 data class AfinityChapter(
@@ -16,13 +16,11 @@ fun BaseItemDto.toAfinityChapters(): List<AfinityChapter> {
         AfinityChapter(
             startPosition = chapter.startPositionTicks / 10000,
             name = chapter.name,
-            imageIndex = index
+            imageIndex = index,
         )
     } ?: emptyList()
 }
 
 fun AfinityChapter.getChapterImageUrl(baseUrl: String, itemId: UUID): String? {
-    return imageIndex?.let { index ->
-        "$baseUrl/Items/$itemId/Images/Chapter/$index"
-    }
+    return imageIndex?.let { index -> "$baseUrl/Items/$itemId/Images/Chapter/$index" }
 }

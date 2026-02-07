@@ -30,8 +30,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -48,23 +48,18 @@ fun MediaItemCard(
     item: AfinityItem,
     onClick: () -> Unit,
     cardWidth: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val fontScale = density.fontScale
 
-    Column(
-        modifier = modifier.width(cardWidth)
-    ) {
+    Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
@@ -74,27 +69,24 @@ fun MediaItemCard(
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 3f / 2f,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
 
                 when {
                     item.played -> {
                         Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(24.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primary,
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier.align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .size(24.dp)
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_check),
                                 contentDescription = "Watched",
                                 tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(16.dp),
                             )
                         }
                     }
@@ -104,22 +96,19 @@ fun MediaItemCard(
                         displayCount?.let { count ->
                             if (count > 0) {
                                 Surface(
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(8.dp),
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                                     shape = RoundedCornerShape(4.dp),
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
                                 ) {
                                     Text(
                                         text = if (count > 99) "99+ EP" else "$count EP",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = FontWeight.Bold
-                                        ),
+                                        style =
+                                            MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold
+                                            ),
                                         color = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.padding(
-                                            horizontal = 6.dp,
-                                            vertical = 2.dp
-                                        )
+                                        modifier =
+                                            Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     )
                                 }
                             }
@@ -133,12 +122,10 @@ fun MediaItemCard(
 
         Text(
             text = item.name,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
 
         Row(
@@ -155,11 +142,14 @@ fun MediaItemCard(
                 metadataItems.add {
                     Text(
                         text = year.toString(),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = MaterialTheme.typography.bodySmall.fontSize *
-                                    if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                fontSize =
+                                    MaterialTheme.typography.bodySmall.fontSize *
+                                        if (fontScale > 1.3f) 0.8f
+                                        else if (fontScale > 1.15f) 0.9f else 1f
+                            ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -172,25 +162,28 @@ fun MediaItemCard(
                 metadataItems.add {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_imdb_logo),
                             contentDescription = "IMDB",
                             tint = Color.Unspecified,
-                            modifier = Modifier.size(
-                                if (fontScale > 1.3f) 14.dp
-                                else if (fontScale > 1.15f) 16.dp
-                                else 18.dp
-                            )
+                            modifier =
+                                Modifier.size(
+                                    if (fontScale > 1.3f) 14.dp
+                                    else if (fontScale > 1.15f) 16.dp else 18.dp
+                                ),
                         )
                         Text(
                             text = String.format(Locale.US, "%.1f", rating),
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontSize = MaterialTheme.typography.bodySmall.fontSize *
-                                        if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontSize =
+                                        MaterialTheme.typography.bodySmall.fontSize *
+                                            if (fontScale > 1.3f) 0.8f
+                                            else if (fontScale > 1.15f) 0.9f else 1f
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -201,31 +194,36 @@ fun MediaItemCard(
                     metadataItems.add {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Icon(
-                                painter = painterResource(
-                                    id = if (rtRating > 60) {
-                                        R.drawable.ic_rotten_tomato_fresh
-                                    } else {
-                                        R.drawable.ic_rotten_tomato_rotten
-                                    }
-                                ),
+                                painter =
+                                    painterResource(
+                                        id =
+                                            if (rtRating > 60) {
+                                                R.drawable.ic_rotten_tomato_fresh
+                                            } else {
+                                                R.drawable.ic_rotten_tomato_rotten
+                                            }
+                                    ),
                                 contentDescription = "Rotten Tomatoes",
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(
-                                    if (fontScale > 1.3f) 10.dp
-                                    else if (fontScale > 1.15f) 11.dp
-                                    else 12.dp
-                                )
+                                modifier =
+                                    Modifier.size(
+                                        if (fontScale > 1.3f) 10.dp
+                                        else if (fontScale > 1.15f) 11.dp else 12.dp
+                                    ),
                             )
                             Text(
                                 text = "${rtRating.toInt()}%",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = MaterialTheme.typography.bodySmall.fontSize *
-                                            if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        fontSize =
+                                            MaterialTheme.typography.bodySmall.fontSize *
+                                                if (fontScale > 1.3f) 0.8f
+                                                else if (fontScale > 1.15f) 0.9f else 1f
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -238,7 +236,7 @@ fun MediaItemCard(
                     Text(
                         text = "•",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

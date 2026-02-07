@@ -82,8 +82,8 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
-import timber.log.Timber
 import java.util.Locale
+import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,7 +93,7 @@ fun LibraryContentScreen(
     modifier: Modifier = Modifier,
     navController: NavController,
     viewModel: LibraryContentViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pagingDataFlow by viewModel.pagingData.collectAsStateWithLifecycle()
@@ -113,34 +113,31 @@ fun LibraryContentScreen(
     }
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.displayCutout)
-            .background(MaterialTheme.colorScheme.background)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.displayCutout)
+                .background(MaterialTheme.colorScheme.background)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             LibraryContentTopBar(
                 title = uiState.libraryName,
                 backgroundOpacity = 1f,
                 userProfileImageUrl = uiState.userProfileImageUrl,
                 onProfileClick = onProfileClick,
-                navController = navController
+                navController = navController,
             )
 
             FilterRow(
                 currentFilter = uiState.currentFilter,
-                onFilterSelected = { viewModel.updateFilter(it) }
+                onFilterSelected = { viewModel.updateFilter(it) },
             )
 
             when {
                 uiState.isLoading -> {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 16.dp),
-                        contentAlignment = Alignment.Center
+                        modifier = Modifier.fillMaxSize().padding(top = 16.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
                     }
@@ -148,37 +145,31 @@ fun LibraryContentScreen(
 
                 uiState.error != null -> {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 16.dp),
-                        contentAlignment = Alignment.Center
+                        modifier = Modifier.fillMaxSize().padding(top = 16.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        ErrorMessage(
-                            message = uiState.error!!
-                        )
+                        ErrorMessage(message = uiState.error!!)
                     }
                 }
 
-                lazyPagingItems.itemCount == 0 && lazyPagingItems.loadState.refresh !is LoadState.Loading -> {
+                lazyPagingItems.itemCount == 0 &&
+                    lazyPagingItems.loadState.refresh !is LoadState.Loading -> {
                     val selectedLetter = uiState.selectedLetter
                     if (selectedLetter != null) {
                         Row(modifier = Modifier.fillMaxSize()) {
                             Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxSize()
-                                    .padding(top = 16.dp),
-                                contentAlignment = Alignment.Center
+                                modifier = Modifier.weight(1f).fillMaxSize().padding(top = 16.dp),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 EmptyLetterFilterMessage(
                                     letter = selectedLetter,
-                                    onClearFilter = { viewModel.clearLetterFilter() }
+                                    onClearFilter = { viewModel.clearLetterFilter() },
                                 )
                             }
 
                             Box(
                                 modifier = Modifier.fillMaxHeight(),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 AlphabetScroller(
                                     onLetterSelected = { letter ->
@@ -186,29 +177,27 @@ fun LibraryContentScreen(
                                         viewModel.scrollToLetter(letter)
                                     },
                                     selectedLetter = uiState.selectedLetter,
-                                    modifier = Modifier
-                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                                    modifier =
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                        ),
                                 )
                             }
                         }
                     } else if (uiState.currentFilter != FilterType.ALL) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 16.dp),
-                            contentAlignment = Alignment.Center
+                            modifier = Modifier.fillMaxSize().padding(top = 16.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
                             EmptyFilterMessage(
                                 filterType = uiState.currentFilter,
-                                onClearFilter = { viewModel.updateFilter(FilterType.ALL) }
+                                onClearFilter = { viewModel.updateFilter(FilterType.ALL) },
                             )
                         }
                     } else {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 16.dp),
-                            contentAlignment = Alignment.Center
+                            modifier = Modifier.fillMaxSize().padding(top = 16.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
                             EmptyLibraryMessage()
                         }
@@ -220,19 +209,20 @@ fun LibraryContentScreen(
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
                             state = gridState,
-                            contentPadding = PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 16.dp,
-                                bottom = 80.dp
-                            ),
+                            contentPadding =
+                                PaddingValues(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    top = 16.dp,
+                                    bottom = 80.dp,
+                                ),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         ) {
                             items(
                                 count = lazyPagingItems.itemCount,
-                                key = { index -> lazyPagingItems[index]?.id ?: index }
+                                key = { index -> lazyPagingItems[index]?.id ?: index },
                             ) { index ->
                                 lazyPagingItems[index]?.let { item ->
                                     MediaItemGridCard(
@@ -240,7 +230,7 @@ fun LibraryContentScreen(
                                         onClick = {
                                             viewModel.onItemClick(item)
                                             onItemClick(item)
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -250,10 +240,8 @@ fun LibraryContentScreen(
                                     loadState.append is LoadState.Loading -> {
                                         item {
                                             Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(16.dp),
-                                                contentAlignment = Alignment.Center
+                                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                                contentAlignment = Alignment.Center,
                                             ) {
                                                 CircularProgressIndicator(
                                                     modifier = Modifier.size(32.dp)
@@ -265,14 +253,10 @@ fun LibraryContentScreen(
                                     loadState.append is LoadState.Error -> {
                                         item {
                                             Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(16.dp),
-                                                contentAlignment = Alignment.Center
+                                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                                contentAlignment = Alignment.Center,
                                             ) {
-                                                Button(onClick = { retry() }) {
-                                                    Text("Retry")
-                                                }
+                                                Button(onClick = { retry() }) { Text("Retry") }
                                             }
                                         }
                                     }
@@ -282,7 +266,7 @@ fun LibraryContentScreen(
 
                         Box(
                             modifier = Modifier.fillMaxHeight(),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
                             AlphabetScroller(
                                 onLetterSelected = { letter ->
@@ -290,8 +274,10 @@ fun LibraryContentScreen(
                                     viewModel.scrollToLetter(letter)
                                 },
                                 selectedLetter = uiState.selectedLetter,
-                                modifier = Modifier
-                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                                modifier =
+                                    Modifier.background(
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                    ),
                             )
                         }
                     }
@@ -301,14 +287,11 @@ fun LibraryContentScreen(
 
         FloatingActionButton(
             onClick = { showSortDialog = true },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-                .padding(end = 24.dp)
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).padding(end = 24.dp),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_arrows_sort),
-                contentDescription = stringResource(R.string.cd_sort_fab)
+                contentDescription = stringResource(R.string.cd_sort_fab),
             )
         }
     }
@@ -319,7 +302,7 @@ fun LibraryContentScreen(
             onSortSelected = { sortBy, descending ->
                 viewModel.updateSort(sortBy, descending)
                 showSortDialog = false
-            }
+            },
         )
     }
 }
@@ -331,16 +314,14 @@ private fun LibraryContentTopBar(
     backgroundOpacity: Float = 0f,
     navController: NavController,
     userProfileImageUrl: String? = null,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
 ) {
     TopAppBar(
         title = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground,
             )
         },
         actions = {
@@ -349,35 +330,31 @@ private fun LibraryContentTopBar(
                     val route = Destination.createSearchRoute()
                     navController.navigate(route)
                 },
-                modifier = Modifier
-                    .height(48.dp)
-                    .width(120.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
+                modifier = Modifier.height(48.dp).width(120.dp),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
                 shape = RoundedCornerShape(24.dp),
-                contentPadding = PaddingValues(0.dp)
+                contentPadding = PaddingValues(0.dp),
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_search),
                             contentDescription = stringResource(R.string.action_search),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                         Text(
                             text = stringResource(R.string.action_search),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodyMedium,
                             fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                     }
                 }
@@ -385,19 +362,13 @@ private fun LibraryContentTopBar(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            IconButton(
-                onClick = onProfileClick,
-                modifier = Modifier.size(48.dp)
-            ) {
+            IconButton(onClick = onProfileClick, modifier = Modifier.size(48.dp)) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            MaterialTheme.colorScheme.surfaceVariant,
-                            CircleShape
-                        )
-                        .clip(CircleShape),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier.fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                            .clip(CircleShape),
+                    contentAlignment = Alignment.Center,
                 ) {
                     if (userProfileImageUrl != null) {
                         AsyncImage(
@@ -406,23 +377,25 @@ private fun LibraryContentTopBar(
                             targetWidth = 48.dp,
                             targetHeight = 48.dp,
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
                         )
                     } else {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_user_circle),
                             contentDescription = stringResource(R.string.cd_profile),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(32.dp),
                         )
                     }
                 }
             }
             Spacer(modifier = Modifier.width(16.dp))
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background.copy(alpha = backgroundOpacity)
-        )
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor =
+                    MaterialTheme.colorScheme.background.copy(alpha = backgroundOpacity)
+            ),
     )
 }
 
@@ -430,20 +403,16 @@ private fun LibraryContentTopBar(
 private fun MediaItemGridCard(
     item: AfinityItem,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = modifier.fillMaxWidth().clickable { onClick() },
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(2f / 3f),
+            modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f),
             shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box {
                 AsyncImage(
@@ -453,60 +422,61 @@ private fun MediaItemGridCard(
                     targetWidth = 160.dp,
                     targetHeight = 240.dp,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
 
                 when {
                     item.played -> {
                         Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(24.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primary,
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier.align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .size(24.dp)
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_check),
                                 contentDescription = stringResource(R.string.cd_watched_status),
                                 tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(16.dp),
                             )
                         }
                     }
 
                     item is AfinityShow -> {
-                        val episodeText = when {
-                            item.unplayedItemCount != null && item.unplayedItemCount > 0 ->
-                                "${item.unplayedItemCount}"
+                        val episodeText =
+                            when {
+                                item.unplayedItemCount != null && item.unplayedItemCount > 0 ->
+                                    "${item.unplayedItemCount}"
 
-                            item.episodeCount != null && item.episodeCount > 0 ->
-                                "${item.episodeCount}"
+                                item.episodeCount != null && item.episodeCount > 0 ->
+                                    "${item.episodeCount}"
 
-                            else -> null
-                        }
+                                else -> null
+                            }
 
                         episodeText?.let { text ->
                             Surface(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(8.dp),
+                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                                 shape = RoundedCornerShape(4.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
                             ) {
                                 Text(
-                                    text = if (text.toIntOrNull() != null && text.toInt() > 99)
-                                        stringResource(R.string.home_episode_count_plus)
-                                    else
-                                        stringResource(R.string.home_episode_count_fmt, text.toIntOrNull() ?: 0),
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
+                                    text =
+                                        if (text.toIntOrNull() != null && text.toInt() > 99)
+                                            stringResource(R.string.home_episode_count_plus)
+                                        else
+                                            stringResource(
+                                                R.string.home_episode_count_fmt,
+                                                text.toIntOrNull() ?: 0,
+                                            ),
+                                    style =
+                                        MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Bold
+                                        ),
                                     color = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 )
                             }
                         }
@@ -517,44 +487,42 @@ private fun MediaItemGridCard(
 
         Text(
             text = item.name,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Medium
-            ),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Start,
         )
 
         when (item) {
             is AfinityMovie -> {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     item.productionYear?.let { year ->
                         Text(
                             text = year.toString(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
                     item.communityRating?.let { rating ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
                                 contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -562,24 +530,26 @@ private fun MediaItemGridCard(
                     item.criticRating?.let { rtRating ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Icon(
-                                painter = painterResource(
-                                    id = if (rtRating > 60) {
-                                        R.drawable.ic_rotten_tomato_fresh
-                                    } else {
-                                        R.drawable.ic_rotten_tomato_rotten
-                                    }
-                                ),
+                                painter =
+                                    painterResource(
+                                        id =
+                                            if (rtRating > 60) {
+                                                R.drawable.ic_rotten_tomato_fresh
+                                            } else {
+                                                R.drawable.ic_rotten_tomato_rotten
+                                            }
+                                    ),
                                 contentDescription = stringResource(R.string.cd_rotten_tomatoes),
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(12.dp)
+                                modifier = Modifier.size(12.dp),
                             )
                             Text(
                                 text = "${rtRating.toInt()}%",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -589,31 +559,31 @@ private fun MediaItemGridCard(
             is AfinityShow -> {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     item.productionYear?.let { year ->
                         Text(
                             text = year.toString(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
                     item.communityRating?.let { rating ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
                                 contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -624,52 +594,47 @@ private fun MediaItemGridCard(
 }
 
 @Composable
-private fun ErrorMessage(
-    message: String,
-    modifier: Modifier = Modifier
-) {
+private fun ErrorMessage(message: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = stringResource(R.string.home_error_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
 
 @Composable
-private fun EmptyLibraryMessage(
-    modifier: Modifier = Modifier
-) {
+private fun EmptyLibraryMessage(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = stringResource(R.string.library_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Text(
             text = stringResource(R.string.library_empty_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -678,30 +643,28 @@ private fun EmptyLibraryMessage(
 private fun EmptyLetterFilterMessage(
     letter: String,
     onClearFilter: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = stringResource(R.string.library_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Text(
             text = stringResource(R.string.library_empty_letter_fmt, letter),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
-        Button(onClick = onClearFilter) {
-            Text(stringResource(R.string.action_show_all))
-        }
+        Button(onClick = onClearFilter) { Text(stringResource(R.string.action_show_all)) }
     }
 }
 
@@ -709,65 +672,55 @@ private fun EmptyLetterFilterMessage(
 private fun EmptyFilterMessage(
     filterType: FilterType,
     onClearFilter: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val filterMessage = when (filterType) {
-        FilterType.WATCHED -> stringResource(R.string.filter_empty_watched)
-        FilterType.UNWATCHED -> stringResource(R.string.filter_empty_unwatched)
-        FilterType.WATCHLIST -> stringResource(R.string.filter_empty_watchlist)
-        FilterType.FAVORITES -> stringResource(R.string.filter_empty_favorites)
-        FilterType.ALL -> stringResource(R.string.filter_empty_all)
-    }
+    val filterMessage =
+        when (filterType) {
+            FilterType.WATCHED -> stringResource(R.string.filter_empty_watched)
+            FilterType.UNWATCHED -> stringResource(R.string.filter_empty_unwatched)
+            FilterType.WATCHLIST -> stringResource(R.string.filter_empty_watchlist)
+            FilterType.FAVORITES -> stringResource(R.string.filter_empty_favorites)
+            FilterType.ALL -> stringResource(R.string.filter_empty_all)
+        }
 
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = stringResource(R.string.library_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Text(
             text = filterMessage,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
-        Button(onClick = onClearFilter) {
-            Text(stringResource(R.string.action_clear_filter))
-        }
+        Button(onClick = onClearFilter) { Text(stringResource(R.string.action_clear_filter)) }
     }
 }
 
 @Composable
-private fun SortDialog(
-    onDismiss: () -> Unit,
-    onSortSelected: (SortBy, Boolean) -> Unit
-) {
+private fun SortDialog(onDismiss: () -> Unit, onSortSelected: (SortBy, Boolean) -> Unit) {
     var isAscending by remember { mutableStateOf(true) }
     var selectedSort by remember { mutableStateOf(SortBy.NAME) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(stringResource(R.string.sort_title))
-        },
+        title = { Text(stringResource(R.string.sort_title)) },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                SingleChoiceSegmentedButtonRow(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     SegmentedButton(
                         selected = isAscending,
                         onClick = { isAscending = true },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
                     ) {
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.sort_ascending))
@@ -776,7 +729,7 @@ private fun SortDialog(
                     SegmentedButton(
                         selected = !isAscending,
                         onClick = { isAscending = false },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                     ) {
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.sort_descending))
@@ -787,33 +740,45 @@ private fun SortDialog(
                     SortOptionRow(
                         stringResource(R.string.sort_option_title),
                         SortBy.NAME,
-                        selectedSort
-                    ) { selectedSort = it }
+                        selectedSort,
+                    ) {
+                        selectedSort = it
+                    }
                     SortOptionRow(
                         stringResource(R.string.sort_option_imdb),
                         SortBy.IMDB_RATING,
-                        selectedSort
-                    ) { selectedSort = it }
+                        selectedSort,
+                    ) {
+                        selectedSort = it
+                    }
                     SortOptionRow(
                         stringResource(R.string.sort_option_parental),
                         SortBy.PARENTAL_RATING,
-                        selectedSort
-                    ) { selectedSort = it }
+                        selectedSort,
+                    ) {
+                        selectedSort = it
+                    }
                     SortOptionRow(
                         stringResource(R.string.sort_option_date_added),
                         SortBy.DATE_ADDED,
-                        selectedSort
-                    ) { selectedSort = it }
+                        selectedSort,
+                    ) {
+                        selectedSort = it
+                    }
                     SortOptionRow(
                         stringResource(R.string.sort_option_date_played),
                         SortBy.DATE_PLAYED,
-                        selectedSort
-                    ) { selectedSort = it }
+                        selectedSort,
+                    ) {
+                        selectedSort = it
+                    }
                     SortOptionRow(
                         stringResource(R.string.sort_option_release_date),
                         SortBy.RELEASE_DATE,
-                        selectedSort
-                    ) { selectedSort = it }
+                        selectedSort,
+                    ) {
+                        selectedSort = it
+                    }
                 }
             }
         },
@@ -828,10 +793,8 @@ private fun SortDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
     )
 }
 
@@ -840,24 +803,15 @@ private fun SortOptionRow(
     label: String,
     sortBy: SortBy,
     selectedSort: SortBy,
-    onSelect: (SortBy) -> Unit
+    onSelect: (SortBy) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onSelect(sortBy) }
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth().clickable { onSelect(sortBy) }.padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(
-            selected = selectedSort == sortBy,
-            onClick = { onSelect(sortBy) }
-        )
+        RadioButton(selected = selectedSort == sortBy, onClick = { onSelect(sortBy) })
         Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge
-        )
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -865,65 +819,66 @@ private fun SortOptionRow(
 private fun FilterRow(
     currentFilter: FilterType,
     onFilterSelected: (FilterType) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val filters = listOf(
-        FilterType.ALL to stringResource(R.string.filter_all),
-        FilterType.WATCHED to stringResource(R.string.filter_watched),
-        FilterType.UNWATCHED to stringResource(R.string.filter_unwatched),
-        FilterType.WATCHLIST to stringResource(R.string.filter_watchlist),
-        FilterType.FAVORITES to stringResource(R.string.filter_favorites)
-    )
+    val filters =
+        listOf(
+            FilterType.ALL to stringResource(R.string.filter_all),
+            FilterType.WATCHED to stringResource(R.string.filter_watched),
+            FilterType.UNWATCHED to stringResource(R.string.filter_unwatched),
+            FilterType.WATCHLIST to stringResource(R.string.filter_watchlist),
+            FilterType.FAVORITES to stringResource(R.string.filter_favorites),
+        )
 
     LazyRow(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp),
     ) {
         items(filters) { (filterType, label) ->
             FilterChip(
                 selected = currentFilter == filterType,
-                onClick = {
-                    onFilterSelected(filterType)
-                },
+                onClick = { onFilterSelected(filterType) },
                 label = { Text(label) },
-                leadingIcon = if (currentFilter == filterType) {
-                    when (filterType) {
-                        FilterType.FAVORITES -> {
-                            {
-                                Icon(
-                                    painterResource(id = R.drawable.ic_favorite_filled),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                leadingIcon =
+                    if (currentFilter == filterType) {
+                        when (filterType) {
+                            FilterType.FAVORITES -> {
+                                {
+                                    Icon(
+                                        painterResource(id = R.drawable.ic_favorite_filled),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
                             }
-                        }
 
-                        FilterType.WATCHLIST -> {
-                            {
-                                Icon(
-                                    painterResource(id = R.drawable.ic_bookmark_filled),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                            FilterType.WATCHLIST -> {
+                                {
+                                    Icon(
+                                        painterResource(id = R.drawable.ic_bookmark_filled),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
                             }
-                        }
 
-                        else -> {
-                            {
-                                Icon(
-                                    painterResource(id = R.drawable.ic_circle_check),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                            else -> {
+                                {
+                                    Icon(
+                                        painterResource(id = R.drawable.ic_circle_check),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
                             }
                         }
-                    }
-                } else null,
-                shape = RoundedCornerShape(50)
+                    } else null,
+                shape = RoundedCornerShape(50),
             )
         }
     }
@@ -933,36 +888,31 @@ private fun FilterRow(
 private fun AlphabetScroller(
     selectedLetter: String?,
     onLetterSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val letters = listOf("#") + ('A'..'Z').map { it.toString() }
 
     LazyColumn(
-        modifier = modifier
-            .width(32.dp)
-            .padding(vertical = 8.dp),
+        modifier = modifier.width(32.dp).padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        items(
-            items = letters,
-            key = { letter -> letter }
-        ) { letter ->
+        items(items = letters, key = { letter -> letter }) { letter ->
             val isSelected = selectedLetter == letter
             Text(
                 text = letter,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                ),
-                color = if (isSelected)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
+                style =
+                    MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    ),
+                color =
+                    if (isSelected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .clickable { onLetterSelected(letter) }
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                    .fillMaxWidth()
+                modifier =
+                    Modifier.clickable { onLetterSelected(letter) }
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .fillMaxWidth(),
             )
         }
     }

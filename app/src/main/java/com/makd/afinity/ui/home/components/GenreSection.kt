@@ -55,7 +55,7 @@ fun GenreSection(
     onVisible: () -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var hasBeenVisible by remember { mutableStateOf(false) }
 
@@ -71,16 +71,12 @@ fun GenreSection(
 
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
-    Column(
-        modifier = modifier.padding(horizontal = 14.dp)
-    ) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(R.string.home_genre_movies_title, genre),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         if (isLoading && movies.isEmpty()) {
@@ -89,16 +85,13 @@ fun GenreSection(
             LazyRow(
                 modifier = Modifier.height(fixedRowHeight),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 0.dp)
+                contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
-                items(
-                    items = movies,
-                    key = { movie -> "genre_${genre}_${movie.id}" }
-                ) { movie ->
+                items(items = movies, key = { movie -> "genre_${genre}_${movie.id}" }) { movie ->
                     MediaItemCard(
                         item = movie,
                         onClick = { onItemClick(movie) },
-                        cardWidth = cardWidth
+                        cardWidth = cardWidth,
                     )
                 }
             }
@@ -107,42 +100,36 @@ fun GenreSection(
 }
 
 @Composable
-private fun GenreSkeletonRow(
-    cardWidth: Dp,
-    height: Dp
-) {
+private fun GenreSkeletonRow(cardWidth: Dp, height: Dp) {
     LazyRow(
         modifier = Modifier.height(height),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
         items(6) {
             Column(modifier = Modifier.width(cardWidth)) {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+                    modifier =
+                        Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
                     shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .shimmerEffect()
-                    )
+                    Box(modifier = Modifier.fillMaxSize().shimmerEffect())
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Box(
-                    modifier = Modifier
-                        .width(cardWidth * 0.8f)
-                        .height(14.dp)
-                        .padding(horizontal = 4.dp)
-                        .shimmerEffect()
+                    modifier =
+                        Modifier.width(cardWidth * 0.8f)
+                            .height(14.dp)
+                            .padding(horizontal = 4.dp)
+                            .shimmerEffect()
                 )
             }
         }
@@ -153,30 +140,31 @@ private fun GenreSkeletonRow(
 fun Modifier.shimmerEffect(): Modifier = composed {
     val transition = rememberInfiniteTransition(label = "shimmer")
 
-    val translateAnimation by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = LinearEasing
-            ),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerTranslate"
-    )
+    val translateAnimation by
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1000f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 1000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+            label = "shimmerTranslate",
+        )
 
-    val shimmerColors = listOf(
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-    )
+    val shimmerColors =
+        listOf(
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+        )
 
-    val brush = Brush.linearGradient(
-        colors = shimmerColors,
-        start = Offset.Zero,
-        end = Offset(x = translateAnimation, y = translateAnimation)
-    )
+    val brush =
+        Brush.linearGradient(
+            colors = shimmerColors,
+            start = Offset.Zero,
+            end = Offset(x = translateAnimation, y = translateAnimation),
+        )
 
     background(brush)
 }

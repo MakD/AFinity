@@ -8,8 +8,7 @@ import java.util.UUID
 
 @Entity(tableName = "downloads")
 data class DownloadDto(
-    @PrimaryKey
-    val id: UUID,
+    @PrimaryKey val id: UUID,
     val itemId: UUID,
     val itemName: String,
     val itemType: String,
@@ -24,7 +23,7 @@ data class DownloadDto(
     val createdAt: Long,
     val updatedAt: Long,
     val serverId: String,
-    val userId: UUID
+    val userId: UUID,
 )
 
 fun DownloadDto.toDownloadInfo(): DownloadInfo {

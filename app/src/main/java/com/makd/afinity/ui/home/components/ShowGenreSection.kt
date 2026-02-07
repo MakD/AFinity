@@ -45,7 +45,7 @@ fun ShowGenreSection(
     onVisible: () -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var hasBeenVisible by remember { mutableStateOf(false) }
 
@@ -63,11 +63,9 @@ fun ShowGenreSection(
     Column(modifier = modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(R.string.home_genre_shows_title, genre),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         if (isLoading && shows.isEmpty()) {
@@ -76,15 +74,13 @@ fun ShowGenreSection(
             LazyRow(
                 modifier = Modifier.height(fixedRowHeight),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 0.dp)
+                contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
-                items(
-                    shows,
-                    key = { "show_genre_${genre}_${it.id}" }) { show ->
+                items(shows, key = { "show_genre_${genre}_${it.id}" }) { show ->
                     MediaItemCard(
                         item = show,
                         onClick = { onItemClick(show) },
-                        cardWidth = cardWidth
+                        cardWidth = cardWidth,
                     )
                 }
             }
@@ -93,42 +89,36 @@ fun ShowGenreSection(
 }
 
 @Composable
-private fun ShowGenreSkeletonRow(
-    cardWidth: Dp,
-    height: Dp
-) {
+private fun ShowGenreSkeletonRow(cardWidth: Dp, height: Dp) {
     LazyRow(
         modifier = Modifier.height(height),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
+        contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
         items(6) {
             Column(modifier = Modifier.width(cardWidth)) {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+                    modifier =
+                        Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
                     shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .shimmerEffect()
-                    )
+                    Box(modifier = Modifier.fillMaxSize().shimmerEffect())
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Box(
-                    modifier = Modifier
-                        .width(cardWidth * 0.8f)
-                        .height(14.dp)
-                        .padding(horizontal = 4.dp)
-                        .shimmerEffect()
+                    modifier =
+                        Modifier.width(cardWidth * 0.8f)
+                            .height(14.dp)
+                            .padding(horizontal = 4.dp)
+                            .shimmerEffect()
                 )
             }
         }

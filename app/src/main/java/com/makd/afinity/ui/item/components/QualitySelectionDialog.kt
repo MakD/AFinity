@@ -38,22 +38,17 @@ fun QualitySelectionDialog(
     sources: List<AfinitySource>,
     onSourceSelected: (AfinitySource) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var selectedSource by remember { mutableStateOf<AfinitySource?>(null) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp)
-            ) {
+        Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+            Column(modifier = Modifier.padding(24.dp)) {
                 Text(
                     text = stringResource(R.string.quality_dialog_title),
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -61,32 +56,25 @@ fun QualitySelectionDialog(
                 Text(
                     text = stringResource(R.string.quality_dialog_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(sources) { source ->
                         QualityOption(
                             source = source,
                             isSelected = selectedSource == source,
-                            onSelect = { selectedSource = source }
+                            onSelect = { selectedSource = source },
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.action_cancel))
-                    }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
 
                     Spacer(modifier = Modifier.width(8.dp))
 
@@ -95,7 +83,7 @@ fun QualitySelectionDialog(
                             selectedSource?.let { onSourceSelected(it) }
                             onDismiss()
                         },
-                        enabled = selectedSource != null
+                        enabled = selectedSource != null,
                     ) {
                         Text(stringResource(R.string.action_download))
                     }
@@ -110,37 +98,33 @@ private fun QualityOption(
     source: AfinitySource,
     isSelected: Boolean,
     onSelect: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onSelect),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onSelect),
         shape = RoundedCornerShape(8.dp),
-        color = if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        },
-        tonalElevation = if (isSelected) 4.dp else 0.dp
+        color =
+            if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            },
+        tonalElevation = if (isSelected) 4.dp else 0.dp,
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                painter = if (isSelected) painterResource(id = R.drawable.ic_radio_button_checked) else painterResource(
-                    id = R.drawable.ic_radio_button_unchecked
-                ),
-                contentDescription = if (isSelected)
-                    stringResource(R.string.cd_selected)
-                else
-                    stringResource(R.string.cd_not_selected),
-                tint = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
+                painter =
+                    if (isSelected) painterResource(id = R.drawable.ic_radio_button_checked)
+                    else painterResource(id = R.drawable.ic_radio_button_unchecked),
+                contentDescription =
+                    if (isSelected) stringResource(R.string.cd_selected)
+                    else stringResource(R.string.cd_not_selected),
+                tint =
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -149,22 +133,23 @@ private fun QualityOption(
                 Text(
                     text = source.name,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 val sizeInMB = source.size / (1024 * 1024)
-                val sizeText = if (sizeInMB > 1024) {
-                    stringResource(R.string.file_size_gb, sizeInMB / 1024.0)
-                } else {
-                    stringResource(R.string.file_size_mb, sizeInMB)
-                }
+                val sizeText =
+                    if (sizeInMB > 1024) {
+                        stringResource(R.string.file_size_gb, sizeInMB / 1024.0)
+                    } else {
+                        stringResource(R.string.file_size_mb, sizeInMB)
+                    }
 
                 Text(
                     text = sizeText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

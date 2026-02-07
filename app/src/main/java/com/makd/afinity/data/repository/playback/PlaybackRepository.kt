@@ -1,7 +1,7 @@
 package com.makd.afinity.data.repository.playback
 
-import org.jellyfin.sdk.model.api.PlaybackInfoDto
 import java.util.UUID
+import org.jellyfin.sdk.model.api.PlaybackInfoDto
 
 interface PlaybackRepository {
 
@@ -11,7 +11,7 @@ interface PlaybackRepository {
         maxAudioChannels: Int? = null,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
-        mediaSourceId: String? = null
+        mediaSourceId: String? = null,
     ): PlaybackInfoDto?
 
     suspend fun getStreamUrl(
@@ -21,7 +21,7 @@ interface PlaybackRepository {
         subtitleStreamIndex: Int? = null,
         videoStreamIndex: Int? = null,
         maxStreamingBitrate: Int? = null,
-        startTimeTicks: Long? = null
+        startTimeTicks: Long? = null,
     ): String?
 
     suspend fun getMediaSources(
@@ -30,7 +30,7 @@ interface PlaybackRepository {
         maxAudioChannels: Int? = null,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
-        mediaSourceId: String? = null
+        mediaSourceId: String? = null,
     ): List<org.jellyfin.sdk.model.api.MediaSourceInfo>
 
     suspend fun reportPlaybackStart(
@@ -40,7 +40,7 @@ interface PlaybackRepository {
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         playMethod: String = "DirectPlay",
-        canSeek: Boolean = true
+        canSeek: Boolean = true,
     ): Boolean
 
     suspend fun reportPlaybackProgress(
@@ -53,7 +53,7 @@ interface PlaybackRepository {
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         playMethod: String = "DirectPlay",
-        repeatMode: String = "RepeatNone"
+        repeatMode: String = "RepeatNone",
     ): Boolean
 
     suspend fun reportPlaybackStop(
@@ -62,16 +62,20 @@ interface PlaybackRepository {
         positionTicks: Long,
         mediaSourceId: String,
         nextMediaType: String? = null,
-        playlistItemId: String? = null
+        playlistItemId: String? = null,
     ): Boolean
 
     suspend fun pingSession(sessionId: String): Boolean
+
     suspend fun getActiveSession(): String?
+
     suspend fun endSession(sessionId: String): Boolean
 
     suspend fun stopTranscoding(deviceId: String): Boolean
+
     suspend fun getTranscodingJob(deviceId: String): Any?
 
     suspend fun getBitrateTestBytes(size: Int): ByteArray?
+
     suspend fun detectMaxBitrate(): Int?
 }

@@ -7,11 +7,12 @@ enum class DiscoverCategory {
     UPCOMING_MOVIES,
     UPCOMING_TV;
 
-    fun getDisplayName(): String = when (this) {
-        TRENDING -> "Trending Now"
-        POPULAR_MOVIES -> "Popular Movies"
-        POPULAR_TV -> "Popular TV Shows"
-        UPCOMING_MOVIES -> "Upcoming Movies"
-        UPCOMING_TV -> "Upcoming TV Shows"
-    }
+    fun getDisplayName(): String =
+        when (this) {
+            TRENDING -> "Trending Now"
+            POPULAR_MOVIES -> "Popular Movies"
+            POPULAR_TV -> "Popular TV Shows"
+            UPCOMING_MOVIES -> "Upcoming Movies"
+            UPCOMING_TV -> "Upcoming TV Shows"
+        }
 }

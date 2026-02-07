@@ -84,16 +84,16 @@ import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.di.PreferencesEntryPoint
 import com.makd.afinity.ui.settings.SettingsViewModel
 import dagger.hilt.android.EntryPointAccessors
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerOptionsScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -101,12 +101,15 @@ fun PlayerOptionsScreen(
     val context = LocalContext.current
     val preferencesRepository = remember {
         EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            PreferencesEntryPoint::class.java
-        ).preferencesRepository()
+                context.applicationContext,
+                PreferencesEntryPoint::class.java,
+            )
+            .preferencesRepository()
     }
-    val subtitlePrefs by preferencesRepository.getSubtitlePreferencesFlow()
-        .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
+    val subtitlePrefs by
+        preferencesRepository
+            .getSubtitlePreferencesFlow()
+            .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
 
     Scaffold(
         topBar = {
@@ -114,33 +117,33 @@ fun PlayerOptionsScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.player_options_title),
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        )
+                        style =
+                            MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chevron_left),
-                            contentDescription = stringResource(R.string.cd_back)
+                            contentDescription = stringResource(R.string.cd_back),
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
             )
         },
         containerColor = MaterialTheme.colorScheme.surface,
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentPadding = PaddingValues(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             item {
                 SettingsGroup(title = stringResource(R.string.pref_group_engine)) {
@@ -149,7 +152,7 @@ fun PlayerOptionsScreen(
                         title = stringResource(R.string.pref_use_exoplayer_title),
                         subtitle = stringResource(R.string.pref_use_exoplayer_summary),
                         checked = uiState.useExoPlayer,
-                        onCheckedChange = viewModel::toggleUseExoPlayer
+                        onCheckedChange = viewModel::toggleUseExoPlayer,
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
@@ -157,7 +160,7 @@ fun PlayerOptionsScreen(
                         title = stringResource(R.string.pref_autoplay_title),
                         subtitle = stringResource(R.string.pref_autoplay_summary),
                         checked = uiState.autoPlay,
-                        onCheckedChange = viewModel::toggleAutoPlay
+                        onCheckedChange = viewModel::toggleAutoPlay,
                     )
                 }
             }
@@ -166,11 +169,11 @@ fun PlayerOptionsScreen(
                 AnimatedVisibility(
                     visible = !uiState.useExoPlayer,
                     enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
+                    exit = fadeOut() + shrinkVertically(),
                 ) {
                     SettingsGroup(
                         title = stringResource(R.string.pref_group_mpv),
-                        modifier = Modifier.padding(bottom = 24.dp)
+                        modifier = Modifier.padding(bottom = 24.dp),
                     ) {
                         SubtitleDropdownItem(
                             title = stringResource(R.string.pref_mpv_hwdec_title),
@@ -178,7 +181,7 @@ fun PlayerOptionsScreen(
                             options = MpvHwDec.entries.toList(),
                             onValueChange = viewModel::setMpvHwDec,
                             labelProvider = { it.getDisplayName() },
-                            icon = painterResource(id = R.drawable.ic_cpu)
+                            icon = painterResource(id = R.drawable.ic_cpu),
                         )
                         SettingsDivider()
                         SubtitleDropdownItem(
@@ -187,7 +190,7 @@ fun PlayerOptionsScreen(
                             options = MpvVideoOutput.entries.toList(),
                             onValueChange = viewModel::setMpvVideoOutput,
                             labelProvider = { it.getDisplayName() },
-                            icon = painterResource(id = R.drawable.ic_video_settings)
+                            icon = painterResource(id = R.drawable.ic_video_settings),
                         )
                         SettingsDivider()
                         SubtitleDropdownItem(
@@ -196,7 +199,7 @@ fun PlayerOptionsScreen(
                             options = MpvAudioOutput.entries.toList(),
                             onValueChange = viewModel::setMpvAudioOutput,
                             labelProvider = { it.getDisplayName() },
-                            icon = painterResource(id = R.drawable.ic_audio)
+                            icon = painterResource(id = R.drawable.ic_audio),
                         )
                     }
                 }
@@ -209,15 +212,16 @@ fun PlayerOptionsScreen(
                         subtitle = stringResource(R.string.pref_preferred_audio_language_summary),
                         selectedCode = uiState.preferredAudioLanguage,
                         onLanguageSelected = viewModel::setPreferredAudioLanguage,
-                        icon = painterResource(id = R.drawable.ic_language)
+                        icon = painterResource(id = R.drawable.ic_language),
                     )
                     SettingsDivider()
                     LanguageSelectorItem(
                         title = stringResource(R.string.pref_preferred_subtitle_language_title),
-                        subtitle = stringResource(R.string.pref_preferred_subtitle_language_summary),
+                        subtitle =
+                            stringResource(R.string.pref_preferred_subtitle_language_summary),
                         selectedCode = uiState.preferredSubtitleLanguage,
                         onLanguageSelected = viewModel::setPreferredSubtitleLanguage,
-                        icon = painterResource(id = R.drawable.ic_subtitles)
+                        icon = painterResource(id = R.drawable.ic_subtitles),
                     )
                 }
             }
@@ -229,7 +233,7 @@ fun PlayerOptionsScreen(
                         title = stringResource(R.string.pref_pip_gesture_title),
                         subtitle = stringResource(R.string.pref_pip_gesture_summary),
                         checked = uiState.pipGestureEnabled,
-                        onCheckedChange = viewModel::togglePipGesture
+                        onCheckedChange = viewModel::togglePipGesture,
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
@@ -237,7 +241,7 @@ fun PlayerOptionsScreen(
                         title = stringResource(R.string.pref_pip_background_title),
                         subtitle = stringResource(R.string.pref_pip_background_summary),
                         checked = uiState.pipBackgroundPlay,
-                        onCheckedChange = viewModel::togglePipBackgroundPlay
+                        onCheckedChange = viewModel::togglePipBackgroundPlay,
                     )
                 }
             }
@@ -249,7 +253,7 @@ fun PlayerOptionsScreen(
                         title = stringResource(R.string.pref_skip_intro_title),
                         subtitle = stringResource(R.string.pref_skip_intro_summary),
                         checked = uiState.skipIntroEnabled,
-                        onCheckedChange = viewModel::toggleSkipIntro
+                        onCheckedChange = viewModel::toggleSkipIntro,
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
@@ -257,7 +261,7 @@ fun PlayerOptionsScreen(
                         title = stringResource(R.string.pref_skip_outro_title),
                         subtitle = stringResource(R.string.pref_skip_outro_summary),
                         checked = uiState.skipOutroEnabled,
-                        onCheckedChange = viewModel::toggleSkipOutro
+                        onCheckedChange = viewModel::toggleSkipOutro,
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
@@ -265,12 +269,12 @@ fun PlayerOptionsScreen(
                         title = stringResource(R.string.pref_autohide_logo_title),
                         subtitle = stringResource(R.string.pref_autohide_logo_summary),
                         checked = uiState.logoAutoHide,
-                        onCheckedChange = viewModel::toggleLogoAutoHide
+                        onCheckedChange = viewModel::toggleLogoAutoHide,
                     )
                     SettingsDivider()
                     VideoZoomModeSelectorItem(
                         selectedMode = uiState.defaultVideoZoomMode,
-                        onModeSelected = viewModel::setDefaultVideoZoomMode
+                        onModeSelected = viewModel::setDefaultVideoZoomMode,
                     )
                 }
             }
@@ -280,7 +284,7 @@ fun PlayerOptionsScreen(
                     Box(modifier = Modifier.padding(16.dp)) {
                         SubtitlePreview(
                             subtitlePrefs = subtitlePrefs,
-                            useExoPlayer = uiState.useExoPlayer
+                            useExoPlayer = uiState.useExoPlayer,
                         )
                     }
 
@@ -293,7 +297,7 @@ fun PlayerOptionsScreen(
                             scope.launch(Dispatchers.IO) {
                                 preferencesRepository.setSubtitlePreferences(updatedPrefs)
                             }
-                        }
+                        },
                     )
                 }
             }
@@ -305,30 +309,24 @@ fun PlayerOptionsScreen(
 private fun SettingsGroup(
     title: String? = null,
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         if (title != null) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
             )
         }
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                content()
-            }
+            Column(modifier = Modifier.padding(vertical = 4.dp)) { content() }
         }
     }
 }
@@ -337,7 +335,7 @@ private fun SettingsGroup(
 private fun SettingsDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(start = 56.dp, end = 16.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
     )
 }
 
@@ -348,33 +346,31 @@ private fun SettingsItem(
     subtitle: String? = null,
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
-    trailing: @Composable (() -> Unit)? = null
+    trailing: @Composable (() -> Unit)? = null,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
             Icon(
                 painter = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
             Spacer(modifier = Modifier.width(16.dp))
         }
 
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
             if (subtitle != null) {
                 Text(
@@ -383,7 +379,7 @@ private fun SettingsItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
@@ -395,7 +391,7 @@ private fun SettingsItem(
                 painter = painterResource(id = R.drawable.ic_chevron_right),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
         }
     }
@@ -409,38 +405,40 @@ private fun SettingsSwitchItem(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     SettingsItem(
         icon = icon,
         title = title,
         subtitle = subtitle,
-        onClick = if (enabled) {
-            { onCheckedChange(!checked) }
-        } else null,
+        onClick =
+            if (enabled) {
+                { onCheckedChange(!checked) }
+            } else null,
         modifier = modifier,
         trailing = {
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 enabled = enabled,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    uncheckedBorderColor = MaterialTheme.colorScheme.outline
-                ),
-                modifier = Modifier.scale(0.8f)
+                colors =
+                    SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                    ),
+                modifier = Modifier.scale(0.8f),
             )
-        }
+        },
     )
 }
 
 @Composable
 private fun VideoZoomModeSelectorItem(
     selectedMode: VideoZoomMode,
-    onModeSelected: (VideoZoomMode) -> Unit
+    onModeSelected: (VideoZoomMode) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val modes = listOf(VideoZoomMode.FIT, VideoZoomMode.ZOOM, VideoZoomMode.STRETCH)
@@ -456,15 +454,15 @@ private fun VideoZoomModeSelectorItem(
                     painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
-            }
+            },
         )
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             modes.forEach { mode ->
                 DropdownMenuItem(
@@ -473,15 +471,16 @@ private fun VideoZoomModeSelectorItem(
                         onModeSelected(mode)
                         expanded = false
                     },
-                    leadingIcon = if (selectedMode == mode) {
-                        {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_check),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    } else null
+                    leadingIcon =
+                        if (selectedMode == mode) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
                 )
             }
         }
@@ -492,12 +491,12 @@ private fun VideoZoomModeSelectorItem(
 private fun SubtitleCustomizationContent(
     subtitlePrefs: SubtitlePreferences,
     useExoPlayer: Boolean,
-    onUpdate: (SubtitlePreferences) -> Unit
+    onUpdate: (SubtitlePreferences) -> Unit,
 ) {
     ColorPickerItem(
         title = stringResource(R.string.pref_sub_text_color),
         color = subtitlePrefs.textColor,
-        onColorChange = { onUpdate(subtitlePrefs.copy(textColor = it)) }
+        onColorChange = { onUpdate(subtitlePrefs.copy(textColor = it)) },
     )
 
     SettingsDivider()
@@ -506,7 +505,7 @@ private fun SubtitleCustomizationContent(
         title = stringResource(R.string.pref_sub_text_size),
         value = subtitlePrefs.textSize,
         valueRange = 0.5f..2.0f,
-        onValueChange = { onUpdate(subtitlePrefs.copy(textSize = it)) }
+        onValueChange = { onUpdate(subtitlePrefs.copy(textSize = it)) },
     )
 
     SettingsDivider()
@@ -516,13 +515,13 @@ private fun SubtitleCustomizationContent(
         title = stringResource(R.string.pref_sub_bold),
         subtitle = stringResource(R.string.pref_sub_bold_summary),
         checked = subtitlePrefs.bold,
-        onCheckedChange = { onUpdate(subtitlePrefs.copy(bold = it)) }
+        onCheckedChange = { onUpdate(subtitlePrefs.copy(bold = it)) },
     )
 
     AnimatedVisibility(
         visible = !useExoPlayer,
         enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
+        exit = fadeOut() + shrinkVertically(),
     ) {
         Column {
             SettingsDivider()
@@ -531,7 +530,7 @@ private fun SubtitleCustomizationContent(
                 title = stringResource(R.string.pref_sub_italic),
                 subtitle = stringResource(R.string.pref_sub_italic_summary),
                 checked = subtitlePrefs.italic,
-                onCheckedChange = { onUpdate(subtitlePrefs.copy(italic = it)) }
+                onCheckedChange = { onUpdate(subtitlePrefs.copy(italic = it)) },
             )
         }
     }
@@ -541,45 +540,48 @@ private fun SubtitleCustomizationContent(
     SubtitleDropdownItem(
         title = stringResource(R.string.pref_sub_outline_style),
         selectedOption = subtitlePrefs.outlineStyle,
-        options = SubtitleOutlineStyle.entries.filter { style ->
-            when (style) {
-                SubtitleOutlineStyle.BACKGROUND_BOX -> !useExoPlayer
-                SubtitleOutlineStyle.RAISED, SubtitleOutlineStyle.DEPRESSED -> useExoPlayer
-                else -> true
-            }
-        },
+        options =
+            SubtitleOutlineStyle.entries.filter { style ->
+                when (style) {
+                    SubtitleOutlineStyle.BACKGROUND_BOX -> !useExoPlayer
+                    SubtitleOutlineStyle.RAISED,
+                    SubtitleOutlineStyle.DEPRESSED -> useExoPlayer
+                    else -> true
+                }
+            },
         onValueChange = { style -> onUpdate(subtitlePrefs.copy(outlineStyle = style)) },
         labelProvider = { getSubtitleOutlineStyleDisplayName(it) },
-        icon = painterResource(id = R.drawable.ic_texture)
+        icon = painterResource(id = R.drawable.ic_texture),
     )
 
     AnimatedVisibility(
-        visible = subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE ||
+        visible =
+            subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE ||
                 subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW,
         enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
+        exit = fadeOut() + shrinkVertically(),
     ) {
         Column {
             SettingsDivider()
             ColorPickerItem(
-                title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW)
-                    stringResource(R.string.pref_sub_shadow_color)
-                else
-                    stringResource(R.string.pref_sub_outline_color),
+                title =
+                    if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW)
+                        stringResource(R.string.pref_sub_shadow_color)
+                    else stringResource(R.string.pref_sub_outline_color),
                 color = subtitlePrefs.outlineColor,
-                onColorChange = { onUpdate(subtitlePrefs.copy(outlineColor = it)) }
+                onColorChange = { onUpdate(subtitlePrefs.copy(outlineColor = it)) },
             )
 
             if (!useExoPlayer) {
                 SettingsDivider()
                 SubtitleSliderItem(
-                    title = if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW)
-                        stringResource(R.string.pref_sub_shadow_size)
-                    else
-                        stringResource(R.string.pref_sub_outline_size),
+                    title =
+                        if (subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW)
+                            stringResource(R.string.pref_sub_shadow_size)
+                        else stringResource(R.string.pref_sub_outline_size),
                     value = subtitlePrefs.outlineSize,
                     valueRange = 0f..10f,
-                    onValueChange = { onUpdate(subtitlePrefs.copy(outlineSize = it)) }
+                    onValueChange = { onUpdate(subtitlePrefs.copy(outlineSize = it)) },
                 )
             }
         }
@@ -588,14 +590,14 @@ private fun SubtitleCustomizationContent(
     AnimatedVisibility(
         visible = subtitlePrefs.outlineStyle == SubtitleOutlineStyle.BACKGROUND_BOX,
         enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
+        exit = fadeOut() + shrinkVertically(),
     ) {
         Column {
             SettingsDivider()
             ColorPickerItem(
                 title = stringResource(R.string.pref_sub_background_color),
                 color = subtitlePrefs.backgroundColor,
-                onColorChange = { onUpdate(subtitlePrefs.copy(backgroundColor = it)) }
+                onColorChange = { onUpdate(subtitlePrefs.copy(backgroundColor = it)) },
             )
         }
     }
@@ -603,14 +605,14 @@ private fun SubtitleCustomizationContent(
     AnimatedVisibility(
         visible = useExoPlayer,
         enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
+        exit = fadeOut() + shrinkVertically(),
     ) {
         Column {
             SettingsDivider()
             ColorPickerItem(
                 title = stringResource(R.string.pref_sub_window_color),
                 color = subtitlePrefs.windowColor,
-                onColorChange = { onUpdate(subtitlePrefs.copy(windowColor = it)) }
+                onColorChange = { onUpdate(subtitlePrefs.copy(windowColor = it)) },
             )
         }
     }
@@ -618,7 +620,7 @@ private fun SubtitleCustomizationContent(
     AnimatedVisibility(
         visible = !useExoPlayer,
         enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
+        exit = fadeOut() + shrinkVertically(),
     ) {
         Column {
             SettingsDivider()
@@ -628,7 +630,7 @@ private fun SubtitleCustomizationContent(
                 options = SubtitleVerticalPosition.entries,
                 onValueChange = { pos -> onUpdate(subtitlePrefs.copy(verticalPosition = pos)) },
                 labelProvider = { getSubtitleVerticalPositionDisplayName(it) },
-                icon = painterResource(id = R.drawable.ic_vertical)
+                icon = painterResource(id = R.drawable.ic_vertical),
             )
 
             SettingsDivider()
@@ -637,9 +639,11 @@ private fun SubtitleCustomizationContent(
                 title = stringResource(R.string.pref_sub_horizontal_align),
                 selectedOption = subtitlePrefs.horizontalAlignment,
                 options = SubtitleHorizontalAlignment.entries,
-                onValueChange = { align -> onUpdate(subtitlePrefs.copy(horizontalAlignment = align)) },
+                onValueChange = { align ->
+                    onUpdate(subtitlePrefs.copy(horizontalAlignment = align))
+                },
                 labelProvider = { getSubtitleHorizontalAlignmentDisplayName(it) },
-                icon = painterResource(id = R.drawable.ic_horizontal)
+                icon = painterResource(id = R.drawable.ic_horizontal),
             )
         }
     }
@@ -648,12 +652,13 @@ private fun SubtitleCustomizationContent(
         OutlinedButton(
             onClick = { onUpdate(SubtitlePreferences.DEFAULT) },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            colors =
+                ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_refresh),
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(R.string.action_reset_defaults))
@@ -662,32 +667,28 @@ private fun SubtitleCustomizationContent(
 }
 
 @Composable
-private fun ColorPickerItem(
-    title: String,
-    color: Int,
-    onColorChange: (Int) -> Unit
-) {
+private fun ColorPickerItem(title: String, color: Int, onColorChange: (Int) -> Unit) {
     var showDialog by remember { mutableStateOf(false) }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { showDialog = true }
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable { showDialog = true }
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(Color(color))
-                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+            modifier =
+                Modifier.size(32.dp)
+                    .clip(CircleShape)
+                    .background(Color(color))
+                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 
@@ -698,7 +699,7 @@ private fun ColorPickerItem(
                 onColorChange(it)
                 showDialog = false
             },
-            onDismiss = { showDialog = false }
+            onDismiss = { showDialog = false },
         )
     }
 }
@@ -708,33 +709,31 @@ private fun SubtitleSliderItem(
     title: String,
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
-    onValueChange: (Float) -> Unit
+    onValueChange: (Float) -> Unit,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = String.format(Locale.US, "%.1f", value),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
         }
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary
-            ),
-            modifier = Modifier.height(24.dp)
+            colors =
+                SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                ),
+            modifier = Modifier.height(24.dp),
         )
     }
 }
@@ -746,7 +745,7 @@ private fun <T> SubtitleDropdownItem(
     options: List<T>,
     onValueChange: (T) -> Unit,
     labelProvider: @Composable (T) -> String,
-    icon: Painter
+    icon: Painter,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -760,15 +759,15 @@ private fun <T> SubtitleDropdownItem(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
+            },
         )
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
@@ -777,15 +776,16 @@ private fun <T> SubtitleDropdownItem(
                         onValueChange(option)
                         expanded = false
                     },
-                    leadingIcon = if (selectedOption == option) {
-                        {
-                            Icon(
-                                painterResource(id = R.drawable.ic_check),
-                                null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    } else null
+                    leadingIcon =
+                        if (selectedOption == option) {
+                            {
+                                Icon(
+                                    painterResource(id = R.drawable.ic_check),
+                                    null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
                 )
             }
         }
@@ -798,7 +798,7 @@ private fun LanguageSelectorItem(
     subtitle: String,
     selectedCode: String,
     onLanguageSelected: (String) -> Unit,
-    icon: Painter
+    icon: Painter,
 ) {
     val context = LocalContext.current
     val languages = remember { context.resources.getStringArray(R.array.languages) }
@@ -818,9 +818,9 @@ private fun LanguageSelectorItem(
             Icon(
                 painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
+        },
     )
 
     if (showDialog) {
@@ -832,7 +832,7 @@ private fun LanguageSelectorItem(
                 onLanguageSelected(code)
                 showDialog = false
             },
-            onDismiss = { showDialog = false }
+            onDismiss = { showDialog = false },
         )
     }
 }
@@ -843,19 +843,20 @@ private fun LanguagePickerDialog(
     languageCodes: Array<String>,
     selectedCode: String,
     onSelect: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
-    val filteredIndices = remember(searchQuery) {
-        if (searchQuery.isBlank()) {
-            languages.indices.toList()
-        } else {
-            languages.indices.filter { i ->
-                languages[i].contains(searchQuery, ignoreCase = true)
+    val filteredIndices =
+        remember(searchQuery) {
+            if (searchQuery.isBlank()) {
+                languages.indices.toList()
+            } else {
+                languages.indices.filter { i ->
+                    languages[i].contains(searchQuery, ignoreCase = true)
+                }
             }
         }
-    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -863,90 +864,87 @@ private fun LanguagePickerDialog(
         text = {
             Column {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_search),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         androidx.compose.foundation.text.BasicTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurface
-                            ),
+                            textStyle =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurface
+                                ),
                             singleLine = true,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(vertical = 12.dp),
+                            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
                                     Text(
                                         text = stringResource(R.string.pref_language_search_hint),
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                                 innerTextField()
-                            }
+                            },
                         )
                         if (searchQuery.isNotEmpty()) {
                             IconButton(
                                 onClick = { searchQuery = "" },
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(32.dp),
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_clear),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(18.dp),
                                 )
                             }
                         }
                     }
                 }
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(400.dp)
-                ) {
+                LazyColumn(modifier = Modifier.fillMaxWidth().height(400.dp)) {
                     items(filteredIndices.size) { filterIdx ->
                         val idx = filteredIndices[filterIdx]
                         val isSelected = languageCodes[idx] == selectedCode
 
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .then(
-                                    if (isSelected) Modifier.background(
-                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                    ) else Modifier
-                                )
-                                .clickable { onSelect(languageCodes[idx]) }
-                                .padding(horizontal = 12.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .then(
+                                        if (isSelected)
+                                            Modifier.background(
+                                                MaterialTheme.colorScheme.primaryContainer.copy(
+                                                    alpha = 0.3f
+                                                )
+                                            )
+                                        else Modifier
+                                    )
+                                    .clickable { onSelect(languageCodes[idx]) }
+                                    .padding(horizontal = 12.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             if (isSelected) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_check),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(20.dp),
                                 )
                             } else {
                                 Spacer(modifier = Modifier.size(20.dp))
@@ -955,8 +953,9 @@ private fun LanguagePickerDialog(
                             Text(
                                 text = languages[idx],
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface
+                                color =
+                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     }
@@ -965,10 +964,8 @@ private fun LanguagePickerDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
     )
 }
 
@@ -976,17 +973,23 @@ private fun LanguagePickerDialog(
 private fun SimpleColorPickerDialog(
     initialColor: Int,
     onColorSelected: (Int) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
-    val presetColors = listOf(
-        Color.WHITE, Color.BLACK, Color.RED, Color.GREEN, Color.BLUE,
-        Color.YELLOW, Color.CYAN, Color.MAGENTA, Color.GRAY,
-        Color.TRANSPARENT
-    )
+    val presetColors =
+        listOf(
+            Color.WHITE,
+            Color.BLACK,
+            Color.RED,
+            Color.GREEN,
+            Color.BLUE,
+            Color.YELLOW,
+            Color.CYAN,
+            Color.MAGENTA,
+            Color.GRAY,
+            Color.TRANSPARENT,
+        )
 
-    var hexInput by remember {
-        mutableStateOf(String.format("#%08X", initialColor))
-    }
+    var hexInput by remember { mutableStateOf(String.format("#%08X", initialColor)) }
     var isValidHex by remember { mutableStateOf(true) }
 
     fun parseHexColor(hex: String): Int? {
@@ -1006,36 +1009,34 @@ private fun SimpleColorPickerDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.color_picker_title)) },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column {
                     Text(
                         stringResource(R.string.color_picker_presets),
                         style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        modifier = Modifier.padding(bottom = 8.dp),
                     )
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         presetColors.forEach { presetColor ->
                             Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(presetColor))
-                                    .border(
-                                        2.dp,
-                                        if (presetColor == initialColor) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.outline
-                                        },
-                                        CircleShape
-                                    )
-                                    .clickable { onColorSelected(presetColor) }
+                                modifier =
+                                    Modifier.size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(presetColor))
+                                        .border(
+                                            2.dp,
+                                            if (presetColor == initialColor) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else {
+                                                MaterialTheme.colorScheme.outline
+                                            },
+                                            CircleShape,
+                                        )
+                                        .clickable { onColorSelected(presetColor) }
                             )
                         }
                     }
@@ -1043,17 +1044,15 @@ private fun SimpleColorPickerDialog(
 
                 HorizontalDivider()
 
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         stringResource(R.string.color_picker_custom),
-                        style = MaterialTheme.typography.titleSmall
+                        style = MaterialTheme.typography.titleSmall,
                     )
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         OutlinedTextField(
                             value = hexInput,
@@ -1065,45 +1064,40 @@ private fun SimpleColorPickerDialog(
                             label = { Text(stringResource(R.string.color_picker_hex_label)) },
                             placeholder = { Text(stringResource(R.string.color_picker_hex_hint)) },
                             isError = !isValidHex,
-                            supportingText = if (!isValidHex) {
-                                {
-                                    Text(
-                                        stringResource(R.string.color_picker_invalid),
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            } else null,
+                            supportingText =
+                                if (!isValidHex) {
+                                    {
+                                        Text(
+                                            stringResource(R.string.color_picker_invalid),
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                    }
+                                } else null,
                             singleLine = true,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
 
                         Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isValidHex) {
-                                        Color(parseHexColor(hexInput) ?: initialColor)
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceVariant
-                                    }
-                                )
-                                .border(
-                                    2.dp,
-                                    MaterialTheme.colorScheme.outline,
-                                    CircleShape
-                                )
+                            modifier =
+                                Modifier.size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (isValidHex) {
+                                            Color(parseHexColor(hexInput) ?: initialColor)
+                                        } else {
+                                            MaterialTheme.colorScheme.surfaceVariant
+                                        }
+                                    )
+                                    .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
                         )
                     }
 
                     Button(
                         onClick = {
-                            parseHexColor(hexInput)?.let { color ->
-                                onColorSelected(color)
-                            }
+                            parseHexColor(hexInput)?.let { color -> onColorSelected(color) }
                         },
                         enabled = isValidHex,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(stringResource(R.string.color_picker_apply))
                     }
@@ -1112,10 +1106,8 @@ private fun SimpleColorPickerDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
     )
 }
 
@@ -1123,71 +1115,77 @@ private fun SimpleColorPickerDialog(
 private fun SubtitlePreview(
     subtitlePrefs: SubtitlePreferences,
     useExoPlayer: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(100.dp)
-            .background(
-                androidx.compose.ui.graphics.Color.DarkGray,
-                RoundedCornerShape(12.dp)
-            ),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .background(androidx.compose.ui.graphics.Color.DarkGray, RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center,
     ) {
-        val textStyle = MaterialTheme.typography.headlineSmall.copy(
-            fontWeight = if (subtitlePrefs.bold) FontWeight.Bold else FontWeight.Normal,
-            fontStyle = if (subtitlePrefs.italic) FontStyle.Italic else FontStyle.Normal,
-            fontSize = MaterialTheme.typography.headlineSmall.fontSize * 1.15f * subtitlePrefs.textSize
-        )
+        val textStyle =
+            MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = if (subtitlePrefs.bold) FontWeight.Bold else FontWeight.Normal,
+                fontStyle = if (subtitlePrefs.italic) FontStyle.Italic else FontStyle.Normal,
+                fontSize =
+                    MaterialTheme.typography.headlineSmall.fontSize * 1.15f * subtitlePrefs.textSize,
+            )
 
         Box(
-            modifier = Modifier
-                .background(
-                    if (useExoPlayer) {
-                        Color(subtitlePrefs.windowColor)
-                    } else {
-                        androidx.compose.ui.graphics.Color.Transparent
-                    },
-                    RoundedCornerShape(6.dp)
-                )
-                .padding(
-                    horizontal = if (useExoPlayer) 4.dp else 0.dp,
-                    vertical = if (useExoPlayer) 2.dp else 0.dp
-                )
+            modifier =
+                Modifier.background(
+                        if (useExoPlayer) {
+                            Color(subtitlePrefs.windowColor)
+                        } else {
+                            androidx.compose.ui.graphics.Color.Transparent
+                        },
+                        RoundedCornerShape(6.dp),
+                    )
+                    .padding(
+                        horizontal = if (useExoPlayer) 4.dp else 0.dp,
+                        vertical = if (useExoPlayer) 2.dp else 0.dp,
+                    )
         ) {
             Box(
-                modifier = Modifier
-                    .background(
-                        when (subtitlePrefs.outlineStyle) {
-                            SubtitleOutlineStyle.BACKGROUND_BOX -> Color(subtitlePrefs.backgroundColor)
-                            else -> androidx.compose.ui.graphics.Color.Transparent
-                        },
-                        RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                modifier =
+                    Modifier.background(
+                            when (subtitlePrefs.outlineStyle) {
+                                SubtitleOutlineStyle.BACKGROUND_BOX ->
+                                    Color(subtitlePrefs.backgroundColor)
+                                else -> androidx.compose.ui.graphics.Color.Transparent
+                            },
+                            RoundedCornerShape(4.dp),
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                if (!useExoPlayer && subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE && subtitlePrefs.outlineSize > 0f) {
+                if (
+                    !useExoPlayer &&
+                        subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE &&
+                        subtitlePrefs.outlineSize > 0f
+                ) {
                     val outlineColor = Color(subtitlePrefs.outlineColor)
                     val offsetStep = (subtitlePrefs.outlineSize * 0.3f).coerceAtMost(2f)
 
                     listOf(
-                        Offset(-offsetStep, -offsetStep),
-                        Offset(0f, -offsetStep),
-                        Offset(offsetStep, -offsetStep),
-                        Offset(-offsetStep, 0f),
-                        Offset(offsetStep, 0f),
-                        Offset(-offsetStep, offsetStep),
-                        Offset(0f, offsetStep),
-                        Offset(offsetStep, offsetStep)
-                    ).forEach { offset ->
-                        Text(
-                            text = stringResource(R.string.subtitle_preview_text),
-                            style = textStyle,
-                            color = outlineColor,
-                            modifier = Modifier.offset(offset.x.dp, offset.y.dp)
+                            Offset(-offsetStep, -offsetStep),
+                            Offset(0f, -offsetStep),
+                            Offset(offsetStep, -offsetStep),
+                            Offset(-offsetStep, 0f),
+                            Offset(offsetStep, 0f),
+                            Offset(-offsetStep, offsetStep),
+                            Offset(0f, offsetStep),
+                            Offset(offsetStep, offsetStep),
                         )
-                    }
+                        .forEach { offset ->
+                            Text(
+                                text = stringResource(R.string.subtitle_preview_text),
+                                style = textStyle,
+                                color = outlineColor,
+                                modifier = Modifier.offset(offset.x.dp, offset.y.dp),
+                            )
+                        }
                 }
 
                 if (useExoPlayer && subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE) {
@@ -1195,65 +1193,83 @@ private fun SubtitlePreview(
                     val offsetStep = 1.5f
 
                     listOf(
-                        Offset(-offsetStep, -offsetStep),
-                        Offset(0f, -offsetStep),
-                        Offset(offsetStep, -offsetStep),
-                        Offset(-offsetStep, 0f),
-                        Offset(offsetStep, 0f),
-                        Offset(-offsetStep, offsetStep),
-                        Offset(0f, offsetStep),
-                        Offset(offsetStep, offsetStep)
-                    ).forEach { offset ->
-                        Text(
-                            text = stringResource(R.string.subtitle_preview_text),
-                            style = textStyle,
-                            color = outlineColor,
-                            modifier = Modifier.offset(offset.x.dp, offset.y.dp)
+                            Offset(-offsetStep, -offsetStep),
+                            Offset(0f, -offsetStep),
+                            Offset(offsetStep, -offsetStep),
+                            Offset(-offsetStep, 0f),
+                            Offset(offsetStep, 0f),
+                            Offset(-offsetStep, offsetStep),
+                            Offset(0f, offsetStep),
+                            Offset(offsetStep, offsetStep),
                         )
-                    }
+                        .forEach { offset ->
+                            Text(
+                                text = stringResource(R.string.subtitle_preview_text),
+                                style = textStyle,
+                                color = outlineColor,
+                                modifier = Modifier.offset(offset.x.dp, offset.y.dp),
+                            )
+                        }
                 }
 
                 Text(
                     text = stringResource(R.string.subtitle_preview_text),
-                    style = textStyle.copy(
-                        shadow = when {
-                            !useExoPlayer && subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW && subtitlePrefs.outlineSize > 0f -> {
-                                val shadowOffset = subtitlePrefs.outlineSize
-                                Shadow(
-                                    color = Color(subtitlePrefs.outlineColor),
-                                    offset = Offset(shadowOffset, shadowOffset),
-                                    blurRadius = shadowOffset * 1.2f
-                                )
-                            }
+                    style =
+                        textStyle.copy(
+                            shadow =
+                                when {
+                                    !useExoPlayer &&
+                                        subtitlePrefs.outlineStyle ==
+                                            SubtitleOutlineStyle.DROP_SHADOW &&
+                                        subtitlePrefs.outlineSize > 0f -> {
+                                        val shadowOffset = subtitlePrefs.outlineSize
+                                        Shadow(
+                                            color = Color(subtitlePrefs.outlineColor),
+                                            offset = Offset(shadowOffset, shadowOffset),
+                                            blurRadius = shadowOffset * 1.2f,
+                                        )
+                                    }
 
-                            useExoPlayer && subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW -> {
-                                Shadow(
-                                    color = Color(subtitlePrefs.outlineColor),
-                                    offset = Offset(3f, 3f),
-                                    blurRadius = 4f
-                                )
-                            }
+                                    useExoPlayer &&
+                                        subtitlePrefs.outlineStyle ==
+                                            SubtitleOutlineStyle.DROP_SHADOW -> {
+                                        Shadow(
+                                            color = Color(subtitlePrefs.outlineColor),
+                                            offset = Offset(3f, 3f),
+                                            blurRadius = 4f,
+                                        )
+                                    }
 
-                            useExoPlayer && subtitlePrefs.outlineStyle == SubtitleOutlineStyle.RAISED -> {
-                                Shadow(
-                                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
-                                    offset = Offset(-1f, -1f),
-                                    blurRadius = 2f
-                                )
-                            }
+                                    useExoPlayer &&
+                                        subtitlePrefs.outlineStyle ==
+                                            SubtitleOutlineStyle.RAISED -> {
+                                        Shadow(
+                                            color =
+                                                androidx.compose.ui.graphics.Color.White.copy(
+                                                    alpha = 0.5f
+                                                ),
+                                            offset = Offset(-1f, -1f),
+                                            blurRadius = 2f,
+                                        )
+                                    }
 
-                            useExoPlayer && subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DEPRESSED -> {
-                                Shadow(
-                                    color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f),
-                                    offset = Offset(-1f, -1f),
-                                    blurRadius = 2f
-                                )
-                            }
+                                    useExoPlayer &&
+                                        subtitlePrefs.outlineStyle ==
+                                            SubtitleOutlineStyle.DEPRESSED -> {
+                                        Shadow(
+                                            color =
+                                                androidx.compose.ui.graphics.Color.Black.copy(
+                                                    alpha = 0.5f
+                                                ),
+                                            offset = Offset(-1f, -1f),
+                                            blurRadius = 2f,
+                                        )
+                                    }
 
-                            else -> null
-                        }
-                    ),
-                    color = Color(subtitlePrefs.textColor)
+                                    else -> null
+                                }
+                        ),
+                    color = Color(subtitlePrefs.textColor),
                 )
             }
         }
@@ -1291,7 +1307,9 @@ private fun getSubtitleVerticalPositionDisplayName(position: SubtitleVerticalPos
 }
 
 @Composable
-private fun getSubtitleHorizontalAlignmentDisplayName(alignment: SubtitleHorizontalAlignment): String {
+private fun getSubtitleHorizontalAlignmentDisplayName(
+    alignment: SubtitleHorizontalAlignment
+): String {
     return when (alignment) {
         SubtitleHorizontalAlignment.LEFT -> stringResource(R.string.align_left)
         SubtitleHorizontalAlignment.CENTER -> stringResource(R.string.align_center)

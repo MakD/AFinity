@@ -6,43 +6,49 @@ enum class Destination(
     val route: String,
     val title: String,
     val selectedIconRes: Int,
-    val unselectedIconRes: Int
+    val unselectedIconRes: Int,
 ) {
     HOME(
         route = "home",
         title = "Home",
         selectedIconRes = R.drawable.ic_home_filled,
-        unselectedIconRes = R.drawable.ic_home
+        unselectedIconRes = R.drawable.ic_home,
     ),
     LIBRARIES(
         route = "libraries",
         title = "Libraries",
         selectedIconRes = R.drawable.ic_video_library_filled,
-        unselectedIconRes = R.drawable.ic_video_library
+        unselectedIconRes = R.drawable.ic_video_library,
     ),
     FAVORITES(
         route = "favorites",
         title = "Favorites",
         selectedIconRes = R.drawable.ic_favorite_filled,
-        unselectedIconRes = R.drawable.ic_favorite
+        unselectedIconRes = R.drawable.ic_favorite,
     ),
     WATCHLIST(
         route = "watchlist",
         title = "Watchlist",
         selectedIconRes = R.drawable.ic_bookmarks_filled,
-        unselectedIconRes = R.drawable.ic_bookmarks
+        unselectedIconRes = R.drawable.ic_bookmarks,
     ),
     REQUESTS(
         route = "requests",
         title = "Requests",
         selectedIconRes = R.drawable.ic_plus_filled,
-        unselectedIconRes = R.drawable.ic_plus
+        unselectedIconRes = R.drawable.ic_plus,
+    ),
+    AUDIOBOOKS(
+        route = "audiobookshelf/libraries",
+        title = "Audiobooks",
+        selectedIconRes = R.drawable.ic_books_filled,
+        unselectedIconRes = R.drawable.ic_books,
     ),
     LIVE_TV(
         route = "live_tv",
         title = "Live TV",
         selectedIconRes = R.drawable.ic_live_tv_filled_nav,
-        unselectedIconRes = R.drawable.ic_live_tv_nav
+        unselectedIconRes = R.drawable.ic_live_tv_nav,
     );
 
     companion object {
@@ -64,6 +70,60 @@ enum class Destination(
 
         const val LOGIN_ROUTE = "login?serverUrl={serverUrl}"
 
+        const val AUDIOBOOKSHELF_LOGIN_ROUTE = "audiobookshelf/login"
+        const val AUDIOBOOKSHELF_LIBRARIES_ROUTE = "audiobookshelf/libraries"
+        const val AUDIOBOOKSHELF_LIBRARY_ROUTE = "audiobookshelf/library/{libraryId}"
+        const val AUDIOBOOKSHELF_ITEM_ROUTE = "audiobookshelf/item/{itemId}"
+        const val AUDIOBOOKSHELF_SERIES_ROUTE =
+            "audiobookshelf/series/{seriesId}/{libraryId}/{seriesName}"
+        const val AUDIOBOOKSHELF_GENRE_RESULTS_ROUTE = "audiobookshelf/genre/{genre}"
+        const val AUDIOBOOKSHELF_PLAYER_ROUTE =
+            "audiobookshelf/player/{itemId}?episodeId={episodeId}&startPosition={startPosition}"
+
+        fun createAudiobookshelfLoginRoute(): String {
+            return AUDIOBOOKSHELF_LOGIN_ROUTE
+        }
+
+        fun createAudiobookshelfLibrariesRoute(): String {
+            return AUDIOBOOKSHELF_LIBRARIES_ROUTE
+        }
+
+        fun createAudiobookshelfLibraryRoute(libraryId: String): String {
+            return "audiobookshelf/library/$libraryId"
+        }
+
+        fun createAudiobookshelfItemRoute(itemId: String): String {
+            return "audiobookshelf/item/$itemId"
+        }
+
+        fun createAudiobookshelfSeriesRoute(
+            seriesId: String,
+            libraryId: String,
+            seriesName: String,
+        ): String {
+            return "audiobookshelf/series/$seriesId/$libraryId/${seriesName.replace("/", "%2F")}"
+        }
+
+        fun createAudiobookshelfGenreResultsRoute(genre: String): String {
+            return "audiobookshelf/genre/${genre.replace("/", "%2F")}"
+        }
+
+        fun createAudiobookshelfPlayerRoute(
+            itemId: String,
+            episodeId: String? = null,
+            startPosition: Double? = null,
+        ): String {
+            val params = buildList {
+                if (episodeId != null) add("episodeId=$episodeId")
+                if (startPosition != null) add("startPosition=$startPosition")
+            }
+            return if (params.isNotEmpty()) {
+                "audiobookshelf/player/$itemId?${params.joinToString("&")}"
+            } else {
+                "audiobookshelf/player/$itemId"
+            }
+        }
+
         fun createPersonRoute(personId: String): String {
             return "person/$personId"
         }
@@ -73,7 +133,7 @@ enum class Destination(
             mediaSourceId: String,
             audioStreamIndex: Int? = null,
             subtitleStreamIndex: Int? = null,
-            startPositionMs: Long = 0L
+            startPositionMs: Long = 0L,
         ): String {
             var route = "player/$itemId/$mediaSourceId"
             val params = mutableListOf<String>()
@@ -133,7 +193,11 @@ enum class Destination(
             return LICENSES_ROUTE
         }
 
-        fun createFilteredMediaRoute(filterType: String, filterId: Int, filterName: String): String {
+        fun createFilteredMediaRoute(
+            filterType: String,
+            filterId: Int,
+            filterName: String,
+        ): String {
             return "filtered_media/$filterType/$filterId/${filterName.replace("/", "%2F")}"
         }
 

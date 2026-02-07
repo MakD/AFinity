@@ -40,72 +40,82 @@ fun AsyncImage(
     blurHash: String? = null,
     targetWidth: Dp? = null,
     targetHeight: Dp? = null,
-    scaleFactor: Float = 1.0f
+    scaleFactor: Float = 1.0f,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
 
-    val imageSize = remember(targetWidth, targetHeight, density, scaleFactor) {
-        when {
-            targetWidth != null && targetHeight != null -> {
-                Size(
-                    width = with(density) { (targetWidth.toPx() * scaleFactor).toInt() },
-                    height = with(density) { (targetHeight.toPx() * scaleFactor).toInt() }
-                )
-            }
-            else -> Size.ORIGINAL
-        }
-    }
-
-    val blurHashPlaceholder = remember(blurHash, targetWidth, targetHeight) {
-        if (!blurHash.isNullOrBlank()) {
-            try {
-                val ratio = if (targetWidth != null && targetHeight != null && targetHeight.value > 0f) {
-                    targetWidth.value / targetHeight.value
-                } else {
-                    1f
+    val imageSize =
+        remember(targetWidth, targetHeight, density, scaleFactor) {
+            when {
+                targetWidth != null && targetHeight != null -> {
+                    Size(
+                        width = with(density) { (targetWidth.toPx() * scaleFactor).toInt() },
+                        height = with(density) { (targetHeight.toPx() * scaleFactor).toInt() },
+                    )
                 }
+                else -> Size.ORIGINAL
+            }
+        }
 
-                val baseSize = 32
-                val decodeWidth = if (ratio > 1) baseSize else (baseSize * ratio).toInt()
-                val decodeHeight = if (ratio < 1) baseSize else (baseSize / ratio).toInt()
+    val blurHashPlaceholder =
+        remember(blurHash, targetWidth, targetHeight) {
+            if (!blurHash.isNullOrBlank()) {
+                try {
+                    val ratio =
+                        if (
+                            targetWidth != null && targetHeight != null && targetHeight.value > 0f
+                        ) {
+                            targetWidth.value / targetHeight.value
+                        } else {
+                            1f
+                        }
 
-                val bitmap = BlurHash.decode(
-                    blurHash = blurHash,
-                    width = decodeWidth.coerceAtLeast(25),
-                    height = decodeHeight.coerceAtLeast(25)
-                )
-                bitmap?.asImageBitmap()?.let { BitmapPainter(it) }
-            } catch (e: Exception) {
-                Timber.w("Failed to decode blur hash: ${e.message}")
+                    val baseSize = 32
+                    val decodeWidth = if (ratio > 1) baseSize else (baseSize * ratio).toInt()
+                    val decodeHeight = if (ratio < 1) baseSize else (baseSize / ratio).toInt()
+
+                    val bitmap =
+                        BlurHash.decode(
+                            blurHash = blurHash,
+                            width = decodeWidth.coerceAtLeast(25),
+                            height = decodeHeight.coerceAtLeast(25),
+                        )
+                    bitmap?.asImageBitmap()?.let { BitmapPainter(it) }
+                } catch (e: Exception) {
+                    Timber.w("Failed to decode blur hash: ${e.message}")
+                    null
+                }
+            } else {
                 null
             }
-        } else {
-            null
         }
-    }
 
     AsyncImage(
-        model = ImageRequest.Builder(context)
-            .data(imageUrl)
-            .size(imageSize)
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .networkCachePolicy(if (imageUrl?.startsWith("file://") == true) CachePolicy.DISABLED else CachePolicy.ENABLED)
-            .crossfade(true)
-            .placeholderMemoryCacheKey(blurHash)
-            .listener(
-                onStart = { onLoading?.invoke(true) },
-                onSuccess = { _, _ ->
-                    onLoading?.invoke(false)
-                    onSuccess?.invoke()
-                },
-                onError = { _, result ->
-                    onLoading?.invoke(false)
-                    onError?.invoke()
-                }
-            )
-            .build(),
+        model =
+            ImageRequest.Builder(context)
+                .data(imageUrl)
+                .size(imageSize)
+                .memoryCachePolicy(CachePolicy.ENABLED)
+                .diskCachePolicy(CachePolicy.ENABLED)
+                .networkCachePolicy(
+                    if (imageUrl?.startsWith("file://") == true) CachePolicy.DISABLED
+                    else CachePolicy.ENABLED
+                )
+                .crossfade(true)
+                .placeholderMemoryCacheKey(blurHash)
+                .listener(
+                    onStart = { onLoading?.invoke(true) },
+                    onSuccess = { _, _ ->
+                        onLoading?.invoke(false)
+                        onSuccess?.invoke()
+                    },
+                    onError = { _, result ->
+                        onLoading?.invoke(false)
+                        onError?.invoke()
+                    },
+                )
+                .build(),
         contentDescription = contentDescription,
         modifier = modifier,
         placeholder = blurHashPlaceholder ?: placeholder,
@@ -114,6 +124,6 @@ fun AsyncImage(
         contentScale = contentScale,
         alpha = alpha,
         colorFilter = colorFilter,
-        filterQuality = filterQuality
+        filterQuality = filterQuality,
     )
 }

@@ -18,18 +18,15 @@ fun VideoQualitySelection(
     mediaSourceOptions: List<MediaSourceOption>,
     selectedSource: MediaSourceOption?,
     onSourceSelected: (MediaSourceOption) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (mediaSourceOptions.size > 1) {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = modifier
-        ) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
             items(mediaSourceOptions) { source ->
                 QualityChip(
                     source = source,
                     isSelected = source == selectedSource,
-                    onClick = { onSourceSelected(source) }
+                    onClick = { onSourceSelected(source) },
                 )
             }
         }
@@ -37,29 +34,30 @@ fun VideoQualitySelection(
 }
 
 @Composable
-private fun QualityChip(
-    source: MediaSourceOption,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+private fun QualityChip(source: MediaSourceOption, isSelected: Boolean, onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primary
-            else Color.Transparent,
-            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary
-            else MaterialTheme.colorScheme.onSurface
-        ),
-        border = BorderStroke(
-            1.dp,
-            if (isSelected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.outline
-        )
+        colors =
+            ButtonDefaults.outlinedButtonColors(
+                containerColor =
+                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                contentColor =
+                    if (isSelected) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurface,
+            ),
+        border =
+            BorderStroke(
+                1.dp,
+                if (isSelected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.outline,
+            ),
     ) {
         Text(
             text =
-                if (source.name.contains("K") || source.name.contains("p") ||
-                    source.name.contains(source.codec, ignoreCase = true)
+                if (
+                    source.name.contains("K") ||
+                        source.name.contains("p") ||
+                        source.name.contains(source.codec, ignoreCase = true)
                 ) {
                     source.name
                 } else {

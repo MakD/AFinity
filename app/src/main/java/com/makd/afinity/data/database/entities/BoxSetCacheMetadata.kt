@@ -5,8 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "boxset_cache_metadata")
 data class BoxSetCacheMetadata(
-    @PrimaryKey
-    val id: Int = 1,
+    @PrimaryKey val id: Int = 1,
     val lastFullBuild: Long,
-    val cacheVersion: Int
+    val cacheVersion: Int,
 )

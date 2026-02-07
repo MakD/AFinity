@@ -5,8 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "boxset_cache")
 data class BoxSetCacheEntity(
-    @PrimaryKey
-    val itemId: String,
+    @PrimaryKey val itemId: String,
     val boxSetIds: String,
-    val lastUpdated: Long
+    val lastUpdated: Long,
 )

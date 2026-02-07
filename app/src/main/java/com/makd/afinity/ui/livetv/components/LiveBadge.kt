@@ -17,21 +17,20 @@ import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 
 @Composable
-fun LiveBadge(
-    modifier: Modifier = Modifier
-) {
+fun LiveBadge(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(Color.Red)
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color.Red)
+                .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
         Text(
             text = stringResource(R.string.livetv_live_badge),
             color = Color.White,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.labelSmall
+            style = MaterialTheme.typography.labelSmall,
         )
     }
 }

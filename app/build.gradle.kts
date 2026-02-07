@@ -45,7 +45,8 @@ android {
             .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
             .forEach { output ->
                 if (variant.buildType.name == "release") {
-                    val outputFileName = "afinity-v${variant.versionName}-${output.getFilter("ABI")}.apk"
+                    val outputFileName =
+                        "afinity-v${variant.versionName}-${output.getFilter("ABI")}.apk"
                     output.outputFileName = outputFileName
                 }
             }
@@ -64,7 +65,7 @@ android {
             buildConfigField("boolean", "DEBUG", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -91,7 +92,7 @@ android {
                 "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
                 "-opt-in=androidx.compose.material3.pulltorefresh.ExperimentalMaterial3PullToRefreshApi",
                 "-Xjvm-default=all",
-                "-Xcontext-receivers"
+                "-Xcontext-receivers",
             )
         }
     }
@@ -116,7 +117,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -124,6 +124,7 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     implementation(libs.androidx.ui)
     ksp(libs.androidx.hilt.compiler)
+    implementation(libs.androidx.palette.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

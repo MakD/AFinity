@@ -22,45 +22,29 @@ import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 fun SimilarItemsSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = stringResource(R.string.similar_items_title),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onBackground
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
             items(items.take(10)) { item ->
-                SimilarItemCard(
-                    item = item,
-                    onClick = { onItemClick(item) },
-                    cardWidth = cardWidth
-                )
+                SimilarItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
             }
         }
     }
 }
 
 @Composable
-private fun SimilarItemCard(
-    item: AfinityItem,
-    onClick: () -> Unit,
-    cardWidth: Dp
-) {
-    MediaItemCard(
-        item = item,
-        onClick = onClick,
-        cardWidth = cardWidth
-    )
+private fun SimilarItemCard(item: AfinityItem, onClick: () -> Unit, cardWidth: Dp) {
+    MediaItemCard(item = item, onClick = onClick, cardWidth = cardWidth)
 }

@@ -91,8 +91,8 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
-import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.MovieRecommendationSection
 import com.makd.afinity.ui.home.components.NextUpSection
@@ -108,8 +108,8 @@ import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
-import kotlinx.coroutines.delay
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,7 +121,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel(),
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -142,406 +142,421 @@ fun HomeScreen(
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.clearSelectedEpisode()
-        }
-    }
+    DisposableEffect(Unit) { onDispose { viewModel.clearSelectedEpisode() } }
 
-    val isScrolling by remember {
-        derivedStateOf {
-            lazyListState.isScrollInProgress
-        }
-    }
+    val isScrolling by remember { derivedStateOf { lazyListState.isScrollInProgress } }
 
     Box(modifier = modifier.fillMaxSize()) {
         uiState.error?.let { error ->
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.home_error_title),
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
                         text = error,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = stringResource(R.string.home_error_message),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-        } ?: run {
-            val configuration = LocalConfiguration.current
-            val isLandscape =
-                configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        }
+            ?: run {
+                val configuration = LocalConfiguration.current
+                val isLandscape =
+                    configuration.orientation ==
+                        android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                val density = LocalDensity.current
-                val statusBarHeight = WindowInsets.statusBars.getTop(density)
-                val showCarousel = !uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    val density = LocalDensity.current
+                    val statusBarHeight = WindowInsets.statusBars.getTop(density)
+                    val showCarousel = !uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()
 
-                val continueWatchingItems = if (uiState.isOffline) {
-                    uiState.offlineContinueWatching
-                } else {
-                    uiState.continueWatching
-                }
+                    val continueWatchingItems =
+                        if (uiState.isOffline) {
+                            uiState.offlineContinueWatching
+                        } else {
+                            uiState.continueWatching
+                        }
 
-                val firstContentKey = when {
-                    continueWatchingItems.isNotEmpty() -> "continue_watching"
-                    !uiState.isOffline && uiState.isLoading && uiState.latestMedia.isNotEmpty() -> "cw_skeleton"
-                    uiState.downloadedMovies.isNotEmpty() -> "downloaded_movies"
-                    uiState.downloadedShows.isNotEmpty() -> "downloaded_shows"
-                    !uiState.isOffline && uiState.nextUp.isNotEmpty() -> "next_up"
-                    else -> null
-                }
+                    val firstContentKey =
+                        when {
+                            continueWatchingItems.isNotEmpty() -> "continue_watching"
+                            !uiState.isOffline &&
+                                uiState.isLoading &&
+                                uiState.latestMedia.isNotEmpty() -> "cw_skeleton"
+                            uiState.downloadedMovies.isNotEmpty() -> "downloaded_movies"
+                            uiState.downloadedShows.isNotEmpty() -> "downloaded_shows"
+                            !uiState.isOffline && uiState.nextUp.isNotEmpty() -> "next_up"
+                            else -> null
+                        }
 
-                fun getItemModifier(key: String): Modifier {
-                    return if (isLandscape && key == firstContentKey) {
-                        Modifier
-                            .fillMaxWidth()
-                            .verticalLayoutOffset((-70).dp)
-                    } else {
-                        Modifier.fillMaxWidth()
-                    }
-                }
-
-                LazyColumn(
-                    state = lazyListState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        top = if (!showCarousel) with(density) { statusBarHeight.toDp() + 56.dp } else 0.dp,
-                        bottom = 16.dp
-                    )
-                ) {
-                    if (showCarousel) {
-                        item(key = "hero_carousel") {
-                            HeroCarousel(
-                                items = uiState.heroCarouselItems,
-                                height = screenHeight * 0.65f,
-                                isScrolling = isScrolling,
-                                onWatchNowClick = onPlayClick,
-                                onPlayTrailerClick = { item ->
-                                    viewModel.onPlayTrailerClick(context, item)
-                                },
-                                onMoreInformationClick = onItemClick
-                            )
+                    fun getItemModifier(key: String): Modifier {
+                        return if (isLandscape && key == firstContentKey) {
+                            Modifier.fillMaxWidth().verticalLayoutOffset((-70).dp)
+                        } else {
+                            Modifier.fillMaxWidth()
                         }
                     }
 
-                    if (continueWatchingItems.isNotEmpty()) {
-                        item(key = "continue_watching") {
-                            Box(modifier = getItemModifier("continue_watching")) {
-                                Column {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedContinueWatchingSection(
-                                        items = continueWatchingItems,
-                                        onItemClick = { item ->
-                                            if (item is AfinityEpisode) {
-                                                viewModel.selectEpisode(item)
-                                            } else {
-                                                onItemClick(item)
-                                            }
-                                        },
-                                        widthSizeClass = widthSizeClass
-                                    )
+                    LazyColumn(
+                        state = lazyListState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding =
+                            PaddingValues(
+                                top =
+                                    if (!showCarousel)
+                                        with(density) { statusBarHeight.toDp() + 56.dp }
+                                    else 0.dp,
+                                bottom = 16.dp,
+                            ),
+                    ) {
+                        if (showCarousel) {
+                            item(key = "hero_carousel") {
+                                HeroCarousel(
+                                    items = uiState.heroCarouselItems,
+                                    height = screenHeight * 0.65f,
+                                    isScrolling = isScrolling,
+                                    onWatchNowClick = onPlayClick,
+                                    onPlayTrailerClick = { item ->
+                                        viewModel.onPlayTrailerClick(context, item)
+                                    },
+                                    onMoreInformationClick = onItemClick,
+                                )
+                            }
+                        }
+
+                        if (continueWatchingItems.isNotEmpty()) {
+                            item(key = "continue_watching") {
+                                Box(modifier = getItemModifier("continue_watching")) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        OptimizedContinueWatchingSection(
+                                            items = continueWatchingItems,
+                                            onItemClick = { item ->
+                                                if (item is AfinityEpisode) {
+                                                    viewModel.selectEpisode(item)
+                                                } else {
+                                                    onItemClick(item)
+                                                }
+                                            },
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
+                                }
+                            }
+                        } else if (
+                            !uiState.isOffline &&
+                                uiState.isLoading &&
+                                uiState.latestMedia.isNotEmpty()
+                        ) {
+                            item(key = "cw_skeleton") {
+                                Box(modifier = getItemModifier("cw_skeleton")) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        ContinueWatchingSkeleton(widthSizeClass)
+                                    }
                                 }
                             }
                         }
-                    } else if (!uiState.isOffline && uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                        item(key = "cw_skeleton") {
-                            Box(modifier = getItemModifier("cw_skeleton")) {
-                                Column {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    ContinueWatchingSkeleton(widthSizeClass)
+
+                        if (uiState.downloadedMovies.isNotEmpty()) {
+                            item(key = "downloaded_movies") {
+                                Box(modifier = getItemModifier("downloaded_movies")) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        OptimizedLatestTvSeriesSection(
+                                            title = stringResource(R.string.home_downloaded_movies),
+                                            items = uiState.downloadedMovies,
+                                            onItemClick = onItemClick,
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (uiState.downloadedMovies.isNotEmpty()) {
-                        item(key = "downloaded_movies") {
-                            Box(modifier = getItemModifier("downloaded_movies")) {
-                                Column {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedLatestTvSeriesSection(
-                                        title = stringResource(R.string.home_downloaded_movies),
-                                        items = uiState.downloadedMovies,
-                                        onItemClick = onItemClick,
-                                        widthSizeClass = widthSizeClass
-                                    )
+                        if (uiState.downloadedShows.isNotEmpty()) {
+                            item(key = "downloaded_shows") {
+                                Box(modifier = getItemModifier("downloaded_shows")) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        OptimizedLatestTvSeriesSection(
+                                            title = stringResource(R.string.home_downloaded_shows),
+                                            items = uiState.downloadedShows,
+                                            onItemClick = onItemClick,
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (uiState.downloadedShows.isNotEmpty()) {
-                        item(key = "downloaded_shows") {
-                            Box(modifier = getItemModifier("downloaded_shows")) {
-                                Column {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedLatestTvSeriesSection(
-                                        title = stringResource(R.string.home_downloaded_shows),
-                                        items = uiState.downloadedShows,
-                                        onItemClick = onItemClick,
-                                        widthSizeClass = widthSizeClass
-                                    )
+                        if (!uiState.isOffline && uiState.nextUp.isNotEmpty()) {
+                            item(key = "next_up") {
+                                Box(modifier = getItemModifier("next_up")) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        NextUpSection(
+                                            episodes = uiState.nextUp,
+                                            onEpisodeClick = { episode ->
+                                                viewModel.selectEpisode(episode)
+                                            },
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (!uiState.isOffline && uiState.nextUp.isNotEmpty()) {
-                        item(key = "next_up") {
-                            Box(modifier = getItemModifier("next_up")) {
-                                Column {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    NextUpSection(
-                                        episodes = uiState.nextUp,
-                                        onEpisodeClick = { episode ->
-                                            viewModel.selectEpisode(episode)
-                                        },
-                                        widthSizeClass = widthSizeClass
-                                    )
+                        if (!uiState.isOffline) {
+                            if (uiState.combineLibrarySections) {
+                                if (uiState.latestMovies.isNotEmpty()) {
+                                    item(key = "latest_movies_combined") {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Spacer(modifier = Modifier.height(24.dp))
+                                            OptimizedLatestMoviesSection(
+                                                items = uiState.latestMovies,
+                                                onItemClick = onItemClick,
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                        }
+                                    }
+                                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                    item(key = "movies_skeleton") {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Spacer(modifier = Modifier.height(24.dp))
+                                            MoviesSectionSkeleton(widthSizeClass)
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                    }
-
-                    if (!uiState.isOffline) {
-                        if (uiState.combineLibrarySections) {
-                            if (uiState.latestMovies.isNotEmpty()) {
-                                item(key = "latest_movies_combined") {
+                            } else {
+                                items(
+                                    items = uiState.separateMovieLibrarySections,
+                                    key = { (library, _) -> "movie_lib_${library.id}" },
+                                ) { (library, movies) ->
                                     Column(modifier = Modifier.fillMaxWidth()) {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         OptimizedLatestMoviesSection(
-                                            items = uiState.latestMovies,
+                                            title = library.name,
+                                            items = movies,
                                             onItemClick = onItemClick,
-                                            widthSizeClass = widthSizeClass
+                                            widthSizeClass = widthSizeClass,
                                         )
                                     }
                                 }
-                            } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                                item(key = "movies_skeleton") {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        MoviesSectionSkeleton(widthSizeClass)
-                                    }
-                                }
-                            }
-                        } else {
-                            items(
-                                items = uiState.separateMovieLibrarySections,
-                                key = { (library, _) -> "movie_lib_${library.id}" }
-                            ) { (library, movies) ->
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedLatestMoviesSection(
-                                        title = library.name,
-                                        items = movies,
-                                        onItemClick = onItemClick,
-                                        widthSizeClass = widthSizeClass
-                                    )
-                                }
                             }
                         }
-                    }
 
-                    if (!uiState.isOffline) {
-                        if (uiState.combineLibrarySections) {
-                            if (uiState.latestTvSeries.isNotEmpty()) {
-                                item(key = "latest_tv_combined") {
+                        if (!uiState.isOffline) {
+                            if (uiState.combineLibrarySections) {
+                                if (uiState.latestTvSeries.isNotEmpty()) {
+                                    item(key = "latest_tv_combined") {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Spacer(modifier = Modifier.height(24.dp))
+                                            OptimizedLatestTvSeriesSection(
+                                                items = uiState.latestTvSeries,
+                                                onItemClick = onItemClick,
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                        }
+                                    }
+                                } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
+                                    item(key = "tv_skeleton") {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Spacer(modifier = Modifier.height(24.dp))
+                                            TvSeriesSectionSkeleton(widthSizeClass)
+                                        }
+                                    }
+                                }
+                            } else {
+                                items(
+                                    items = uiState.separateTvLibrarySections,
+                                    key = { (library, _) -> "tv_lib_${library.id}" },
+                                ) { (library, shows) ->
                                     Column(modifier = Modifier.fillMaxWidth()) {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         OptimizedLatestTvSeriesSection(
-                                            items = uiState.latestTvSeries,
+                                            title = library.name,
+                                            items = shows,
                                             onItemClick = onItemClick,
-                                            widthSizeClass = widthSizeClass
+                                            widthSizeClass = widthSizeClass,
                                         )
                                     }
                                 }
-                            } else if (uiState.isLoading && uiState.latestMedia.isNotEmpty()) {
-                                item(key = "tv_skeleton") {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        TvSeriesSectionSkeleton(widthSizeClass)
-                                    }
-                                }
                             }
-                        } else {
-                            items(
-                                items = uiState.separateTvLibrarySections,
-                                key = { (library, _) -> "tv_lib_${library.id}" }
-                            ) { (library, shows) ->
+                        }
+
+                        if (!uiState.isOffline && uiState.highestRated.isNotEmpty()) {
+                            item(key = "highest_rated") {
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     Spacer(modifier = Modifier.height(24.dp))
-                                    OptimizedLatestTvSeriesSection(
-                                        title = library.name,
-                                        items = shows,
+                                    HighestRatedSection(
+                                        items = uiState.highestRated,
                                         onItemClick = onItemClick,
-                                        widthSizeClass = widthSizeClass
+                                        widthSizeClass = widthSizeClass,
                                     )
                                 }
                             }
                         }
-                    }
 
-                    if (!uiState.isOffline && uiState.highestRated.isNotEmpty()) {
-                        item(key = "highest_rated") {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                HighestRatedSection(
-                                    items = uiState.highestRated,
-                                    onItemClick = onItemClick,
-                                    widthSizeClass = widthSizeClass
-                                )
-                            }
-                        }
-                    }
-
-                    if (!uiState.isOffline && uiState.studios.isNotEmpty()) {
-                        item(key = "popular_studios") {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                PopularStudiosSection(
-                                    studios = uiState.studios,
-                                    onStudioClick = { studio ->
-                                        viewModel.onStudioClick(studio, navController)
-                                    },
-                                    widthSizeClass = widthSizeClass
-                                )
-                            }
-                        }
-                    }
-
-                    if (!uiState.isOffline && uiState.combinedSections.isNotEmpty()) {
-                        items(
-                            items = uiState.combinedSections,
-                            key = { section ->
-                                when (section) {
-                                    is HomeSection.Person -> "person_${section.section.hashCode()}"
-                                    is HomeSection.Movie -> "movie_rec_${section.section.hashCode()}"
-                                    is HomeSection.PersonFromMovie -> "person_movie_${section.section.hashCode()}"
-                                    is HomeSection.Genre -> "genre_${section.genreItem.name}_${section.genreItem.type}"
+                        if (!uiState.isOffline && uiState.studios.isNotEmpty()) {
+                            item(key = "popular_studios") {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    PopularStudiosSection(
+                                        studios = uiState.studios,
+                                        onStudioClick = { studio ->
+                                            viewModel.onStudioClick(studio, navController)
+                                        },
+                                        widthSizeClass = widthSizeClass,
+                                    )
                                 }
                             }
-                        ) { section ->
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Spacer(modifier = Modifier.height(24.dp))
-                                when (section) {
-                                    is HomeSection.Person -> {
-                                        PersonSection(
-                                            section = section.section,
-                                            onItemClick = { movie -> onItemClick(movie) },
-                                            widthSizeClass = widthSizeClass
-                                        )
+                        }
+
+                        if (!uiState.isOffline && uiState.combinedSections.isNotEmpty()) {
+                            items(
+                                items = uiState.combinedSections,
+                                key = { section ->
+                                    when (section) {
+                                        is HomeSection.Person ->
+                                            "person_${section.section.hashCode()}"
+                                        is HomeSection.Movie ->
+                                            "movie_rec_${section.section.hashCode()}"
+                                        is HomeSection.PersonFromMovie ->
+                                            "person_movie_${section.section.hashCode()}"
+                                        is HomeSection.Genre ->
+                                            "genre_${section.genreItem.name}_${section.genreItem.type}"
                                     }
+                                },
+                            ) { section ->
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    when (section) {
+                                        is HomeSection.Person -> {
+                                            PersonSection(
+                                                section = section.section,
+                                                onItemClick = { movie -> onItemClick(movie) },
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                        }
 
-                                    is HomeSection.Movie -> {
-                                        MovieRecommendationSection(
-                                            section = section.section,
-                                            onItemClick = { movie -> onItemClick(movie) },
-                                            widthSizeClass = widthSizeClass
-                                        )
-                                    }
+                                        is HomeSection.Movie -> {
+                                            MovieRecommendationSection(
+                                                section = section.section,
+                                                onItemClick = { movie -> onItemClick(movie) },
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                        }
 
-                                    is HomeSection.PersonFromMovie -> {
-                                        PersonFromMovieSection(
-                                            section = section.section,
-                                            onItemClick = { movie -> onItemClick(movie) },
-                                            widthSizeClass = widthSizeClass
-                                        )
-                                    }
+                                        is HomeSection.PersonFromMovie -> {
+                                            PersonFromMovieSection(
+                                                section = section.section,
+                                                onItemClick = { movie -> onItemClick(movie) },
+                                                widthSizeClass = widthSizeClass,
+                                            )
+                                        }
 
-                                    is HomeSection.Genre -> {
-                                        when (section.genreItem.type) {
-                                            GenreType.MOVIE -> {
-                                                GenreSection(
-                                                    genre = section.genreItem.name,
-                                                    movies = uiState.genreMovies[section.genreItem.name]
-                                                        ?: emptyList(),
-                                                    isLoading = uiState.genreLoadingStates[section.genreItem.name]
-                                                        ?: false,
-                                                    onVisible = {
-                                                        if (uiState.genreMovies[section.genreItem.name] == null) {
-                                                            viewModel.loadMoviesForGenre(
-                                                                section.genreItem.name
-                                                            )
-                                                        }
-                                                    },
-                                                    onItemClick = onItemClick,
-                                                    widthSizeClass = widthSizeClass
-                                                )
-                                            }
+                                        is HomeSection.Genre -> {
+                                            when (section.genreItem.type) {
+                                                GenreType.MOVIE -> {
+                                                    GenreSection(
+                                                        genre = section.genreItem.name,
+                                                        movies =
+                                                            uiState.genreMovies[
+                                                                    section.genreItem.name]
+                                                                ?: emptyList(),
+                                                        isLoading =
+                                                            uiState.genreLoadingStates[
+                                                                    section.genreItem.name]
+                                                                ?: false,
+                                                        onVisible = {
+                                                            if (
+                                                                uiState.genreMovies[
+                                                                        section.genreItem.name] ==
+                                                                    null
+                                                            ) {
+                                                                viewModel.loadMoviesForGenre(
+                                                                    section.genreItem.name
+                                                                )
+                                                            }
+                                                        },
+                                                        onItemClick = onItemClick,
+                                                        widthSizeClass = widthSizeClass,
+                                                    )
+                                                }
 
-                                            GenreType.SHOW -> {
-                                                ShowGenreSection(
-                                                    genre = section.genreItem.name,
-                                                    shows = uiState.genreShows[section.genreItem.name]
-                                                        ?: emptyList(),
-                                                    isLoading = uiState.genreLoadingStates[section.genreItem.name]
-                                                        ?: false,
-                                                    onVisible = {
-                                                        if (uiState.genreShows[section.genreItem.name] == null) {
-                                                            viewModel.loadShowsForGenre(
-                                                                section.genreItem.name
-                                                            )
-                                                        }
-                                                    },
-                                                    onItemClick = onItemClick,
-                                                    widthSizeClass = widthSizeClass
-                                                )
+                                                GenreType.SHOW -> {
+                                                    ShowGenreSection(
+                                                        genre = section.genreItem.name,
+                                                        shows =
+                                                            uiState.genreShows[
+                                                                    section.genreItem.name]
+                                                                ?: emptyList(),
+                                                        isLoading =
+                                                            uiState.genreLoadingStates[
+                                                                    section.genreItem.name]
+                                                                ?: false,
+                                                        onVisible = {
+                                                            if (
+                                                                uiState.genreShows[
+                                                                        section.genreItem.name] ==
+                                                                    null
+                                                            ) {
+                                                                viewModel.loadShowsForGenre(
+                                                                    section.genreItem.name
+                                                                )
+                                                            }
+                                                        },
+                                                        onItemClick = onItemClick,
+                                                        widthSizeClass = widthSizeClass,
+                                                    )
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    item(key = "bottom_padding") {
-                        Spacer(modifier = Modifier.height(32.dp))
+                        item(key = "bottom_padding") { Spacer(modifier = Modifier.height(32.dp)) }
                     }
                 }
             }
-        }
 
         AfinityTopAppBar(
             title = {
                 IconButton(
                     onClick = { /* TODO: Handle app icon click if needed */ },
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Color.Black.copy(alpha = 0.3f),
-                                CircleShape
-                            )
-                            .clip(CircleShape),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                                .clip(CircleShape),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Image(
                             painter = painterResource(id = ic_launcher_monochrome),
                             contentDescription = stringResource(R.string.cd_app_logo),
-                            modifier = Modifier
-                                .size(60.dp)
-                                .fillMaxSize(),
+                            modifier = Modifier.size(60.dp).fillMaxSize(),
                             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                            contentScale = ContentScale.Fit
+                            contentScale = ContentScale.Fit,
                         )
                     }
                 }
@@ -552,12 +567,14 @@ fun HomeScreen(
             },
             onProfileClick = onProfileClick,
             userProfileImageUrl = mainUiState.userProfileImageUrl,
-            backgroundOpacity = topBarOpacity
+            backgroundOpacity = topBarOpacity,
         )
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
         val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
-        val selectedEpisodeWatchlistStatus by viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
-        val selectedEpisodeDownloadInfo by viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+        val selectedEpisodeWatchlistStatus by
+            viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
+        val selectedEpisodeDownloadInfo by
+            viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
 
         var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
@@ -568,7 +585,7 @@ fun HomeScreen(
 
         AnimatedVisibility(
             visible = selectedEpisode != null,
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
         ) {
             episodeForOverlay?.let { episode ->
                 EpisodeDetailOverlay(
@@ -588,38 +605,23 @@ fun HomeScreen(
                             mediaSourceId = selection.mediaSourceId,
                             audioStreamIndex = selection.audioStreamIndex,
                             subtitleStreamIndex = selection.subtitleStreamIndex,
-                            startPositionMs = selection.startPositionMs
+                            startPositionMs = selection.startPositionMs,
                         )
                     },
-                    onToggleFavorite = {
-                        viewModel.toggleEpisodeFavorite(episode)
-                    },
-                    onToggleWatchlist = {
-                        viewModel.toggleEpisodeWatchlist(episode)
-                    },
-                    onToggleWatched = {
-                        viewModel.toggleEpisodeWatched(episode)
-                    },
-                    onDownloadClick = {
-                        viewModel.onDownloadClick()
-                    },
-                    onPauseDownload = {
-                        viewModel.pauseDownload()
-                    },
-                    onResumeDownload = {
-                        viewModel.resumeDownload()
-                    },
-                    onCancelDownload = {
-                        viewModel.cancelDownload()
-                    },
+                    onToggleFavorite = { viewModel.toggleEpisodeFavorite(episode) },
+                    onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(episode) },
+                    onToggleWatched = { viewModel.toggleEpisodeWatched(episode) },
+                    onDownloadClick = { viewModel.onDownloadClick() },
+                    onPauseDownload = { viewModel.pauseDownload() },
+                    onResumeDownload = { viewModel.resumeDownload() },
+                    onCancelDownload = { viewModel.cancelDownload() },
                     onGoToSeries = {
                         viewModel.clearSelectedEpisode()
                         pendingNavigationSeriesId = episode.seriesId.toString()
-                    }
+                    },
                 )
             }
         }
-
 
         LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
             if (selectedEpisode == null && pendingNavigationSeriesId != null) {
@@ -632,17 +634,16 @@ fun HomeScreen(
 
         if (uiState.showQualityDialog) {
             val currentEpisode = selectedEpisode
-            val remoteSources = currentEpisode?.sources?.filter {
-                it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
-            } ?: emptyList()
+            val remoteSources =
+                currentEpisode?.sources?.filter {
+                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
+                } ?: emptyList()
 
             if (remoteSources.isNotEmpty()) {
                 QualitySelectionDialog(
                     sources = remoteSources,
-                    onSourceSelected = { source ->
-                        viewModel.onQualitySelected(source.id)
-                    },
-                    onDismiss = { viewModel.dismissQualityDialog() }
+                    onSourceSelected = { source -> viewModel.onQualitySelected(source.id) },
+                    onDismiss = { viewModel.dismissQualityDialog() },
                 )
             }
         }
@@ -653,22 +654,18 @@ fun HomeScreen(
 private fun HighestRatedSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
     val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Text(
             text = stringResource(R.string.home_critics_choice),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         val uniqueItems = items.distinctBy { it.id }
@@ -676,17 +673,14 @@ private fun HighestRatedSection(
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(22.dp),
-            contentPadding = PaddingValues(start = 4.dp, end = 24.dp)
+            contentPadding = PaddingValues(start = 4.dp, end = 24.dp),
         ) {
-            itemsIndexed(
-                items = uniqueItems,
-                key = { _, item -> item.id }
-            ) { index, item ->
+            itemsIndexed(items = uniqueItems, key = { _, item -> item.id }) { index, item ->
                 HighestRatedCard(
                     item = item,
                     ranking = index + 1,
                     onClick = { onItemClick(item) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -694,49 +688,36 @@ private fun HighestRatedSection(
 }
 
 @Composable
-private fun HighestRatedCard(
-    item: AfinityItem,
-    ranking: Int,
-    onClick: () -> Unit,
-    cardWidth: Dp
-) {
+private fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardWidth: Dp) {
     val density = LocalDensity.current
     val fontScale = density.fontScale
 
     val baseFontSize = MaterialTheme.typography.bodySmall.fontSize
-    val metadataFontSize = remember(fontScale, baseFontSize) {
-        baseFontSize * if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
-    }
+    val metadataFontSize =
+        remember(fontScale, baseFontSize) {
+            baseFontSize * if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
+        }
 
-    val imdbIconSize = remember(fontScale) {
-        if (fontScale > 1.3f) 14.dp
-        else if (fontScale > 1.15f) 16.dp
-        else 18.dp
-    }
+    val imdbIconSize =
+        remember(fontScale) {
+            if (fontScale > 1.3f) 14.dp else if (fontScale > 1.15f) 16.dp else 18.dp
+        }
 
-    val rtIconSize = remember(fontScale) {
-        if (fontScale > 1.3f) 10.dp
-        else if (fontScale > 1.15f) 11.dp
-        else 12.dp
-    }
+    val rtIconSize =
+        remember(fontScale) {
+            if (fontScale > 1.3f) 10.dp else if (fontScale > 1.15f) 11.dp else 12.dp
+        }
 
-    Column(
-        modifier = Modifier.width(cardWidth)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT)
-        ) {
+    Column(modifier = Modifier.width(cardWidth)) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT)) {
             Card(
                 onClick = onClick,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset(x = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                modifier = Modifier.fillMaxSize().offset(x = 16.dp),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     AsyncImage(
@@ -746,27 +727,24 @@ private fun HighestRatedCard(
                         targetWidth = cardWidth,
                         targetHeight = cardWidth * 3f / 2f,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
 
                     when {
                         item.played -> {
                             Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(8.dp)
-                                    .size(24.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.primary,
-                                        CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
+                                modifier =
+                                    Modifier.align(Alignment.TopEnd)
+                                        .padding(8.dp)
+                                        .size(24.dp)
+                                        .background(MaterialTheme.colorScheme.primary, CircleShape),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_check),
                                     contentDescription = stringResource(R.string.cd_watched_status),
                                     tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(16.dp),
                                 )
                             }
                         }
@@ -776,22 +754,26 @@ private fun HighestRatedCard(
                             displayCount?.let { count ->
                                 if (count > 0) {
                                     Surface(
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .padding(8.dp),
+                                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                                         shape = RoundedCornerShape(4.dp),
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
                                     ) {
                                         Text(
-                                            text = if (count > 99) stringResource(R.string.home_episode_count_plus) else stringResource(R.string.home_episode_count_fmt, count),
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Bold
-                                            ),
+                                            text =
+                                                if (count > 99)
+                                                    stringResource(R.string.home_episode_count_plus)
+                                                else
+                                                    stringResource(
+                                                        R.string.home_episode_count_fmt,
+                                                        count,
+                                                    ),
+                                            style =
+                                                MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                ),
                                             color = MaterialTheme.colorScheme.onPrimary,
-                                            modifier = Modifier.padding(
-                                                horizontal = 6.dp,
-                                                vertical = 2.dp
-                                            )
+                                            modifier =
+                                                Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                         )
                                     }
                                 }
@@ -803,30 +785,25 @@ private fun HighestRatedCard(
 
             Text(
                 text = ranking.toString(),
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 82.sp,
-                    fontWeight = FontWeight.Black
-                ),
+                style =
+                    MaterialTheme.typography.displayLarge.copy(
+                        fontSize = 82.sp,
+                        fontWeight = FontWeight.Black,
+                    ),
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .offset(y = 12.dp)
+                modifier = Modifier.align(Alignment.BottomStart).offset(y = 12.dp),
             )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Column(
-            modifier = Modifier.offset(x = 16.dp)
-        ) {
+        Column(modifier = Modifier.offset(x = 16.dp)) {
             Text(
                 text = item.name,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             Row(
@@ -843,10 +820,11 @@ private fun HighestRatedCard(
                     metadataItems.add {
                         Text(
                             text = year.toString(),
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontSize = metadataFontSize
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = metadataFontSize
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -859,20 +837,21 @@ private fun HighestRatedCard(
                     metadataItems.add {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
                                 contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
-                                modifier = Modifier.size(imdbIconSize)
+                                modifier = Modifier.size(imdbIconSize),
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = metadataFontSize
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        fontSize = metadataFontSize
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -883,26 +862,30 @@ private fun HighestRatedCard(
                         metadataItems.add {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
                                 Icon(
-                                    painter = painterResource(
-                                        id = if (rtRating > 60) {
-                                            R.drawable.ic_rotten_tomato_fresh
-                                        } else {
-                                            R.drawable.ic_rotten_tomato_rotten
-                                        }
-                                    ),
-                                    contentDescription = stringResource(R.string.cd_rotten_tomatoes),
+                                    painter =
+                                        painterResource(
+                                            id =
+                                                if (rtRating > 60) {
+                                                    R.drawable.ic_rotten_tomato_fresh
+                                                } else {
+                                                    R.drawable.ic_rotten_tomato_rotten
+                                                }
+                                        ),
+                                    contentDescription =
+                                        stringResource(R.string.cd_rotten_tomatoes),
                                     tint = Color.Unspecified,
-                                    modifier = Modifier.size(rtIconSize)
+                                    modifier = Modifier.size(rtIconSize),
                                 )
                                 Text(
                                     text = "${rtRating.toInt()}%",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontSize = metadataFontSize
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    style =
+                                        MaterialTheme.typography.bodySmall.copy(
+                                            fontSize = metadataFontSize
+                                        ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -915,7 +898,7 @@ private fun HighestRatedCard(
                         Text(
                             text = "•",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -928,51 +911,47 @@ private fun HighestRatedCard(
 private fun ContinueWatchingSkeleton(widthSizeClass: WindowWidthSizeClass) {
     val cardWidth = widthSizeClass.portraitWidth
 
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Box(
-            modifier = Modifier
-                .width(200.dp)
-                .height(24.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                .shimmerEffect()
+            modifier =
+                Modifier.width(200.dp)
+                    .height(24.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .shimmerEffect()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp)
+            contentPadding = PaddingValues(horizontal = 4.dp),
         ) {
             items(5) {
                 Column(modifier = Modifier.width(cardWidth)) {
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
                         shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        )
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor =
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .shimmerEffect()
-                        )
+                        Box(modifier = Modifier.fillMaxSize().shimmerEffect())
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(
-                        modifier = Modifier
-                            .width(cardWidth * 0.8f)
-                            .height(16.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                RoundedCornerShape(4.dp)
-                            )
-                            .shimmerEffect()
+                        modifier =
+                            Modifier.width(cardWidth * 0.8f)
+                                .height(16.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .shimmerEffect()
                     )
                 }
             }
@@ -984,69 +963,65 @@ private fun ContinueWatchingSkeleton(widthSizeClass: WindowWidthSizeClass) {
 private fun MoviesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
     val cardWidth = widthSizeClass.portraitWidth
 
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Box(
-            modifier = Modifier
-                .width(150.dp)
-                .height(24.dp)
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    RoundedCornerShape(4.dp)
-                )
-                .shimmerEffect()
+            modifier =
+                Modifier.width(150.dp)
+                    .height(24.dp)
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        RoundedCornerShape(4.dp),
+                    )
+                    .shimmerEffect()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp)
+            contentPadding = PaddingValues(horizontal = 4.dp),
         ) {
             items(6) {
                 Column(modifier = Modifier.width(cardWidth)) {
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
                         shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor =
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .shimmerEffect()
-                        )
+                        Box(modifier = Modifier.fillMaxSize().shimmerEffect())
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Box(
-                        modifier = Modifier
-                            .width(cardWidth * 0.9f)
-                            .height(16.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                RoundedCornerShape(4.dp)
-                            )
-                            .shimmerEffect()
+                        modifier =
+                            Modifier.width(cardWidth * 0.9f)
+                                .height(16.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .shimmerEffect()
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Box(
-                        modifier = Modifier
-                            .width(cardWidth * 0.6f)
-                            .height(12.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                                RoundedCornerShape(4.dp)
-                            )
-                            .shimmerEffect()
+                        modifier =
+                            Modifier.width(cardWidth * 0.6f)
+                                .height(12.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .shimmerEffect()
                     )
                 }
             }
@@ -1058,56 +1033,52 @@ private fun MoviesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
 private fun TvSeriesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
     val cardWidth = widthSizeClass.portraitWidth
 
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Box(
-            modifier = Modifier
-                .width(180.dp)
-                .height(24.dp)
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    RoundedCornerShape(4.dp)
-                )
-                .shimmerEffect()
+            modifier =
+                Modifier.width(180.dp)
+                    .height(24.dp)
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        RoundedCornerShape(4.dp),
+                    )
+                    .shimmerEffect()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp)
+            contentPadding = PaddingValues(horizontal = 4.dp),
         ) {
             items(6) {
                 Column(modifier = Modifier.width(cardWidth)) {
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
                         shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor =
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .shimmerEffect()
-                            )
+                            Box(modifier = Modifier.fillMaxSize().shimmerEffect())
 
                             Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(8.dp)
-                                    .width(50.dp)
-                                    .height(20.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                                        RoundedCornerShape(4.dp)
-                                    )
-                                    .shimmerEffect()
+                                modifier =
+                                    Modifier.align(Alignment.TopEnd)
+                                        .padding(8.dp)
+                                        .width(50.dp)
+                                        .height(20.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                            RoundedCornerShape(4.dp),
+                                        )
+                                        .shimmerEffect()
                             )
                         }
                     }
@@ -1115,27 +1086,27 @@ private fun TvSeriesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Box(
-                        modifier = Modifier
-                            .width(cardWidth * 0.9f)
-                            .height(16.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                RoundedCornerShape(4.dp)
-                            )
-                            .shimmerEffect()
+                        modifier =
+                            Modifier.width(cardWidth * 0.9f)
+                                .height(16.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .shimmerEffect()
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Box(
-                        modifier = Modifier
-                            .width(cardWidth * 0.7f)
-                            .height(12.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                                RoundedCornerShape(4.dp)
-                            )
-                            .shimmerEffect()
+                        modifier =
+                            Modifier.width(cardWidth * 0.7f)
+                                .height(12.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .shimmerEffect()
                     )
                 }
             }
@@ -1147,30 +1118,31 @@ private fun TvSeriesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
 fun Modifier.shimmerEffect(): Modifier = composed {
     val transition = rememberInfiniteTransition(label = "shimmer")
 
-    val translateAnimation by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = LinearEasing
-            ),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerTranslate"
-    )
+    val translateAnimation by
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1000f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 1000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+            label = "shimmerTranslate",
+        )
 
-    val shimmerColors = listOf(
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-    )
+    val shimmerColors =
+        listOf(
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+        )
 
-    val brush = Brush.linearGradient(
-        colors = shimmerColors,
-        start = Offset.Zero,
-        end = Offset(x = translateAnimation, y = translateAnimation)
-    )
+    val brush =
+        Brush.linearGradient(
+            colors = shimmerColors,
+            start = Offset.Zero,
+            end = Offset(x = translateAnimation, y = translateAnimation),
+        )
 
     background(brush)
 }
@@ -1179,38 +1151,31 @@ fun Modifier.shimmerEffect(): Modifier = composed {
 private fun PopularStudiosSection(
     studios: List<AfinityStudio>,
     onStudioClick: (AfinityStudio) -> Unit,
-    widthSizeClass: WindowWidthSizeClass
+    widthSizeClass: WindowWidthSizeClass,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
     val cardHeight =
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp
 
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Text(
             text = stringResource(R.string.home_popular_studios),
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         )
 
         LazyRow(
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
+            contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            itemsIndexed(
-                items = studios,
-                key = { _, studio -> studio.id }
-            ) { _, studio ->
+            itemsIndexed(items = studios, key = { _, studio -> studio.id }) { _, studio ->
                 StudioCard(
                     studio = studio,
                     onClick = { onStudioClick(studio) },
-                    cardWidth = cardWidth
+                    cardWidth = cardWidth,
                 )
             }
         }
@@ -1218,23 +1183,14 @@ private fun PopularStudiosSection(
 }
 
 @Composable
-private fun StudioCard(
-    studio: AfinityStudio,
-    onClick: () -> Unit,
-    cardWidth: Dp
-) {
-    Column(
-        modifier = Modifier.width(cardWidth)
-    ) {
+private fun StudioCard(studio: AfinityStudio, onClick: () -> Unit, cardWidth: Dp) {
+    Column(modifier = Modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+            colors =
+                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 studio.primaryImageUrl?.let { imageUrl ->
@@ -1245,33 +1201,35 @@ private fun StudioCard(
                         targetWidth = cardWidth,
                         targetHeight = cardWidth * 9f / 16f,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
-                } ?: run {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_tmdb_collection),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(48.dp)
-                        )
-                    }
                 }
+                    ?: run {
+                        Box(
+                            modifier =
+                                Modifier.fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_tmdb_collection),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(48.dp),
+                            )
+                        }
+                    }
             }
         }
     }
 }
 
-fun Modifier.verticalLayoutOffset(yOffset: Dp) = this.layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints)
-    val yOffsetPx = yOffset.roundToPx()
+fun Modifier.verticalLayoutOffset(yOffset: Dp) =
+    this.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val yOffsetPx = yOffset.roundToPx()
 
-    layout(placeable.width, placeable.height + yOffsetPx) {
-        placeable.placeRelative(0, yOffsetPx)
+        layout(placeable.width, placeable.height + yOffsetPx) {
+            placeable.placeRelative(0, yOffsetPx)
+        }
     }
-}

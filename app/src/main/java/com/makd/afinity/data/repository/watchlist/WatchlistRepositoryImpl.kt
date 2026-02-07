@@ -11,21 +11,23 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
-class WatchlistRepositoryImpl @Inject constructor(
+class WatchlistRepositoryImpl
+@Inject
+constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
-    private val jellyfinRepository: JellyfinRepository
+    private val jellyfinRepository: JellyfinRepository,
 ) : WatchlistRepository {
 
     override suspend fun addToWatchlist(itemId: UUID, itemType: String): Boolean {
@@ -49,9 +51,7 @@ class WatchlistRepositoryImpl @Inject constructor(
     }
 
     override fun isInWatchlistFlow(itemId: UUID): Flow<Boolean> {
-        return flow {
-            emit(isInWatchlist(itemId))
-        }.flowOn(Dispatchers.IO)
+        return flow { emit(isInWatchlist(itemId)) }.flowOn(Dispatchers.IO)
     }
 
     override suspend fun getWatchlistMovies(): List<AfinityMovie> {
@@ -61,7 +61,7 @@ class WatchlistRepositoryImpl @Inject constructor(
                     isLiked = true,
                     sortBy = SortBy.DATE_ADDED,
                     sortDescending = true,
-                    fields = FieldSets.MEDIA_ITEM_CARDS
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
                 )
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked movies")
@@ -77,7 +77,7 @@ class WatchlistRepositoryImpl @Inject constructor(
                     isLiked = true,
                     sortBy = SortBy.DATE_ADDED,
                     sortDescending = true,
-                    fields = FieldSets.MEDIA_ITEM_CARDS
+                    fields = FieldSets.MEDIA_ITEM_CARDS,
                 )
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked shows")
@@ -89,18 +89,17 @@ class WatchlistRepositoryImpl @Inject constructor(
     override suspend fun getWatchlistSeasons(): List<AfinitySeason> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = mediaRepository.getItems(
-                    isLiked = true,
-                    includeItemTypes = listOf("SEASON"),
-                    sortBy = SortBy.DATE_ADDED,
-                    sortDescending = true,
-                    fields = FieldSets.MEDIA_ITEM_CARDS
-                )
+                val response =
+                    mediaRepository.getItems(
+                        isLiked = true,
+                        includeItemTypes = listOf("SEASON"),
+                        sortBy = SortBy.DATE_ADDED,
+                        sortDescending = true,
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                    )
                 response.items
                     ?.filter { it.type?.name == "SEASON" }
-                    ?.mapNotNull {
-                        it.toAfinitySeason(jellyfinRepository)
-                    } ?: emptyList()
+                    ?.mapNotNull { it.toAfinitySeason(jellyfinRepository) } ?: emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked seasons")
                 emptyList()
@@ -111,18 +110,17 @@ class WatchlistRepositoryImpl @Inject constructor(
     override suspend fun getWatchlistEpisodes(): List<AfinityEpisode> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = mediaRepository.getItems(
-                    isLiked = true,
-                    includeItemTypes = listOf("EPISODE"),
-                    sortBy = SortBy.DATE_ADDED,
-                    sortDescending = true,
-                    fields = FieldSets.MEDIA_ITEM_CARDS
-                )
+                val response =
+                    mediaRepository.getItems(
+                        isLiked = true,
+                        includeItemTypes = listOf("EPISODE"),
+                        sortBy = SortBy.DATE_ADDED,
+                        sortDescending = true,
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                    )
                 response.items
                     ?.filter { it.type?.name == "EPISODE" }
-                    ?.mapNotNull {
-                        it.toAfinityEpisode(jellyfinRepository)
-                    } ?: emptyList()
+                    ?.mapNotNull { it.toAfinityEpisode(jellyfinRepository) } ?: emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked episodes")
                 emptyList()
@@ -133,10 +131,7 @@ class WatchlistRepositoryImpl @Inject constructor(
     override suspend fun getWatchlistCount(): Int {
         return withContext(Dispatchers.IO) {
             try {
-                val response = mediaRepository.getItems(
-                    isLiked = true,
-                    limit = 0
-                )
+                val response = mediaRepository.getItems(isLiked = true, limit = 0)
                 response.totalRecordCount ?: 0
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get watchlist count")
@@ -146,18 +141,13 @@ class WatchlistRepositoryImpl @Inject constructor(
     }
 
     override fun getWatchlistCountFlow(): Flow<Int> {
-        return flow {
-            emit(getWatchlistCount())
-        }.flowOn(Dispatchers.IO)
+        return flow { emit(getWatchlistCount()) }.flowOn(Dispatchers.IO)
     }
 
     override suspend fun clearWatchlist() {
         return withContext(Dispatchers.IO) {
             try {
-                val allLikedResponse = mediaRepository.getItems(
-                    isLiked = true,
-                    limit = 1000
-                )
+                val allLikedResponse = mediaRepository.getItems(isLiked = true, limit = 1000)
                 val likedItemIds = allLikedResponse.items?.mapNotNull { it.id } ?: emptyList()
 
                 likedItemIds.forEach { itemId ->

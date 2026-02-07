@@ -20,12 +20,12 @@ object WatchlistModule {
     fun provideWatchlistRepository(
         userDataRepository: UserDataRepository,
         mediaRepository: MediaRepository,
-        jellyfinRepository: JellyfinRepository
+        jellyfinRepository: JellyfinRepository,
     ): WatchlistRepository {
         return WatchlistRepositoryImpl(
             userDataRepository = userDataRepository,
             mediaRepository = mediaRepository,
-            jellyfinRepository = jellyfinRepository
+            jellyfinRepository = jellyfinRepository,
         )
     }
 }
