@@ -72,6 +72,11 @@ The Requests tab will appear in your bottom navigation once connected.
   <img src="screenshots/request_screen.png" width="30%" alt="Favorite Page">
   &nbsp;
   <img src="screenshots/request_prompt.png" width="30%" alt="Person Detail Page">
+  <img src="screenshots/audiobookshelf_screen.png" width="30%" alt="Audiobookshelf Page">
+  &nbsp;
+  <img src="screenshots/book_detail.png" width="30%" alt="Audiobook Detail Page">
+  &nbsp;
+  <img src="screenshots/audiobook_player.png" width="30%" alt="Audiobook Player Screen">
   <img src="screenshots/player.png" width="92%" alt="Player Screen">
 </p>
 
@@ -82,7 +87,8 @@ The Requests tab will appear in your bottom navigation once connected.
 | **Media Playback** | - Hardware-accelerated video playback with LibMPV<br>- Multiple audio and subtitle track support<br>- Customizable subtitle appearance (color, size, position, style)<br>- Resume functionality across sessions<br>- Trickplay navigation with thumbnail previews<br>- Chapter markers and navigation<br>- Media Segments Support (Intro/Outro Skipper)<br>- Multiple video zoom modes (Fit, Zoom, Stretch)<br>- Picture-in-Picture mode with background audio control |  
 | **Live TV** | - Watch live television channels<br>- Electronic Program Guide (EPG) with timeline navigation<br>- Browse programs by category (Movies, Sports, News, etc.)<br>- Mark channels as favourites<br>- Real-time program progress updates<br>- Direct stream support for IPTV sources |  
 | **Content Discovery** | - Library browsing by content type<br>- Personalized home screen with dynamic recommendations<br>- Genre, studio, and network browsing<br>- Search and filtering capabilities with alphabet scroller<br>- Favorites and watchlist management<br>- Cast and crew information with full filmography<br>- Episode switcher in player for quick navigation |  
-| **Seerr Integration** | - Request movies and TV shows with season selection<br>- Browse trending, popular, and upcoming content<br>- Search integration with request filter<br>- Track request status (Pending, Approved, Available)<br>- Real-time request status updates across app<br>- Approve / Reject incoming requests (admin only)<br>- Detailed media information in request dialog (ratings, runtime, cast) |  
+| **Seerr Integration** *(Optional)* | - Request movies and TV shows with season selection<br>- Browse trending, popular, and upcoming content<br>- Search integration with request filter<br>- Track request status (Pending, Approved, Available)<br>- Real-time request status updates across app<br>- Approve / Reject incoming requests (admin only)<br>- Detailed media information in request dialog (ratings, runtime, cast) |  
+| **Audiobookshelf Integration** *(Optional)* | - Connect to Audiobookshelf servers for audiobook and podcast playback<br>- Browse libraries with tabbed navigation (Home, Series, Libraries)<br>- Genre-based discovery and series collections<br>- Background audio playback with media notifications and lock screen controls<br>- Sleep timer and adjustable playback speed<br>- Chapter navigation with progress syncing<br>- Persistent mini-player for navigation during playback<br>- Integration with main search |
 | **Interface** | - Material 3 design with system theming<br>- Responsive adaptive layouts for phones, tablets, and foldables<br>- Gesture-based player controls (brightness, volume, seeking)<br>- Dark and light theme support with dynamic colors<br>- Customizable episode layout (horizontal/vertical)<br>- Edge-to-edge display support |  
 | **Server Integration** | - Secure authentication with encrypted credential storage<br>- Multi-server & multi-user support with quick session switching<br>- Playback progress synchronization<br>- Multiple quality options<br>- Background library updates and downloads<br>- One-tap login for saved accounts |
 
