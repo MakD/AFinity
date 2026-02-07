@@ -74,8 +74,11 @@ enum class Destination(
         const val AUDIOBOOKSHELF_LIBRARIES_ROUTE = "audiobookshelf/libraries"
         const val AUDIOBOOKSHELF_LIBRARY_ROUTE = "audiobookshelf/library/{libraryId}"
         const val AUDIOBOOKSHELF_ITEM_ROUTE = "audiobookshelf/item/{itemId}"
+        const val AUDIOBOOKSHELF_SERIES_ROUTE =
+            "audiobookshelf/series/{seriesId}/{libraryId}/{seriesName}"
+        const val AUDIOBOOKSHELF_GENRE_RESULTS_ROUTE = "audiobookshelf/genre/{genre}"
         const val AUDIOBOOKSHELF_PLAYER_ROUTE =
-            "audiobookshelf/player/{itemId}?episodeId={episodeId}"
+            "audiobookshelf/player/{itemId}?episodeId={episodeId}&startPosition={startPosition}"
 
         fun createAudiobookshelfLoginRoute(): String {
             return AUDIOBOOKSHELF_LOGIN_ROUTE
@@ -93,9 +96,29 @@ enum class Destination(
             return "audiobookshelf/item/$itemId"
         }
 
-        fun createAudiobookshelfPlayerRoute(itemId: String, episodeId: String? = null): String {
-            return if (episodeId != null) {
-                "audiobookshelf/player/$itemId?episodeId=$episodeId"
+        fun createAudiobookshelfSeriesRoute(
+            seriesId: String,
+            libraryId: String,
+            seriesName: String,
+        ): String {
+            return "audiobookshelf/series/$seriesId/$libraryId/${seriesName.replace("/", "%2F")}"
+        }
+
+        fun createAudiobookshelfGenreResultsRoute(genre: String): String {
+            return "audiobookshelf/genre/${genre.replace("/", "%2F")}"
+        }
+
+        fun createAudiobookshelfPlayerRoute(
+            itemId: String,
+            episodeId: String? = null,
+            startPosition: Double? = null,
+        ): String {
+            val params = buildList {
+                if (episodeId != null) add("episodeId=$episodeId")
+                if (startPosition != null) add("startPosition=$startPosition")
+            }
+            return if (params.isNotEmpty()) {
+                "audiobookshelf/player/$itemId?${params.joinToString("&")}"
             } else {
                 "audiobookshelf/player/$itemId"
             }

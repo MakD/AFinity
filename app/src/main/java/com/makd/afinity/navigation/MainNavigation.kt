@@ -13,7 +13,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,10 +37,11 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.updater.UpdateManager
+import com.makd.afinity.ui.audiobookshelf.genre.AudiobookshelfGenreResultsScreen
 import com.makd.afinity.ui.audiobookshelf.item.AudiobookshelfItemScreen
+import com.makd.afinity.ui.audiobookshelf.item.series.AudiobookshelfSeriesScreen
 import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibrariesScreen
 import com.makd.afinity.ui.audiobookshelf.library.AudiobookshelfLibraryScreen
-import com.makd.afinity.ui.audiobookshelf.login.AudiobookshelfLoginScreen
 import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
 import com.makd.afinity.ui.audiobookshelf.player.components.MiniPlayer
 import com.makd.afinity.ui.components.AfinitySplashScreen
@@ -133,21 +133,12 @@ fun MainNavigation(
                 route != "server_management" &&
                 !route.startsWith("add_edit_server") &&
                 !route.startsWith("login") &&
-                !route.startsWith("audiobookshelf/login") &&
                 !route.startsWith("audiobookshelf/library/") &&
                 !route.startsWith("audiobookshelf/item/") &&
+                !route.startsWith("audiobookshelf/series/") &&
+                !route.startsWith("audiobookshelf/genre/") &&
                 !route.startsWith("audiobookshelf/player/")
         } ?: true
-
-    val navigationSuiteScaffoldState = rememberNavigationSuiteScaffoldState()
-
-    LaunchedEffect(shouldShowNavigation) {
-        if (shouldShowNavigation) {
-            navigationSuiteScaffoldState.show()
-        } else {
-            navigationSuiteScaffoldState.hide()
-        }
-    }
 
     val useNavRail = widthSizeClass != WindowWidthSizeClass.Compact
 
@@ -167,8 +158,11 @@ fun MainNavigation(
 
     NavigationSuiteScaffold(
         layoutType =
-            if (useNavRail) NavigationSuiteType.NavigationRail
-            else NavigationSuiteType.NavigationBar,
+            when {
+                !shouldShowNavigation -> NavigationSuiteType.None
+                useNavRail -> NavigationSuiteType.NavigationRail
+                else -> NavigationSuiteType.NavigationBar
+            },
         navigationSuiteItems = {
             Destination.entries.forEach { destination ->
                 if (isOffline && destination != Destination.HOME) {
@@ -230,7 +224,6 @@ fun MainNavigation(
                 )
             }
         },
-        state = navigationSuiteScaffoldState,
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -529,6 +522,16 @@ fun MainNavigation(
                             val route = Destination.createGenreResultsRoute(genre)
                             navController.navigate(route)
                         },
+                        onAudiobookshelfItemClick = { itemId ->
+                            navController.navigate(
+                                Destination.createAudiobookshelfItemRoute(itemId)
+                            )
+                        },
+                        onAudiobookshelfGenreClick = { genre ->
+                            navController.navigate(
+                                Destination.createAudiobookshelfGenreResultsRoute(genre)
+                            )
+                        },
                         modifier = Modifier.fillMaxSize(),
                         widthSizeClass = widthSizeClass,
                     )
@@ -544,6 +547,23 @@ fun MainNavigation(
                         onItemClick = { item ->
                             val route = Destination.createItemDetailRoute(item.id.toString())
                             navController.navigate(route)
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                        widthSizeClass = widthSizeClass,
+                    )
+                }
+
+                composable(
+                    route = Destination.AUDIOBOOKSHELF_GENRE_RESULTS_ROUTE,
+                    arguments = listOf(navArgument("genre") { type = NavType.StringType }),
+                ) {
+                    AudiobookshelfGenreResultsScreen(
+                        genre = it.arguments?.getString("genre") ?: "",
+                        onBackClick = { navController.popBackStack() },
+                        onItemClick = { itemId ->
+                            navController.navigate(
+                                Destination.createAudiobookshelfItemRoute(itemId)
+                            )
                         },
                         modifier = Modifier.fillMaxSize(),
                         widthSizeClass = widthSizeClass,
@@ -576,9 +596,6 @@ fun MainNavigation(
                         onServerManagementClick = {
                             val route = Destination.createServerManagementRoute()
                             navController.navigate(route)
-                        },
-                        onAudiobookshelfClick = {
-                            navController.navigate(Destination.createAudiobookshelfLoginRoute())
                         },
                     )
                 }
@@ -656,28 +673,12 @@ fun MainNavigation(
                     )
                 }
 
-                composable(Destination.AUDIOBOOKSHELF_LOGIN_ROUTE) {
-                    AudiobookshelfLoginScreen(
-                        onNavigateBack = { navController.popBackStack() },
-                        onLoginSuccess = {
-                            navController.navigate(
-                                Destination.createAudiobookshelfLibrariesRoute()
-                            ) {
-                                popUpTo(Destination.AUDIOBOOKSHELF_LOGIN_ROUTE) { inclusive = true }
-                            }
-                        },
-                    )
-                }
-
                 composable(Destination.AUDIOBOOKSHELF_LIBRARIES_ROUTE) {
                     AudiobookshelfLibrariesScreen(
                         onNavigateToItem = { itemId ->
                             navController.navigate(
                                 Destination.createAudiobookshelfItemRoute(itemId)
                             )
-                        },
-                        onNavigateToLogin = {
-                            navController.navigate(Destination.createAudiobookshelfLoginRoute())
                         },
                         navController = navController,
                         mainUiState = mainUiState,
@@ -705,9 +706,45 @@ fun MainNavigation(
                 ) {
                     AudiobookshelfItemScreen(
                         onNavigateBack = { navController.popBackStack() },
-                        onNavigateToPlayer = { itemId, episodeId ->
+                        onNavigateToPlayer = { itemId, episodeId, startPosition ->
                             navController.navigate(
-                                Destination.createAudiobookshelfPlayerRoute(itemId, episodeId)
+                                Destination.createAudiobookshelfPlayerRoute(
+                                    itemId,
+                                    episodeId,
+                                    startPosition,
+                                )
+                            )
+                        },
+                        onNavigateToSeries = { seriesId, libraryId, seriesName ->
+                            navController.navigate(
+                                Destination.createAudiobookshelfSeriesRoute(
+                                    seriesId,
+                                    libraryId,
+                                    seriesName,
+                                )
+                            )
+                        },
+                    )
+                }
+
+                composable(
+                    route = Destination.AUDIOBOOKSHELF_SERIES_ROUTE,
+                    arguments =
+                        listOf(
+                            navArgument("seriesId") { type = NavType.StringType },
+                            navArgument("libraryId") { type = NavType.StringType },
+                            navArgument("seriesName") { type = NavType.StringType },
+                        ),
+                ) {
+                    AudiobookshelfSeriesScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToPlayer = { itemId, episodeId, startPosition ->
+                            navController.navigate(
+                                Destination.createAudiobookshelfPlayerRoute(
+                                    itemId,
+                                    episodeId,
+                                    startPosition,
+                                )
                             )
                         },
                     )
@@ -719,6 +756,11 @@ fun MainNavigation(
                         listOf(
                             navArgument("itemId") { type = NavType.StringType },
                             navArgument("episodeId") {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            },
+                            navArgument("startPosition") {
                                 type = NavType.StringType
                                 nullable = true
                                 defaultValue = null

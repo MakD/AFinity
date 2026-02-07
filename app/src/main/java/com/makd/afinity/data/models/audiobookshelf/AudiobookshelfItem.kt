@@ -1,7 +1,16 @@
 package com.makd.afinity.data.models.audiobookshelf
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 
 @Serializable
 data class LibraryItem(
@@ -75,7 +84,9 @@ data class MediaMetadata(
     @SerialName("abridged") val abridged: Boolean? = null,
     @SerialName("authors") val authors: List<Author>? = null,
     @SerialName("narrators") val narrators: List<String>? = null,
-    @SerialName("series") val series: List<SeriesItem>? = null,
+    @Serializable(with = SeriesItemListSerializer::class)
+    @SerialName("series")
+    val series: List<SeriesItem>? = null,
     @SerialName("feedUrl") val feedUrl: String? = null,
     @SerialName("imageUrl") val imageUrl: String? = null,
     @SerialName("itunesPageUrl") val itunesPageUrl: String? = null,
@@ -105,6 +116,30 @@ data class SeriesItem(
     @SerialName("name") val name: String,
     @SerialName("sequence") val sequence: String? = null,
 )
+
+object SeriesItemListSerializer : KSerializer<List<SeriesItem>?> {
+    private val listSerializer = ListSerializer(SeriesItem.serializer())
+
+    override val descriptor: SerialDescriptor = listSerializer.descriptor
+
+    override fun serialize(encoder: Encoder, value: List<SeriesItem>?) {
+        if (value != null) {
+            listSerializer.serialize(encoder, value)
+        } else {
+            encoder.encodeNull()
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): List<SeriesItem>? {
+        val jsonDecoder = decoder as? JsonDecoder ?: return listSerializer.deserialize(decoder)
+        return when (val element = jsonDecoder.decodeJsonElement()) {
+            is JsonArray -> jsonDecoder.json.decodeFromJsonElement(listSerializer, element)
+            is JsonObject ->
+                listOf(jsonDecoder.json.decodeFromJsonElement(SeriesItem.serializer(), element))
+            else -> null
+        }
+    }
+}
 
 @Serializable
 data class AudioFile(
@@ -293,3 +328,5 @@ data class SeriesResult(
 
 @Serializable
 data class ItemsInProgressResponse(@SerialName("libraryItems") val libraryItems: List<LibraryItem>)
+
+@Serializable data class GenresResponse(@SerialName("genres") val genres: List<String>)

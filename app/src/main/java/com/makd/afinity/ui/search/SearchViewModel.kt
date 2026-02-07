@@ -2,6 +2,7 @@ package com.makd.afinity.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
@@ -13,15 +14,19 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -34,12 +39,14 @@ constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val jellyseerrRepository: JellyseerrRepository,
     private val appDataRepository: AppDataRepository,
+    private val audiobookshelfRepository: AudiobookshelfRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     val isJellyseerrAuthenticated = jellyseerrRepository.isAuthenticated
+    val isAudiobookshelfAuthenticated = audiobookshelfRepository.isAuthenticated
 
     init {
         viewModelScope.launch {
@@ -49,15 +56,25 @@ constructor(
                     loadGenres()
 
                     if (_uiState.value.searchQuery.isNotEmpty()) {
-                        if (_uiState.value.isJellyseerrSearchMode) {
-                            performJellyseerrSearch()
-                        } else {
-                            performSearch()
+                        when {
+                            _uiState.value.isJellyseerrSearchMode -> performJellyseerrSearch()
+                            _uiState.value.isAudiobookshelfSearchMode ->
+                                performAudiobookshelfSearch()
+                            else -> {
+                                performSearch()
+                                performAudiobookshelfSearch()
+                            }
                         }
                     }
                 } else {
                     _uiState.value = SearchUiState()
                 }
+            }
+        }
+
+        viewModelScope.launch {
+            audiobookshelfRepository.currentConfig.collect { config ->
+                _uiState.update { it.copy(audiobookshelfServerUrl = config?.serverUrl) }
             }
         }
     }
@@ -93,6 +110,28 @@ constructor(
         }
     }
 
+    fun loadAudiobookshelfGenres() {
+        viewModelScope.launch {
+            try {
+                audiobookshelfRepository
+                    .getGenres()
+                    .fold(
+                        onSuccess = { genres ->
+                            _uiState.update { it.copy(audiobookshelfGenres = genres) }
+                            Timber.d("Loaded ${genres.size} Audiobookshelf genres")
+                        },
+                        onFailure = { error ->
+                            Timber.e(error, "Failed to load Audiobookshelf genres")
+                            _uiState.update { it.copy(audiobookshelfGenres = emptyList()) }
+                        },
+                    )
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load Audiobookshelf genres")
+                _uiState.update { it.copy(audiobookshelfGenres = emptyList()) }
+            }
+        }
+    }
+
     fun updateSearchQuery(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query)
 
@@ -100,10 +139,13 @@ constructor(
             viewModelScope.launch {
                 kotlinx.coroutines.delay(500)
                 if (_uiState.value.searchQuery == query) {
-                    if (_uiState.value.isJellyseerrSearchMode) {
-                        performJellyseerrSearch()
-                    } else {
-                        performSearch()
+                    when {
+                        _uiState.value.isJellyseerrSearchMode -> performJellyseerrSearch()
+                        _uiState.value.isAudiobookshelfSearchMode -> performAudiobookshelfSearch()
+                        else -> {
+                            performSearch()
+                            performAudiobookshelfSearch()
+                        }
                     }
                 }
             }
@@ -112,12 +154,18 @@ constructor(
                 _uiState.value.copy(
                     searchResults = emptyList(),
                     jellyseerrSearchResults = emptyList(),
+                    audiobookshelfSearchResults = emptyList(),
                 )
         }
     }
 
     fun selectLibrary(library: AfinityCollection?) {
-        _uiState.value = _uiState.value.copy(selectedLibrary = library)
+        _uiState.value =
+            _uiState.value.copy(
+                selectedLibrary = library,
+                isAudiobookshelfSearchMode = false,
+                audiobookshelfSearchResults = emptyList(),
+            )
 
         loadGenres()
 
@@ -198,11 +246,20 @@ constructor(
                 isSearching = false,
                 jellyseerrSearchResults = emptyList(),
                 isJellyseerrSearching = false,
+                audiobookshelfSearchResults = emptyList(),
+                isAudiobookshelfSearching = false,
             )
     }
 
     fun selectJellyseerrSearchMode() {
-        _uiState.update { it.copy(isJellyseerrSearchMode = true, selectedLibrary = null) }
+        _uiState.update {
+            it.copy(
+                isJellyseerrSearchMode = true,
+                isAudiobookshelfSearchMode = false,
+                selectedLibrary = null,
+                audiobookshelfSearchResults = emptyList(),
+            )
+        }
 
         if (_uiState.value.searchQuery.isNotEmpty()) {
             performJellyseerrSearch()
@@ -211,11 +268,99 @@ constructor(
 
     fun selectJellyfinSearchMode() {
         _uiState.update {
-            it.copy(isJellyseerrSearchMode = false, jellyseerrSearchResults = emptyList())
+            it.copy(
+                isJellyseerrSearchMode = false,
+                isAudiobookshelfSearchMode = false,
+                jellyseerrSearchResults = emptyList(),
+                audiobookshelfSearchResults = emptyList(),
+            )
         }
 
         if (_uiState.value.searchQuery.isNotEmpty()) {
             performSearch()
+            performAudiobookshelfSearch()
+        }
+    }
+
+    fun selectAudiobookshelfSearchMode() {
+        _uiState.update {
+            it.copy(
+                isAudiobookshelfSearchMode = true,
+                isJellyseerrSearchMode = false,
+                selectedLibrary = null,
+                jellyseerrSearchResults = emptyList(),
+                searchResults = emptyList(),
+            )
+        }
+
+        loadAudiobookshelfGenres()
+
+        if (_uiState.value.searchQuery.isNotEmpty()) {
+            performAudiobookshelfSearch()
+        }
+    }
+
+    fun performAudiobookshelfSearch() {
+        val query = _uiState.value.searchQuery.trim()
+        if (query.isEmpty()) return
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isAudiobookshelfSearching = true) }
+
+                var libraries = audiobookshelfRepository.getLibrariesFlow().first()
+                if (libraries.isEmpty()) {
+                    Timber.d("No cached libraries, refreshing from server")
+                    libraries =
+                        audiobookshelfRepository.refreshLibraries().getOrDefault(emptyList())
+                }
+
+                Timber.d(
+                    "Searching ${libraries.size} libraries: ${libraries.map { "${it.name}(${it.id})" }}"
+                )
+
+                val results =
+                    libraries
+                        .map { library ->
+                            async {
+                                audiobookshelfRepository
+                                    .searchLibrary(library.id, query)
+                                    .onSuccess { response ->
+                                        Timber.d(
+                                            "Library '${library.name}': ${response.book?.size ?: 0} books, ${response.podcast?.size ?: 0} podcasts"
+                                        )
+                                    }
+                                    .onFailure {
+                                        Timber.w(it, "Search failed for library ${library.name}")
+                                    }
+                                    .getOrNull()
+                            }
+                        }
+                        .awaitAll()
+                        .filterNotNull()
+
+                val items =
+                    results
+                        .flatMap { response ->
+                            val books = response.book?.map { it.libraryItem } ?: emptyList()
+                            val podcasts = response.podcast?.map { it.libraryItem } ?: emptyList()
+                            books + podcasts
+                        }
+                        .distinctBy { it.id }
+
+                _uiState.update {
+                    it.copy(audiobookshelfSearchResults = items, isAudiobookshelfSearching = false)
+                }
+                Timber.d("Audiobookshelf search completed: ${items.size} results for '$query'")
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        audiobookshelfSearchResults = emptyList(),
+                        isAudiobookshelfSearching = false,
+                    )
+                }
+                Timber.e(e, "Error during Audiobookshelf search")
+            }
         }
     }
 
@@ -437,9 +582,14 @@ data class SearchUiState(
     val libraries: List<AfinityCollection> = emptyList(),
     val selectedLibrary: AfinityCollection? = null,
     val genres: List<String> = emptyList(),
+    val audiobookshelfGenres: List<String> = emptyList(),
     val isJellyseerrSearchMode: Boolean = false,
     val jellyseerrSearchResults: List<SearchResultItem> = emptyList(),
     val isJellyseerrSearching: Boolean = false,
+    val isAudiobookshelfSearchMode: Boolean = false,
+    val audiobookshelfSearchResults: List<LibraryItem> = emptyList(),
+    val isAudiobookshelfSearching: Boolean = false,
+    val audiobookshelfServerUrl: String? = null,
     val showRequestDialog: Boolean = false,
     val pendingRequest: PendingRequestSearch? = null,
     val selectedSeasons: List<Int> = emptyList(),

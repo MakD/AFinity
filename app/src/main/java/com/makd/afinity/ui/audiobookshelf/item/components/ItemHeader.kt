@@ -25,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,11 +42,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -70,7 +69,7 @@ fun ItemHeader(
         } else null
 
     Box(modifier = modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.fillMaxWidth().height(450.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().height(530.dp)) {
             ItemHeroBackground(coverUrl = coverUrl)
         }
 
@@ -123,100 +122,115 @@ fun ItemHeaderContent(
     onPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Spacer(modifier = Modifier.statusBarsPadding())
-        Spacer(modifier = Modifier.height(140.dp))
+        Spacer(modifier = Modifier.height(60.dp))
 
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-            if (coverUrl != null) {
-                AsyncImage(
-                    model = coverUrl,
-                    contentDescription = "Cover",
-                    modifier =
-                        Modifier.width(160.dp)
-                            .aspectRatio(1f)
-                            .shadow(12.dp, RoundedCornerShape(12.dp))
-                            .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop,
-                )
-            } else {
-                Card(
-                    modifier = Modifier.width(160.dp).aspectRatio(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ),
-                ) {}
-            }
+        if (coverUrl != null) {
+            AsyncImage(
+                model = coverUrl,
+                contentDescription = "Cover",
+                modifier =
+                    Modifier.width(200.dp)
+                        .aspectRatio(1f)
+                        .shadow(12.dp, RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            Card(
+                modifier = Modifier.width(200.dp).aspectRatio(1f),
+                shape = RoundedCornerShape(12.dp),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                    ),
+            ) {}
+        }
 
-            Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Column(
-                modifier = Modifier.weight(1f).padding(bottom = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                item.media.metadata.seriesName?.let { series ->
-                    Text(
-                        text = series.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+        Text(
+            text = item.media.metadata.title ?: "Unknown Title",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+        )
 
+        item.media.metadata.authorName?.let { author ->
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "by $author",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        item.media.duration?.let { duration ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = item.media.metadata.title ?: "Unknown Title",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
+                    text = formatDuration(duration),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
-                item.media.metadata.authorName?.let { author ->
+                if (progress != null && progress.progress > 0) {
                     Text(
-                        text = "by $author",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium,
+                        text = " • ",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    CircularProgressIndicator(
+                        progress = { progress.progress.toFloat() },
+                        modifier = Modifier.size(12.dp),
+                        color = Color(0xFFFFC107),
+                        strokeWidth = 2.dp,
+                        trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                    )
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    val remainingSeconds = progress.duration - progress.currentTime
+                    Text(
+                        text = "${formatDuration(remainingSeconds)} left",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
+            }
+        }
 
-                item.media.duration?.let { duration ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+        val genres = item.media.metadata.genres
+        if (!genres.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) {
+                genres.take(2).forEach { genre ->
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ) {
                         Text(
-                            text = formatDuration(duration),
-                            style = MaterialTheme.typography.labelMedium,
+                            text = genre,
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         )
-
-                        if (progress != null && progress.progress > 0) {
-                            Text(
-                                text = " • ",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-
-                            Spacer(modifier = Modifier.width(4.dp))
-
-                            CircularProgressIndicator(
-                                progress = { progress.progress.toFloat() },
-                                modifier = Modifier.size(12.dp),
-                                color = Color(0xFFFFC107),
-                                strokeWidth = 2.dp,
-                                trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                            )
-
-                            Spacer(modifier = Modifier.width(6.dp))
-
-                            val remainingSeconds = progress.duration - progress.currentTime
-                            Text(
-                                text = "${formatDuration(remainingSeconds)} left",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
                     }
                 }
             }
@@ -254,47 +268,11 @@ fun ItemHeaderContent(
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        item.media.metadata.description?.let { description ->
-            ExpandableSynopsis(description = description)
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        item.media.metadata.narratorName?.let { narrator ->
-            Text(
-                text =
-                    buildAnnotatedString {
-                        withStyle(
-                            style =
-                                SpanStyle(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.Normal,
-                                )
-                        ) {
-                            append("Narrated by: ")
-                        }
-
-                        withStyle(
-                            style =
-                                SpanStyle(
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = FontWeight.Medium,
-                                )
-                        ) {
-                            append(narrator)
-                        }
-                    },
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
     }
 }
 
 @Composable
-private fun ExpandableSynopsis(description: String, modifier: Modifier = Modifier) {
+internal fun ExpandableSynopsis(description: String, modifier: Modifier = Modifier) {
     var isExpanded by remember { mutableStateOf(false) }
     var isEllipsized by remember { mutableStateOf(false) }
 
@@ -316,7 +294,7 @@ private fun ExpandableSynopsis(description: String, modifier: Modifier = Modifie
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "Synopsis",
+            text = "Overview",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -360,7 +338,7 @@ private fun ExpandableSynopsis(description: String, modifier: Modifier = Modifie
         if (isEllipsized || isExpanded) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (isExpanded) "Show Less" else "Show More",
+                text = if (isExpanded) "Show Less" else "Read more",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,

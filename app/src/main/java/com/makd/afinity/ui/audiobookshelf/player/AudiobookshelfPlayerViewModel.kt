@@ -26,6 +26,8 @@ constructor(
 
     private val itemId: String = savedStateHandle.get<String>("itemId") ?: ""
     private val episodeId: String? = savedStateHandle.get<String>("episodeId")
+    private val startPosition: Double? =
+        savedStateHandle.get<String>("startPosition")?.toDoubleOrNull()
 
     private val _uiState = MutableStateFlow(AudiobookshelfPlayerUiState())
     val uiState: StateFlow<AudiobookshelfPlayerUiState> = _uiState.asStateFlow()
@@ -41,6 +43,9 @@ constructor(
         val currentState = playbackManager.playbackState.value
         if (currentState.sessionId != null && currentState.itemId == itemId) {
             Timber.d("Resuming existing playback session for item: $itemId")
+            if (startPosition != null) {
+                audiobookshelfPlayer.seekToPosition(startPosition)
+            }
             return
         }
 
@@ -53,8 +58,7 @@ constructor(
                 onSuccess = { session ->
                     val serverUrl = currentConfig.value?.serverUrl
                     if (serverUrl != null) {
-                        audiobookshelfPlayer.loadSession(session, serverUrl)
-                        audiobookshelfPlayer.play()
+                        audiobookshelfPlayer.loadSession(session, serverUrl, startPosition)
                         _uiState.value = _uiState.value.copy(isLoading = false)
                         Timber.d("Started playback session: ${session.id}")
                     } else {

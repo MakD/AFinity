@@ -9,6 +9,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -34,12 +35,42 @@ constructor(
     private val playbackManager: AudiobookshelfPlaybackManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val sessionManager: SessionManager,
 ) {
     private var mediaController: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var sleepTimerJob: Job? = null
+
+    init {
+        scope.launch {
+            var previousSessionKey: String? = null
+            sessionManager.currentSession.collect { session ->
+                val newKey = session?.let { "${it.serverId}/${it.userId}" }
+                if (previousSessionKey != null && newKey != previousSessionKey) {
+                    if (playbackManager.playbackState.value.sessionId != null) {
+                        Timber.d("Jellyfin session changed, closing Audiobookshelf playback")
+                        closeSession()
+                    }
+                }
+                previousSessionKey = newKey
+            }
+        }
+
+        scope.launch {
+            var wasAuthenticated = false
+            audiobookshelfRepository.isAuthenticated.collect { isAuthenticated ->
+                if (wasAuthenticated && !isAuthenticated) {
+                    if (playbackManager.playbackState.value.sessionId != null) {
+                        Timber.d("Audiobookshelf auth lost, closing playback")
+                        closeSession()
+                    }
+                }
+                wasAuthenticated = isAuthenticated
+            }
+        }
+    }
 
     private suspend fun getConnectedController(): MediaController? {
         if (mediaController != null) return mediaController
@@ -60,7 +91,7 @@ constructor(
         }
     }
 
-    fun loadSession(session: PlaybackSession, baseUrl: String) {
+    fun loadSession(session: PlaybackSession, baseUrl: String, startPosition: Double? = null) {
         scope.launch {
             val controller = getConnectedController() ?: return@launch
 
@@ -167,8 +198,9 @@ constructor(
             controller.setMediaItems(mediaItems)
             controller.prepare()
 
-            if (session.currentTime > 0) {
-                seekToPosition(session.currentTime)
+            val seekPosition = startPosition ?: session.currentTime
+            if (seekPosition > 0) {
+                seekToPosition(seekPosition)
             }
             controller.play()
         }

@@ -207,6 +207,10 @@ interface PreferencesRepository {
 
     fun getEpisodeLayoutFlow(): Flow<EpisodeLayout>
 
+    suspend fun setNotificationPermissionDeclined(declined: Boolean)
+
+    suspend fun getNotificationPermissionDeclined(): Boolean
+
     suspend fun clearAllPreferences()
 
     suspend fun clearServerPreferences()

@@ -17,6 +17,7 @@ import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -45,6 +46,7 @@ constructor(
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val jellyseerrRepository: JellyseerrRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val audiobookshelfPlayer: AudiobookshelfPlayer,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -482,6 +484,7 @@ constructor(
                     }
 
                     try {
+                        audiobookshelfPlayer.release()
                         audiobookshelfRepository.logout()
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to logout from Audiobookshelf during AFinity logout")
@@ -522,6 +525,7 @@ constructor(
     fun logoutFromAudiobookshelf() {
         viewModelScope.launch {
             try {
+                audiobookshelfPlayer.release()
                 audiobookshelfRepository.logout()
                 Timber.d("Audiobookshelf logout successful")
             } catch (e: Exception) {

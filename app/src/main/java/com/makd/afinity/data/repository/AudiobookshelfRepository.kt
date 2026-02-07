@@ -66,6 +66,12 @@ interface AudiobookshelfRepository {
         page: Int = 0,
     ): Result<List<AudiobookshelfSeries>>
 
+    suspend fun getSeriesItems(
+        libraryId: String,
+        seriesId: String,
+        limit: Int = 4,
+    ): Result<SeriesItemsResult>
+
     suspend fun getPersonalized(libraryId: String): Result<List<PersonalizedView>>
 
     fun getInProgressItemsFlow(): Flow<List<ItemWithProgress>>
@@ -99,6 +105,12 @@ interface AudiobookshelfRepository {
     ): Result<Unit>
 
     suspend fun syncPendingProgress(): Result<Int>
+
+    suspend fun getGenres(): Result<List<String>>
+
+    suspend fun getLibraryItemsByGenre(libraryId: String, genre: String): Result<List<LibraryItem>>
 }
 
 data class AudiobookshelfConfig(val serverUrl: String, val absUserId: String, val username: String)
+
+data class SeriesItemsResult(val items: List<LibraryItem>, val totalBooks: Int)

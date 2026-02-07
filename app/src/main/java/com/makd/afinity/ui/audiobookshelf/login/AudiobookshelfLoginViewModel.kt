@@ -3,6 +3,7 @@ package com.makd.afinity.ui.audiobookshelf.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +15,10 @@ import timber.log.Timber
 @HiltViewModel
 class AudiobookshelfLoginViewModel
 @Inject
-constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : ViewModel() {
+constructor(
+    private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val preferencesRepository: PreferencesRepository,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AudiobookshelfLoginUiState())
     val uiState: StateFlow<AudiobookshelfLoginUiState> = _uiState.asStateFlow()
@@ -130,6 +134,14 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    suspend fun isNotificationPermissionDeclined(): Boolean {
+        return preferencesRepository.getNotificationPermissionDeclined()
+    }
+
+    fun declineNotificationPermission() {
+        viewModelScope.launch { preferencesRepository.setNotificationPermissionDeclined(true) }
     }
 
     private fun normalizeUrl(url: String): String {

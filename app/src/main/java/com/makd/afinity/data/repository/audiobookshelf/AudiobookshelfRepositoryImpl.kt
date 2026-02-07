@@ -25,6 +25,7 @@ import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.ItemWithProgress
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.repository.SeriesItemsResult
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
 import java.util.UUID
@@ -467,7 +468,7 @@ constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val response = apiService.get().search(libraryId, query)
+                val response = apiService.get().search(libraryId, query, limit = 25)
 
                 if (response.isSuccessful && response.body() != null) {
                     Result.success(response.body()!!)
@@ -526,6 +527,51 @@ constructor(
                 Result.success(allSeries)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get series for library $libraryId")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getSeriesItems(
+        libraryId: String,
+        seriesId: String,
+        limit: Int,
+    ): Result<SeriesItemsResult> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val encodedFilter =
+                    "series." +
+                        java.net.URLEncoder.encode(
+                            android.util.Base64.encodeToString(
+                                seriesId.toByteArray(),
+                                android.util.Base64.NO_WRAP,
+                            ),
+                            "UTF-8",
+                        )
+
+                val response =
+                    apiService
+                        .get()
+                        .getLibraryItems(
+                            id = libraryId,
+                            limit = limit,
+                            page = 0,
+                            filter = encodedFilter,
+                            minified = 1,
+                        )
+
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    Result.success(SeriesItemsResult(items = body.results, totalBooks = body.total))
+                } else {
+                    Result.failure(Exception("Failed to fetch series items: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get series items for series: $seriesId")
                 Result.failure(e)
             }
         }
@@ -804,6 +850,91 @@ constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to close playback session")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getGenres(): Result<List<String>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getGenres()
+
+                if (response.isSuccessful && response.body() != null) {
+                    val genres = response.body()!!.genres.sorted()
+                    Timber.d("Fetched ${genres.size} genres from Audiobookshelf")
+                    Result.success(genres)
+                } else {
+                    Result.failure(Exception("Failed to fetch genres: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get genres")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getLibraryItemsByGenre(
+        libraryId: String,
+        genre: String,
+    ): Result<List<LibraryItem>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val encodedFilter =
+                    "genres." +
+                        java.net.URLEncoder.encode(
+                            android.util.Base64.encodeToString(
+                                genre.toByteArray(),
+                                android.util.Base64.NO_WRAP,
+                            ),
+                            "UTF-8",
+                        )
+
+                val allItems = mutableListOf<LibraryItem>()
+                var currentPage = 0
+                var totalFetched = 0
+                var total = Int.MAX_VALUE
+
+                while (totalFetched < total) {
+                    val response =
+                        apiService
+                            .get()
+                            .getLibraryItems(
+                                id = libraryId,
+                                limit = 100,
+                                page = currentPage,
+                                filter = encodedFilter,
+                                minified = 0,
+                                include = "progress",
+                            )
+
+                    if (response.isSuccessful && response.body() != null) {
+                        val body = response.body()!!
+                        total = body.total
+                        allItems.addAll(body.results)
+                        totalFetched += body.results.size
+                        currentPage++
+
+                        if (body.results.isEmpty()) break
+                    } else {
+                        return@withContext Result.failure(
+                            Exception("Failed to fetch items by genre: ${response.message()}")
+                        )
+                    }
+                }
+
+                Timber.d("Fetched ${allItems.size} items for genre '$genre' in library $libraryId")
+                Result.success(allItems)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get items by genre '$genre'")
                 Result.failure(e)
             }
         }

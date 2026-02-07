@@ -32,6 +32,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -56,9 +58,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.text.HtmlCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
@@ -78,6 +82,8 @@ fun SearchScreen(
     onBackClick: () -> Unit,
     onItemClick: (AfinityItem) -> Unit,
     onGenreClick: (String) -> Unit,
+    onAudiobookshelfItemClick: (String) -> Unit,
+    onAudiobookshelfGenreClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
@@ -85,6 +91,8 @@ fun SearchScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isJellyseerrAuthenticated by
         viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
+    val isAudiobookshelfAuthenticated by
+        viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     LocalFocusManager.current
@@ -103,39 +111,79 @@ fun SearchScreen(
             focusRequester = focusRequester,
             onSearch = {
                 keyboardController?.hide()
-                if (uiState.isJellyseerrSearchMode) {
-                    viewModel.performJellyseerrSearch()
-                } else {
-                    viewModel.performSearch()
+                when {
+                    uiState.isJellyseerrSearchMode -> viewModel.performJellyseerrSearch()
+                    uiState.isAudiobookshelfSearchMode -> viewModel.performAudiobookshelfSearch()
+                    else -> {
+                        viewModel.performSearch()
+                        viewModel.performAudiobookshelfSearch()
+                    }
                 }
             },
         )
 
-        if (uiState.libraries.isNotEmpty() || isJellyseerrAuthenticated) {
+        if (
+            uiState.libraries.isNotEmpty() ||
+                isJellyseerrAuthenticated ||
+                isAudiobookshelfAuthenticated
+        ) {
             HorizontalLibraryFilters(
                 libraries = uiState.libraries,
                 selectedLibrary = uiState.selectedLibrary,
                 isJellyseerrAuthenticated = isJellyseerrAuthenticated,
                 isJellyseerrSearchMode = uiState.isJellyseerrSearchMode,
+                isAudiobookshelfAuthenticated = isAudiobookshelfAuthenticated,
+                isAudiobookshelfSearchMode = uiState.isAudiobookshelfSearchMode,
                 onLibrarySelected = viewModel::selectLibrary,
                 onJellyseerrSearchSelected = viewModel::selectJellyseerrSearchMode,
                 onJellyfinSearchSelected = viewModel::selectJellyfinSearchMode,
+                onAudiobookshelfSearchSelected = viewModel::selectAudiobookshelfSearchMode,
             )
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
+            val isAllMode =
+                !uiState.isJellyseerrSearchMode &&
+                    !uiState.isAudiobookshelfSearchMode &&
+                    uiState.selectedLibrary == null
+            val allLoading =
+                if (isAllMode) {
+                    uiState.isSearching &&
+                        uiState.isAudiobookshelfSearching &&
+                        uiState.searchResults.isEmpty() &&
+                        uiState.audiobookshelfSearchResults.isEmpty()
+                } else {
+                    uiState.isSearching ||
+                        uiState.isJellyseerrSearching ||
+                        uiState.isAudiobookshelfSearching
+                }
+
             when {
                 uiState.searchQuery.isEmpty() &&
                     !uiState.isSearching &&
-                    !uiState.isJellyseerrSearching -> {
-                    SearchHomeContent(
-                        genres = uiState.genres,
-                        onGenreClick = onGenreClick,
-                        widthSizeClass = widthSizeClass,
-                    )
+                    !uiState.isJellyseerrSearching &&
+                    !uiState.isAudiobookshelfSearching -> {
+                    when {
+                        uiState.isJellyseerrSearchMode -> {}
+                        uiState.isAudiobookshelfSearchMode -> {
+                            SearchHomeContent(
+                                genres = uiState.audiobookshelfGenres,
+                                onGenreClick = onAudiobookshelfGenreClick,
+                                widthSizeClass = widthSizeClass,
+                                isAudiobookshelf = true,
+                            )
+                        }
+                        else -> {
+                            SearchHomeContent(
+                                genres = uiState.genres,
+                                onGenreClick = onGenreClick,
+                                widthSizeClass = widthSizeClass,
+                            )
+                        }
+                    }
                 }
 
-                uiState.isSearching || uiState.isJellyseerrSearching -> {
+                allLoading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
@@ -156,6 +204,28 @@ fun SearchScreen(
                                 )
                             }
                         },
+                    )
+                }
+
+                uiState.isAudiobookshelfSearchMode &&
+                    uiState.audiobookshelfSearchResults.isNotEmpty() -> {
+                    AudiobookshelfSearchResultsContent(
+                        results = uiState.audiobookshelfSearchResults,
+                        serverUrl = uiState.audiobookshelfServerUrl,
+                        onItemClick = onAudiobookshelfItemClick,
+                    )
+                }
+
+                isAllMode &&
+                    (uiState.searchResults.isNotEmpty() ||
+                        uiState.audiobookshelfSearchResults.isNotEmpty()) -> {
+                    CombinedSearchResultsContent(
+                        jellyfinResults = uiState.searchResults,
+                        audiobookshelfResults = uiState.audiobookshelfSearchResults,
+                        isAudiobookshelfSearching = uiState.isAudiobookshelfSearching,
+                        serverUrl = uiState.audiobookshelfServerUrl,
+                        onItemClick = onItemClick,
+                        onAudiobookshelfItemClick = onAudiobookshelfItemClick,
                     )
                 }
 
@@ -285,9 +355,12 @@ private fun HorizontalLibraryFilters(
     selectedLibrary: AfinityCollection?,
     isJellyseerrAuthenticated: Boolean,
     isJellyseerrSearchMode: Boolean,
+    isAudiobookshelfAuthenticated: Boolean,
+    isAudiobookshelfSearchMode: Boolean,
     onLibrarySelected: (AfinityCollection?) -> Unit,
     onJellyseerrSearchSelected: () -> Unit,
     onJellyfinSearchSelected: () -> Unit,
+    onAudiobookshelfSearchSelected: () -> Unit,
 ) {
     LazyRow(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp),
@@ -297,7 +370,10 @@ private fun HorizontalLibraryFilters(
         item {
             LibraryFilterChip(
                 text = stringResource(R.string.filter_all),
-                isSelected = !isJellyseerrSearchMode && selectedLibrary == null,
+                isSelected =
+                    !isJellyseerrSearchMode &&
+                        !isAudiobookshelfSearchMode &&
+                        selectedLibrary == null,
                 onClick = {
                     onJellyfinSearchSelected()
                     onLibrarySelected(null)
@@ -317,10 +393,24 @@ private fun HorizontalLibraryFilters(
             }
         }
 
+        if (isAudiobookshelfAuthenticated) {
+            item {
+                LibraryFilterChip(
+                    text = stringResource(R.string.filter_audiobooks),
+                    isSelected = isAudiobookshelfSearchMode,
+                    onClick = onAudiobookshelfSearchSelected,
+                    showCheckIcon = false,
+                )
+            }
+        }
+
         items(libraries) { library ->
             LibraryFilterChip(
                 text = library.name,
-                isSelected = !isJellyseerrSearchMode && selectedLibrary?.id == library.id,
+                isSelected =
+                    !isJellyseerrSearchMode &&
+                        !isAudiobookshelfSearchMode &&
+                        selectedLibrary?.id == library.id,
                 onClick = {
                     onJellyfinSearchSelected()
                     onLibrarySelected(library)
@@ -336,6 +426,7 @@ private fun SearchHomeContent(
     genres: List<String>,
     onGenreClick: (String) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
+    isAudiobookshelf: Boolean = false,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -354,7 +445,13 @@ private fun SearchHomeContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 16.dp),
         ) {
-            items(genres) { genre -> GenreCard(genre = genre, onClick = { onGenreClick(genre) }) }
+            items(genres) { genre ->
+                GenreCard(
+                    genre = genre,
+                    onClick = { onGenreClick(genre) },
+                    isAudiobookshelf = isAudiobookshelf,
+                )
+            }
         }
     }
 }
@@ -418,30 +515,33 @@ private fun LibraryFilterChip(
 }
 
 @Composable
-private fun GenreCard(genre: String, onClick: () -> Unit) {
+private fun GenreCard(genre: String, onClick: () -> Unit, isAudiobookshelf: Boolean = false) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(80.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Icon(
-                    painter = getGenreIcon(genre),
+                    painter = getGenreIcon(genre, isAudiobookshelf),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     text = genre,
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }
         }
@@ -770,29 +870,284 @@ private fun JellyseerrSearchResultItem(item: SearchResultItem, onRequestClick: (
 }
 
 @Composable
-private fun getGenreIcon(genre: String): Painter {
-    return when (genre.lowercase()) {
-        "action" -> painterResource(id = R.drawable.ic_boom)
-        "comedy" -> painterResource(id = R.drawable.ic_comedy)
-        "drama" -> painterResource(id = R.drawable.ic_theater)
-        "horror" -> painterResource(id = R.drawable.ic_horror)
-        "thriller" -> painterResource(id = R.drawable.ic_bolt)
-        "romance" -> painterResource(id = R.drawable.ic_favorite)
-        "sci-fi",
-        "science fiction" -> painterResource(id = R.drawable.ic_alien)
-        "fantasy" -> painterResource(id = R.drawable.ic_auto_awesome)
-        "documentary" -> painterResource(id = R.drawable.ic_article)
-        "animation" -> painterResource(id = R.drawable.ic_animation)
-        "family" -> painterResource(id = R.drawable.ic_family)
-        "adventure" -> painterResource(id = R.drawable.ic_adventure)
-        "crime" -> painterResource(id = R.drawable.ic_security)
-        "mystery" -> painterResource(id = R.drawable.ic_mystery)
-        "western" -> painterResource(id = R.drawable.ic_cactus)
-        "war" -> painterResource(id = R.drawable.ic_war)
-        "music" -> painterResource(id = R.drawable.ic_music_heart)
-        "sport" -> painterResource(id = R.drawable.ic_sports)
-        "biography" -> painterResource(id = R.drawable.ic_person_heart)
-        "history" -> painterResource(id = R.drawable.ic_history)
-        else -> painterResource(id = R.drawable.ic_movie)
+private fun getGenreIcon(genre: String, isAudiobookshelf: Boolean = false): Painter {
+    val normalizedGenre = genre.lowercase()
+    return when {
+        normalizedGenre == "action" || normalizedGenre.startsWith("action") ->
+            painterResource(id = R.drawable.ic_boom)
+        normalizedGenre == "comedy" || normalizedGenre.contains("humor") ->
+            painterResource(id = R.drawable.ic_comedy)
+        normalizedGenre == "drama" -> painterResource(id = R.drawable.ic_theater)
+        normalizedGenre == "horror" -> painterResource(id = R.drawable.ic_horror)
+        normalizedGenre == "thriller" -> painterResource(id = R.drawable.ic_bolt)
+        normalizedGenre == "romance" || normalizedGenre.contains("romance") ->
+            painterResource(id = R.drawable.ic_favorite)
+        normalizedGenre == "sci-fi" ||
+            normalizedGenre == "science fiction" ||
+            normalizedGenre.contains("sci-fi") -> painterResource(id = R.drawable.ic_alien)
+        normalizedGenre == "fantasy" || normalizedGenre.startsWith("fantasy") ->
+            painterResource(id = R.drawable.ic_auto_awesome)
+        normalizedGenre == "documentary" -> painterResource(id = R.drawable.ic_article)
+        normalizedGenre == "animation" -> painterResource(id = R.drawable.ic_animation)
+        normalizedGenre == "family" || normalizedGenre.contains("family") ->
+            painterResource(id = R.drawable.ic_family)
+        normalizedGenre == "adventure" || normalizedGenre.contains("adventure") ->
+            painterResource(id = R.drawable.ic_adventure)
+        normalizedGenre == "crime" -> painterResource(id = R.drawable.ic_security)
+        normalizedGenre == "mystery" || normalizedGenre.contains("mystery") ->
+            painterResource(id = R.drawable.ic_mystery)
+        normalizedGenre == "western" -> painterResource(id = R.drawable.ic_cactus)
+        normalizedGenre == "war" || normalizedGenre.contains("military") ->
+            painterResource(id = R.drawable.ic_war)
+        normalizedGenre == "music" -> painterResource(id = R.drawable.ic_music_heart)
+        normalizedGenre == "sport" || normalizedGenre == "sports" ->
+            painterResource(id = R.drawable.ic_sports)
+        normalizedGenre == "biography" ||
+            normalizedGenre.contains("biograph") ||
+            normalizedGenre.contains("memoir") -> painterResource(id = R.drawable.ic_person_heart)
+        normalizedGenre == "history" || normalizedGenre.startsWith("history") ->
+            painterResource(id = R.drawable.ic_history)
+        normalizedGenre.contains("fiction") || normalizedGenre.contains("literary") ->
+            painterResource(id = R.drawable.ic_book_audio)
+        normalizedGenre.contains("children") || normalizedGenre.contains("young adult") ->
+            painterResource(id = R.drawable.ic_family)
+        normalizedGenre.contains("erotica") -> painterResource(id = R.drawable.ic_favorite)
+        normalizedGenre.contains("art") -> painterResource(id = R.drawable.ic_auto_awesome)
+        normalizedGenre.contains("entertainment") -> painterResource(id = R.drawable.ic_theater)
+        else ->
+            if (isAudiobookshelf) {
+                painterResource(id = R.drawable.ic_book_audio)
+            } else {
+                painterResource(id = R.drawable.ic_movie)
+            }
+    }
+}
+
+private fun formatAudiobookDuration(seconds: Double): String {
+    val totalMinutes = (seconds / 60).toInt()
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+}
+
+@Composable
+private fun AudiobookshelfSearchResultItem(
+    item: LibraryItem,
+    serverUrl: String?,
+    onClick: () -> Unit,
+) {
+    val isFinished = item.userMediaProgress?.isFinished == true
+    val progress = item.userMediaProgress?.progress ?: 0.0
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(modifier = Modifier.width(80.dp).height(120.dp)) {
+                Card(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(8.dp)) {
+                    AsyncImage(
+                        imageUrl = serverUrl?.let { "$it/api/items/${item.id}/cover" },
+                        contentDescription = item.media.metadata.title,
+                        blurHash = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                }
+
+                if (isFinished) {
+                    Box(
+                        modifier =
+                            Modifier.align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .size(24.dp)
+                                .background(Color(0xFF4CAF50), CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_check),
+                            contentDescription = stringResource(R.string.cd_finished),
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = item.media.metadata.title ?: "",
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                item.media.metadata.authorName?.let { author ->
+                    Text(
+                        text = author,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text =
+                            if (item.mediaType == "podcast") {
+                                stringResource(R.string.media_type_podcast)
+                            } else {
+                                stringResource(R.string.media_type_book)
+                            },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    item.media.duration?.let { duration ->
+                        Text(
+                            text = "\u2022",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = formatAudiobookDuration(duration),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                if (!isFinished && progress > 0.0) {
+                    LinearProgressIndicator(
+                        progress = { progress.toFloat() },
+                        modifier =
+                            Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+                        color = Color(0xFFFFC107),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                }
+
+                item.media.metadata.description?.let { rawHtml ->
+                    val cleanDescription =
+                        remember(rawHtml) {
+                            HtmlCompat.fromHtml(rawHtml, HtmlCompat.FROM_HTML_MODE_COMPACT)
+                                .toString()
+                                .trim()
+                        }
+                    Text(
+                        text = cleanDescription,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AudiobookshelfSearchResultsContent(
+    results: List<LibraryItem>,
+    serverUrl: String?,
+    onItemClick: (String) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            Text(
+                text = stringResource(R.string.search_results_count_fmt, results.size),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        items(results, key = { it.id }) { item ->
+            AudiobookshelfSearchResultItem(
+                item = item,
+                serverUrl = serverUrl,
+                onClick = { onItemClick(item.id) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun CombinedSearchResultsContent(
+    jellyfinResults: List<AfinityItem>,
+    audiobookshelfResults: List<LibraryItem>,
+    isAudiobookshelfSearching: Boolean,
+    serverUrl: String?,
+    onItemClick: (AfinityItem) -> Unit,
+    onAudiobookshelfItemClick: (String) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        if (jellyfinResults.isNotEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.search_results_count_fmt, jellyfinResults.size),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            items(jellyfinResults) { item ->
+                SearchResultItem(item = item, onClick = { onItemClick(item) })
+            }
+        }
+
+        if (audiobookshelfResults.isNotEmpty() || isAudiobookshelfSearching) {
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.search_results_count_fmt,
+                                audiobookshelfResults.size,
+                            ),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (isAudiobookshelfSearching) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    }
+                }
+            }
+
+            items(audiobookshelfResults, key = { it.id }) { item ->
+                AudiobookshelfSearchResultItem(
+                    item = item,
+                    serverUrl = serverUrl,
+                    onClick = { onAudiobookshelfItemClick(item.id) },
+                )
+            }
+        }
     }
 }

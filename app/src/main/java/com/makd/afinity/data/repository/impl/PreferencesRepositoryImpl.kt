@@ -95,6 +95,9 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
 
         val PREFERRED_AUDIO_LANGUAGE = stringPreferencesKey("preferred_audio_language")
         val PREFERRED_SUBTITLE_LANGUAGE = stringPreferencesKey("preferred_subtitle_language")
+
+        val NOTIFICATION_PERMISSION_DECLINED =
+            booleanPreferencesKey("notification_permission_declined")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -352,6 +355,16 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
 
     override fun getOfflineModeFlow(): Flow<Boolean> {
         return dataStore.data.map { preferences -> preferences[Keys.OFFLINE_MODE] ?: false }
+    }
+
+    override suspend fun setNotificationPermissionDeclined(declined: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.NOTIFICATION_PERMISSION_DECLINED] = declined
+        }
+    }
+
+    override suspend fun getNotificationPermissionDeclined(): Boolean {
+        return dataStore.data.first()[Keys.NOTIFICATION_PERMISSION_DECLINED] ?: false
     }
 
     override suspend fun clearAllPreferences() {

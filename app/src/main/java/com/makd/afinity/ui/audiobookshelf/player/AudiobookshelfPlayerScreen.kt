@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -47,7 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackState
@@ -240,16 +242,20 @@ fun PortraitPlayerContent(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            if (playbackState.currentChapter != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = playbackState.currentChapter!!.title,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = animatedColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            val chapterText = playbackState.currentChapter?.title ?: " "
+            val isChapterVisible = playbackState.currentChapter != null
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = chapterText,
+                style = MaterialTheme.typography.labelLarge,
+                color = animatedColor,
+                maxLines = 1,
+                modifier =
+                    Modifier.alpha(if (isChapterVisible) 1f else 0f)
+                        .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -421,16 +427,20 @@ fun LandscapePlayerContent(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            if (playbackState.currentChapter != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = playbackState.currentChapter!!.title,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = animatedColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            val chapterText = playbackState.currentChapter?.title ?: " "
+            val isChapterVisible = playbackState.currentChapter != null
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = chapterText,
+                style = MaterialTheme.typography.labelLarge,
+                color = animatedColor,
+                maxLines = 1,
+                modifier =
+                    Modifier.alpha(if (isChapterVisible) 1f else 0f)
+                        .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 

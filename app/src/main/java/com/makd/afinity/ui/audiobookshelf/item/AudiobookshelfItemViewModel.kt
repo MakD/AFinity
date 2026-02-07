@@ -7,6 +7,7 @@ import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
+import com.makd.afinity.data.models.audiobookshelf.SeriesItem
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -61,12 +62,46 @@ constructor(
                             episodes = item.media.episodes ?: emptyList(),
                         )
                     Timber.d("Loaded item: ${item.media.metadata.title}")
+
+                    item.media.metadata.series?.let { seriesList ->
+                        if (seriesList.isNotEmpty()) {
+                            loadSeriesDetails(item.libraryId, seriesList)
+                        }
+                    }
                 },
                 onFailure = { error ->
                     _uiState.value = _uiState.value.copy(isLoading = false, error = error.message)
                     Timber.e(error, "Failed to load item")
                 },
             )
+        }
+    }
+
+    private fun loadSeriesDetails(libraryId: String, seriesItems: List<SeriesItem>) {
+        viewModelScope.launch {
+            val loadedSeries = mutableListOf<SeriesDisplayData>()
+
+            for (seriesItem in seriesItems) {
+                audiobookshelfRepository
+                    .getSeriesItems(libraryId, seriesItem.id, limit = 4)
+                    .fold(
+                        onSuccess = { result ->
+                            loadedSeries.add(
+                                SeriesDisplayData(
+                                    id = seriesItem.id,
+                                    name = seriesItem.name,
+                                    totalBooks = result.totalBooks,
+                                    bookItems = result.items,
+                                )
+                            )
+                        },
+                        onFailure = { e ->
+                            Timber.w(e, "Failed to load series items: ${seriesItem.name}")
+                        },
+                    )
+            }
+
+            _uiState.value = _uiState.value.copy(seriesDetails = loadedSeries)
         }
     }
 
@@ -79,9 +114,17 @@ constructor(
     }
 }
 
+data class SeriesDisplayData(
+    val id: String,
+    val name: String,
+    val totalBooks: Int,
+    val bookItems: List<LibraryItem>,
+)
+
 data class AudiobookshelfItemUiState(
     val isLoading: Boolean = false,
     val chapters: List<BookChapter> = emptyList(),
     val episodes: List<PodcastEpisode> = emptyList(),
+    val seriesDetails: List<SeriesDisplayData> = emptyList(),
     val error: String? = null,
 )

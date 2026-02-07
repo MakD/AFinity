@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.search
+package com.makd.afinity.ui.audiobookshelf.genre
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,20 +38,18 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
-import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.ui.audiobookshelf.library.components.AudiobookCard
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GenreResultsScreen(
+fun AudiobookshelfGenreResultsScreen(
     genre: String,
     onBackClick: () -> Unit,
-    onItemClick: (AfinityItem) -> Unit,
+    onItemClick: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: GenreResultsViewModel = hiltViewModel(),
+    viewModel: AudiobookshelfGenreResultsViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -104,9 +102,10 @@ fun GenreResultsScreen(
             }
 
             else -> {
-                GenreResultsContent(
-                    movies = uiState.movies,
-                    shows = uiState.shows,
+                AudiobookshelfGenreResultsContent(
+                    audiobooks = uiState.audiobooks,
+                    podcasts = uiState.podcasts,
+                    serverUrl = uiState.serverUrl,
                     onItemClick = onItemClick,
                     widthSizeClass = widthSizeClass,
                 )
@@ -116,14 +115,19 @@ fun GenreResultsScreen(
 }
 
 @Composable
-private fun GenreResultsContent(
-    movies: List<AfinityMovie>,
-    shows: List<AfinityShow>,
-    onItemClick: (AfinityItem) -> Unit,
+private fun AudiobookshelfGenreResultsContent(
+    audiobooks: List<LibraryItem>,
+    podcasts: List<LibraryItem>,
+    serverUrl: String?,
+    onItemClick: (String) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf(stringResource(R.string.tab_movies), stringResource(R.string.tab_tv_shows))
+    val tabs =
+        listOf(
+            stringResource(R.string.filter_audiobooks),
+            stringResource(R.string.media_type_podcast),
+        )
 
     Column {
         Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -139,7 +143,7 @@ private fun GenreResultsContent(
                 ) {
                     tabs.forEachIndexed { index, title ->
                         val isSelected = selectedTab == index
-                        val count = if (index == 0) movies.size else shows.size
+                        val count = if (index == 0) audiobooks.size else podcasts.size
 
                         Surface(
                             onClick = { selectedTab = index },
@@ -208,11 +212,12 @@ private fun GenreResultsContent(
 
         when (selectedTab) {
             0 -> {
-                if (movies.isEmpty()) {
-                    EmptyStateMessage(stringResource(R.string.empty_genre_movies))
+                if (audiobooks.isEmpty()) {
+                    EmptyStateMessage(stringResource(R.string.empty_genre_audiobooks))
                 } else {
-                    ItemGrid(
-                        items = movies,
+                    AudiobookshelfItemGrid(
+                        items = audiobooks,
+                        serverUrl = serverUrl,
                         onItemClick = onItemClick,
                         widthSizeClass = widthSizeClass,
                     )
@@ -220,11 +225,12 @@ private fun GenreResultsContent(
             }
 
             1 -> {
-                if (shows.isEmpty()) {
-                    EmptyStateMessage(stringResource(R.string.empty_genre_tv))
+                if (podcasts.isEmpty()) {
+                    EmptyStateMessage(stringResource(R.string.empty_genre_podcasts))
                 } else {
-                    ItemGrid(
-                        items = shows,
+                    AudiobookshelfItemGrid(
+                        items = podcasts,
+                        serverUrl = serverUrl,
                         onItemClick = onItemClick,
                         widthSizeClass = widthSizeClass,
                     )
@@ -235,9 +241,10 @@ private fun GenreResultsContent(
 }
 
 @Composable
-private fun ItemGrid(
-    items: List<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit,
+private fun AudiobookshelfItemGrid(
+    items: List<LibraryItem>,
+    serverUrl: String?,
+    onItemClick: (String) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
     LazyVerticalGrid(
@@ -247,11 +254,11 @@ private fun ItemGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        items(items) { item ->
-            MediaItemCard(
+        items(items, key = { it.id }) { item ->
+            AudiobookCard(
                 item = item,
-                onClick = { onItemClick(item) },
-                cardWidth = widthSizeClass.gridMinSize,
+                serverUrl = serverUrl,
+                onClick = { onItemClick(item.id) },
                 modifier = Modifier.fillMaxWidth(),
             )
         }

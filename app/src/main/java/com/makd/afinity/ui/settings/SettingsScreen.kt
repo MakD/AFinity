@@ -75,7 +75,6 @@ fun SettingsScreen(
     onPlayerOptionsClick: () -> Unit,
     onAppearanceOptionsClick: () -> Unit,
     onServerManagementClick: () -> Unit,
-    onAudiobookshelfClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -94,8 +93,10 @@ fun SettingsScreen(
     var showJellyseerrLogoutDialog by remember { mutableStateOf(false) }
     var showAudiobookshelfLogoutDialog by remember { mutableStateOf(false) }
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
+    var showAudiobookshelfBottomSheet by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
     val jellyseerrSheetState = rememberModalBottomSheetState()
+    val audiobookshelfSheetState = rememberModalBottomSheetState()
     val sessionSwitcherSheetState = rememberModalBottomSheetState()
 
     if (showLogoutDialog) {
@@ -132,6 +133,13 @@ fun SettingsScreen(
         JellyseerrBottomSheet(
             onDismiss = { showJellyseerrBottomSheet = false },
             sheetState = jellyseerrSheetState,
+        )
+    }
+
+    if (showAudiobookshelfBottomSheet) {
+        AudiobookshelfBottomSheet(
+            onDismiss = { showAudiobookshelfBottomSheet = false },
+            sheetState = audiobookshelfSheetState,
         )
     }
 
@@ -252,7 +260,7 @@ fun SettingsScreen(
                                 else stringResource(R.string.audiobookshelf_connect),
                             checked = isAudiobookshelfAuthenticated,
                             onCheckedChange = { enabled ->
-                                if (enabled) onAudiobookshelfClick()
+                                if (enabled) showAudiobookshelfBottomSheet = true
                                 else showAudiobookshelfLogoutDialog = true
                             },
                         )
