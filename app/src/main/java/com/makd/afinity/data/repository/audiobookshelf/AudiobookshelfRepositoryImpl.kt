@@ -940,6 +940,57 @@ constructor(
         }
     }
 
+    override suspend fun getGenreItemsLimited(
+        libraryId: String,
+        genre: String,
+        limit: Int,
+    ): Result<List<LibraryItem>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val encodedFilter =
+                    "genres." +
+                        java.net.URLEncoder.encode(
+                            android.util.Base64.encodeToString(
+                                genre.toByteArray(),
+                                android.util.Base64.NO_WRAP,
+                            ),
+                            "UTF-8",
+                        )
+
+                val response =
+                    apiService
+                        .get()
+                        .getLibraryItems(
+                            id = libraryId,
+                            limit = limit,
+                            page = 0,
+                            filter = encodedFilter,
+                            minified = 0,
+                            include = "progress",
+                        )
+
+                if (response.isSuccessful && response.body() != null) {
+                    val items = response.body()!!.results
+                    Timber.d(
+                        "Fetched ${items.size} items for genre '$genre' in library $libraryId (limit=$limit)"
+                    )
+                    Result.success(items)
+                } else {
+                    Result.failure(
+                        Exception("Failed to fetch genre items: ${response.message()}")
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get limited items for genre '$genre'")
+                Result.failure(e)
+            }
+        }
+    }
+
     override suspend fun syncPendingProgress(): Result<Int> {
         return withContext(Dispatchers.IO) {
             val (currentServerId, currentUserId) =

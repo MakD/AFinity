@@ -95,7 +95,7 @@ fun SettingsScreen(
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
     var showAudiobookshelfBottomSheet by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
-    val jellyseerrSheetState = rememberModalBottomSheetState()
+    val jellyseerrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val audiobookshelfSheetState = rememberModalBottomSheetState()
     val sessionSwitcherSheetState = rememberModalBottomSheetState()
 

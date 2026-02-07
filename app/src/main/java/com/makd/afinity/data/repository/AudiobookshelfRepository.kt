@@ -109,6 +109,12 @@ interface AudiobookshelfRepository {
     suspend fun getGenres(): Result<List<String>>
 
     suspend fun getLibraryItemsByGenre(libraryId: String, genre: String): Result<List<LibraryItem>>
+
+    suspend fun getGenreItemsLimited(
+        libraryId: String,
+        genre: String,
+        limit: Int,
+    ): Result<List<LibraryItem>>
 }
 
 data class AudiobookshelfConfig(val serverUrl: String, val absUserId: String, val username: String)

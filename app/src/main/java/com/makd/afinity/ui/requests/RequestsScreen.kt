@@ -53,7 +53,7 @@ fun RequestsScreen(
         viewModel.isAuthenticated.collectAsStateWithLifecycle(initialValue = false)
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         topBar = {

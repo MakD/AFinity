@@ -89,8 +89,8 @@ fun JellyseerrBottomSheet(
                 Modifier.fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .padding(bottom = 24.dp)
-                    .verticalScroll(rememberScrollState())
-                    .imePadding(),
+                    .imePadding()
+                    .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

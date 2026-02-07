@@ -2,7 +2,6 @@ package com.makd.afinity.ui.settings
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -91,19 +90,15 @@ fun AudiobookshelfBottomSheet(
 
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val hasPermission =
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.POST_NOTIFICATIONS,
-                    ) == PackageManager.PERMISSION_GRANTED
-                val declined = viewModel.isNotificationPermissionDeclined()
+            val hasPermission =
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) == PackageManager.PERMISSION_GRANTED
+            val declined = viewModel.isNotificationPermissionDeclined()
 
-                if (!hasPermission && !declined) {
-                    showNotificationDialog = true
-                } else {
-                    onDismiss()
-                }
+            if (!hasPermission && !declined) {
+                showNotificationDialog = true
             } else {
                 onDismiss()
             }
@@ -130,9 +125,7 @@ fun AudiobookshelfBottomSheet(
                 Button(
                     onClick = {
                         showNotificationDialog = false
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 ) {
                     Text(stringResource(R.string.notification_permission_yes))
