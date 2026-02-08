@@ -78,7 +78,7 @@ enum class Destination(
             "audiobookshelf/series/{seriesId}/{libraryId}/{seriesName}"
         const val AUDIOBOOKSHELF_GENRE_RESULTS_ROUTE = "audiobookshelf/genre/{genre}"
         const val AUDIOBOOKSHELF_PLAYER_ROUTE =
-            "audiobookshelf/player/{itemId}?episodeId={episodeId}&startPosition={startPosition}"
+            "audiobookshelf/player/{itemId}?episodeId={episodeId}&startPosition={startPosition}&episodeSort={episodeSort}"
 
         fun createAudiobookshelfLoginRoute(): String {
             return AUDIOBOOKSHELF_LOGIN_ROUTE
@@ -112,10 +112,12 @@ enum class Destination(
             itemId: String,
             episodeId: String? = null,
             startPosition: Double? = null,
+            episodeSort: String? = null,
         ): String {
             val params = buildList {
                 if (episodeId != null) add("episodeId=$episodeId")
                 if (startPosition != null) add("startPosition=$startPosition")
+                if (episodeSort != null) add("episodeSort=$episodeSort")
             }
             return if (params.isNotEmpty()) {
                 "audiobookshelf/player/$itemId?${params.joinToString("&")}"

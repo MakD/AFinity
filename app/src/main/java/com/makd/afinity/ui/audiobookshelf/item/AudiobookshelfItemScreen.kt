@@ -25,17 +25,27 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,9 +70,35 @@ import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeader
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeaderContent
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
 
+private val naturalOrderComparator =
+    Comparator<String> { a, b ->
+        val patternSplit = Regex("(\\d+|\\D+)")
+        val aParts = patternSplit.findAll(a).map { it.value }.toList()
+        val bParts = patternSplit.findAll(b).map { it.value }.toList()
+        for (i in 0 until minOf(aParts.size, bParts.size)) {
+            val ap = aParts[i]
+            val bp = bParts[i]
+            val aNum = ap.toBigIntegerOrNull()
+            val bNum = bp.toBigIntegerOrNull()
+            val cmp =
+                if (aNum != null && bNum != null) aNum.compareTo(bNum)
+                else ap.compareTo(bp, ignoreCase = true)
+            if (cmp != 0) return@Comparator cmp
+        }
+        aParts.size - bParts.size
+    }
+
+private enum class EpisodeSortOption(val label: String) {
+    PUB_DATE("Pub Date"),
+    TITLE("Title"),
+    SEASON("Season"),
+    EPISODE("Episode"),
+    FILENAME("Filename"),
+}
+
 @Composable
 fun AudiobookshelfItemScreen(
-    onNavigateToPlayer: (String, String?, Double?) -> Unit,
+    onNavigateToPlayer: (String, String?, Double?, String?) -> Unit,
     onNavigateToSeries: (seriesId: String, libraryId: String, seriesName: String) -> Unit =
         { _, _, _ ->
         },
@@ -78,6 +114,56 @@ fun AudiobookshelfItemScreen(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     var chaptersExpanded by remember { mutableStateOf(false) }
+    var sortOption by remember { mutableStateOf(EpisodeSortOption.PUB_DATE) }
+    var sortAscending by remember { mutableStateOf(false) }
+    var showSortDialog by remember { mutableStateOf(false) }
+
+    val sortedEpisodes by remember(uiState.episodes, sortOption, sortAscending) {
+        derivedStateOf {
+            val episodes = uiState.episodes
+            val cmp = naturalOrderComparator
+            val sorted =
+                when (sortOption) {
+                    EpisodeSortOption.PUB_DATE ->
+                        episodes.sortedBy { it.publishedAt ?: 0L }
+                    EpisodeSortOption.TITLE ->
+                        episodes.sortedWith(
+                            compareBy<com.makd.afinity.data.models.audiobookshelf.PodcastEpisode, String>(cmp) { it.title }
+                        )
+                    EpisodeSortOption.SEASON ->
+                        episodes.sortedWith(
+                            compareBy<com.makd.afinity.data.models.audiobookshelf.PodcastEpisode, String>(cmp) {
+                                it.season ?: ""
+                            }.thenBy(cmp) { it.episode ?: "" }
+                        )
+                    EpisodeSortOption.EPISODE ->
+                        episodes.sortedWith(
+                            compareBy<com.makd.afinity.data.models.audiobookshelf.PodcastEpisode, String>(cmp) { it.episode ?: "" }
+                        )
+                    EpisodeSortOption.FILENAME ->
+                        episodes.sortedWith(
+                            compareBy<com.makd.afinity.data.models.audiobookshelf.PodcastEpisode, String>(cmp) {
+                                it.audioFile?.metadata?.filename ?: ""
+                            }
+                        )
+                }
+            if (sortAscending) sorted else sorted.reversed()
+        }
+    }
+
+    val currentSortParam by remember(sortOption, sortAscending) {
+        derivedStateOf {
+            val key =
+                when (sortOption) {
+                    EpisodeSortOption.PUB_DATE -> "pub_date"
+                    EpisodeSortOption.TITLE -> "title"
+                    EpisodeSortOption.SEASON -> "season"
+                    EpisodeSortOption.EPISODE -> "episode"
+                    EpisodeSortOption.FILENAME -> "filename"
+                }
+            "${key}_${if (sortAscending) "asc" else "desc"}"
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -109,7 +195,14 @@ fun AudiobookshelfItemScreen(
                                 item = item!!,
                                 progress = progress,
                                 coverUrl = coverUrl,
-                                onPlay = { onNavigateToPlayer(viewModel.itemId, null, null) },
+                                onPlay = {
+                                    onNavigateToPlayer(
+                                        viewModel.itemId,
+                                        null,
+                                        null,
+                                        currentSortParam,
+                                    )
+                                },
                             )
                         }
 
@@ -169,6 +262,8 @@ fun AudiobookshelfItemScreen(
                                         title = if (showEpisodes) "EPISODES" else "CHAPTERS",
                                         expanded = chaptersExpanded,
                                         onToggle = { chaptersExpanded = !chaptersExpanded },
+                                        showSortButton = showEpisodes,
+                                        onSortClick = { showSortDialog = true },
                                         modifier = Modifier.padding(top = 16.dp),
                                     )
                                 }
@@ -177,12 +272,13 @@ fun AudiobookshelfItemScreen(
                                     item {
                                         if (showEpisodes) {
                                             EpisodeList(
-                                                episodes = uiState.episodes,
+                                                episodes = sortedEpisodes,
                                                 onEpisodeClick = { /* Details */ },
                                                 onEpisodePlay = { episode ->
                                                     onNavigateToPlayer(
                                                         viewModel.itemId,
                                                         episode.id,
+                                                        null,
                                                         null,
                                                     )
                                                 },
@@ -198,6 +294,7 @@ fun AudiobookshelfItemScreen(
                                                         viewModel.itemId,
                                                         null,
                                                         chapter.start,
+                                                        null,
                                                     )
                                                 },
                                                 modifier = Modifier.padding(bottom = 16.dp),
@@ -218,7 +315,14 @@ fun AudiobookshelfItemScreen(
                                 item = item!!,
                                 progress = progress,
                                 serverUrl = config?.serverUrl,
-                                onPlay = { onNavigateToPlayer(viewModel.itemId, null, null) },
+                                onPlay = {
+                                    onNavigateToPlayer(
+                                        viewModel.itemId,
+                                        null,
+                                        null,
+                                        currentSortParam,
+                                    )
+                                },
                             )
                         }
 
@@ -267,6 +371,8 @@ fun AudiobookshelfItemScreen(
                                     title = if (showEpisodes) "EPISODES" else "CHAPTERS",
                                     expanded = chaptersExpanded,
                                     onToggle = { chaptersExpanded = !chaptersExpanded },
+                                    showSortButton = showEpisodes,
+                                    onSortClick = { showSortDialog = true },
                                     modifier = Modifier.padding(top = 16.dp),
                                 )
                             }
@@ -280,12 +386,13 @@ fun AudiobookshelfItemScreen(
                                     ) {
                                         if (showEpisodes) {
                                             EpisodeList(
-                                                episodes = uiState.episodes,
+                                                episodes = sortedEpisodes,
                                                 onEpisodeClick = { /* Details */ },
                                                 onEpisodePlay = { episode ->
                                                     onNavigateToPlayer(
                                                         viewModel.itemId,
                                                         episode.id,
+                                                        null,
                                                         null,
                                                     )
                                                 },
@@ -301,6 +408,7 @@ fun AudiobookshelfItemScreen(
                                                         viewModel.itemId,
                                                         null,
                                                         chapter.start,
+                                                        null,
                                                     )
                                                 },
                                                 modifier = Modifier.padding(bottom = 16.dp),
@@ -349,6 +457,19 @@ fun AudiobookshelfItemScreen(
             }
         }
     }
+
+    if (showSortDialog) {
+        EpisodeSortDialog(
+            currentSort = sortOption,
+            currentAscending = sortAscending,
+            onDismiss = { showSortDialog = false },
+            onSortSelected = { sort, ascending ->
+                sortOption = sort
+                sortAscending = ascending
+                showSortDialog = false
+            },
+        )
+    }
 }
 
 @Composable
@@ -356,6 +477,8 @@ private fun CollapsibleSectionHeader(
     title: String,
     expanded: Boolean,
     onToggle: () -> Unit,
+    showSortButton: Boolean = false,
+    onSortClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -377,7 +500,21 @@ private fun CollapsibleSectionHeader(
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
         )
+        if (showSortButton) {
+            IconButton(
+                onClick = onSortClick,
+                modifier = Modifier.size(32.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_arrows_sort),
+                    contentDescription = "Sort",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
         Icon(
             painter =
                 painterResource(
@@ -420,4 +557,76 @@ private fun NarratedByRow(narrator: String, modifier: Modifier = Modifier) {
         style = MaterialTheme.typography.bodyMedium,
         modifier = modifier,
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EpisodeSortDialog(
+    currentSort: EpisodeSortOption,
+    currentAscending: Boolean,
+    onDismiss: () -> Unit,
+    onSortSelected: (EpisodeSortOption, Boolean) -> Unit,
+) {
+    var isAscending by remember { mutableStateOf(currentAscending) }
+    var selectedSort by remember { mutableStateOf(currentSort) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Sort Episodes") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    SegmentedButton(
+                        selected = isAscending,
+                        onClick = { isAscending = true },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    ) {
+                        Spacer(Modifier.width(4.dp))
+                        Text("Ascending")
+                    }
+
+                    SegmentedButton(
+                        selected = !isAscending,
+                        onClick = { isAscending = false },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    ) {
+                        Spacer(Modifier.width(4.dp))
+                        Text("Descending")
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    EpisodeSortOption.entries.forEach { option ->
+                        EpisodeSortOptionRow(
+                            label = option.label,
+                            selected = selectedSort == option,
+                            onClick = { selectedSort = option },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSortSelected(selectedSort, isAscending) }) {
+                Text("Apply")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun EpisodeSortOptionRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+    }
 }

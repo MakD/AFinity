@@ -11,6 +11,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
+import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -91,14 +92,25 @@ constructor(
         }
     }
 
-    fun loadSession(session: PlaybackSession, baseUrl: String, startPosition: Double? = null) {
+    fun loadSession(
+        session: PlaybackSession,
+        baseUrl: String,
+        startPosition: Double? = null,
+        episodeSort: String? = null,
+    ) {
         scope.launch {
             val controller = getConnectedController() ?: return@launch
 
             val token = securePreferencesRepository.getCachedAudiobookshelfToken()
             val isPodcastWithoutEpisode =
                 session.audioTracks.isNullOrEmpty() && session.mediaType == "podcast"
-            val episodes = session.libraryItem?.media?.episodes ?: emptyList()
+            val unsortedEpisodes = session.libraryItem?.media?.episodes ?: emptyList()
+            val episodes =
+                if (isPodcastWithoutEpisode && episodeSort != null) {
+                    sortEpisodes(unsortedEpisodes, episodeSort)
+                } else {
+                    unsortedEpisodes
+                }
 
             val audioTracks =
                 if (isPodcastWithoutEpisode) {
@@ -204,6 +216,61 @@ constructor(
             }
             controller.play()
         }
+    }
+
+    private fun sortEpisodes(
+        episodes: List<PodcastEpisode>,
+        sortParam: String,
+    ): List<PodcastEpisode> {
+        val parts = sortParam.split("_")
+        val ascending = parts.lastOrNull() == "asc"
+        val sortType = parts.dropLast(1).joinToString("_")
+
+        val cmp = Comparator<String> { a, b ->
+            val pattern = Regex("(\\d+|\\D+)")
+            val aParts = pattern.findAll(a).map { it.value }.toList()
+            val bParts = pattern.findAll(b).map { it.value }.toList()
+            for (i in 0 until minOf(aParts.size, bParts.size)) {
+                val ap = aParts[i]
+                val bp = bParts[i]
+                val aNum = ap.toBigIntegerOrNull()
+                val bNum = bp.toBigIntegerOrNull()
+                val result =
+                    if (aNum != null && bNum != null) aNum.compareTo(bNum)
+                    else ap.compareTo(bp, ignoreCase = true)
+                if (result != 0) return@Comparator result
+            }
+            aParts.size - bParts.size
+        }
+
+        val sorted =
+            when (sortType) {
+                "pub_date" ->
+                    episodes.sortedBy { it.publishedAt ?: 0L }
+                "title" ->
+                    episodes.sortedWith(
+                        compareBy<PodcastEpisode, String>(cmp) { it.title }
+                    )
+                "season" ->
+                    episodes.sortedWith(
+                        compareBy<PodcastEpisode, String>(cmp) {
+                            it.season ?: ""
+                        }.thenBy(cmp) { it.episode ?: "" }
+                    )
+                "episode" ->
+                    episodes.sortedWith(
+                        compareBy<PodcastEpisode, String>(cmp) { it.episode ?: "" }
+                    )
+                "filename" ->
+                    episodes.sortedWith(
+                        compareBy<PodcastEpisode, String>(cmp) {
+                            it.audioFile?.metadata?.filename ?: ""
+                        }
+                    )
+                else -> episodes
+            }
+
+        return if (ascending) sorted else sorted.reversed()
     }
 
     fun play() = mediaController?.play()

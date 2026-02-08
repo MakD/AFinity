@@ -705,12 +705,13 @@ fun MainNavigation(
                     arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
                 ) {
                     AudiobookshelfItemScreen(
-                        onNavigateToPlayer = { itemId, episodeId, startPosition ->
+                        onNavigateToPlayer = { itemId, episodeId, startPosition, episodeSort ->
                             navController.navigate(
                                 Destination.createAudiobookshelfPlayerRoute(
                                     itemId,
                                     episodeId,
                                     startPosition,
+                                    episodeSort,
                                 )
                             )
                         },
@@ -739,9 +740,9 @@ fun MainNavigation(
                         onNavigateToPlayer = { itemId, episodeId, startPosition ->
                             navController.navigate(
                                 Destination.createAudiobookshelfPlayerRoute(
-                                    itemId,
-                                    episodeId,
-                                    startPosition,
+                                    itemId = itemId,
+                                    episodeId = episodeId,
+                                    startPosition = startPosition,
                                 )
                             )
                         },
@@ -759,6 +760,11 @@ fun MainNavigation(
                                 defaultValue = null
                             },
                             navArgument("startPosition") {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            },
+                            navArgument("episodeSort") {
                                 type = NavType.StringType
                                 nullable = true
                                 defaultValue = null
