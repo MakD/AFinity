@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.audiobookshelf.library.components
+package com.makd.afinity.ui.audiobookshelf.libraries.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

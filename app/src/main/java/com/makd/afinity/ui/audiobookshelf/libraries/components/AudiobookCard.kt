@@ -1,4 +1,4 @@
-package com.makd.afinity.ui.audiobookshelf.library.components
+package com.makd.afinity.ui.audiobookshelf.libraries.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +13,9 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +52,18 @@ fun AudiobookCard(
                         contentScale = ContentScale.Crop,
                     )
                 }
+
+                item.userMediaProgress?.let { progress ->
+                    if (progress.progress > 0 && !progress.isFinished) {
+                        LinearProgressIndicator(
+                            progress = { progress.progress.toFloat() },
+                            modifier =
+                                Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = Color.Black.copy(alpha = 0.3f),
+                        )
+                    }
+                }
             }
         }
 
@@ -71,17 +85,6 @@ fun AudiobookCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-        }
-
-        item.userMediaProgress?.let { progress ->
-            if (progress.progress > 0 && !progress.isFinished) {
-                Spacer(modifier = Modifier.height(4.dp))
-                LinearProgressIndicator(
-                    progress = { progress.progress.toFloat() },
-                    modifier = Modifier.fillMaxWidth(),
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                )
-            }
         }
     }
 }

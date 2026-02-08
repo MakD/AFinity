@@ -83,12 +83,15 @@ fun ContinueWatchingCard(
                             .coerceIn(0f, 1f)
                     } else 0f
 
-                LinearProgressIndicator(
-                    progress = { progressPercentage },
-                    modifier = Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = Color.Black.copy(alpha = 0.3f),
-                )
+                if (progressPercentage > 0f) {
+                    LinearProgressIndicator(
+                        progress = { progressPercentage },
+                        modifier =
+                            Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = Color.Black.copy(alpha = 0.3f),
+                    )
+                }
 
                 if (item.played) {
                     Box(
@@ -227,10 +230,10 @@ fun ContinueWatchingCard(
                             val truncatedName =
                                 if (item.name.length > 15) {
                                     "S${item.parentIndexNumber}:E${item.indexNumber} • ${
-                                    item.name.take(
-                                        15
-                                    )
-                                }..."
+                                        item.name.take(
+                                            15
+                                        )
+                                    }..."
                                 } else {
                                     "S${item.parentIndexNumber}:E${item.indexNumber} • ${item.name}"
                                 }

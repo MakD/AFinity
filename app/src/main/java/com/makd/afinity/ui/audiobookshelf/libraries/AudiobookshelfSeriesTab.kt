@@ -23,7 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
-import com.makd.afinity.ui.audiobookshelf.library.components.AudiobookCard
+import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 

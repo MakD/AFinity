@@ -39,7 +39,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
-import com.makd.afinity.ui.audiobookshelf.library.components.AudiobookCard
+import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 
 @OptIn(ExperimentalMaterial3Api::class)

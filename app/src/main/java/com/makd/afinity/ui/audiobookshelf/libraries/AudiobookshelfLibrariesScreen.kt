@@ -59,7 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.navigation.Destination
-import com.makd.afinity.ui.audiobookshelf.library.components.AudiobookCard
+import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.AudiobookshelfBottomSheet
@@ -266,14 +266,12 @@ fun AudiobookshelfLibrariesScreen(
                                         Row(modifier = Modifier.fillMaxSize()) {
                                             if (displayItems.isEmpty()) {
                                                 Box(
-                                                    modifier =
-                                                        Modifier.weight(1f).fillMaxHeight(),
+                                                    modifier = Modifier.weight(1f).fillMaxHeight(),
                                                     contentAlignment = Alignment.Center,
                                                 ) {
                                                     Text(
                                                         text = "No items in library",
-                                                        style =
-                                                            MaterialTheme.typography.bodyMedium,
+                                                        style = MaterialTheme.typography.bodyMedium,
                                                         color =
                                                             MaterialTheme.colorScheme
                                                                 .onSurfaceVariant,
@@ -281,10 +279,8 @@ fun AudiobookshelfLibrariesScreen(
                                                 }
                                             } else {
                                                 LazyVerticalGrid(
-                                                    columns =
-                                                        GridCells.Adaptive(minSize = 140.dp),
-                                                    modifier =
-                                                        Modifier.weight(1f).fillMaxHeight(),
+                                                    columns = GridCells.Adaptive(minSize = 140.dp),
+                                                    modifier = Modifier.weight(1f).fillMaxHeight(),
                                                     contentPadding = PaddingValues(16.dp),
                                                     horizontalArrangement =
                                                         Arrangement.spacedBy(12.dp),
@@ -295,9 +291,7 @@ fun AudiobookshelfLibrariesScreen(
                                                         AudiobookCard(
                                                             item = item,
                                                             serverUrl = config?.serverUrl,
-                                                            onClick = {
-                                                                onNavigateToItem(item.id)
-                                                            },
+                                                            onClick = { onNavigateToItem(item.id) },
                                                         )
                                                     }
                                                 }
@@ -309,14 +303,13 @@ fun AudiobookshelfLibrariesScreen(
                                             ) {
                                                 AlphabetScroller(
                                                     selectedLetter = selectedLetter,
-                                                    onLetterSelected =
-                                                        viewModel::onLetterSelected,
+                                                    onLetterSelected = viewModel::onLetterSelected,
                                                     modifier =
                                                         Modifier.background(
-                                                            MaterialTheme.colorScheme.surface
-                                                                .copy(alpha = 0.8f),
-                                                            shape =
-                                                                MaterialTheme.shapes.small,
+                                                            MaterialTheme.colorScheme.surface.copy(
+                                                                alpha = 0.8f
+                                                            ),
+                                                            shape = MaterialTheme.shapes.small,
                                                         ),
                                                 )
                                             }

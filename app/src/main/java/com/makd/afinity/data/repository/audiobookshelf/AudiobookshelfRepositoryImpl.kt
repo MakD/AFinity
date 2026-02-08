@@ -32,10 +32,12 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -65,7 +67,12 @@ constructor(
     private val _currentConfig = MutableStateFlow<AudiobookshelfConfig?>(null)
     override val currentConfig: StateFlow<AudiobookshelfConfig?> = _currentConfig.asStateFlow()
 
-    private var activeContext: Pair<String, UUID>? = null
+    private val _activeContextFlow = MutableStateFlow<Pair<String, UUID>?>(null)
+    private var activeContext: Pair<String, UUID>?
+        get() = _activeContextFlow.value
+        set(value) {
+            _activeContextFlow.value = value
+        }
 
     private var pendingServerUrl: String? = null
 
@@ -252,10 +259,14 @@ constructor(
         return _isAuthenticated.value && _currentConfig.value != null
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getLibrariesFlow(): Flow<List<Library>> {
-        val (serverId, userId) = activeContext ?: return flowOf(emptyList())
-        return audiobookshelfDao.getLibrariesFlow(serverId, userId.toString()).map { entities ->
-            entities.map { it.toLibrary() }
+        return _activeContextFlow.flatMapLatest { context ->
+            if (context == null) return@flatMapLatest flowOf(emptyList())
+            val (serverId, userId) = context
+            audiobookshelfDao.getLibrariesFlow(serverId, userId.toString()).map { entities ->
+                entities.map { it.toLibrary() }
+            }
         }
     }
 
@@ -326,11 +337,14 @@ constructor(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getLibraryItemsFlow(libraryId: String): Flow<List<LibraryItem>> {
-        val (serverId, userId) = activeContext ?: return flowOf(emptyList())
-        return audiobookshelfDao.getItemsFlow(serverId, userId.toString(), libraryId).map { entities
-            ->
-            entities.map { it.toLibraryItem() }
+        return _activeContextFlow.flatMapLatest { context ->
+            if (context == null) return@flatMapLatest flowOf(emptyList())
+            val (serverId, userId) = context
+            audiobookshelfDao.getItemsFlow(serverId, userId.toString(), libraryId).map { entities ->
+                entities.map { it.toLibraryItem() }
+            }
         }
     }
 
@@ -598,20 +612,25 @@ constructor(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getInProgressItemsFlow(): Flow<List<ItemWithProgress>> {
-        val (serverId, userId) = activeContext ?: return flowOf(emptyList())
-
-        val progressFlow = audiobookshelfDao.getInProgressFlow(serverId, userId.toString())
-        val itemsFlow = audiobookshelfDao.getItemsFlow(serverId, userId.toString(), "")
-        return progressFlow.map { progressList ->
-            progressList.mapNotNull { progress ->
-                val item =
-                    audiobookshelfDao.getItem(progress.libraryItemId, serverId, userId.toString())
-                item?.let {
-                    ItemWithProgress(
-                        item = it.toLibraryItem(),
-                        progress = progress.toMediaProgress(),
-                    )
+        return _activeContextFlow.flatMapLatest { context ->
+            if (context == null) return@flatMapLatest flowOf(emptyList())
+            val (serverId, userId) = context
+            audiobookshelfDao.getInProgressFlow(serverId, userId.toString()).map { progressList ->
+                progressList.mapNotNull { progress ->
+                    val item =
+                        audiobookshelfDao.getItem(
+                            progress.libraryItemId,
+                            serverId,
+                            userId.toString(),
+                        )
+                    item?.let {
+                        ItemWithProgress(
+                            item = it.toLibraryItem(),
+                            progress = progress.toMediaProgress(),
+                        )
+                    }
                 }
             }
         }
@@ -711,10 +730,27 @@ constructor(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getProgressForItemFlow(itemId: String): Flow<MediaProgress?> {
-        val (serverId, userId) = activeContext ?: return flowOf(null)
-        return audiobookshelfDao.getProgressForItemFlow(itemId, serverId, userId.toString()).map {
-            it?.toMediaProgress()
+        return _activeContextFlow.flatMapLatest { context ->
+            if (context == null) return@flatMapLatest flowOf(null)
+            val (serverId, userId) = context
+            audiobookshelfDao.getProgressForItemFlow(itemId, serverId, userId.toString()).map {
+                it?.toMediaProgress()
+            }
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun getAllProgressFlow(): Flow<Map<String, MediaProgress>> {
+        return _activeContextFlow.flatMapLatest { context ->
+            if (context == null) return@flatMapLatest flowOf(emptyMap())
+            val (serverId, userId) = context
+            audiobookshelfDao.getAllProgressFlow(serverId, userId.toString()).map { progressList ->
+                progressList
+                    .filter { it.episodeId.isNullOrEmpty() }
+                    .associate { it.libraryItemId to it.toMediaProgress() }
+            }
         }
     }
 

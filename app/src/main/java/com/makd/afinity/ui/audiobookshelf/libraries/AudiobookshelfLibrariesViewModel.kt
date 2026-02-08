@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import timber.log.Timber
@@ -47,27 +47,63 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
 
     private val _personalizedSections = MutableStateFlow<List<PersonalizedSection>>(emptyList())
     private val _genreSections = MutableStateFlow<List<PersonalizedSection>>(emptyList())
-    val personalizedSections: StateFlow<List<PersonalizedSection>> =
-        combine(_personalizedSections, _genreSections) { personalized, genres ->
-                personalized + genres
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _libraryItems = MutableStateFlow<Map<String, List<LibraryItem>>>(emptyMap())
-    val libraryItems: StateFlow<Map<String, List<LibraryItem>>> = _libraryItems.asStateFlow()
 
     private val _selectedLetter = MutableStateFlow<String?>(null)
     val selectedLetter: StateFlow<String?> = _selectedLetter.asStateFlow()
 
     private val _filteredLibraryItems = MutableStateFlow<Map<String, List<LibraryItem>>>(emptyMap())
-    val filteredLibraryItems: StateFlow<Map<String, List<LibraryItem>>> =
-        _filteredLibraryItems.asStateFlow()
 
     private val _allSeries = MutableStateFlow<List<AudiobookshelfSeries>>(emptyList())
-    val allSeries: StateFlow<List<AudiobookshelfSeries>> = _allSeries.asStateFlow()
+
+    private val progressMap: StateFlow<Map<String, MediaProgress>> =
+        audiobookshelfRepository
+            .getAllProgressFlow()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    val personalizedSections: StateFlow<List<PersonalizedSection>> =
+        combine(_personalizedSections, _genreSections, progressMap) { personalized, genres, progress
+                ->
+                (personalized + genres).map { section ->
+                    section.copy(items = enrichItems(section.items, progress))
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val libraryItems: StateFlow<Map<String, List<LibraryItem>>> =
+        combine(_libraryItems, progressMap) { items, progress ->
+                items.mapValues { (_, list) -> enrichItems(list, progress) }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    val filteredLibraryItems: StateFlow<Map<String, List<LibraryItem>>> =
+        combine(_filteredLibraryItems, progressMap) { items, progress ->
+                items.mapValues { (_, list) -> enrichItems(list, progress) }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    val allSeries: StateFlow<List<AudiobookshelfSeries>> =
+        combine(_allSeries, progressMap) { series, progress ->
+                series.map { s -> s.copy(books = enrichItems(s.books, progress)) }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        refreshLibraries()
+        viewModelScope.launch {
+            audiobookshelfRepository.currentSessionId.collect { sessionId ->
+                _libraryItems.value = emptyMap()
+                _filteredLibraryItems.value = emptyMap()
+                _personalizedSections.value = emptyList()
+                _genreSections.value = emptyList()
+                _allSeries.value = emptyList()
+                _selectedLetter.value = null
+
+                if (sessionId != null) {
+                    refreshLibraries()
+                }
+            }
+        }
     }
 
     fun refreshLibraries() {
@@ -296,6 +332,17 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    private fun enrichItems(
+        items: List<LibraryItem>,
+        progressMap: Map<String, MediaProgress>,
+    ): List<LibraryItem> {
+        if (progressMap.isEmpty()) return items
+        return items.map { item ->
+            if (item.userMediaProgress != null) item
+            else progressMap[item.id]?.let { item.copy(userMediaProgress = it) } ?: item
+        }
     }
 }
 
