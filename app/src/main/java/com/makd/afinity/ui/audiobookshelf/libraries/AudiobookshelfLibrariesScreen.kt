@@ -3,19 +3,26 @@ package com.makd.afinity.ui.audiobookshelf.libraries
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -45,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,6 +79,8 @@ fun AudiobookshelfLibrariesScreen(
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val personalizedSections by viewModel.personalizedSections.collectAsStateWithLifecycle()
     val libraryItems by viewModel.libraryItems.collectAsStateWithLifecycle()
+    val filteredLibraryItems by viewModel.filteredLibraryItems.collectAsStateWithLifecycle()
+    val selectedLetter by viewModel.selectedLetter.collectAsStateWithLifecycle()
     val allSeries by viewModel.allSeries.collectAsStateWithLifecycle()
     val config by viewModel.currentConfig.collectAsStateWithLifecycle()
 
@@ -239,39 +249,75 @@ fun AudiobookshelfLibrariesScreen(
                                 val libraryIndex = page - 2
                                 if (libraryIndex < libraries.size) {
                                     val library = libraries[libraryIndex]
-                                    val items = libraryItems[library.id]
+                                    val allItems = libraryItems[library.id]
+                                    val displayItems =
+                                        if (selectedLetter != null)
+                                            filteredLibraryItems[library.id] ?: allItems
+                                        else allItems
 
-                                    if (items == null) {
+                                    if (displayItems == null) {
                                         Box(
                                             modifier = Modifier.fillMaxSize(),
                                             contentAlignment = Alignment.Center,
                                         ) {
                                             CircularProgressIndicator()
                                         }
-                                    } else if (items.isEmpty()) {
-                                        Box(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Text(
-                                                text = "No items in library",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                        }
                                     } else {
-                                        LazyVerticalGrid(
-                                            columns = GridCells.Adaptive(minSize = 140.dp),
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentPadding = PaddingValues(16.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                                        ) {
-                                            items(items, key = { it.id }) { item ->
-                                                AudiobookCard(
-                                                    item = item,
-                                                    serverUrl = config?.serverUrl,
-                                                    onClick = { onNavigateToItem(item.id) },
+                                        Row(modifier = Modifier.fillMaxSize()) {
+                                            if (displayItems.isEmpty()) {
+                                                Box(
+                                                    modifier =
+                                                        Modifier.weight(1f).fillMaxHeight(),
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    Text(
+                                                        text = "No items in library",
+                                                        style =
+                                                            MaterialTheme.typography.bodyMedium,
+                                                        color =
+                                                            MaterialTheme.colorScheme
+                                                                .onSurfaceVariant,
+                                                    )
+                                                }
+                                            } else {
+                                                LazyVerticalGrid(
+                                                    columns =
+                                                        GridCells.Adaptive(minSize = 140.dp),
+                                                    modifier =
+                                                        Modifier.weight(1f).fillMaxHeight(),
+                                                    contentPadding = PaddingValues(16.dp),
+                                                    horizontalArrangement =
+                                                        Arrangement.spacedBy(12.dp),
+                                                    verticalArrangement =
+                                                        Arrangement.spacedBy(12.dp),
+                                                ) {
+                                                    items(displayItems, key = { it.id }) { item ->
+                                                        AudiobookCard(
+                                                            item = item,
+                                                            serverUrl = config?.serverUrl,
+                                                            onClick = {
+                                                                onNavigateToItem(item.id)
+                                                            },
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            Box(
+                                                modifier = Modifier.fillMaxHeight(),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                AlphabetScroller(
+                                                    selectedLetter = selectedLetter,
+                                                    onLetterSelected =
+                                                        viewModel::onLetterSelected,
+                                                    modifier =
+                                                        Modifier.background(
+                                                            MaterialTheme.colorScheme.surface
+                                                                .copy(alpha = 0.8f),
+                                                            shape =
+                                                                MaterialTheme.shapes.small,
+                                                        ),
                                                 )
                                             }
                                         }
@@ -349,4 +395,38 @@ private fun NavigationChip(selected: Boolean, label: String, iconResId: Int, onC
                 selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ),
     )
+}
+
+@Composable
+private fun AlphabetScroller(
+    selectedLetter: String?,
+    onLetterSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val letters = listOf("#") + ('A'..'Z').map { it.toString() }
+
+    LazyColumn(
+        modifier = modifier.width(32.dp).padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        items(items = letters, key = { it }) { letter ->
+            val isSelected = selectedLetter == letter
+            Text(
+                text = letter,
+                style =
+                    MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    ),
+                color =
+                    if (isSelected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier =
+                    Modifier.clickable { onLetterSelected(letter) }
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .fillMaxWidth(),
+            )
+        }
+    }
 }

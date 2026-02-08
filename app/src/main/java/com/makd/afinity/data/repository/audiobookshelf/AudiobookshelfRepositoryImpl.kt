@@ -584,7 +584,7 @@ constructor(
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val response = apiService.get().getPersonalized(libraryId)
+                val response = apiService.get().getPersonalized(libraryId, include = "progress")
 
                 if (response.isSuccessful && response.body() != null) {
                     Result.success(response.body()!!)

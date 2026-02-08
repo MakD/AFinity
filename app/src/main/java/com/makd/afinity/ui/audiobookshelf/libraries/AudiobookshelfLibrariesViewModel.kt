@@ -8,6 +8,7 @@ import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.repository.AudiobookshelfConfig
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import timber.log.Timber
@@ -53,6 +55,13 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
 
     private val _libraryItems = MutableStateFlow<Map<String, List<LibraryItem>>>(emptyMap())
     val libraryItems: StateFlow<Map<String, List<LibraryItem>>> = _libraryItems.asStateFlow()
+
+    private val _selectedLetter = MutableStateFlow<String?>(null)
+    val selectedLetter: StateFlow<String?> = _selectedLetter.asStateFlow()
+
+    private val _filteredLibraryItems = MutableStateFlow<Map<String, List<LibraryItem>>>(emptyMap())
+    val filteredLibraryItems: StateFlow<Map<String, List<LibraryItem>>> =
+        _filteredLibraryItems.asStateFlow()
 
     private val _allSeries = MutableStateFlow<List<AudiobookshelfSeries>>(emptyList())
     val allSeries: StateFlow<List<AudiobookshelfSeries>> = _allSeries.asStateFlow()
@@ -253,6 +262,35 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
                     Timber.e(error, "Failed to load items for library $libraryId")
                 },
             )
+        }
+    }
+
+    fun onLetterSelected(letter: String) {
+        val newLetter = if (_selectedLetter.value == letter) null else letter
+        _selectedLetter.value = newLetter
+        applyLetterFilter(newLetter)
+    }
+
+    private fun applyLetterFilter(letter: String?) {
+        viewModelScope.launch(Dispatchers.Default) {
+            val allItems = _libraryItems.value
+            val filtered =
+                if (letter == null) {
+                    allItems
+                } else {
+                    allItems.mapValues { (_, items) ->
+                        items.filter { item ->
+                            val firstChar =
+                                item.media.metadata.title?.firstOrNull()?.uppercase() ?: ""
+                            if (letter == "#") {
+                                firstChar.isNotEmpty() && !firstChar[0].isLetter()
+                            } else {
+                                firstChar == letter
+                            }
+                        }
+                    }
+                }
+            _filteredLibraryItems.value = filtered
         }
     }
 

@@ -41,7 +41,6 @@ import com.makd.afinity.ui.audiobookshelf.genre.AudiobookshelfGenreResultsScreen
 import com.makd.afinity.ui.audiobookshelf.item.AudiobookshelfItemScreen
 import com.makd.afinity.ui.audiobookshelf.item.series.AudiobookshelfSeriesScreen
 import com.makd.afinity.ui.audiobookshelf.libraries.AudiobookshelfLibrariesScreen
-import com.makd.afinity.ui.audiobookshelf.library.AudiobookshelfLibraryScreen
 import com.makd.afinity.ui.audiobookshelf.player.AudiobookshelfPlayerScreen
 import com.makd.afinity.ui.audiobookshelf.player.components.MiniPlayer
 import com.makd.afinity.ui.components.AfinitySplashScreen
@@ -687,20 +686,6 @@ fun MainNavigation(
                 }
 
                 composable(
-                    route = Destination.AUDIOBOOKSHELF_LIBRARY_ROUTE,
-                    arguments = listOf(navArgument("libraryId") { type = NavType.StringType }),
-                ) {
-                    AudiobookshelfLibraryScreen(
-                        onNavigateBack = { navController.popBackStack() },
-                        onNavigateToItem = { itemId ->
-                            navController.navigate(
-                                Destination.createAudiobookshelfItemRoute(itemId)
-                            )
-                        },
-                    )
-                }
-
-                composable(
                     route = Destination.AUDIOBOOKSHELF_ITEM_ROUTE,
                     arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
                 ) {
@@ -745,7 +730,7 @@ fun MainNavigation(
                                     startPosition = startPosition,
                                 )
                             )
-                        },
+                        }
                     )
                 }
 

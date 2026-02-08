@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,23 +36,23 @@ fun ChapterList(
     onChapterClick: (BookChapter) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            chapters.forEachIndexed { index, chapter ->
-                val isCurrentChapter =
-                    currentPosition?.let { pos -> pos >= chapter.start && pos < chapter.end }
-                        ?: false
+    Column(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        chapters.forEachIndexed { index, chapter ->
+            val isCurrentChapter =
+                currentPosition?.let { pos -> pos >= chapter.start && pos < chapter.end } ?: false
 
-                val isCompleted = currentPosition?.let { pos -> pos >= chapter.end } ?: false
+            val isCompleted = currentPosition?.let { pos -> pos >= chapter.end } ?: false
 
-                ChapterItem(
-                    chapter = chapter,
-                    index = index + 1,
-                    isCurrentChapter = isCurrentChapter,
-                    isCompleted = isCompleted,
-                    onClick = { onChapterClick(chapter) },
-                )
-            }
+            ChapterItem(
+                chapter = chapter,
+                index = index + 1,
+                isCurrentChapter = isCurrentChapter,
+                isCompleted = isCompleted,
+                onClick = { onChapterClick(chapter) },
+            )
         }
     }
 }
@@ -64,27 +66,24 @@ private fun ChapterItem(
     onClick: () -> Unit,
 ) {
     val backgroundColor =
-        if (isCurrentChapter) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            Color.Transparent
+        when {
+            isCurrentChapter -> MaterialTheme.colorScheme.primaryContainer
+            else -> Color.Transparent
         }
 
     val textColor =
-        if (isCurrentChapter) {
-            MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurface
+        when {
+            isCurrentChapter -> MaterialTheme.colorScheme.onPrimaryContainer
+            else -> MaterialTheme.colorScheme.onSurface
         }
 
     val iconTint =
-        if (isCurrentChapter) {
-            MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
+        when {
+            isCurrentChapter -> MaterialTheme.colorScheme.onPrimaryContainer
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
         }
 
-    val contentAlpha = if (isCompleted && !isCurrentChapter) 0.5f else 1f
+    val contentAlpha = if (isCompleted && !isCurrentChapter) 0.6f else 1f
 
     Row(
         modifier =
@@ -96,28 +95,32 @@ private fun ChapterItem(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.width(32.dp), contentAlignment = Alignment.CenterStart) {
-            if (isCurrentChapter) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_audio),
-                    contentDescription = "Playing",
-                    tint = iconTint,
-                    modifier = Modifier.size(20.dp),
-                )
-            } else if (isCompleted) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_check),
-                    contentDescription = "Completed",
-                    tint = iconTint.copy(alpha = 0.5f),
-                    modifier = Modifier.size(18.dp),
-                )
-            } else {
-                Text(
-                    text = index.toString(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.align(Alignment.Center),
-                )
+            when {
+                isCurrentChapter -> {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_audio),
+                        contentDescription = "Playing",
+                        tint = iconTint,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                isCompleted -> {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_check),
+                        contentDescription = "Completed",
+                        tint = iconTint.copy(alpha = 0.6f),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                else -> {
+                    Text(
+                        text = index.toString(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
             }
         }
 
@@ -149,7 +152,13 @@ private fun ChapterItem(
 
 private fun formatChapterDuration(seconds: Double): String {
     val totalSeconds = seconds.toLong()
-    val minutes = totalSeconds / 60
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
     val secs = totalSeconds % 60
-    return "${minutes}:${secs.toString().padStart(2, '0')}"
+
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, secs)
+    } else {
+        "%d:%02d".format(minutes, secs)
+    }
 }

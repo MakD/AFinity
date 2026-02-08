@@ -1,5 +1,11 @@
 package com.makd.afinity.ui.audiobookshelf.item.components
 
+import android.text.Spannable
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
+import android.view.MotionEvent
+import android.widget.TextView
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,48 +23,68 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.text.HtmlCompat
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private val episodeDateFormatter = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+
 @Composable
 fun EpisodeList(
     episodes: List<PodcastEpisode>,
-    onEpisodeClick: (PodcastEpisode) -> Unit,
     onEpisodePlay: (PodcastEpisode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            episodes.forEach { episode ->
-                EpisodeItem(
-                    episode = episode,
-                    onClick = { onEpisodeClick(episode) },
-                    onPlay = { onEpisodePlay(episode) },
-                )
-            }
+    var expandedEpisodeId by remember { mutableStateOf<String?>(null) }
+
+    Column(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        episodes.forEach { episode ->
+            val isExpanded = expandedEpisodeId == episode.id
+
+            ExpandableEpisodeItem(
+                episode = episode,
+                isExpanded = isExpanded,
+                onPlay = { onEpisodePlay(episode) },
+                onExpandToggle = { expandedEpisodeId = if (isExpanded) null else episode.id },
+            )
         }
     }
 }
 
 @Composable
-private fun EpisodeItem(episode: PodcastEpisode, onClick: () -> Unit, onPlay: () -> Unit) {
+private fun ExpandableEpisodeItem(
+    episode: PodcastEpisode,
+    isExpanded: Boolean,
+    onPlay: () -> Unit,
+    onExpandToggle: () -> Unit,
+) {
     Row(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onClick)
-                .padding(vertical = 12.dp, horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+                .clickable { onExpandToggle() }
+                .padding(12.dp)
+                .animateContentSize(),
+        verticalAlignment = Alignment.Top,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -66,7 +92,7 @@ private fun EpisodeItem(episode: PodcastEpisode, onClick: () -> Unit, onPlay: ()
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
+                maxLines = if (isExpanded) Int.MAX_VALUE else 2,
                 overflow = TextOverflow.Ellipsis,
             )
 
@@ -99,13 +125,13 @@ private fun EpisodeItem(episode: PodcastEpisode, onClick: () -> Unit, onPlay: ()
 
             episode.description?.let { description ->
                 Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.2,
+
+                HtmlText(
+                    html = description,
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 2,
+                    textColor = MaterialTheme.colorScheme.onSurfaceVariant.toArgb(),
+                    renderHtml = isExpanded,
+                    onClick = onExpandToggle,
                 )
             }
         }
@@ -130,9 +156,45 @@ private fun EpisodeItem(episode: PodcastEpisode, onClick: () -> Unit, onPlay: ()
     }
 }
 
+@Composable
+fun HtmlText(
+    html: String,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 2,
+    textColor: Int,
+    renderHtml: Boolean,
+    onClick: () -> Unit,
+) {
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            TextView(context).apply {
+                textSize = 14f
+                setLinkTextColor(textColor)
+                movementMethod = LinkOrExpandMovementMethod
+            }
+        },
+        update = { textView ->
+            textView.setTextColor(textColor)
+            textView.maxLines = maxLines
+            textView.ellipsize = android.text.TextUtils.TruncateAt.END
+
+            textView.setOnClickListener { onClick() }
+
+            if (renderHtml) {
+                textView.movementMethod = LinkOrExpandMovementMethod
+                textView.text = HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT)
+            } else {
+                textView.movementMethod = null
+                textView.text =
+                    HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT).toString()
+            }
+        },
+    )
+}
+
 private fun formatDate(timestamp: Long): String {
-    val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-    return dateFormat.format(Date(timestamp))
+    return episodeDateFormatter.format(Date(timestamp))
 }
 
 private fun formatDuration(seconds: Double): String {
@@ -140,9 +202,41 @@ private fun formatDuration(seconds: Double): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
 
-    return if (hours > 0) {
-        "${hours}h ${minutes}m"
-    } else {
-        "${minutes}m"
+    return when {
+        hours > 0 -> "${hours}h ${minutes}m"
+        minutes > 0 -> "${minutes}m"
+        else -> "< 1m"
+    }
+}
+
+object LinkOrExpandMovementMethod : LinkMovementMethod() {
+    override fun onTouchEvent(widget: TextView, buffer: Spannable, event: MotionEvent): Boolean {
+        val action = event.action
+
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
+            var x = event.x.toInt()
+            var y = event.y.toInt()
+
+            x -= widget.totalPaddingLeft
+            y -= widget.totalPaddingTop
+            x += widget.scrollX
+            y += widget.scrollY
+
+            val layout = widget.layout
+            val line = layout.getLineForVertical(y)
+            val off = layout.getOffsetForHorizontal(line, x.toFloat())
+
+            val links = buffer.getSpans(off, off, ClickableSpan::class.java)
+
+            if (links.isNotEmpty()) {
+                return super.onTouchEvent(widget, buffer, event)
+            } else {
+                if (action == MotionEvent.ACTION_UP) {
+                    widget.performClick()
+                }
+                return true
+            }
+        }
+        return super.onTouchEvent(widget, buffer, event)
     }
 }

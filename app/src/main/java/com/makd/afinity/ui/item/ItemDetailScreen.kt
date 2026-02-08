@@ -543,7 +543,8 @@ private fun LandscapeItemDetailContent(
                                                                 ) to
                                                                     painterResource(
                                                                         id =
-                                                                            R.drawable.ic_play_arrow
+                                                                            R.drawable
+                                                                                .ic_player_play_filled
                                                                     )
                                                             }
 
@@ -553,7 +554,8 @@ private fun LandscapeItemDetailContent(
                                                                 ) to
                                                                     painterResource(
                                                                         id =
-                                                                            R.drawable.ic_play_arrow
+                                                                            R.drawable
+                                                                                .ic_player_play_filled
                                                                     )
                                                             }
                                                         }
@@ -666,7 +668,8 @@ private fun LandscapeItemDetailContent(
                                                                 ) to
                                                                     painterResource(
                                                                         id =
-                                                                            R.drawable.ic_play_arrow
+                                                                            R.drawable
+                                                                                .ic_player_play_filled
                                                                     )
                                                             }
 
@@ -676,7 +679,8 @@ private fun LandscapeItemDetailContent(
                                                                 ) to
                                                                     painterResource(
                                                                         id =
-                                                                            R.drawable.ic_play_arrow
+                                                                            R.drawable
+                                                                                .ic_player_play_filled
                                                                     )
                                                             }
                                                         }
@@ -765,7 +769,8 @@ private fun LandscapeItemDetailContent(
                                                             R.string.action_resume_playback
                                                         ) to
                                                             painterResource(
-                                                                id = R.drawable.ic_play_arrow
+                                                                id =
+                                                                    R.drawable.ic_player_play_filled
                                                             )
                                                     }
 
@@ -774,7 +779,8 @@ private fun LandscapeItemDetailContent(
                                                             R.string.hero_btn_watch_now
                                                         ) to
                                                             painterResource(
-                                                                id = R.drawable.ic_play_arrow
+                                                                id =
+                                                                    R.drawable.ic_player_play_filled
                                                             )
                                                     }
                                                 }
@@ -1266,14 +1272,14 @@ private fun PortraitItemDetailContent(
                                                         R.string.action_resume_playback
                                                     ) to
                                                         painterResource(
-                                                            id = R.drawable.ic_play_arrow
+                                                            id = R.drawable.ic_player_play_filled
                                                         )
                                                 }
 
                                                 else -> {
                                                     stringResource(R.string.action_play) to
                                                         painterResource(
-                                                            id = R.drawable.ic_play_arrow
+                                                            id = R.drawable.ic_player_play_filled
                                                         )
                                                 }
                                             }
@@ -1367,14 +1373,14 @@ private fun PortraitItemDetailContent(
                                                         R.string.action_resume_playback
                                                     ) to
                                                         painterResource(
-                                                            id = R.drawable.ic_play_arrow
+                                                            id = R.drawable.ic_player_play_filled
                                                         )
                                                 }
 
                                                 else -> {
                                                     stringResource(R.string.action_play) to
                                                         painterResource(
-                                                            id = R.drawable.ic_play_arrow
+                                                            id = R.drawable.ic_player_play_filled
                                                         )
                                                 }
                                             }
@@ -1445,12 +1451,16 @@ private fun PortraitItemDetailContent(
 
                                         item.playbackPositionTicks > 0 && item.runtimeTicks > 0 -> {
                                             stringResource(R.string.action_resume_playback) to
-                                                painterResource(id = R.drawable.ic_play_arrow)
+                                                painterResource(
+                                                    id = R.drawable.ic_player_play_filled
+                                                )
                                         }
 
                                         else -> {
                                             stringResource(R.string.hero_btn_watch_now) to
-                                                painterResource(id = R.drawable.ic_play_arrow)
+                                                painterResource(
+                                                    id = R.drawable.ic_player_play_filled
+                                                )
                                         }
                                     }
 
