@@ -15,7 +15,7 @@
 
 ## Overview
 
-AFinity is a native Android application that brings your Jellyfin media library to life with a clean, responsive interface. Stream your movies, TV shows, and live TV with hardware-accelerated playback, discover new content through personalised recommendations, and request media directly through Seerr integration.
+​AFinity is a native Android application that brings your Jellyfin media library to life with a clean, responsive interface. Stream your movies, TV shows, and live TV with hardware-accelerated playback, and discover new content through personalised recommendations. Beyond video, AFinity extends your experience with optional Audiobookshelf integration for audiobooks and podcasts, and direct media requests via Jellyseerr.
 
 ## Installation
 
@@ -213,6 +213,7 @@ AFinity stands on the shoulders of giants. Special thanks to:
 - [MPV](https://mpv.io/) - Media player engine
 - [libmpv-android](https://github.com/jarnedemeulemeester/libmpv-android) by Jarne Demeulemeester - Android MPV integration
 - [Seerr](https://github.com/seerr-team/seerr) - Open-source media discovery and request manager for Jellyfin, Plex, and Emby.
+- [Audiobookshelf](https://github.com/advplyr/audiobookshelf) - Open-source self-hosted audiobook and podcast server.
 
 ## Privacy
 
@@ -251,7 +252,7 @@ If you've spent hours enjoying your library through AFinity and want to show som
 
 **Made with ❤️ for the Jellyfin community**
 
-*AFinity is an independent project and is not affiliated with Jellyfin or Seerr.*  
+*AFinity is an independent project and is not affiliated with Jellyfin, Audiobookshelf or Seerr.*  
 *Jellyfin is a trademark of the Jellyfin project.*
 
 ---
