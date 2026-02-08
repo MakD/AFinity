@@ -183,7 +183,31 @@ fun ItemHeaderContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
-                if (progress != null && progress.progress > 0) {
+                if (progress != null && progress.isFinished) {
+                    Text(
+                        text = " • ",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_check),
+                        contentDescription = "Finished",
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(14.dp),
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Text(
+                        text = "Finished",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color(0xFF4CAF50),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                } else if (progress != null && progress.progress > 0) {
                     Text(
                         text = " • ",
                         style = MaterialTheme.typography.labelMedium,
@@ -261,8 +285,11 @@ fun ItemHeaderContent(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text =
-                        if (progress != null && progress.progress > 0) "Continue Listening"
-                        else "Play",
+                        when {
+                            progress != null && progress.isFinished -> "Listen Again"
+                            progress != null && progress.progress > 0 -> "Continue Listening"
+                            else -> "Play"
+                        },
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                 )

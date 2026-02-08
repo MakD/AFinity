@@ -88,6 +88,8 @@ interface AudiobookshelfRepository {
 
     fun getProgressForItemFlow(itemId: String): Flow<MediaProgress?>
 
+    fun getEpisodeProgressMapFlow(itemId: String): Flow<Map<String, MediaProgress>>
+
     fun getAllProgressFlow(): Flow<Map<String, MediaProgress>>
 
     suspend fun startPlaybackSession(itemId: String, episodeId: String?): Result<PlaybackSession>

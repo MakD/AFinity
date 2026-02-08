@@ -40,6 +40,11 @@ constructor(
             .getProgressForItemFlow(itemId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    val episodeProgressMap: StateFlow<Map<String, MediaProgress>> =
+        audiobookshelfRepository
+            .getEpisodeProgressMapFlow(itemId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     val currentConfig = audiobookshelfRepository.currentConfig
 
     init {
@@ -62,6 +67,10 @@ constructor(
                             episodes = item.media.episodes ?: emptyList(),
                         )
                     Timber.d("Loaded item: ${item.media.metadata.title}")
+
+                    if (item.mediaType.lowercase() == "podcast") {
+                        audiobookshelfRepository.refreshProgress()
+                    }
 
                     item.media.metadata.series?.let { seriesList ->
                         if (seriesList.isNotEmpty()) {

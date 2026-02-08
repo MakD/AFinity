@@ -28,9 +28,6 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.SeriesItemsResult
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -41,9 +38,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class AudiobookshelfRepositoryImpl
@@ -658,6 +657,17 @@ constructor(
                         item.userMediaProgress?.let { progress -> cacheProgress(progress) }
                     }
 
+                    try {
+                        val meResponse = apiService.get().getMe()
+                        if (meResponse.isSuccessful && meResponse.body() != null) {
+                            meResponse.body()!!.mediaProgress?.forEach { progress ->
+                                cacheProgress(progress)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to fetch user progress for episodes")
+                    }
+
                     Result.success(progressList)
                 } else {
                     Result.failure(Exception("Failed to fetch progress: ${response.message()}"))
@@ -737,6 +747,22 @@ constructor(
             val (serverId, userId) = context
             audiobookshelfDao.getProgressForItemFlow(itemId, serverId, userId.toString()).map {
                 it?.toMediaProgress()
+            }
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun getEpisodeProgressMapFlow(itemId: String): Flow<Map<String, MediaProgress>> {
+        return _activeContextFlow.flatMapLatest { context ->
+            if (context == null) return@flatMapLatest flowOf(emptyMap())
+            val (serverId, userId) = context
+            audiobookshelfDao.getEpisodeProgressFlow(itemId, serverId, userId.toString()).map {
+                progressList ->
+                progressList
+                    .mapNotNull { entity ->
+                        entity.episodeId?.let { epId -> epId to entity.toMediaProgress() }
+                    }
+                    .toMap()
             }
         }
     }
@@ -1016,9 +1042,7 @@ constructor(
                     )
                     Result.success(items)
                 } else {
-                    Result.failure(
-                        Exception("Failed to fetch genre items: ${response.message()}")
-                    )
+                    Result.failure(Exception("Failed to fetch genre items: ${response.message()}"))
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get limited items for genre '$genre'")

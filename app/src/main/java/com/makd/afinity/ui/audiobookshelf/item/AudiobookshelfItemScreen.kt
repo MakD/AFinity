@@ -108,6 +108,7 @@ fun AudiobookshelfItemScreen(
     val item by viewModel.item.collectAsStateWithLifecycle()
     val progress by viewModel.progress.collectAsStateWithLifecycle()
     val config by viewModel.currentConfig.collectAsStateWithLifecycle()
+    val episodeProgressMap by viewModel.episodeProgressMap.collectAsStateWithLifecycle()
 
     val isPodcast = item?.mediaType?.lowercase() == "podcast"
     val configuration = LocalConfiguration.current
@@ -307,6 +308,7 @@ fun AudiobookshelfItemScreen(
                                                         null,
                                                     )
                                                 },
+                                                episodeProgressMap = episodeProgressMap,
                                                 modifier =
                                                     Modifier.padding(top = 8.dp, bottom = 16.dp),
                                             )
@@ -420,6 +422,7 @@ fun AudiobookshelfItemScreen(
                                                         null,
                                                     )
                                                 },
+                                                episodeProgressMap = episodeProgressMap,
                                                 modifier =
                                                     Modifier.padding(top = 8.dp, bottom = 16.dp),
                                             )

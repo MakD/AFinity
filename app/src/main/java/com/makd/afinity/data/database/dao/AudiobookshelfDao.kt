@@ -168,6 +168,15 @@ interface AudiobookshelfDao {
     ): Flow<AudiobookshelfProgressEntity?>
 
     @Query(
+        "SELECT * FROM audiobookshelf_progress WHERE libraryItemId = :itemId AND jellyfinServerId = :serverId AND jellyfinUserId = :userId AND episodeId IS NOT NULL AND episodeId != ''"
+    )
+    fun getEpisodeProgressFlow(
+        itemId: String,
+        serverId: String,
+        userId: String,
+    ): Flow<List<AudiobookshelfProgressEntity>>
+
+    @Query(
         "SELECT * FROM audiobookshelf_progress WHERE pendingSync = 1 AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )
     suspend fun getPendingSyncProgress(
