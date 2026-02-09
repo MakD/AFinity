@@ -55,7 +55,7 @@ fun IncludedInSeriesSection(
                         .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SeriesCoverGrid(coverUrls = coverUrls, modifier = Modifier.size(130.dp))
+                SeriesCoverGrid(coverUrls = coverUrls, modifier = Modifier.size(75.dp))
 
                 Spacer(modifier = Modifier.width(16.dp))
 

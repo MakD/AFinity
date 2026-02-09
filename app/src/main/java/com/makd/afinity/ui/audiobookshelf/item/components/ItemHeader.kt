@@ -183,6 +183,8 @@ fun ItemHeaderContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
+                Spacer(modifier = Modifier.width(4.dp))
+
                 if (progress != null && progress.isFinished) {
                     Text(
                         text = " • ",
