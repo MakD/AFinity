@@ -143,7 +143,7 @@ object SeriesItemListSerializer : KSerializer<List<SeriesItem>?> {
 
 @Serializable
 data class AudioFile(
-    @SerialName("index") val index: Int,
+    @SerialName("index") val index: Int? = null,
     @SerialName("ino") val ino: String,
     @SerialName("metadata") val metadata: FileMetadata,
     @SerialName("addedAt") val addedAt: Long? = null,

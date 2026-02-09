@@ -462,7 +462,7 @@ private fun MetadataDot() {
 }
 
 @Composable
-private fun CircleFlagIcon(url: String, modifier: Modifier = Modifier) {
+internal fun CircleFlagIcon(url: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val model =
         remember(url) {
@@ -566,11 +566,22 @@ fun SeparatedFlowRow(
     }
 }
 
-private fun getAutoFlagUrl(langCode: String): String? {
+internal fun getAutoFlagUrl(langCode: String): String? {
     if (langCode.isBlank()) return null
+    val resolvedCode =
+        if (langCode.length > 3) {
+            Locale.getAvailableLocales()
+                .firstOrNull {
+                    it.displayLanguage.equals(langCode, ignoreCase = true) ||
+                        it.getDisplayLanguage(Locale.ENGLISH).equals(langCode, ignoreCase = true)
+                }
+                ?.language ?: langCode
+        } else {
+            langCode
+        }
 
     val manualMapping =
-        when (langCode.lowercase()) {
+        when (resolvedCode.lowercase()) {
             "en" -> "us"
             "hi" -> "in"
             "ja" -> "jp"
@@ -614,10 +625,10 @@ private fun getAutoFlagUrl(langCode: String): String? {
     val countryCode =
         manualMapping
             ?: run {
-                val locale = Locale.forLanguageTag(langCode)
+                val locale = Locale.forLanguageTag(resolvedCode)
                 locale.country.ifBlank {
                     Locale.getAvailableLocales()
-                        .firstOrNull { it.language == langCode && it.country.isNotBlank() }
+                        .firstOrNull { it.language == resolvedCode && it.country.isNotBlank() }
                         ?.country
                 }
             }

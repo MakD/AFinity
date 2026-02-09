@@ -66,6 +66,7 @@ import com.makd.afinity.ui.audiobookshelf.item.components.ChapterList
 import com.makd.afinity.ui.audiobookshelf.item.components.EpisodeList
 import com.makd.afinity.ui.audiobookshelf.item.components.ExpandableSynopsis
 import com.makd.afinity.ui.audiobookshelf.item.components.IncludedInSeriesSection
+import com.makd.afinity.ui.audiobookshelf.item.components.ItemDetailsSection
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeader
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeaderContent
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
@@ -280,6 +281,13 @@ fun AudiobookshelfItemScreen(
                                 }
                             }
 
+                            item {
+                                ItemDetailsSection(
+                                    item = item!!,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                                )
+                            }
+
                             val showEpisodes = isPodcast && uiState.episodes.isNotEmpty()
                             val showChapters = !isPodcast && uiState.chapters.isNotEmpty()
 
@@ -387,6 +395,13 @@ fun AudiobookshelfItemScreen(
                                     modifier = Modifier.padding(horizontal = 16.dp),
                                 )
                             }
+                        }
+
+                        item {
+                            ItemDetailsSection(
+                                item = item!!,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                            )
                         }
 
                         val showEpisodes = isPodcast && uiState.episodes.isNotEmpty()

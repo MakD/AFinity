@@ -7,6 +7,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -42,9 +45,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -52,6 +58,8 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.ui.components.CircleFlagIcon
+import com.makd.afinity.ui.components.getAutoFlagUrl
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
 
@@ -240,13 +248,23 @@ fun ItemHeaderContent(
         }
 
         val genres = item.media.metadata.genres
-        if (!genres.isNullOrEmpty()) {
+        val language = item.media.metadata.language?.takeIf { it.isNotBlank() }
+        val flagUrl = remember(language) { language?.let { getAutoFlagUrl(it) } }
+        val isExplicit = item.media.metadata.explicit == true
+        val hasChips = !genres.isNullOrEmpty() || flagUrl != null || language != null || isExplicit
+
+        if (hasChips) {
+            val hasGenres = !genres.isNullOrEmpty()
+            val hasLanguage = flagUrl != null || language != null
+            val dotColor = MaterialTheme.colorScheme.onSurfaceVariant
+
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             ) {
-                genres.take(2).forEach { genre ->
+                genres?.take(2)?.forEach { genre ->
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -256,6 +274,44 @@ fun ItemHeaderContent(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+
+                if (hasLanguage && hasGenres) {
+                    Text(text = "•", color = dotColor, style = MaterialTheme.typography.labelSmall)
+                }
+
+                if (flagUrl != null) {
+                    CircleFlagIcon(url = flagUrl, modifier = Modifier.size(16.dp))
+                } else if (language != null) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ) {
+                        Text(
+                            text = language,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+
+                if (isExplicit && (hasGenres || hasLanguage)) {
+                    Text(text = "•", color = dotColor, style = MaterialTheme.typography.labelSmall)
+                }
+
+                if (isExplicit) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.errorContainer,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_explicit),
+                            contentDescription = "Explicit",
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.padding(4.dp).size(16.dp),
                         )
                     }
                 }
@@ -382,6 +438,120 @@ internal fun ExpandableSynopsis(description: String, modifier: Modifier = Modifi
             )
         }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun ItemDetailsSection(item: LibraryItem, modifier: Modifier = Modifier) {
+    val metadata = item.media.metadata
+    val publisher = metadata.publisher
+    val year = metadata.publishedYear
+    val abridged = metadata.abridged == true
+    val tags = item.media.tags
+
+    val hasPublisherOrYear = !publisher.isNullOrBlank() || !year.isNullOrBlank()
+    val hasTags = !tags.isNullOrEmpty()
+
+    if (!hasPublisherOrYear && !abridged && !hasTags) return
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "Details",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (hasPublisherOrYear) {
+            val label =
+                when {
+                    !publisher.isNullOrBlank() && !year.isNullOrBlank() -> "Publisher"
+                    !publisher.isNullOrBlank() -> "Publisher"
+                    else -> "Year"
+                }
+            val value =
+                when {
+                    !publisher.isNullOrBlank() && !year.isNullOrBlank() -> "$publisher \u2022 $year"
+                    !publisher.isNullOrBlank() -> publisher
+                    else -> year!!
+                }
+            DetailRow(label = label, value = value)
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        if (abridged) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            ) {
+                Text(
+                    text = "Abridged",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        if (hasTags) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tags",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                tags!!.forEach { tag ->
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ) {
+                        Text(
+                            text = tag,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailRow(label: String, value: String) {
+    Text(
+        text =
+            buildAnnotatedString {
+                withStyle(
+                    style =
+                        SpanStyle(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Normal,
+                        )
+                ) {
+                    append("$label: ")
+                }
+                withStyle(
+                    style =
+                        SpanStyle(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Medium,
+                        )
+                ) {
+                    append(value)
+                }
+            },
+        style = MaterialTheme.typography.bodyMedium,
+    )
 }
 
 private fun formatDuration(seconds: Double): String {
