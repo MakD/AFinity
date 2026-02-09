@@ -8,15 +8,18 @@ import android.widget.TextView
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -24,8 +27,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.core.text.HtmlCompat
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
@@ -251,6 +257,71 @@ private fun formatDuration(seconds: Double): String {
         hours > 0 -> "${hours}h ${minutes}m"
         minutes > 0 -> "${minutes}m"
         else -> "< 1m"
+    }
+}
+
+@Composable
+fun EpisodeListDialog(
+    episodes: List<PodcastEpisode>,
+    onEpisodePlay: (PodcastEpisode) -> Unit,
+    expandedEpisodeId: String?,
+    onExpandEpisode: (String?) -> Unit,
+    episodeProgressMap: Map<String, MediaProgress>,
+    onDismiss: () -> Unit,
+    onSortClick: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().height(600.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Episodes",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+
+                    Row {
+                        IconButton(onClick = onSortClick) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_arrows_sort),
+                                contentDescription = "Sort",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_close),
+                                contentDescription = "Close",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    episodeListItems(
+                        episodes = episodes,
+                        onEpisodePlay = { episode ->
+                            onEpisodePlay(episode)
+                            onDismiss()
+                        },
+                        expandedEpisodeId = expandedEpisodeId,
+                        onExpandEpisode = onExpandEpisode,
+                        episodeProgressMap = episodeProgressMap,
+                    )
+                }
+            }
+        }
     }
 }
 

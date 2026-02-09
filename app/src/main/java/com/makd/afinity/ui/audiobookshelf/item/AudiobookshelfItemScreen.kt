@@ -66,6 +66,8 @@ import com.makd.afinity.ui.audiobookshelf.item.components.ItemDetailsSection
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeader
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeaderContent
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
+import com.makd.afinity.ui.audiobookshelf.item.components.ChapterListDialog
+import com.makd.afinity.ui.audiobookshelf.item.components.EpisodeListDialog
 import com.makd.afinity.ui.audiobookshelf.item.components.chapterListItems
 import com.makd.afinity.ui.audiobookshelf.item.components.episodeListItems
 
@@ -117,6 +119,7 @@ fun AudiobookshelfItemScreen(
     var sortOption by remember { mutableStateOf(EpisodeSortOption.PUB_DATE) }
     var sortAscending by remember { mutableStateOf(false) }
     var showSortDialog by remember { mutableStateOf(false) }
+    var showListDialog by remember { mutableStateOf(false) }
 
     var expandedEpisodeId by remember { mutableStateOf<String?>(null) }
 
@@ -416,54 +419,16 @@ fun AudiobookshelfItemScreen(
 
                         if (showEpisodes || showChapters) {
                             item {
-                                CollapsibleSectionHeader(
-                                    title = if (showEpisodes) "EPISODES" else "CHAPTERS",
-                                    expanded = chaptersExpanded,
-                                    onToggle = { chaptersExpanded = !chaptersExpanded },
-                                    showSortButton = showEpisodes,
-                                    onSortClick = { showSortDialog = true },
+                                SectionDialogRow(
+                                    title =
+                                        if (showEpisodes) "EPISODES"
+                                        else "CHAPTERS",
+                                    count =
+                                        if (showEpisodes) uiState.episodes.size
+                                        else uiState.chapters.size,
+                                    onClick = { showListDialog = true },
                                     modifier = Modifier.padding(top = 16.dp),
                                 )
-                            }
-
-                            if (chaptersExpanded) {
-                                if (showEpisodes) {
-                                    episodeListItems(
-                                        episodes = sortedEpisodes,
-                                        onEpisodePlay = { episode ->
-                                            onNavigateToPlayer(
-                                                viewModel.itemId,
-                                                episode.id,
-                                                null,
-                                                null,
-                                            )
-                                        },
-                                        expandedEpisodeId = expandedEpisodeId,
-                                        onExpandEpisode = { expandedEpisodeId = it },
-                                        episodeProgressMap = episodeProgressMap,
-                                    )
-
-                                    item {
-                                        Spacer(
-                                            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
-                                        )
-                                    }
-                                } else {
-                                    chapterListItems(
-                                        chapters = uiState.chapters,
-                                        currentPosition = progress?.currentTime,
-                                        onChapterClick = { chapter ->
-                                            onNavigateToPlayer(
-                                                viewModel.itemId,
-                                                null,
-                                                chapter.start,
-                                                null,
-                                            )
-                                        },
-                                    )
-
-                                    item { Modifier.padding(bottom = 16.dp) }
-                                }
                             }
                         } else {
                             item { Spacer(modifier = Modifier.height(32.dp)) }
@@ -518,6 +483,43 @@ fun AudiobookshelfItemScreen(
             },
         )
     }
+
+    if (showListDialog) {
+        if (isPodcast && uiState.episodes.isNotEmpty()) {
+            EpisodeListDialog(
+                episodes = sortedEpisodes,
+                onEpisodePlay = { episode ->
+                    onNavigateToPlayer(
+                        viewModel.itemId,
+                        episode.id,
+                        null,
+                        null,
+                    )
+                    showListDialog = false
+                },
+                expandedEpisodeId = expandedEpisodeId,
+                onExpandEpisode = { expandedEpisodeId = it },
+                episodeProgressMap = episodeProgressMap,
+                onDismiss = { showListDialog = false },
+                onSortClick = { showSortDialog = true },
+            )
+        } else if (uiState.chapters.isNotEmpty()) {
+            ChapterListDialog(
+                chapters = uiState.chapters,
+                currentPosition = progress?.currentTime,
+                onChapterClick = { chapter ->
+                    onNavigateToPlayer(
+                        viewModel.itemId,
+                        null,
+                        chapter.start,
+                        null,
+                    )
+                    showListDialog = false
+                },
+                onDismiss = { showListDialog = false },
+            )
+        }
+    }
 }
 
 @Composable
@@ -568,6 +570,43 @@ private fun CollapsibleSectionHeader(
                         else R.drawable.ic_keyboard_arrow_down
                 ),
             contentDescription = if (expanded) "Collapse" else "Expand",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp),
+        )
+    }
+}
+
+@Composable
+private fun SectionDialogRow(
+    title: String,
+    count: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                )
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "$title ($count)",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            painter = painterResource(id = R.drawable.ic_chevron_right),
+            contentDescription = "Open $title",
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp),
         )

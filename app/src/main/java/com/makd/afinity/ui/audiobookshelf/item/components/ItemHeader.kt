@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,9 +57,9 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.ui.components.CircleFlagIcon
 import com.makd.afinity.ui.components.getAutoFlagUrl
-import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
 
 @Composable
@@ -251,7 +250,13 @@ fun ItemHeaderContent(
         val language = item.media.metadata.language?.takeIf { it.isNotBlank() }
         val flagUrl = remember(language) { language?.let { getAutoFlagUrl(it) } }
         val isExplicit = item.media.metadata.explicit == true
-        val hasChips = !genres.isNullOrEmpty() || flagUrl != null || language != null || isExplicit
+        val isAbridged = item.media.metadata.abridged == true
+        val hasChips =
+            !genres.isNullOrEmpty() ||
+                flagUrl != null ||
+                language != null ||
+                isExplicit ||
+                isAbridged
 
         if (hasChips) {
             val hasGenres = !genres.isNullOrEmpty()
@@ -304,14 +309,34 @@ fun ItemHeaderContent(
 
                 if (isExplicit) {
                     Surface(
-                        shape = CircleShape,
+                        shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.errorContainer,
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_explicit),
                             contentDescription = "Explicit",
                             tint = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.padding(4.dp).size(16.dp),
+                            modifier =
+                                Modifier.padding(horizontal = 4.dp, vertical = 4.dp).size(12.dp),
+                        )
+                    }
+                }
+
+                if (isAbridged && (hasGenres || hasLanguage || isExplicit)) {
+                    Text(text = "•", color = dotColor, style = MaterialTheme.typography.labelSmall)
+                }
+
+                if (isAbridged) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_abridged),
+                            contentDescription = "Abridged",
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier =
+                                Modifier.padding(horizontal = 4.dp, vertical = 4.dp).size(12.dp),
                         )
                     }
                 }
@@ -446,13 +471,12 @@ internal fun ItemDetailsSection(item: LibraryItem, modifier: Modifier = Modifier
     val metadata = item.media.metadata
     val publisher = metadata.publisher
     val year = metadata.publishedYear
-    val abridged = metadata.abridged == true
     val tags = item.media.tags
 
     val hasPublisherOrYear = !publisher.isNullOrBlank() || !year.isNullOrBlank()
     val hasTags = !tags.isNullOrEmpty()
 
-    if (!hasPublisherOrYear && !abridged && !hasTags) return
+    if (!hasPublisherOrYear && !hasTags) return
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -476,23 +500,6 @@ internal fun ItemDetailsSection(item: LibraryItem, modifier: Modifier = Modifier
                     else -> year!!
                 }
             DetailRow(label = label, value = value)
-            Spacer(modifier = Modifier.height(4.dp))
-        }
-
-        if (abridged) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-            ) {
-                Text(
-                    text = "Abridged",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                )
-            }
             Spacer(modifier = Modifier.height(4.dp))
         }
 
