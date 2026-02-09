@@ -2,7 +2,6 @@ package com.makd.afinity.ui.audiobookshelf.item.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -29,23 +28,21 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 
-@Composable
-fun ChapterList(
+fun LazyListScope.chapterListItems(
     chapters: List<BookChapter>,
     currentPosition: Double?,
     onChapterClick: (BookChapter) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        chapters.forEachIndexed { index, chapter ->
-            val isCurrentChapter =
-                currentPosition?.let { pos -> pos >= chapter.start && pos < chapter.end } ?: false
+    itemsIndexed(
+        items = chapters,
+        key = { _, chapter -> "${chapter.start}_${chapter.end}_${chapter.title}" },
+    ) { index, chapter ->
+        val isCurrentChapter =
+            currentPosition?.let { pos -> pos >= chapter.start && pos < chapter.end } ?: false
 
-            val isCompleted = currentPosition?.let { pos -> pos >= chapter.end } ?: false
+        val isCompleted = currentPosition?.let { pos -> pos >= chapter.end } ?: false
 
+        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
             ChapterItem(
                 chapter = chapter,
                 index = index + 1,

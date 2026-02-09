@@ -2,10 +2,8 @@ package com.makd.afinity.ui.audiobookshelf.item
 
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -62,14 +60,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
-import com.makd.afinity.ui.audiobookshelf.item.components.ChapterList
-import com.makd.afinity.ui.audiobookshelf.item.components.EpisodeList
 import com.makd.afinity.ui.audiobookshelf.item.components.ExpandableSynopsis
 import com.makd.afinity.ui.audiobookshelf.item.components.IncludedInSeriesSection
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemDetailsSection
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeader
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeaderContent
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
+import com.makd.afinity.ui.audiobookshelf.item.components.chapterListItems
+import com.makd.afinity.ui.audiobookshelf.item.components.episodeListItems
 
 private val naturalOrderComparator =
     Comparator<String> { a, b ->
@@ -119,6 +117,8 @@ fun AudiobookshelfItemScreen(
     var sortOption by remember { mutableStateOf(EpisodeSortOption.PUB_DATE) }
     var sortAscending by remember { mutableStateOf(false) }
     var showSortDialog by remember { mutableStateOf(false) }
+
+    var expandedEpisodeId by remember { mutableStateOf<String?>(null) }
 
     val sortedEpisodes by
         remember(uiState.episodes, sortOption, sortAscending) {
@@ -284,7 +284,8 @@ fun AudiobookshelfItemScreen(
                             item {
                                 ItemDetailsSection(
                                     item = item!!,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                                    modifier =
+                                        Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
                                 )
                             }
 
@@ -304,37 +305,43 @@ fun AudiobookshelfItemScreen(
                                 }
 
                                 if (chaptersExpanded) {
-                                    item {
-                                        if (showEpisodes) {
-                                            EpisodeList(
-                                                episodes = sortedEpisodes,
-                                                onEpisodePlay = { episode ->
-                                                    onNavigateToPlayer(
-                                                        viewModel.itemId,
-                                                        episode.id,
-                                                        null,
-                                                        null,
-                                                    )
-                                                },
-                                                episodeProgressMap = episodeProgressMap,
+                                    if (showEpisodes) {
+                                        episodeListItems(
+                                            episodes = sortedEpisodes,
+                                            onEpisodePlay = { episode ->
+                                                onNavigateToPlayer(
+                                                    viewModel.itemId,
+                                                    episode.id,
+                                                    null,
+                                                    null,
+                                                )
+                                            },
+                                            expandedEpisodeId = expandedEpisodeId,
+                                            onExpandEpisode = { expandedEpisodeId = it },
+                                            episodeProgressMap = episodeProgressMap,
+                                        )
+
+                                        item {
+                                            Spacer(
                                                 modifier =
-                                                    Modifier.padding(top = 8.dp, bottom = 16.dp),
-                                            )
-                                        } else {
-                                            ChapterList(
-                                                chapters = uiState.chapters,
-                                                currentPosition = progress?.currentTime,
-                                                onChapterClick = { chapter ->
-                                                    onNavigateToPlayer(
-                                                        viewModel.itemId,
-                                                        null,
-                                                        chapter.start,
-                                                        null,
-                                                    )
-                                                },
-                                                modifier = Modifier.padding(bottom = 16.dp),
+                                                    Modifier.padding(top = 8.dp, bottom = 16.dp)
                                             )
                                         }
+                                    } else {
+                                        chapterListItems(
+                                            chapters = uiState.chapters,
+                                            currentPosition = progress?.currentTime,
+                                            onChapterClick = { chapter ->
+                                                onNavigateToPlayer(
+                                                    viewModel.itemId,
+                                                    null,
+                                                    chapter.start,
+                                                    null,
+                                                )
+                                            },
+                                        )
+
+                                        item { Modifier.padding(bottom = 16.dp) }
                                     }
                                 }
                             }
@@ -400,7 +407,7 @@ fun AudiobookshelfItemScreen(
                         item {
                             ItemDetailsSection(
                                 item = item!!,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
                             )
                         }
 
@@ -420,43 +427,42 @@ fun AudiobookshelfItemScreen(
                             }
 
                             if (chaptersExpanded) {
-                                item {
-                                    AnimatedVisibility(
-                                        visible = true,
-                                        enter = expandVertically() + fadeIn(),
-                                        exit = shrinkVertically() + fadeOut(),
-                                    ) {
-                                        if (showEpisodes) {
-                                            EpisodeList(
-                                                episodes = sortedEpisodes,
-                                                onEpisodePlay = { episode ->
-                                                    onNavigateToPlayer(
-                                                        viewModel.itemId,
-                                                        episode.id,
-                                                        null,
-                                                        null,
-                                                    )
-                                                },
-                                                episodeProgressMap = episodeProgressMap,
-                                                modifier =
-                                                    Modifier.padding(top = 8.dp, bottom = 16.dp),
+                                if (showEpisodes) {
+                                    episodeListItems(
+                                        episodes = sortedEpisodes,
+                                        onEpisodePlay = { episode ->
+                                            onNavigateToPlayer(
+                                                viewModel.itemId,
+                                                episode.id,
+                                                null,
+                                                null,
                                             )
-                                        } else {
-                                            ChapterList(
-                                                chapters = uiState.chapters,
-                                                currentPosition = progress?.currentTime,
-                                                onChapterClick = { chapter ->
-                                                    onNavigateToPlayer(
-                                                        viewModel.itemId,
-                                                        null,
-                                                        chapter.start,
-                                                        null,
-                                                    )
-                                                },
-                                                modifier = Modifier.padding(bottom = 16.dp),
-                                            )
-                                        }
+                                        },
+                                        expandedEpisodeId = expandedEpisodeId,
+                                        onExpandEpisode = { expandedEpisodeId = it },
+                                        episodeProgressMap = episodeProgressMap,
+                                    )
+
+                                    item {
+                                        Spacer(
+                                            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
+                                        )
                                     }
+                                } else {
+                                    chapterListItems(
+                                        chapters = uiState.chapters,
+                                        currentPosition = progress?.currentTime,
+                                        onChapterClick = { chapter ->
+                                            onNavigateToPlayer(
+                                                viewModel.itemId,
+                                                null,
+                                                chapter.start,
+                                                null,
+                                            )
+                                        },
+                                    )
+
+                                    item { Modifier.padding(bottom = 16.dp) }
                                 }
                             }
                         } else {

@@ -8,7 +8,6 @@ import android.widget.TextView
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,10 +28,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,27 +48,22 @@ import java.util.Locale
 
 private val episodeDateFormatter = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
 
-@Composable
-fun EpisodeList(
+fun LazyListScope.episodeListItems(
     episodes: List<PodcastEpisode>,
     onEpisodePlay: (PodcastEpisode) -> Unit,
-    modifier: Modifier = Modifier,
+    expandedEpisodeId: String?,
+    onExpandEpisode: (String?) -> Unit,
     episodeProgressMap: Map<String, MediaProgress> = emptyMap(),
 ) {
-    var expandedEpisodeId by remember { mutableStateOf<String?>(null) }
+    items(items = episodes, key = { it.id }) { episode ->
+        val isExpanded = expandedEpisodeId == episode.id
 
-    Column(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        episodes.forEach { episode ->
-            val isExpanded = expandedEpisodeId == episode.id
-
+        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
             ExpandableEpisodeItem(
                 episode = episode,
                 isExpanded = isExpanded,
                 onPlay = { onEpisodePlay(episode) },
-                onExpandToggle = { expandedEpisodeId = if (isExpanded) null else episode.id },
+                onExpandToggle = { onExpandEpisode(if (isExpanded) null else episode.id) },
                 progress = episodeProgressMap[episode.id],
             )
         }
