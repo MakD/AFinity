@@ -165,6 +165,11 @@ constructor(
 
             playbackManager.setSession(enhancedSession, baseUrl, token)
 
+            if (isPodcastPlaylist) {
+                val episodeIds = episodes.filter { it.audioTrack != null }.map { it.id }
+                playbackManager.setPlaylistInfo(episodeIds)
+            }
+
             val mediaItems =
                 audioTracks.mapIndexed { index, track ->
                     val url =
@@ -347,12 +352,26 @@ constructor(
         if (sessionId != null) {
             scope.launch {
                 try {
+                    val currentTime: Double
+                    val duration: Double
+
+                    if (state.isPodcastPlaylist && state.currentChapter != null) {
+                        currentTime =
+                            (state.currentTime - state.currentChapter.start).coerceAtLeast(0.0)
+                        duration =
+                            (state.currentChapter.end - state.currentChapter.start)
+                                .coerceAtLeast(0.0)
+                    } else {
+                        currentTime = state.currentTime
+                        duration = state.duration
+                    }
+
                     val result =
                         audiobookshelfRepository.closePlaybackSession(
                             sessionId = sessionId,
-                            currentTime = state.currentTime,
-                            timeListened = state.currentTime,
-                            duration = state.duration,
+                            currentTime = currentTime,
+                            timeListened = currentTime,
+                            duration = duration,
                         )
                     if (result.isSuccess) {
                         Timber.d("Session closed on server: $sessionId")
