@@ -3,7 +3,7 @@ name: Discord Release Notification
 on:
   release:
     types: [published]
-  workflow_dispatch:  # Allows manual trigger
+  workflow_dispatch:
 
 jobs:
   notify:
@@ -12,35 +12,51 @@ jobs:
       - name: Get Release Information
         id: get_release
         run: |
+          # 1. Define a random delimiter to prevent the text "EOF" inside release notes from breaking the script
+          DELIMITER="EOF_$(date +%s)"
+          
           if [ "${{ github.event_name }}" == "release" ]; then
-            # Use event data for automatic triggers
-            echo "RELEASE_NAME=${{ github.event.release.name }}" >> $GITHUB_ENV
-            echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
-            echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
-            echo "${{ github.event.release.body }}" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
-            echo "RELEASE_URL=${{ github.event.release.html_url }}" >> $GITHUB_ENV
-            echo "RELEASE_AUTHOR=${{ github.event.release.author.login }}" >> $GITHUB_ENV
-            echo "RELEASE_AUTHOR_AVATAR=${{ github.event.release.author.avatar_url }}" >> $GITHUB_ENV
-            echo "ASSETS<<EOF" >> $GITHUB_ENV
-            printf '%s\n' '${{ toJson(github.event.release.assets) }}' | jq -r 'map("[\(.name)](\(.browser_download_url))") | join("\n")' >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            # --- AUTOMATIC TRIGGER (Read from Event Path for safety) ---
+            
+            # Read name/tag safely using jq from the event file
+            echo "RELEASE_NAME=$(jq -r .release.name "$GITHUB_EVENT_PATH")" >> $GITHUB_ENV
+            echo "RELEASE_TAG=$(jq -r .release.tag_name "$GITHUB_EVENT_PATH")" >> $GITHUB_ENV
+            
+            # Read Body safely
+            echo "RELEASE_BODY<<$DELIMITER" >> $GITHUB_ENV
+            jq -r .release.body "$GITHUB_EVENT_PATH" >> $GITHUB_ENV
+            echo "$DELIMITER" >> $GITHUB_ENV
+            
+            # URLs and Author
+            echo "RELEASE_URL=$(jq -r .release.html_url "$GITHUB_EVENT_PATH")" >> $GITHUB_ENV
+            echo "RELEASE_AUTHOR=$(jq -r .release.author.login "$GITHUB_EVENT_PATH")" >> $GITHUB_ENV
+            echo "RELEASE_AUTHOR_AVATAR=$(jq -r .release.author.avatar_url "$GITHUB_EVENT_PATH")" >> $GITHUB_ENV
+            
+            # Assets
+            echo "ASSETS<<$DELIMITER" >> $GITHUB_ENV
+            jq -r '.release.assets | map("[\(.name)](\(.browser_download_url))") | join("\n")' "$GITHUB_EVENT_PATH" >> $GITHUB_ENV
+            echo "$DELIMITER" >> $GITHUB_ENV
+
           else
-            # Fetch latest release data for manual triggers
+            # --- MANUAL TRIGGER (Fetch via CURL) ---
+            
             RELEASE_DATA=$(curl -s -H "Authorization: token ${{ github.token }}" \
               "https://api.github.com/repos/${{ github.repository }}/releases/latest")
             
             echo "RELEASE_NAME=$(echo "$RELEASE_DATA" | jq -r '.name')" >> $GITHUB_ENV
             echo "RELEASE_TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')" >> $GITHUB_ENV
-            echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
+            
+            echo "RELEASE_BODY<<$DELIMITER" >> $GITHUB_ENV
             echo "$RELEASE_DATA" | jq -r '.body' >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            echo "$DELIMITER" >> $GITHUB_ENV
+            
             echo "RELEASE_URL=$(echo "$RELEASE_DATA" | jq -r '.html_url')" >> $GITHUB_ENV
             echo "RELEASE_AUTHOR=$(echo "$RELEASE_DATA" | jq -r '.author.login')" >> $GITHUB_ENV
             echo "RELEASE_AUTHOR_AVATAR=$(echo "$RELEASE_DATA" | jq -r '.author.avatar_url')" >> $GITHUB_ENV
-            echo "ASSETS<<EOF" >> $GITHUB_ENV
-            printf '%s\n' "$RELEASE_DATA" | jq -r '.assets | map("[\(.name)](\(.browser_download_url))") | join("\n")' >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            
+            echo "ASSETS<<$DELIMITER" >> $GITHUB_ENV
+            echo "$RELEASE_DATA" | jq -r '.assets | map("[\(.name)](\(.browser_download_url))") | join("\n")' >> $GITHUB_ENV
+            echo "$DELIMITER" >> $GITHUB_ENV
           fi
           
       - name: Send Discord Notification
@@ -58,23 +74,21 @@ jobs:
           REPO_URL="https://github.com/${{ github.repository }}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          # Get assets from environment or set default message
           if [ -z "$ASSETS" ]; then
             ASSETS="No downloadable assets"
           fi
 
-          # Truncate release body if it exceeds Discord's 4096 character limit
+          # Truncate release body if it exceeds Discord's limit
           MAX_DESC_LENGTH=4000
 
           if [ ${#RELEASE_BODY} -gt $MAX_DESC_LENGTH ]; then
-            echo "Release body is ${#RELEASE_BODY} characters, truncating to $MAX_DESC_LENGTH"
+            echo "Release body is ${#RELEASE_BODY} characters, truncating..."
             RELEASE_BODY_TRUNCATED="${RELEASE_BODY:0:$MAX_DESC_LENGTH}... [Read full release notes]($RELEASE_URL)"
           else
-            echo "Release body is ${#RELEASE_BODY} characters (within limit)"
             RELEASE_BODY_TRUNCATED="$RELEASE_BODY"
           fi
 
-          # Create Discord embed JSON using jq with proper multiline handling
+          # Create Discord payload
           DISCORD_PAYLOAD=$(jq -n \
             --arg title "🚀 New Release: $RELEASE_NAME" \
             --arg description "$RELEASE_BODY_TRUNCATED" \
@@ -93,57 +107,26 @@ jobs:
                 url: $url,
                 color: 3066993,
                 fields: [
-                  {
-                    name: "📦 Version",
-                    value: ("`" + $tag + "`"),
-                    inline: true
-                  },
-                  {
-                    name: "👤 Author",
-                    value: ("[" + $author + "](https://github.com/" + $author + ")"),
-                    inline: true
-                  },
-                  {
-                    name: "📂 Repository",
-                    value: ("[" + $repo + "](" + $repo_url + ")"),
-                    inline: false
-                  },
-                  {
-                    name: "⬇️ Downloads",
-                    value: $assets,
-                    inline: false
-                  }
+                  { name: "📦 Version", value: ("`" + $tag + "`"), inline: true },
+                  { name: "👤 Author", value: ("[" + $author + "](https://github.com/" + $author + ")"), inline: true },
+                  { name: "📂 Repository", value: ("[" + $repo + "](" + $repo_url + ")"), inline: false },
+                  { name: "⬇️ Downloads", value: $assets, inline: false }
                 ],
-                author: {
-                  name: $author,
-                  icon_url: $avatar,
-                  url: ("https://github.com/" + $author)
-                },
+                author: { name: $author, icon_url: $avatar, url: ("https://github.com/" + $author) },
                 timestamp: $timestamp,
-                footer: {
-                  text: ("Released from " + $repo)
-                }
+                footer: { text: ("Released from " + $repo) }
               }]
             }')
 
-          if [ $? -ne 0 ]; then
-            echo "Failed to create JSON payload"
-            exit 1
-          fi
-
-          # Send to Discord with error handling
           echo "Sending notification to Discord..."
           RESPONSE=$(curl -s -w "\n%{http_code}" -H "Content-Type: application/json" \
                -d "$DISCORD_PAYLOAD" \
                "$DISCORD_WEBHOOK_URL")
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
-
           if [ "$HTTP_CODE" -eq 204 ] || [ "$HTTP_CODE" -eq 200 ]; then
-            echo "Successfully sent Discord notification (HTTP $HTTP_CODE)"
+            echo "Success: $HTTP_CODE"
           else
-            echo "Failed to send Discord notification (HTTP $HTTP_CODE)"
-            echo "Response: $RESPONSE_BODY"
+            echo "Failed: $HTTP_CODE"
             exit 1
           fi
