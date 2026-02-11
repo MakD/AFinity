@@ -102,18 +102,18 @@ constructor(
             val controller = getConnectedController() ?: return@launch
 
             val token = securePreferencesRepository.getCachedAudiobookshelfToken()
-            val isPodcastWithoutEpisode =
-                session.audioTracks.isNullOrEmpty() && session.mediaType == "podcast"
+            val isPodcastPlaylist =
+                episodeSort != null && session.mediaType == "podcast"
             val unsortedEpisodes = session.libraryItem?.media?.episodes ?: emptyList()
             val episodes =
-                if (isPodcastWithoutEpisode && episodeSort != null) {
-                    sortEpisodes(unsortedEpisodes, episodeSort)
+                if (isPodcastPlaylist) {
+                    sortEpisodes(unsortedEpisodes, episodeSort!!)
                 } else {
                     unsortedEpisodes
                 }
 
             val audioTracks =
-                if (isPodcastWithoutEpisode) {
+                if (isPodcastPlaylist) {
                     val allTracks =
                         episodes.mapNotNull { episode ->
                             episode.audioTrack?.let { track -> track.copy(title = episode.title) }
@@ -133,7 +133,7 @@ constructor(
                 }
 
             val enhancedSession =
-                if (isPodcastWithoutEpisode && episodes.isNotEmpty()) {
+                if (isPodcastPlaylist && episodes.isNotEmpty()) {
                     var accumulatedTime = 0.0
                     val episodeChapters =
                         episodes.mapNotNull { episode ->
@@ -177,7 +177,7 @@ constructor(
                         } else enhancedSession.coverPath
 
                     val itemTitle =
-                        if (isPodcastWithoutEpisode && track.title != null) {
+                        if (isPodcastPlaylist && track.title != null) {
                             track.title
                         } else {
                             enhancedSession.displayTitle

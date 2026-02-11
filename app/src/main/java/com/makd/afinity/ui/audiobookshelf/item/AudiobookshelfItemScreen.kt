@@ -229,9 +229,9 @@ fun AudiobookshelfItemScreen(
                                 onPlay = {
                                     onNavigateToPlayer(
                                         viewModel.itemId,
+                                        if (isPodcast) sortedEpisodes.firstOrNull()?.id else null,
                                         null,
-                                        null,
-                                        currentSortParam,
+                                        if (isPodcast) currentSortParam else null,
                                     )
                                 },
                             )
@@ -363,9 +363,9 @@ fun AudiobookshelfItemScreen(
                                 onPlay = {
                                     onNavigateToPlayer(
                                         viewModel.itemId,
+                                        if (isPodcast) sortedEpisodes.firstOrNull()?.id else null,
                                         null,
-                                        null,
-                                        currentSortParam,
+                                        if (isPodcast) currentSortParam else null,
                                     )
                                 },
                             )
