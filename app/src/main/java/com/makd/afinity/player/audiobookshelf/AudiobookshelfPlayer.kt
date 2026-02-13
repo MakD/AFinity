@@ -64,8 +64,7 @@ constructor(
             audiobookshelfRepository.isAuthenticated.collect { isAuthenticated ->
                 if (wasAuthenticated && !isAuthenticated) {
                     if (playbackManager.playbackState.value.sessionId != null) {
-                        Timber.d("Audiobookshelf auth lost, closing playback")
-                        closeSession()
+                        Timber.w("Audiobookshelf auth lost while playback active - playback continues")
                     }
                 }
                 wasAuthenticated = isAuthenticated

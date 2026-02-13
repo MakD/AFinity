@@ -80,6 +80,15 @@ constructor(
     }
 
     override suspend fun setActiveJellyfinSession(serverId: String, userId: UUID) {
+        val currentContext = activeContext
+        if (currentContext != null &&
+            currentContext.first == serverId &&
+            currentContext.second == userId &&
+            _isAuthenticated.value) {
+            Timber.d("Already in Audiobookshelf context for Server: $serverId, User: $userId")
+            return
+        }
+
         Timber.d("Switching Audiobookshelf context to Server: $serverId, User: $userId")
         _isAuthenticated.value = false
         _currentConfig.value = null
@@ -143,9 +152,9 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val loginResponse = response.body()!!
                     val user = loginResponse.user
-                    val token =
-                        user.token
-                            ?: return@withContext Result.failure(Exception("No token received"))
+                    val token = user.accessToken ?: user.token
+                        ?: return@withContext Result.failure(Exception("No token received"))
+                    val refreshToken = user.refreshToken
 
                     securePreferencesRepository.saveAudiobookshelfAuthForUser(
                         jellyfinServerId = currentServerId,
@@ -154,6 +163,7 @@ constructor(
                         accessToken = token,
                         absUserId = user.id,
                         username = user.username,
+                        refreshToken = refreshToken,
                     )
 
                     audiobookshelfDao.insertConfig(

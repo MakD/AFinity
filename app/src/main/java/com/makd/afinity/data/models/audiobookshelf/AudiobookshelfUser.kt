@@ -9,6 +9,8 @@ data class AudiobookshelfUser(
     @SerialName("username") val username: String,
     @SerialName("type") val type: String? = null,
     @SerialName("token") val token: String? = null,
+    @SerialName("accessToken") val accessToken: String? = null,
+    @SerialName("refreshToken") val refreshToken: String? = null,
     @SerialName("mediaProgress") val mediaProgress: List<MediaProgress>? = null,
     @SerialName("bookmarks") val bookmarks: List<Bookmark>? = null,
     @SerialName("isActive") val isActive: Boolean? = null,

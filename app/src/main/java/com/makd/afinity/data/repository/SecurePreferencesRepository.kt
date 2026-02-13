@@ -111,6 +111,7 @@ interface SecurePreferencesRepository {
         accessToken: String,
         absUserId: String,
         username: String,
+        refreshToken: String? = null,
     )
 
     suspend fun switchAudiobookshelfContext(jellyfinServerId: String, jellyfinUserId: UUID): Boolean
@@ -128,6 +129,10 @@ interface SecurePreferencesRepository {
 
     fun getCachedAudiobookshelfToken(): String?
 
+    fun getCachedAudiobookshelfRefreshToken(): String?
+
+    fun updateCachedAudiobookshelfTokens(accessToken: String, refreshToken: String?)
+
     suspend fun hasValidAudiobookshelfAuth(): Boolean
 }
 
@@ -136,4 +141,5 @@ data class AudiobookshelfAuthData(
     val accessToken: String,
     val absUserId: String,
     val username: String,
+    val refreshToken: String? = null,
 )

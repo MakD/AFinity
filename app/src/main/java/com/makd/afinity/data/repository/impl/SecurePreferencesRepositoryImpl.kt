@@ -16,18 +16,20 @@ import com.makd.afinity.data.repository.AudiobookshelfAuthData
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.ServerUserToken
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.Base64
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.util.Base64
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 private val Context.dataStore: DataStore<Preferences> by
     preferencesDataStore(name = "secure_settings")
@@ -104,6 +106,13 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
     @Volatile private var cachedAudiobookshelfUserId: String? = null
 
     @Volatile private var cachedAudiobookshelfUsername: String? = null
+
+    @Volatile private var cachedAudiobookshelfRefreshToken: String? = null
+
+    @Volatile private var activeAbsServerId: String? = null
+    @Volatile private var activeAbsUserId: UUID? = null
+
+    private val persistScope = kotlinx.coroutines.CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _authenticationState = MutableStateFlow(false)
 
@@ -192,6 +201,9 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
         cachedAudiobookshelfToken = null
         cachedAudiobookshelfUserId = null
         cachedAudiobookshelfUsername = null
+        cachedAudiobookshelfRefreshToken = null
+        activeAbsServerId = null
+        activeAbsUserId = null
         _authenticationState.value = false
         Timber.d("Cleared all secure data")
     }
@@ -467,6 +479,7 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
         accessToken: String,
         absUserId: String,
         username: String,
+        refreshToken: String?,
     ) {
         context.dataStore.edit { prefs ->
             prefs[getAudiobookshelfKey("abs_url", jellyfinServerId, jellyfinUserId)] =
@@ -477,12 +490,21 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
                 encrypt(absUserId)
             prefs[getAudiobookshelfKey("abs_user", jellyfinServerId, jellyfinUserId)] =
                 encrypt(username)
+            if (refreshToken != null) {
+                prefs[getAudiobookshelfKey("abs_refresh_token", jellyfinServerId, jellyfinUserId)] =
+                    encrypt(refreshToken)
+            }
         }
 
         cachedAudiobookshelfUrl = serverUrl
         cachedAudiobookshelfToken = accessToken
         cachedAudiobookshelfUserId = absUserId
         cachedAudiobookshelfUsername = username
+        if (refreshToken != null) {
+            cachedAudiobookshelfRefreshToken = refreshToken
+        }
+        activeAbsServerId = jellyfinServerId
+        activeAbsUserId = jellyfinUserId
 
         Timber.d("Saved Audiobookshelf auth for user $jellyfinUserId on server $jellyfinServerId")
     }
@@ -498,16 +520,22 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
             val tokenKey = getAudiobookshelfKey("abs_token", jellyfinServerId, jellyfinUserId)
             val userIdKey = getAudiobookshelfKey("abs_userid", jellyfinServerId, jellyfinUserId)
             val userKey = getAudiobookshelfKey("abs_user", jellyfinServerId, jellyfinUserId)
+            val refreshTokenKey =
+                getAudiobookshelfKey("abs_refresh_token", jellyfinServerId, jellyfinUserId)
 
             val url = decrypt(prefs[urlKey])
             val token = decrypt(prefs[tokenKey])
             val absUserId = decrypt(prefs[userIdKey])
             val username = decrypt(prefs[userKey])
+            val refreshToken = decrypt(prefs[refreshTokenKey])
 
             cachedAudiobookshelfUrl = url
             cachedAudiobookshelfToken = token
             cachedAudiobookshelfUserId = absUserId
             cachedAudiobookshelfUsername = username
+            cachedAudiobookshelfRefreshToken = refreshToken
+            activeAbsServerId = jellyfinServerId
+            activeAbsUserId = jellyfinUserId
 
             Timber.d(
                 "Switched Audiobookshelf context. Valid: ${!url.isNullOrBlank() && !token.isNullOrBlank()}"
@@ -522,6 +550,9 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
         cachedAudiobookshelfToken = null
         cachedAudiobookshelfUserId = null
         cachedAudiobookshelfUsername = null
+        cachedAudiobookshelfRefreshToken = null
+        activeAbsServerId = null
+        activeAbsUserId = null
     }
 
     override suspend fun getAudiobookshelfAuthForUser(
@@ -538,6 +569,11 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
                 decrypt(prefs[getAudiobookshelfKey("abs_userid", jellyfinServerId, jellyfinUserId)])
             val username =
                 decrypt(prefs[getAudiobookshelfKey("abs_user", jellyfinServerId, jellyfinUserId)])
+            val refreshToken =
+                decrypt(
+                    prefs[
+                        getAudiobookshelfKey("abs_refresh_token", jellyfinServerId, jellyfinUserId)]
+                )
 
             if (url != null && token != null && absUserId != null && username != null) {
                 AudiobookshelfAuthData(
@@ -545,6 +581,7 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
                     accessToken = token,
                     absUserId = absUserId,
                     username = username,
+                    refreshToken = refreshToken,
                 )
             } else {
                 null
@@ -561,6 +598,9 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
             prefs.remove(getAudiobookshelfKey("abs_token", jellyfinServerId, jellyfinUserId))
             prefs.remove(getAudiobookshelfKey("abs_userid", jellyfinServerId, jellyfinUserId))
             prefs.remove(getAudiobookshelfKey("abs_user", jellyfinServerId, jellyfinUserId))
+            prefs.remove(
+                getAudiobookshelfKey("abs_refresh_token", jellyfinServerId, jellyfinUserId)
+            )
         }
         clearActiveAudiobookshelfCache()
         Timber.d("Cleared Audiobookshelf auth for user $jellyfinUserId on server $jellyfinServerId")
@@ -569,6 +609,35 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
     override fun getCachedAudiobookshelfServerUrl(): String? = cachedAudiobookshelfUrl
 
     override fun getCachedAudiobookshelfToken(): String? = cachedAudiobookshelfToken
+
+    override fun getCachedAudiobookshelfRefreshToken(): String? = cachedAudiobookshelfRefreshToken
+
+    override fun updateCachedAudiobookshelfTokens(accessToken: String, refreshToken: String?) {
+        cachedAudiobookshelfToken = accessToken
+        if (refreshToken != null) {
+            cachedAudiobookshelfRefreshToken = refreshToken
+        }
+        val serverId = activeAbsServerId
+        val userId = activeAbsUserId
+        if (serverId == null || userId == null) {
+            Timber.w("Cannot persist ABS tokens - no active context")
+            return
+        }
+        persistScope.launch {
+            try {
+                context.dataStore.edit { prefs ->
+                    prefs[getAudiobookshelfKey("abs_token", serverId, userId)] =
+                        encrypt(accessToken)
+                    if (refreshToken != null) {
+                        prefs[getAudiobookshelfKey("abs_refresh_token", serverId, userId)] =
+                            encrypt(refreshToken)
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to persist updated ABS tokens")
+            }
+        }
+    }
 
     override suspend fun hasValidAudiobookshelfAuth(): Boolean {
         if (!cachedAudiobookshelfToken.isNullOrBlank() && !cachedAudiobookshelfUrl.isNullOrBlank())

@@ -11,18 +11,17 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import java.io.File
-import java.io.IOException
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import javax.inject.Qualifier
-import javax.inject.Singleton
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Cache
 import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.android.androidDevice
@@ -34,6 +33,12 @@ import org.jellyfin.sdk.model.DeviceInfo
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import timber.log.Timber
+import java.io.File
+import java.io.IOException
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
+import javax.inject.Singleton
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class DownloadClient
 
@@ -317,6 +322,8 @@ object NetworkModule {
         return base
     }
 
+    private val absTokenRefreshLock = Any()
+
     @Provides
     @Singleton
     @AudiobookshelfClient
@@ -348,44 +355,138 @@ object NetworkModule {
                 }
 
                 val newUrl =
-                    currentBaseUrl
-                        .toHttpUrlOrNull()
-                        ?.newBuilder()
-                        ?.addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
-                        ?.apply {
-                            for (i in 0 until originalRequest.url.querySize) {
-                                addQueryParameter(
-                                    originalRequest.url.queryParameterName(i),
-                                    originalRequest.url.queryParameterValue(i),
-                                )
-                            }
-                        }
-                        ?.build() ?: throw IOException("Failed to build Audiobookshelf URL")
+                    buildAbsUrl(originalRequest, currentBaseUrl)
+                        ?: throw IOException("Failed to build Audiobookshelf URL")
 
+                val token = securePreferencesRepository.getCachedAudiobookshelfToken()
                 val newRequest =
                     originalRequest
                         .newBuilder()
                         .url(newUrl)
                         .apply {
-                            val token = securePreferencesRepository.getCachedAudiobookshelfToken()
                             token?.let { addHeader("Authorization", "Bearer $it") }
                             addHeader("Content-Type", "application/json")
+                            addHeader("x-return-tokens", "true")
                         }
                         .build()
 
                 val response = chain.proceed(newRequest)
+
                 if (newUrl.encodedPath.contains("/play")) {
                     val responseBody = response.body
-                    val source = responseBody?.source()
-                    source?.request(Long.MAX_VALUE)
-                    val buffer = source?.buffer?.clone()
-                    val responseString = buffer?.readUtf8()
-                    timber.log.Timber.d("ABS Play Response [${response.code}]: $responseString")
+                    val source = responseBody.source()
+                    source.request(Long.MAX_VALUE)
+                    val buffer = source.buffer.clone()
+                    val responseString = buffer.readUtf8()
+                    Timber.d("ABS Play Response [${response.code}]: $responseString")
+                }
+
+                if (response.code == 401 && !newUrl.encodedPath.contains("auth")) {
+                    response.close()
+
+                    synchronized(absTokenRefreshLock) {
+                        val currentToken =
+                            securePreferencesRepository.getCachedAudiobookshelfToken()
+                        if (currentToken != null && currentToken != token) {
+                            val retryRequest =
+                                originalRequest
+                                    .newBuilder()
+                                    .url(newUrl)
+                                    .header("Authorization", "Bearer $currentToken")
+                                    .header("Content-Type", "application/json")
+                                    .header("x-return-tokens", "true")
+                                    .build()
+                            return@addInterceptor chain.proceed(retryRequest)
+                        }
+
+                        val refreshToken =
+                            securePreferencesRepository.getCachedAudiobookshelfRefreshToken()
+                        if (refreshToken != null) {
+                            val refreshResult = attemptAbsTokenRefresh(currentBaseUrl, refreshToken)
+                            if (refreshResult != null) {
+                                securePreferencesRepository.updateCachedAudiobookshelfTokens(
+                                    refreshResult.first,
+                                    refreshResult.second,
+                                )
+                                val retryRequest =
+                                    originalRequest
+                                        .newBuilder()
+                                        .url(newUrl)
+                                        .header("Authorization", "Bearer ${refreshResult.first}")
+                                        .header("Content-Type", "application/json")
+                                        .header("x-return-tokens", "true")
+                                        .build()
+                                return@addInterceptor chain.proceed(retryRequest)
+                            }
+                        }
+                    }
+                    return@addInterceptor chain.proceed(newRequest)
                 }
 
                 response
             }
             .build()
+    }
+
+    private fun buildAbsUrl(originalRequest: Request, baseUrl: String): HttpUrl? {
+        return baseUrl
+            .toHttpUrlOrNull()
+            ?.newBuilder()
+            ?.addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
+            ?.apply {
+                for (i in 0 until originalRequest.url.querySize) {
+                    addQueryParameter(
+                        originalRequest.url.queryParameterName(i),
+                        originalRequest.url.queryParameterValue(i),
+                    )
+                }
+            }
+            ?.build()
+    }
+
+    private fun attemptAbsTokenRefresh(
+        baseUrl: String,
+        refreshToken: String,
+    ): Pair<String, String?>? {
+        return try {
+            val refreshUrl = "${baseUrl}auth/refresh"
+            val refreshClient =
+                OkHttpClient.Builder()
+                    .connectTimeout(10, TimeUnit.SECONDS)
+                    .readTimeout(10, TimeUnit.SECONDS)
+                    .build()
+
+            val request =
+                Request.Builder()
+                    .url(refreshUrl)
+                    .post("".toRequestBody("application/json".toMediaType()))
+                    .addHeader("x-refresh-token", refreshToken)
+                    .addHeader("x-return-tokens", "true")
+                    .build()
+
+            val response = refreshClient.newCall(request).execute()
+            if (response.isSuccessful) {
+                val body = response.body.string()
+                val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                val jsonObj = json.parseToJsonElement(body).jsonObject
+                val newAccessToken = jsonObj["accessToken"]?.jsonPrimitive?.content
+                val newRefreshToken = jsonObj["refreshToken"]?.jsonPrimitive?.content
+                if (newAccessToken != null) {
+                    Timber.d("ABS token refresh successful")
+                    Pair(newAccessToken, newRefreshToken)
+                } else {
+                    Timber.w("ABS token refresh response missing accessToken")
+                    null
+                }
+            } else {
+                Timber.w("ABS token refresh failed: ${response.code}")
+                response.close()
+                null
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "ABS token refresh error")
+            null
+        }
     }
 
     private val audiobookshelfJson =
