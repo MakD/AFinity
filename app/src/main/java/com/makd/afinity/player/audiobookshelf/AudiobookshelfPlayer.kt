@@ -214,9 +214,20 @@ constructor(
             controller.setMediaItems(mediaItems)
             controller.prepare()
 
-            val seekPosition = startPosition ?: session.currentTime
-            if (seekPosition > 0) {
-                seekToPosition(seekPosition)
+            if (isPodcastPlaylist && session.episodeId != null) {
+                val episodesWithTracks = episodes.filter { it.audioTrack != null }
+                val episodeIndex = episodesWithTracks.indexOfFirst { it.id == session.episodeId }
+                val seekPosition = startPosition ?: session.currentTime
+                if (episodeIndex > 0) {
+                    controller.seekTo(episodeIndex, (seekPosition * 1000).toLong())
+                } else if (seekPosition > 0) {
+                    controller.seekTo(0, (seekPosition * 1000).toLong())
+                }
+            } else {
+                val seekPosition = startPosition ?: session.currentTime
+                if (seekPosition > 0) {
+                    seekToPosition(seekPosition)
+                }
             }
             controller.play()
         }

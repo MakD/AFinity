@@ -227,10 +227,17 @@ fun AudiobookshelfItemScreen(
                                 progress = progress,
                                 coverUrl = coverUrl,
                                 onPlay = {
+                                    val resumeEpisodeId = if (isPodcast) {
+                                        episodeProgressMap.values
+                                            .filter { !it.isFinished && it.currentTime > 0 }
+                                            .maxByOrNull { it.lastUpdate }
+                                            ?.episodeId
+                                            ?: sortedEpisodes.firstOrNull()?.id
+                                    } else null
                                     onNavigateToPlayer(
                                         viewModel.itemId,
-                                        if (isPodcast) sortedEpisodes.firstOrNull()?.id else null,
-                                        null,
+                                        resumeEpisodeId,
+                                        resumeEpisodeId?.let { episodeProgressMap[it]?.currentTime },
                                         if (isPodcast) currentSortParam else null,
                                     )
                                 },
@@ -315,7 +322,7 @@ fun AudiobookshelfItemScreen(
                                                 onNavigateToPlayer(
                                                     viewModel.itemId,
                                                     episode.id,
-                                                    null,
+                                                    episodeProgressMap[episode.id]?.currentTime,
                                                     null,
                                                 )
                                             },
@@ -361,10 +368,17 @@ fun AudiobookshelfItemScreen(
                                 progress = progress,
                                 serverUrl = config?.serverUrl,
                                 onPlay = {
+                                    val resumeEpisodeId = if (isPodcast) {
+                                        episodeProgressMap.values
+                                            .filter { !it.isFinished && it.currentTime > 0 }
+                                            .maxByOrNull { it.lastUpdate }
+                                            ?.episodeId
+                                            ?: sortedEpisodes.firstOrNull()?.id
+                                    } else null
                                     onNavigateToPlayer(
                                         viewModel.itemId,
-                                        if (isPodcast) sortedEpisodes.firstOrNull()?.id else null,
-                                        null,
+                                        resumeEpisodeId,
+                                        resumeEpisodeId?.let { episodeProgressMap[it]?.currentTime },
                                         if (isPodcast) currentSortParam else null,
                                     )
                                 },
@@ -492,7 +506,7 @@ fun AudiobookshelfItemScreen(
                     onNavigateToPlayer(
                         viewModel.itemId,
                         episode.id,
-                        null,
+                        episodeProgressMap[episode.id]?.currentTime,
                         null,
                     )
                     showListDialog = false
