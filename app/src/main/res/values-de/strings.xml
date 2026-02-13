@@ -446,4 +446,15 @@
     <string name="section_tv_shows">Fernsehsendungen</string>
     <string name="section_seasons">Staffeln</string>
     <string name="section_episodes">Folgen</string>
+    <string name="livetv_home_empty_message">Komm später zurück, um das Programm aufzulisten</string>
+    <string name="livetv_tab_guide">TV - Führer</string>
+    <string name="livetv_tab_channels">Kanäle</string>
+    <string name="livetv_error_not_available_message">Konfiguriere LIVE TV auf deinem Jellyfin-Server</string>
+    <string name="player_up_next">Als Nächstes</string>
+    <string name="cd_enter_pip">Rufe Bild-in-Bild auf</string>
+    <string name="cd_fast_forward">Schneller Vorlauf</string>
+    <string name="player_error_stream_load">Stream laden ist fehlgeschlagen</string>
+    <string name="player_error_media_load">Medien laden ist fehlgeschlagen</string>
+    <string name="error_load_stream">Stream laden ist fehlgeschlagen.</string>
+    <string name="error_unexpected">Ein unvorhergesehener Fehler ist aufgetreten.</string>
 </resources>
