@@ -99,9 +99,20 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
                 _allSeries.value = emptyList()
                 _selectedLetter.value = null
 
-                if (sessionId != null) {
+                if (sessionId != null && audiobookshelfRepository.isAuthenticated.value) {
+                    _uiState.value = _uiState.value.copy(isLoadingPersonalized = true)
                     refreshLibraries()
                 }
+            }
+        }
+
+        viewModelScope.launch {
+            var wasAuthenticated = false
+            audiobookshelfRepository.isAuthenticated.collect { authenticated ->
+                if (!wasAuthenticated && authenticated) {
+                    refreshLibraries()
+                }
+                wasAuthenticated = authenticated
             }
         }
     }

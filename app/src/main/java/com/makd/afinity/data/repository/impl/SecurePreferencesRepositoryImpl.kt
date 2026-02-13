@@ -88,7 +88,7 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
             val decrypted = aead.decrypt(bytes, null)
             String(decrypted, Charsets.UTF_8)
         } catch (e: Exception) {
-            Timber.tag("CryptoAuth").e(e, "Decryption failed.")
+            Timber.tag("CryptoAuth").d(e, "Decryption failed - likely stale or missing data")
             null
         }
     }
