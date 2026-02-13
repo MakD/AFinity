@@ -25,10 +25,6 @@ import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.toAfinityExternalUrl
 import com.makd.afinity.data.repository.FieldSets
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -49,6 +45,7 @@ import org.jellyfin.sdk.api.operations.StudiosApi
 import org.jellyfin.sdk.api.operations.TrickplayApi
 import org.jellyfin.sdk.api.operations.TvShowsApi
 import org.jellyfin.sdk.api.operations.UserLibraryApi
+import org.jellyfin.sdk.api.operations.UserViewsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -58,6 +55,10 @@ import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
+import java.io.File
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class JellyfinMediaRepository
@@ -333,59 +334,33 @@ constructor(
             return@withContext try {
                 val apiClient =
                     sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                Timber.d("Attempting to get libraries via MediaFolders API")
-                try {
-                    val libraryApi = LibraryApi(apiClient)
-                    val response = libraryApi.getMediaFolders()
-                    val libraries =
-                        response.content?.items?.mapNotNull { baseItemDto ->
-                            baseItemDto.toAfinityCollection(getBaseUrl())
-                        } ?: emptyList()
-
-                    if (libraries.isNotEmpty()) {
-                        _libraries.value = libraries
-                        Timber.d(
-                            "Successfully retrieved ${libraries.size} libraries via MediaFolders API"
-                        )
-                        return@withContext libraries
-                    }
-                } catch (e: ApiClientException) {
-                    val errorMessage = e.message ?: ""
-                    if (errorMessage.contains("403")) {
-                        Timber.w(
-                            "MediaFolders API returned 403 Forbidden. User doesn't have admin privileges. Trying Items API approach..."
-                        )
-                    } else {
-                        Timber.e(e, "MediaFolders API failed: ${e.message}")
-                    }
-                }
-
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val itemsApi = ItemsApi(apiClient)
-                val response = itemsApi.getItems(userId = userId)
+                val userViewsApi = UserViewsApi(apiClient)
+                val response = userViewsApi.getUserViews(userId = userId)
 
                 val libraries =
-                    response.content?.items?.mapNotNull { baseItemDto ->
-                        try {
-                            Timber.d(
-                                "Processing library: ${baseItemDto.name} (Type: ${baseItemDto.type}, CollectionType: ${baseItemDto.collectionType})"
-                            )
-                            baseItemDto.toAfinityCollection(getBaseUrl())
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to convert item to collection: ${baseItemDto.name}")
-                            null
+                    response.content
+                        ?.items
+                        ?.filter {
+                            it.collectionType != org.jellyfin.sdk.model.api.CollectionType.LIVETV
                         }
-                    } ?: emptyList()
+                        ?.mapNotNull { baseItemDto ->
+                            try {
+                                baseItemDto.toAfinityCollection(getBaseUrl())
+                            } catch (e: Exception) {
+                                Timber.w(
+                                    e,
+                                    "Failed to convert item to collection: ${baseItemDto.name}",
+                                )
+                                null
+                            }
+                        } ?: emptyList()
 
                 _libraries.value = libraries
-                Timber.d("Successfully retrieved ${libraries.size} libraries via Items API")
+                Timber.d("Successfully retrieved ${libraries.size} libraries via UserViews API")
                 libraries
-            } catch (e: ApiClientException) {
-                Timber.e(e, "Failed to get libraries: ${e.message}")
-                emptyList()
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error getting libraries")
+                Timber.e(e, "Failed to get libraries")
                 emptyList()
             }
         }
