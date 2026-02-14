@@ -614,9 +614,7 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
 
     override fun updateCachedAudiobookshelfTokens(accessToken: String, refreshToken: String?) {
         cachedAudiobookshelfToken = accessToken
-        if (refreshToken != null) {
-            cachedAudiobookshelfRefreshToken = refreshToken
-        }
+        cachedAudiobookshelfRefreshToken = refreshToken
         val serverId = activeAbsServerId
         val userId = activeAbsUserId
         if (serverId == null || userId == null) {
@@ -631,6 +629,8 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
                     if (refreshToken != null) {
                         prefs[getAudiobookshelfKey("abs_refresh_token", serverId, userId)] =
                             encrypt(refreshToken)
+                    } else {
+                        prefs.remove(getAudiobookshelfKey("abs_refresh_token", serverId, userId))
                     }
                 }
             } catch (e: Exception) {
@@ -644,4 +644,7 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
             return true
         return false
     }
+
+    @Volatile
+    override var onAbsAuthInvalidated: (() -> Unit)? = null
 }

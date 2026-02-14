@@ -316,8 +316,7 @@ fun ItemHeaderContent(
                             painter = painterResource(id = R.drawable.ic_explicit),
                             contentDescription = "Explicit",
                             tint = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier =
-                                Modifier.padding(horizontal = 4.dp, vertical = 4.dp).size(12.dp),
+                            modifier = Modifier.padding(2.dp).size(14.dp),
                         )
                     }
                 }
@@ -335,8 +334,7 @@ fun ItemHeaderContent(
                             painter = painterResource(id = R.drawable.ic_abridged),
                             contentDescription = "Abridged",
                             tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier =
-                                Modifier.padding(horizontal = 4.dp, vertical = 4.dp).size(12.dp),
+                            modifier = Modifier.padding(2.dp).size(14.dp),
                         )
                     }
                 }

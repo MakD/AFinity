@@ -57,6 +57,13 @@ constructor(
     private val audiobookshelfDao = database.audiobookshelfDao()
     private val json = Json { ignoreUnknownKeys = true }
 
+    init {
+        securePreferencesRepository.onAbsAuthInvalidated = {
+            _isAuthenticated.value = false
+            Timber.d("Audiobookshelf auth invalidated by token refresh failure")
+        }
+    }
+
     private val _isAuthenticated = MutableStateFlow(false)
     override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 

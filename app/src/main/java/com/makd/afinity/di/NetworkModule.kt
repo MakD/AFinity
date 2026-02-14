@@ -22,6 +22,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.android.androidDevice
@@ -417,10 +419,24 @@ object NetworkModule {
                                         .header("x-return-tokens", "true")
                                         .build()
                                 return@addInterceptor chain.proceed(retryRequest)
+                            } else {
+                                Timber.w("ABS token refresh failed, clearing invalid refresh token")
+                                securePreferencesRepository.updateCachedAudiobookshelfTokens(
+                                    token ?: "",
+                                    null,
+                                )
+                                securePreferencesRepository.onAbsAuthInvalidated?.invoke()
                             }
                         }
                     }
-                    return@addInterceptor chain.proceed(newRequest)
+                    securePreferencesRepository.onAbsAuthInvalidated?.invoke()
+                    return@addInterceptor Response.Builder()
+                        .request(originalRequest)
+                        .protocol(okhttp3.Protocol.HTTP_1_1)
+                        .code(401)
+                        .message("Unauthorized - token refresh failed")
+                        .body("".toResponseBody(null))
+                        .build()
                 }
 
                 response
@@ -459,18 +475,24 @@ object NetworkModule {
             val request =
                 Request.Builder()
                     .url(refreshUrl)
-                    .post("".toRequestBody("application/json".toMediaType()))
+                    .post("{}".toRequestBody("application/json".toMediaType()))
                     .addHeader("x-refresh-token", refreshToken)
-                    .addHeader("x-return-tokens", "true")
+                    .addHeader("Content-Type", "application/json")
                     .build()
 
             val response = refreshClient.newCall(request).execute()
             if (response.isSuccessful) {
                 val body = response.body.string()
+                Timber.d("ABS token refresh response: $body")
                 val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
                 val jsonObj = json.parseToJsonElement(body).jsonObject
-                val newAccessToken = jsonObj["accessToken"]?.jsonPrimitive?.content
-                val newRefreshToken = jsonObj["refreshToken"]?.jsonPrimitive?.content
+                val userObj = jsonObj["user"]?.jsonObject
+                val newAccessToken =
+                    userObj?.get("accessToken")?.jsonPrimitive?.content
+                        ?: jsonObj["accessToken"]?.jsonPrimitive?.content
+                val newRefreshToken =
+                    userObj?.get("refreshToken")?.jsonPrimitive?.content
+                        ?: jsonObj["refreshToken"]?.jsonPrimitive?.content
                 if (newAccessToken != null) {
                     Timber.d("ABS token refresh successful")
                     Pair(newAccessToken, newRefreshToken)

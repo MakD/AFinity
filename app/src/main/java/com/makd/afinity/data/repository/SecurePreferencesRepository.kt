@@ -134,6 +134,8 @@ interface SecurePreferencesRepository {
     fun updateCachedAudiobookshelfTokens(accessToken: String, refreshToken: String?)
 
     suspend fun hasValidAudiobookshelfAuth(): Boolean
+
+    var onAbsAuthInvalidated: (() -> Unit)?
 }
 
 data class AudiobookshelfAuthData(
