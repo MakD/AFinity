@@ -2,6 +2,7 @@ package com.makd.afinity.ui.player
 
 import android.app.Application
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.provider.Settings
@@ -18,6 +19,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
+import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
@@ -51,8 +53,6 @@ import com.makd.afinity.player.mpv.MPVPlayer
 import com.makd.afinity.ui.player.utils.VolumeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -67,6 +67,8 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
 @HiltViewModel
@@ -112,6 +114,8 @@ constructor(
 
     private var playerView: PlayerView? = null
     private var currentZoomMode: VideoZoomMode = VideoZoomMode.FIT
+    private var isVideoPortrait: Boolean = false
+    private var isOrientationOverridden: Boolean = false
 
     var onAutoplayNextEpisode: ((AfinityItem) -> Unit)? = null
     var enterPictureInPicture: (() -> Unit)? = null
@@ -613,6 +617,10 @@ constructor(
                 is PlayerEvent.CycleVideoZoomMode -> {
                     cycleZoomMode()
                 }
+
+                is PlayerEvent.CycleScreenRotation -> {
+                    toggleScreenRotation()
+                }
             }
         }
     }
@@ -656,6 +664,12 @@ constructor(
 
     fun cycleZoomMode() {
         applyZoomMode(currentZoomMode.toggle())
+    }
+
+    private fun toggleScreenRotation() {
+        isOrientationOverridden = !isOrientationOverridden
+        val effectivePortrait = if (isOrientationOverridden) !isVideoPortrait else isVideoPortrait
+        updateUiState { it.copy(resolvedOrientation = computeOrientation(effectivePortrait)) }
     }
 
     fun setPlayerView(view: PlayerView) {
@@ -716,6 +730,23 @@ constructor(
                     )
                 }
                 return
+            }
+
+            val videoStream =
+                mediaSource.mediaStreams.firstOrNull { it.type == MediaStreamType.VIDEO }
+            if (videoStream != null) {
+                val w = videoStream.width
+                val h = videoStream.height
+                if (w != null && h != null && w > 0 && h > 0) {
+                    isVideoPortrait = h > w
+                    isOrientationOverridden = false
+                    updateUiState {
+                        it.copy(resolvedOrientation = computeOrientation(isVideoPortrait))
+                    }
+                    Timber.d(
+                        "Pre-set orientation from metadata: ${w}x${h}, isPortrait=$isVideoPortrait"
+                    )
+                }
             }
 
             val audioStreams = mediaSource.mediaStreams.filter { it.type == MediaStreamType.AUDIO }
@@ -1054,6 +1085,24 @@ constructor(
                 }
             }
         }
+    }
+
+    override fun onVideoSizeChanged(videoSize: VideoSize) {
+        super.onVideoSizeChanged(videoSize)
+        if (videoSize.width > 0 && videoSize.height > 0) {
+            isVideoPortrait = videoSize.height > videoSize.width
+            Timber.d(
+                "Video size changed: ${videoSize.width}x${videoSize.height}, isPortrait=$isVideoPortrait"
+            )
+            if (!isOrientationOverridden) {
+                updateUiState { it.copy(resolvedOrientation = computeOrientation(isVideoPortrait)) }
+            }
+        }
+    }
+
+    private fun computeOrientation(portrait: Boolean): Int {
+        return if (portrait) ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        else ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
     }
 
     override fun onTracksChanged(tracks: Tracks) {
@@ -1497,6 +1546,7 @@ constructor(
         val pipBackgroundPlay: Boolean = true,
         val isControlsVisible: Boolean = true,
         val videoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
+        val resolvedOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
         val logoAutoHide: Boolean = false,
         val isLiveChannel: Boolean = false,
     )

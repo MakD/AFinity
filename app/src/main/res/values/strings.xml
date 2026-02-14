@@ -294,6 +294,7 @@
     <string name="cd_audio_settings">Audio Settings</string>
     <string name="cd_subtitle_settings">Subtitle Settings</string>
     <string name="cd_aspect_ratio">Aspect Ratio</string>
+    <string name="cd_screen_rotation">Screen rotation</string>
 
     <string name="cd_fast_forward">Fast Forward</string>
     <string name="cd_rewind">Rewind</string>
@@ -526,6 +527,7 @@
     <string name="zoom_fit">Fit</string>
     <string name="zoom_zoom">Zoom</string>
     <string name="zoom_stretch">Stretch</string>
+
     <string name="outline_none">None</string>
     <string name="outline_outline">Outline</string>
     <string name="outline_drop_shadow">Drop Shadow</string>

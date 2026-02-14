@@ -82,6 +82,8 @@ sealed class PlayerEvent {
     data class SetVideoZoomMode(val mode: VideoZoomMode) : PlayerEvent()
 
     data object CycleVideoZoomMode : PlayerEvent()
+
+    data object CycleScreenRotation : PlayerEvent()
 }
 
 data class GestureConfig(

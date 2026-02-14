@@ -32,9 +32,9 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.ui.theme.AFinityTheme
 import dagger.hilt.android.AndroidEntryPoint
+import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
-import timber.log.Timber
 
 @UnstableApi
 @AndroidEntryPoint
@@ -103,6 +103,7 @@ class PlayerActivity : ComponentActivity() {
         }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         hideSystemUI()
 
         val itemId =
@@ -132,6 +133,8 @@ class PlayerActivity : ComponentActivity() {
             val dynamicColors by
                 preferencesRepository.getDynamicColorsFlow().collectAsState(initial = true)
 
+            val uiState by viewModel.uiState.collectAsState()
+
             LaunchedEffect(Unit) {
                 viewModel.enterPictureInPicture = { enterPictureInPicture() }
                 viewModel.updatePipParams = {
@@ -139,6 +142,10 @@ class PlayerActivity : ComponentActivity() {
                         setPictureInPictureParams(buildPipParams())
                     }
                 }
+            }
+
+            LaunchedEffect(uiState.resolvedOrientation) {
+                requestedOrientation = uiState.resolvedOrientation
             }
 
             AFinityTheme(themeMode = themeMode, dynamicColor = dynamicColors) {

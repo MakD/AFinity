@@ -10,9 +10,14 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -25,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,9 +47,14 @@ fun TrickplayPreview(
     modifier: Modifier = Modifier,
 ) {
     val configuration = LocalConfiguration.current
+    val layoutDirection = LocalLayoutDirection.current
     val screenWidth = configuration.screenWidthDp.dp
     val previewWidth = 220.dp
     val previewHeight = 124.dp
+    val safeDrawingPadding = WindowInsets.safeDrawing.asPaddingValues()
+    val bottomInset = safeDrawingPadding.calculateBottomPadding()
+    val startInset = safeDrawingPadding.calculateStartPadding(layoutDirection)
+    val endInset = safeDrawingPadding.calculateEndPadding(layoutDirection)
 
     AnimatedVisibility(
         visible = isVisible && previewImage != null,
@@ -53,10 +64,10 @@ fun TrickplayPreview(
     ) {
         if (previewImage != null) {
             Box(modifier = Modifier.fillMaxSize()) {
-                val seekBarY = configuration.screenHeightDp.dp - 80.dp
+                val seekBarY = configuration.screenHeightDp.dp - 80.dp - bottomInset
 
-                val startPadding = 24.dp
-                val endPadding = 78.dp
+                val startPadding = 24.dp + startInset
+                val endPadding = 78.dp + endInset
 
                 val actualSliderWidth = screenWidth - startPadding - endPadding
                 val progress =
@@ -65,11 +76,12 @@ fun TrickplayPreview(
                     else 0f
                 val targetX = startPadding + (actualSliderWidth * progress)
 
+                val minX = startInset + 8.dp
+                val maxX = screenWidth - previewWidth - endInset - 8.dp
                 val constrainedX =
                     when {
-                        targetX - previewWidth / 2 < 8.dp -> 8.dp
-                        targetX + previewWidth / 2 > screenWidth - 8.dp ->
-                            screenWidth - previewWidth - 8.dp
+                        targetX - previewWidth / 2 < minX -> minX
+                        targetX + previewWidth / 2 > screenWidth - endInset - 8.dp -> maxX
                         else -> targetX - previewWidth / 2
                     }
 

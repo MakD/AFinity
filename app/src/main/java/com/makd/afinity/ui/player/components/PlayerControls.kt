@@ -16,14 +16,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -66,9 +71,9 @@ import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.livetv.components.LiveBadge
 import com.makd.afinity.ui.player.PlayerViewModel
+import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 import kotlin.math.abs
-import org.jellyfin.sdk.model.api.MediaStreamType
 
 data class AudioStreamOption(
     val stream: AfinityMediaStream,
@@ -195,7 +200,12 @@ fun PlayerControls(
                                 colors = listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)
                             )
                         )
-                        .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 16.dp)
+                        .windowInsetsPadding(
+                            WindowInsets.safeDrawing.only(
+                                WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+                            )
+                        )
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(
@@ -341,6 +351,11 @@ fun PlayerControls(
                                         listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
                                 )
                             )
+                            .windowInsetsPadding(
+                                WindowInsets.safeDrawing.only(
+                                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                                )
+                            )
                             .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp)
                 ) {
                     SeekBar(uiState = uiState, onPlayerEvent = onPlayerEvent)
@@ -350,14 +365,25 @@ fun PlayerControls(
         }
     }
     if (uiState.showSkipButton && uiState.currentSegment != null) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier =
+                Modifier.fillMaxSize()
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                        )
+                    )
+        ) {
             SkipButton(
                 segment = uiState.currentSegment,
                 skipButtonText = uiState.skipButtonText,
                 onClick = { onPlayerEvent(PlayerEvent.SkipSegment(uiState.currentSegment)) },
                 modifier =
                     Modifier.align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = if (uiState.showControls) 70.dp else 16.dp),
+                        .padding(
+                            end = 16.dp,
+                            bottom = if (uiState.showControls) 70.dp else 16.dp,
+                        ),
             )
         }
     }
@@ -581,7 +607,12 @@ private fun TopControls(
                         colors = listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)
                     )
                 )
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 32.dp)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(
+                        WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+                    )
+                )
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 8.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             IconButton(onClick = onBackClick, modifier = Modifier.size(36.dp)) {
@@ -620,6 +651,20 @@ private fun TopControls(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_pip),
                             contentDescription = stringResource(R.string.cd_enter_pip),
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+
+                if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
+                    IconButton(
+                        onClick = { onPlayerEvent(PlayerEvent.CycleScreenRotation) },
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_screen_rotation),
+                            contentDescription = stringResource(R.string.cd_screen_rotation),
                             tint = Color.White,
                             modifier = Modifier.size(24.dp),
                         )
@@ -743,7 +788,12 @@ private fun BottomControls(
                         colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
                     )
                 )
-                .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(
+                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                    )
+                )
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp)
     ) {
         Column {
             SeekBar(uiState = uiState, onPlayerEvent = onPlayerEvent)

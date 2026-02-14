@@ -209,6 +209,8 @@ class MPVPlayer(
                 Property("speed", MPVLib.MPV_FORMAT_DOUBLE),
                 Property("playlist-count", MPVLib.MPV_FORMAT_INT64),
                 Property("playlist-current-pos", MPVLib.MPV_FORMAT_INT64),
+                Property("video-params/w", MPVLib.MPV_FORMAT_INT64),
+                Property("video-params/h", MPVLib.MPV_FORMAT_INT64),
             )
             .forEach { (name, format) -> MPVLib.observeProperty(name, format) }
 
@@ -251,6 +253,8 @@ class MPVPlayer(
     private var initialIndex: Int = 0
     private var initialSeekTo: Long = 0L
     private var oldMediaItem: MediaItem? = null
+    private var currentVideoWidth: Int = 0
+    private var currentVideoHeight: Int = 0
 
     override fun eventProperty(property: String) {}
 
@@ -365,6 +369,25 @@ class MPVPlayer(
                         }
                     }
                 }
+
+                "video-params/w" -> {
+                    currentVideoWidth = value.toInt()
+                    notifyVideoSizeChangedIfReady()
+                }
+
+                "video-params/h" -> {
+                    currentVideoHeight = value.toInt()
+                    notifyVideoSizeChangedIfReady()
+                }
+            }
+        }
+    }
+
+    private fun notifyVideoSizeChangedIfReady() {
+        if (currentVideoWidth > 0 && currentVideoHeight > 0) {
+            val newSize = VideoSize(currentVideoWidth, currentVideoHeight)
+            listeners.sendEvent(EVENT_VIDEO_SIZE_CHANGED) { listener ->
+                listener.onVideoSizeChanged(newSize)
             }
         }
     }
