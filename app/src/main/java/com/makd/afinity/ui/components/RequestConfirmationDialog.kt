@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,12 +19,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +58,9 @@ import coil3.svg.SvgDecoder
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
+import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
+import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -81,6 +92,19 @@ fun RequestConfirmationDialog(
     director: String? = null,
     genres: List<String> = emptyList(),
     ratingsCombined: RatingsCombined? = null,
+    can4k: Boolean = false,
+    is4k: Boolean = false,
+    onIs4kChange: (Boolean) -> Unit = {},
+    canAdvanced: Boolean = false,
+    availableServers: List<ServiceSettings> = emptyList(),
+    selectedServer: ServiceSettings? = null,
+    onServerSelected: (ServiceSettings) -> Unit = {},
+    availableProfiles: List<QualityProfile> = emptyList(),
+    selectedProfile: QualityProfile? = null,
+    onProfileSelected: (QualityProfile) -> Unit = {},
+    selectedRootFolder: String? = null,
+    isLoadingServers: Boolean = false,
+    isLoadingProfiles: Boolean = false,
 ) {
     val alreadyRequested =
         existingStatus != null &&
@@ -419,6 +443,72 @@ fun RequestConfirmationDialog(
                         disabledSeasons = disabledSeasons,
                     )
                 }
+
+                if (can4k && !alreadyRequested) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "4K Request",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Switch(checked = is4k, onCheckedChange = onIs4kChange)
+                    }
+                }
+
+                if (canAdvanced && !alreadyRequested) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Advanced Options",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+
+                        val serverLabel =
+                            if (mediaType == MediaType.MOVIE) "Radarr Server" else "Sonarr Server"
+                        SettingsDropdown(
+                            label = serverLabel,
+                            selectedText = selectedServer?.name ?: "Default",
+                            items = availableServers,
+                            itemText = { it.name },
+                            onItemSelected = onServerSelected,
+                            isLoading = isLoadingServers,
+                        )
+
+                        if (selectedServer != null) {
+                            SettingsDropdown(
+                                label = "Quality Profile",
+                                selectedText = selectedProfile?.name ?: "Default",
+                                items = availableProfiles,
+                                itemText = { it.name },
+                                onItemSelected = onProfileSelected,
+                                isLoading = isLoadingProfiles,
+                            )
+
+                            selectedRootFolder?.let { folder ->
+                                Text(
+                                    text =
+                                        buildAnnotatedString {
+                                            withStyle(
+                                                style = SpanStyle(fontWeight = FontWeight.Bold)
+                                            ) {
+                                                append("Root Folder: ")
+                                            }
+                                            append(folder)
+                                        },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color =
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -657,5 +747,67 @@ private fun formatRuntime(minutes: Int): String {
         "${hours}h ${mins}m"
     } else {
         "${mins}m"
+    }
+}
+
+@Composable
+private fun <T> SettingsDropdown(
+    label: String,
+    selectedText: String,
+    items: List<T>,
+    itemText: (T) -> String,
+    onItemSelected: (T) -> Unit,
+    isLoading: Boolean = false,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        )
+
+        Box {
+            var expanded by remember { mutableStateOf(false) }
+
+            OutlinedButton(
+                onClick = { if (items.isNotEmpty()) expanded = true },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading && items.isNotEmpty(),
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Loading...")
+                } else {
+                    Text(
+                        text = selectedText,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                items.forEach { item ->
+                    DropdownMenuItem(
+                        text = { Text(itemText(item)) },
+                        onClick = {
+                            onItemSelected(item)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
     }
 }

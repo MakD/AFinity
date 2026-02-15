@@ -66,7 +66,9 @@ import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
+import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -93,6 +95,7 @@ fun SearchScreen(
         viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
     val isAudiobookshelfAuthenticated by
         viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     LocalFocusManager.current
@@ -280,6 +283,19 @@ fun SearchScreen(
                 director = uiState.pendingRequest!!.director,
                 genres = uiState.pendingRequest!!.genres,
                 ratingsCombined = uiState.pendingRequest!!.ratingsCombined,
+                can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
+                is4k = uiState.is4kRequested,
+                onIs4kChange = { viewModel.setIs4kRequested(it) },
+                canAdvanced = currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true,
+                availableServers = uiState.availableServers,
+                selectedServer = uiState.selectedServer,
+                onServerSelected = { viewModel.selectServer(it) },
+                availableProfiles = uiState.availableProfiles,
+                selectedProfile = uiState.selectedProfile,
+                onProfileSelected = { viewModel.selectProfile(it) },
+                selectedRootFolder = uiState.selectedRootFolder,
+                isLoadingServers = uiState.isLoadingServers,
+                isLoadingProfiles = uiState.isLoadingProfiles,
             )
         }
     }

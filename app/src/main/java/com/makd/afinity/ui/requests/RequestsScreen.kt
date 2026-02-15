@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.jellyseerr.Permissions
+import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.RequestConfirmationDialog
@@ -433,6 +435,19 @@ fun RequestsScreen(
                 director = uiState.pendingRequest!!.director,
                 genres = uiState.pendingRequest!!.genres,
                 ratingsCombined = uiState.pendingRequest!!.ratingsCombined,
+                can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
+                is4k = uiState.is4kRequested,
+                onIs4kChange = { viewModel.setIs4kRequested(it) },
+                canAdvanced = currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true,
+                availableServers = uiState.availableServers,
+                selectedServer = uiState.selectedServer,
+                onServerSelected = { viewModel.selectServer(it) },
+                availableProfiles = uiState.availableProfiles,
+                selectedProfile = uiState.selectedProfile,
+                onProfileSelected = { viewModel.selectProfile(it) },
+                selectedRootFolder = uiState.selectedRootFolder,
+                isLoadingServers = uiState.isLoadingServers,
+                isLoadingProfiles = uiState.isLoadingProfiles,
             )
         }
 

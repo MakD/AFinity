@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.jellyseerr.Permissions
+import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -61,6 +63,7 @@ fun FilteredMediaScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val requestsUiState by requestsViewModel.uiState.collectAsStateWithLifecycle()
+    val currentUser by requestsViewModel.currentUser.collectAsStateWithLifecycle()
 
     LaunchedEffect(filterParams) { viewModel.loadContent(filterParams) }
 
@@ -186,6 +189,19 @@ fun FilteredMediaScreen(
             director = requestsUiState.pendingRequest!!.director,
             genres = requestsUiState.pendingRequest!!.genres,
             ratingsCombined = requestsUiState.pendingRequest!!.ratingsCombined,
+            can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
+            is4k = requestsUiState.is4kRequested,
+            onIs4kChange = { requestsViewModel.setIs4kRequested(it) },
+            canAdvanced = currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true,
+            availableServers = requestsUiState.availableServers,
+            selectedServer = requestsUiState.selectedServer,
+            onServerSelected = { requestsViewModel.selectServer(it) },
+            availableProfiles = requestsUiState.availableProfiles,
+            selectedProfile = requestsUiState.selectedProfile,
+            onProfileSelected = { requestsViewModel.selectProfile(it) },
+            selectedRootFolder = requestsUiState.selectedRootFolder,
+            isLoadingServers = requestsUiState.isLoadingServers,
+            isLoadingProfiles = requestsUiState.isLoadingProfiles,
         )
     }
 }

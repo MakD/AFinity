@@ -14,10 +14,12 @@ import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaInfo
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
+import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.RequestUser
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.RequestEvent
@@ -261,6 +263,10 @@ constructor(
         mediaId: Int,
         mediaType: MediaType,
         seasons: List<Int>?,
+        is4k: Boolean,
+        serverId: Int?,
+        profileId: Int?,
+        rootFolder: String?,
     ): Result<JellyseerrRequest> {
         return withContext(Dispatchers.IO) {
             try {
@@ -273,6 +279,10 @@ constructor(
                         tmdbId = mediaId,
                         mediaType = mediaType.toApiString(),
                         seasons = seasons,
+                        is4k = is4k,
+                        serverId = serverId,
+                        profileId = profileId,
+                        rootFolder = rootFolder,
                     )
                 val response = apiService.get().createRequest(requestBody)
 
@@ -789,6 +799,59 @@ constructor(
                     Result.success(response.body()!!)
                 else Result.failure(Exception("Failed"))
             } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getServiceSettings(
+        mediaType: MediaType,
+    ): Result<List<ServiceSettings>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response =
+                    when (mediaType) {
+                        MediaType.MOVIE -> apiService.get().getRadarrSettings()
+                        MediaType.TV -> apiService.get().getSonarrSettings()
+                    }
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(Exception("Failed to get service settings: ${response.message()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get service settings")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getQualityProfiles(
+        mediaType: MediaType,
+        serviceId: Int,
+    ): Result<List<QualityProfile>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+                val response =
+                    when (mediaType) {
+                        MediaType.MOVIE -> apiService.get().getRadarrProfiles(serviceId)
+                        MediaType.TV -> apiService.get().getSonarrProfiles(serviceId)
+                    }
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(
+                        Exception("Failed to get quality profiles: ${response.message()}")
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get quality profiles")
                 Result.failure(e)
             }
         }
