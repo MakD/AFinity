@@ -192,7 +192,8 @@ fun FilteredMediaScreen(
             can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
             is4k = requestsUiState.is4kRequested,
             onIs4kChange = { requestsViewModel.setIs4kRequested(it) },
-            canAdvanced = currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true,
+            canAdvanced = currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true ||
+                currentUser?.hasPermission(Permissions.MANAGE_REQUESTS) == true,
             availableServers = requestsUiState.availableServers,
             selectedServer = requestsUiState.selectedServer,
             onServerSelected = { requestsViewModel.selectServer(it) },

@@ -438,7 +438,8 @@ fun RequestsScreen(
                 can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
                 is4k = uiState.is4kRequested,
                 onIs4kChange = { viewModel.setIs4kRequested(it) },
-                canAdvanced = currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true,
+                canAdvanced = currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true ||
+                    currentUser?.hasPermission(Permissions.MANAGE_REQUESTS) == true,
                 availableServers = uiState.availableServers,
                 selectedServer = uiState.selectedServer,
                 onServerSelected = { viewModel.selectServer(it) },

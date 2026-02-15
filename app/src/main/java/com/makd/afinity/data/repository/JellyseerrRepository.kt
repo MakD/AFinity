@@ -6,8 +6,8 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrSearchResult
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaType
-import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -57,10 +57,10 @@ interface JellyseerrRepository {
 
     suspend fun getServiceSettings(mediaType: MediaType): Result<List<ServiceSettings>>
 
-    suspend fun getQualityProfiles(
+    suspend fun getServiceDetails(
         mediaType: MediaType,
         serviceId: Int,
-    ): Result<List<QualityProfile>>
+    ): Result<ServiceDetailsResponse>
 
     suspend fun getRequests(
         take: Int = 20,

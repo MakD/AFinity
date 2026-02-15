@@ -645,7 +645,7 @@ constructor(
         _uiState.update {
             it.copy(
                 selectedServer = server,
-                selectedRootFolder = server.activeDirectory,
+                selectedRootFolder = null,
                 selectedProfile = null,
                 availableProfiles = emptyList(),
             )
@@ -661,7 +661,8 @@ constructor(
     private fun loadServiceSettings(mediaType: MediaType) {
         val user = _currentUser.value ?: return
         if (!user.hasPermission(Permissions.REQUEST_ADVANCED) &&
-            !user.hasPermission(Permissions.REQUEST_4K)
+            !user.hasPermission(Permissions.REQUEST_4K) &&
+            !user.hasPermission(Permissions.MANAGE_REQUESTS)
         ) return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingServers = true) }
@@ -687,16 +688,19 @@ constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingProfiles = true) }
             jellyseerrRepository
-                .getQualityProfiles(mediaType, serviceId)
+                .getServiceDetails(mediaType, serviceId)
                 .fold(
-                    onSuccess = { profiles ->
-                        val server = _uiState.value.selectedServer
+                    onSuccess = { details ->
+                        val activeProfileId = details.server?.activeProfileId
                         val preselected =
-                            profiles.find { it.id == server?.activeProfileId }
+                            details.profiles.find { it.id == activeProfileId }
+                        val rootFolder = details.server?.activeDirectory
+                            ?: details.rootFolders.firstOrNull()?.path
                         _uiState.update {
                             it.copy(
-                                availableProfiles = profiles,
+                                availableProfiles = details.profiles,
                                 selectedProfile = preselected,
+                                selectedRootFolder = rootFolder,
                                 isLoadingProfiles = false,
                             )
                         }

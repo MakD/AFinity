@@ -8,10 +8,10 @@ import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.models.jellyseerr.LoginRequest
 import com.makd.afinity.data.models.jellyseerr.LoginResponse
 import com.makd.afinity.data.models.jellyseerr.MediaDetails
-import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestsResponse
 import com.makd.afinity.data.models.jellyseerr.RottenTomatoesRating
+import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import retrofit2.Response
 import retrofit2.http.Body
@@ -150,19 +150,19 @@ interface JellyseerrApiService {
         @Query("language") language: String = "en",
     ): Response<JellyseerrSearchResult>
 
-    @GET("api/v1/settings/radarr")
+    @GET("api/v1/service/radarr")
     suspend fun getRadarrSettings(): Response<List<ServiceSettings>>
 
-    @GET("api/v1/settings/sonarr")
+    @GET("api/v1/service/sonarr")
     suspend fun getSonarrSettings(): Response<List<ServiceSettings>>
 
-    @GET("api/v1/settings/radarr/{serviceId}/profiles")
-    suspend fun getRadarrProfiles(
+    @GET("api/v1/service/radarr/{serviceId}")
+    suspend fun getRadarrDetails(
         @Path("serviceId") serviceId: Int,
-    ): Response<List<QualityProfile>>
+    ): Response<ServiceDetailsResponse>
 
-    @GET("api/v1/settings/sonarr/{serviceId}/profiles")
-    suspend fun getSonarrProfiles(
+    @GET("api/v1/service/sonarr/{serviceId}")
+    suspend fun getSonarrDetails(
         @Path("serviceId") serviceId: Int,
-    ): Response<List<QualityProfile>>
+    ): Response<ServiceDetailsResponse>
 }

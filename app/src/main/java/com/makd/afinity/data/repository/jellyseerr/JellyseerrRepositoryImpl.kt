@@ -14,11 +14,11 @@ import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaInfo
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
-import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.RequestUser
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
+import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.repository.JellyseerrRepository
@@ -829,10 +829,10 @@ constructor(
         }
     }
 
-    override suspend fun getQualityProfiles(
+    override suspend fun getServiceDetails(
         mediaType: MediaType,
         serviceId: Int,
-    ): Result<List<QualityProfile>> {
+    ): Result<ServiceDetailsResponse> {
         return withContext(Dispatchers.IO) {
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
@@ -840,18 +840,18 @@ constructor(
                 }
                 val response =
                     when (mediaType) {
-                        MediaType.MOVIE -> apiService.get().getRadarrProfiles(serviceId)
-                        MediaType.TV -> apiService.get().getSonarrProfiles(serviceId)
+                        MediaType.MOVIE -> apiService.get().getRadarrDetails(serviceId)
+                        MediaType.TV -> apiService.get().getSonarrDetails(serviceId)
                     }
                 if (response.isSuccessful && response.body() != null) {
                     Result.success(response.body()!!)
                 } else {
                     Result.failure(
-                        Exception("Failed to get quality profiles: ${response.message()}")
+                        Exception("Failed to get service details: ${response.message()}")
                     )
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to get quality profiles")
+                Timber.e(e, "Failed to get service details")
                 Result.failure(e)
             }
         }

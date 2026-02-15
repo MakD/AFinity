@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,14 +21,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -112,6 +113,8 @@ fun RequestConfirmationDialog(
                 existingStatus == MediaStatus.AVAILABLE ||
                 existingStatus == MediaStatus.PROCESSING)
     val headerImageUrl = mediaBackdropUrl?.takeIf { it.isNotBlank() } ?: mediaPosterUrl
+    val scrollState = rememberScrollState()
+    LaunchedEffect(mediaTitle) { scrollState.scrollTo(0) }
 
     AlertDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
@@ -125,7 +128,7 @@ fun RequestConfirmationDialog(
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth().verticalScroll(scrollState),
             ) {
                 if (!headerImageUrl.isNullOrBlank()) {
                     Box(
@@ -426,85 +429,100 @@ fun RequestConfirmationDialog(
                 }
 
                 if (!alreadyRequested) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Request this ${mediaType.toApiString()} on Seerr?",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
-
-                if (mediaType == MediaType.TV && !alreadyRequested) {
-                    SeasonSelector(
-                        availableSeasons = availableSeasons,
-                        selectedSeasons = selectedSeasons,
-                        onSeasonsChange = onSeasonsChange,
-                        disabledSeasons = disabledSeasons,
-                    )
-                }
-
-                if (can4k && !alreadyRequested) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    Row(
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "4K Request",
-                            style = MaterialTheme.typography.bodyLarge,
+                            text = "Request this ${mediaType.toApiString()} on Seerr?",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
                         )
-                        Switch(checked = is4k, onCheckedChange = onIs4kChange)
-                    }
-                }
 
-                if (canAdvanced && !alreadyRequested) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = "Advanced Options",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                        )
-
-                        val serverLabel =
-                            if (mediaType == MediaType.MOVIE) "Radarr Server" else "Sonarr Server"
-                        SettingsDropdown(
-                            label = serverLabel,
-                            selectedText = selectedServer?.name ?: "Default",
-                            items = availableServers,
-                            itemText = { it.name },
-                            onItemSelected = onServerSelected,
-                            isLoading = isLoadingServers,
-                        )
-
-                        if (selectedServer != null) {
-                            SettingsDropdown(
-                                label = "Quality Profile",
-                                selectedText = selectedProfile?.name ?: "Default",
-                                items = availableProfiles,
-                                itemText = { it.name },
-                                onItemSelected = onProfileSelected,
-                                isLoading = isLoadingProfiles,
+                        if (mediaType == MediaType.TV) {
+                            SeasonSelector(
+                                availableSeasons = availableSeasons,
+                                selectedSeasons = selectedSeasons,
+                                onSeasonsChange = onSeasonsChange,
+                                disabledSeasons = disabledSeasons,
                             )
+                        }
 
-                            selectedRootFolder?.let { folder ->
+                        if (can4k) {
+                            MinimalSwitchTile(
+                                title = "Request in 4K",
+                                checked = is4k,
+                                onCheckedChange = onIs4kChange,
+                                icon = R.drawable.ic_4k,
+                                iconSize = 18.dp,
+                            )
+                        }
+
+                        if (canAdvanced) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
                                 Text(
-                                    text =
-                                        buildAnnotatedString {
-                                            withStyle(
-                                                style = SpanStyle(fontWeight = FontWeight.Bold)
-                                            ) {
-                                                append("Root Folder: ")
-                                            }
-                                            append(folder)
-                                        },
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color =
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                    text = "Advanced Options",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 4.dp),
                                 )
+
+                                val serverLabel =
+                                    if (mediaType == MediaType.MOVIE) "Radarr Server"
+                                    else "Sonarr Server"
+
+                                MinimalSelectionTile(
+                                    label = serverLabel,
+                                    selectedText = selectedServer?.name ?: "Default",
+                                    items = availableServers,
+                                    itemText = { it.name },
+                                    onItemSelected = onServerSelected,
+                                    isLoading = isLoadingServers,
+                                )
+
+                                if (selectedServer != null) {
+                                    MinimalSelectionTile(
+                                        label = "Quality Profile",
+                                        selectedText = selectedProfile?.name ?: "Default",
+                                        items = availableProfiles,
+                                        itemText = { it.name },
+                                        onItemSelected = onProfileSelected,
+                                        isLoading = isLoadingProfiles,
+                                    )
+
+                                    selectedRootFolder?.let { folder ->
+                                        Row(
+                                            modifier =
+                                                Modifier.fillMaxWidth()
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .background(
+                                                        MaterialTheme.colorScheme.surfaceVariant
+                                                            .copy(alpha = 0.5f)
+                                                    )
+                                                    .padding(16.dp)
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = "Root Folder",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color =
+                                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                                Text(
+                                                    text = folder,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -553,22 +571,157 @@ private fun MetadataDot() {
 
 @Composable
 internal fun CircleFlagIcon(url: String, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val model =
-        remember(url) {
-            ImageRequest.Builder(context)
+    AsyncImage(
+        model =
+            ImageRequest.Builder(LocalContext.current)
                 .data(url)
                 .decoderFactory(SvgDecoder.Factory())
                 .crossfade(true)
-                .build()
-        }
-
-    AsyncImage(
-        model = model,
+                .build(),
         contentDescription = "Flag",
         modifier = modifier.size(14.dp).clip(CircleShape),
         contentScale = ContentScale.Crop,
     )
+}
+
+@Composable
+fun <T> MinimalSelectionTile(
+    label: String,
+    selectedText: String,
+    items: List<T>,
+    itemText: (T) -> String,
+    onItemSelected: (T) -> Unit,
+    isLoading: Boolean = false,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .clickable(enabled = !isLoading && items.isNotEmpty()) { expanded = true }
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                if (isLoading) {
+                    Text(
+                        text = "Loading...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                } else {
+                    Text(
+                        text = selectedText,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            Icon(
+                painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                contentDescription = "Select",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            items.forEach { item ->
+                val isSelected = itemText(item) == selectedText
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = itemText(item),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    },
+                    onClick = {
+                        onItemSelected(item)
+                        expanded = false
+                    },
+                    trailingIcon =
+                        if (isSelected) {
+                            {
+                                Icon(
+                                    painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MinimalSwitchTile(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    icon: Int? = null,
+    iconSize: Dp = 24.dp,
+) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onCheckedChange(!checked) }
+                .padding(vertical = 8.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (icon != null) {
+                Icon(
+                    painter = painterResource(icon),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 12.dp).size(iconSize),
+                )
+            }
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            modifier = Modifier.scale(0.8f),
+            colors =
+                SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                ),
+        )
+    }
 }
 
 @Composable
@@ -747,67 +900,5 @@ private fun formatRuntime(minutes: Int): String {
         "${hours}h ${mins}m"
     } else {
         "${mins}m"
-    }
-}
-
-@Composable
-private fun <T> SettingsDropdown(
-    label: String,
-    selectedText: String,
-    items: List<T>,
-    itemText: (T) -> String,
-    onItemSelected: (T) -> Unit,
-    isLoading: Boolean = false,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-        )
-
-        Box {
-            var expanded by remember { mutableStateOf(false) }
-
-            OutlinedButton(
-                onClick = { if (items.isNotEmpty()) expanded = true },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading && items.isNotEmpty(),
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Loading...")
-                } else {
-                    Text(
-                        text = selectedText,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
-
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                items.forEach { item ->
-                    DropdownMenuItem(
-                        text = { Text(itemText(item)) },
-                        onClick = {
-                            onItemSelected(item)
-                            expanded = false
-                        },
-                    )
-                }
-            }
-        }
     }
 }
