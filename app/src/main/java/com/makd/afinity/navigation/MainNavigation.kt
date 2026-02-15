@@ -7,6 +7,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -767,6 +768,7 @@ fun MainNavigation(
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
                 MiniPlayer(
+                    modifier = Modifier.navigationBarsPadding(),
                     title = audiobookshelfPlaybackState.displayTitle,
                     author = audiobookshelfPlaybackState.displayAuthor,
                     coverUrl = audiobookshelfPlaybackState.coverUrl,
