@@ -26,12 +26,6 @@ import com.makd.afinity.data.repository.RequestEvent
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -48,6 +42,12 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class JellyseerrRepositoryImpl
@@ -804,9 +804,7 @@ constructor(
         }
     }
 
-    override suspend fun getServiceSettings(
-        mediaType: MediaType,
-    ): Result<List<ServiceSettings>> {
+    override suspend fun getServiceSettings(mediaType: MediaType): Result<List<ServiceSettings>> {
         return withContext(Dispatchers.IO) {
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
@@ -820,7 +818,9 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     Result.success(response.body()!!)
                 } else {
-                    Result.failure(Exception("Failed to get service settings: ${response.message()}"))
+                    Result.failure(
+                        Exception("Failed to get service settings: ${response.message()}")
+                    )
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get service settings")
@@ -872,6 +872,10 @@ constructor(
         userId: String,
     ): JellyseerrRequestEntity {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        val seasonsJsonString =
+            if (seasons != null) {
+                kotlinx.serialization.json.Json.encodeToString(seasons)
+            } else null
         return JellyseerrRequestEntity(
             id = id,
             jellyfinServerId = serverId,
@@ -902,11 +906,28 @@ constructor(
             mediaReleaseDate = media.releaseDate,
             mediaFirstAirDate = media.firstAirDate,
             mediaStatus = media.status,
+            is4k = is4k,
+            serverId = this.serverId,
+            profileId = profileId,
+            rootFolder = rootFolder,
+            seasonsJson = seasonsJsonString,
         )
     }
 
     private fun JellyseerrRequestEntity.toJellyseerrRequest(): JellyseerrRequest {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        val seasonsList =
+            if (seasonsJson != null) {
+                try {
+                    kotlinx.serialization.json.Json.decodeFromString<
+                        List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>
+                    >(
+                        seasonsJson
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            } else null
         return JellyseerrRequest(
             id = id,
             status = status,
@@ -929,7 +950,11 @@ constructor(
             modifiedBy = null,
             createdAt = dateFormat.format(Date(requestedAt)),
             updatedAt = dateFormat.format(Date(updatedAt)),
-            seasons = null,
+            seasons = seasonsList,
+            is4k = is4k,
+            serverId = serverId,
+            profileId = profileId,
+            rootFolder = rootFolder,
         )
     }
 }

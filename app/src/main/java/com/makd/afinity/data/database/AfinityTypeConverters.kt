@@ -11,13 +11,13 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityStudio
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.UUID
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PersonKind
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 class AfinityTypeConverters {
 
@@ -398,6 +398,28 @@ class AfinityTypeConverters {
             )
         } catch (e: Exception) {
             null
+        }
+    }
+
+    @TypeConverter
+    fun fromSeasonRequestList(
+        seasons: List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>?
+    ): String? {
+        return seasons?.let { json.encodeToString(it) }
+    }
+
+    @TypeConverter
+    fun toSeasonRequestList(
+        seasonsString: String?
+    ): List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>? {
+        return seasonsString?.let {
+            try {
+                json.decodeFromString<List<com.makd.afinity.data.models.jellyseerr.SeasonRequest>>(
+                    it
+                )
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 }

@@ -333,6 +333,7 @@
     <string name="status_partially_available">Partially Available</string>
     <string name="status_available">Available</string>
     <string name="status_deleted">Deleted</string>
+    <string name="manage_request_title">Manage Request</string>
 
     <string name="cd_tmdb_rating">TMDB Rating</string>
 

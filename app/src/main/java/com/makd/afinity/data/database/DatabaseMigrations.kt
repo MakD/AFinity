@@ -595,6 +595,19 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_26_27 =
+        object : Migration(26, 27) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE jellyseerr_requests ADD COLUMN is4k INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN serverId INTEGER")
+                db.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN profileId INTEGER")
+                db.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN rootFolder TEXT")
+                db.execSQL("ALTER TABLE jellyseerr_requests ADD COLUMN seasonsJson TEXT")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -618,5 +631,6 @@ object DatabaseMigrations {
             MIGRATION_23_24,
             MIGRATION_24_25,
             MIGRATION_25_26,
+            MIGRATION_26_27,
         )
 }

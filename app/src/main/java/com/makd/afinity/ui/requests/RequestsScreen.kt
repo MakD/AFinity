@@ -31,7 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Permissions
+import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
 import com.makd.afinity.ui.components.AfinityTopAppBar
@@ -118,13 +120,13 @@ fun RequestsScreen(
                                     requests = uiState.requests,
                                     baseUrl = uiState.jellyseerrUrl,
                                     isAdmin = currentUser?.isAdmin() == true,
-                                    onRequestClick = { /* TODO: Navigate to request details */ },
-                                    onApprove = { requestId ->
-                                        viewModel.approveRequest(requestId)
+                                    onRequestClick = { request ->
+                                        if (currentUser?.isAdmin() == true) {
+                                            viewModel.selectRequest(request)
+                                        }
                                     },
-                                    onDecline = { requestId ->
-                                        viewModel.declineRequest(requestId)
-                                    },
+                                    onApprove = { viewModel.approveRequest(it) },
+                                    onDecline = { viewModel.declineRequest(it) },
                                     widthSizeClass = widthSizeClass,
                                 )
                             }
@@ -412,30 +414,73 @@ fun RequestsScreen(
             }
         }
 
-        if (uiState.showRequestDialog && uiState.pendingRequest != null) {
+        if (uiState.selectedRequest != null) {
+            val req = uiState.selectedRequest!!
+            val details = uiState.selectedRequestDetails
+
             RequestConfirmationDialog(
-                mediaTitle = uiState.pendingRequest!!.title,
-                mediaPosterUrl = uiState.pendingRequest!!.posterUrl,
-                mediaType = uiState.pendingRequest!!.mediaType,
-                availableSeasons = uiState.pendingRequest!!.availableSeasons,
+                isManagementMode = true,
+                requestStatus = RequestStatus.fromValue(req.status),
+                mediaTitle = details?.title ?: details?.name ?: req.media.getDisplayTitle(),
+                mediaPosterUrl = details?.getPosterUrl() ?: req.media.getPosterUrl(),
+                mediaBackdropUrl = details?.getBackdropUrl() ?: req.media.getBackdropUrl(),
+                mediaOverview = details?.overview,
+                mediaTagline = details?.tagline,
+                mediaType = req.getMediaType() ?: MediaType.MOVIE,
+                releaseDate =
+                    details?.releaseDate ?: details?.firstAirDate ?: req.media.releaseDate,
+                runtime = details?.runtime,
+                voteAverage = details?.voteAverage,
+                certification = details?.getCertification(),
+                originalLanguage = details?.originalLanguage,
+                director = details?.getDirector(),
+                genres = details?.getGenreNames() ?: emptyList(),
+                ratingsCombined = details?.ratingsCombined,
+                selectedSeasons = req.seasons?.map { it.seasonNumber } ?: emptyList(),
+                onSeasonsChange = {},
+                is4k = req.is4k,
+                manageRootFolder = req.rootFolder,
+                manageServerName = uiState.selectedRequestServerName,
+                manageProfileName = uiState.selectedRequestProfileName,
+                isLoading =
+                    uiState.isLoadingDetails ||
+                        uiState.isProcessingRequest ||
+                        uiState.isDeletingRequest,
+                onApprove = { viewModel.approveRequest(req.id) },
+                onDecline = { viewModel.declineRequest(req.id) },
+                onDelete = { viewModel.deleteRequest(req.id) },
+                onDismiss = { viewModel.dismissManagementDialog() },
+                onConfirm = {},
+            )
+        }
+
+        if (uiState.showRequestDialog && uiState.pendingRequest != null) {
+            val pending = uiState.pendingRequest!!
+
+            RequestConfirmationDialog(
+                isManagementMode = false,
+                mediaTitle = pending.title,
+                mediaPosterUrl = pending.posterUrl,
+                mediaType = pending.mediaType,
+                availableSeasons = pending.availableSeasons,
                 selectedSeasons = uiState.selectedSeasons,
                 onSeasonsChange = { viewModel.setSelectedSeasons(it) },
                 disabledSeasons = uiState.disabledSeasons,
-                existingStatus = uiState.pendingRequest!!.existingStatus,
+                existingStatus = pending.existingStatus,
                 isLoading = uiState.isCreatingRequest,
                 onConfirm = { viewModel.confirmRequest() },
                 onDismiss = { viewModel.dismissRequestDialog() },
-                mediaBackdropUrl = uiState.pendingRequest!!.backdropUrl,
-                mediaTagline = uiState.pendingRequest!!.tagline,
-                mediaOverview = uiState.pendingRequest!!.overview,
-                releaseDate = uiState.pendingRequest!!.releaseDate,
-                runtime = uiState.pendingRequest!!.runtime,
-                voteAverage = uiState.pendingRequest!!.voteAverage,
-                certification = uiState.pendingRequest!!.certification,
-                originalLanguage = uiState.pendingRequest!!.originalLanguage,
-                director = uiState.pendingRequest!!.director,
-                genres = uiState.pendingRequest!!.genres,
-                ratingsCombined = uiState.pendingRequest!!.ratingsCombined,
+                mediaBackdropUrl = pending.backdropUrl,
+                mediaTagline = pending.tagline,
+                mediaOverview = pending.overview,
+                releaseDate = pending.releaseDate,
+                runtime = pending.runtime,
+                voteAverage = pending.voteAverage,
+                certification = pending.certification,
+                originalLanguage = pending.originalLanguage,
+                director = pending.director,
+                genres = pending.genres,
+                ratingsCombined = pending.ratingsCombined,
                 can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
                 is4k = uiState.is4kRequested,
                 onIs4kChange = { viewModel.setIs4kRequested(it) },

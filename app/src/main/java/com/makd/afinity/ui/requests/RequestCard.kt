@@ -42,7 +42,6 @@ import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
-import timber.log.Timber
 
 @Composable
 fun RequestCard(
@@ -119,24 +118,13 @@ fun RequestCard(
                     val rawAvatarUrl = request.requestedBy.avatar
                     val avatarUrl =
                         remember(rawAvatarUrl, baseUrl) {
-                            Timber.d("Avatar URL: $rawAvatarUrl, Base URL: $baseUrl")
-                            when {
-                                rawAvatarUrl.isNullOrBlank() -> null
-                                rawAvatarUrl.startsWith("http") -> rawAvatarUrl
-                                !baseUrl.isNullOrBlank() -> {
-                                    var cleanBase = baseUrl.trimEnd('/')
-                                    if (
-                                        !cleanBase.startsWith("http://") &&
-                                            !cleanBase.startsWith("https://")
-                                    ) {
-                                        cleanBase = "http://$cleanBase"
-                                    }
-
-                                    val cleanPath = rawAvatarUrl.trimStart('/')
-                                    "$cleanBase/$cleanPath"
-                                }
-                                else -> null
-                            }
+                            if (rawAvatarUrl.isNullOrBlank()) null
+                            else if (rawAvatarUrl.startsWith("http")) rawAvatarUrl
+                            else if (!baseUrl.isNullOrBlank()) {
+                                var cleanBase = baseUrl.trimEnd('/')
+                                if (!cleanBase.startsWith("http")) cleanBase = "http://$cleanBase"
+                                "$cleanBase/${rawAvatarUrl.trimStart('/')}"
+                            } else null
                         }
 
                     if (avatarUrl != null) {
@@ -157,7 +145,7 @@ fun RequestCard(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_user_circle),
                             contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.7f),
+                            tint = Color.White.copy(alpha = 0.8f),
                             modifier = Modifier.size(28.dp),
                         )
                     }
@@ -238,21 +226,19 @@ private fun getRequestStatusAttributes(request: JellyseerrRequest): StatusAttrib
     val requestStatus = RequestStatus.fromValue(request.status)
     val mediaStatus = MediaStatus.fromValue(request.media.status ?: 1)
 
-    return when {
-        requestStatus == RequestStatus.DECLINED ->
+    return when (requestStatus) {
+        RequestStatus.DECLINED ->
             StatusAttributes(
                 textRes = R.string.status_declined,
                 containerColor = MaterialTheme.colorScheme.error,
                 contentColor = MaterialTheme.colorScheme.onError,
             )
-
-        requestStatus == RequestStatus.APPROVED && mediaStatus == MediaStatus.PENDING ->
+        RequestStatus.APPROVED if mediaStatus == MediaStatus.PENDING ->
             StatusAttributes(
                 textRes = R.string.status_processing,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             )
-
         else -> {
             val (textRes, containerColor, contentColor) =
                 when (mediaStatus) {

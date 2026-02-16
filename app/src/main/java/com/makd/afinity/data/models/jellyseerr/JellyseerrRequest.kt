@@ -13,6 +13,10 @@ data class JellyseerrRequest(
     @SerialName("createdAt") val createdAt: String,
     @SerialName("updatedAt") val updatedAt: String,
     @SerialName("seasons") val seasons: List<SeasonRequest>? = null,
+    @SerialName("is4k") val is4k: Boolean = false,
+    @SerialName("serverId") val serverId: Int? = null,
+    @SerialName("profileId") val profileId: Int? = null,
+    @SerialName("rootFolder") val rootFolder: String? = null,
 ) {
     fun getRequestStatus(): RequestStatus = RequestStatus.fromValue(status)
 

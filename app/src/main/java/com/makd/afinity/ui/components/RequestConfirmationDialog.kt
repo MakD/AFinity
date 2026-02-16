@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -61,6 +62,7 @@ import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.QualityProfile
 import com.makd.afinity.data.models.jellyseerr.RatingsCombined
+import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -82,6 +84,14 @@ fun RequestConfirmationDialog(
     isLoading: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    isManagementMode: Boolean = false,
+    requestStatus: RequestStatus? = null,
+    onApprove: () -> Unit = {},
+    onDecline: () -> Unit = {},
+    onDelete: () -> Unit = {},
+    manageServerName: String? = null,
+    manageProfileName: String? = null,
+    manageRootFolder: String? = null,
     mediaBackdropUrl: String? = null,
     mediaTagline: String? = null,
     mediaOverview: String? = null,
@@ -108,10 +118,12 @@ fun RequestConfirmationDialog(
     isLoadingProfiles: Boolean = false,
 ) {
     val alreadyRequested =
-        existingStatus != null &&
+        !isManagementMode &&
+            existingStatus != null &&
             (mediaType == MediaType.MOVIE ||
                 existingStatus == MediaStatus.AVAILABLE ||
                 existingStatus == MediaStatus.PROCESSING)
+
     val headerImageUrl = mediaBackdropUrl?.takeIf { it.isNotBlank() } ?: mediaPosterUrl
     val scrollState = rememberScrollState()
     LaunchedEffect(mediaTitle) { scrollState.scrollTo(0) }
@@ -120,7 +132,7 @@ fun RequestConfirmationDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
         title = {
             Text(
-                text = "Request on Seerr",
+                text = if (isManagementMode) "Manage Request" else "Request on Seerr",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -142,7 +154,6 @@ fun RequestConfirmationDialog(
                             modifier = Modifier.fillMaxWidth(),
                             contentScale = ContentScale.Crop,
                         )
-
                         Box(
                             modifier =
                                 Modifier.fillMaxWidth()
@@ -155,25 +166,22 @@ fun RequestConfirmationDialog(
                                                     Color.Black.copy(alpha = 0.8f),
                                                 ),
                                             startY = 100f,
-                                            endY = Float.POSITIVE_INFINITY,
                                         )
                                     )
                         )
-
                         Column(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)) {
                             Text(
-                                text = mediaTitle,
+                                mediaTitle,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
-
                             if (!mediaTagline.isNullOrBlank()) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = mediaTagline,
+                                    mediaTagline,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontStyle = FontStyle.Italic,
                                     color = Color.White.copy(alpha = 0.9f),
@@ -186,19 +194,18 @@ fun RequestConfirmationDialog(
                 } else {
                     Column {
                         Text(
-                            text = mediaTitle,
+                            mediaTitle,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
-                        if (!mediaTagline.isNullOrBlank()) {
+                        if (!mediaTagline.isNullOrBlank())
                             Text(
-                                text = mediaTagline,
+                                mediaTagline,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontStyle = FontStyle.Italic,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                        }
                     }
                 }
 
@@ -213,62 +220,63 @@ fun RequestConfirmationDialog(
                         val tint: Color = Color.Unspecified,
                         val flagUrl: String? = null,
                     )
-
                     val metadataItems =
                         remember(ratingsCombined, voteAverage, originalLanguage, certification) {
                             buildList {
-                                ratingsCombined?.imdb?.criticsScore?.let { score ->
+                                ratingsCombined?.imdb?.criticsScore?.let {
                                     add(
                                         MetaItem(
                                             R.drawable.ic_imdb_logo,
-                                            String.format(Locale.US, "%.1f", score),
+                                            String.format(Locale.US, "%.1f", it),
                                             "IMDb",
                                         )
                                     )
                                 }
-
-                                ratingsCombined?.rt?.criticsScore?.let { score ->
-                                    val icon =
-                                        if (score >= 60) R.drawable.ic_rotten_tomato_fresh
-                                        else R.drawable.ic_rotten_tomato_rotten
-                                    add(MetaItem(icon, "$score%", "RT Critic"))
+                                ratingsCombined?.rt?.criticsScore?.let {
+                                    add(
+                                        MetaItem(
+                                            if (it >= 60) R.drawable.ic_rotten_tomato_fresh
+                                            else R.drawable.ic_rotten_tomato_rotten,
+                                            "$it%",
+                                            "RT Critic",
+                                        )
+                                    )
                                 }
-
-                                ratingsCombined?.rt?.audienceScore?.let { score ->
-                                    val icon =
-                                        if (score >= 60) R.drawable.ic_rt_fresh_popcorn
-                                        else R.drawable.ic_rt_stale_popcorn
-                                    add(MetaItem(icon, "$score%", "RT Audience"))
+                                ratingsCombined?.rt?.audienceScore?.let {
+                                    add(
+                                        MetaItem(
+                                            if (it >= 60) R.drawable.ic_rt_fresh_popcorn
+                                            else R.drawable.ic_rt_stale_popcorn,
+                                            "$it%",
+                                            "RT Audience",
+                                        )
+                                    )
                                 }
-
-                                voteAverage?.let { rating ->
-                                    if (rating > 0) {
+                                voteAverage?.let {
+                                    if (it > 0)
                                         add(
                                             MetaItem(
                                                 R.drawable.ic_tmdb,
-                                                "${(rating * 10).toInt()}%",
+                                                "${(it * 10).toInt()}%",
                                                 "TMDB",
                                             )
                                         )
-                                    }
                                 }
-
                                 originalLanguage
                                     ?.takeIf { it.isNotBlank() }
-                                    ?.let { lang ->
+                                    ?.let {
                                         add(
                                             MetaItem(
-                                                icon = R.drawable.ic_language,
-                                                text = lang.uppercase(),
-                                                flagUrl = getAutoFlagUrl(lang),
-                                                contentDesc = "Language",
+                                                R.drawable.ic_language,
+                                                it.uppercase(),
+                                                "Language",
+                                                flagUrl = getAutoFlagUrl(it),
                                             )
                                         )
                                     }
-
                                 certification
                                     ?.takeIf { it.isNotBlank() }
-                                    ?.let { cert -> add(MetaItem(text = cert)) }
+                                    ?.let { add(MetaItem(text = it)) }
                             }
                         }
 
@@ -282,44 +290,35 @@ fun RequestConfirmationDialog(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 ) {
-                                    if (item.icon != 0) {
-                                        val itemTint =
-                                            if (item.contentDesc == "Language")
-                                                MaterialTheme.colorScheme.onSurface
-                                            else item.tint
+                                    if (item.icon != 0)
                                         Icon(
                                             painter = painterResource(id = item.icon),
                                             contentDescription = null,
-                                            tint = itemTint,
+                                            tint =
+                                                if (item.contentDesc == "Language")
+                                                    MaterialTheme.colorScheme.onSurface
+                                                else item.tint,
                                             modifier = Modifier.size(14.dp),
                                         )
-                                    }
-
-                                    if (item.flagUrl != null) {
-                                        CircleFlagIcon(url = item.flagUrl)
-                                    } else if (item.icon == 0) {
+                                    if (item.flagUrl != null) CircleFlagIcon(url = item.flagUrl)
+                                    else if (item.icon == 0) {
                                         androidx.compose.material3.Surface(
                                             shape = RoundedCornerShape(4.dp),
                                             border =
                                                 androidx.compose.foundation.BorderStroke(
-                                                    width = 1.dp,
-                                                    color =
-                                                        MaterialTheme.colorScheme.onSurface.copy(
-                                                            alpha = 0.5f
-                                                        ),
+                                                    1.dp,
+                                                    MaterialTheme.colorScheme.onSurface.copy(0.5f),
                                                 ),
                                             color = Color.Transparent,
                                         ) {
                                             Text(
-                                                text = item.text,
+                                                item.text,
                                                 style =
                                                     MaterialTheme.typography.labelSmall.copy(
                                                         fontWeight = FontWeight.Bold
                                                     ),
                                                 color =
-                                                    MaterialTheme.colorScheme.onSurface.copy(
-                                                        alpha = 0.9f
-                                                    ),
+                                                    MaterialTheme.colorScheme.onSurface.copy(0.9f),
                                                 modifier =
                                                     Modifier.padding(
                                                         horizontal = 6.dp,
@@ -327,114 +326,166 @@ fun RequestConfirmationDialog(
                                                     ),
                                             )
                                         }
-                                    } else {
+                                    } else
                                         Text(
-                                            text = item.text,
+                                            item.text,
                                             style =
                                                 MaterialTheme.typography.bodyMedium.copy(
                                                     fontWeight = FontWeight.SemiBold
                                                 ),
-                                            color =
-                                                MaterialTheme.colorScheme.onSurface.copy(
-                                                    alpha = 0.9f
-                                                ),
+                                            color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
                                         )
-                                    }
                                 }
                             }
                         }
                     }
-
                     Spacer(modifier = Modifier.height(4.dp))
 
                     if (!mediaOverview.isNullOrBlank()) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
-                                text = "Overview",
+                                "Overview",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = mediaOverview,
+                                mediaOverview,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2,
                             )
                         }
                     }
-
                     director
                         ?.takeIf { it.isNotBlank() }
-                        ?.let { dir ->
+                        ?.let {
                             Text(
-                                text =
-                                    buildAnnotatedString {
-                                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                            append("Director: ")
-                                        }
-                                        append(dir)
-                                    },
+                                buildAnnotatedString {
+                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                        append("Director: ")
+                                    }
+                                    append(it)
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
                             )
                         }
-
-                    releaseDate?.let { date ->
-                        val formattedDate = formatReleaseDate(date)
-                        if (formattedDate.isNotBlank()) {
-                            Text(
-                                text =
+                    releaseDate?.let {
+                        formatReleaseDate(it)
+                            .takeIf { d -> d.isNotBlank() }
+                            ?.let { d ->
+                                Text(
                                     buildAnnotatedString {
-                                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
                                             append("Release Date: ")
                                         }
-                                        append(formattedDate)
+                                        append(d)
                                     },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-                            )
-                        }
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
+                                )
+                            }
                     }
-
-                    runtime?.let { minutes ->
-                        if (minutes > 0) {
+                    runtime
+                        ?.takeIf { it > 0 }
+                        ?.let {
                             Text(
-                                text =
-                                    buildAnnotatedString {
-                                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                            append("Runtime: ")
-                                        }
-                                        append(formatRuntime(minutes))
-                                    },
+                                buildAnnotatedString {
+                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                        append("Runtime: ")
+                                    }
+                                    append(formatRuntime(it))
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
                             )
                         }
-                    }
-
-                    if (genres.isNotEmpty()) {
+                    if (genres.isNotEmpty())
                         Text(
-                            text =
-                                buildAnnotatedString {
-                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                        append("Genre: ")
-                                    }
-                                    append(genres.joinToString(", "))
-                                },
+                            buildAnnotatedString {
+                                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                    append("Genre: ")
+                                }
+                                append(genres.joinToString(", "))
+                            },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(0.9f),
                         )
-                    }
                 }
 
-                if (!alreadyRequested) {
+                if (isManagementMode) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            text = "Request this ${mediaType.toApiString()} on Seerr?",
+                            text = "Fulfillment Details",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+
+                        if (mediaType == MediaType.TV) {
+                            if (selectedSeasons.isNotEmpty()) {
+                                Text(
+                                    text =
+                                        buildAnnotatedString {
+                                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                                append("Requested Seasons: ")
+                                            }
+                                            append(selectedSeasons.sorted().joinToString(", "))
+                                        },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            } else {
+                                Text(
+                                    text = "Seasons: All / First available",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        if (is4k) {
+                            Text(
+                                text = "Quality: 4K UHD",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+
+                        manageServerName?.let {
+                            Text(
+                                text = "Server: $it",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        manageProfileName?.let {
+                            Text(
+                                text = "Profile: $it",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        manageRootFolder?.let {
+                            Text(
+                                text = "Root Folder: $it",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                } else if (!alreadyRequested) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            "Request this ${mediaType.toApiString()} on Seerr?",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
@@ -442,20 +493,20 @@ fun RequestConfirmationDialog(
 
                         if (mediaType == MediaType.TV) {
                             SeasonSelector(
-                                availableSeasons = availableSeasons,
-                                selectedSeasons = selectedSeasons,
-                                onSeasonsChange = onSeasonsChange,
-                                disabledSeasons = disabledSeasons,
+                                availableSeasons,
+                                selectedSeasons,
+                                onSeasonsChange,
+                                disabledSeasons,
                             )
                         }
 
                         if (can4k) {
                             MinimalSwitchTile(
-                                title = "Request in 4K",
-                                checked = is4k,
-                                onCheckedChange = onIs4kChange,
-                                icon = R.drawable.ic_4k,
-                                iconSize = 18.dp,
+                                "Request in 4K",
+                                is4k,
+                                onIs4kChange,
+                                R.drawable.ic_4k,
+                                18.dp,
                             )
                         }
 
@@ -465,35 +516,31 @@ fun RequestConfirmationDialog(
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Text(
-                                    text = "Advanced Options",
+                                    "Advanced Options",
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(start = 4.dp),
                                 )
-
                                 val serverLabel =
                                     if (mediaType == MediaType.MOVIE) "Radarr Server"
                                     else "Sonarr Server"
-
                                 MinimalSelectionTile(
-                                    label = serverLabel,
-                                    selectedText = selectedServer?.name ?: "Default",
-                                    items = availableServers,
-                                    itemText = { it.name },
-                                    onItemSelected = onServerSelected,
-                                    isLoading = isLoadingServers,
+                                    serverLabel,
+                                    selectedServer?.name ?: "Default",
+                                    availableServers,
+                                    { it.name },
+                                    onServerSelected,
+                                    isLoadingServers,
                                 )
-
                                 if (selectedServer != null) {
                                     MinimalSelectionTile(
-                                        label = "Quality Profile",
-                                        selectedText = selectedProfile?.name ?: "Default",
-                                        items = availableProfiles,
-                                        itemText = { it.name },
-                                        onItemSelected = onProfileSelected,
-                                        isLoading = isLoadingProfiles,
+                                        "Quality Profile",
+                                        selectedProfile?.name ?: "Default",
+                                        availableProfiles,
+                                        { it.name },
+                                        onProfileSelected,
+                                        isLoadingProfiles,
                                     )
-
                                     selectedRootFolder?.let { folder ->
                                         Row(
                                             modifier =
@@ -501,19 +548,19 @@ fun RequestConfirmationDialog(
                                                     .clip(RoundedCornerShape(12.dp))
                                                     .background(
                                                         MaterialTheme.colorScheme.surfaceVariant
-                                                            .copy(alpha = 0.5f)
+                                                            .copy(0.5f)
                                                     )
                                                     .padding(16.dp)
                                         ) {
                                             Column {
                                                 Text(
-                                                    text = "Root Folder",
+                                                    "Root Folder",
                                                     style = MaterialTheme.typography.labelMedium,
                                                     color =
                                                         MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )
                                                 Text(
-                                                    text = folder,
+                                                    folder,
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     color = MaterialTheme.colorScheme.onSurface,
                                                     maxLines = 1,
@@ -530,28 +577,74 @@ fun RequestConfirmationDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = onConfirm,
-                enabled =
-                    !alreadyRequested &&
-                        !isLoading &&
-                        (mediaType == MediaType.MOVIE ||
-                            selectedSeasons.isNotEmpty() ||
-                            availableSeasons == 0),
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Text(if (alreadyRequested) "Already Requested" else "Request")
+            if (isManagementMode) {
+                if (requestStatus == RequestStatus.PENDING) {
+                    Button(
+                        onClick = onApprove,
+                        enabled = !isLoading,
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            ),
+                    ) {
+                        if (isLoading)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        else Text("Approve")
+                    }
+                }
+            } else {
+                Button(
+                    onClick = onConfirm,
+                    enabled =
+                        !alreadyRequested &&
+                            !isLoading &&
+                            (mediaType == MediaType.MOVIE ||
+                                selectedSeasons.isNotEmpty() ||
+                                availableSeasons == 0),
+                ) {
+                    if (isLoading)
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp,
+                        )
+                    else Text(if (alreadyRequested) "Already Requested" else "Request")
                 }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isLoading) { Text("Cancel") }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (isManagementMode) {
+                    if (requestStatus == RequestStatus.PENDING) {
+                        TextButton(
+                            onClick = onDecline,
+                            enabled = !isLoading,
+                            colors =
+                                ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                        ) {
+                            Text("Decline")
+                        }
+                    } else {
+                        TextButton(
+                            onClick = onDelete,
+                            enabled = !isLoading,
+                            colors =
+                                ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                        ) {
+                            Text("Delete Request")
+                        }
+                    }
+                }
+                TextButton(onClick = onDismiss, enabled = !isLoading) { Text("Cancel") }
+            }
         },
         modifier = modifier,
     )

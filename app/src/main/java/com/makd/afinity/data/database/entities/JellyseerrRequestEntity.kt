@@ -27,4 +27,9 @@ data class JellyseerrRequestEntity(
     val mediaReleaseDate: String? = null,
     val mediaFirstAirDate: String? = null,
     val mediaStatus: Int? = null,
+    val is4k: Boolean = false,
+    val serverId: Int? = null,
+    val profileId: Int? = null,
+    val rootFolder: String? = null,
+    val seasonsJson: String? = null,
 )

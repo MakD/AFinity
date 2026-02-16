@@ -7,6 +7,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.GenreSliderItem
 import com.makd.afinity.data.models.jellyseerr.JellyseerrRequest
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
+import com.makd.afinity.data.models.jellyseerr.MediaDetails
 import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.Network
@@ -22,6 +23,7 @@ import com.makd.afinity.util.BackdropTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -102,13 +104,15 @@ constructor(
                 .fold(
                     onSuccess = { user ->
                         _currentUser.value = user
-                        Timber.d(
-                            "Loaded current user: ${user.displayName}, isAdmin: ${user.permissions}"
-                        )
+                        Timber.d("Loaded current user: ${user.displayName}")
                     },
                     onFailure = { error -> Timber.e(error, "Failed to load current user") },
                 )
         }
+    }
+
+    private suspend fun refreshCurrentUser() {
+        jellyseerrRepository.getCurrentUser().onSuccess { user -> _currentUser.value = user }
     }
 
     private fun observeRequests() {
@@ -118,7 +122,6 @@ constructor(
                 try {
                     jellyseerrRepository.observeRequests().collect { requests ->
                         _uiState.update { it.copy(requests = requests, isLoading = false) }
-                        Timber.d("Database updated with ${requests.size} requests for active user")
                     }
                 } catch (e: Exception) {
                     Timber.e(e, "Error observing requests")
@@ -150,9 +153,6 @@ constructor(
                         upcomingTv = it.upcomingTv.map(updateItemStatus),
                     )
                 }
-                Timber.d(
-                    "Updated discover items for tmdbId ${updatedRequest.media.tmdbId} with new request status"
-                )
             }
         }
     }
@@ -161,27 +161,17 @@ constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true, error = null) }
-
-                jellyseerrRepository
-                    .getRequests()
-                    .fold(
-                        onSuccess = {
-                            Timber.d("Requests refreshed from network and cached to database")
-                        },
-                        onFailure = { error ->
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error =
-                                        error.message
-                                            ?: context.getString(
-                                                R.string.error_requests_load_failed
-                                            ),
-                                )
-                            }
-                            Timber.e(error, "Failed to load requests")
-                        },
-                    )
+                jellyseerrRepository.getRequests().onFailure { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error =
+                                error.message
+                                    ?: context.getString(R.string.error_requests_load_failed),
+                        )
+                    }
+                    Timber.e(error, "Failed to load requests")
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -198,12 +188,13 @@ constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isDeletingRequest = true) }
-
                 jellyseerrRepository
                     .deleteRequest(requestId)
                     .fold(
                         onSuccess = {
-                            _uiState.update { it.copy(isDeletingRequest = false) }
+                            _uiState.update {
+                                it.copy(isDeletingRequest = false, selectedRequest = null)
+                            }
                             Timber.d("Request $requestId deleted successfully")
                         },
                         onFailure = { error ->
@@ -236,7 +227,6 @@ constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isProcessingRequest = true) }
-
                 jellyseerrRepository
                     .approveRequest(requestId)
                     .fold(
@@ -245,26 +235,14 @@ constructor(
                                 it.copy(
                                     isProcessingRequest = false,
                                     requests =
-                                        it.requests.map { request ->
-                                            if (request.id == requestId) {
-                                                updatedRequest.copy(
-                                                    media =
-                                                        updatedRequest.media.copy(
-                                                            title = request.media.title,
-                                                            name = request.media.name,
-                                                            posterPath = request.media.posterPath,
-                                                            backdropPath =
-                                                                request.media.backdropPath,
-                                                            releaseDate = request.media.releaseDate,
-                                                            firstAirDate =
-                                                                request.media.firstAirDate,
-                                                        )
-                                                )
-                                            } else request
+                                        it.requests.map { req ->
+                                            if (req.id == requestId) updatedRequest else req
                                         },
+                                    selectedRequest =
+                                        if (it.selectedRequest?.id == requestId) updatedRequest
+                                        else it.selectedRequest,
                                 )
                             }
-                            Timber.d("Request $requestId approved successfully")
                         },
                         onFailure = { error ->
                             _uiState.update {
@@ -277,7 +255,6 @@ constructor(
                                         ),
                                 )
                             }
-                            Timber.e(error, "Failed to approve request")
                         },
                     )
             } catch (e: Exception) {
@@ -287,7 +264,6 @@ constructor(
                         error = e.message ?: context.getString(R.string.error_unknown),
                     )
                 }
-                Timber.e(e, "Error approving request")
             }
         }
     }
@@ -296,7 +272,6 @@ constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isProcessingRequest = true) }
-
                 jellyseerrRepository
                     .declineRequest(requestId)
                     .fold(
@@ -305,26 +280,14 @@ constructor(
                                 it.copy(
                                     isProcessingRequest = false,
                                     requests =
-                                        it.requests.map { request ->
-                                            if (request.id == requestId) {
-                                                updatedRequest.copy(
-                                                    media =
-                                                        updatedRequest.media.copy(
-                                                            title = request.media.title,
-                                                            name = request.media.name,
-                                                            posterPath = request.media.posterPath,
-                                                            backdropPath =
-                                                                request.media.backdropPath,
-                                                            releaseDate = request.media.releaseDate,
-                                                            firstAirDate =
-                                                                request.media.firstAirDate,
-                                                        )
-                                                )
-                                            } else request
+                                        it.requests.map { req ->
+                                            if (req.id == requestId) updatedRequest else req
                                         },
+                                    selectedRequest =
+                                        if (it.selectedRequest?.id == requestId) updatedRequest
+                                        else it.selectedRequest,
                                 )
                             }
-                            Timber.d("Request $requestId declined successfully")
                         },
                         onFailure = { error ->
                             _uiState.update {
@@ -337,7 +300,6 @@ constructor(
                                         ),
                                 )
                             }
-                            Timber.e(error, "Failed to decline request")
                         },
                     )
             } catch (e: Exception) {
@@ -347,111 +309,183 @@ constructor(
                         error = e.message ?: context.getString(R.string.error_unknown),
                     )
                 }
-                Timber.e(e, "Error declining request")
             }
+        }
+    }
+
+    fun selectRequest(request: JellyseerrRequest) {
+        val initialServerName = request.serverId?.toString()?.let { "ID: $it" } ?: "Default"
+        val initialProfileName = request.profileId?.toString()?.let { "ID: $it" } ?: "Default"
+
+        _uiState.update {
+            it.copy(
+                selectedRequest = request,
+                selectedRequestDetails = null,
+                selectedRequestServerName = initialServerName,
+                selectedRequestProfileName = initialProfileName,
+                isLoadingDetails = true,
+            )
+        }
+
+        val tmdbId = request.media.tmdbId ?: return
+        val mediaType = request.getMediaType() ?: MediaType.MOVIE
+
+        viewModelScope.launch {
+            val result =
+                if (mediaType == MediaType.TV) {
+                    jellyseerrRepository.getTvDetails(tmdbId)
+                } else {
+                    jellyseerrRepository.getMovieDetails(tmdbId)
+                }
+
+            result.fold(
+                onSuccess = { details ->
+                    _uiState.update {
+                        it.copy(selectedRequestDetails = details, isLoadingDetails = false)
+                    }
+                },
+                onFailure = { error ->
+                    Timber.e(error, "Failed to load details for request")
+                    _uiState.update { it.copy(isLoadingDetails = false) }
+                },
+            )
+        }
+
+        val user = _currentUser.value
+        if (
+            user != null &&
+                (user.hasPermission(Permissions.MANAGE_REQUESTS) ||
+                    user.hasPermission(Permissions.REQUEST_ADVANCED))
+        ) {
+            viewModelScope.launch {
+                jellyseerrRepository
+                    .getServiceSettings(mediaType)
+                    .onSuccess { servers ->
+                        val server =
+                            servers.find { it.id == request.serverId }
+                                ?: servers.firstOrNull { it.isDefault }
+                                ?: servers.firstOrNull()
+
+                        if (server != null) {
+                            _uiState.update { it.copy(selectedRequestServerName = server.name) }
+                        }
+
+                        val targetServiceId = request.serverId ?: server?.id
+
+                        if (targetServiceId != null) {
+                            jellyseerrRepository
+                                .getServiceDetails(mediaType, targetServiceId)
+                                .onSuccess { serviceDetails ->
+                                    val profile =
+                                        if (request.profileId != null) {
+                                            serviceDetails.profiles.find {
+                                                it.id == request.profileId
+                                            }
+                                        } else {
+                                            serviceDetails.profiles.find {
+                                                it.id == serviceDetails.server?.activeProfileId
+                                            }
+                                        }
+
+                                    if (profile?.name != null) {
+                                        _uiState.update {
+                                            it.copy(selectedRequestProfileName = profile.name)
+                                        }
+                                    }
+                                }
+                        }
+                    }
+                    .onFailure {
+                        Timber.w(it, "Failed to resolve server/profile names (Permission issue?)")
+                    }
+            }
+        }
+    }
+
+    fun dismissManagementDialog() {
+        _uiState.update {
+            it.copy(
+                selectedRequest = null,
+                selectedRequestDetails = null,
+                selectedRequestServerName = null,
+                selectedRequestProfileName = null,
+                isLoadingDetails = false,
+            )
         }
     }
 
     fun searchForContent(query: String, mediaType: MediaType? = null) {
         viewModelScope.launch {
-            try {
-                _uiState.update {
-                    it.copy(isSearching = true, searchQuery = query, searchError = null)
-                }
-
-                jellyseerrRepository
-                    .findMediaByName(query, mediaType)
-                    .fold(
-                        onSuccess = { results ->
+            _uiState.update { it.copy(isSearching = true, searchQuery = query, searchError = null) }
+            jellyseerrRepository
+                .findMediaByName(query, mediaType)
+                .fold(
+                    onSuccess = { results ->
+                        _uiState.update {
+                            it.copy(
+                                searchResults = results,
+                                isSearching = false,
+                                showSearchDialog = results.isNotEmpty(),
+                            )
+                        }
+                        if (results.isEmpty()) {
                             _uiState.update {
                                 it.copy(
-                                    searchResults = results,
-                                    isSearching = false,
-                                    showSearchDialog = results.isNotEmpty(),
-                                )
-                            }
-                            if (results.isEmpty()) {
-                                _uiState.update {
-                                    it.copy(
-                                        searchError =
-                                            context.getString(
-                                                R.string.error_search_no_results_fmt,
-                                                query,
-                                            )
-                                    )
-                                }
-                            }
-                            Timber.d("Found ${results.size} search results")
-                        },
-                        onFailure = { error ->
-                            _uiState.update {
-                                it.copy(
-                                    isSearching = false,
                                     searchError =
                                         context.getString(
-                                            R.string.error_search_failed_fmt,
-                                            error.message,
-                                        ),
+                                            R.string.error_search_no_results_fmt,
+                                            query,
+                                        )
                                 )
                             }
-                            Timber.e(error, "Search failed")
-                        },
-                    )
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isSearching = false,
-                        searchError = e.message ?: context.getString(R.string.error_unknown),
-                    )
-                }
-                Timber.e(e, "Error searching")
-            }
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update {
+                            it.copy(
+                                isSearching = false,
+                                searchError =
+                                    context.getString(
+                                        R.string.error_search_failed_fmt,
+                                        error.message,
+                                    ),
+                            )
+                        }
+                    },
+                )
         }
     }
 
     fun createRequest(mediaId: Int, mediaType: MediaType, seasons: List<Int>? = null) {
         viewModelScope.launch {
-            try {
-                _uiState.update { it.copy(isCreatingRequest = true) }
-
-                jellyseerrRepository
-                    .createRequest(mediaId, mediaType, seasons)
-                    .fold(
-                        onSuccess = { newRequest ->
-                            _uiState.update {
-                                it.copy(
-                                    isCreatingRequest = false,
-                                    showSearchDialog = false,
-                                    searchResults = emptyList(),
-                                    searchQuery = "",
-                                )
-                            }
-                            loadRequests()
-                            Timber.d("Request created successfully: ${newRequest.id}")
-                        },
-                        onFailure = { error ->
-                            _uiState.update {
-                                it.copy(
-                                    isCreatingRequest = false,
-                                    error =
-                                        context.getString(
-                                            R.string.error_request_create_failed_fmt,
-                                            error.message,
-                                        ),
-                                )
-                            }
-                            Timber.e(error, "Failed to create request")
-                        },
-                    )
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isCreatingRequest = false,
-                        error = e.message ?: context.getString(R.string.error_unknown),
-                    )
-                }
-                Timber.e(e, "Error creating request")
-            }
+            _uiState.update { it.copy(isCreatingRequest = true) }
+            jellyseerrRepository
+                .createRequest(mediaId, mediaType, seasons)
+                .fold(
+                    onSuccess = { newRequest ->
+                        _uiState.update {
+                            it.copy(
+                                isCreatingRequest = false,
+                                showSearchDialog = false,
+                                searchResults = emptyList(),
+                                searchQuery = "",
+                            )
+                        }
+                        loadRequests()
+                    },
+                    onFailure = { error ->
+                        _uiState.update {
+                            it.copy(
+                                isCreatingRequest = false,
+                                error =
+                                    context.getString(
+                                        R.string.error_request_create_failed_fmt,
+                                        error.message,
+                                    ),
+                            )
+                        }
+                    },
+                )
         }
     }
 
@@ -481,56 +515,46 @@ constructor(
     fun loadDiscoverContent() {
         _backdropTracker.reset()
         _uiState.update { it.copy(isLoadingDiscover = true) }
-
         viewModelScope.launch {
             jellyseerrRepository
-                .getTrending(limit = 10)
+                .getTrending(10)
                 .fold(
-                    onSuccess = { result ->
+                    onSuccess = { res ->
                         _uiState.update {
-                            it.copy(trendingItems = result.results, isLoadingDiscover = false)
+                            it.copy(trendingItems = res.results, isLoadingDiscover = false)
                         }
                     },
-                    onFailure = {
-                        Timber.e(it, "Failed to load trending items")
-                        _uiState.update { it.copy(isLoadingDiscover = false) }
-                    },
+                    onFailure = { _uiState.update { it.copy(isLoadingDiscover = false) } },
                 )
         }
-
         viewModelScope.launch {
-            jellyseerrRepository.getDiscoverMovies().onSuccess { result ->
-                _uiState.update { it.copy(popularMovies = result.results) }
+            jellyseerrRepository.getDiscoverMovies().onSuccess { res ->
+                _uiState.update { it.copy(popularMovies = res.results) }
             }
         }
-
         viewModelScope.launch {
-            jellyseerrRepository.getDiscoverTv().onSuccess { result ->
-                _uiState.update { it.copy(popularTv = result.results) }
+            jellyseerrRepository.getDiscoverTv().onSuccess { res ->
+                _uiState.update { it.copy(popularTv = res.results) }
             }
         }
-
         viewModelScope.launch {
-            jellyseerrRepository.getUpcomingMovies().onSuccess { result ->
-                _uiState.update { it.copy(upcomingMovies = result.results) }
+            jellyseerrRepository.getUpcomingMovies().onSuccess { res ->
+                _uiState.update { it.copy(upcomingMovies = res.results) }
             }
         }
-
         viewModelScope.launch {
-            jellyseerrRepository.getUpcomingTv().onSuccess { result ->
-                _uiState.update { it.copy(upcomingTv = result.results) }
+            jellyseerrRepository.getUpcomingTv().onSuccess { res ->
+                _uiState.update { it.copy(upcomingTv = res.results) }
             }
         }
-
         viewModelScope.launch {
-            jellyseerrRepository.getMovieGenreSlider().onSuccess { result ->
-                _uiState.update { it.copy(movieGenres = result) }
+            jellyseerrRepository.getMovieGenreSlider().onSuccess { res ->
+                _uiState.update { it.copy(movieGenres = res) }
             }
         }
-
         viewModelScope.launch {
-            jellyseerrRepository.getTvGenreSlider().onSuccess { result ->
-                _uiState.update { it.copy(tvGenres = result) }
+            jellyseerrRepository.getTvGenreSlider().onSuccess { res ->
+                _uiState.update { it.copy(tvGenres = res) }
             }
         }
     }
@@ -544,108 +568,88 @@ constructor(
         existingStatus: MediaStatus? = null,
     ) {
         viewModelScope.launch {
-            try {
-                _uiState.update { it.copy(isFetchingTvDetails = true) }
+            val authJob = async { refreshCurrentUser() }
 
-                val detailsResult =
-                    if (mediaType == MediaType.TV) {
-                        jellyseerrRepository.getTvDetails(tmdbId)
-                    } else {
-                        jellyseerrRepository.getMovieDetails(tmdbId)
-                    }
-
-                detailsResult.fold(
-                    onSuccess = { details ->
-                        _uiState.update { it.copy(isFetchingTvDetails = false) }
-
-                        val seasonCount =
-                            if (mediaType == MediaType.TV) details.getSeasonCount() else 0
-                        val alreadyAvailableSeasons =
-                            details.mediaInfo?.getAvailableSeasons() ?: emptyList()
-                        val selectableSeasons =
-                            if (mediaType == MediaType.TV) {
-                                (1..seasonCount).filter { it !in alreadyAvailableSeasons }
-                            } else emptyList()
-
-                        _uiState.update {
-                            it.copy(
-                                showRequestDialog = true,
-                                pendingRequest =
-                                    PendingRequest(
-                                        tmdbId = tmdbId,
-                                        mediaType = mediaType,
-                                        title = details.title ?: details.name ?: title,
-                                        posterUrl = details.getPosterUrl(),
-                                        availableSeasons = seasonCount,
-                                        existingStatus = existingStatus,
-                                        backdropUrl = details.getBackdropUrl(),
-                                        tagline = details.tagline,
-                                        overview = details.overview,
-                                        releaseDate = details.releaseDate ?: details.firstAirDate,
-                                        runtime = details.runtime,
-                                        voteAverage = details.voteAverage,
-                                        certification = details.getCertification(),
-                                        originalLanguage = details.originalLanguage,
-                                        director = details.getDirector(),
-                                        genres = details.getGenreNames(),
-                                        ratingsCombined = details.ratingsCombined,
-                                    ),
-                                selectedSeasons = selectableSeasons,
-                                disabledSeasons = alreadyAvailableSeasons,
-                            )
-                        }
-                        loadServiceSettings(mediaType)
-                    },
-                    onFailure = { error ->
-                        _uiState.update { it.copy(isFetchingTvDetails = false) }
-                        Timber.w(error, "Failed to fetch details, using fallback")
-
-                        _uiState.update {
-                            it.copy(
-                                showRequestDialog = true,
-                                pendingRequest =
-                                    PendingRequest(
-                                        tmdbId = tmdbId,
-                                        mediaType = mediaType,
-                                        title = title,
-                                        posterUrl = posterUrl,
-                                        availableSeasons = availableSeasons,
-                                        existingStatus = existingStatus,
-                                    ),
-                                selectedSeasons =
-                                    if (mediaType == MediaType.TV && availableSeasons > 0) {
-                                        (1..availableSeasons).toList()
-                                    } else emptyList(),
-                                disabledSeasons = emptyList(),
-                            )
-                        }
-                        loadServiceSettings(mediaType)
-                    },
-                )
-            } catch (e: Exception) {
-                Timber.e(e, "Error showing request dialog")
-                _uiState.update {
-                    it.copy(
-                        showRequestDialog = true,
-                        pendingRequest =
-                            PendingRequest(
-                                tmdbId = tmdbId,
-                                mediaType = mediaType,
-                                title = title,
-                                posterUrl = posterUrl,
-                                availableSeasons = availableSeasons,
-                                existingStatus = existingStatus,
-                            ),
-                        selectedSeasons =
-                            if (mediaType == MediaType.TV && availableSeasons > 0) {
-                                (1..availableSeasons).toList()
-                            } else emptyList(),
-                        disabledSeasons = emptyList(),
-                        isFetchingTvDetails = false,
-                    )
+            _uiState.update { it.copy(isFetchingTvDetails = true) }
+            val detailsJob = async {
+                if (mediaType == MediaType.TV) {
+                    jellyseerrRepository.getTvDetails(tmdbId)
+                } else {
+                    jellyseerrRepository.getMovieDetails(tmdbId)
                 }
-                loadServiceSettings(mediaType)
             }
+
+            authJob.await()
+
+            val detailsResult = detailsJob.await()
+
+            detailsResult.fold(
+                onSuccess = { details ->
+                    _uiState.update { it.copy(isFetchingTvDetails = false) }
+
+                    val seasonCount = if (mediaType == MediaType.TV) details.getSeasonCount() else 0
+                    val alreadyAvailableSeasons =
+                        details.mediaInfo?.getAvailableSeasons() ?: emptyList()
+                    val selectableSeasons =
+                        if (mediaType == MediaType.TV) {
+                            (1..seasonCount).filter { it !in alreadyAvailableSeasons }
+                        } else emptyList()
+
+                    _uiState.update {
+                        it.copy(
+                            showRequestDialog = true,
+                            pendingRequest =
+                                PendingRequest(
+                                    tmdbId = tmdbId,
+                                    mediaType = mediaType,
+                                    title = details.title ?: details.name ?: title,
+                                    posterUrl = details.getPosterUrl(),
+                                    availableSeasons = seasonCount,
+                                    existingStatus = existingStatus,
+                                    backdropUrl = details.getBackdropUrl(),
+                                    tagline = details.tagline,
+                                    overview = details.overview,
+                                    releaseDate = details.releaseDate ?: details.firstAirDate,
+                                    runtime = details.runtime,
+                                    voteAverage = details.voteAverage,
+                                    certification = details.getCertification(),
+                                    originalLanguage = details.originalLanguage,
+                                    director = details.getDirector(),
+                                    genres = details.getGenreNames(),
+                                    ratingsCombined = details.ratingsCombined,
+                                ),
+                            selectedSeasons = selectableSeasons,
+                            disabledSeasons = alreadyAvailableSeasons,
+                        )
+                    }
+                    loadServiceSettings(mediaType)
+                },
+                onFailure = { error ->
+                    _uiState.update { it.copy(isFetchingTvDetails = false) }
+                    Timber.w(error, "Failed to fetch details, using fallback")
+
+                    _uiState.update {
+                        it.copy(
+                            showRequestDialog = true,
+                            pendingRequest =
+                                PendingRequest(
+                                    tmdbId = tmdbId,
+                                    mediaType = mediaType,
+                                    title = title,
+                                    posterUrl = posterUrl,
+                                    availableSeasons = availableSeasons,
+                                    existingStatus = existingStatus,
+                                ),
+                            selectedSeasons =
+                                if (mediaType == MediaType.TV && availableSeasons > 0) {
+                                    (1..availableSeasons).toList()
+                                } else emptyList(),
+                            disabledSeasons = emptyList(),
+                        )
+                    }
+                    loadServiceSettings(mediaType)
+                },
+            )
         }
     }
 
@@ -653,83 +657,63 @@ constructor(
         val pending = _uiState.value.pendingRequest ?: return
         val state = _uiState.value
         val seasons =
-            if (pending.mediaType == MediaType.TV) {
-                state.selectedSeasons.takeIf { it.isNotEmpty() }
-            } else null
-
+            if (pending.mediaType == MediaType.TV) state.selectedSeasons.takeIf { it.isNotEmpty() }
+            else null
         viewModelScope.launch {
-            try {
-                _uiState.update { it.copy(isCreatingRequest = true) }
-
-                jellyseerrRepository
-                    .createRequest(
-                        mediaId = pending.tmdbId,
-                        mediaType = pending.mediaType,
-                        seasons = seasons,
-                        is4k = state.is4kRequested,
-                        serverId = state.selectedServer?.id,
-                        profileId = state.selectedProfile?.id,
-                        rootFolder = state.selectedRootFolder,
-                    )
-                    .fold(
-                        onSuccess = { newRequest ->
-                            val updatedMediaInfo =
-                                newRequest.media.copy(requests = listOfNotNull(newRequest))
-
-                            val updateItemStatus: (SearchResultItem) -> SearchResultItem = { item ->
-                                if (item.id == pending.tmdbId) {
-                                    item.copy(mediaInfo = updatedMediaInfo)
-                                } else {
-                                    item
-                                }
-                            }
-
-                            _uiState.update {
-                                it.copy(
-                                    isCreatingRequest = false,
-                                    showRequestDialog = false,
-                                    pendingRequest = null,
-                                    selectedSeasons = emptyList(),
-                                    disabledSeasons = emptyList(),
-                                    is4kRequested = false,
-                                    availableServers = emptyList(),
-                                    selectedServer = null,
-                                    availableProfiles = emptyList(),
-                                    selectedProfile = null,
-                                    selectedRootFolder = null,
-                                    trendingItems = it.trendingItems.map(updateItemStatus),
-                                    popularMovies = it.popularMovies.map(updateItemStatus),
-                                    popularTv = it.popularTv.map(updateItemStatus),
-                                    upcomingMovies = it.upcomingMovies.map(updateItemStatus),
-                                    upcomingTv = it.upcomingTv.map(updateItemStatus),
-                                )
-                            }
-                            loadRequests()
-                            Timber.d("Request created successfully: ${newRequest.id}")
-                        },
-                        onFailure = { error ->
-                            _uiState.update {
-                                it.copy(
-                                    isCreatingRequest = false,
-                                    error =
-                                        context.getString(
-                                            R.string.error_request_create_failed_fmt,
-                                            error.message,
-                                        ),
-                                )
-                            }
-                            Timber.e(error, "Failed to create request")
-                        },
-                    )
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isCreatingRequest = false,
-                        error = e.message ?: context.getString(R.string.error_unknown),
-                    )
-                }
-                Timber.e(e, "Error creating request")
-            }
+            _uiState.update { it.copy(isCreatingRequest = true) }
+            jellyseerrRepository
+                .createRequest(
+                    pending.tmdbId,
+                    pending.mediaType,
+                    seasons,
+                    state.is4kRequested,
+                    state.selectedServer?.id,
+                    state.selectedProfile?.id,
+                    state.selectedRootFolder,
+                )
+                .fold(
+                    onSuccess = { newRequest ->
+                        val updatedMediaInfo =
+                            newRequest.media.copy(requests = listOfNotNull(newRequest))
+                        val updateItemStatus: (SearchResultItem) -> SearchResultItem = {
+                            if (it.id == pending.tmdbId) it.copy(mediaInfo = updatedMediaInfo)
+                            else it
+                        }
+                        _uiState.update {
+                            it.copy(
+                                isCreatingRequest = false,
+                                showRequestDialog = false,
+                                pendingRequest = null,
+                                selectedSeasons = emptyList(),
+                                disabledSeasons = emptyList(),
+                                is4kRequested = false,
+                                availableServers = emptyList(),
+                                selectedServer = null,
+                                availableProfiles = emptyList(),
+                                selectedProfile = null,
+                                selectedRootFolder = null,
+                                trendingItems = it.trendingItems.map(updateItemStatus),
+                                popularMovies = it.popularMovies.map(updateItemStatus),
+                                popularTv = it.popularTv.map(updateItemStatus),
+                                upcomingMovies = it.upcomingMovies.map(updateItemStatus),
+                                upcomingTv = it.upcomingTv.map(updateItemStatus),
+                            )
+                        }
+                        loadRequests()
+                    },
+                    onFailure = { error ->
+                        _uiState.update {
+                            it.copy(
+                                isCreatingRequest = false,
+                                error =
+                                    context.getString(
+                                        R.string.error_request_create_failed_fmt,
+                                        error.message,
+                                    ),
+                            )
+                        }
+                    },
+                )
         }
     }
 
@@ -794,6 +778,7 @@ constructor(
                 !user.hasPermission(Permissions.MANAGE_REQUESTS)
         )
             return
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingServers = true) }
             jellyseerrRepository
@@ -802,14 +787,18 @@ constructor(
                     onSuccess = { servers ->
                         val is4k = _uiState.value.is4kRequested
                         val filtered = servers.filter { it.is4k == is4k }
+                        val defaultServer =
+                            filtered.firstOrNull { it.isDefault } ?: filtered.firstOrNull()
                         _uiState.update {
-                            it.copy(availableServers = filtered, isLoadingServers = false)
+                            it.copy(
+                                availableServers = filtered,
+                                selectedServer = defaultServer,
+                                isLoadingServers = false,
+                            )
                         }
+                        if (defaultServer != null) loadQualityProfiles(mediaType, defaultServer.id)
                     },
-                    onFailure = { error ->
-                        Timber.e(error, "Failed to load service settings")
-                        _uiState.update { it.copy(isLoadingServers = false) }
-                    },
+                    onFailure = { _uiState.update { it.copy(isLoadingServers = false) } },
                 )
         }
     }
@@ -821,8 +810,8 @@ constructor(
                 .getServiceDetails(mediaType, serviceId)
                 .fold(
                     onSuccess = { details ->
-                        val activeProfileId = details.server?.activeProfileId
-                        val preselected = details.profiles.find { it.id == activeProfileId }
+                        val preselected =
+                            details.profiles.find { it.id == details.server?.activeProfileId }
                         val rootFolder =
                             details.server?.activeDirectory
                                 ?: details.rootFolders.firstOrNull()?.path
@@ -835,10 +824,7 @@ constructor(
                             )
                         }
                     },
-                    onFailure = { error ->
-                        Timber.e(error, "Failed to load quality profiles")
-                        _uiState.update { it.copy(isLoadingProfiles = false) }
-                    },
+                    onFailure = { _uiState.update { it.copy(isLoadingProfiles = false) } },
                 )
         }
     }
@@ -880,6 +866,11 @@ data class RequestsUiState(
     val selectedRootFolder: String? = null,
     val isLoadingServers: Boolean = false,
     val isLoadingProfiles: Boolean = false,
+    val selectedRequest: JellyseerrRequest? = null,
+    val selectedRequestDetails: MediaDetails? = null,
+    val isLoadingDetails: Boolean = false,
+    val selectedRequestServerName: String? = null,
+    val selectedRequestProfileName: String? = null,
 )
 
 data class PendingRequest(
