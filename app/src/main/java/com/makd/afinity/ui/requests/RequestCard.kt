@@ -224,7 +224,13 @@ private data class StatusAttributes(
 @Composable
 private fun getRequestStatusAttributes(request: JellyseerrRequest): StatusAttributes {
     val requestStatus = RequestStatus.fromValue(request.status)
-    val mediaStatus = MediaStatus.fromValue(request.media.status ?: 1)
+    val statusValue =
+        if (request.is4k) {
+            request.media.status4k ?: 1
+        } else {
+            request.media.status ?: 1
+        }
+    val mediaStatus = MediaStatus.fromValue(statusValue)
 
     return when (requestStatus) {
         RequestStatus.DECLINED ->

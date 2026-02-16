@@ -10,6 +10,7 @@ data class MediaInfo(
     @SerialName("tmdbId") val tmdbId: Int?,
     @SerialName("tvdbId") val tvdbId: Int?,
     @SerialName("status") val status: Int?,
+    @SerialName("status4k") val status4k: Int? = null,
     @SerialName("mediaAddedAt") val mediaAddedAt: String? = null,
     @SerialName("seasons") val seasons: List<MediaInfoSeason>? = null,
     @SerialName("requests") val requests: List<JellyseerrRequest>? = null,
@@ -22,6 +23,7 @@ data class MediaInfo(
     @SerialName("releaseDate") val releaseDate: String? = null,
     @SerialName("firstAirDate") val firstAirDate: String? = null,
     @SerialName("jellyfinMediaId") val jellyfinMediaId: String? = null,
+    @SerialName("jellyfinMediaId4k") val jellyfinMediaId4k: String? = null,
 ) {
     fun getAvailableSeasons(): List<Int> {
         return seasons?.filter { season -> season.status == 5 }?.mapNotNull { it.seasonNumber }

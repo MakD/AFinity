@@ -39,7 +39,16 @@ data class SearchResultItem(
 
     fun hasExistingRequest(): Boolean = mediaInfo?.status != null
 
-    fun getMediaStatus(): MediaStatus? = mediaInfo?.status?.let { MediaStatus.fromValue(it) }
+    fun getMediaStatus(): MediaStatus? {
+        val standardStatus = mediaInfo?.status
+        val status4k = mediaInfo?.status4k
+        fun isValid(status: Int?) = status != null && status != 1
+        return when {
+            isValid(standardStatus) -> MediaStatus.fromValue(standardStatus!!)
+            isValid(status4k) -> MediaStatus.fromValue(status4k!!)
+            else -> mediaInfo?.status?.let { MediaStatus.fromValue(it) }
+        }
+    }
 
     fun getDisplayStatus(): MediaStatus? {
         val mediaStatus = getMediaStatus() ?: return null
