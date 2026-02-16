@@ -14,13 +14,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,10 +42,12 @@ import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
+import timber.log.Timber
 
 @Composable
 fun RequestCard(
     request: JellyseerrRequest,
+    baseUrl: String?,
     isAdmin: Boolean,
     onClick: () -> Unit,
     onApprove: () -> Unit,
@@ -78,138 +84,117 @@ fun RequestCard(
                         imageUrl = posterUrl,
                         contentDescription = request.media.getDisplayTitle(),
                         blurHash = null,
-                        targetWidth = cardWidth * 0.3f,
+                        targetWidth = cardWidth * 0.4f,
                         targetHeight = cardWidth * 9f / 16f,
                         contentScale = ContentScale.Crop,
                         modifier =
                             Modifier.align(Alignment.CenterStart)
-                                .padding(start = 6.dp, top = 6.dp, bottom = 6.dp)
+                                .padding(6.dp)
                                 .fillMaxHeight()
                                 .aspectRatio(2f / 3f)
                                 .clip(RoundedCornerShape(8.dp)),
                     )
                 }
 
-                val requestStatus = RequestStatus.fromValue(request.status)
-                val mediaStatus = MediaStatus.fromValue(request.media.status ?: 1)
-
-                val (badgeText, badgeColor, badgeTextColor) =
-                    when {
-                        requestStatus == RequestStatus.DECLINED ->
-                            Triple(
-                                stringResource(R.string.status_declined),
-                                MaterialTheme.colorScheme.error,
-                                MaterialTheme.colorScheme.onError,
-                            )
-
-                        requestStatus == RequestStatus.APPROVED &&
-                            mediaStatus == MediaStatus.PENDING ->
-                            Triple(
-                                stringResource(R.string.status_processing),
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.onPrimary,
-                            )
-
-                        else -> {
-                            val statusText =
-                                when (mediaStatus) {
-                                    MediaStatus.PENDING -> stringResource(R.string.status_pending)
-                                    MediaStatus.PROCESSING ->
-                                        stringResource(R.string.status_processing)
-                                    MediaStatus.PARTIALLY_AVAILABLE ->
-                                        stringResource(R.string.status_partially_available)
-                                    MediaStatus.AVAILABLE ->
-                                        stringResource(R.string.status_available)
-                                    MediaStatus.DELETED -> stringResource(R.string.status_deleted)
-                                    else -> stringResource(R.string.status_unknown)
-                                }
-
-                            Triple(
-                                statusText,
-                                when (mediaStatus) {
-                                    MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
-                                    MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
-                                    MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
-                                    MediaStatus.PARTIALLY_AVAILABLE ->
-                                        MaterialTheme.colorScheme.secondary
-                                    MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
-                                    MediaStatus.DELETED -> MaterialTheme.colorScheme.error
-                                },
-                                when (mediaStatus) {
-                                    MediaStatus.UNKNOWN ->
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
-                                    MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
-                                    MediaStatus.PARTIALLY_AVAILABLE ->
-                                        MaterialTheme.colorScheme.onSecondary
-                                    MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
-                                    MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
-                                },
-                            )
-                        }
-                    }
-
+                val statusAttributes = getRequestStatusAttributes(request)
                 Card(
                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                     shape = RoundedCornerShape(4.dp),
-                    colors = CardDefaults.cardColors(containerColor = badgeColor),
+                    colors =
+                        CardDefaults.cardColors(containerColor = statusAttributes.containerColor),
                 ) {
                     Text(
-                        text = badgeText,
+                        text = stringResource(statusAttributes.textRes),
                         style = MaterialTheme.typography.labelSmall,
-                        color = badgeTextColor,
+                        color = statusAttributes.contentColor,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         fontWeight = FontWeight.Bold,
                     )
                 }
+                Row(
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val rawAvatarUrl = request.requestedBy.avatar
+                    val avatarUrl =
+                        remember(rawAvatarUrl, baseUrl) {
+                            Timber.d("Avatar URL: $rawAvatarUrl, Base URL: $baseUrl")
+                            when {
+                                rawAvatarUrl.isNullOrBlank() -> null
+                                rawAvatarUrl.startsWith("http") -> rawAvatarUrl
+                                !baseUrl.isNullOrBlank() -> {
+                                    var cleanBase = baseUrl.trimEnd('/')
+                                    if (
+                                        !cleanBase.startsWith("http://") &&
+                                            !cleanBase.startsWith("https://")
+                                    ) {
+                                        cleanBase = "http://$cleanBase"
+                                    }
 
-                if (isPending && isAdmin) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
-                    ) {
-                        Card(
-                            onClick = onApprove,
-                            shape = RoundedCornerShape(8.dp),
-                            colors =
-                                CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
-                                ),
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = stringResource(R.string.cd_approve),
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(18.dp),
-                                )
+                                    val cleanPath = rawAvatarUrl.trimStart('/')
+                                    "$cleanBase/$cleanPath"
+                                }
+                                else -> null
                             }
                         }
 
-                        Card(
-                            onClick = onDecline,
+                    if (avatarUrl != null) {
+                        AsyncImage(
+                            imageUrl = avatarUrl,
+                            contentDescription =
+                                stringResource(
+                                    R.string.requested_by_fmt,
+                                    request.requestedBy.displayName ?: "",
+                                ),
+                            blurHash = null,
+                            targetWidth = 32.dp,
+                            targetHeight = 32.dp,
+                            modifier = Modifier.size(24.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_user_circle),
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+
+                    if (isPending && isAdmin) {
+                        FilledIconButton(
+                            onClick = onApprove,
+                            modifier = Modifier.size(36.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors =
-                                CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer
+                                IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
                                 ),
-                            modifier = Modifier.size(36.dp),
                         ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_cancel),
-                                    contentDescription = stringResource(R.string.cd_decline),
-                                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_check),
+                                contentDescription = stringResource(R.string.cd_approve),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+
+                        FilledIconButton(
+                            onClick = onDecline,
+                            modifier = Modifier.size(36.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors =
+                                IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                ),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_cancel),
+                                contentDescription = stringResource(R.string.cd_decline),
+                                modifier = Modifier.size(18.dp),
+                            )
                         }
                     }
                 }
@@ -239,5 +224,76 @@ fun RequestCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+private data class StatusAttributes(
+    val textRes: Int,
+    val containerColor: Color,
+    val contentColor: Color,
+)
+
+@Composable
+private fun getRequestStatusAttributes(request: JellyseerrRequest): StatusAttributes {
+    val requestStatus = RequestStatus.fromValue(request.status)
+    val mediaStatus = MediaStatus.fromValue(request.media.status ?: 1)
+
+    return when {
+        requestStatus == RequestStatus.DECLINED ->
+            StatusAttributes(
+                textRes = R.string.status_declined,
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            )
+
+        requestStatus == RequestStatus.APPROVED && mediaStatus == MediaStatus.PENDING ->
+            StatusAttributes(
+                textRes = R.string.status_processing,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            )
+
+        else -> {
+            val (textRes, containerColor, contentColor) =
+                when (mediaStatus) {
+                    MediaStatus.PENDING ->
+                        Triple(
+                            R.string.status_pending,
+                            MaterialTheme.colorScheme.tertiary,
+                            MaterialTheme.colorScheme.onTertiary,
+                        )
+                    MediaStatus.PROCESSING ->
+                        Triple(
+                            R.string.status_processing,
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.onPrimary,
+                        )
+                    MediaStatus.PARTIALLY_AVAILABLE ->
+                        Triple(
+                            R.string.status_partially_available,
+                            MaterialTheme.colorScheme.secondary,
+                            MaterialTheme.colorScheme.onSecondary,
+                        )
+                    MediaStatus.AVAILABLE ->
+                        Triple(
+                            R.string.status_available,
+                            MaterialTheme.colorScheme.secondary,
+                            MaterialTheme.colorScheme.onSecondary,
+                        )
+                    MediaStatus.DELETED ->
+                        Triple(
+                            R.string.status_deleted,
+                            MaterialTheme.colorScheme.error,
+                            MaterialTheme.colorScheme.onError,
+                        )
+                    else ->
+                        Triple(
+                            R.string.status_unknown,
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                }
+            StatusAttributes(textRes, containerColor, contentColor)
+        }
     }
 }

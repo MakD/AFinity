@@ -21,7 +21,6 @@ import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.util.BackdropTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +29,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class RequestsViewModel
@@ -65,6 +65,8 @@ constructor(
                         Timber.d(
                             "Session Active & Authenticated ($sessionId). Reloading ALL content..."
                         )
+                        val serverUrl = jellyseerrRepository.getServerUrl()
+                        _uiState.update { it.copy(jellyseerrUrl = serverUrl) }
                         loadCurrentUser()
                         observeRequests()
                         loadRequests()
@@ -75,6 +77,7 @@ constructor(
                         requestsJob?.cancel()
                         _uiState.update {
                             it.copy(
+                                jellyseerrUrl = null,
                                 requests = emptyList(),
                                 trendingItems = emptyList(),
                                 popularMovies = emptyList(),
@@ -785,10 +788,12 @@ constructor(
 
     private fun loadServiceSettings(mediaType: MediaType) {
         val user = _currentUser.value ?: return
-        if (!user.hasPermission(Permissions.REQUEST_ADVANCED) &&
-            !user.hasPermission(Permissions.REQUEST_4K) &&
-            !user.hasPermission(Permissions.MANAGE_REQUESTS)
-        ) return
+        if (
+            !user.hasPermission(Permissions.REQUEST_ADVANCED) &&
+                !user.hasPermission(Permissions.REQUEST_4K) &&
+                !user.hasPermission(Permissions.MANAGE_REQUESTS)
+        )
+            return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingServers = true) }
             jellyseerrRepository
@@ -817,10 +822,10 @@ constructor(
                 .fold(
                     onSuccess = { details ->
                         val activeProfileId = details.server?.activeProfileId
-                        val preselected =
-                            details.profiles.find { it.id == activeProfileId }
-                        val rootFolder = details.server?.activeDirectory
-                            ?: details.rootFolders.firstOrNull()?.path
+                        val preselected = details.profiles.find { it.id == activeProfileId }
+                        val rootFolder =
+                            details.server?.activeDirectory
+                                ?: details.rootFolders.firstOrNull()?.path
                         _uiState.update {
                             it.copy(
                                 availableProfiles = details.profiles,
@@ -840,6 +845,7 @@ constructor(
 }
 
 data class RequestsUiState(
+    val jellyseerrUrl: String? = null,
     val requests: List<JellyseerrRequest> = emptyList(),
     val isLoading: Boolean = false,
     val isSearching: Boolean = false,

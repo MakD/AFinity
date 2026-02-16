@@ -40,6 +40,7 @@ import com.makd.afinity.util.BackdropTracker
 @Composable
 fun MyRequestsSection(
     requests: List<JellyseerrRequest>,
+    baseUrl: String?,
     isAdmin: Boolean,
     onRequestClick: (JellyseerrRequest) -> Unit,
     onApprove: (Int) -> Unit,
@@ -68,6 +69,7 @@ fun MyRequestsSection(
             items(items = requests, key = { request -> "request_${request.id}" }) { request ->
                 RequestCard(
                     request = request,
+                    baseUrl = baseUrl,
                     isAdmin = isAdmin,
                     onClick = { onRequestClick(request) },
                     onApprove = { onApprove(request.id) },
