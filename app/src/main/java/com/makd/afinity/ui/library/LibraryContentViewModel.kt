@@ -12,9 +12,8 @@ import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +22,8 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
 
 enum class FilterType {
     ALL,
@@ -39,6 +40,7 @@ constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val appDataRepository: AppDataRepository,
     private val playbackStateManager: PlaybackStateManager,
+    private val preferencesRepository: PreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -152,6 +154,9 @@ constructor(
                 val type = determineLibraryType()
                 libraryType = type
 
+                currentSortBy = preferencesRepository.getDefaultSortBy()
+                currentSortDescending = preferencesRepository.getSortDescending()
+
                 _uiState.value =
                     _uiState.value.copy(
                         libraryType = type,
@@ -186,6 +191,10 @@ constructor(
         if (currentSortBy != sortBy || currentSortDescending != descending) {
             currentSortBy = sortBy
             currentSortDescending = descending
+            viewModelScope.launch {
+                preferencesRepository.setDefaultSortBy(sortBy)
+                preferencesRepository.setSortDescending(descending)
+            }
             _uiState.value =
                 _uiState.value.copy(
                     currentSortBy = currentSortBy,

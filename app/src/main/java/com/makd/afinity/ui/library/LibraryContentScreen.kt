@@ -82,8 +82,8 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
-import java.util.Locale
 import timber.log.Timber
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -298,6 +298,8 @@ fun LibraryContentScreen(
 
     if (showSortDialog) {
         SortDialog(
+            currentSortBy = uiState.currentSortBy,
+            currentSortDescending = uiState.currentSortDescending,
             onDismiss = { showSortDialog = false },
             onSortSelected = { sortBy, descending ->
                 viewModel.updateSort(sortBy, descending)
@@ -707,9 +709,14 @@ private fun EmptyFilterMessage(
 }
 
 @Composable
-private fun SortDialog(onDismiss: () -> Unit, onSortSelected: (SortBy, Boolean) -> Unit) {
-    var isAscending by remember { mutableStateOf(true) }
-    var selectedSort by remember { mutableStateOf(SortBy.NAME) }
+private fun SortDialog(
+    currentSortBy: SortBy,
+    currentSortDescending: Boolean,
+    onDismiss: () -> Unit,
+    onSortSelected: (SortBy, Boolean) -> Unit,
+) {
+    var isAscending by remember { mutableStateOf(!currentSortDescending) }
+    var selectedSort by remember { mutableStateOf(currentSortBy) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -867,10 +874,30 @@ private fun FilterRow(
                                 }
                             }
 
-                            else -> {
+                            FilterType.UNWATCHED -> {
+                                {
+                                    Icon(
+                                        painterResource(id = R.drawable.ic_circle_check_outline),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+
+                            FilterType.WATCHED -> {
                                 {
                                     Icon(
                                         painterResource(id = R.drawable.ic_circle_check),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+
+                            else -> {
+                                {
+                                    Icon(
+                                        painterResource(id = R.drawable.ic_check),
                                         contentDescription = null,
                                         modifier = Modifier.size(18.dp),
                                     )
