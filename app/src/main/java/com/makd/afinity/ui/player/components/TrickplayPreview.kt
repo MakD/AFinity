@@ -24,6 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,8 +50,21 @@ fun TrickplayPreview(
     val configuration = LocalConfiguration.current
     val layoutDirection = LocalLayoutDirection.current
     val screenWidth = configuration.screenWidthDp.dp
-    val previewWidth = 220.dp
-    val previewHeight = 124.dp
+    val (previewWidth, previewHeight) =
+        remember(previewImage) {
+            if (previewImage != null) {
+                val width = previewImage.width.toFloat()
+                val height = previewImage.height.toFloat()
+                val aspectRatio = width / height
+                if (width > height) {
+                    220.dp to 124.dp
+                } else {
+                    (220.dp * aspectRatio) to 220.dp
+                }
+            } else {
+                220.dp to 124.dp
+            }
+        }
     val safeDrawingPadding = WindowInsets.safeDrawing.asPaddingValues()
     val bottomInset = safeDrawingPadding.calculateBottomPadding()
     val startInset = safeDrawingPadding.calculateStartPadding(layoutDirection)
