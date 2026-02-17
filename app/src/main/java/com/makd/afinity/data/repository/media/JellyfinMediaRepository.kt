@@ -7,7 +7,6 @@ import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityCollection
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
-import com.makd.afinity.data.models.extensions.toAfinityImages
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.extensions.toAfinityPersonDetail
@@ -23,7 +22,6 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
-import com.makd.afinity.data.models.media.toAfinityExternalUrl
 import com.makd.afinity.data.repository.FieldSets
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -1174,18 +1172,7 @@ constructor(
 
                 val userLibraryApi = UserLibraryApi(apiClient)
                 val response = userLibraryApi.getItem(itemId = personId, userId = userId)
-
-                response.content?.let { baseItemDto ->
-                    AfinityPersonDetail(
-                        id = baseItemDto.id,
-                        name = baseItemDto.name.orEmpty(),
-                        overview = baseItemDto.overview.orEmpty(),
-                        images = baseItemDto.toAfinityImages(getBaseUrl()),
-                        premiereDate = baseItemDto.premiereDate,
-                        productionLocations = baseItemDto.productionLocations ?: emptyList(),
-                        externalUrls = baseItemDto.externalUrls?.map { it.toAfinityExternalUrl() },
-                    )
-                }
+                response.content?.toAfinityPersonDetail(getBaseUrl())
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get person details for ID: $personId")
                 null

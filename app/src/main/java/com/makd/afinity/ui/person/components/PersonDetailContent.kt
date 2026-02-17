@@ -15,13 +15,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,6 +70,7 @@ fun PersonDetailContent(
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
     onItemClick: (AfinityItem) -> Unit,
+    onToggleFavorite: () -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
 ) {
@@ -94,7 +99,7 @@ fun PersonDetailContent(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                PersonMetadataSection(person = person)
+                PersonMetadataSection(person = person, onToggleFavorite = onToggleFavorite)
 
                 if (person.overview.isNotBlank()) {
                     PersonOverviewSection(overview = person.overview)
@@ -273,7 +278,11 @@ private fun FilmographyItemCard(
 }
 
 @Composable
-private fun PersonMetadataSection(person: AfinityPersonDetail, modifier: Modifier = Modifier) {
+private fun PersonMetadataSection(
+    person: AfinityPersonDetail,
+    onToggleFavorite: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val hasBirthday = person.premiereDate != null
     val hasBirthplace = person.productionLocations.isNotEmpty()
     val hasExternalLinks = !person.externalUrls.isNullOrEmpty()
@@ -309,14 +318,18 @@ private fun PersonMetadataSection(person: AfinityPersonDetail, modifier: Modifie
             }
 
             if (hasExternalLinks) {
-                PersonExternalLinksSection(person = person)
+                PersonExternalLinksSection(person = person, onToggleFavorite = onToggleFavorite)
             }
         }
     }
 }
 
 @Composable
-private fun PersonExternalLinksSection(person: AfinityPersonDetail, modifier: Modifier = Modifier) {
+private fun PersonExternalLinksSection(
+    person: AfinityPersonDetail,
+    onToggleFavorite: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val externalUrls = person.externalUrls ?: return
 
@@ -325,6 +338,21 @@ private fun PersonExternalLinksSection(person: AfinityPersonDetail, modifier: Mo
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        IconButton(onClick = onToggleFavorite) {
+            Icon(
+                painter =
+                    if (person.favorite) painterResource(id = R.drawable.ic_favorite_filled)
+                    else painterResource(id = R.drawable.ic_favorite),
+                contentDescription = stringResource(R.string.cd_favorite),
+                tint =
+                    if (person.favorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(28.dp),
+            )
+        }
+        VerticalDivider(
+            modifier = Modifier.height(24.dp).padding(horizontal = 4.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
         externalUrls.forEach { externalUrl ->
             val url = externalUrl.url ?: return@forEach
             val lowerUrl = url.lowercase()

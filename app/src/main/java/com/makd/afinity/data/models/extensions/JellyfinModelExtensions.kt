@@ -377,6 +377,7 @@ fun BaseItemDto.toAfinityPersonDetail(baseUrl: String): AfinityPersonDetail {
         premiereDate = premiereDate,
         productionLocations = productionLocations ?: emptyList(),
         externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
+        favorite = userData?.isFavorite ?: false,
     )
 }
 

@@ -67,6 +67,7 @@ fun PersonScreen(
                     movies = uiState.movies,
                     shows = uiState.shows,
                     onItemClick = { item -> navController.navigate("item_detail/${item.id}") },
+                    onToggleFavorite = { viewModel.toggleFavorite() },
                     widthSizeClass = widthSizeClass,
                 )
             }

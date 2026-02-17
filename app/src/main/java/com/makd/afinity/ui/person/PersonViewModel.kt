@@ -8,14 +8,15 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.userdata.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
 
 @HiltViewModel
 class PersonViewModel
@@ -23,6 +24,7 @@ class PersonViewModel
 constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val appDataRepository: AppDataRepository,
+    private val userDataRepository: UserDataRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -82,6 +84,31 @@ constructor(
                         isLoading = false,
                         error = "Failed to load person details: ${e.message}",
                     )
+            }
+        }
+    }
+
+    fun toggleFavorite() {
+        val person = _uiState.value.person ?: return
+
+        viewModelScope.launch {
+            try {
+                val newStatus = !person.favorite
+                val updatedPerson = person.copy(favorite = newStatus)
+                _uiState.value = _uiState.value.copy(person = updatedPerson)
+                val success =
+                    if (newStatus) {
+                        userDataRepository.addToFavorites(person.id)
+                    } else {
+                        userDataRepository.removeFromFavorites(person.id)
+                    }
+                if (!success) {
+                    _uiState.value = _uiState.value.copy(person = person)
+                    Timber.e("Failed to toggle favorite for person: ${person.name}")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error toggling favorite")
+                _uiState.value = _uiState.value.copy(person = person)
             }
         }
     }
