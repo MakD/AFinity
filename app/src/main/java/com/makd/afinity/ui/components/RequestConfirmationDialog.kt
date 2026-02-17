@@ -53,7 +53,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
@@ -89,6 +88,7 @@ fun RequestConfirmationDialog(
     onApprove: () -> Unit = {},
     onDecline: () -> Unit = {},
     onDelete: () -> Unit = {},
+    onUpdate: () -> Unit = {},
     manageServerName: String? = null,
     manageProfileName: String? = null,
     manageRootFolder: String? = null,
@@ -446,7 +446,15 @@ fun RequestConfirmationDialog(
                             }
                         }
 
-                        if (is4k) {
+                        if (requestStatus == RequestStatus.PENDING && can4k) {
+                            MinimalSwitchTile(
+                                title = "Request in 4K",
+                                checked = is4k,
+                                onCheckedChange = onIs4kChange,
+                                icon = R.drawable.ic_4k,
+                                iconSize = 18.dp,
+                            )
+                        } else if (is4k) {
                             Text(
                                 text = "Quality: 4K UHD",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -455,28 +463,109 @@ fun RequestConfirmationDialog(
                             )
                         }
 
-                        manageServerName?.let {
-                            Text(
-                                text = "Server: $it",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        if (requestStatus == RequestStatus.PENDING) {
+                            if (isLoadingServers) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            } else if (availableServers.isEmpty()) {
+                                Text(
+                                    text =
+                                        "No fulfillment servers available. Check your admin settings.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(top = 8.dp),
+                                )
+                            } else {
+                                Text(
+                                    "Override Options",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(top = 8.dp),
+                                )
 
-                        manageProfileName?.let {
-                            Text(
-                                text = "Profile: $it",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                                MinimalSelectionTile(
+                                    label = "Destination Server",
+                                    selectedText =
+                                        selectedServer?.name ?: manageServerName ?: "Default",
+                                    items = availableServers,
+                                    itemText = { it.name },
+                                    onItemSelected = onServerSelected,
+                                    isLoading = isLoadingServers,
+                                )
 
-                        manageRootFolder?.let {
-                            Text(
-                                text = "Root Folder: $it",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                                if (selectedServer != null) {
+                                    MinimalSelectionTile(
+                                        label = "Quality Profile",
+                                        selectedText =
+                                            selectedProfile?.name ?: manageProfileName ?: "Default",
+                                        items = availableProfiles,
+                                        itemText = { it.name },
+                                        onItemSelected = onProfileSelected,
+                                        isLoading = isLoadingProfiles,
+                                    )
+
+                                    selectedRootFolder?.let { folder ->
+                                        Row(
+                                            modifier =
+                                                Modifier.fillMaxWidth()
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .background(
+                                                        MaterialTheme.colorScheme.surfaceVariant
+                                                            .copy(0.5f)
+                                                    )
+                                                    .padding(16.dp)
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    "Root Folder",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color =
+                                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                                Text(
+                                                    folder,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            manageServerName?.let {
+                                Text(
+                                    text = "Server: $it",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+
+                            manageProfileName?.let {
+                                Text(
+                                    text = "Profile: $it",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+
+                            manageRootFolder?.let {
+                                Text(
+                                    text = "Root Folder: $it",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 } else if (!alreadyRequested) {
@@ -579,21 +668,40 @@ fun RequestConfirmationDialog(
         confirmButton = {
             if (isManagementMode) {
                 if (requestStatus == RequestStatus.PENDING) {
-                    Button(
-                        onClick = onApprove,
-                        enabled = !isLoading,
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
-                    ) {
-                        if (isLoading)
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                            )
-                        else Text("Approve")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onUpdate,
+                            enabled = !isLoading,
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.tertiary
+                                ),
+                        ) {
+                            if (isLoading)
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onTertiary,
+                                )
+                            else Text("Save")
+                        }
+
+                        Button(
+                            onClick = onApprove,
+                            enabled = !isLoading,
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                ),
+                        ) {
+                            if (isLoading)
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            else Text("Approve")
+                        }
                     }
                 }
             } else {
@@ -664,7 +772,7 @@ private fun MetadataDot() {
 
 @Composable
 internal fun CircleFlagIcon(url: String, modifier: Modifier = Modifier) {
-    AsyncImage(
+    coil3.compose.AsyncImage(
         model =
             ImageRequest.Builder(LocalContext.current)
                 .data(url)

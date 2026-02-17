@@ -34,10 +34,12 @@ object Permissions {
 }
 
 fun JellyseerrUser.hasPermission(permission: Int): Boolean {
-    if ((this.permissions and Permissions.ADMIN) == Permissions.ADMIN) return true
-    return (this.permissions and permission) == permission
+    if ((this.permissions and Permissions.ADMIN) != 0) {
+        return true
+    }
+    return (this.permissions and permission) != 0
 }
 
 fun JellyseerrUser.isAdmin(): Boolean {
-    return hasPermission(Permissions.ADMIN)
+    return (this.permissions and Permissions.ADMIN) != 0
 }

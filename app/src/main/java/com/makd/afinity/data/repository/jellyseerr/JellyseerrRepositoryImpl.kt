@@ -458,18 +458,34 @@ constructor(
         }
     }
 
-    override suspend fun approveRequest(requestId: Int): Result<JellyseerrRequest> {
+    override suspend fun approveRequest(
+        requestId: Int,
+        serverId: Int?,
+        profileId: Int?,
+        rootFolder: String?,
+    ): Result<JellyseerrRequest> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = apiService.get().approveRequest(requestId)
+                val body =
+                    if (serverId != null || profileId != null || rootFolder != null) {
+                        com.makd.afinity.data.models.jellyseerr.ApproveRequestBody(
+                            serverId = serverId,
+                            profileId = profileId,
+                            rootFolder = rootFolder,
+                        )
+                    } else null
+                val response = apiService.get().approveRequest(requestId, body)
+
                 if (response.isSuccessful && response.body() != null) {
                     var req = response.body()!!
-                    val (serverId, userId) =
+                    val (currentServerId, currentUserId) =
                         activeContext ?: return@withContext Result.failure(Exception("No session"))
                     val existingEntity =
-                        jellyseerrDao.getAllRequests(serverId, userId.toString()).first().find {
-                            it.id == requestId
-                        }
+                        jellyseerrDao
+                            .getAllRequests(currentServerId, currentUserId.toString())
+                            .first()
+                            .find { it.id == requestId }
+
                     req =
                         req.copy(
                             status = RequestStatus.APPROVED.value,
@@ -496,8 +512,89 @@ constructor(
 
                     cacheRequest(req)
                     Result.success(req)
-                } else Result.failure(Exception("Failed"))
+                } else Result.failure(Exception("Failed to approve request"))
             } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun updateRequest(
+        requestId: Int,
+        mediaId: Int,
+        mediaType: MediaType,
+        seasons: List<Int>?,
+        is4k: Boolean,
+        serverId: Int?,
+        profileId: Int?,
+        rootFolder: String?,
+    ): Result<JellyseerrRequest> {
+        return withContext(Dispatchers.IO) {
+            val (currentServerId, currentUserId) =
+                activeContext ?: return@withContext Result.failure(Exception("No active session"))
+
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val requestBody =
+                    CreateRequestBody(
+                        tmdbId = mediaId,
+                        mediaType = mediaType.toApiString(),
+                        seasons = seasons,
+                        is4k = is4k,
+                        serverId = serverId,
+                        profileId = profileId,
+                        rootFolder = rootFolder,
+                    )
+
+                val response = apiService.get().updateRequest(requestId, requestBody)
+
+                if (response.isSuccessful && response.body() != null) {
+                    var updatedRequest = response.body()!!
+                    val existingEntity =
+                        jellyseerrDao
+                            .getAllRequests(currentServerId, currentUserId.toString())
+                            .first()
+                            .find { it.id == requestId }
+                    updatedRequest =
+                        updatedRequest.copy(
+                            media =
+                                updatedRequest.media.copy(
+                                    title =
+                                        if (!updatedRequest.media.title.isNullOrBlank())
+                                            updatedRequest.media.title
+                                        else existingEntity?.mediaTitle,
+                                    name =
+                                        if (!updatedRequest.media.name.isNullOrBlank())
+                                            updatedRequest.media.name
+                                        else existingEntity?.mediaName,
+                                    posterPath =
+                                        updatedRequest.media.posterPath
+                                            ?: existingEntity?.posterPath,
+                                    backdropPath =
+                                        updatedRequest.media.backdropPath
+                                            ?: existingEntity?.mediaBackdropPath,
+                                    releaseDate =
+                                        updatedRequest.media.releaseDate
+                                            ?: existingEntity?.mediaReleaseDate,
+                                    firstAirDate =
+                                        updatedRequest.media.firstAirDate
+                                            ?: existingEntity?.mediaFirstAirDate,
+                                )
+                        )
+
+                    cacheRequest(updatedRequest)
+                    _requestEvents.emit(RequestEvent(updatedRequest))
+                    Result.success(updatedRequest)
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    val errorMsg = "Failed to update: ${response.code()} - $errorBody"
+                    Result.failure(Exception(errorMsg))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update Jellyseerr request")
                 Result.failure(e)
             }
         }

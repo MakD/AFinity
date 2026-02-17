@@ -51,7 +51,16 @@ interface JellyseerrApiService {
     suspend fun deleteRequest(@Path("requestId") requestId: Int): Response<Unit>
 
     @POST("api/v1/request/{requestId}/approve")
-    suspend fun approveRequest(@Path("requestId") requestId: Int): Response<JellyseerrRequest>
+    suspend fun approveRequest(
+        @Path("requestId") requestId: Int,
+        @Body body: com.makd.afinity.data.models.jellyseerr.ApproveRequestBody? = null,
+    ): Response<JellyseerrRequest>
+
+    @retrofit2.http.PUT("api/v1/request/{requestId}")
+    suspend fun updateRequest(
+        @Path("requestId") requestId: Int,
+        @Body request: CreateRequestBody,
+    ): Response<JellyseerrRequest>
 
     @POST("api/v1/request/{requestId}/decline")
     suspend fun declineRequest(@Path("requestId") requestId: Int): Response<JellyseerrRequest>
@@ -150,19 +159,17 @@ interface JellyseerrApiService {
         @Query("language") language: String = "en",
     ): Response<JellyseerrSearchResult>
 
-    @GET("api/v1/service/radarr")
-    suspend fun getRadarrSettings(): Response<List<ServiceSettings>>
+    @GET("api/v1/service/radarr") suspend fun getRadarrSettings(): Response<List<ServiceSettings>>
 
-    @GET("api/v1/service/sonarr")
-    suspend fun getSonarrSettings(): Response<List<ServiceSettings>>
+    @GET("api/v1/service/sonarr") suspend fun getSonarrSettings(): Response<List<ServiceSettings>>
 
     @GET("api/v1/service/radarr/{serviceId}")
     suspend fun getRadarrDetails(
-        @Path("serviceId") serviceId: Int,
+        @Path("serviceId") serviceId: Int
     ): Response<ServiceDetailsResponse>
 
     @GET("api/v1/service/sonarr/{serviceId}")
     suspend fun getSonarrDetails(
-        @Path("serviceId") serviceId: Int,
+        @Path("serviceId") serviceId: Int
     ): Response<ServiceDetailsResponse>
 }

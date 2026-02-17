@@ -9,10 +9,10 @@ import com.makd.afinity.data.models.jellyseerr.MediaType
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceDetailsResponse
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.util.UUID
 
 data class RequestEvent(val request: JellyseerrRequest)
 
@@ -74,7 +74,23 @@ interface JellyseerrRepository {
 
     suspend fun deleteRequest(requestId: Int): Result<Unit>
 
-    suspend fun approveRequest(requestId: Int): Result<JellyseerrRequest>
+    suspend fun approveRequest(
+        requestId: Int,
+        serverId: Int?,
+        profileId: Int?,
+        rootFolder: String?,
+    ): Result<JellyseerrRequest>
+
+    suspend fun updateRequest(
+        requestId: Int,
+        mediaId: Int,
+        mediaType: MediaType,
+        seasons: List<Int>? = null,
+        is4k: Boolean = false,
+        serverId: Int? = null,
+        profileId: Int? = null,
+        rootFolder: String? = null,
+    ): Result<JellyseerrRequest>
 
     suspend fun declineRequest(requestId: Int): Result<JellyseerrRequest>
 

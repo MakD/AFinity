@@ -418,6 +418,16 @@ fun RequestsScreen(
             val req = uiState.selectedRequest!!
             val details = uiState.selectedRequestDetails
 
+            val type = req.getMediaType()
+
+            val canToggle4k =
+                currentUser?.let { user ->
+                    user.hasPermission(Permissions.REQUEST_4K) ||
+                        (type == MediaType.MOVIE &&
+                            user.hasPermission(Permissions.REQUEST_4K_MOVIE)) ||
+                        (type == MediaType.TV && user.hasPermission(Permissions.REQUEST_4K_TV))
+                } ?: false
+
             RequestConfirmationDialog(
                 isManagementMode = true,
                 requestStatus = RequestStatus.fromValue(req.status),
@@ -438,7 +448,9 @@ fun RequestsScreen(
                 ratingsCombined = details?.ratingsCombined,
                 selectedSeasons = req.seasons?.map { it.seasonNumber } ?: emptyList(),
                 onSeasonsChange = {},
-                is4k = req.is4k,
+                is4k = uiState.is4kRequested,
+                onIs4kChange = { viewModel.setIs4kRequested(it) },
+                can4k = canToggle4k,
                 manageRootFolder = req.rootFolder,
                 manageServerName = uiState.selectedRequestServerName,
                 manageProfileName = uiState.selectedRequestProfileName,
@@ -446,16 +458,35 @@ fun RequestsScreen(
                     uiState.isLoadingDetails ||
                         uiState.isProcessingRequest ||
                         uiState.isDeletingRequest,
+                onUpdate = { viewModel.updateRequest(req.id) },
                 onApprove = { viewModel.approveRequest(req.id) },
                 onDecline = { viewModel.declineRequest(req.id) },
                 onDelete = { viewModel.deleteRequest(req.id) },
                 onDismiss = { viewModel.dismissManagementDialog() },
                 onConfirm = {},
+                availableServers = uiState.availableServers,
+                selectedServer = uiState.selectedServer,
+                onServerSelected = { viewModel.selectServer(it) },
+                availableProfiles = uiState.availableProfiles,
+                selectedProfile = uiState.selectedProfile,
+                onProfileSelected = { viewModel.selectProfile(it) },
+                selectedRootFolder = uiState.selectedRootFolder,
+                isLoadingServers = uiState.isLoadingServers,
+                isLoadingProfiles = uiState.isLoadingProfiles,
             )
         }
 
         if (uiState.showRequestDialog && uiState.pendingRequest != null) {
             val pending = uiState.pendingRequest!!
+
+            val canRequest4k =
+                currentUser?.let { user ->
+                    user.hasPermission(Permissions.REQUEST_4K) ||
+                        (pending.mediaType == MediaType.MOVIE &&
+                            user.hasPermission(Permissions.REQUEST_4K_MOVIE)) ||
+                        (pending.mediaType == MediaType.TV &&
+                            user.hasPermission(Permissions.REQUEST_4K_TV))
+                } ?: false
 
             RequestConfirmationDialog(
                 isManagementMode = false,
@@ -481,7 +512,7 @@ fun RequestsScreen(
                 director = pending.director,
                 genres = pending.genres,
                 ratingsCombined = pending.ratingsCombined,
-                can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
+                can4k = canRequest4k,
                 is4k = uiState.is4kRequested,
                 onIs4kChange = { viewModel.setIs4kRequested(it) },
                 canAdvanced =
