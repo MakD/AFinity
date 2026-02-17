@@ -10,6 +10,7 @@ import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityImages
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinityMovie
+import com.makd.afinity.data.models.extensions.toAfinityPersonDetail
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityShow
 import com.makd.afinity.data.models.extensions.toAfinityVideo
@@ -41,6 +42,7 @@ import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.GenresApi
 import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.api.operations.LibraryApi
+import org.jellyfin.sdk.api.operations.PersonsApi
 import org.jellyfin.sdk.api.operations.StudiosApi
 import org.jellyfin.sdk.api.operations.TrickplayApi
 import org.jellyfin.sdk.api.operations.TvShowsApi
@@ -1016,6 +1018,33 @@ constructor(
                 } ?: emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite box sets")
+                emptyList()
+            }
+        }
+
+    override suspend fun getFavoritePeople(fields: List<ItemFields>?): List<AfinityPersonDetail> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+
+                val personsApi = PersonsApi(apiClient)
+
+                val response =
+                    personsApi.getPersons(
+                        userId = userId,
+                        isFavorite = true,
+                        fields = fields ?: listOf(ItemFields.PRIMARY_IMAGE_ASPECT_RATIO),
+                        enableImages = true,
+                        enableUserData = true,
+                    )
+
+                response.content?.items?.mapNotNull { baseItem ->
+                    baseItem.toAfinityPersonDetail(getBaseUrl())
+                } ?: emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get favorite people")
                 emptyList()
             }
         }

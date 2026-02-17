@@ -1,5 +1,9 @@
+@file:UnstableApi
+
 package com.makd.afinity.ui.favorites
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +21,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,18 +32,22 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
@@ -301,6 +308,7 @@ fun FavoritesScreen(
                                         FavoritePeopleRow(
                                             people = uiState.people,
                                             onPersonClick = onPersonClick,
+                                            cardWidth = portraitWidth,
                                         )
                                     }
                                 }
@@ -448,40 +456,59 @@ private fun FavoriteEpisodesRow(
 }
 
 @Composable
-private fun FavoritePeopleRow(people: List<AfinityPersonDetail>, onPersonClick: (String) -> Unit) {
+private fun FavoritePeopleRow(
+    people: List<AfinityPersonDetail>,
+    onPersonClick: (String) -> Unit,
+    cardWidth: Dp,
+) {
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
         items(people) { person ->
-            FavoritePersonCard(person = person, onClick = { onPersonClick(person.id.toString()) })
+            FavoritePersonCard(
+                person = person,
+                onClick = { onPersonClick(person.id.toString()) },
+                cardWidth = cardWidth,
+            )
         }
     }
 }
 
 @Composable
-private fun FavoritePersonCard(person: AfinityPersonDetail, onClick: () -> Unit) {
+private fun FavoritePersonCard(person: AfinityPersonDetail, onClick: () -> Unit, cardWidth: Dp) {
     Column(
+        modifier =
+            Modifier.width(cardWidth)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onClick,
+                ),
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(80.dp).clip(RoundedCornerShape(8.dp)),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Card(onClick = onClick, shape = CircleShape, modifier = Modifier.size(64.dp)) {
-            AsyncImage(
-                imageUrl = person.images.primaryImageUrl,
-                blurHash = person.images.primaryBlurHash,
-                contentDescription = person.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        }
+        AsyncImage(
+            imageUrl = person.images.primaryImageUrl,
+            blurHash = person.images.primaryBlurHash,
+            contentDescription = person.name,
+            targetWidth = cardWidth,
+            targetHeight = cardWidth,
+            modifier = Modifier.size(cardWidth).clip(CircleShape),
+            contentScale = ContentScale.Crop,
+            placeholder = painterResource(id = R.drawable.ic_person_heart),
+            error = painterResource(id = R.drawable.ic_person_heart),
+        )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = person.name,
             style = MaterialTheme.typography.bodySmall,
-            maxLines = 2,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
     }

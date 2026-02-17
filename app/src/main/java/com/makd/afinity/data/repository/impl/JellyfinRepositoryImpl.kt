@@ -29,9 +29,6 @@ import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.library.FilterType
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.jellyfin.sdk.model.api.AuthenticationResult
@@ -40,6 +37,9 @@ import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemFilter
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class JellyfinRepositoryImpl
@@ -722,6 +722,10 @@ constructor(
 
     override suspend fun getFavoriteBoxSets(): List<AfinityBoxSet> {
         return mediaRepository.getFavoriteBoxSets()
+    }
+
+    override suspend fun getFavoritePeople(): List<AfinityPersonDetail> {
+        return mediaRepository.getFavoritePeople()
     }
 
     override suspend fun getEpisodeToPlayForSeason(

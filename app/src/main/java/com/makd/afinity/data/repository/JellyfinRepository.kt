@@ -17,13 +17,13 @@ import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.ui.library.FilterType
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemFilter
+import java.util.UUID
 
 interface JellyfinRepository {
 
@@ -227,6 +227,8 @@ interface JellyfinRepository {
     suspend fun getFavoriteSeasons(): List<AfinitySeason>
 
     suspend fun getFavoriteBoxSets(): List<AfinityBoxSet>
+
+    suspend fun getFavoritePeople(): List<AfinityPersonDetail>
 
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>
 

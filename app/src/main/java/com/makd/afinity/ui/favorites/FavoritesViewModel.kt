@@ -21,7 +21,6 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class FavoritesViewModel
@@ -92,6 +92,7 @@ constructor(
                     val seasonsDeferred = async { jellyfinRepository.getFavoriteSeasons() }
                     val episodesDeferred = async { jellyfinRepository.getFavoriteEpisodes() }
                     val boxSetsDeferred = async { jellyfinRepository.getFavoriteBoxSets() }
+                    val peopleDeferred = async { jellyfinRepository.getFavoritePeople() }
                     val channelsDeferred = async {
                         try {
                             liveTvRepository.getChannels(isFavorite = true)
@@ -106,6 +107,10 @@ constructor(
                     val seasons = seasonsDeferred.await()
                     val episodes = episodesDeferred.await()
                     val boxSets = boxSetsDeferred.await()
+                    val people = peopleDeferred.await()
+                    Timber.d(
+                        "Favorite People loaded: Count=${people.size}, Names=${people.map { it.name }}"
+                    )
                     val channels = channelsDeferred.await()
 
                     _uiState.value =
@@ -117,7 +122,7 @@ constructor(
                             episodes = episodes.sortedBy { it.name },
                             boxSets = boxSets.sortedBy { it.name },
                             channels = channels.sortedBy { it.channelNumber ?: it.name },
-                            people = emptyList(),
+                            people = people.sortedBy { it.name },
                             error = null,
                         )
                 }

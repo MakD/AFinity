@@ -11,11 +11,11 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.ItemFields
+import java.util.UUID
 
 interface MediaRepository {
 
@@ -139,6 +139,8 @@ interface MediaRepository {
     suspend fun getFavoriteSeasons(fields: List<ItemFields>? = null): List<AfinitySeason>
 
     suspend fun getFavoriteBoxSets(fields: List<ItemFields>? = null): List<AfinityBoxSet>
+
+    suspend fun getFavoritePeople(fields: List<ItemFields>? = null): List<AfinityPersonDetail>
 
     suspend fun getGenres(
         parentId: UUID? = null,
