@@ -167,9 +167,9 @@
     <string name="cd_sort_fab">Sortieren</string>
     <string name="livetv_unknown_program">Unbekanntes Programm</string>
     <string name="livetv_program_time_fmt">%1$s • %2$s - %3$s</string>
-    <string name="livetv_time_pattern">h:mm Uhr</string>
+    <string name="livetv_time_pattern">h:mm a</string>
     <string name="livetv_epg_time_range">%1$s - %2$s</string>
-    <string name="livetv_time_header_pattern">h</string>
+    <string name="livetv_time_header_pattern">h a</string>
     <string name="livetv_live_badge">LIVE</string>
     <string name="livetv_cat_on_now">Läuft gerade</string>
     <string name="livetv_cat_movies">Filme</string>
@@ -457,4 +457,6 @@
     <string name="player_error_media_load">Medien laden ist fehlgeschlagen</string>
     <string name="error_load_stream">Stream laden ist fehlgeschlagen.</string>
     <string name="error_unexpected">Ein unvorhergesehener Fehler ist aufgetreten.</string>
+    <string name="cd_screen_rotation">Bildschirmdrehung</string>
+    <string name="audio_channel_fmt">(%1$dch)</string>
 </resources>
