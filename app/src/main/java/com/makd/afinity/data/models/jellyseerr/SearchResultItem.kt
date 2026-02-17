@@ -37,7 +37,9 @@ data class SearchResultItem(
         return posterPath?.let { "$baseUrl$it" }
     }
 
-    fun hasExistingRequest(): Boolean = mediaInfo?.status != null
+    fun hasExistingRequest(): Boolean {
+        return mediaInfo?.status != null && mediaInfo.status != MediaStatus.UNKNOWN.value
+    }
 
     fun getMediaStatus(): MediaStatus? {
         val standardStatus = mediaInfo?.status

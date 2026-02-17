@@ -120,6 +120,7 @@ fun RequestConfirmationDialog(
     val alreadyRequested =
         !isManagementMode &&
             existingStatus != null &&
+            existingStatus != MediaStatus.UNKNOWN &&
             (mediaType == MediaType.MOVIE ||
                 existingStatus == MediaStatus.AVAILABLE ||
                 existingStatus == MediaStatus.PROCESSING)
