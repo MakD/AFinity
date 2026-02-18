@@ -1769,10 +1769,6 @@ fun SeriesDetailContent(
             )
         }
 
-        DirectorSection(item = item)
-
-        WriterSection(item = item)
-
         if (seasons.isNotEmpty()) {
             SeasonsSection(
                 seasons = seasons,
@@ -1780,6 +1776,10 @@ fun SeriesDetailContent(
                 widthSizeClass = widthSizeClass,
             )
         }
+
+        DirectorSection(item = item)
+
+        WriterSection(item = item)
 
         ExternalLinksSection(item = item)
 
