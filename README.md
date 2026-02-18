@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/github/license/MakD/AFinity?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgLTk2MCA5NjAgOTYwIiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTQ4MC00NDBxLTUwIDAtODUtMzV0LTM1LTg1cTAtNTAgMzUtODV0ODUtMzVxNTAgMCA4NSAzNXQzNSA4NXEwIDUwLTM1IDg1dC04NSAzNVptMCAzMjBMMjkzLTU4cS0yMCA3LTM2LjUtNVQyNDAtOTV2LTI1NHEtMzgtNDItNTktOTZ0LTIxLTExNXEwLTEzNCA5My0yMjd0MjI3LTkzcTEzNCAwIDIyNyA5M3Q5MyAyMjdxMCA2MS0yMSAxMTV0LTU5IDk2djI1NHEwIDIwLTE2LjUgMzJUNjY3LTU4bC0xODctNjJabTAtMjAwcTEwMCAwIDE3MC03MHQ3MC0xNzBxMC0xMDAtNzAtMTcwdC0xNzAtNzBxLTEwMCAwLTE3MCA3MHQtNzAgMTcwcTAgMTAwIDcwIDE3MHQxNzAgNzBaIi8+PC9zdmc+&logoColor=ffffff&labelColor=000000&color=665687)](https://github.com/MakD/AFinity/blob/master/LICENSE.md)
 <a href="https://discord.com/channels/1381737066366242896/1422939582533730325"><img alt="Discord" src="https://img.shields.io/badge/AFinity-%20Jellyfin%20Community?&logo=discord&logoColor=white&style=for-the-badge&label=Jellyfin%20Community&labelColor=black&color=5865F2"></a>
 
-[Download Latest Release](https://github.com/MakD/AFinity/releases) • [View Screenshots](#screenshots) • [Report Bug](https://github.com/MakD/AFinity/issues) • [Request Feature](https://github.com/MakD/AFinity/issues)
+[Download](#installation) • [View Screenshots](#screenshots) • [Report Bug](https://github.com/MakD/AFinity/issues) • [Request Feature](https://github.com/MakD/AFinity/issues)
 
 </div>
 
