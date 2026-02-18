@@ -47,7 +47,7 @@
     <string name="home_latest_movies">Derniers films</string>
     <string name="home_latest_tv_series">Dernières séries TV</string>
     <string name="home_next_up">À suivre</string>
-    <string name="home_genre_movies_title">%1$s Films</string>
+    <string name="home_genre_movies_title">Films %1$s</string>
     <string name="home_genre_shows_title">%1$s Séries</string>
     <string name="home_person_directed_by">Réalisé par %1$s</string>
     <string name="home_person_written_by">Écrit par %1$s</string>
@@ -135,8 +135,8 @@
     <string name="filter_unwatched">Non visionné</string>
     <string name="filter_watchlist">Liste de surveillance</string>
     <string name="filter_favorites">Favoris</string>
-    <string name="filter_empty_watched">Aucun objet regardé trouvé</string>
-    <string name="filter_empty_unwatched">Aucun objet regardé trouvé</string>
+    <string name="filter_empty_watched">Aucun élément visionné trouvé</string>
+    <string name="filter_empty_unwatched">Aucun élément non visionné trouvé</string>
     <string name="filter_empty_watchlist">Pas d\'articles dans votre liste</string>
     <string name="filter_empty_favorites">Aucun produit favori trouvé</string>
     <string name="filter_empty_all">Aucun article trouvé</string>
@@ -151,7 +151,7 @@
     <string name="sort_option_release_date">Date de sortie</string>
     <string name="cd_sort_fab">Trier</string>
     <string name="livetv_unknown_program">Programme inconnu</string>
-    <string name="livetv_cat_on_now">Maintenant</string>
+    <string name="livetv_cat_on_now">En cours</string>
     <string name="livetv_cat_movies">Films</string>
     <string name="livetv_cat_kids">Pour les enfants</string>
     <string name="livetv_cat_news">Actualités</string>
@@ -174,7 +174,7 @@
     <string name="livetv_error_not_available_message">Configurez Live TV sur votre serveur Jellyfin</string>
     <string name="person_biography">Biographie</string>
     <string name="person_born_fmt">Né(e) : %1$s (%2$d ans)</string>
-    <string name="person_birthplace_fmt">Lieu de naissance:%1$s</string>
+    <string name="person_birthplace_fmt">Lieu de naissance :%1$s</string>
     <string name="person_movies_fmt">Films (%1$d)</string>
     <string name="person_shows_fmt">Séries TV (%1$d)</string>
     <string name="action_show_more">Afficher plus</string>
@@ -183,7 +183,7 @@
     <string name="cd_external_link">Lien externe</string>
     <string name="action_retry">Essayez encore</string>
     <string name="player_error_title">Erreur de lecture</string>
-    <string name="player_up_next">Suivant</string>
+    <string name="player_up_next">À suivre</string>
     <string name="player_season_fmt">Saison %1$d</string>
     <string name="player_season_episode_fmt">Saison %1$d : Épisode %2$d</string>
     <string name="cd_close">Fermer</string>
@@ -230,7 +230,7 @@
     <string name="skip_commercial">Passer la publicité</string>
     <string name="skip_generic">Passer</string>
     <string name="error_get_stream_url">Échec de la récupération de l\'URL du flux</string>
-    <string name="error_load_channel_fmt">Échec du chargement du canal: %1$s</string>
+    <string name="error_load_channel_fmt">Échec du chargement de la chaîne : %1$s</string>
     <string name="status_unknown">Inconnu</string>
     <string name="livetv_cat_sports">Sports</string>
     <string name="cd_logo">Logo</string>
@@ -270,7 +270,7 @@
     <string name="error_request_approve_failed_fmt">Échec de l\'approbation de la demande : %1$s</string>
     <string name="error_request_decline_failed_fmt">Échec du refus de la requête : %1$s</string>
     <string name="error_search_no_results_fmt">Aucun résultat trouvé pour \'%1$s \'</string>
-    <string name="error_search_failed_fmt">Recherche échouée: %1$s</string>
+    <string name="error_search_failed_fmt">Échec de la recherche : %1$s</string>
     <string name="error_request_create_failed_fmt">Échec de la création de la requête : %1$s</string>
     <string name="error_something_went_wrong">Une erreur s\'est produite</string>
     <string name="tab_movies">Films</string>
@@ -355,12 +355,12 @@
     <string name="active_downloads_header_fmt">Téléchargements actifs (%1$d)</string>
     <string name="completed_downloads_header_fmt">Téléchargements complets (%1$d)</string>
     <string name="download_count_fmt">%1$d %2$s</string>
-    <string name="download_singular">Téléchargement</string>
-    <string name="download_plural">Téléchargement</string>
+    <string name="download_singular">Télécharger</string>
+    <string name="download_plural">Téléchargements</string>
     <string name="download_item_info_fmt">%1$s • %2$s</string>
     <string name="download_progress_size_fmt">%1$s / %2$s</string>
     <string name="download_status_queued">En file d\'attente</string>
-    <string name="download_status_downloading">Téléchargement</string>
+    <string name="download_status_downloading">Téléchargement en cours</string>
     <string name="download_status_paused">Pause</string>
     <string name="download_status_failed_fmt">Échec : %1$s</string>
     <string name="empty_downloads_title">Pas de téléchargements</string>
