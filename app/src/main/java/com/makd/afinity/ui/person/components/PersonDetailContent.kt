@@ -1,8 +1,10 @@
 package com.makd.afinity.ui.person.components
 
 import android.content.Intent
+import android.content.res.Configuration
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -10,16 +12,27 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +47,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.BlendMode
@@ -41,6 +56,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -63,9 +79,145 @@ import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 import com.makd.afinity.ui.utils.htmlToAnnotatedString
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonDetailContent(
+    person: AfinityPersonDetail,
+    movies: List<AfinityMovie>,
+    shows: List<AfinityShow>,
+    onItemClick: (AfinityItem) -> Unit,
+    onToggleFavorite: () -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
+    modifier: Modifier = Modifier,
+) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    if (isLandscape) {
+        LandscapePersonDetailContent(
+            person = person,
+            movies = movies,
+            shows = shows,
+            onItemClick = onItemClick,
+            onToggleFavorite = onToggleFavorite,
+            widthSizeClass = widthSizeClass,
+            modifier = modifier,
+        )
+    } else {
+        PortraitPersonDetailContent(
+            person = person,
+            movies = movies,
+            shows = shows,
+            onItemClick = onItemClick,
+            onToggleFavorite = onToggleFavorite,
+            widthSizeClass = widthSizeClass,
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun LandscapePersonDetailContent(
+    person: AfinityPersonDetail,
+    movies: List<AfinityMovie>,
+    shows: List<AfinityShow>,
+    onItemClick: (AfinityItem) -> Unit,
+    onToggleFavorite: () -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
+    modifier: Modifier = Modifier,
+) {
+    val paddingValues = WindowInsets.safeDrawing.asPaddingValues()
+
+    Box(modifier = modifier.fillMaxSize()) {
+        AsyncImage(
+            imageUrl = person.images.primaryImageUrl,
+            contentDescription = null,
+            blurHash = person.images.primaryBlurHash,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize().blur(radius = 20.dp).alpha(0.6f),
+        )
+
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)))
+
+        Row(
+            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            Column(
+                modifier = Modifier.width(280.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(4.dp),
+                    modifier = Modifier.aspectRatio(2f / 3f),
+                ) {
+                    AsyncImage(
+                        imageUrl = person.images.primaryImageUrl,
+                        contentDescription = person.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
+            ) {
+                item {
+                    Text(
+                        text = person.name,
+                        style =
+                            MaterialTheme.typography.displaySmall.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                        color = Color.White,
+                    )
+                }
+
+                item {
+                    PersonMetadataSection(
+                        person = person,
+                        onToggleFavorite = onToggleFavorite,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
+                if (person.overview.isNotBlank()) {
+                    item { PersonOverviewSection(overview = person.overview) }
+                }
+
+                if (movies.isNotEmpty()) {
+                    item {
+                        PersonFilmographySection(
+                            title = stringResource(R.string.person_movies_fmt, movies.size),
+                            items = movies,
+                            onItemClick = onItemClick,
+                            cardWidth = 140.dp,
+                        )
+                    }
+                }
+
+                if (shows.isNotEmpty()) {
+                    item {
+                        PersonFilmographySection(
+                            title = stringResource(R.string.person_shows_fmt, shows.size),
+                            items = shows,
+                            onItemClick = onItemClick,
+                            cardWidth = 140.dp,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PortraitPersonDetailContent(
     person: AfinityPersonDetail,
     movies: List<AfinityMovie>,
     shows: List<AfinityShow>,
@@ -83,7 +235,7 @@ fun PersonDetailContent(
             Column(
                 modifier =
                     Modifier.fillMaxWidth()
-                        .offset(y = (-110).dp)
+                        .verticalLayoutOffset((-110).dp)
                         .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -392,3 +544,13 @@ private fun PersonExternalLinksSection(
         }
     }
 }
+
+private fun Modifier.verticalLayoutOffset(yOffset: Dp) =
+    this.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val yOffsetPx = yOffset.roundToPx()
+
+        layout(placeable.width, placeable.height + yOffsetPx) {
+            placeable.placeRelative(0, yOffsetPx)
+        }
+    }
