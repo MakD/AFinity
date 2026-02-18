@@ -19,9 +19,9 @@
 
 ## Installation
 
-#### GitHub Releases
-
-Download the latest APK [Releases page](https://github.com/MakD/AFinity/releases)
+<p align="center">
+  <a href="https://github.com/MakD/AFinity/releases/latest"><img src="https://img.shields.io/badge/Get%20it%20on-GitHub-181717?style=for-the-badge&logo=github&labelColor=000000" alt="Get it on GitHub"></a>&nbsp;<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22com.makd.afinity%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2FMakD%2FAFinity%22%2C%22author%22%3A%22MakD%22%2C%22name%22%3A%22AFinity%22%2C%22supportFixedAPKURL%22%3Afalse%7D"><img src="https://img.shields.io/badge/Get%20it%20on-Obtainium-4A148C?style=for-the-badge&logo=obtainium&logoColor=white&labelColor=000000" alt="Get it on Obtainium"></a>
+</p>
 
 #### Build From Source
 
