@@ -1773,6 +1773,14 @@ fun SeriesDetailContent(
 
         WriterSection(item = item)
 
+        if (seasons.isNotEmpty()) {
+            SeasonsSection(
+                seasons = seasons,
+                navController = navController,
+                widthSizeClass = widthSizeClass,
+            )
+        }
+
         ExternalLinksSection(item = item)
 
         SpecialFeaturesSection(
@@ -1798,14 +1806,6 @@ fun SeriesDetailContent(
             },
             widthSizeClass = widthSizeClass,
         )
-
-        if (seasons.isNotEmpty()) {
-            SeasonsSection(
-                seasons = seasons,
-                navController = navController,
-                widthSizeClass = widthSizeClass,
-            )
-        }
     }
 }
 
