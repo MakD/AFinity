@@ -18,6 +18,7 @@ import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.MediaSourceInfo
 import org.jellyfin.sdk.model.api.PlayMethod
 import org.jellyfin.sdk.model.api.PlaybackInfoDto
+import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 import org.jellyfin.sdk.model.api.RepeatMode
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
@@ -492,6 +493,55 @@ constructor(
                 if (maxBitrate > 0) maxBitrate else null
             } catch (e: Exception) {
                 Timber.e(e, "Failed to detect max bitrate")
+                null
+            }
+        }
+    }
+
+    override suspend fun getPlaybackInfoForCast(
+        itemId: UUID,
+        deviceProfile: DeviceProfile,
+        maxStreamingBitrate: Int?,
+        maxAudioChannels: Int?,
+        audioStreamIndex: Int?,
+        subtitleStreamIndex: Int?,
+        mediaSourceId: String?,
+    ): PlaybackInfoResponse? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val userId = getCurrentUserId() ?: return@withContext null
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
+                val mediaInfoApi = MediaInfoApi(apiClient)
+
+                val playbackInfoDto =
+                    PlaybackInfoDto(
+                        userId = userId,
+                        maxStreamingBitrate = maxStreamingBitrate,
+                        startTimeTicks = 0L,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = subtitleStreamIndex,
+                        maxAudioChannels = maxAudioChannels,
+                        mediaSourceId = mediaSourceId,
+                        deviceProfile = deviceProfile,
+                        enableDirectPlay = true,
+                        enableDirectStream = true,
+                        enableTranscoding = true,
+                        allowVideoStreamCopy = true,
+                        allowAudioStreamCopy = true,
+                    )
+
+                val response =
+                    mediaInfoApi.getPostedPlaybackInfo(itemId = itemId, data = playbackInfoDto)
+
+                Timber.d(
+                    "Got cast playback info with ${response.content.mediaSources?.size ?: 0} media sources"
+                )
+                response.content
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to get cast playback info for item: $itemId")
+                null
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error getting cast playback info for item: $itemId")
                 null
             }
         }

@@ -716,4 +716,22 @@
     <string name="section_tv_shows">TV Shows</string>
     <string name="section_seasons">Seasons</string>
     <string name="section_episodes">Episodes</string>
+
+    <!--Chromecast-->
+    <string name="cd_cast">Cast</string>
+    <string name="cast_connected_to">Casting to %1$s</string>
+    <string name="cast_stop">Stop Casting</string>
+    <string name="cast_settings">Playback Settings</string>
+    <string name="cast_quality">Quality</string>
+    <string name="cast_volume">Volume</string>
+    <string name="cast_info">Info</string>
+    <string name="cast_device_info">Device Info</string>
+    <string name="cast_device">Device</string>
+    <string name="cast_bitrate">Bitrate</string>
+    <string name="cast_playback_speed">Playback Speed</string>
+    <string name="cast_now_playing">Now Playing</string>
+    <string name="pref_group_chromecast">Chromecast</string>
+    <string name="pref_cast_hevc_title">Enable HEVC</string>
+    <string name="pref_cast_hevc_description">Enable for Chromecast Ultra/Google TV</string>
+    <string name="pref_cast_max_bitrate_title">Max Bitrate</string>
 </resources>

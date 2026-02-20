@@ -25,6 +25,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import com.makd.afinity.R
+import com.makd.afinity.cast.CastEvent
+import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.ChannelType
@@ -79,6 +81,7 @@ constructor(
     private val application: Application,
     private val playbackRepository: PlaybackRepository,
     private val playbackStateManager: PlaybackStateManager,
+    val castManager: CastManager,
     private val mediaRepository: MediaRepository,
     private val jellyfinRepository: JellyfinRepository,
     private val segmentsRepository: SegmentsRepository,
@@ -143,6 +146,7 @@ constructor(
         initializeVideoZoomMode()
         initializeLogoAutoHide()
         initializeBackgroundPlay()
+        observeCastState()
     }
 
     private fun initializeVideoZoomMode() {
@@ -165,6 +169,70 @@ constructor(
             val logoAutoHide = preferencesRepository.getLogoAutoHide()
             updateUiState { it.copy(logoAutoHide = logoAutoHide) }
         }
+    }
+
+    private fun observeCastState() {
+        viewModelScope.launch {
+            castManager.castState.collect { castState ->
+                updateUiState { it.copy(isCasting = castState.isConnected) }
+                if (castState.isConnected && castState.currentItem == null) {
+                    startCasting()
+                }
+            }
+        }
+        viewModelScope.launch {
+            castManager.castEvents.collect { event ->
+                when (event) {
+                    is CastEvent.Connected -> {
+                        Timber.d("Cast connected to: ${event.deviceName}")
+                    }
+                    is CastEvent.Disconnected -> {
+                        Timber.d("Cast disconnected")
+                        updateUiState { it.copy(isCasting = false) }
+                    }
+                    is CastEvent.PlaybackStarted -> {
+                        Timber.d("Cast playback started")
+                    }
+                    is CastEvent.PlaybackError -> {
+                        Timber.e("Cast error: ${event.message}")
+                        updateUiState { it.copy(isCasting = false) }
+                    }
+                }
+            }
+        }
+    }
+
+    fun startCasting() {
+        val item = currentItem ?: return
+        val mediaSourceId = item.sources.firstOrNull()?.id ?: return
+        val serverBaseUrl = apiClient.baseUrl ?: return
+
+        player.pause()
+
+        viewModelScope.launch {
+            val enableHevc = preferencesRepository.getCastHevcEnabled()
+            val maxBitrate = preferencesRepository.getCastMaxBitrate()
+
+            castManager.loadMedia(
+                item = item,
+                serverBaseUrl = serverBaseUrl,
+                mediaSourceId = mediaSourceId,
+                audioStreamIndex = _uiState.value.audioStreamIndex,
+                subtitleStreamIndex = _uiState.value.subtitleStreamIndex,
+                startPositionMs = player.currentPosition,
+                maxBitrate = maxBitrate,
+                enableHevc = enableHevc,
+            )
+        }
+    }
+
+    fun stopCasting() {
+        castManager.stop()
+        updateUiState { it.copy(isCasting = false) }
+    }
+
+    fun dismissCastChooser() {
+        updateUiState { it.copy(showCastChooser = false) }
     }
 
     private fun initializeBackgroundPlay() {
@@ -620,6 +688,10 @@ constructor(
 
                 is PlayerEvent.CycleScreenRotation -> {
                     toggleScreenRotation()
+                }
+
+                is PlayerEvent.RequestCastDeviceSelection -> {
+                    updateUiState { it.copy(showCastChooser = true) }
                 }
             }
         }
@@ -1423,11 +1495,15 @@ constructor(
     }
 
     fun onResume() {
-        player.play()
+        if (!_uiState.value.isCasting) {
+            player.play()
+        }
     }
 
     fun onPause() {
-        player.pause()
+        if (!_uiState.value.isCasting) {
+            player.pause()
+        }
     }
 
     fun stopPlayback() {
@@ -1549,6 +1625,8 @@ constructor(
         val resolvedOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,
         val logoAutoHide: Boolean = false,
         val isLiveChannel: Boolean = false,
+        val isCasting: Boolean = false,
+        val showCastChooser: Boolean = false,
     )
 }
 

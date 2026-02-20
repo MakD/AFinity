@@ -84,6 +84,8 @@ sealed class PlayerEvent {
     data object CycleVideoZoomMode : PlayerEvent()
 
     data object CycleScreenRotation : PlayerEvent()
+
+    data object RequestCastDeviceSelection : PlayerEvent()
 }
 
 data class GestureConfig(

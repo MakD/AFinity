@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Google Cast SDK
+-keep class com.google.android.gms.cast.** { *; }
+-keep class com.makd.afinity.cast.CastOptionsProvider { *; }

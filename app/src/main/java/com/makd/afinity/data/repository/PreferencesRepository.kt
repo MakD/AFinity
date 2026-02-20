@@ -211,6 +211,18 @@ interface PreferencesRepository {
 
     suspend fun getNotificationPermissionDeclined(): Boolean
 
+    suspend fun setCastHevcEnabled(enabled: Boolean)
+
+    suspend fun getCastHevcEnabled(): Boolean
+
+    fun getCastHevcEnabledFlow(): Flow<Boolean>
+
+    suspend fun setCastMaxBitrate(bitrate: Int)
+
+    suspend fun getCastMaxBitrate(): Int
+
+    fun getCastMaxBitrateFlow(): Flow<Int>
+
     suspend fun clearAllPreferences()
 
     suspend fun clearServerPreferences()

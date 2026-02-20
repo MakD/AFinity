@@ -34,6 +34,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.player.mpv.MPVPlayer
+import com.makd.afinity.ui.player.cast.CastRemoteControllerScreen
 import com.makd.afinity.ui.player.components.ErrorIndicator
 import com.makd.afinity.ui.player.components.GestureHandler
 import com.makd.afinity.ui.player.components.MpvSurface
@@ -43,8 +44,8 @@ import com.makd.afinity.ui.player.components.TrickplayPreview
 import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
-import java.util.UUID
 import timber.log.Timber
+import java.util.UUID
 
 @UnstableApi
 @Composable
@@ -154,142 +155,193 @@ fun PlayerScreen(
             onBackPressed()
         }
     }
+    val castState by viewModel.castManager.castState.collectAsStateWithLifecycle()
+
+    if (uiState.showCastChooser) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        LaunchedEffect(Unit) {
+            try {
+                val castContext =
+                    com.google.android.gms.cast.framework.CastContext.getSharedInstance()
+                        ?: return@LaunchedEffect
+                val selector = castContext.mergedSelector
+                if (selector != null) {
+
+                    val themedContext =
+                        androidx.appcompat.view.ContextThemeWrapper(
+                            context,
+                            androidx.mediarouter.R.style.Theme_MediaRouter_Light,
+                        )
+
+                    val dialog = androidx.mediarouter.app.MediaRouteChooserDialog(themedContext)
+                    dialog.routeSelector = selector
+                    dialog.setOnDismissListener { viewModel.dismissCastChooser() }
+                    dialog.show()
+                } else {
+                    viewModel.dismissCastChooser()
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to show cast chooser")
+                viewModel.dismissCastChooser()
+            }
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
-        GestureHandler(
-            onSingleTap = { viewModel.onSingleTap() },
-            onDoubleTap = { isForward ->
-                if (!uiState.isControlsLocked) viewModel.onDoubleTapSeek(isForward)
-            },
-            onVolumeGesture = { percent, isActive ->
-                if (!uiState.isControlsLocked) {
-                    if (!isActive) {
-                        dragStartVolume = -1
-                    } else {
-                        if (dragStartVolume == -1) {
-                            dragStartVolume = uiState.volumeLevel
-                        }
+        if (castState.isConnected && castState.currentItem != null) {
+            CastRemoteControllerScreen(
+                castState = castState,
+                castManager = viewModel.castManager,
+                onBackClick = {
+                    if (!hasNavigatedBack) {
+                        hasNavigatedBack = true
+                        viewModel.castManager.stop()
+                        onBackPressed()
+                    }
+                },
+                onStopCasting = { viewModel.stopCasting() },
+                viewModel = viewModel,
+            )
+        } else {
+            GestureHandler(
+                onSingleTap = { viewModel.onSingleTap() },
+                onDoubleTap = { isForward ->
+                    if (!uiState.isControlsLocked) viewModel.onDoubleTapSeek(isForward)
+                },
+                onVolumeGesture = { percent, isActive ->
+                    if (!uiState.isControlsLocked) {
+                        if (!isActive) {
+                            dragStartVolume = -1
+                        } else {
+                            if (dragStartVolume == -1) {
+                                dragStartVolume = uiState.volumeLevel
+                            }
 
-                        val addedVolume = (percent * 50).toInt()
-                        val targetVolume = (dragStartVolume + addedVolume).coerceIn(0, 100)
+                            val addedVolume = (percent * 50).toInt()
+                            val targetVolume = (dragStartVolume + addedVolume).coerceIn(0, 100)
 
-                        viewModel.handlePlayerEvent(PlayerEvent.SetVolume(targetVolume))
-                    }
-                }
-            },
-            onBrightnessGesture = { percent, isActive ->
-                if (!uiState.isControlsLocked) {
-                    if (!isActive) {
-                        dragStartBrightness = -1f
-                    } else {
-                        if (dragStartBrightness == -1f) {
-                            dragStartBrightness = uiState.brightnessLevel
+                            viewModel.handlePlayerEvent(PlayerEvent.SetVolume(targetVolume))
                         }
-                        val targetBrightness = (dragStartBrightness + percent).coerceIn(0f, 1f)
-                        viewModel.onScreenBrightnessGesture(targetBrightness, isAbsolute = true)
                     }
-                }
-            },
-            onSeekPreview = { isActive ->
-                if (!uiState.isControlsLocked) {
-                    if (isActive) {
-                        seekOriginTime = viewModel.player.currentPosition
-                        viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragStart)
-                    } else {
-                        viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragFinished)
+                },
+                onBrightnessGesture = { percent, isActive ->
+                    if (!uiState.isControlsLocked) {
+                        if (!isActive) {
+                            dragStartBrightness = -1f
+                        } else {
+                            if (dragStartBrightness == -1f) {
+                                dragStartBrightness = uiState.brightnessLevel
+                            }
+                            val targetBrightness = (dragStartBrightness + percent).coerceIn(0f, 1f)
+                            viewModel.onScreenBrightnessGesture(targetBrightness, isAbsolute = true)
+                        }
                     }
-                }
-            },
-            onSeekGesture = { delta ->
-                if (!uiState.isControlsLocked) {
-                    val timeShiftMs = (delta * uiState.duration).toLong()
-                    val targetTime = (seekOriginTime + timeShiftMs).coerceIn(0L, uiState.duration)
-                    viewModel.updateTrickplayPreview(targetTime)
-                }
-            },
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            when (val player = viewModel.player) {
-                is ExoPlayer -> {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        AndroidView(
-                            factory = { ctx ->
-                                PlayerView(ctx).apply {
-                                    useController = false
-                                    subtitleView?.visibility = android.view.View.GONE
-                                    this.player = player
-                                    viewModel.setPlayerView(this)
-                                }
-                            },
+                },
+                onSeekPreview = { isActive ->
+                    if (!uiState.isControlsLocked) {
+                        if (isActive) {
+                            seekOriginTime = viewModel.player.currentPosition
+                            viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragStart)
+                        } else {
+                            viewModel.handlePlayerEvent(PlayerEvent.OnSeekBarDragFinished)
+                        }
+                    }
+                },
+                onSeekGesture = { delta ->
+                    if (!uiState.isControlsLocked) {
+                        val timeShiftMs = (delta * uiState.duration).toLong()
+                        val targetTime =
+                            (seekOriginTime + timeShiftMs).coerceIn(0L, uiState.duration)
+                        viewModel.updateTrickplayPreview(targetTime)
+                    }
+                },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                when (val player = viewModel.player) {
+                    is ExoPlayer -> {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            AndroidView(
+                                factory = { ctx ->
+                                    PlayerView(ctx).apply {
+                                        useController = false
+                                        subtitleView?.visibility = android.view.View.GONE
+                                        this.player = player
+                                        viewModel.setPlayerView(this)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    }
+
+                    is MPVPlayer -> {
+                        MpvSurface(
                             modifier = Modifier.fillMaxSize(),
+                            videoOutput = viewModel.mpvVideoOutputValue,
+                            onSurfaceCreated = { Timber.d("MPV surface created in player screen") },
+                            onSurfaceDestroyed = {
+                                Timber.d("MPV surface destroyed in player screen")
+                            },
                         )
                     }
                 }
-
-                is MPVPlayer -> {
-                    MpvSurface(
-                        modifier = Modifier.fillMaxSize(),
-                        videoOutput = viewModel.mpvVideoOutputValue,
-                        onSurfaceCreated = { Timber.d("MPV surface created in player screen") },
-                        onSurfaceDestroyed = { Timber.d("MPV surface destroyed in player screen") },
-                    )
-                }
             }
-        }
 
-        if (viewModel.player is ExoPlayer) {
-            ExoPlayerSubtitles(
-                player = viewModel.player as ExoPlayer,
-                subtitlePrefs = subtitlePrefs,
+            if (viewModel.player is ExoPlayer) {
+                ExoPlayerSubtitles(
+                    player = viewModel.player as ExoPlayer,
+                    subtitlePrefs = subtitlePrefs,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            PlayerControls(
+                uiState = uiState,
+                player = viewModel.player,
+                onPlayerEvent = viewModel::handlePlayerEvent,
+                onBackClick = {
+                    if (!hasNavigatedBack) {
+                        hasNavigatedBack = true
+                        viewModel.stopPlayback()
+                        onBackPressed()
+                    }
+                },
+                onNextClick = viewModel::onNextChapterOrEpisode,
+                onPreviousClick = viewModel::onPreviousChapterOrEpisode,
+                onPipToggle = { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) },
+                playlistQueue = playlistState.queue,
+                currentPlaylistIndex = playlistState.currentIndex,
+                onJumpToEpisode = viewModel::jumpToEpisode,
+            )
+
+            TrickplayPreview(
+                isVisible = uiState.showTrickplayPreview,
+                previewImage = uiState.trickplayPreviewImage,
+                positionMs = uiState.trickplayPreviewPosition,
+                durationMs = uiState.duration,
+                chapters = uiState.chapters,
                 modifier = Modifier.fillMaxSize(),
             )
-        }
 
-        PlayerControls(
-            uiState = uiState,
-            player = viewModel.player,
-            onPlayerEvent = viewModel::handlePlayerEvent,
-            onBackClick = {
-                if (!hasNavigatedBack) {
-                    hasNavigatedBack = true
-                    viewModel.stopPlayback()
-                    onBackPressed()
-                }
-            },
-            onNextClick = viewModel::onNextChapterOrEpisode,
-            onPreviousClick = viewModel::onPreviousChapterOrEpisode,
-            onPipToggle = { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) },
-            playlistQueue = playlistState.queue,
-            currentPlaylistIndex = playlistState.currentIndex,
-            onJumpToEpisode = viewModel::jumpToEpisode,
-        )
+            PlayerIndicators(uiState = uiState, modifier = Modifier.fillMaxSize())
 
-        TrickplayPreview(
-            isVisible = uiState.showTrickplayPreview,
-            previewImage = uiState.trickplayPreviewImage,
-            positionMs = uiState.trickplayPreviewPosition,
-            durationMs = uiState.duration,
-            chapters = uiState.chapters,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        PlayerIndicators(uiState = uiState, modifier = Modifier.fillMaxSize())
-
-        ErrorIndicator(
-            isVisible = uiState.showError,
-            errorMessage = uiState.errorMessage,
-            onRetryClick = {
-                viewModel.handlePlayerEvent(
-                    PlayerEvent.LoadMedia(
-                        item = item,
-                        mediaSourceId = mediaSourceId,
-                        audioStreamIndex = audioStreamIndex,
-                        subtitleStreamIndex = subtitleStreamIndex,
-                        startPositionMs = startPositionMs,
+            ErrorIndicator(
+                isVisible = uiState.showError,
+                errorMessage = uiState.errorMessage,
+                onRetryClick = {
+                    viewModel.handlePlayerEvent(
+                        PlayerEvent.LoadMedia(
+                            item = item,
+                            mediaSourceId = mediaSourceId,
+                            audioStreamIndex = audioStreamIndex,
+                            subtitleStreamIndex = subtitleStreamIndex,
+                            startPositionMs = startPositionMs,
+                        )
                     )
-                )
-            },
-            modifier = Modifier.align(Alignment.Center),
-        )
+                },
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
     }
 
     ScreenBrightnessController(brightness = uiState.brightnessLevel)

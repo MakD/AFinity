@@ -234,6 +234,18 @@ constructor(
                 _uiState.value = _uiState.value.copy(preferredSubtitleLanguage = lang)
             }
         }
+
+        viewModelScope.launch {
+            preferencesRepository.getCastHevcEnabledFlow().collect {
+                _uiState.value = _uiState.value.copy(castHevcEnabled = it)
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getCastMaxBitrateFlow().collect {
+                _uiState.value = _uiState.value.copy(castMaxBitrate = it)
+            }
+        }
     }
 
     fun setThemeMode(mode: String) {
@@ -456,6 +468,28 @@ constructor(
         }
     }
 
+    fun setCastHevcEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setCastHevcEnabled(enabled)
+                Timber.d("Cast HEVC set to: $enabled")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set cast HEVC")
+            }
+        }
+    }
+
+    fun setCastMaxBitrate(bitrate: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setCastMaxBitrate(bitrate)
+                Timber.d("Cast max bitrate set to: $bitrate")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set cast max bitrate")
+            }
+        }
+    }
+
     fun setEpisodeLayout(layout: EpisodeLayout) {
         viewModelScope.launch {
             try {
@@ -568,6 +602,8 @@ data class SettingsUiState(
     val mpvAudioOutput: MpvAudioOutput = MpvAudioOutput.default,
     val preferredAudioLanguage: String = "",
     val preferredSubtitleLanguage: String = "",
+    val castHevcEnabled: Boolean = false,
+    val castMaxBitrate: Int = 16_000_000,
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,
     val error: String? = null,

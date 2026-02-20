@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.AFinity" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.AFinity" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:colorBackground">#FFFFFFFF</item>
+        <item name="colorBackgroundFloating">#FFFFFFFF</item>
+        <item name="colorPrimary">#FF000000</item>
+    </style>
 
     <style name="Theme.AFinity.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">?android:attr/colorBackground</item>
