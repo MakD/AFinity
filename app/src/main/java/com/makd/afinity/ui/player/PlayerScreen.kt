@@ -4,6 +4,7 @@ import android.graphics.Typeface
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -11,6 +12,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,7 +83,7 @@ fun PlayerScreen(
             .getSubtitlePreferencesFlow()
             .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
     var seekOriginTime by remember { mutableLongStateOf(0L) }
-    var dragStartVolume by remember { mutableStateOf(-1) }
+    var dragStartVolume by remember { mutableIntStateOf(-1) }
     var dragStartBrightness by remember { mutableFloatStateOf(-1f) }
     LocalLifecycleOwner.current
 
@@ -156,23 +158,25 @@ fun PlayerScreen(
         }
     }
     val castState by viewModel.castManager.castState.collectAsStateWithLifecycle()
+    val isDarkTheme = isSystemInDarkTheme()
 
     if (uiState.showCastChooser) {
         val context = androidx.compose.ui.platform.LocalContext.current
-        LaunchedEffect(Unit) {
+        LaunchedEffect(isDarkTheme) {
             try {
                 val castContext =
                     com.google.android.gms.cast.framework.CastContext.getSharedInstance()
                         ?: return@LaunchedEffect
                 val selector = castContext.mergedSelector
                 if (selector != null) {
-
+                    val themeResId =
+                        if (isDarkTheme) {
+                            androidx.appcompat.R.style.Theme_AppCompat_Dialog
+                        } else {
+                            androidx.appcompat.R.style.Theme_AppCompat_Light_Dialog
+                        }
                     val themedContext =
-                        androidx.appcompat.view.ContextThemeWrapper(
-                            context,
-                            androidx.mediarouter.R.style.Theme_MediaRouter_Light,
-                        )
-
+                        androidx.appcompat.view.ContextThemeWrapper(context, themeResId)
                     val dialog = androidx.mediarouter.app.MediaRouteChooserDialog(themedContext)
                     dialog.routeSelector = selector
                     dialog.setOnDismissListener { viewModel.dismissCastChooser() }
