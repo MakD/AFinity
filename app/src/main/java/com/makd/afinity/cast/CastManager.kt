@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
+import com.google.android.gms.cast.MediaSeekOptions
 import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.MediaTrack
 import com.google.android.gms.cast.framework.CastContext
@@ -12,7 +13,6 @@ import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import kotlinx.coroutines.CoroutineScope
@@ -40,7 +40,6 @@ constructor(
     private val playbackRepository: PlaybackRepository,
     private val playbackStateManager: PlaybackStateManager,
     private val castDeviceProfileFactory: CastDeviceProfileFactory,
-    private val preferencesRepository: PreferencesRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -111,6 +110,7 @@ constructor(
                             audioStreamIndex = audioStreamIndex,
                             subtitleStreamIndex = subtitleStreamIndex,
                             mediaSourceId = mediaSourceId,
+                            startTimeTicks = startPositionMs * 10_000L,
                         )
                     }
 
@@ -120,7 +120,7 @@ constructor(
                     return@launch
                 }
 
-                val mediaSource = playbackInfo.mediaSources?.firstOrNull()
+                val mediaSource = playbackInfo.mediaSources.firstOrNull()
                 if (mediaSource == null) {
                     Timber.e("No media source available for cast")
                     _castEvents.emit(CastEvent.PlaybackError("No media source available"))
@@ -218,7 +218,20 @@ constructor(
                         .setActiveTrackIds(activeTrackIds)
                         .build()
 
-                client.load(loadRequest)
+                Timber.d(
+                    "Cast loadMedia: startPositionMs=$startPositionMs, setCurrentTime=${startPositionMs / 1000.0}s"
+                )
+                val loadTask = client.load(loadRequest)
+                if (startPositionMs > 0) {
+                    loadTask.setResultCallback { result ->
+                        if (result.status.isSuccess) {
+                            Timber.d("Cast post-load seek to ${startPositionMs}ms")
+                            client.seek(
+                                MediaSeekOptions.Builder().setPosition(startPositionMs).build()
+                            )
+                        }
+                    }
+                }
 
                 _castState.value =
                     _castState.value.copy(
@@ -231,6 +244,7 @@ constructor(
                         castBitrate = maxBitrate,
                         duration = item.runtimeTicks / 10000,
                         playMethod = playMethod,
+                        serverBaseUrl = serverBaseUrl,
                     )
 
                 withContext(Dispatchers.IO) {
@@ -271,7 +285,7 @@ constructor(
     }
 
     fun seekTo(positionMs: Long) {
-        remoteMediaClient?.seek(positionMs)
+        remoteMediaClient?.seek(MediaSeekOptions.Builder().setPosition(positionMs).build())
     }
 
     fun stop() {
@@ -391,7 +405,6 @@ constructor(
     fun disconnect() {
         scope.launch {
             try {
-                reportFinalPosition()
                 castContext?.sessionManager?.endCurrentSession(true)
             } catch (e: Exception) {
                 Timber.e(e, "Error disconnecting cast session")
@@ -573,16 +586,39 @@ constructor(
 
             override fun onSessionEnded(session: CastSession, error: Int) {
                 Timber.d("Cast session ended (error: $error)")
+                val finalState = _castState.value
                 remoteMediaClient?.unregisterCallback(remoteMediaClientCallback)
                 remoteMediaClient = null
                 castSession = null
                 _castState.value = CastSessionState()
 
                 scope.launch {
-                    reportFinalPosition()
                     stopProgressReporting()
                     stopPositionPolling()
-                    _castEvents.emit(CastEvent.Disconnected)
+                    val itemId = finalState.currentItemId
+                    val sessionId = finalState.sessionId
+                    val mediaSourceId = finalState.mediaSourceId
+                    if (itemId != null && sessionId != null && mediaSourceId != null) {
+                        withContext(Dispatchers.IO) {
+                            try {
+                                playbackRepository.reportPlaybackStop(
+                                    itemId = itemId,
+                                    sessionId = sessionId,
+                                    positionTicks = finalState.currentPosition * 10000,
+                                    mediaSourceId = mediaSourceId,
+                                )
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to report cast playback stop")
+                            }
+                        }
+                        playbackStateManager.notifyPlaybackStopped(
+                            itemId,
+                            finalState.currentPosition,
+                        )
+                    }
+                    _castEvents.emit(
+                        CastEvent.Disconnected(lastPositionMs = finalState.currentPosition)
+                    )
                     playbackStateManager.clearSession()
                 }
             }

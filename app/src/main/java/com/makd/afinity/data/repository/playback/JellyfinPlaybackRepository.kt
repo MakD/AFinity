@@ -506,6 +506,7 @@ constructor(
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         mediaSourceId: String?,
+        startTimeTicks: Long,
     ): PlaybackInfoResponse? {
         return withContext(Dispatchers.IO) {
             try {
@@ -517,7 +518,7 @@ constructor(
                     PlaybackInfoDto(
                         userId = userId,
                         maxStreamingBitrate = maxStreamingBitrate,
-                        startTimeTicks = 0L,
+                        startTimeTicks = startTimeTicks,
                         audioStreamIndex = audioStreamIndex,
                         subtitleStreamIndex = subtitleStreamIndex,
                         maxAudioChannels = maxAudioChannels,

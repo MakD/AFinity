@@ -187,12 +187,12 @@ constructor(
                         Timber.d("Cast connected to: ${event.deviceName}")
                     }
                     is CastEvent.Disconnected -> {
-                        Timber.d("Cast disconnected")
-                        val lastCastPosition = castManager.castState.value.currentPosition
-                        if (lastCastPosition > 0) {
-                            player.seekTo(lastCastPosition)
+                        Timber.d("Cast disconnected, last position: ${event.lastPositionMs}ms")
+                        if (event.lastPositionMs > 0) {
+                            player.seekTo(event.lastPositionMs)
                         }
                         updateUiState { it.copy(isCasting = false) }
+                        startProgressReporting()
                     }
                     is CastEvent.PlaybackStarted -> {
                         Timber.d("Cast playback started")
@@ -210,7 +210,10 @@ constructor(
         val item = currentItem ?: return
         val mediaSourceId = item.sources.firstOrNull()?.id ?: return
         val serverBaseUrl = apiClient.baseUrl ?: return
+        val startPositionMs = player.currentPosition
+        Timber.d("startCasting: captured position=${startPositionMs}ms for ${item.name}")
 
+        progressReportingJob?.cancel()
         player.pause()
 
         viewModelScope.launch {
@@ -223,7 +226,7 @@ constructor(
                 mediaSourceId = mediaSourceId,
                 audioStreamIndex = _uiState.value.audioStreamIndex,
                 subtitleStreamIndex = _uiState.value.subtitleStreamIndex,
-                startPositionMs = player.currentPosition,
+                startPositionMs = startPositionMs,
                 maxBitrate = maxBitrate,
                 enableHevc = enableHevc,
             )
@@ -1515,7 +1518,11 @@ constructor(
         hasStoppedPlayback = true
         progressReportingJob?.cancel()
 
-        val finalPosition = player.currentPosition
+        val finalPosition = if (_uiState.value.isCasting) {
+            castManager.castState.value.currentPosition
+        } else {
+            player.currentPosition
+        }
         val item = currentItem
 
         if (item != null) {

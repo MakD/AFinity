@@ -22,11 +22,12 @@ data class CastSessionState(
     val castBitrate: Int = 16_000_000,
     val playbackSpeed: Float = 1.0f,
     val playMethod: String = "DirectPlay",
+    val serverBaseUrl: String? = null,
 )
 
 sealed class CastEvent {
     data class Connected(val deviceName: String) : CastEvent()
-    data object Disconnected : CastEvent()
+    data class Disconnected(val lastPositionMs: Long = 0L) : CastEvent()
     data class PlaybackStarted(val itemId: UUID) : CastEvent()
     data class PlaybackError(val message: String) : CastEvent()
 }

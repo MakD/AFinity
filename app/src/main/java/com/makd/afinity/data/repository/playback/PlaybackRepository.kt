@@ -89,5 +89,6 @@ interface PlaybackRepository {
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         mediaSourceId: String?,
+        startTimeTicks: Long = 0L,
     ): PlaybackInfoResponse?
 }

@@ -96,8 +96,7 @@ fun CastPlaybackSettingsSheet(
                                     castManager.changeBitrate(
                                         bitrate = option.bitrate,
                                         item = currentItem,
-                                        serverBaseUrl =
-                                            viewModel.castManager.castState.value.let { "" },
+                                        serverBaseUrl = castState.serverBaseUrl ?: "",
                                         mediaSourceId = castState.mediaSourceId ?: "",
                                         audioStreamIndex = castState.audioStreamIndex,
                                         subtitleStreamIndex = castState.subtitleStreamIndex,
@@ -149,7 +148,7 @@ fun CastPlaybackSettingsSheet(
                                         castManager.switchAudioTrack(
                                             audioStreamIndex = stream.index ?: index,
                                             item = currentItem,
-                                            serverBaseUrl = "",
+                                            serverBaseUrl = castState.serverBaseUrl ?: "",
                                             mediaSourceId = castState.mediaSourceId ?: "",
                                             subtitleStreamIndex = castState.subtitleStreamIndex,
                                             maxBitrate = castState.castBitrate,
@@ -197,7 +196,7 @@ fun CastPlaybackSettingsSheet(
                                 castManager.switchSubtitleTrack(
                                     subtitleStreamIndex = null,
                                     item = currentItem,
-                                    serverBaseUrl = "",
+                                    serverBaseUrl = castState.serverBaseUrl ?: "",
                                     mediaSourceId = castState.mediaSourceId ?: "",
                                     audioStreamIndex = castState.audioStreamIndex,
                                     maxBitrate = castState.castBitrate,
@@ -239,7 +238,7 @@ fun CastPlaybackSettingsSheet(
                                     castManager.switchSubtitleTrack(
                                         subtitleStreamIndex = stream.index ?: index,
                                         item = currentItem,
-                                        serverBaseUrl = "",
+                                        serverBaseUrl = castState.serverBaseUrl ?: "",
                                         mediaSourceId = castState.mediaSourceId ?: "",
                                         audioStreamIndex = castState.audioStreamIndex,
                                         maxBitrate = castState.castBitrate,
