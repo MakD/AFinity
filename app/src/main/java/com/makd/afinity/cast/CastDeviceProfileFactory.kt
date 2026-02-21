@@ -21,16 +21,16 @@ class CastDeviceProfileFactory @Inject constructor() {
 
     fun createProfile(enableHevc: Boolean, maxBitrate: Int): DeviceProfile {
         val videoCodecs = buildString {
-            append("h264")
+            append("h264,vp8")
             if (enableHevc) append(",hevc")
         }
 
         val directPlayProfiles = buildList {
             add(
                 DirectPlayProfile(
-                    container = "mp4,webm",
+                    container = "mp4,webm,mkv",
                     videoCodec = videoCodecs,
-                    audioCodec = "aac,mp3,opus,flac",
+                    audioCodec = "aac,mp3,opus,flac,vorbis",
                     type = DlnaProfileType.VIDEO,
                 )
             )
@@ -44,7 +44,7 @@ class CastDeviceProfileFactory @Inject constructor() {
                 type = DlnaProfileType.VIDEO,
                 context = EncodingContext.STREAMING,
                 protocol = MediaStreamProtocol.HLS,
-                maxAudioChannels = "2",
+                maxAudioChannels = "6",
                 breakOnNonKeyFrames = false,
                 conditions = emptyList(),
             )
@@ -102,7 +102,7 @@ class CastDeviceProfileFactory @Inject constructor() {
                         ProfileCondition(
                             condition = ProfileConditionType.LESS_THAN_EQUAL,
                             property = ProfileConditionValue.AUDIO_CHANNELS,
-                            value = "2",
+                            value = "6",
                             isRequired = false,
                         ),
                     ),
@@ -112,12 +112,13 @@ class CastDeviceProfileFactory @Inject constructor() {
         }
 
         val subtitleProfiles = listOf(
-            SubtitleProfile("vtt", SubtitleDeliveryMethod.ENCODE),
-            SubtitleProfile("srt", SubtitleDeliveryMethod.ENCODE),
+            SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
+            SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
             SubtitleProfile("ass", SubtitleDeliveryMethod.ENCODE),
             SubtitleProfile("ssa", SubtitleDeliveryMethod.ENCODE),
             SubtitleProfile("sub", SubtitleDeliveryMethod.ENCODE),
             SubtitleProfile("pgssub", SubtitleDeliveryMethod.ENCODE),
+            SubtitleProfile("dvdsub", SubtitleDeliveryMethod.ENCODE),
         )
 
         return DeviceProfile(

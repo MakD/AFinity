@@ -21,6 +21,7 @@ data class CastSessionState(
     val sessionId: String? = null,
     val castBitrate: Int = 16_000_000,
     val playbackSpeed: Float = 1.0f,
+    val playMethod: String = "DirectPlay",
 )
 
 sealed class CastEvent {

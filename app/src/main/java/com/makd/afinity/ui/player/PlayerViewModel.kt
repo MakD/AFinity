@@ -188,6 +188,10 @@ constructor(
                     }
                     is CastEvent.Disconnected -> {
                         Timber.d("Cast disconnected")
+                        val lastCastPosition = castManager.castState.value.currentPosition
+                        if (lastCastPosition > 0) {
+                            player.seekTo(lastCastPosition)
+                        }
                         updateUiState { it.copy(isCasting = false) }
                     }
                     is CastEvent.PlaybackStarted -> {
@@ -227,7 +231,7 @@ constructor(
     }
 
     fun stopCasting() {
-        castManager.stop()
+        castManager.disconnect()
         updateUiState { it.copy(isCasting = false) }
     }
 

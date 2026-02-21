@@ -5,22 +5,21 @@ import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaStatus
+import com.google.android.gms.cast.MediaTrack
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
-import com.google.android.gms.cast.framework.SessionManager
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +28,10 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class CastManager
@@ -39,6 +41,7 @@ constructor(
     private val playbackStateManager: PlaybackStateManager,
     private val castDeviceProfileFactory: CastDeviceProfileFactory,
     private val preferencesRepository: PreferencesRepository,
+    private val securePreferencesRepository: SecurePreferencesRepository,
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -65,10 +68,9 @@ constructor(
     fun initialize(context: Context) {
         try {
             castContext = CastContext.getSharedInstance(context)
-            castContext?.sessionManager?.addSessionManagerListener(
-                castSessionManagerListener,
-                CastSession::class.java,
-            )
+            castContext
+                ?.sessionManager
+                ?.addSessionManagerListener(castSessionManagerListener, CastSession::class.java)
             Timber.d("CastManager initialized")
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize CastManager")
@@ -99,17 +101,18 @@ constructor(
 
                 val deviceProfile = castDeviceProfileFactory.createProfile(enableHevc, maxBitrate)
 
-                val playbackInfo = withContext(Dispatchers.IO) {
-                    playbackRepository.getPlaybackInfoForCast(
-                        itemId = item.id,
-                        deviceProfile = deviceProfile,
-                        maxStreamingBitrate = maxBitrate,
-                        maxAudioChannels = 2,
-                        audioStreamIndex = audioStreamIndex,
-                        subtitleStreamIndex = subtitleStreamIndex,
-                        mediaSourceId = mediaSourceId,
-                    )
-                }
+                val playbackInfo =
+                    withContext(Dispatchers.IO) {
+                        playbackRepository.getPlaybackInfoForCast(
+                            itemId = item.id,
+                            deviceProfile = deviceProfile,
+                            maxStreamingBitrate = maxBitrate,
+                            maxAudioChannels = 6,
+                            audioStreamIndex = audioStreamIndex,
+                            subtitleStreamIndex = subtitleStreamIndex,
+                            mediaSourceId = mediaSourceId,
+                        )
+                    }
 
                 if (playbackInfo == null) {
                     Timber.e("Failed to get playback info for cast")
@@ -135,25 +138,64 @@ constructor(
                                 audioStreamIndex = audioStreamIndex,
                                 subtitleStreamIndex = subtitleStreamIndex,
                             )
-                        } ?: run {
-                            _castEvents.emit(
-                                CastEvent.PlaybackError("Failed to get stream URL")
-                            )
-                            return@launch
                         }
+                            ?: run {
+                                _castEvents.emit(
+                                    CastEvent.PlaybackError("Failed to get stream URL")
+                                )
+                                return@launch
+                            }
                     }
 
                 val isTranscoding = mediaSource.transcodingUrl != null
                 val playMethod = if (isTranscoding) "Transcode" else "DirectPlay"
                 val playSessionId = playbackInfo.playSessionId ?: ""
 
-                val contentType = if (isTranscoding && streamUrl.contains(".m3u8")) {
-                    "application/x-mpegURL"
-                } else {
-                    "video/mp4"
-                }
+                val contentType =
+                    if (isTranscoding && streamUrl.contains(".m3u8")) {
+                        "application/x-mpegURL"
+                    } else {
+                        "video/mp4"
+                    }
 
-                Timber.d("Cast stream URL: $streamUrl (method: $playMethod, contentType: $contentType)")
+                Timber.d(
+                    "Cast stream URL: $streamUrl (method: $playMethod, contentType: $contentType)"
+                )
+
+                val apiToken =
+                    withContext(Dispatchers.IO) { securePreferencesRepository.getAccessToken() }
+                        ?: ""
+                val textSubtitleCodecs = setOf("srt", "subrip", "vtt", "webvtt")
+                val textSubtitleStreams =
+                    mediaSource.mediaStreams
+                        ?.filter { stream ->
+                            stream.type == MediaStreamType.SUBTITLE &&
+                                stream.codec?.lowercase() in textSubtitleCodecs
+                        }
+                        .orEmpty()
+                val mediaTracks =
+                    textSubtitleStreams.map { stream ->
+                        val subUrl =
+                            "${serverBaseUrl.trimEnd('/')}/Videos/${item.id}/" +
+                                "${mediaSource.id ?: mediaSourceId}/Subtitles/${stream.index}/Stream.vtt" +
+                                "?api_key=$apiToken"
+                        MediaTrack.Builder(stream.index.toLong(), MediaTrack.TYPE_TEXT)
+                            .setName(stream.displayTitle ?: stream.language ?: "Subtitle")
+                            .setSubtype(MediaTrack.SUBTYPE_SUBTITLES)
+                            .setContentId(subUrl)
+                            .setContentType("text/vtt")
+                            .setLanguage(stream.language ?: "und")
+                            .build()
+                    }
+                val activeTrackIds: LongArray? =
+                    if (
+                        subtitleStreamIndex != null &&
+                            textSubtitleStreams.any { it.index == subtitleStreamIndex }
+                    ) {
+                        longArrayOf(subtitleStreamIndex.toLong())
+                    } else {
+                        null
+                    }
 
                 val metadata =
                     MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
@@ -165,6 +207,7 @@ constructor(
                         .setContentType(contentType)
                         .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                         .setMetadata(metadata)
+                        .setMediaTracks(mediaTracks.ifEmpty { null })
                         .build()
 
                 val loadRequest =
@@ -172,6 +215,7 @@ constructor(
                         .setMediaInfo(mediaInfo)
                         .setAutoplay(true)
                         .setCurrentTime(startPositionMs / 1000)
+                        .setActiveTrackIds(activeTrackIds)
                         .build()
 
                 client.load(loadRequest)
@@ -186,6 +230,7 @@ constructor(
                         subtitleStreamIndex = subtitleStreamIndex,
                         castBitrate = maxBitrate,
                         duration = item.runtimeTicks / 10000,
+                        playMethod = playMethod,
                     )
 
                 withContext(Dispatchers.IO) {
@@ -226,7 +271,7 @@ constructor(
     }
 
     fun seekTo(positionMs: Long) {
-        remoteMediaClient?.seek(positionMs / 1000)
+        remoteMediaClient?.seek(positionMs)
     }
 
     fun stop() {
@@ -358,11 +403,11 @@ constructor(
         stopProgressReporting()
         stopPositionPolling()
         volumeDebounceJob?.cancel()
-        castContext?.sessionManager?.removeSessionManagerListener(
-            castSessionManagerListener,
-            CastSession::class.java,
-        )
+        castContext
+            ?.sessionManager
+            ?.removeSessionManagerListener(castSessionManagerListener, CastSession::class.java)
         castContext = null
+        scope.cancel()
         Timber.d("CastManager released")
     }
 
@@ -426,10 +471,7 @@ constructor(
             val session = castSession
             if (session != null) {
                 _castState.value =
-                    _castState.value.copy(
-                        volume = session.volume,
-                        isMuted = session.isMute,
-                    )
+                    _castState.value.copy(volume = session.volume, isMuted = session.isMute)
             }
         } catch (e: Exception) {
             Timber.e(e, "Error polling cast position")
@@ -450,7 +492,7 @@ constructor(
                 isMuted = state.isMuted,
                 audioStreamIndex = state.audioStreamIndex,
                 subtitleStreamIndex = state.subtitleStreamIndex,
-                playMethod = "Transcode",
+                playMethod = state.playMethod,
             )
         }
     }
@@ -514,9 +556,7 @@ constructor(
                     )
 
                 scope.launch {
-                    _castEvents.emit(
-                        CastEvent.Connected(deviceName ?: "Unknown Device")
-                    )
+                    _castEvents.emit(CastEvent.Connected(deviceName ?: "Unknown Device"))
                 }
             }
 
