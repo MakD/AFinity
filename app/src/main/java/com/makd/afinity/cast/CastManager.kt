@@ -151,16 +151,19 @@ constructor(
                 val playMethod = if (isTranscoding) "Transcode" else "DirectPlay"
                 val playSessionId = playbackInfo.playSessionId ?: ""
 
-                val contentType = when {
-                    isTranscoding && streamUrl.contains(".m3u8") -> "application/x-mpegURL"
-                    isTranscoding -> "video/mp2t"
-                    else -> when (mediaSource.container?.lowercase()) {
-                        "mkv", "matroska" -> "video/x-matroska"
-                        "webm" -> "video/webm"
-                        "ts" -> "video/mp2t"
-                        else -> "video/mp4"
+                val contentType =
+                    when {
+                        isTranscoding && streamUrl.contains(".m3u8") -> "application/x-mpegURL"
+                        isTranscoding -> "video/mp2t"
+                        else ->
+                            when (mediaSource.container?.lowercase()) {
+                                "mkv",
+                                "matroska" -> "video/x-matroska"
+                                "webm" -> "video/webm"
+                                "ts" -> "video/mp2t"
+                                else -> "video/mp4"
+                            }
                     }
-                }
 
                 Timber.d(
                     "Cast stream URL: $streamUrl (method: $playMethod, contentType: $contentType)"
@@ -250,6 +253,7 @@ constructor(
                         playMethod = playMethod,
                         serverBaseUrl = serverBaseUrl,
                         enableHevc = enableHevc,
+                        loadedTextTrackIndices = textSubtitleStreams.map { it.index }.toSet(),
                     )
 
                 withContext(Dispatchers.IO) {
@@ -363,20 +367,45 @@ constructor(
         enableHevc: Boolean,
     ) {
         scope.launch {
-            val currentPosition = _castState.value.currentPosition
-            remoteMediaClient?.stop()
-            stopProgressReporting()
-            stopPositionPolling()
-            loadMedia(
-                item = item,
-                serverBaseUrl = serverBaseUrl,
-                mediaSourceId = mediaSourceId,
-                audioStreamIndex = audioStreamIndex,
-                subtitleStreamIndex = subtitleStreamIndex,
-                startPositionMs = currentPosition,
-                maxBitrate = maxBitrate,
-                enableHevc = enableHevc,
-            )
+            val state = _castState.value
+            val loadedIndices = state.loadedTextTrackIndices
+
+            val currentIsClean =
+                state.subtitleStreamIndex == null || state.subtitleStreamIndex in loadedIndices
+            val targetIsLoaded = subtitleStreamIndex == null || subtitleStreamIndex in loadedIndices
+
+            if (currentIsClean && targetIsLoaded) {
+                val trackIds =
+                    if (subtitleStreamIndex != null) {
+                        longArrayOf(subtitleStreamIndex.toLong())
+                    } else {
+                        longArrayOf()
+                    }
+                remoteMediaClient?.setActiveMediaTracks(trackIds)?.setResultCallback { result ->
+                    if (result.status.isSuccess) {
+                        _castState.value =
+                            _castState.value.copy(subtitleStreamIndex = subtitleStreamIndex)
+                        Timber.d("Cast subtitle switched natively to index $subtitleStreamIndex")
+                    } else {
+                        Timber.w("Native subtitle switch failed (${result.status.statusCode})")
+                    }
+                }
+            } else {
+                val currentPosition = state.currentPosition
+                remoteMediaClient?.stop()
+                stopProgressReporting()
+                stopPositionPolling()
+                loadMedia(
+                    item = item,
+                    serverBaseUrl = serverBaseUrl,
+                    mediaSourceId = mediaSourceId,
+                    audioStreamIndex = audioStreamIndex,
+                    subtitleStreamIndex = subtitleStreamIndex,
+                    startPositionMs = currentPosition,
+                    maxBitrate = maxBitrate,
+                    enableHevc = enableHevc,
+                )
+            }
         }
     }
 

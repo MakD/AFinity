@@ -24,6 +24,7 @@ data class CastSessionState(
     val playMethod: String = "DirectPlay",
     val serverBaseUrl: String? = null,
     val enableHevc: Boolean = false,
+    val loadedTextTrackIndices: Set<Int> = emptySet(),
 )
 
 sealed class CastEvent {
