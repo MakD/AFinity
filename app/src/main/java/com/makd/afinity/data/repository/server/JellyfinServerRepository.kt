@@ -3,10 +3,6 @@ package com.makd.afinity.data.repository.server
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.DatabaseRepository
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Provider
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,6 +19,10 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.SystemApi
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Provider
+import javax.inject.Singleton
 
 @Singleton
 class JellyfinServerRepository
@@ -154,14 +154,23 @@ constructor(
 
     override suspend fun testServerConnection(serverAddress: String): ServerConnectionResult {
         return withContext(Dispatchers.IO) {
-            try {
-                val originalUrl = _currentBaseUrl.value
-                val originalConnected = _isConnected.value
-                val originalServer = _currentServer.value
+            val originalUrl = _currentBaseUrl.value
+            val originalConnected = _isConnected.value
+            val originalServer = _currentServer.value
+            val cleanAddress = serverAddress.trim().removeSuffix("/")
+            val urlsToTry =
+                if (!cleanAddress.startsWith("http://") && !cleanAddress.startsWith("https://")) {
+                    listOf("https://$cleanAddress", "http://$cleanAddress")
+                } else {
+                    listOf(cleanAddress)
+                }
 
+            var lastException: Exception? = null
+
+            for (url in urlsToTry) {
                 try {
-                    apiClient.update(baseUrl = serverAddress)
-                    _currentBaseUrl.value = serverAddress
+                    apiClient.update(baseUrl = url)
+                    _currentBaseUrl.value = url
 
                     val systemApi = SystemApi(apiClient)
                     val response = systemApi.getPublicSystemInfo()
@@ -173,42 +182,40 @@ constructor(
                                 id = systemInfo.id ?: UUID.randomUUID().toString(),
                                 name = systemInfo.serverName ?: "Jellyfin Server",
                                 version = systemInfo.version,
-                                address = serverAddress,
+                                address = url,
                             )
-
                         apiClient.update(baseUrl = originalUrl)
                         _currentBaseUrl.value = originalUrl
                         _isConnected.value = originalConnected
                         _currentServer.value = originalServer
 
-                        ServerConnectionResult.Success(
+                        return@withContext ServerConnectionResult.Success(
                             server = server,
-                            serverAddress = serverAddress,
+                            serverAddress = url,
                             version = systemInfo.version ?: "Unknown",
                             isQuickConnectEnabled = systemInfo.startupWizardCompleted == true,
                         )
-                    } else {
-                        apiClient.update(baseUrl = originalUrl)
-                        _currentBaseUrl.value = originalUrl
-                        _isConnected.value = originalConnected
-                        _currentServer.value = originalServer
-
-                        ServerConnectionResult.Error("No system information received from server")
                     }
+                } catch (e: ApiClientException) {
+                    lastException = e
                 } catch (e: Exception) {
-                    apiClient.update(baseUrl = originalUrl)
-                    _currentBaseUrl.value = originalUrl
-                    _isConnected.value = originalConnected
-                    _currentServer.value = originalServer
-                    throw e
+                    lastException = e
                 }
-            } catch (e: ApiClientException) {
-                Timber.e(e, "API error testing server connection")
-                ServerConnectionResult.Error("Server error: ${e.message ?: "Unknown API error"}")
-            } catch (e: Exception) {
-                Timber.e(e, "Network error testing server connection")
+            }
+            apiClient.update(baseUrl = originalUrl)
+            _currentBaseUrl.value = originalUrl
+            _isConnected.value = originalConnected
+            _currentServer.value = originalServer
+
+            if (lastException is ApiClientException) {
+                Timber.e(lastException, "API error testing server connection")
                 ServerConnectionResult.Error(
-                    "Failed to connect: ${e.message ?: "Check server address and network connection"}"
+                    "Server error: ${lastException.message ?: "Unknown API error"}"
+                )
+            } else {
+                Timber.e(lastException, "Network error testing server connection")
+                ServerConnectionResult.Error(
+                    "Failed to connect: ${lastException?.message ?: "Check server address and network connection"}"
                 )
             }
         }

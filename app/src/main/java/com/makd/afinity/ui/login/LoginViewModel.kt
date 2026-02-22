@@ -13,7 +13,6 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel
@@ -120,31 +120,23 @@ constructor(
         }
     }
 
-    private fun isValidUrl(url: String): Boolean {
-        return (url.startsWith("http://") || url.startsWith("https://")) &&
-            url.length > 8 &&
-            (url.contains(".") || url.contains(":")) &&
-            !url.endsWith("://") &&
-            !url.contains(" ")
-    }
-
     fun connectToServer() {
         val url = _serverUrl.value.trim()
         if (url.isBlank()) return
+
         viewModelScope.launch {
             _uiState.value =
                 _uiState.value.copy(isConnecting = true, isConnectedToServer = false, error = null)
-
             try {
                 Timber.d("Validating Jellyfin server at: $url")
                 when (val validationResult = jellyfinRepository.validateServer(url)) {
                     is JellyfinServerRepository.ServerConnectionResult.Success -> {
-                        Timber.d("Server validation successful for: $url")
-
-                        jellyfinRepository.setBaseUrl(url)
+                        val workingUrl = validationResult.serverAddress
+                        Timber.d("Server validation successful for: $workingUrl")
+                        _serverUrl.value = workingUrl
+                        _connectedServerUrl.value = workingUrl
+                        jellyfinRepository.setBaseUrl(workingUrl)
                         jellyfinRepository.refreshServerInfo()
-                        _connectedServerUrl.value = url
-
                         try {
                             databaseRepository.insertServer(validationResult.server)
                             Timber.d(
@@ -153,20 +145,15 @@ constructor(
                         } catch (e: Exception) {
                             Timber.w(e, "Failed to save server to database, continuing anyway")
                         }
-
                         loadPublicUsers()
-
                         _uiState.value =
                             _uiState.value.copy(isConnecting = false, isConnectedToServer = true)
-
                         Timber.d(
-                            "Successfully connected to Jellyfin server: $url (${validationResult.server.name})"
+                            "Successfully connected to Jellyfin server: $workingUrl (${validationResult.server.name})"
                         )
                     }
-
                     is JellyfinServerRepository.ServerConnectionResult.Error -> {
                         Timber.w("Server validation failed for: $url - ${validationResult.message}")
-
                         _uiState.value =
                             _uiState.value.copy(
                                 isConnecting = false,
@@ -632,14 +619,6 @@ constructor(
                 _connectedServerUrl.value = ""
             }
         }
-    }
-
-    fun resetState() {
-        quickConnectJob?.cancel()
-        _uiState.value = LoginUiState()
-        _serverUrl.value = ""
-        _publicUsers.value = emptyList()
-        _connectedServerUrl.value = ""
     }
 }
 

@@ -11,12 +11,12 @@ import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 data class AddEditServerState(
     val serverId: String? = null,
@@ -119,6 +119,7 @@ constructor(
                         _state.value =
                             _state.value.copy(
                                 isTestingConnection = false,
+                                serverUrl = result.serverAddress,
                                 connectionTestResult = ConnectionTestResult.Success(serverInfo),
                                 serverName = currentName.ifBlank { serverInfo.name },
                             )
