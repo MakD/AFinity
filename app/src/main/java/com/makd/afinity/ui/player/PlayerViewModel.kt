@@ -206,11 +206,11 @@ constructor(
         }
     }
 
-    fun startCasting() {
+    fun startCasting(startPositionOverride: Long? = null) {
         val item = currentItem ?: return
         val mediaSourceId = item.sources.firstOrNull()?.id ?: return
         val serverBaseUrl = apiClient.baseUrl ?: return
-        val startPositionMs = player.currentPosition
+        val startPositionMs = startPositionOverride ?: player.currentPosition
         Timber.d("startCasting: captured position=${startPositionMs}ms for ${item.name}")
 
         progressReportingJob?.cancel()
@@ -968,7 +968,11 @@ constructor(
                 withContext(Dispatchers.Main) {
                     player.setMediaItems(listOf(mediaItem), 0, startPositionMs)
                     player.prepare()
-                    player.play()
+                    if (castManager.isCasting) {
+                        startCasting(startPositionOverride = startPositionMs)
+                    } else {
+                        player.play()
+                    }
                     showControls()
                 }
 
@@ -1518,11 +1522,12 @@ constructor(
         hasStoppedPlayback = true
         progressReportingJob?.cancel()
 
-        val finalPosition = if (_uiState.value.isCasting) {
-            castManager.castState.value.currentPosition
-        } else {
-            player.currentPosition
-        }
+        val finalPosition =
+            if (_uiState.value.isCasting) {
+                castManager.castState.value.currentPosition
+            } else {
+                player.currentPosition
+            }
         val item = currentItem
 
         if (item != null) {

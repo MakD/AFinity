@@ -284,6 +284,7 @@ fun CastRemoteControllerScreen(
         CastEpisodeListSheet(
             episodes = playlistState.queue,
             currentItemId = currentItem?.id,
+            isPlaying = castState.isPlaying,
             onEpisodeClick = { episode -> viewModel.jumpToEpisode(episode.id) },
             onDismiss = { showEpisodeList = false },
         )
