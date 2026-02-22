@@ -23,6 +23,7 @@ data class CastSessionState(
     val playbackSpeed: Float = 1.0f,
     val playMethod: String = "DirectPlay",
     val serverBaseUrl: String? = null,
+    val enableHevc: Boolean = false,
 )
 
 sealed class CastEvent {

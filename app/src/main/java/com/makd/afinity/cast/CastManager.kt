@@ -245,6 +245,7 @@ constructor(
                         duration = item.runtimeTicks / 10000,
                         playMethod = playMethod,
                         serverBaseUrl = serverBaseUrl,
+                        enableHevc = enableHevc,
                     )
 
                 withContext(Dispatchers.IO) {

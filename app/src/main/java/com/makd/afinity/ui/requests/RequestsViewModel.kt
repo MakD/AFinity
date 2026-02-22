@@ -17,10 +17,9 @@ import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.data.repository.JellyseerrRepository
-import com.makd.afinity.util.BackdropTracker
+import com.makd.afinity.util.GenreDuotoneColorGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +29,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class RequestsViewModel
@@ -47,10 +47,6 @@ constructor(
 
     private val _currentUser = MutableStateFlow<JellyseerrUser?>(null)
     val currentUser: StateFlow<JellyseerrUser?> = _currentUser.asStateFlow()
-    private val _backdropTracker = BackdropTracker()
-    val backdropTracker: BackdropTracker
-        get() = _backdropTracker
-
     private var requestsJob: Job? = null
 
     init {
@@ -206,9 +202,36 @@ constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isProcessingRequest = true) }
-                val serverId = _uiState.value.selectedServer?.id
-                val profileId = _uiState.value.selectedProfile?.id
-                val rootFolder = _uiState.value.selectedRootFolder
+
+                var serverId = _uiState.value.selectedServer?.id
+                var profileId = _uiState.value.selectedProfile?.id
+                var rootFolder = _uiState.value.selectedRootFolder
+                val isFromDialog = _uiState.value.selectedRequest?.id == requestId
+                if (!isFromDialog && serverId == null) {
+                    val request = _uiState.value.requests.find { it.id == requestId }
+                    val mediaType = request?.getMediaType() ?: MediaType.MOVIE
+                    val is4k = request?.is4k ?: false
+                    jellyseerrRepository.getServiceSettings(mediaType).onSuccess { servers ->
+                        val defaultServer =
+                            servers.firstOrNull { it.is4k == is4k }
+                                ?: servers.firstOrNull { it.isDefault }
+                                ?: servers.firstOrNull()
+                        serverId = defaultServer?.id
+                    }
+
+                    serverId?.let { sid ->
+                        jellyseerrRepository.getServiceDetails(mediaType, sid).onSuccess { details
+                            ->
+                            profileId =
+                                details.server?.activeProfileId
+                                    ?: details.profiles.firstOrNull()?.id
+                            rootFolder =
+                                details.server?.activeDirectory
+                                    ?: details.rootFolders.firstOrNull()?.path
+                        }
+                    }
+                }
+
                 jellyseerrRepository
                     .approveRequest(requestId, serverId, profileId, rootFolder)
                     .fold(
@@ -662,7 +685,6 @@ constructor(
     }
 
     fun loadDiscoverContent() {
-        _backdropTracker.reset()
         _uiState.update { it.copy(isLoadingDiscover = true) }
         viewModelScope.launch {
             jellyseerrRepository
@@ -697,13 +719,15 @@ constructor(
             }
         }
         viewModelScope.launch {
-            jellyseerrRepository.getMovieGenreSlider().onSuccess { res ->
-                _uiState.update { it.copy(movieGenres = res) }
+            jellyseerrRepository.getMovieGenreSlider().onSuccess { genres ->
+                val backdrops = buildGenreBackdrops(genres)
+                _uiState.update { it.copy(movieGenres = genres, movieGenreBackdrops = backdrops) }
             }
         }
         viewModelScope.launch {
-            jellyseerrRepository.getTvGenreSlider().onSuccess { res ->
-                _uiState.update { it.copy(tvGenres = res) }
+            jellyseerrRepository.getTvGenreSlider().onSuccess { genres ->
+                val backdrops = buildGenreBackdrops(genres)
+                _uiState.update { it.copy(tvGenres = genres, tvGenreBackdrops = backdrops) }
             }
         }
     }
@@ -832,6 +856,24 @@ constructor(
     fun setSelectedSeasons(seasons: List<Int>) {
         _uiState.update { it.copy(selectedSeasons = seasons) }
     }
+
+    private fun buildGenreBackdrops(genres: List<GenreSliderItem>): Map<Int, String> {
+        val usedPaths = mutableSetOf<String>()
+        return buildMap {
+            genres.forEachIndexed { index, genre ->
+                val path =
+                    genre.backdrops?.firstOrNull { it !in usedPaths }
+                        ?: genre.backdrops?.firstOrNull()
+                if (path != null) {
+                    usedPaths.add(path)
+                    put(
+                        genre.id,
+                        "${GenreDuotoneColorGenerator.getDuotoneFilterUrlByIndex(index)}$path",
+                    )
+                }
+            }
+        }
+    }
 }
 
 data class RequestsUiState(
@@ -856,7 +898,9 @@ data class RequestsUiState(
     val studios: List<Studio> = Studio.getPopularStudios(),
     val networks: List<Network> = Network.getPopularNetworks(),
     val movieGenres: List<GenreSliderItem> = emptyList(),
+    val movieGenreBackdrops: Map<Int, String> = emptyMap(),
     val tvGenres: List<GenreSliderItem> = emptyList(),
+    val tvGenreBackdrops: Map<Int, String> = emptyMap(),
     val isLoadingDiscover: Boolean = false,
     val showRequestDialog: Boolean = false,
     val pendingRequest: PendingRequest? = null,

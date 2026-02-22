@@ -32,4 +32,9 @@ object GenreDuotoneColorGenerator {
         val (primary, secondary) = getColorsForGenre(genreId)
         return "https://image.tmdb.org/t/p/${width}_filter(duotone,$primary,$secondary)"
     }
+
+    fun getDuotoneFilterUrlByIndex(index: Int, width: String = "w1280"): String {
+        val (primary, secondary) = COLOR_PALETTES[index % COLOR_PALETTES.size]
+        return "https://image.tmdb.org/t/p/${width}_filter(duotone,$primary,$secondary)"
+    }
 }

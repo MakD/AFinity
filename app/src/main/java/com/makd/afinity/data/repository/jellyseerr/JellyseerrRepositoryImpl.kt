@@ -26,10 +26,11 @@ import com.makd.afinity.data.repository.RequestEvent
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.text.SimpleDateFormat
@@ -71,6 +73,8 @@ constructor(
     override val requestEvents: SharedFlow<RequestEvent> = _requestEvents.asSharedFlow()
 
     private var activeContext: Pair<String, UUID>? = null
+
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
@@ -330,62 +334,7 @@ constructor(
                     try {
                         val response = apiService.get().getRequests(take, skip, filter)
                         if (response.isSuccessful && response.body() != null) {
-                            val requests = response.body()!!.results
-
-                            val enrichedRequests = coroutineScope {
-                                requests
-                                    .map { request ->
-                                        async {
-                                            try {
-                                                val tmdbId = request.media.tmdbId
-                                                if (tmdbId != null) {
-                                                    val detailsResponse =
-                                                        when (request.media.mediaType.lowercase()) {
-                                                            "movie" ->
-                                                                apiService
-                                                                    .get()
-                                                                    .getMovieDetails(tmdbId)
-
-                                                            "tv" ->
-                                                                apiService
-                                                                    .get()
-                                                                    .getTvDetails(tmdbId)
-
-                                                            else -> null
-                                                        }
-
-                                                    if (
-                                                        detailsResponse?.isSuccessful == true &&
-                                                            detailsResponse.body() != null
-                                                    ) {
-                                                        val details = detailsResponse.body()!!
-                                                        request.copy(
-                                                            media =
-                                                                request.media.copy(
-                                                                    title = details.title,
-                                                                    name = details.name,
-                                                                    posterPath = details.posterPath,
-                                                                    backdropPath =
-                                                                        details.backdropPath,
-                                                                    releaseDate =
-                                                                        details.releaseDate,
-                                                                    firstAirDate =
-                                                                        details.firstAirDate,
-                                                                )
-                                                        )
-                                                    } else request
-                                                } else request
-                                            } catch (e: Exception) {
-                                                Timber.w(
-                                                    e,
-                                                    "Failed to enrich request ${request.id}",
-                                                )
-                                                request
-                                            }
-                                        }
-                                    }
-                                    .awaitAll()
-                            }
+                            val baseRequests = response.body()!!.results
 
                             if (skip == 0 && take >= 20) {
                                 val expiryTime = System.currentTimeMillis() - CACHE_VALIDITY_MS
@@ -396,8 +345,109 @@ constructor(
                                 )
                             }
 
-                            enrichedRequests.forEach { cacheRequest(it) }
-                            return@withContext Result.success(enrichedRequests)
+                            val existingById =
+                                jellyseerrDao
+                                    .getAllRequests(currentServerId, currentUserId.toString())
+                                    .first()
+                                    .associateBy { it.id }
+
+                            jellyseerrDao.insertRequests(
+                                baseRequests.map { request ->
+                                    val base =
+                                        request.toEntity(currentServerId, currentUserId.toString())
+                                    val existing = existingById[base.id]
+                                    if (existing == null) base
+                                    else
+                                        base.copy(
+                                            title =
+                                                base.title.takeUnless { it == "Unknown" }
+                                                    ?: existing.title,
+                                            mediaTitle = base.mediaTitle ?: existing.mediaTitle,
+                                            mediaName = base.mediaName ?: existing.mediaName,
+                                            posterPath = base.posterPath ?: existing.posterPath,
+                                            mediaBackdropPath =
+                                                base.mediaBackdropPath
+                                                    ?: existing.mediaBackdropPath,
+                                            mediaReleaseDate =
+                                                base.mediaReleaseDate ?: existing.mediaReleaseDate,
+                                            mediaFirstAirDate =
+                                                base.mediaFirstAirDate
+                                                    ?: existing.mediaFirstAirDate,
+                                            requestedByName =
+                                                base.requestedByName ?: existing.requestedByName,
+                                            requestedByAvatar =
+                                                base.requestedByAvatar ?: existing.requestedByAvatar,
+                                        )
+                                }
+                            )
+                            repositoryScope.launch {
+                                val enrichedEntities =
+                                    baseRequests
+                                        .map { request ->
+                                            async {
+                                                try {
+                                                    val tmdbId =
+                                                        request.media.tmdbId ?: return@async null
+                                                    val detailsResponse =
+                                                        when (request.media.mediaType.lowercase()) {
+                                                            "movie" ->
+                                                                apiService
+                                                                    .get()
+                                                                    .getMovieDetails(tmdbId)
+                                                            "tv" ->
+                                                                apiService
+                                                                    .get()
+                                                                    .getTvDetails(tmdbId)
+                                                            else -> null
+                                                        }
+                                                    if (
+                                                        detailsResponse?.isSuccessful == true &&
+                                                            detailsResponse.body() != null
+                                                    ) {
+                                                        val details = detailsResponse.body()!!
+                                                        request
+                                                            .copy(
+                                                                media =
+                                                                    request.media.copy(
+                                                                        title = details.title,
+                                                                        name = details.name,
+                                                                        posterPath =
+                                                                            details.posterPath,
+                                                                        backdropPath =
+                                                                            details.backdropPath,
+                                                                        releaseDate =
+                                                                            details.releaseDate,
+                                                                        firstAirDate =
+                                                                            details.firstAirDate,
+                                                                    )
+                                                            )
+                                                            .toEntity(
+                                                                currentServerId,
+                                                                currentUserId.toString(),
+                                                            )
+                                                    } else null
+                                                } catch (e: Exception) {
+                                                    Timber.w(
+                                                        e,
+                                                        "Failed to enrich request ${request.id}",
+                                                    )
+                                                    null
+                                                }
+                                            }
+                                        }
+                                        .awaitAll()
+                                        .filterNotNull()
+
+                                if (enrichedEntities.isNotEmpty()) {
+                                    try {
+                                        jellyseerrDao.insertRequests(enrichedEntities)
+                                    } catch (e: Exception) {
+                                        Timber.e(e, "Failed to batch-cache enriched requests")
+                                    }
+                                }
+                            }
+
+                            return@withContext Result.success(baseRequests)
                         }
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to fetch from network, falling back to cache")

@@ -35,7 +35,6 @@ import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
-import com.makd.afinity.util.BackdropTracker
 
 @Composable
 fun MyRequestsSection(
@@ -222,7 +221,7 @@ fun MovieGenresSection(
     onGenreClick: (GenreSliderItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
-    backdropTracker: BackdropTracker? = null,
+    genreBackdrops: Map<Int, String> = emptyMap(),
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
     val cardHeight =
@@ -246,8 +245,7 @@ fun MovieGenresSection(
                 GenreCard(
                     genre = genre,
                     onClick = { onGenreClick(genre) },
-                    backdropTracker = backdropTracker,
-                    isMovie = true,
+                    backdropUrl = genreBackdrops[genre.id],
                     cardWidth = cardWidth,
                 )
             }
@@ -261,7 +259,7 @@ fun TvGenresSection(
     onGenreClick: (GenreSliderItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
-    backdropTracker: BackdropTracker? = null,
+    genreBackdrops: Map<Int, String> = emptyMap(),
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
     val cardHeight =
@@ -285,8 +283,7 @@ fun TvGenresSection(
                 GenreCard(
                     genre = genre,
                     onClick = { onGenreClick(genre) },
-                    backdropTracker = backdropTracker,
-                    isMovie = false,
+                    backdropUrl = genreBackdrops[genre.id],
                     cardWidth = cardWidth,
                 )
             }

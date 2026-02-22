@@ -25,11 +25,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +53,8 @@ fun PlaybackSpeedDialog(
     onDismiss: () -> Unit,
 ) {
     var sliderSpeed by remember(currentSpeed) { mutableFloatStateOf(currentSpeed) }
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val cardWidthFraction = if (isLandscape) 0.5f else 0.9f
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -65,7 +69,7 @@ fun PlaybackSpeedDialog(
         ) {
             Card(
                 modifier =
-                    Modifier.fillMaxWidth(0.5f).pointerInput(Unit) {
+                    Modifier.fillMaxWidth(cardWidthFraction).pointerInput(Unit) {
                         detectTapGestures(onTap = { /* Consume tap - prevent dismissal */ })
                     },
                 shape = RoundedCornerShape(16.dp),

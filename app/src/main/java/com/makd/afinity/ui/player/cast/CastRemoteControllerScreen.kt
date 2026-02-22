@@ -56,6 +56,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.cast.CastManager
 import com.makd.afinity.cast.CastSessionState
@@ -70,6 +72,7 @@ import kotlin.math.abs
 
 data class CastBitrateOption(val label: String, val bitrate: Int)
 
+@UnstableApi
 @Composable
 fun CastRemoteControllerScreen(
     castState: CastSessionState,
@@ -86,8 +89,11 @@ fun CastRemoteControllerScreen(
     var showQualityDialog by remember { mutableStateOf(false) }
     var showAudioDialog by remember { mutableStateOf(false) }
     var showSubtitleDialog by remember { mutableStateOf(false) }
+    var showEpisodeList by remember { mutableStateOf(false) }
 
+    val playlistState by viewModel.playlistState.collectAsStateWithLifecycle()
     val currentItem = castState.currentItem
+    val isEpisode = currentItem is AfinityEpisode
     val posterUrl = currentItem?.images?.primary?.toString()
 
     val configuration = LocalConfiguration.current
@@ -196,6 +202,8 @@ fun CastRemoteControllerScreen(
                             onShowQuality = { showQualityDialog = true },
                             onShowAudio = { showAudioDialog = true },
                             onShowSubtitle = { showSubtitleDialog = true },
+                            showEpisodeListButton = isEpisode && playlistState.queue.size > 1,
+                            onShowEpisodeList = { showEpisodeList = true },
                         )
                     }
                 }
@@ -224,6 +232,8 @@ fun CastRemoteControllerScreen(
                     onShowQuality = { showQualityDialog = true },
                     onShowAudio = { showAudioDialog = true },
                     onShowSubtitle = { showSubtitleDialog = true },
+                    showEpisodeListButton = isEpisode && playlistState.queue.size > 1,
+                    onShowEpisodeList = { showEpisodeList = true },
                 )
             }
         }
@@ -269,17 +279,34 @@ fun CastRemoteControllerScreen(
             onDismiss = { showInfo = false },
         )
     }
+
+    if (showEpisodeList && playlistState.queue.isNotEmpty()) {
+        CastEpisodeListSheet(
+            episodes = playlistState.queue,
+            currentItemId = currentItem?.id,
+            onEpisodeClick = { episode -> viewModel.jumpToEpisode(episode.id) },
+            onDismiss = { showEpisodeList = false },
+        )
+    }
 }
 
 @Composable
 private fun CastMediaInfo(currentItem: AfinityItem?, posterUrl: String?, isLandscape: Boolean) {
     if (currentItem == null) return
 
-    val posterFraction = if (isLandscape) 0.5f else 0.65f
+    val isEpisode = currentItem is AfinityEpisode
+    val aspectRatio = if (isEpisode) 16f / 9f else 2f / 3f
+    val posterFraction =
+        when {
+            isEpisode && isLandscape -> 0.75f
+            isEpisode -> 0.95f
+            isLandscape -> 0.5f
+            else -> 0.65f
+        }
 
     if (posterUrl != null) {
         Surface(
-            modifier = Modifier.fillMaxWidth(posterFraction).aspectRatio(2f / 3f),
+            modifier = Modifier.fillMaxWidth(posterFraction).aspectRatio(aspectRatio),
             shape = RoundedCornerShape(16.dp),
             shadowElevation = 16.dp,
             color = Color.Transparent,
@@ -296,7 +323,7 @@ private fun CastMediaInfo(currentItem: AfinityItem?, posterUrl: String?, isLands
         Box(
             modifier =
                 Modifier.fillMaxWidth(posterFraction)
-                    .aspectRatio(2f / 3f)
+                    .aspectRatio(aspectRatio)
                     .background(Color.DarkGray, RoundedCornerShape(16.dp))
         )
     }
@@ -347,6 +374,8 @@ private fun CastPlaybackControls(
     onShowQuality: () -> Unit,
     onShowAudio: () -> Unit,
     onShowSubtitle: () -> Unit,
+    showEpisodeListButton: Boolean,
+    onShowEpisodeList: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         val displayPosition = seekDragPosition ?: castState.currentPosition.toFloat()
@@ -469,6 +498,16 @@ private fun CastPlaybackControls(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (showEpisodeListButton) {
+                IconButton(onClick = onShowEpisodeList) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_episodes_list),
+                        contentDescription = "Episode List",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+            }
             IconButton(onClick = onShowSpeed) {
                 Icon(
                     painter = painterResource(R.drawable.ic_speed),
@@ -572,7 +611,7 @@ fun CastQualitySelectionDialog(
                                                 mediaSourceId = castState.mediaSourceId ?: "",
                                                 audioStreamIndex = castState.audioStreamIndex,
                                                 subtitleStreamIndex = castState.subtitleStreamIndex,
-                                                enableHevc = false,
+                                                enableHevc = castState.enableHevc,
                                             )
                                         }
                                     }
@@ -621,7 +660,8 @@ fun CastAudioSelectionDialog(
         text = {
             LazyColumn {
                 items(audioStreams) { stream ->
-                    val isSelected = stream.index == castState.audioStreamIndex
+                    val isSelected =
+                        castState.audioStreamIndex?.let { it == stream.index } ?: stream.isDefault
                     val displayName = buildString {
                         append(stream.language?.uppercase() ?: "Unknown")
                         append(" - ${stream.codec?.uppercase() ?: "N/A"}")
@@ -643,7 +683,7 @@ fun CastAudioSelectionDialog(
                                                 mediaSourceId = mediaSource.id ?: "",
                                                 subtitleStreamIndex = castState.subtitleStreamIndex,
                                                 maxBitrate = castState.castBitrate,
-                                                enableHevc = false,
+                                                enableHevc = castState.enableHevc,
                                             )
                                         }
                                     }
@@ -697,7 +737,10 @@ fun CastSubtitleSelectionDialog(
         text = {
             LazyColumn {
                 item {
-                    val isOff = castState.subtitleStreamIndex == null
+                    val anyStreamSelected =
+                        castState.subtitleStreamIndex != null &&
+                            subtitleStreams.any { it.index == castState.subtitleStreamIndex }
+                    val isOff = !anyStreamSelected
                     Row(
                         modifier =
                             Modifier.fillMaxWidth()
@@ -711,7 +754,7 @@ fun CastSubtitleSelectionDialog(
                                                 mediaSourceId = mediaSource.id ?: "",
                                                 audioStreamIndex = castState.audioStreamIndex,
                                                 maxBitrate = castState.castBitrate,
-                                                enableHevc = false,
+                                                enableHevc = castState.enableHevc,
                                             )
                                         }
                                     }
@@ -756,7 +799,7 @@ fun CastSubtitleSelectionDialog(
                                                 mediaSourceId = mediaSource.id ?: "",
                                                 audioStreamIndex = castState.audioStreamIndex,
                                                 maxBitrate = castState.castBitrate,
-                                                enableHevc = false,
+                                                enableHevc = castState.enableHevc,
                                             )
                                         }
                                     }

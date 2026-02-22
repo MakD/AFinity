@@ -221,7 +221,7 @@ fun RequestsScreen(
                                             )
                                         )
                                     },
-                                    backdropTracker = viewModel.backdropTracker,
+                                    genreBackdrops = uiState.movieGenreBackdrops,
                                     widthSizeClass = widthSizeClass,
                                 )
                             }
@@ -334,7 +334,7 @@ fun RequestsScreen(
                                             )
                                         )
                                     },
-                                    backdropTracker = viewModel.backdropTracker,
+                                    genreBackdrops = uiState.tvGenreBackdrops,
                                     widthSizeClass = widthSizeClass,
                                 )
                             }
