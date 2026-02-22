@@ -1,10 +1,13 @@
 package com.makd.afinity.ui.login
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -17,15 +20,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -49,11 +53,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -65,6 +69,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -124,112 +129,277 @@ fun LoginScreen(
         }
     }
 
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isExpanded = widthSizeClass == WindowWidthSizeClass.Expanded
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.surface,
     ) { innerPadding ->
         Box(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            modifier =
+                Modifier.fillMaxSize().padding(innerPadding).consumeWindowInsets(innerPadding),
             contentAlignment = Alignment.TopCenter,
         ) {
-            Column(
-                modifier =
-                    Modifier.widthIn(max = 550.dp)
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Spacer(modifier = Modifier.height(48.dp))
-
-                LoginHeader(
-                    isConnected = loginState.uiState.isConnectedToServer,
-                    serverUrl = loginState.serverUrl,
-                )
-
-                Spacer(modifier = Modifier.height(48.dp))
-
+            if (isExpanded) {
+                val expandedTopSpacer = if (isLandscape) 16.dp else 48.dp
+                val expandedBetweenSpacer = if (isLandscape) 24.dp else 48.dp
+                val expandedBottomSpacer = if (isLandscape) 24.dp else 48.dp
                 AnimatedContent(
                     targetState = loginState.uiState.isConnectedToServer,
-                    transitionSpec = {
-                        (slideInVertically { height -> height } + fadeIn()).togetherWith(
-                            slideOutVertically { height -> -height } + fadeOut()
-                        ) using SizeTransform(clip = false)
-                    },
-                    label = "LoginStateTransition",
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "ExpandedLoginStateTransition",
                 ) { isConnected ->
-                    if (!isConnected) {
-                        ServerConnectionContent(
-                            serverUrl = loginState.serverUrl,
-                            savedServers = savedServers,
-                            discoveredServers = loginState.uiState.discoveredServers,
-                            isConnecting = loginState.uiState.isConnecting,
-                            isDiscovering = loginState.uiState.isDiscovering,
-                            showAddServerInput = loginState.uiState.showAddServerInput,
-                            onUrlChange = viewModel::setServerUrl,
-                            onConnectToServer = viewModel::connectToServer,
-                            onSavedServerSelect = viewModel::selectServer,
-                            onDiscoveredServerSelect = { server ->
-                                val url = server.address.ifBlank { "http://${server.name}:8096" }
-                                viewModel.setServerUrl(url)
-                                viewModel.connectToServer()
-                            },
-                            onDiscoverServers = viewModel::discoverServers,
-                            onAddNewServer = viewModel::showAddNewServer,
-                            onCancelAddServer = viewModel::cancelAddServer,
-                        )
-                    } else {
-                        UserLoginContent(
-                            uiState = loginState.uiState,
-                            savedUsers = savedUsers,
-                            publicUsers = loginState.publicUsers,
-                            serverUrl = loginState.serverUrl,
-                            selectedMethod = selectedLoginMethod,
-                            onMethodChange = { selectedLoginMethod = it },
-                            onUsernameChange = viewModel::updateUsername,
-                            onPasswordChange = viewModel::updatePassword,
-                            onUserSelect = viewModel::selectUser,
-                            onSavedUserLogin = viewModel::loginWithSavedUser,
-                            onLogin = viewModel::login,
-                            onQuickConnectStart = viewModel::startQuickConnect,
-                            onQuickConnectCancel = viewModel::cancelQuickConnect,
-                            onChangeServer = { viewModel.setServerUrl("") },
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(48.dp))
-
-                AnimatedVisibility(
-                    visible = loginState.uiState.error != null,
-                    enter = fadeIn() + slideInVertically { it },
-                    exit = fadeOut() + slideOutVertically { it },
-                ) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.padding(bottom = 16.dp),
+                    Row(
+                        modifier =
+                            Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 24.dp),
+                        horizontalArrangement = Arrangement.Center,
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_info),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(20.dp),
+                        if (!isConnected) {
+                            Column(
+                                modifier =
+                                    Modifier.weight(1f)
+                                        .fillMaxHeight()
+                                        .imePadding()
+                                        .padding(end = 24.dp)
+                                        .verticalScroll(rememberScrollState()),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Top,
+                            ) {
+                                Spacer(modifier = Modifier.height(expandedTopSpacer))
+                                LoginHeader(isConnected = false, serverUrl = "")
+                                Spacer(modifier = Modifier.height(expandedBetweenSpacer))
+                                LocalDiscoveryContent(
+                                    discoveredServers = loginState.uiState.discoveredServers,
+                                    isDiscovering = loginState.uiState.isDiscovering,
+                                    onDiscoveredServerSelect = { server ->
+                                        val url =
+                                            server.address.ifBlank { "http://${server.name}:8096" }
+                                        viewModel.setServerUrl(url)
+                                        viewModel.connectToServer()
+                                    },
+                                    onDiscoverServers = viewModel::discoverServers,
+                                )
+                                Spacer(modifier = Modifier.height(expandedBottomSpacer))
+                            }
+
+                            VerticalDivider(
+                                modifier = Modifier.padding(vertical = expandedTopSpacer)
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = loginState.uiState.error ?: "",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
+                            Column(
+                                modifier =
+                                    Modifier.weight(1f)
+                                        .fillMaxHeight()
+                                        .imePadding()
+                                        .padding(start = 24.dp)
+                                        .verticalScroll(rememberScrollState()),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Top,
+                            ) {
+                                Spacer(modifier = Modifier.height(expandedTopSpacer))
+                                LoginErrorBanner(error = loginState.uiState.error)
+                                ManualServerContent(
+                                    serverUrl = loginState.serverUrl,
+                                    savedServers = savedServers,
+                                    isConnecting = loginState.uiState.isConnecting,
+                                    showAddServerInput = loginState.uiState.showAddServerInput,
+                                    onUrlChange = viewModel::setServerUrl,
+                                    onConnectToServer = viewModel::connectToServer,
+                                    onSavedServerSelect = viewModel::selectServer,
+                                    onAddNewServer = viewModel::showAddNewServer,
+                                    onCancelAddServer = viewModel::cancelAddServer,
+                                )
+                                Spacer(modifier = Modifier.height(expandedBottomSpacer))
+                            }
+                        } else {
+                            Column(
+                                modifier =
+                                    Modifier.weight(1f)
+                                        .fillMaxHeight()
+                                        .imePadding()
+                                        .padding(end = 24.dp)
+                                        .verticalScroll(rememberScrollState()),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Top,
+                            ) {
+                                Spacer(modifier = Modifier.height(expandedTopSpacer))
+                                LoginHeader(isConnected = true, serverUrl = loginState.serverUrl)
+                                Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 16.dp))
+                                TextButton(onClick = { viewModel.setServerUrl("") }) {
+                                    Text(stringResource(R.string.login_switch_server))
+                                }
+                                Spacer(
+                                    modifier = Modifier.height(if (isLandscape) 16.dp else 24.dp)
+                                )
+                                UserSelectionAndTabs(
+                                    uiState = loginState.uiState,
+                                    savedUsers = savedUsers,
+                                    publicUsers = loginState.publicUsers,
+                                    serverUrl = loginState.serverUrl,
+                                    selectedMethod = selectedLoginMethod,
+                                    onMethodChange = { selectedLoginMethod = it },
+                                    onUserSelect = viewModel::selectUser,
+                                    onSavedUserLogin = viewModel::loginWithSavedUser,
+                                )
+                                Spacer(modifier = Modifier.height(expandedBottomSpacer))
+                            }
+
+                            VerticalDivider(
+                                modifier = Modifier.padding(vertical = expandedTopSpacer)
                             )
+                            Column(
+                                modifier =
+                                    Modifier.weight(1f)
+                                        .fillMaxHeight()
+                                        .imePadding()
+                                        .padding(start = 24.dp)
+                                        .verticalScroll(rememberScrollState()),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Top,
+                            ) {
+                                Spacer(modifier = Modifier.height(expandedTopSpacer))
+                                LoginErrorBanner(error = loginState.uiState.error)
+                                UserLoginForms(
+                                    uiState = loginState.uiState,
+                                    selectedMethod = selectedLoginMethod,
+                                    onUsernameChange = viewModel::updateUsername,
+                                    onPasswordChange = viewModel::updatePassword,
+                                    onLogin = viewModel::login,
+                                    onQuickConnectStart = viewModel::startQuickConnect,
+                                    onQuickConnectCancel = viewModel::cancelQuickConnect,
+                                )
+                                Spacer(modifier = Modifier.height(expandedBottomSpacer))
+                            }
                         }
                     }
                 }
+            } else {
+                val topSpacerHeight = if (isLandscape) 16.dp else 64.dp
+                val bottomSpacerHeight = if (isLandscape) 32.dp else 64.dp
+                val innerSpacing = if (isLandscape) 16.dp else 32.dp
+                Column(
+                    modifier =
+                        Modifier.widthIn(max = 550.dp)
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .imePadding()
+                            .padding(horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top,
+                ) {
+                    Spacer(modifier = Modifier.height(topSpacerHeight))
+
+                    LoginHeader(
+                        isConnected = loginState.uiState.isConnectedToServer,
+                        serverUrl = loginState.serverUrl,
+                    )
+
+                    Spacer(modifier = Modifier.height(innerSpacing))
+
+                    LoginErrorBanner(error = loginState.uiState.error)
+
+                    AnimatedContent(
+                        targetState = loginState.uiState.isConnectedToServer,
+                        transitionSpec = {
+                            (slideInVertically { height -> height } + fadeIn()).togetherWith(
+                                slideOutVertically { height -> -height } + fadeOut()
+                            ) using SizeTransform(clip = false)
+                        },
+                        label = "LoginStateTransition",
+                    ) { isConnected ->
+                        if (!isConnected) {
+                            Column(verticalArrangement = Arrangement.spacedBy(innerSpacing)) {
+                                ManualServerContent(
+                                    serverUrl = loginState.serverUrl,
+                                    savedServers = savedServers,
+                                    isConnecting = loginState.uiState.isConnecting,
+                                    showAddServerInput = loginState.uiState.showAddServerInput,
+                                    onUrlChange = viewModel::setServerUrl,
+                                    onConnectToServer = viewModel::connectToServer,
+                                    onSavedServerSelect = viewModel::selectServer,
+                                    onAddNewServer = viewModel::showAddNewServer,
+                                    onCancelAddServer = viewModel::cancelAddServer,
+                                )
+
+                                LocalDiscoveryContent(
+                                    discoveredServers = loginState.uiState.discoveredServers,
+                                    isDiscovering = loginState.uiState.isDiscovering,
+                                    onDiscoveredServerSelect = { server ->
+                                        val url =
+                                            server.address.ifBlank { "http://${server.name}:8096" }
+                                        viewModel.setServerUrl(url)
+                                        viewModel.connectToServer()
+                                    },
+                                    onDiscoverServers = viewModel::discoverServers,
+                                )
+                            }
+                        } else {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                TextButton(onClick = { viewModel.setServerUrl("") }) {
+                                    Text(stringResource(R.string.login_switch_server))
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                UserSelectionAndTabs(
+                                    uiState = loginState.uiState,
+                                    savedUsers = savedUsers,
+                                    publicUsers = loginState.publicUsers,
+                                    serverUrl = loginState.serverUrl,
+                                    selectedMethod = selectedLoginMethod,
+                                    onMethodChange = { selectedLoginMethod = it },
+                                    onUserSelect = viewModel::selectUser,
+                                    onSavedUserLogin = viewModel::loginWithSavedUser,
+                                )
+                                Spacer(modifier = Modifier.height(24.dp))
+                                UserLoginForms(
+                                    uiState = loginState.uiState,
+                                    selectedMethod = selectedLoginMethod,
+                                    onUsernameChange = viewModel::updateUsername,
+                                    onPasswordChange = viewModel::updatePassword,
+                                    onLogin = viewModel::login,
+                                    onQuickConnectStart = viewModel::startQuickConnect,
+                                    onQuickConnectCancel = viewModel::cancelQuickConnect,
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(bottomSpacerHeight))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoginErrorBanner(error: String?) {
+    AnimatedVisibility(
+        visible = error != null,
+        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.errorContainer,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth(),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_info),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = error ?: "",
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }
@@ -268,95 +438,93 @@ private fun LoginHeader(isConnected: Boolean, serverUrl: String) {
                 textAlign = TextAlign.Center,
             )
         } else {
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier.padding(bottom = 16.dp),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_server),
-                        contentDescription = stringResource(R.string.cd_server_icon),
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = serverUrl.removePrefix("http://").removePrefix("https://"),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Text(
-                text = stringResource(R.string.login_welcome_back),
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-            )
+            ConnectedServerPill(serverUrl = serverUrl)
         }
     }
 }
 
 @Composable
-private fun ServerConnectionContent(
+private fun ConnectedServerPill(serverUrl: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.padding(bottom = 16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_server),
+                    contentDescription = stringResource(R.string.cd_server_icon),
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = serverUrl.removePrefix("http://").removePrefix("https://"),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.login_welcome_back),
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun ManualServerContent(
     serverUrl: String,
     savedServers: List<Server>,
-    discoveredServers: List<Server>,
     isConnecting: Boolean,
-    isDiscovering: Boolean,
     showAddServerInput: Boolean,
     onUrlChange: (String) -> Unit,
     onConnectToServer: () -> Unit,
     onSavedServerSelect: (Server) -> Unit,
-    onDiscoveredServerSelect: (Server) -> Unit,
-    onDiscoverServers: () -> Unit,
     onAddNewServer: () -> Unit,
     onCancelAddServer: () -> Unit,
 ) {
     val showSavedServers = savedServers.isNotEmpty() && !showAddServerInput
 
-    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (showSavedServers) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.login_saved_servers),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    TextButton(onClick = onAddNewServer) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_plus),
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.login_add_new_server))
-                        }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.login_saved_servers),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                TextButton(onClick = onAddNewServer) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_plus),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.login_add_new_server))
                     }
                 }
+            }
 
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 240.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(savedServers) { server ->
-                        SavedServerCard(
-                            server = server,
-                            isSelected = false,
-                            isConnecting = false,
-                            onClick = { onSavedServerSelect(server) },
-                        )
-                    }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                savedServers.forEach { server ->
+                    SavedServerCard(
+                        server = server,
+                        isSelected = false,
+                        isConnecting = false,
+                        onClick = { onSavedServerSelect(server) },
+                    )
                 }
             }
         } else {
@@ -420,81 +588,86 @@ private fun ServerConnectionContent(
                 }
             }
         }
+    }
+}
 
-        Column {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.login_local_network),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                    if (isDiscovering) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
+@Composable
+private fun LocalDiscoveryContent(
+    discoveredServers: List<Server>,
+    isDiscovering: Boolean,
+    onDiscoveredServerSelect: (Server) -> Unit,
+    onDiscoverServers: () -> Unit,
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.login_local_network),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                if (isDiscovering) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                } else {
+                    IconButton(onClick = onDiscoverServers) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_refresh),
+                            contentDescription = stringResource(R.string.login_refresh),
                         )
-                    } else {
-                        IconButton(onClick = onDiscoverServers) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_refresh),
-                                contentDescription = stringResource(R.string.login_refresh),
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (discoveredServers.isNotEmpty()) {
+            discoveredServers.forEach { server ->
+                Surface(
+                    onClick = { onDiscoveredServerSelect(server) },
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_server),
+                            contentDescription = stringResource(R.string.cd_server_icon),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                server.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                server.address,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (discoveredServers.isNotEmpty()) {
-                discoveredServers.forEach { server ->
-                    Surface(
-                        onClick = { onDiscoveredServerSelect(server) },
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_server),
-                                contentDescription = stringResource(R.string.cd_server_icon),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(
-                                    server.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                )
-                                Text(
-                                    server.address,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-            } else if (!isDiscovering) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        stringResource(R.string.login_no_servers_found),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
+        } else if (!isDiscovering) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    stringResource(R.string.login_no_servers_found),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                )
             }
         }
     }
@@ -548,34 +721,17 @@ private fun SavedServerCard(
 }
 
 @Composable
-private fun UserLoginContent(
+private fun UserSelectionAndTabs(
     uiState: LoginUiState,
     savedUsers: List<User>,
     publicUsers: List<User>,
     serverUrl: String,
     selectedMethod: LoginMethod,
     onMethodChange: (LoginMethod) -> Unit,
-    onUsernameChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
     onUserSelect: (User) -> Unit,
     onSavedUserLogin: (User) -> Unit,
-    onLogin: () -> Unit,
-    onQuickConnectStart: () -> Unit,
-    onQuickConnectCancel: () -> Unit,
-    onChangeServer: () -> Unit,
 ) {
-    var tabIndex by remember { mutableIntStateOf(0) }
-
-    Column {
-        TextButton(
-            onClick = onChangeServer,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        ) {
-            Text(stringResource(R.string.login_switch_server))
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         val allUsers = (savedUsers + publicUsers).distinctBy { it.id }
 
         if (allUsers.isNotEmpty()) {
@@ -604,46 +760,49 @@ private fun UserLoginContent(
         }
 
         SecondaryTabRow(
-            selectedTabIndex = tabIndex,
+            selectedTabIndex = selectedMethod.ordinal,
             containerColor = Color.Transparent,
             divider = {},
             indicator = {},
         ) {
             Tab(
-                selected = tabIndex == 0,
-                onClick = {
-                    tabIndex = 0
-                    onMethodChange(LoginMethod.PASSWORD)
-                },
+                selected = selectedMethod == LoginMethod.PASSWORD,
+                onClick = { onMethodChange(LoginMethod.PASSWORD) },
                 text = { Text(stringResource(R.string.login_method_password)) },
             )
             Tab(
-                selected = tabIndex == 1,
-                onClick = {
-                    tabIndex = 1
-                    onMethodChange(LoginMethod.QUICK_CONNECT)
-                },
+                selected = selectedMethod == LoginMethod.QUICK_CONNECT,
+                onClick = { onMethodChange(LoginMethod.QUICK_CONNECT) },
                 text = { Text(stringResource(R.string.login_method_quick_connect)) },
             )
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        AnimatedContent(targetState = tabIndex, label = "AuthMethod") { index ->
-            if (index == 0) {
-                PasswordForm(
-                    uiState = uiState,
-                    onUsernameChange = onUsernameChange,
-                    onPasswordChange = onPasswordChange,
-                    onLogin = onLogin,
-                )
-            } else {
-                QuickConnectView(
-                    uiState = uiState,
-                    onStart = onQuickConnectStart,
-                    onCancel = onQuickConnectCancel,
-                )
-            }
+@Composable
+private fun UserLoginForms(
+    uiState: LoginUiState,
+    selectedMethod: LoginMethod,
+    onUsernameChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onLogin: () -> Unit,
+    onQuickConnectStart: () -> Unit,
+    onQuickConnectCancel: () -> Unit,
+) {
+    AnimatedContent(targetState = selectedMethod, label = "AuthMethod") { method ->
+        if (method == LoginMethod.PASSWORD) {
+            PasswordForm(
+                uiState = uiState,
+                onUsernameChange = onUsernameChange,
+                onPasswordChange = onPasswordChange,
+                onLogin = onLogin,
+            )
+        } else {
+            QuickConnectView(
+                uiState = uiState,
+                onStart = onQuickConnectStart,
+                onCancel = onQuickConnectCancel,
+            )
         }
     }
 }
@@ -762,8 +921,8 @@ private fun PasswordForm(
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
                         painter =
-                            if (passwordVisible) painterResource(id = R.drawable.ic_visibility_off)
-                            else painterResource(id = R.drawable.ic_visibility),
+                            if (passwordVisible) painterResource(id = R.drawable.ic_visibility)
+                            else painterResource(id = R.drawable.ic_visibility_off),
                         contentDescription = null,
                     )
                 }

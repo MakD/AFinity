@@ -6,8 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
@@ -32,8 +30,8 @@ import com.makd.afinity.ui.login.LoginScreen
 import com.makd.afinity.ui.theme.AFinityTheme
 import com.makd.afinity.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -122,13 +120,7 @@ private fun MainContent(
         }
 
         AuthenticationState.NotAuthenticated -> {
-            Scaffold(modifier = modifier) { innerPadding ->
-                LoginScreen(
-                    onLoginSuccess = {},
-                    modifier = Modifier.padding(innerPadding),
-                    widthSizeClass = widthSizeClass,
-                )
-            }
+            LoginScreen(onLoginSuccess = {}, modifier = modifier, widthSizeClass = widthSizeClass)
         }
     }
 }
