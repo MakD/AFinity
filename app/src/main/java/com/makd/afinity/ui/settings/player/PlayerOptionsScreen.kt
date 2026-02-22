@@ -301,6 +301,73 @@ fun PlayerOptionsScreen(
                     )
                 }
             }
+
+            item {
+                SettingsGroup(title = stringResource(R.string.pref_group_chromecast)) {
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_cast),
+                        title = stringResource(R.string.pref_cast_hevc_title),
+                        subtitle = stringResource(R.string.pref_cast_hevc_description),
+                        checked = uiState.castHevcEnabled,
+                        onCheckedChange = { viewModel.setCastHevcEnabled(it) },
+                    )
+
+                    SettingsDivider()
+
+                    var showBitrateMenu by remember { mutableStateOf(false) }
+                    val bitrateOptions = listOf(
+                        16_000_000 to "16 Mbps",
+                        8_000_000 to "8 Mbps",
+                        4_000_000 to "4 Mbps",
+                        2_000_000 to "2 Mbps",
+                        1_000_000 to "1 Mbps",
+                    )
+                    val currentBitrateLabel = bitrateOptions.find { it.first == uiState.castMaxBitrate }?.second ?: "16 Mbps"
+
+                    Box {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showBitrateMenu = true }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_speed),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.pref_cast_max_bitrate_title),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                Text(
+                                    text = currentBitrateLabel,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                )
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = showBitrateMenu,
+                            onDismissRequest = { showBitrateMenu = false },
+                        ) {
+                            bitrateOptions.forEach { (bitrate, label) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = {
+                                        viewModel.setCastMaxBitrate(bitrate)
+                                        showBitrateMenu = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

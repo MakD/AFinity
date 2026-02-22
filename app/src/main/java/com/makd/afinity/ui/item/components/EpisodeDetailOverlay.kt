@@ -44,10 +44,10 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
+import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
-import org.jellyfin.sdk.model.api.MediaStreamType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -341,7 +341,7 @@ fun EpisodeDetailOverlay(
                         if (episode.playbackPositionTicks > 0)
                             stringResource(R.string.episode_resume)
                         else stringResource(R.string.episode_play),
-                    buttonIcon = painterResource(id = R.drawable.ic_play_arrow),
+                    buttonIcon = painterResource(id = R.drawable.ic_player_play_filled),
                     onPlayClick = { selection -> onPlayClick(episode, selection) },
                     modifier = Modifier.fillMaxWidth(),
                 )

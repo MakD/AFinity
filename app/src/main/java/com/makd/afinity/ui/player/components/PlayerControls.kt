@@ -380,10 +380,7 @@ fun PlayerControls(
                 onClick = { onPlayerEvent(PlayerEvent.SkipSegment(uiState.currentSegment)) },
                 modifier =
                     Modifier.align(Alignment.BottomEnd)
-                        .padding(
-                            end = 16.dp,
-                            bottom = if (uiState.showControls) 70.dp else 16.dp,
-                        ),
+                        .padding(end = 16.dp, bottom = if (uiState.showControls) 70.dp else 16.dp),
             )
         }
     }
@@ -647,6 +644,22 @@ private fun TopControls(
                 }
 
                 if (!uiState.isControlsLocked && !uiState.isInPictureInPictureMode) {
+                    IconButton(
+                        onClick = { onPlayerEvent(PlayerEvent.RequestCastDeviceSelection) },
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(
+                                id = if (uiState.isCasting) R.drawable.ic_cast_connected
+                                else R.drawable.ic_cast,
+                            ),
+                            contentDescription = stringResource(R.string.cd_cast),
+                            tint = if (uiState.isCasting) MaterialTheme.colorScheme.primary
+                            else Color.White,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+
                     IconButton(onClick = onPipToggle, modifier = Modifier.size(40.dp)) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_pip),

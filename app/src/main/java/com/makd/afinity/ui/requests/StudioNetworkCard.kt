@@ -27,7 +27,6 @@ import com.makd.afinity.data.models.jellyseerr.Network
 import com.makd.afinity.data.models.jellyseerr.Studio
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.util.BackdropTracker
 
 @Composable
 fun StudioCard(studio: Studio, onClick: () -> Unit, cardWidth: Dp, modifier: Modifier = Modifier) {
@@ -90,8 +89,7 @@ fun GenreCard(
     onClick: () -> Unit,
     cardWidth: Dp,
     modifier: Modifier = Modifier,
-    backdropTracker: BackdropTracker? = null,
-    isMovie: Boolean = true,
+    backdropUrl: String? = null,
 ) {
 
     Column(modifier = modifier.width(cardWidth)) {
@@ -103,7 +101,7 @@ fun GenreCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                genre.getDuotoneBackdropUrl(backdropTracker, isMovie)?.let { backdropUrl ->
+                backdropUrl?.let { backdropUrl ->
                     AsyncImage(
                         imageUrl = backdropUrl,
                         contentDescription = genre.name,

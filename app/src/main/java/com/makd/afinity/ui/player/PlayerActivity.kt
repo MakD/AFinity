@@ -144,8 +144,12 @@ class PlayerActivity : ComponentActivity() {
                 }
             }
 
-            LaunchedEffect(uiState.resolvedOrientation) {
-                requestedOrientation = uiState.resolvedOrientation
+            LaunchedEffect(uiState.resolvedOrientation, uiState.isCasting) {
+                requestedOrientation = if (uiState.isCasting) {
+                    android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                } else {
+                    uiState.resolvedOrientation
+                }
             }
 
             AFinityTheme(themeMode = themeMode, dynamicColor = dynamicColors) {

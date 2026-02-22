@@ -13,6 +13,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
+import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
@@ -35,6 +36,8 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
 
     @Inject lateinit var preferencesRepository: PreferencesRepository
 
+    @Inject lateinit var castManager: CastManager
+
     @Inject lateinit var okHttpClient: OkHttpClient
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -46,6 +49,8 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
             Timber.plant(Timber.DebugTree())
             Timber.d("Afinity Application started")
         }
+
+        castManager.initialize(this)
 
         applicationScope.launch {
             val frequency = preferencesRepository.getUpdateCheckFrequency()

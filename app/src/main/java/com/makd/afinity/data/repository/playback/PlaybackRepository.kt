@@ -1,7 +1,9 @@
 package com.makd.afinity.data.repository.playback
 
 import java.util.UUID
+import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.PlaybackInfoDto
+import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 
 interface PlaybackRepository {
 
@@ -78,4 +80,15 @@ interface PlaybackRepository {
     suspend fun getBitrateTestBytes(size: Int): ByteArray?
 
     suspend fun detectMaxBitrate(): Int?
+
+    suspend fun getPlaybackInfoForCast(
+        itemId: UUID,
+        deviceProfile: DeviceProfile,
+        maxStreamingBitrate: Int?,
+        maxAudioChannels: Int?,
+        audioStreamIndex: Int?,
+        subtitleStreamIndex: Int?,
+        mediaSourceId: String?,
+        startTimeTicks: Long = 0L,
+    ): PlaybackInfoResponse?
 }

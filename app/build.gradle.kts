@@ -178,5 +178,7 @@ dependencies {
     implementation(libs.compose.pager.indicator)
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+    implementation(libs.play.services.cast.framework)
+    implementation(libs.androidx.mediarouter)
     coreLibraryDesugaring(libs.android.desugar.jdk)
 }

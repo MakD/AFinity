@@ -98,6 +98,9 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
 
         val NOTIFICATION_PERMISSION_DECLINED =
             booleanPreferencesKey("notification_permission_declined")
+
+        val CAST_HEVC_ENABLED = booleanPreferencesKey("cast_hevc_enabled")
+        val CAST_MAX_BITRATE = intPreferencesKey("cast_max_bitrate")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -365,6 +368,30 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
 
     override suspend fun getNotificationPermissionDeclined(): Boolean {
         return dataStore.data.first()[Keys.NOTIFICATION_PERMISSION_DECLINED] ?: false
+    }
+
+    override suspend fun setCastHevcEnabled(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.CAST_HEVC_ENABLED] = enabled }
+    }
+
+    override suspend fun getCastHevcEnabled(): Boolean {
+        return dataStore.data.first()[Keys.CAST_HEVC_ENABLED] ?: false
+    }
+
+    override fun getCastHevcEnabledFlow(): Flow<Boolean> {
+        return dataStore.data.map { it[Keys.CAST_HEVC_ENABLED] ?: false }
+    }
+
+    override suspend fun setCastMaxBitrate(bitrate: Int) {
+        dataStore.edit { preferences -> preferences[Keys.CAST_MAX_BITRATE] = bitrate }
+    }
+
+    override suspend fun getCastMaxBitrate(): Int {
+        return dataStore.data.first()[Keys.CAST_MAX_BITRATE] ?: 16_000_000
+    }
+
+    override fun getCastMaxBitrateFlow(): Flow<Int> {
+        return dataStore.data.map { it[Keys.CAST_MAX_BITRATE] ?: 16_000_000 }
     }
 
     override suspend fun clearAllPreferences() {
