@@ -19,7 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -151,12 +151,16 @@ constructor(
                 val playMethod = if (isTranscoding) "Transcode" else "DirectPlay"
                 val playSessionId = playbackInfo.playSessionId ?: ""
 
-                val contentType =
-                    if (isTranscoding && streamUrl.contains(".m3u8")) {
-                        "application/x-mpegURL"
-                    } else {
-                        "video/mp4"
+                val contentType = when {
+                    isTranscoding && streamUrl.contains(".m3u8") -> "application/x-mpegURL"
+                    isTranscoding -> "video/mp2t"
+                    else -> when (mediaSource.container?.lowercase()) {
+                        "mkv", "matroska" -> "video/x-matroska"
+                        "webm" -> "video/webm"
+                        "ts" -> "video/mp2t"
+                        else -> "video/mp4"
                     }
+                }
 
                 Timber.d(
                     "Cast stream URL: $streamUrl (method: $playMethod, contentType: $contentType)"
@@ -421,7 +425,7 @@ constructor(
             ?.sessionManager
             ?.removeSessionManagerListener(castSessionManagerListener, CastSession::class.java)
         castContext = null
-        scope.cancel()
+        scope.coroutineContext.cancelChildren()
         Timber.d("CastManager released")
     }
 
