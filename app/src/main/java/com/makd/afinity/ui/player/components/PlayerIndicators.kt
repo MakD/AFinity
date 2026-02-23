@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -61,6 +62,11 @@ fun PlayerIndicators(uiState: PlayerViewModel.PlayerUiState, modifier: Modifier 
             show = uiState.showVolumeIndicator,
             level = uiState.volumeLevel,
             modifier = Modifier.align(Alignment.CenterEnd),
+        )
+
+        SpeedIndicator(
+            show = uiState.isSpeedingUp,
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 48.dp),
         )
     }
 }
@@ -225,5 +231,39 @@ private fun getVolumeIcon(level: Int): Painter {
         level == 0 -> painterResource(id = R.drawable.ic_volume_off)
         level < 30 -> painterResource(id = R.drawable.ic_volume_down)
         else -> painterResource(id = R.drawable.ic_volume_up)
+    }
+}
+
+@Composable
+private fun SpeedIndicator(show: Boolean, modifier: Modifier = Modifier) {
+    AnimatedVisibility(
+        visible = show,
+        enter = scaleIn(animationSpec = tween(200)) + fadeIn(),
+        exit = scaleOut(animationSpec = tween(200)) + fadeOut(),
+        modifier = modifier,
+    ) {
+        Card(
+            modifier = Modifier.clip(RoundedCornerShape(32.dp)),
+            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.8f)),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_fast_forward),
+                    contentDescription = "Speeding up",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text = "2x Speed",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
     }
 }

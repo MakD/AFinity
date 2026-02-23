@@ -108,6 +108,7 @@ constructor(
     val gestureConfig = GestureConfig()
 
     private var controlsHideJob: Job? = null
+    private var speedBeforeLongPress: Float? = null
     private var currentMediaSegments: List<AfinitySegment> = emptyList()
     private var segmentCheckingJob: Job? = null
 
@@ -1363,6 +1364,23 @@ constructor(
         handlePlayerEvent(PlayerEvent.ToggleControls)
     }
 
+    fun onLongPressStart() {
+        val currentSpeed = _uiState.value.playbackSpeed
+        if (currentSpeed < 2.0f) {
+            speedBeforeLongPress = currentSpeed
+            handlePlayerEvent(PlayerEvent.SetPlaybackSpeed(2.0f))
+            updateUiState { it.copy(isSpeedingUp = true) }
+        }
+    }
+
+    fun onLongPressEnd() {
+        speedBeforeLongPress?.let { savedSpeed ->
+            handlePlayerEvent(PlayerEvent.SetPlaybackSpeed(savedSpeed))
+            speedBeforeLongPress = null
+            updateUiState { it.copy(isSpeedingUp = false) }
+        }
+    }
+
     fun onDoubleTapSeek(isForward: Boolean) {
         val delta = if (isForward) 10000L else -10000L
         handlePlayerEvent(PlayerEvent.SeekRelative(delta))
@@ -1515,6 +1533,7 @@ constructor(
         if (!_uiState.value.isCasting) {
             player.pause()
         }
+        onLongPressEnd()
     }
 
     fun stopPlayback() {
@@ -1643,6 +1662,7 @@ constructor(
         val isLiveChannel: Boolean = false,
         val isCasting: Boolean = false,
         val showCastChooser: Boolean = false,
+        val isSpeedingUp: Boolean = false,
     )
 }
 

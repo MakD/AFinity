@@ -212,6 +212,8 @@ fun PlayerScreen(
                 onDoubleTap = { isForward ->
                     if (!uiState.isControlsLocked) viewModel.onDoubleTapSeek(isForward)
                 },
+                onLongPressStart = { if (!uiState.isControlsLocked) viewModel.onLongPressStart() },
+                onLongPressEnd = { if (!uiState.isControlsLocked) viewModel.onLongPressEnd() },
                 onVolumeGesture = { percent, isActive ->
                     if (!uiState.isControlsLocked) {
                         if (!isActive) {

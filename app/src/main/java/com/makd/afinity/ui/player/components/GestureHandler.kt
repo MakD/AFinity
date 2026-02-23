@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -17,8 +18,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import kotlin.math.abs
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import timber.log.Timber
+import kotlin.math.abs
 
 private enum class GestureType {
     BRIGHTNESS,
@@ -31,6 +34,8 @@ fun GestureHandler(
     modifier: Modifier = Modifier,
     onSingleTap: () -> Unit,
     onDoubleTap: (isForward: Boolean) -> Unit,
+    onLongPressStart: () -> Unit = {},
+    onLongPressEnd: () -> Unit = {},
     onBrightnessGesture: (percent: Float, isActive: Boolean) -> Unit,
     onVolumeGesture: (percent: Float, isActive: Boolean) -> Unit,
     onSeekGesture: (delta: Float) -> Unit,
@@ -50,12 +55,15 @@ fun GestureHandler(
 
     val currentOnSingleTap by rememberUpdatedState(onSingleTap)
     val currentOnDoubleTap by rememberUpdatedState(onDoubleTap)
+    val currentOnLongPressStart by rememberUpdatedState(onLongPressStart)
+    val currentOnLongPressEnd by rememberUpdatedState(onLongPressEnd)
     val currentOnBrightnessGesture by rememberUpdatedState(onBrightnessGesture)
     val currentOnVolumeGesture by rememberUpdatedState(onVolumeGesture)
     val currentOnSeekGesture by rememberUpdatedState(onSeekGesture)
     val currentOnSeekPreview by rememberUpdatedState(onSeekPreview)
 
     var isDragging by remember { mutableStateOf(false) }
+    var isLongPressActive by remember { mutableStateOf(false) }
     var gestureType by remember { mutableStateOf<GestureType?>(null) }
 
     var dragStartOffset by remember { mutableStateOf(Offset.Zero) }
@@ -63,6 +71,8 @@ fun GestureHandler(
     var totalHorizontalDelta by remember { mutableFloatStateOf(0f) }
     var totalVerticalDelta by remember { mutableFloatStateOf(0f) }
     var isSeeking by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
 
     Box(
         modifier =
@@ -75,6 +85,24 @@ fun GestureHandler(
                             currentOnDoubleTap(isForward)
                         },
                         onTap = { currentOnSingleTap() },
+                        onPress = { offset ->
+                            val job =
+                                coroutineScope.launch {
+                                    delay(500)
+                                    if (!isDragging) {
+                                        isLongPressActive = true
+                                        currentOnLongPressStart()
+                                    }
+                                }
+
+                            tryAwaitRelease()
+                            job.cancel()
+
+                            if (isLongPressActive) {
+                                isLongPressActive = false
+                                currentOnLongPressEnd()
+                            }
+                        },
                     )
                 }
                 .pointerInput(screenWidth, screenHeight) {
@@ -90,6 +118,11 @@ fun GestureHandler(
                             }
 
                             isDragging = true
+                            if (isLongPressActive) {
+                                isLongPressActive = false
+                                currentOnLongPressEnd()
+                            }
+
                             dragStartOffset = offset
                             totalHorizontalDelta = 0f
                             totalVerticalDelta = 0f
