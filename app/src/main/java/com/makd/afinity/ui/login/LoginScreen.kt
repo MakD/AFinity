@@ -281,8 +281,8 @@ fun LoginScreen(
                     modifier =
                         Modifier.widthIn(max = 550.dp)
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
                             .imePadding()
+                            .verticalScroll(rememberScrollState())
                             .padding(horizontal = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Top,
