@@ -96,8 +96,8 @@ fun SettingsScreen(
     var showAudiobookshelfBottomSheet by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
     val jellyseerrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val audiobookshelfSheetState = rememberModalBottomSheetState()
-    val sessionSwitcherSheetState = rememberModalBottomSheetState()
+    val audiobookshelfSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sessionSwitcherSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     if (showLogoutDialog) {
         LogoutConfirmationDialog(
