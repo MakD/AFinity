@@ -288,7 +288,18 @@ fun ItemHeaderContent(
                 }
 
                 if (flagUrl != null) {
-                    CircleFlagIcon(url = flagUrl, modifier = Modifier.size(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_language),
+                            contentDescription = "Language",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        CircleFlagIcon(url = flagUrl, modifier = Modifier.size(16.dp))
+                    }
                 } else if (language != null) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
