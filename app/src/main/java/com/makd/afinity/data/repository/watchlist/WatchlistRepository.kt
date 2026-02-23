@@ -4,8 +4,9 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+import java.util.UUID
 
 interface WatchlistRepository {
 
@@ -27,7 +28,9 @@ interface WatchlistRepository {
 
     suspend fun getWatchlistCount(): Int
 
-    fun getWatchlistCountFlow(): Flow<Int>
+    val watchlistCountFlow: StateFlow<Int?>
+
+    suspend fun refreshWatchlistCount()
 
     suspend fun clearWatchlist()
 }

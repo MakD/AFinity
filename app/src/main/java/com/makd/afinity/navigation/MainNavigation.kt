@@ -85,8 +85,7 @@ fun MainNavigation(
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
     val watchlistRepository: WatchlistRepository =
         hiltViewModel<MainNavigationViewModel>().watchlistRepository
-    val watchlistCount by
-        watchlistRepository.getWatchlistCountFlow().collectAsStateWithLifecycle(initialValue = 0)
+    val watchlistCount by watchlistRepository.watchlistCountFlow.collectAsStateWithLifecycle()
     val jellyseerrRepository: JellyseerrRepository =
         hiltViewModel<MainNavigationViewModel>().jellyseerrRepository
     val isJellyseerrAuthenticated by

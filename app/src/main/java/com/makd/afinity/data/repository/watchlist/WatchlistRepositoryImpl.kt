@@ -11,15 +11,18 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class WatchlistRepositoryImpl
@@ -29,13 +32,23 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val jellyfinRepository: JellyfinRepository,
 ) : WatchlistRepository {
+    private val _watchlistCountFlow = MutableStateFlow<Int?>(null)
+    override val watchlistCountFlow: StateFlow<Int?> = _watchlistCountFlow.asStateFlow()
+
+    override suspend fun refreshWatchlistCount() {
+        _watchlistCountFlow.value = getWatchlistCount()
+    }
 
     override suspend fun addToWatchlist(itemId: UUID, itemType: String): Boolean {
-        return userDataRepository.setLike(itemId, isLiked = true)
+        val success = userDataRepository.setLike(itemId, isLiked = true)
+        if (success) refreshWatchlistCount()
+        return success
     }
 
     override suspend fun removeFromWatchlist(itemId: UUID): Boolean {
-        return userDataRepository.setLike(itemId, isLiked = false)
+        val success = userDataRepository.setLike(itemId, isLiked = false)
+        if (success) refreshWatchlistCount()
+        return success
     }
 
     override suspend fun isInWatchlist(itemId: UUID): Boolean {
@@ -140,10 +153,6 @@ constructor(
         }
     }
 
-    override fun getWatchlistCountFlow(): Flow<Int> {
-        return flow { emit(getWatchlistCount()) }.flowOn(Dispatchers.IO)
-    }
-
     override suspend fun clearWatchlist() {
         return withContext(Dispatchers.IO) {
             try {
@@ -158,6 +167,7 @@ constructor(
                     }
                 }
                 Timber.d("Cleared watchlist (unliked ${likedItemIds.size} items)")
+                refreshWatchlistCount()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to clear watchlist")
             }

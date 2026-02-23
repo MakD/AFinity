@@ -27,13 +27,9 @@ import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.util.JellyfinImageUrlBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.random.Random
-import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -52,6 +48,11 @@ import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.random.Random
+import kotlin.time.Duration.Companion.hours
 
 @Singleton
 class AppDataRepository
@@ -63,6 +64,7 @@ constructor(
     private val database: AfinityDatabase,
     private val sessionManager: SessionManager,
     private val jellyfinImageUrlBuilder: JellyfinImageUrlBuilder,
+    private val watchlistRepository: WatchlistRepository,
 ) {
     private val GENRE_CACHE_TTL = 12.hours.inWholeMilliseconds
     private val PERSON_SECTION_CACHE_TTL = 48.hours.inWholeMilliseconds
@@ -224,6 +226,7 @@ constructor(
                 val continueWatchingDeferred = async { loadContinueWatching() }
                 val nextUpDeferred = async { loadNextUp() }
                 val librariesDeferred = async { loadLibraries() }
+                val watchlistCountDeferred = async { watchlistRepository.refreshWatchlistCount() }
 
                 updateProgress(0.3f, context.getString(R.string.loading_phase_fetching))
 
@@ -238,6 +241,7 @@ constructor(
                 _heroCarouselItems.value = heroCarouselDeferred.await()
                 _continueWatching.value = continueWatchingDeferred.await()
                 _nextUp.value = nextUpDeferred.await()
+                watchlistCountDeferred.await()
 
                 updateProgress(0.8f, context.getString(R.string.loading_phase_finalizing))
 
