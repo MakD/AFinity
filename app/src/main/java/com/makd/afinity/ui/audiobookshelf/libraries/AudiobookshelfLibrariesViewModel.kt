@@ -245,7 +245,8 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
             _uiState.value = _uiState.value.copy(isLoadingGenres = true)
 
             try {
-                val genresResult = audiobookshelfRepository.getGenres()
+                val libraryIds = libraryList.map { it.id }
+                val genresResult = audiobookshelfRepository.getGenres(libraryIds)
                 val allGenres = genresResult.getOrNull() ?: emptyList()
 
                 if (allGenres.isEmpty()) {

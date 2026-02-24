@@ -30,6 +30,8 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -88,10 +90,12 @@ constructor(
 
     override suspend fun setActiveJellyfinSession(serverId: String, userId: UUID) {
         val currentContext = activeContext
-        if (currentContext != null &&
-            currentContext.first == serverId &&
-            currentContext.second == userId &&
-            _isAuthenticated.value) {
+        if (
+            currentContext != null &&
+                currentContext.first == serverId &&
+                currentContext.second == userId &&
+                _isAuthenticated.value
+        ) {
             Timber.d("Already in Audiobookshelf context for Server: $serverId, User: $userId")
             return
         }
@@ -159,8 +163,10 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val loginResponse = response.body()!!
                     val user = loginResponse.user
-                    val token = user.accessToken ?: user.token
-                        ?: return@withContext Result.failure(Exception("No token received"))
+                    val token =
+                        user.accessToken
+                            ?: user.token
+                            ?: return@withContext Result.failure(Exception("No token received"))
                     val refreshToken = user.refreshToken
 
                     securePreferencesRepository.saveAudiobookshelfAuthForUser(
@@ -934,24 +940,37 @@ constructor(
         }
     }
 
-    override suspend fun getGenres(): Result<List<String>> {
+    override suspend fun getGenres(libraryIds: List<String>): Result<List<String>> {
         return withContext(Dispatchers.IO) {
             try {
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
                     return@withContext Result.failure(Exception("No network connection"))
                 }
 
-                val response = apiService.get().getGenres()
-
-                if (response.isSuccessful && response.body() != null) {
-                    val genres = response.body()!!.genres.sorted()
-                    Timber.d("Fetched ${genres.size} genres from Audiobookshelf")
-                    Result.success(genres)
-                } else {
-                    Result.failure(Exception("Failed to fetch genres: ${response.message()}"))
+                if (libraryIds.isEmpty()) {
+                    return@withContext Result.success(emptyList())
                 }
+
+                val deferredResponses =
+                    libraryIds.map { libraryId ->
+                        async { apiService.get().getFilterData(libraryId) }
+                    }
+
+                val responses = deferredResponses.awaitAll()
+
+                val combinedGenres =
+                    responses
+                        .filter { it.isSuccessful && it.body() != null }
+                        .flatMap { it.body()!!.genres }
+                        .toSet()
+                        .sorted()
+
+                Timber.d(
+                    "Fetched ${combinedGenres.size} combined genres across ${libraryIds.size} libraries"
+                )
+                Result.success(combinedGenres)
             } catch (e: Exception) {
-                Timber.e(e, "Failed to get genres")
+                Timber.e(e, "Failed to get combined genres")
                 Result.failure(e)
             }
         }

@@ -142,12 +142,20 @@ constructor(
     fun loadAudiobookshelfGenres() {
         viewModelScope.launch {
             try {
+                var libraries = audiobookshelfRepository.getLibrariesFlow().first()
+                if (libraries.isEmpty()) {
+                    libraries =
+                        audiobookshelfRepository.refreshLibraries().getOrDefault(emptyList())
+                }
+                val libraryIds = libraries.map { it.id }
                 audiobookshelfRepository
-                    .getGenres()
+                    .getGenres(libraryIds)
                     .fold(
                         onSuccess = { genres ->
                             _uiState.update { it.copy(audiobookshelfGenres = genres) }
-                            Timber.d("Loaded ${genres.size} Audiobookshelf genres")
+                            Timber.d(
+                                "Loaded ${genres.size} Audiobookshelf genres across ${libraryIds.size} libraries"
+                            )
                         },
                         onFailure = { error ->
                             Timber.e(error, "Failed to load Audiobookshelf genres")

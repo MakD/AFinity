@@ -4,7 +4,7 @@ import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.AuthorizeResponse
 import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
 import com.makd.afinity.data.models.audiobookshelf.BatchSyncResponse
-import com.makd.afinity.data.models.audiobookshelf.GenresResponse
+import com.makd.afinity.data.models.audiobookshelf.FilterDataResponse
 import com.makd.afinity.data.models.audiobookshelf.ItemResponse
 import com.makd.afinity.data.models.audiobookshelf.ItemsInProgressResponse
 import com.makd.afinity.data.models.audiobookshelf.LibrariesResponse
@@ -88,7 +88,8 @@ interface AudiobookshelfApiService {
         @Query("include") include: String? = "progress",
     ): Response<ItemResponse>
 
-    @GET("api/genres") suspend fun getGenres(): Response<GenresResponse>
+    @GET("api/libraries/{libraryId}/filterdata")
+    suspend fun getFilterData(@Path("libraryId") libraryId: String): Response<FilterDataResponse>
 
     @GET("api/me") suspend fun getMe(): Response<AudiobookshelfUser>
 
