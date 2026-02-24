@@ -21,6 +21,7 @@ import com.makd.afinity.data.models.MovieSectionType
 import com.makd.afinity.data.models.PersonFromMovieSection
 import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.PersonSectionType
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions
@@ -29,7 +30,7 @@ import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 @Composable
 fun PersonSection(
     section: PersonSection,
-    onItemClick: (AfinityMovie) -> Unit,
+    onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
 ) {
@@ -64,8 +65,8 @@ fun PersonSection(
                 key = { movie ->
                     "person_${section.sectionType.name}_${section.person.id}_${movie.id}"
                 },
-            ) { movie ->
-                MediaItemCard(item = movie, onClick = { onItemClick(movie) }, cardWidth = cardWidth)
+            ) { item ->
+                MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
             }
         }
     }
@@ -121,7 +122,7 @@ fun MovieRecommendationSection(
 @Composable
 fun PersonFromMovieSection(
     section: PersonFromMovieSection,
-    onItemClick: (AfinityMovie) -> Unit,
+    onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
 ) {
@@ -152,8 +153,8 @@ fun PersonFromMovieSection(
                 key = { movie ->
                     "actor_recent_${section.person.id}_${section.referenceMovie.id}_${movie.id}"
                 },
-            ) { movie ->
-                MediaItemCard(item = movie, onClick = { onItemClick(movie) }, cardWidth = cardWidth)
+            ) { item ->
+                MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
             }
         }
     }

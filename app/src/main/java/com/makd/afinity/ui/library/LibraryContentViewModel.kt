@@ -5,11 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.map
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
@@ -18,6 +21,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -58,6 +62,19 @@ constructor(
         )
     val uiState: StateFlow<LibraryContentUiState> = _uiState.asStateFlow()
 
+    private val _itemUpdates = MutableStateFlow<Map<UUID, AfinityItem>>(emptyMap())
+
+    private fun applyUpdatesToPagingFlow(
+        baseFlow: Flow<PagingData<AfinityItem>>
+    ): Flow<PagingData<AfinityItem>> {
+        return baseFlow
+            .cachedIn(viewModelScope)
+            .combine(_itemUpdates) { pagingData, updates ->
+                pagingData.map { item -> updates[item.id] ?: item }
+            }
+            .cachedIn(viewModelScope)
+    }
+
     private val _pagingData = MutableStateFlow<Flow<PagingData<AfinityItem>>>(emptyFlow())
     val pagingData: StateFlow<Flow<PagingData<AfinityItem>>> = _pagingData.asStateFlow()
 
@@ -88,7 +105,14 @@ constructor(
         viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
                 if (event is PlaybackEvent.Synced) {
-                    loadItems()
+                    val syncedItem = jellyfinRepository.getItemById(event.itemId) ?: return@collect
+                    val targetItem =
+                        when (syncedItem) {
+                            is AfinityEpisode -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                            is AfinitySeason -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                            else -> syncedItem
+                        } ?: return@collect
+                    _itemUpdates.value += (targetItem.id to targetItem)
                 }
             }
         }
@@ -131,18 +155,17 @@ constructor(
     private fun loadItems() {
         val type = libraryType ?: return
 
-        _pagingData.value =
-            jellyfinRepository
-                .getItemsPaging(
-                    parentId = libraryId?.let { UUID.fromString(it) },
-                    libraryType = type,
-                    sortBy = currentSortBy,
-                    sortDescending = currentSortDescending,
-                    filter = currentFilter,
-                    nameStartsWith = null,
-                    studioName = studioName,
-                )
-                .cachedIn(viewModelScope)
+        val baseFlow =
+            jellyfinRepository.getItemsPaging(
+                parentId = libraryId?.let { UUID.fromString(it) },
+                libraryType = type,
+                sortBy = currentSortBy,
+                sortDescending = currentSortDescending,
+                filter = currentFilter,
+                nameStartsWith = null,
+                studioName = studioName,
+            )
+        _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
     }
 
     private fun loadLibraryContent() {
@@ -231,18 +254,17 @@ constructor(
 
                 _uiState.value = _uiState.value.copy(selectedLetter = letter)
 
-                _pagingData.value =
-                    jellyfinRepository
-                        .getItemsPaging(
-                            parentId = libraryId?.let { UUID.fromString(it) },
-                            libraryType = type,
-                            sortBy = currentSortBy,
-                            sortDescending = currentSortDescending,
-                            filter = currentFilter,
-                            nameStartsWith = letterFilter,
-                            studioName = studioName,
-                        )
-                        .cachedIn(viewModelScope)
+                val baseFlow =
+                    jellyfinRepository.getItemsPaging(
+                        parentId = libraryId?.let { UUID.fromString(it) },
+                        libraryType = type,
+                        sortBy = currentSortBy,
+                        sortDescending = currentSortDescending,
+                        filter = currentFilter,
+                        nameStartsWith = letterFilter,
+                        studioName = studioName,
+                    )
+                _pagingData.value = applyUpdatesToPagingFlow(baseFlow)
 
                 Timber.d("Alphabet scroll: Created new paging source for letter '$letter'")
             } catch (e: Exception) {

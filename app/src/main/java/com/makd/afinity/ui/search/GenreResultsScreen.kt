@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,7 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,10 +36,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 
@@ -55,6 +55,11 @@ fun GenreResultsScreen(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val movies =
+        viewModel.moviesPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
+    val shows =
+        viewModel.showsPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
 
     LaunchedEffect(genre) { viewModel.loadGenreResults(genre) }
 
@@ -105,8 +110,8 @@ fun GenreResultsScreen(
 
             else -> {
                 GenreResultsContent(
-                    movies = uiState.movies,
-                    shows = uiState.shows,
+                    movies = movies,
+                    shows = shows,
                     onItemClick = onItemClick,
                     widthSizeClass = widthSizeClass,
                 )
@@ -117,12 +122,12 @@ fun GenreResultsScreen(
 
 @Composable
 private fun GenreResultsContent(
-    movies: List<AfinityMovie>,
-    shows: List<AfinityShow>,
+    movies: LazyPagingItems<AfinityItem>,
+    shows: LazyPagingItems<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val tabs = listOf(stringResource(R.string.tab_movies), stringResource(R.string.tab_tv_shows))
 
     Column {
@@ -139,7 +144,6 @@ private fun GenreResultsContent(
                 ) {
                     tabs.forEachIndexed { index, title ->
                         val isSelected = selectedTab == index
-                        val count = if (index == 0) movies.size else shows.size
 
                         Surface(
                             onClick = { selectedTab = index },
@@ -173,32 +177,6 @@ private fun GenreResultsContent(
                                             MaterialTheme.colorScheme.onSurfaceVariant
                                         },
                                 )
-
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color =
-                                        if (isSelected) {
-                                            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)
-                                        } else {
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                        },
-                                ) {
-                                    Text(
-                                        text = count.toString(),
-                                        modifier =
-                                            Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                        style =
-                                            MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.Medium
-                                            ),
-                                        color =
-                                            if (isSelected) {
-                                                MaterialTheme.colorScheme.onPrimary
-                                            } else {
-                                                MaterialTheme.colorScheme.primary
-                                            },
-                                    )
-                                }
                             }
                         }
                     }
@@ -208,7 +186,10 @@ private fun GenreResultsContent(
 
         when (selectedTab) {
             0 -> {
-                if (movies.isEmpty()) {
+                val isMoviesEmpty =
+                    movies.loadState.refresh is LoadState.NotLoading && movies.itemCount == 0
+
+                if (isMoviesEmpty) {
                     EmptyStateMessage(stringResource(R.string.empty_genre_movies))
                 } else {
                     ItemGrid(
@@ -220,7 +201,10 @@ private fun GenreResultsContent(
             }
 
             1 -> {
-                if (shows.isEmpty()) {
+                val isShowsEmpty =
+                    shows.loadState.refresh is LoadState.NotLoading && shows.itemCount == 0
+
+                if (isShowsEmpty) {
                     EmptyStateMessage(stringResource(R.string.empty_genre_tv))
                 } else {
                     ItemGrid(
@@ -236,7 +220,7 @@ private fun GenreResultsContent(
 
 @Composable
 private fun ItemGrid(
-    items: List<AfinityItem>,
+    items: LazyPagingItems<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
@@ -247,13 +231,16 @@ private fun ItemGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        items(items) { item ->
-            MediaItemCard(
-                item = item,
-                onClick = { onItemClick(item) },
-                cardWidth = widthSizeClass.gridMinSize,
-                modifier = Modifier.fillMaxWidth(),
-            )
+        items(count = items.itemCount) { index ->
+            val item = items[index]
+            if (item != null) {
+                MediaItemCard(
+                    item = item,
+                    onClick = { onItemClick(item) },
+                    cardWidth = widthSizeClass.gridMinSize,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }

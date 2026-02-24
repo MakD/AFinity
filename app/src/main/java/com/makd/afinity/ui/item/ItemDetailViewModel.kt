@@ -37,8 +37,6 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +45,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemKind
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 @HiltViewModel
 class ItemDetailViewModel
@@ -109,15 +110,49 @@ constructor(
                     }
 
                     is PlaybackEvent.Synced -> {
+                        val isNextEpisode = _uiState.value.nextEpisode?.id == event.itemId
+                        val isBoxSetItem = _uiState.value.boxSetItems.any { it.id == event.itemId }
                         val isChildUpdate =
                             _uiState.value.seasons.any { season ->
                                 season.episodes.any { it.id == event.itemId } ||
                                     season.id == event.itemId
                             }
 
-                        if (event.itemId == itemId || isChildUpdate) {
-                            Timber.d("Global sync event (child or self), refreshing details...")
-                            loadItem()
+                        var isRelated =
+                            event.itemId == itemId || isChildUpdate || isNextEpisode || isBoxSetItem
+                        var syncedEpisode: AfinityEpisode? = null
+
+                        if (!isRelated) {
+                            try {
+                                val syncedItem = jellyfinRepository.getItemById(event.itemId)
+                                if (syncedItem is AfinityEpisode) {
+                                    isRelated =
+                                        (syncedItem.seriesId == itemId ||
+                                            syncedItem.seasonId == itemId)
+                                    syncedEpisode = syncedItem
+                                } else if (syncedItem is AfinitySeason) {
+                                    isRelated = (syncedItem.seriesId == itemId)
+                                }
+                            } catch (e: Exception) {
+                                Timber.e(e, "Error checking synced item")
+                            }
+                        } else {
+                            try {
+                                val syncedItem = jellyfinRepository.getItemById(event.itemId)
+                                if (syncedItem is AfinityEpisode) {
+                                    syncedEpisode = syncedItem
+                                }
+                            } catch (e: Exception) {
+                                Timber.e(e, "Error fetching synced episode")
+                            }
+                        }
+
+                        if (isRelated) {
+                            syncedEpisode?.let { ep ->
+                                _episodeStatusUpdates.value += (ep.id to ep.played)
+                            }
+
+                            refreshFromCacheImmediate()
                         }
                     }
                 }
@@ -172,6 +207,7 @@ constructor(
                     _uiState.value = _uiState.value.copy(downloadInfo = itemDownload)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 Timber.e(e, "Failed to observe download status")
             }
         }
@@ -184,13 +220,35 @@ constructor(
                 if (cachedItem != null) {
                     _uiState.value = _uiState.value.copy(item = cachedItem)
                     Timber.d("UI updated immediately from cache: ${cachedItem.name}")
+
                     if (cachedItem is AfinityShow) {
                         launch {
                             try {
                                 val nextEpisode = jellyfinRepository.getEpisodeToPlay(cachedItem.id)
                                 _uiState.value = _uiState.value.copy(nextEpisode = nextEpisode)
                             } catch (e: Exception) {
-                                Timber.w(e, "Failed to get next episode in background")
+                                Timber.w(e, "Failed to get next episode")
+                            }
+                        }
+                        launch {
+                            try {
+                                val seasons = jellyfinRepository.getSeasons(cachedItem.id)
+                                _uiState.value = _uiState.value.copy(seasons = seasons)
+                            } catch (e: Exception) {
+                                Timber.w(e, "Failed to get updated seasons")
+                            }
+                        }
+                    } else if (cachedItem is AfinitySeason) {
+                        launch {
+                            try {
+                                val nextEpisode =
+                                    jellyfinRepository.getEpisodeToPlayForSeason(
+                                        cachedItem.id,
+                                        cachedItem.seriesId,
+                                    )
+                                _uiState.value = _uiState.value.copy(nextEpisode = nextEpisode)
+                            } catch (e: Exception) {
+                                Timber.w(e, "Failed to get next episode for season")
                             }
                         }
                     }
@@ -807,6 +865,8 @@ constructor(
                     if (!success) {
                         _uiState.value = _uiState.value.copy(item = currentItem)
                         Timber.w("Failed to toggle favorite status, reverted UI")
+                    } else {
+                        playbackStateManager.notifyItemChanged(currentItem.id)
                     }
                 }
             } catch (e: Exception) {
@@ -864,6 +924,7 @@ constructor(
                                 currentItem.id,
                                 FieldSets.REFRESH_USER_DATA,
                             )
+                        playbackStateManager.notifyItemChanged(currentItem.id)
 
                         if (refreshed is AfinityEpisode && refreshed.played) {
                             mediaRepository.invalidateNextUpCache()
@@ -905,6 +966,8 @@ constructor(
                     if (!success) {
                         _uiState.value = _uiState.value.copy(item = currentItem)
                         Timber.w("Failed to toggle like status, reverted UI")
+                    } else {
+                        playbackStateManager.notifyItemChanged(currentItem.id)
                     }
                 }
             } catch (e: Exception) {

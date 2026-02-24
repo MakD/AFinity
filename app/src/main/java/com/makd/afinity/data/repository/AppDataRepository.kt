@@ -917,7 +917,7 @@ constructor(
                     )
                 val cachedItems =
                     json.decodeFromString<List<String>>(cached.itemsData).mapNotNull {
-                        afinityTypeConverters.toAfinityMovie(it)
+                        afinityTypeConverters.toAfinityItem(it)
                     }
                 return PersonSection(
                     person = cachedPersonData.person,
@@ -943,7 +943,8 @@ constructor(
 
             if (filteredItems.size < 5) return null
 
-            val selectedItems = filteredItems.filterIsInstance<AfinityMovie>().shuffled().take(20)
+            val selectedItems =
+                filteredItems.filter { it is AfinityMovie || it is AfinityShow }.shuffled().take(20)
 
             val section =
                 PersonSection(
@@ -953,13 +954,19 @@ constructor(
                     sectionType = sectionType,
                 )
 
-            val movieJsonStrings =
-                selectedItems.mapNotNull { afinityTypeConverters.fromAfinityMovie(it) }
+            val itemJsonStrings =
+                selectedItems.mapNotNull {
+                    when (it) {
+                        is AfinityMovie -> afinityTypeConverters.fromAfinityMovie(it)
+                        is AfinityShow -> afinityTypeConverters.fromAfinityShow(it)
+                        else -> null
+                    }
+                }
             val entity =
                 PersonSectionCacheEntity(
                     cacheKey = cacheKey,
                     personData = json.encodeToString(personWithCount.toCached()),
-                    itemsData = json.encodeToString(movieJsonStrings),
+                    itemsData = json.encodeToString(itemJsonStrings),
                     sectionType = sectionType.name,
                     cachedTimestamp = currentTime,
                 )

@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.models.media.AfinityVideo
@@ -33,7 +34,6 @@ import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -50,6 +50,7 @@ import org.jellyfin.sdk.model.api.PersonKind.ACTOR
 import org.jellyfin.sdk.model.api.PersonKind.DIRECTOR
 import org.jellyfin.sdk.model.api.PersonKind.WRITER
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel
@@ -228,6 +229,7 @@ constructor(
                 if (event is PlaybackEvent.Synced) {
                     Timber.d("HomeViewModel received sync event for ${event.itemId}")
                     appDataRepository.reloadHomeData()
+                    updateItemInDynamicSections(event.itemId)
                 }
             }
         }
@@ -991,6 +993,97 @@ constructor(
             loadStudios()
             loadCombinedGenres()
             loadNewHomescreenSections()
+        }
+    }
+
+    private suspend fun updateItemInDynamicSections(itemId: java.util.UUID) {
+        val syncedItem = jellyfinRepository.getItemById(itemId) ?: return
+
+        val updatedItem =
+            when (syncedItem) {
+                is AfinityEpisode -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                is AfinitySeason -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                else -> syncedItem
+            } ?: return
+        val targetId = updatedItem.id
+
+        var genreMoviesChanged = false
+        val currentGenreMovies = _uiState.value.genreMovies.toMutableMap()
+        currentGenreMovies.forEach { (genre, movies) ->
+            val index = movies.indexOfFirst { it.id == targetId }
+            if (index != -1 && updatedItem is AfinityMovie) {
+                val mutableMovies = movies.toMutableList()
+                mutableMovies[index] = updatedItem
+                currentGenreMovies[genre] = mutableMovies
+                genreMoviesChanged = true
+            }
+        }
+        if (genreMoviesChanged) {
+            _uiState.value = _uiState.value.copy(genreMovies = currentGenreMovies)
+        }
+
+        var genreShowsChanged = false
+        val currentGenreShows = _uiState.value.genreShows.toMutableMap()
+        currentGenreShows.forEach { (genre, shows) ->
+            val index = shows.indexOfFirst { it.id == targetId }
+            if (index != -1 && updatedItem is AfinityShow) {
+                val mutableShows = shows.toMutableList()
+                mutableShows[index] = updatedItem
+                currentGenreShows[genre] = mutableShows
+                genreShowsChanged = true
+            }
+        }
+        if (genreShowsChanged) {
+            _uiState.value = _uiState.value.copy(genreShows = currentGenreShows)
+        }
+
+        var sectionsChanged = false
+        val updatedSections =
+            loadedRecommendationSections.map { section ->
+                when (section) {
+                    is HomeSection.Movie -> {
+                        val items = section.section.recommendedItems
+                        val index = items.indexOfFirst { it.id == targetId }
+                        if (index != -1 && updatedItem is AfinityMovie) {
+                            sectionsChanged = true
+                            val newItems = items.toMutableList().apply { this[index] = updatedItem }
+                            HomeSection.Movie(section.section.copy(recommendedItems = newItems))
+                        } else section
+                    }
+                    is HomeSection.Person -> {
+                        val items = section.section.items
+                        val index = items.indexOfFirst { it.id == targetId }
+                        if (
+                            index != -1 &&
+                                (updatedItem is AfinityMovie || updatedItem is AfinityShow)
+                        ) {
+                            sectionsChanged = true
+                            val newItems = items.toMutableList().apply { this[index] = updatedItem }
+                            HomeSection.Person(section.section.copy(items = newItems))
+                        } else section
+                    }
+                    is HomeSection.PersonFromMovie -> {
+                        val items = section.section.items
+                        val index = items.indexOfFirst { it.id == targetId }
+                        if (
+                            index != -1 &&
+                                (updatedItem is AfinityMovie || updatedItem is AfinityShow)
+                        ) {
+                            sectionsChanged = true
+                            val newItems = items.toMutableList().apply { this[index] = updatedItem }
+                            HomeSection.PersonFromMovie(section.section.copy(items = newItems))
+                        } else section
+                    }
+                    is HomeSection.Genre -> section
+                }
+            }
+
+        if (sectionsChanged) {
+            loadedRecommendationSections.clear()
+            loadedRecommendationSections.addAll(updatedSections)
+            withContext(Dispatchers.Main) {
+                updateCombinedSections(appDataRepository.combinedGenres.value)
+            }
         }
     }
 }

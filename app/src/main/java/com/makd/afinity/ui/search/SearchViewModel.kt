@@ -2,6 +2,8 @@ package com.makd.afinity.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.PlaybackEvent
+import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
@@ -15,8 +17,10 @@ import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.ServiceSettings
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -25,7 +29,6 @@ import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +38,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class SearchViewModel
@@ -45,6 +49,7 @@ constructor(
     private val jellyseerrRepository: JellyseerrRepository,
     private val appDataRepository: AppDataRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val playbackStateManager: PlaybackStateManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -83,6 +88,22 @@ constructor(
         viewModelScope.launch {
             audiobookshelfRepository.currentConfig.collect { config ->
                 _uiState.update { it.copy(audiobookshelfServerUrl = config?.serverUrl) }
+            }
+        }
+
+        viewModelScope.launch {
+            playbackStateManager.playbackEvents.collect { event ->
+                if (event is PlaybackEvent.Synced) {
+                    val syncedItem = jellyfinRepository.getItemById(event.itemId) ?: return@collect
+                    val targetItem =
+                        when (syncedItem) {
+                            is AfinityEpisode -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                            is AfinitySeason -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                            else -> syncedItem
+                        } ?: return@collect
+
+                    updateItemInSearchResults(targetItem)
+                }
             }
         }
     }
@@ -282,9 +303,7 @@ constructor(
                 .getCurrentUser()
                 .fold(
                     onSuccess = { user -> _currentUser.value = user },
-                    onFailure = { error ->
-                        Timber.e(error, "Failed to load current user")
-                    },
+                    onFailure = { error -> Timber.e(error, "Failed to load current user") },
                 )
         }
     }
@@ -660,10 +679,12 @@ constructor(
 
     private fun loadServiceSettings(mediaType: MediaType) {
         val user = _currentUser.value ?: return
-        if (!user.hasPermission(Permissions.REQUEST_ADVANCED) &&
-            !user.hasPermission(Permissions.REQUEST_4K) &&
-            !user.hasPermission(Permissions.MANAGE_REQUESTS)
-        ) return
+        if (
+            !user.hasPermission(Permissions.REQUEST_ADVANCED) &&
+                !user.hasPermission(Permissions.REQUEST_4K) &&
+                !user.hasPermission(Permissions.MANAGE_REQUESTS)
+        )
+            return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingServers = true) }
             jellyseerrRepository
@@ -692,10 +713,10 @@ constructor(
                 .fold(
                     onSuccess = { details ->
                         val activeProfileId = details.server?.activeProfileId
-                        val preselected =
-                            details.profiles.find { it.id == activeProfileId }
-                        val rootFolder = details.server?.activeDirectory
-                            ?: details.rootFolders.firstOrNull()?.path
+                        val preselected = details.profiles.find { it.id == activeProfileId }
+                        val rootFolder =
+                            details.server?.activeDirectory
+                                ?: details.rootFolders.firstOrNull()?.path
                         _uiState.update {
                             it.copy(
                                 availableProfiles = details.profiles,
@@ -710,6 +731,18 @@ constructor(
                         _uiState.update { it.copy(isLoadingProfiles = false) }
                     },
                 )
+        }
+    }
+
+    private fun updateItemInSearchResults(updatedItem: AfinityItem) {
+        val currentResults = _uiState.value.searchResults
+        val index = currentResults.indexOfFirst { it.id == updatedItem.id }
+
+        if (index != -1) {
+            val mutableResults = currentResults.toMutableList()
+            mutableResults[index] = updatedItem
+            _uiState.update { it.copy(searchResults = mutableResults) }
+            Timber.d("Updated search result: ${updatedItem.name}")
         }
     }
 }

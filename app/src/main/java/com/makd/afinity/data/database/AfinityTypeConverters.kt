@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.room.TypeConverter
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
@@ -419,6 +420,32 @@ class AfinityTypeConverters {
                 )
             } catch (e: Exception) {
                 null
+            }
+        }
+    }
+
+    @TypeConverter
+    fun fromAfinityItem(item: AfinityItem?): String? {
+        return when (item) {
+            is AfinityMovie -> "MOVIE::${fromAfinityMovie(item)}"
+            is AfinityShow -> "SHOW::${fromAfinityShow(item)}"
+            else -> null
+        }
+    }
+
+    @TypeConverter
+    fun toAfinityItem(itemString: String?): AfinityItem? {
+        if (itemString == null) return null
+
+        return when {
+            itemString.startsWith("MOVIE::") -> {
+                toAfinityMovie(itemString.removePrefix("MOVIE::"))
+            }
+            itemString.startsWith("SHOW::") -> {
+                toAfinityShow(itemString.removePrefix("SHOW::"))
+            }
+            else -> {
+                toAfinityMovie(itemString)
             }
         }
     }
