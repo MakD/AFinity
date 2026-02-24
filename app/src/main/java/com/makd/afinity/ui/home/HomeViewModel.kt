@@ -227,8 +227,16 @@ constructor(
         viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
                 if (event is PlaybackEvent.Synced) {
-                    Timber.d("HomeViewModel received sync event for ${event.itemId}")
+                    Timber.d("HomeViewModel received sync for ${event.itemId}")
+                    val syncedItem = jellyfinRepository.getItemById(event.itemId) ?: return@collect
+                    val targetItem =
+                        when (syncedItem) {
+                            is AfinityEpisode -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                            is AfinitySeason -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                            else -> syncedItem
+                        } ?: return@collect
                     appDataRepository.reloadHomeData()
+                    appDataRepository.updateItemInCaches(targetItem)
                     updateItemInDynamicSections(event.itemId)
                 }
             }

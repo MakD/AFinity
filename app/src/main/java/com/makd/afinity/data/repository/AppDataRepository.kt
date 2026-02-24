@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
@@ -560,7 +561,7 @@ constructor(
     suspend fun loadMoviesForGenre(genre: String, limit: Int = 20) {
         if (_genreMovies.value.containsKey(genre)) return
 
-        kotlinx.coroutines.withContext(Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             try {
                 _genreLoadingStates.value += (genre to true)
 
@@ -1020,6 +1021,62 @@ constructor(
     private fun updateProgress(progress: Float, phase: String) {
         _loadingProgress.value = progress
         _loadingPhase.value = phase
+    }
+
+    suspend fun updateItemInCaches(updatedItem: AfinityItem) {
+        if (updatedItem is AfinityMovie) {
+            val newGenreMovies = _genreMovies.value.toMutableMap()
+            var updatedMovie = false
+            newGenreMovies.forEach { (genre, movies) ->
+                val index = movies.indexOfFirst { it.id == updatedItem.id }
+                if (index != -1) {
+                    val mut = movies.toMutableList()
+                    mut[index] = updatedItem
+                    newGenreMovies[genre] = mut
+                    updatedMovie = true
+                }
+            }
+            if (updatedMovie) {
+                _genreMovies.value = newGenreMovies
+            }
+        }
+
+        if (updatedItem is AfinityShow) {
+            val newGenreShows = _genreShows.value.toMutableMap()
+            var updatedShow = false
+            newGenreShows.forEach { (genre, shows) ->
+                val index = shows.indexOfFirst { it.id == updatedItem.id }
+                if (index != -1) {
+                    val mut = shows.toMutableList()
+                    mut[index] = updatedItem
+                    newGenreShows[genre] = mut
+                    updatedShow = true
+                }
+            }
+            if (updatedShow) {
+                _genreShows.value = newGenreShows
+            }
+        }
+        withContext(Dispatchers.IO) {
+            try {
+                if (updatedItem is AfinityMovie) {
+                    val newJson = afinityTypeConverters.fromAfinityMovie(updatedItem)
+                    if (newJson != null) {
+                        genreCacheDao.updateCachedMovieData(updatedItem.id.toString(), newJson)
+                        Timber.d("Updated movie DB cache for: ${updatedItem.name}")
+                    }
+                } else if (updatedItem is AfinityShow) {
+                    val newJson = afinityTypeConverters.fromAfinityShow(updatedItem)
+                    if (newJson != null) {
+                        genreCacheDao.updateCachedShowData(updatedItem.id.toString(), newJson)
+                        Timber.d("Updated show DB cache for: ${updatedItem.name}")
+                    }
+                }
+                personSectionDao.clearAllCache()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update DB caches")
+            }
+        }
     }
 
     suspend fun clearAllData() {
