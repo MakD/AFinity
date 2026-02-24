@@ -5,13 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.repository.JellyseerrRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class JellyseerrLoginViewModel
@@ -95,33 +95,60 @@ constructor(private val jellyseerrRepository: JellyseerrRepository) : ViewModel(
 
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
-                jellyseerrRepository.setServerUrl(_uiState.value.serverUrl.trim())
+                val rawUrl = _uiState.value.serverUrl.trim()
+                val candidateUrls =
+                    if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+                        listOf(rawUrl)
+                    } else {
+                        listOf("https://$rawUrl", "http://$rawUrl")
+                    }
 
-                jellyseerrRepository
-                    .login(
-                        email = _uiState.value.email.trim(),
-                        password = _uiState.value.password,
-                        useJellyfinAuth = _uiState.value.useJellyfinAuth,
-                    )
-                    .fold(
-                        onSuccess = { user ->
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    loginSuccess = true,
-                                    loggedInUser = user.displayName ?: user.username ?: user.email,
-                                    currentUser = user,
-                                )
-                            }
-                            Timber.d("Login successful for user: ${user.username}")
-                        },
-                        onFailure = { error ->
-                            _uiState.update {
-                                it.copy(isLoading = false, error = parseErrorMessage(error.message))
-                            }
-                            Timber.e(error, "Login failed")
-                        },
-                    )
+                var successUser: JellyseerrUser? = null
+                var lastError: Throwable? = null
+                for (url in candidateUrls) {
+                    jellyseerrRepository.setServerUrl(url)
+
+                    val result =
+                        jellyseerrRepository.login(
+                            email = _uiState.value.email.trim(),
+                            password = _uiState.value.password,
+                            useJellyfinAuth = _uiState.value.useJellyfinAuth,
+                        )
+
+                    if (result.isSuccess) {
+                        successUser = result.getOrNull()
+                        _uiState.update { it.copy(serverUrl = url) }
+                        break
+                    } else {
+                        lastError = result.exceptionOrNull()
+                        val errMsg = lastError?.message ?: ""
+                        if (errMsg.contains("401") || errMsg.contains("403")) {
+                            break
+                        }
+                        Timber.d(
+                            "Connection to $url failed, trying next protocol (if any). Error: $errMsg"
+                        )
+                    }
+                }
+                if (successUser != null) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            loginSuccess = true,
+                            loggedInUser =
+                                successUser!!.displayName
+                                    ?: successUser!!.username
+                                    ?: successUser!!.email,
+                            currentUser = successUser,
+                        )
+                    }
+                    Timber.d("Login successful for user: ${successUser!!.username}")
+                } else {
+                    _uiState.update {
+                        it.copy(isLoading = false, error = parseErrorMessage(lastError?.message))
+                    }
+                    Timber.e(lastError, "Login failed across all protocols")
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(isLoading = false, error = "An unexpected error occurred: ${e.message}")

@@ -231,7 +231,7 @@ object NetworkModule {
         var base = raw.trim()
 
         if (!base.startsWith("http://") && !base.startsWith("https://")) {
-            base = "https://$base"
+            base = "http://$base"
         }
 
         if (!base.endsWith("/")) {
@@ -336,7 +336,7 @@ object NetworkModule {
         var base = raw.trim()
 
         if (!base.startsWith("http://") && !base.startsWith("https://")) {
-            base = "https://$base"
+            base = "http://$base"
         }
 
         if (!base.endsWith("/")) {

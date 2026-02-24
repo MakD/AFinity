@@ -5,12 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class AudiobookshelfLoginViewModel
@@ -85,27 +86,49 @@ constructor(
         viewModelScope.launch {
             _uiState.value = currentState.copy(isLoggingIn = true, error = null)
 
-            val result =
-                audiobookshelfRepository.login(
-                    serverUrl = normalizeUrl(currentState.serverUrl),
-                    username = currentState.username,
-                    password = currentState.password,
-                )
+            val rawUrl = currentState.serverUrl.trim().removeSuffix("/")
+            val candidateUrls =
+                if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+                    listOf(rawUrl)
+                } else {
+                    listOf("https://$rawUrl", "http://$rawUrl")
+                }
+            var successUser: com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser? = null
+            var lastError: Throwable? = null
 
-            result.fold(
-                onSuccess = { user ->
-                    _uiState.value = _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
-                    Timber.d("Audiobookshelf login successful for user: ${user.username}")
-                },
-                onFailure = { error ->
-                    _uiState.value =
-                        _uiState.value.copy(
-                            isLoggingIn = false,
-                            error = "Login failed: ${error.message}",
-                        )
-                    Timber.e(error, "Audiobookshelf login failed")
-                },
-            )
+            for (url in candidateUrls) {
+                val result =
+                    audiobookshelfRepository.login(
+                        serverUrl = url,
+                        username = currentState.username,
+                        password = currentState.password,
+                    )
+
+                if (result.isSuccess) {
+                    successUser = result.getOrNull()
+                    _uiState.update { it.copy(serverUrl = url) }
+                    break
+                } else {
+                    lastError = result.exceptionOrNull()
+                    val errMsg = lastError?.message ?: ""
+                    if (errMsg.contains("401") || errMsg.contains("403")) {
+                        break
+                    }
+                    Timber.d("Connection to $url failed, trying next protocol. Error: $errMsg")
+                }
+            }
+
+            if (successUser != null) {
+                _uiState.value = _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
+                Timber.d("Audiobookshelf login successful for user: ${successUser.username}")
+            } else {
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoggingIn = false,
+                        error = "Login failed: ${lastError?.message ?: "Unknown error"}",
+                    )
+                Timber.e(lastError, "Audiobookshelf login failed across all protocols")
+            }
         }
     }
 
