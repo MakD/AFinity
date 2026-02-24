@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.filter
 import androidx.paging.map
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
@@ -70,7 +71,17 @@ constructor(
         return baseFlow
             .cachedIn(viewModelScope)
             .combine(_itemUpdates) { pagingData, updates ->
-                pagingData.map { item -> updates[item.id] ?: item }
+                pagingData
+                    .map { item -> updates[item.id] ?: item }
+                    .filter { item ->
+                        when (currentFilter) {
+                            FilterType.ALL -> true
+                            FilterType.WATCHED -> item.played
+                            FilterType.UNWATCHED -> !item.played
+                            FilterType.WATCHLIST -> item.liked
+                            FilterType.FAVORITES -> item.favorite
+                        }
+                    }
             }
             .cachedIn(viewModelScope)
     }
