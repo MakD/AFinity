@@ -103,16 +103,27 @@ object NetworkModule {
         if (BuildConfig.DEBUG) {
             val loggingInterceptor =
                 HttpLoggingInterceptor { message ->
+                        val sanitizedMessage =
+                            message.replace(
+                                Regex("(?i)(api_key|token|accessToken)=[^&\\s]+"),
+                                "$1=[REDACTED]",
+                            )
                         if (
-                            message.contains("ERROR") ||
-                                message.contains("FAILED") ||
-                                message.contains("-->") ||
-                                message.contains("<--")
+                            sanitizedMessage.contains("ERROR") ||
+                                sanitizedMessage.contains("FAILED") ||
+                                sanitizedMessage.contains("-->") ||
+                                sanitizedMessage.contains("<--")
                         ) {
-                            Timber.tag("Jellyfin-HTTP").d(message)
+                            Timber.tag("Jellyfin-HTTP").d(sanitizedMessage)
                         }
                     }
-                    .apply { level = HttpLoggingInterceptor.Level.BASIC }
+                    .apply {
+                        level = HttpLoggingInterceptor.Level.BASIC
+                        redactHeader("Authorization")
+                        redactHeader("Cookie")
+                        redactHeader("X-MediaBrowser-Token")
+                        redactHeader("x-refresh-token")
+                    }
             builder.addInterceptor(loggingInterceptor)
         }
 
@@ -156,16 +167,27 @@ object NetworkModule {
         if (BuildConfig.DEBUG) {
             val loggingInterceptor =
                 HttpLoggingInterceptor { message ->
+                        val sanitizedMessage =
+                            message.replace(
+                                Regex("(?i)(api_key|token|accessToken)=[^&\\s]+"),
+                                "$1=[REDACTED]",
+                            )
+
                         if (
-                            message.contains("ERROR") ||
-                                message.contains("FAILED") ||
-                                message.contains("-->") ||
-                                message.contains("<--")
+                            sanitizedMessage.contains("ERROR") ||
+                                sanitizedMessage.contains("FAILED") ||
+                                sanitizedMessage.contains("-->") ||
+                                sanitizedMessage.contains("<--")
                         ) {
-                            Timber.tag("Download-HTTP").d(message)
+                            Timber.tag("Download-HTTP").d(sanitizedMessage)
                         }
                     }
-                    .apply { level = HttpLoggingInterceptor.Level.BASIC }
+                    .apply {
+                        level = HttpLoggingInterceptor.Level.BASIC
+                        redactHeader("Authorization")
+                        redactHeader("Cookie")
+                        redactHeader("X-MediaBrowser-Token")
+                    }
             builder.addInterceptor(loggingInterceptor)
         }
 
@@ -209,7 +231,7 @@ object NetworkModule {
         var base = raw.trim()
 
         if (!base.startsWith("http://") && !base.startsWith("https://")) {
-            base = "http://$base"
+            base = "https://$base"
         }
 
         if (!base.endsWith("/")) {
@@ -314,7 +336,7 @@ object NetworkModule {
         var base = raw.trim()
 
         if (!base.startsWith("http://") && !base.startsWith("https://")) {
-            base = "http://$base"
+            base = "https://$base"
         }
 
         if (!base.endsWith("/")) {

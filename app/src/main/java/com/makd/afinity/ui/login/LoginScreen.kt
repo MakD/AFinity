@@ -57,6 +57,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -91,6 +92,7 @@ import coil3.request.crossfade
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
+import com.makd.afinity.util.isInsecurePublicUrl
 
 enum class LoginMethod {
     PASSWORD,
@@ -198,6 +200,7 @@ fun LoginScreen(
                             ) {
                                 Spacer(modifier = Modifier.height(expandedTopSpacer))
                                 LoginErrorBanner(error = loginState.uiState.error)
+                                InsecureConnectionBanner(serverUrl = loginState.serverUrl)
                                 ManualServerContent(
                                     serverUrl = loginState.serverUrl,
                                     savedServers = savedServers,
@@ -259,6 +262,7 @@ fun LoginScreen(
                             ) {
                                 Spacer(modifier = Modifier.height(expandedTopSpacer))
                                 LoginErrorBanner(error = loginState.uiState.error)
+                                InsecureConnectionBanner(serverUrl = loginState.serverUrl)
                                 UserLoginForms(
                                     uiState = loginState.uiState,
                                     selectedMethod = selectedLoginMethod,
@@ -297,6 +301,8 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(innerSpacing))
 
                     LoginErrorBanner(error = loginState.uiState.error)
+
+                    InsecureConnectionBanner(serverUrl = loginState.serverUrl)
 
                     AnimatedContent(
                         targetState = loginState.uiState.isConnectedToServer,
@@ -399,6 +405,42 @@ private fun LoginErrorBanner(error: String?) {
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InsecureConnectionBanner(serverUrl: String) {
+    val showWarning by remember(serverUrl) { derivedStateOf { isInsecurePublicUrl(serverUrl) } }
+
+    AnimatedVisibility(
+        visible = showWarning,
+        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.errorContainer,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth(),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_info),
+                    contentDescription = "Security Warning",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text =
+                        "Warning: Connecting over HTTP sends your password in plain text. HTTPS is highly recommended.",
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
