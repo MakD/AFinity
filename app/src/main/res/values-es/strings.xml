@@ -69,4 +69,18 @@
     <string name="cast_role_format">como %1$d</string>
     <string name="external_links_title">Enlaces externos</string>
     <string name="external_link_default_name">Enlace externo</string>
+    <string name="splash_progress_fmt">%1$d%%</string>
+    <string name="loading_phase_fetching">Recuperando contenido...</string>
+    <string name="login_server_url_placeholder">https://jellyfin.exemple.com</string>
+    <string name="collections_included_in">Incluido en</string>
+    <string name="meta_res_4k">4 k</string>
+    <string name="meta_res_hd">HD</string>
+    <string name="meta_res_sd">SD</string>
+    <string name="meta_vision">Visión</string>
+    <string name="meta_digital">Digital</string>
+    <string name="meta_cc">CC</string>
+    <string name="episode_play">Reproducir</string>
+    <string name="episode_resume">Reanudar</string>
+    <string name="cd_air_date">Fecha de emisión</string>
+    <string name="cd_duration">Duración</string>
 </resources>
