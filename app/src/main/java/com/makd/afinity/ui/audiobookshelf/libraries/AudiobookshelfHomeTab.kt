@@ -57,39 +57,35 @@ fun AudiobookshelfHomeTab(
             val fixedRowHeight = cardHeight + 8.dp + 20.dp + 18.dp
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                sections.forEach { section ->
-                    item(key = section.id) {
-                        Column {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Column(modifier = Modifier.padding(horizontal = 14.dp)) {
-                                Text(
-                                    text = section.label,
-                                    style =
-                                        MaterialTheme.typography.headlineSmall.copy(
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.padding(bottom = 16.dp),
-                                )
+                items(items = sections, key = { it.id }) { section ->
+                    Column {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Column(modifier = Modifier.padding(horizontal = 14.dp)) {
+                            Text(
+                                text = section.label,
+                                style =
+                                    MaterialTheme.typography.headlineSmall.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.padding(bottom = 16.dp),
+                            )
 
-                                val uniqueItems = section.items.distinctBy { it.id }
-
-                                LazyRow(
-                                    modifier = Modifier.height(fixedRowHeight),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    contentPadding = PaddingValues(horizontal = 0.dp),
-                                ) {
-                                    items(
-                                        items = uniqueItems,
-                                        key = { item -> "${section.id}_${item.id}" },
-                                    ) { item ->
-                                        AudiobookCard(
-                                            item = item,
-                                            serverUrl = serverUrl,
-                                            onClick = { onItemClick(item) },
-                                            modifier = Modifier.width(cardWidth),
-                                        )
-                                    }
+                            LazyRow(
+                                modifier = Modifier.height(fixedRowHeight),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(horizontal = 0.dp),
+                            ) {
+                                items(
+                                    items = section.items,
+                                    key = { item -> "${section.id}_${item.id}" },
+                                ) { item ->
+                                    AudiobookCard(
+                                        item = item,
+                                        serverUrl = serverUrl,
+                                        onClick = { onItemClick(item) },
+                                        modifier = Modifier.width(cardWidth),
+                                    )
                                 }
                             }
                         }

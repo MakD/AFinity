@@ -164,16 +164,13 @@ fun AudiobookshelfLibrariesScreen(
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (libraries.isEmpty() && !uiState.isRefreshing) {
+            if (libraries.isEmpty() && uiState.isRefreshing) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    if (uiState.isRefreshing) {
-                        CircularProgressIndicator()
-                    } else {
-                        Text(
-                            text = "No libraries found",
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                    }
+                    CircularProgressIndicator()
+                }
+            } else if (libraries.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = "No libraries found", style = MaterialTheme.typography.titleMedium)
                 }
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -202,7 +199,9 @@ fun AudiobookshelfLibrariesScreen(
                                 },
                             )
                         }
-                        itemsIndexed(libraries) { index, library ->
+                        itemsIndexed(items = libraries, key = { _, library -> library.id }) {
+                            index,
+                            library ->
                             val iconRes =
                                 when (library.mediaType.lowercase()) {
                                     "podcast" -> R.drawable.ic_apple_podcast
@@ -230,7 +229,7 @@ fun AudiobookshelfLibrariesScreen(
                                     sections = personalizedSections,
                                     serverUrl = config?.serverUrl,
                                     onItemClick = { item -> onNavigateToItem(item.id) },
-                                    isLoading = uiState.isLoadingPersonalized,
+                                    isLoading = uiState.isRefreshing,
                                     widthSizeClass = widthSizeClass,
                                 )
                             }
@@ -240,7 +239,7 @@ fun AudiobookshelfLibrariesScreen(
                                     seriesList = allSeries,
                                     serverUrl = config?.serverUrl,
                                     onItemClick = { item -> onNavigateToItem(item.id) },
-                                    isLoading = uiState.isLoadingSeries,
+                                    isLoading = uiState.isRefreshing,
                                     widthSizeClass = widthSizeClass,
                                 )
                             }
@@ -396,7 +395,7 @@ private fun AlphabetScroller(
     onLetterSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val letters = listOf("#") + ('A'..'Z').map { it.toString() }
+    val letters = remember { listOf("#") + ('A'..'Z').map { it.toString() } }
 
     LazyColumn(
         modifier = modifier.width(32.dp).padding(vertical = 8.dp),

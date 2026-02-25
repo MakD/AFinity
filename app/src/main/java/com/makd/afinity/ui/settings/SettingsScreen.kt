@@ -644,6 +644,7 @@ private fun AudiobookshelfLogoutConfirmationDialog(onConfirm: () -> Unit, onDism
             Icon(
                 painter = painterResource(id = R.drawable.ic_audiobookshelf_light),
                 contentDescription = null,
+                modifier = Modifier.size(30.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
         },
@@ -678,6 +679,7 @@ private fun JellyseerrLogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss:
             Icon(
                 painter = painterResource(id = R.drawable.ic_seerr_logo),
                 contentDescription = null,
+                modifier = Modifier.size(30.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )
         },
