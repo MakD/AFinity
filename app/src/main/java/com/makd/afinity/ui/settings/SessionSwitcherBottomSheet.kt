@@ -69,7 +69,6 @@ fun SessionSwitcherBottomSheet(
     LaunchedEffect(state.switchSuccess) {
         if (state.switchSuccess) {
             viewModel.resetSwitchSuccess()
-            sheetState.hide()
             onDismiss()
         }
     }

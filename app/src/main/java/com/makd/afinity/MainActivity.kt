@@ -4,6 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
@@ -43,12 +49,18 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var updateScheduler: UpdateScheduler
 
+    private val mainViewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        splashScreen.setKeepOnScreenCondition {
+            mainViewModel.authenticationState.value == AuthenticationState.Loading
+        }
 
         setContent {
             @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
@@ -77,6 +89,7 @@ class MainActivity : ComponentActivity() {
 
                 MainContent(
                     modifier = Modifier.fillMaxSize(),
+                    viewModel = mainViewModel,
                     updateManager = updateManager,
                     offlineModeManager = offlineModeManager,
                     widthSizeClass = windowSize.widthSizeClass,
@@ -102,25 +115,37 @@ private fun MainContent(
 ) {
     val authState by viewModel.authenticationState.collectAsStateWithLifecycle()
 
-    when (authState) {
-        AuthenticationState.Loading -> {
-            AfinitySplashScreen(
-                statusText = stringResource(R.string.splash_status_authenticating),
-                modifier = modifier,
-            )
-        }
+    AnimatedContent(
+        targetState = authState,
+        transitionSpec = {
+            fadeIn(animationSpec = tween(400)) togetherWith fadeOut(animationSpec = tween(400))
+        },
+        label = "AuthTransition",
+    ) { state ->
+        when (state) {
+            AuthenticationState.Loading -> {
+                AfinitySplashScreen(
+                    statusText = stringResource(R.string.splash_status_authenticating),
+                    modifier = modifier,
+                )
+            }
 
-        AuthenticationState.Authenticated -> {
-            MainNavigation(
-                modifier = modifier,
-                updateManager = updateManager,
-                offlineModeManager = offlineModeManager,
-                widthSizeClass = widthSizeClass,
-            )
-        }
+            AuthenticationState.Authenticated -> {
+                MainNavigation(
+                    modifier = modifier,
+                    updateManager = updateManager,
+                    offlineModeManager = offlineModeManager,
+                    widthSizeClass = widthSizeClass,
+                )
+            }
 
-        AuthenticationState.NotAuthenticated -> {
-            LoginScreen(onLoginSuccess = {}, modifier = modifier, widthSizeClass = widthSizeClass)
+            AuthenticationState.NotAuthenticated -> {
+                LoginScreen(
+                    onLoginSuccess = {},
+                    modifier = modifier,
+                    widthSizeClass = widthSizeClass,
+                )
+            }
         }
     }
 }

@@ -1,28 +1,54 @@
 package com.makd.afinity.ui.components
 
+import android.graphics.BlurMaskFilter
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.EaseInOutSine
+import androidx.compose.animation.core.EaseOutExpo
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -35,20 +61,111 @@ fun AfinitySplashScreen(
     modifier: Modifier = Modifier,
     progress: Float? = null,
 ) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val isLightBackground = backgroundColor.luminance() > 0.5f
+    val isAmoled = backgroundColor == Color.Black
+
+    val glowAlpha =
+        when {
+            isLightBackground -> 0.4f
+            isAmoled -> 0.05f
+            else -> 0.15f
+        }
+
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
+    val textAlpha by
+        animateFloatAsState(
+            targetValue = if (isVisible) 1f else 0f,
+            animationSpec = tween(durationMillis = 1000, delayMillis = 300),
+            label = "text_alpha",
+        )
+    val textOffset by
+        animateDpAsState(
+            targetValue = if (isVisible) 0.dp else 16.dp,
+            animationSpec = tween(durationMillis = 1000, delayMillis = 300, easing = EaseOutExpo),
+            label = "text_offset",
+        )
+
+    val bottomAlpha by
+        animateFloatAsState(
+            targetValue = if (isVisible) 1f else 0f,
+            animationSpec = tween(durationMillis = 1000, delayMillis = 450),
+            label = "bottom_alpha",
+        )
+    val bottomOffset by
+        animateDpAsState(
+            targetValue = if (isVisible) 0.dp else 12.dp,
+            animationSpec = tween(durationMillis = 1000, delayMillis = 450, easing = EaseOutExpo),
+            label = "bottom_offset",
+        )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val logoScale by
+        infiniteTransition.animateFloat(
+            initialValue = 0.95f,
+            targetValue = 1.05f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(1500, easing = EaseInOutSine),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "logo_scale",
+        )
+
+    val auraScale by
+        infiniteTransition.animateFloat(
+            initialValue = 0.8f,
+            targetValue = 1.2f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(1500, easing = EaseInOutSine),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "aura_scale",
+        )
+
+    val animatedProgress by
+        animateFloatAsState(
+            targetValue = progress ?: 0f,
+            animationSpec = tween(500),
+            label = "pill_progress",
+        )
+
     Box(
-        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        modifier =
+            modifier.fillMaxSize().background(backgroundColor).drawBehind {
+                val baseRadius =
+                    if (isAmoled) size.minDimension / 1.5f else size.minDimension / 1.1f
+                val radius = baseRadius * auraScale
+
+                drawRect(
+                    brush =
+                        Brush.radialGradient(
+                            colors =
+                                listOf(primaryColor.copy(alpha = glowAlpha), Color.Transparent),
+                            center = Offset(size.width / 2, size.height / 2),
+                            radius = radius,
+                        )
+                )
+            },
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
+            modifier = Modifier.padding(24.dp),
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_launcher_monochrome),
                 contentDescription = stringResource(R.string.cd_app_logo),
-                modifier = Modifier.size(160.dp),
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                modifier =
+                    Modifier.size(260.dp).graphicsLayer {
+                        scaleX = logoScale
+                        scaleY = logoScale
+                    },
+                colorFilter = ColorFilter.tint(primaryColor),
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -57,49 +174,101 @@ fun AfinitySplashScreen(
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onBackground,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = stringResource(R.string.splash_powered_by),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = statusText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val showProgress = progress != null
-            val currentProgress = progress ?: 0f
-
-            LinearProgressIndicator(
-                progress = { currentProgress },
                 modifier =
-                    Modifier.width(240.dp)
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .alpha(if (showProgress) 1f else 0f),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                    Modifier.graphicsLayer {
+                        alpha = textAlpha
+                        translationY = textOffset.toPx()
+                    },
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
-            Text(
-                text =
-                    stringResource(R.string.splash_progress_fmt, (currentProgress * 100).toInt()),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.alpha(if (showProgress) 1f else 0f),
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier =
+                    Modifier.graphicsLayer {
+                        alpha = bottomAlpha
+                        translationY = bottomOffset.toPx()
+                    },
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    AnimatedContent(
+                        targetState = statusText,
+                        transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
+                        label = "status_text_transition",
+                    ) { text ->
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        )
+                    }
+
+                    if (progress != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${(animatedProgress * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = primaryColor,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (progress == null) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = primaryColor,
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Box(
+                        modifier =
+                            Modifier.width(180.dp)
+                                .height(3.dp)
+                                .background(
+                                    color = primaryColor.copy(alpha = 0.2f),
+                                    shape = CircleShape,
+                                )
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier.fillMaxHeight()
+                                    .fillMaxWidth(animatedProgress.coerceIn(0f, 1f))
+                                    .drawBehind {
+                                        drawIntoCanvas { canvas ->
+                                            val composePaint =
+                                                Paint().apply {
+                                                    color = primaryColor.copy(alpha = 0.8f)
+                                                    asFrameworkPaint().apply {
+                                                        maskFilter =
+                                                            BlurMaskFilter(
+                                                                8f,
+                                                                BlurMaskFilter.Blur.NORMAL,
+                                                            )
+                                                    }
+                                                }
+                                            canvas.drawRoundRect(
+                                                0f,
+                                                0f,
+                                                size.width,
+                                                size.height,
+                                                size.height / 2f,
+                                                size.height / 2f,
+                                                composePaint,
+                                            )
+                                        }
+                                    }
+                                    .background(primaryColor, CircleShape)
+                        )
+                    }
+                }
+            }
         }
     }
 }
