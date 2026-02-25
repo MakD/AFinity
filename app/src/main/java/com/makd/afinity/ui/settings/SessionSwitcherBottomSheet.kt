@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.settings
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -68,6 +69,7 @@ fun SessionSwitcherBottomSheet(
     LaunchedEffect(state.switchSuccess) {
         if (state.switchSuccess) {
             viewModel.resetSwitchSuccess()
+            sheetState.hide()
             onDismiss()
         }
     }
@@ -100,28 +102,31 @@ fun SessionSwitcherBottomSheet(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (state.isSwitching) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else if (state.sessionGroups.isEmpty()) {
-                EmptySessionsState(modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp))
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
-                ) {
-                    items(items = state.sessionGroups, key = { it.server.id }) { sessionGroup ->
-                        ServerSessionGroupItem(
-                            sessionGroup = sessionGroup,
-                            onSessionClick = { session ->
-                                viewModel.switchSession(session.serverId, session.userId)
-                            },
-                            onAddAccountClick = { onAddAccountClick(sessionGroup.server) },
-                        )
+            Crossfade(targetState = state.isSwitching, label = "session_switch_animation") {
+                isSwitching ->
+                if (isSwitching) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else if (state.sessionGroups.isEmpty()) {
+                    EmptySessionsState(modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp))
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        items(items = state.sessionGroups, key = { it.server.id }) { sessionGroup ->
+                            ServerSessionGroupItem(
+                                sessionGroup = sessionGroup,
+                                onSessionClick = { session ->
+                                    viewModel.switchSession(session.serverId, session.userId)
+                                },
+                                onAddAccountClick = { onAddAccountClick(sessionGroup.server) },
+                            )
+                        }
                     }
                 }
             }

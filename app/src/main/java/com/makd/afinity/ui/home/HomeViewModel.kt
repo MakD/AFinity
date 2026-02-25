@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -113,43 +114,43 @@ constructor(
 
         viewModelScope.launch {
             appDataRepository.latestMedia.collect { latestMedia ->
-                _uiState.value = _uiState.value.copy(latestMedia = latestMedia)
+                _uiState.update { it.copy(latestMedia = latestMedia) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.heroCarouselItems.collect { heroItems ->
-                _uiState.value = _uiState.value.copy(heroCarouselItems = heroItems)
+                _uiState.update { it.copy(heroCarouselItems = heroItems) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.continueWatching.collect { continueWatching ->
-                _uiState.value = _uiState.value.copy(continueWatching = continueWatching)
+                _uiState.update { it.copy(continueWatching = continueWatching) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.nextUp.collect { nextUp ->
-                _uiState.value = _uiState.value.copy(nextUp = nextUp)
+                _uiState.update { it.copy(nextUp = nextUp) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.latestMovies.collect { latestMovies ->
-                _uiState.value = _uiState.value.copy(latestMovies = latestMovies)
+                _uiState.update { it.copy(latestMovies = latestMovies) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.latestTvSeries.collect { latestTvSeries ->
-                _uiState.value = _uiState.value.copy(latestTvSeries = latestTvSeries)
+                _uiState.update { it.copy(latestTvSeries = latestTvSeries) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.getCombineLibrarySectionsFlow().collect { combine ->
-                _uiState.value = _uiState.value.copy(combineLibrarySections = combine)
+                _uiState.update { it.copy(combineLibrarySections = combine) }
             }
         }
 
@@ -166,19 +167,19 @@ constructor(
 
         viewModelScope.launch {
             appDataRepository.separateMovieLibrarySections.collect { sections ->
-                _uiState.value = _uiState.value.copy(separateMovieLibrarySections = sections)
+                _uiState.update { it.copy(separateMovieLibrarySections = sections) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.separateTvLibrarySections.collect { sections ->
-                _uiState.value = _uiState.value.copy(separateTvLibrarySections = sections)
+                _uiState.update { it.copy(separateTvLibrarySections = sections) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.highestRated.collect { highestRated ->
-                _uiState.value = _uiState.value.copy(highestRated = highestRated)
+                _uiState.update { it.copy(highestRated = highestRated) }
             }
         }
 
@@ -190,32 +191,32 @@ constructor(
 
         viewModelScope.launch {
             appDataRepository.genreMovies.collect { genreMovies ->
-                _uiState.value = _uiState.value.copy(genreMovies = genreMovies)
+                _uiState.update { it.copy(genreMovies = genreMovies) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.genreShows.collect { genreShows ->
-                _uiState.value = _uiState.value.copy(genreShows = genreShows)
+                _uiState.update { it.copy(genreShows = genreShows) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.genreLoadingStates.collect { loadingStates ->
-                _uiState.value = _uiState.value.copy(genreLoadingStates = loadingStates)
+                _uiState.update { it.copy(genreLoadingStates = loadingStates) }
             }
         }
 
         viewModelScope.launch {
             appDataRepository.studios.collect { studios ->
-                _uiState.value = _uiState.value.copy(studios = studios)
+                _uiState.update { it.copy(studios = studios) }
             }
         }
 
         viewModelScope.launch {
             offlineModeManager.isOffline.collect { isOffline ->
                 Timber.d("Offline mode changed: $isOffline")
-                _uiState.value = _uiState.value.copy(isOffline = isOffline)
+                _uiState.update { it.copy(isOffline = isOffline) }
 
                 if (isOffline) {
                     loadDownloadedContent()
@@ -271,7 +272,7 @@ constructor(
             finalLayout.add(recIterator.next())
         }
 
-        _uiState.value = _uiState.value.copy(combinedSections = finalLayout)
+        _uiState.update { it.copy(combinedSections = finalLayout) }
         Timber.d("Updated home layout with ${finalLayout.size} sections (Stable Interleave)")
     }
 
@@ -673,12 +674,13 @@ constructor(
                 "Found ${sortedOfflineContinueWatching.size} items to continue watching offline"
             )
 
-            _uiState.value =
-                _uiState.value.copy(
+            _uiState.update {
+                it.copy(
                     downloadedMovies = downloadedMovies,
                     downloadedShows = downloadedShows,
                     offlineContinueWatching = sortedOfflineContinueWatching,
                 )
+            }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load downloaded content")
         }
@@ -926,7 +928,7 @@ constructor(
                             Timber.e(error, "Failed to start download for episode: ${episode.name}")
                         }
                 } else {
-                    _uiState.value = _uiState.value.copy(showQualityDialog = true)
+                    _uiState.update { it.copy(showQualityDialog = true) }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error starting download")
@@ -946,7 +948,7 @@ constructor(
                     .onFailure { error ->
                         Timber.e(error, "Failed to start download for episode: ${episode.name}")
                     }
-                _uiState.value = _uiState.value.copy(showQualityDialog = false)
+                _uiState.update { it.copy(showQualityDialog = false) }
             } catch (e: Exception) {
                 Timber.e(e, "Error starting download with selected quality")
             }
@@ -954,7 +956,7 @@ constructor(
     }
 
     fun dismissQualityDialog() {
-        _uiState.value = _uiState.value.copy(showQualityDialog = false)
+        _uiState.update { it.copy(showQualityDialog = false) }
     }
 
     fun pauseDownload() {
@@ -1027,7 +1029,7 @@ constructor(
             }
         }
         if (genreMoviesChanged) {
-            _uiState.value = _uiState.value.copy(genreMovies = currentGenreMovies)
+            _uiState.update { it.copy(genreMovies = currentGenreMovies) }
         }
 
         var genreShowsChanged = false
@@ -1042,7 +1044,7 @@ constructor(
             }
         }
         if (genreShowsChanged) {
-            _uiState.value = _uiState.value.copy(genreShows = currentGenreShows)
+            _uiState.update { it.copy(genreShows = currentGenreShows) }
         }
 
         var sectionsChanged = false

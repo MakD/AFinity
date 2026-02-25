@@ -12,9 +12,6 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,9 +22,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.okhttp.OkHttpFactory
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
 import timber.log.Timber
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import javax.inject.Singleton
 
 data class Session(
     val serverId: String,
@@ -56,6 +58,7 @@ constructor(
     private val securePrefsRepository: SecurePreferencesRepository,
     private val jellyseerrRepository: JellyseerrRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val okHttpFactory: OkHttpFactory,
     @ApplicationContext private val context: Context,
 ) {
     private val _currentSession = MutableStateFlow<Session?>(null)
@@ -64,7 +67,7 @@ constructor(
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
-    private val apiClients = mutableMapOf<String, ApiClient>()
+    private val apiClients = ConcurrentHashMap<String, ApiClient>()
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -282,6 +285,7 @@ constructor(
         _currentSession.value = null
         _connectionState.value = ConnectionState.Disconnected
         authRepository.clearAllAuthData()
+        apiClients.clear()
 
         Timber.d("Logged out successfully (token kept for re-login)")
     }
@@ -299,6 +303,8 @@ constructor(
         val jellyfin = createJellyfin {
             this.context = this@SessionManager.context
             this.clientInfo = ClientInfo(name = "AFinity", version = BuildConfig.VERSION_NAME)
+            this.apiClientFactory = okHttpFactory
+            this.socketConnectionFactory = okHttpFactory
         }
         val newClient = jellyfin.createApi(baseUrl = serverUrl)
         apiClients[serverId] = newClient

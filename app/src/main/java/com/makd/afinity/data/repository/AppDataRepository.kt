@@ -32,6 +32,7 @@ import com.makd.afinity.util.JellyfinImageUrlBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -43,6 +44,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -175,6 +177,7 @@ constructor(
 
     private var currentSessionId: String? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var liveDataJob: Job? = null
 
     init {
         scope.launch {
@@ -263,25 +266,30 @@ constructor(
     }
 
     private fun startLiveDataCollectors() {
-        val scope = CoroutineScope(Dispatchers.IO)
+        liveDataJob?.cancel()
 
-        scope.launch {
-            jellyfinRepository.getContinueWatchingFlow().collect { liveData ->
-                _continueWatching.value = liveData
+        liveDataJob =
+            scope.launch {
+                launch {
+                    jellyfinRepository.getContinueWatchingFlow().collect { liveData ->
+                        _continueWatching.value = liveData
+                    }
+                }
+
+                launch {
+                    jellyfinRepository.getLatestMediaFlow().collect { liveData ->
+                        val filteredData =
+                            liveData.filter { item -> item is AfinityMovie || item is AfinityShow }
+                        _latestMedia.value = filteredData
+                    }
+                }
+
+                launch {
+                    jellyfinRepository.getNextUpFlow().collect { liveData ->
+                        _nextUp.value = liveData
+                    }
+                }
             }
-        }
-
-        scope.launch {
-            jellyfinRepository.getLatestMediaFlow().collect { liveData ->
-                val filteredData =
-                    liveData.filter { item -> item is AfinityMovie || item is AfinityShow }
-                _latestMedia.value = filteredData
-            }
-        }
-
-        scope.launch {
-            jellyfinRepository.getNextUpFlow().collect { liveData -> _nextUp.value = liveData }
-        }
     }
 
     suspend fun reloadHomeData() {
@@ -563,7 +571,7 @@ constructor(
 
         withContext(Dispatchers.IO) {
             try {
-                _genreLoadingStates.value += (genre to true)
+                _genreLoadingStates.update { it + (genre to true) }
 
                 val cachedMovieEntities = genreCacheDao.getCachedMoviesForGenre(genre)
                 if (cachedMovieEntities.isNotEmpty()) {
@@ -573,8 +581,8 @@ constructor(
                         }
 
                     if (cachedMovies.isNotEmpty()) {
-                        _genreMovies.value += (genre to cachedMovies)
-                        _genreLoadingStates.value += (genre to false)
+                        _genreMovies.update { it + (genre to cachedMovies) }
+                        _genreLoadingStates.update { it + (genre to false) }
 
                         val currentTime = System.currentTimeMillis()
                         val isFresh =
@@ -606,11 +614,11 @@ constructor(
                     genreCacheDao.cacheGenreWithMovies(genre, movieEntities, timestamp)
                 }
 
-                _genreMovies.value += (genre to movies)
-                _genreLoadingStates.value += (genre to false)
+                _genreMovies.update { it + (genre to movies) }
+                _genreLoadingStates.update { it + (genre to false) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load movies for genre: $genre")
-                _genreLoadingStates.value += (genre to false)
+                _genreLoadingStates.update { it + (genre to false) }
 
                 try {
                     val fallbackEntities = genreCacheDao.getCachedMoviesForGenre(genre)
@@ -619,7 +627,7 @@ constructor(
                             afinityTypeConverters.toAfinityMovie(entity.movieData)
                         }
                     if (fallbackMovies.isNotEmpty()) {
-                        _genreMovies.value += (genre to fallbackMovies)
+                        _genreMovies.update { it + (genre to fallbackMovies) }
                     }
                 } catch (cacheError: Exception) {
                     /* Ignore */
@@ -629,7 +637,7 @@ constructor(
     }
 
     suspend fun loadCombinedGenres() {
-        kotlinx.coroutines.withContext(Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             try {
                 coroutineScope {
                     val movieGenresTask = async { loadGenres() }
@@ -688,7 +696,7 @@ constructor(
         if (_genreShows.value.containsKey(genre)) return
 
         try {
-            _genreLoadingStates.value += (genre to true)
+            _genreLoadingStates.update { it + (genre to true) }
 
             val cachedShowEntities = genreCacheDao.getCachedShowsForGenre(genre)
             if (cachedShowEntities.isNotEmpty()) {
@@ -698,8 +706,8 @@ constructor(
                     }
 
                 if (cachedShows.isNotEmpty()) {
-                    _genreShows.value += (genre to cachedShows)
-                    _genreLoadingStates.value += (genre to false)
+                    _genreShows.update { it + (genre to cachedShows) }
+                    _genreLoadingStates.update { it + (genre to false) }
 
                     val currentTime = System.currentTimeMillis()
                     val isFresh =
@@ -726,11 +734,11 @@ constructor(
                 genreCacheDao.cacheGenreWithShows(genre, showEntities, timestamp)
             }
 
-            _genreShows.value += (genre to shows)
-            _genreLoadingStates.value += (genre to false)
+            _genreShows.update { it + (genre to shows) }
+            _genreLoadingStates.update { it + (genre to false) }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load shows for genre: $genre")
-            _genreLoadingStates.value += (genre to false)
+            _genreLoadingStates.update { it + (genre to false) }
         }
     }
 
@@ -1025,38 +1033,41 @@ constructor(
 
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
         if (updatedItem is AfinityMovie) {
-            val newGenreMovies = _genreMovies.value.toMutableMap()
-            var updatedMovie = false
-            newGenreMovies.forEach { (genre, movies) ->
-                val index = movies.indexOfFirst { it.id == updatedItem.id }
-                if (index != -1) {
-                    val mut = movies.toMutableList()
-                    mut[index] = updatedItem
-                    newGenreMovies[genre] = mut
-                    updatedMovie = true
+            _genreMovies.update { currentMap ->
+                val newMap = currentMap.toMutableMap()
+                var updatedMovie = false
+
+                newMap.forEach { (genre, movies) ->
+                    val index = movies.indexOfFirst { it.id == updatedItem.id }
+                    if (index != -1) {
+                        val mut = movies.toMutableList()
+                        mut[index] = updatedItem
+                        newMap[genre] = mut
+                        updatedMovie = true
+                    }
                 }
-            }
-            if (updatedMovie) {
-                _genreMovies.value = newGenreMovies
+                if (updatedMovie) newMap else currentMap
             }
         }
 
         if (updatedItem is AfinityShow) {
-            val newGenreShows = _genreShows.value.toMutableMap()
-            var updatedShow = false
-            newGenreShows.forEach { (genre, shows) ->
-                val index = shows.indexOfFirst { it.id == updatedItem.id }
-                if (index != -1) {
-                    val mut = shows.toMutableList()
-                    mut[index] = updatedItem
-                    newGenreShows[genre] = mut
-                    updatedShow = true
+            _genreShows.update { currentMap ->
+                val newMap = currentMap.toMutableMap()
+                var updatedShow = false
+
+                newMap.forEach { (genre, shows) ->
+                    val index = shows.indexOfFirst { it.id == updatedItem.id }
+                    if (index != -1) {
+                        val mut = shows.toMutableList()
+                        mut[index] = updatedItem
+                        newMap[genre] = mut
+                        updatedShow = true
+                    }
                 }
-            }
-            if (updatedShow) {
-                _genreShows.value = newGenreShows
+                if (updatedShow) newMap else currentMap
             }
         }
+
         withContext(Dispatchers.IO) {
             try {
                 if (updatedItem is AfinityMovie) {
@@ -1081,6 +1092,7 @@ constructor(
 
     suspend fun clearAllData() {
         Timber.d("Clearing all cached app data")
+        liveDataJob?.cancel()
 
         try {
             studioCacheDao.deleteAllStudios()

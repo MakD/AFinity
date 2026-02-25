@@ -5,9 +5,6 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.sync.UserDataSyncScheduler
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,6 +12,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class PlaybackStateManager
@@ -29,12 +29,10 @@ constructor(
     private val _playbackEvents = MutableSharedFlow<PlaybackEvent>()
     val playbackEvents = _playbackEvents.asSharedFlow()
 
-    private var currentItemId: UUID? = null
-    private var currentSessionId: String? = null
-    private var lastKnownPosition: Long = 0L
-    private var lastKnownMediaSourceId: String? = null
-    private var onItemUpdatedCallback: ((UUID) -> Unit)? = null
-    private var onPlaybackStoppedCallback: (() -> Unit)? = null
+    @Volatile private var currentItemId: UUID? = null
+    @Volatile private var currentSessionId: String? = null
+    @Volatile private var lastKnownPosition: Long = 0L
+    @Volatile private var lastKnownMediaSourceId: String? = null
 
     fun trackCurrentItem(itemId: UUID) {
         currentItemId = itemId
@@ -48,14 +46,6 @@ constructor(
 
     fun updatePlaybackPosition(positionMs: Long) {
         lastKnownPosition = positionMs
-    }
-
-    fun setOnItemUpdatedCallback(callback: (UUID) -> Unit) {
-        onItemUpdatedCallback = callback
-    }
-
-    fun setOnPlaybackStoppedCallback(callback: () -> Unit) {
-        onPlaybackStoppedCallback = callback
     }
 
     fun notifyPlaybackStopped(itemId: UUID, positionMs: Long) {
@@ -110,22 +100,20 @@ constructor(
         }
     }
 
-    private fun handlePlaybackStopped(itemId: UUID) {
-        scope.launch {
-            try {
-                val refreshedItem =
-                    mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
+    private suspend fun handlePlaybackStopped(itemId: UUID) {
+        try {
+            val refreshedItem =
+                mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
 
-                if (refreshedItem != null) {
-                    _playbackEvents.emit(PlaybackEvent.Synced(itemId))
-                    if (refreshedItem is AfinityEpisode && refreshedItem.played) {
-                        Timber.d("Episode finished. Refreshing Next Up queue...")
-                        mediaRepository.invalidateNextUpCache()
-                    }
+            if (refreshedItem != null) {
+                _playbackEvents.emit(PlaybackEvent.Synced(itemId))
+                if (refreshedItem is AfinityEpisode && refreshedItem.played) {
+                    Timber.d("Episode finished. Refreshing Next Up queue...")
+                    mediaRepository.invalidateNextUpCache()
                 }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to handle playback stopped")
             }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to handle playback stopped")
         }
     }
 
