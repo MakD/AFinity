@@ -55,26 +55,26 @@ fun ContinueWatchingCard(
     Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
             colors =
                 CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
+                val blurHash = item.images.primaryBlurHash
+                    ?: item.images.thumbBlurHash
+                    ?: item.images.backdropBlurHash
                 AsyncImage(
                     imageUrl =
-                        item.images.thumbImageUrl
-                            ?: item.images.backdropImageUrl
-                            ?: item.images.primaryImageUrl,
+                        item.images.primaryImageUrl
+                            ?: item.images.thumbImageUrl
+                            ?: item.images.backdropImageUrl,
+                    blurHash = blurHash,
                     contentDescription = item.name,
-                    blurHash =
-                        item.images.thumbBlurHash
-                            ?: item.images.backdropBlurHash
-                            ?: item.images.primaryBlurHash,
-                    targetWidth = cardWidth,
-                    targetHeight = cardWidth * 9f / 16f,
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().align(Alignment.Center),
                 )
 
                 val progressPercentage =
@@ -87,7 +87,10 @@ fun ContinueWatchingCard(
                     LinearProgressIndicator(
                         progress = { progressPercentage },
                         modifier =
-                            Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
+                            Modifier
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .align(Alignment.BottomCenter),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = Color.Black.copy(alpha = 0.3f),
                     )
@@ -96,7 +99,8 @@ fun ContinueWatchingCard(
                 if (item.played) {
                     Box(
                         modifier =
-                            Modifier.align(Alignment.TopEnd)
+                            Modifier
+                                .align(Alignment.TopEnd)
                                 .padding(8.dp)
                                 .size(24.dp)
                                 .background(MaterialTheme.colorScheme.primary, CircleShape),

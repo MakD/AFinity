@@ -36,8 +36,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
+import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.theme.CardDimensions
@@ -80,14 +83,15 @@ fun EpisodeListCard(
                         .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)
                         .clip(MaterialTheme.shapes.medium)
             ) {
+                val blurHash = item.images.primaryBlurHash
+                    ?: item.images.thumbBlurHash
+                    ?: item.images.backdropBlurHash
                 AsyncImage(
                     imageUrl =
                         item.images.primaryImageUrl
                             ?: item.images.thumbImageUrl
                             ?: item.images.backdropImageUrl,
-                    blurHash = item.images.primaryImageUrl
-                        ?: item.images.thumbImageUrl
-                        ?: item.images.backdropImageUrl,
+                    blurHash = blurHash,
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
