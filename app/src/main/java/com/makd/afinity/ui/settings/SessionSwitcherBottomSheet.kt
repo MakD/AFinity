@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.ui.components.AsyncImage
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +60,7 @@ fun SessionSwitcherBottomSheet(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(state.error) {
         state.error?.let { error ->
@@ -122,8 +125,18 @@ fun SessionSwitcherBottomSheet(
                                 sessionGroup = sessionGroup,
                                 onSessionClick = { session ->
                                     viewModel.switchSession(session.serverId, session.userId)
+                                    coroutineScope.launch {
+                                        sheetState.hide()
+                                        onDismiss()
+                                    }
                                 },
-                                onAddAccountClick = { onAddAccountClick(sessionGroup.server) },
+                                onAddAccountClick = {
+                                    coroutineScope.launch {
+                                        sheetState.hide()
+                                        onDismiss()
+                                        onAddAccountClick(sessionGroup.server)
+                                    }
+                                },
                             )
                         }
                     }
