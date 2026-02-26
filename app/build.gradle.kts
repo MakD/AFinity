@@ -1,9 +1,8 @@
-import com.android.build.api.dsl.Packaging
+import com.android.build.api.dsl.ApplicationExtension
 
 plugins {
-    alias(libs.plugins.aboutlibraries.android)
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.aboutlibraries.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt.android)
@@ -15,6 +14,8 @@ val appName = project.property("app.name") as String
 val appVersionName = project.property("app.versionName") as String
 val appVersionCode = project.property("app.versionCode") as String
 
+base { archivesName.set("afinity-v${appVersionName}") }
+
 aboutLibraries {
     library {
         duplicationMode = com.mikepenz.aboutlibraries.plugin.DuplicateMode.MERGE
@@ -22,7 +23,7 @@ aboutLibraries {
     }
 }
 
-android {
+configure<ApplicationExtension> {
     namespace = "com.makd.afinity"
     compileSdk = 36
 
@@ -32,24 +33,10 @@ android {
         targetSdk = 36
         versionCode = appVersionCode.toInt()
         versionName = appVersionName
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "APP_NAME", "\"${appName}\"")
         buildConfigField("String", "VERSION_NAME", "\"${appVersionName}\"")
         buildConfigField("int", "VERSION_CODE", appVersionCode)
-    }
-
-    applicationVariants.all {
-        val variant = this
-        variant.outputs
-            .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
-            .forEach { output ->
-                if (variant.buildType.name == "release") {
-                    val outputFileName =
-                        "afinity-v${variant.versionName}-${output.getFilter("ABI")}.apk"
-                    output.outputFileName = outputFileName
-                }
-            }
     }
 
     buildTypes {
@@ -83,21 +70,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-            freeCompilerArgs.addAll(
-                "-opt-in=kotlin.RequiresOptIn",
-                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-                "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-                "-opt-in=androidx.compose.material3.pulltorefresh.ExperimentalMaterial3PullToRefreshApi",
-                "-Xjvm-default=all",
-                "-Xcontext-receivers",
-            )
-        }
-    }
-
-    fun Packaging.() {
+    packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "/META-INF/versions/**"
@@ -113,6 +86,19 @@ android {
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        freeCompilerArgs.addAll(
+            "-opt-in=kotlin.RequiresOptIn",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+            "-Xjvm-default=all",
+            "-Xcontext-parameters",
+        )
     }
 }
 
