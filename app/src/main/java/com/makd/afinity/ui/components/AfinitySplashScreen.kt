@@ -1,9 +1,9 @@
 package com.makd.afinity.ui.components
 
-import android.graphics.BlurMaskFilter
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.EaseInOutSine
 import androidx.compose.animation.core.EaseOutExpo
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
@@ -45,10 +45,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -116,21 +116,42 @@ fun AfinitySplashScreen(
 
     val auraScale by
         infiniteTransition.animateFloat(
-            initialValue = 0.8f,
-            targetValue = 1.2f,
+            initialValue = 1.2f,
+            targetValue = 0.8f,
             animationSpec =
                 infiniteRepeatable(
-                    animation = tween(1500, easing = EaseInOutSine),
+                    animation = tween(2200, easing = EaseInOutSine),
                     repeatMode = RepeatMode.Reverse,
                 ),
             label = "aura_scale",
         )
 
-    val animatedProgress by
-        animateFloatAsState(
-            targetValue = progress ?: 0f,
-            animationSpec = tween(500),
-            label = "pill_progress",
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+
+    val shimmerTranslate by
+        infiniteTransition.animateFloat(
+            initialValue = -screenWidthPx * 0.5f,
+            targetValue = screenWidthPx * 1.5f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(1800, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+            label = "shimmer_translate",
+        )
+
+    val shimmerBrush =
+        Brush.linearGradient(
+            colors =
+                listOf(
+                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    MaterialTheme.colorScheme.onBackground,
+                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                ),
+            start = Offset(shimmerTranslate, 0f),
+            end = Offset(shimmerTranslate + screenWidthPx * 0.3f, 0f),
         )
 
     Box(
@@ -172,8 +193,11 @@ fun AfinitySplashScreen(
 
             Text(
                 text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground,
+                style =
+                    MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        brush = shimmerBrush,
+                    ),
                 modifier =
                     Modifier.graphicsLayer {
                         alpha = textAlpha
@@ -208,6 +232,13 @@ fun AfinitySplashScreen(
                     }
 
                     if (progress != null) {
+                        val animatedProgress by
+                            animateFloatAsState(
+                                targetValue = progress,
+                                animationSpec = tween(500),
+                                label = "pill_progress",
+                            )
+
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "${(animatedProgress * 100).toInt()}%",
@@ -227,6 +258,13 @@ fun AfinitySplashScreen(
                         strokeWidth = 2.dp,
                     )
                 } else {
+                    val animatedProgress by
+                        animateFloatAsState(
+                            targetValue = progress,
+                            animationSpec = tween(500),
+                            label = "pill_progress",
+                        )
+
                     Box(
                         modifier =
                             Modifier.width(180.dp)
@@ -240,31 +278,17 @@ fun AfinitySplashScreen(
                             modifier =
                                 Modifier.fillMaxHeight()
                                     .fillMaxWidth(animatedProgress.coerceIn(0f, 1f))
-                                    .drawBehind {
-                                        drawIntoCanvas { canvas ->
-                                            val composePaint =
-                                                Paint().apply {
-                                                    color = primaryColor.copy(alpha = 0.8f)
-                                                    asFrameworkPaint().apply {
-                                                        maskFilter =
-                                                            BlurMaskFilter(
-                                                                8f,
-                                                                BlurMaskFilter.Blur.NORMAL,
-                                                            )
-                                                    }
-                                                }
-                                            canvas.drawRoundRect(
-                                                0f,
-                                                0f,
-                                                size.width,
-                                                size.height,
-                                                size.height / 2f,
-                                                size.height / 2f,
-                                                composePaint,
-                                            )
-                                        }
-                                    }
-                                    .background(primaryColor, CircleShape)
+                                    .background(
+                                        brush =
+                                            Brush.horizontalGradient(
+                                                colors =
+                                                    listOf(
+                                                        primaryColor.copy(alpha = 0.6f),
+                                                        primaryColor,
+                                                    )
+                                            ),
+                                        shape = CircleShape,
+                                    )
                         )
                     }
                 }
