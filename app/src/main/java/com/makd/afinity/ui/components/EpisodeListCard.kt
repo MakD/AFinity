@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryImageUrl
-import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.theme.CardDimensions
@@ -68,22 +67,27 @@ fun EpisodeListCard(
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier =
-                    Modifier.width(thumbnailWidth)
+                    Modifier
+                        .width(thumbnailWidth)
                         .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)
                         .clip(MaterialTheme.shapes.medium)
             ) {
                 AsyncImage(
                     imageUrl =
-                        item.images.thumbImageUrl
-                            ?: item.images.backdropImageUrl
-                            ?: item.images.primaryImageUrl,
-                    blurHash = item.images.thumbBlurHash,
+                        item.images.primaryImageUrl
+                            ?: item.images.thumbImageUrl
+                            ?: item.images.backdropImageUrl,
+                    blurHash = item.images.primaryImageUrl
+                        ?: item.images.thumbImageUrl
+                        ?: item.images.backdropImageUrl,
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
@@ -95,7 +99,10 @@ fun EpisodeListCard(
                         LinearProgressIndicator(
                             progress = { progress },
                             modifier =
-                                Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(4.dp)
+                                    .align(Alignment.BottomCenter),
                             color = MaterialTheme.colorScheme.primary,
                             trackColor = Color.Black.copy(alpha = 0.3f),
                         )
@@ -105,7 +112,8 @@ fun EpisodeListCard(
                 if (item.played) {
                     Box(
                         modifier =
-                            Modifier.align(Alignment.TopEnd)
+                            Modifier
+                                .align(Alignment.TopEnd)
                                 .padding(8.dp)
                                 .size(24.dp)
                                 .background(MaterialTheme.colorScheme.primary, CircleShape),
@@ -122,7 +130,9 @@ fun EpisodeListCard(
             }
 
             Column(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
                 verticalArrangement = Arrangement.Center,
             ) {
                 Row(
