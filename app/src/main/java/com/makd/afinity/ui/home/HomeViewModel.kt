@@ -652,8 +652,8 @@ constructor(
                     season.episodes.forEach { episode ->
                         if (
                             episode.playbackPositionTicks > 0 &&
-                                !episode.played &&
-                                episode.id in downloadedItemIds
+                            !episode.played &&
+                            episode.id in downloadedItemIds
                         ) {
                             offlineContinueWatching.add(episode)
                         }
@@ -1047,6 +1047,17 @@ constructor(
             _uiState.update { it.copy(genreShows = currentGenreShows) }
         }
 
+        var highestRatedChanged = false
+        val currentHighestRated = _uiState.value.highestRated.toMutableList()
+        val hrIndex = currentHighestRated.indexOfFirst { it.id == targetId }
+        if (hrIndex != -1) {
+            currentHighestRated[hrIndex] = updatedItem
+            highestRatedChanged = true
+        }
+        if (highestRatedChanged) {
+            _uiState.update { it.copy(highestRated = currentHighestRated) }
+        }
+
         var sectionsChanged = false
         val updatedSections =
             loadedRecommendationSections.map { section ->
@@ -1060,30 +1071,33 @@ constructor(
                             HomeSection.Movie(section.section.copy(recommendedItems = newItems))
                         } else section
                     }
+
                     is HomeSection.Person -> {
                         val items = section.section.items
                         val index = items.indexOfFirst { it.id == targetId }
                         if (
                             index != -1 &&
-                                (updatedItem is AfinityMovie || updatedItem is AfinityShow)
+                            (updatedItem is AfinityMovie || updatedItem is AfinityShow)
                         ) {
                             sectionsChanged = true
                             val newItems = items.toMutableList().apply { this[index] = updatedItem }
                             HomeSection.Person(section.section.copy(items = newItems))
                         } else section
                     }
+
                     is HomeSection.PersonFromMovie -> {
                         val items = section.section.items
                         val index = items.indexOfFirst { it.id == targetId }
                         if (
                             index != -1 &&
-                                (updatedItem is AfinityMovie || updatedItem is AfinityShow)
+                            (updatedItem is AfinityMovie || updatedItem is AfinityShow)
                         ) {
                             sectionsChanged = true
                             val newItems = items.toMutableList().apply { this[index] = updatedItem }
                             HomeSection.PersonFromMovie(section.section.copy(items = newItems))
                         } else section
                     }
+
                     is HomeSection.Genre -> section
                 }
             }
