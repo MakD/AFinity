@@ -78,6 +78,8 @@ constructor(
 
     private val recommendationMutex = Mutex()
 
+    private var recommendationLoadingJob: kotlinx.coroutines.Job? = null
+
     private val renderedPeopleNames = mutableSetOf<String>()
     private val renderedItemIds = mutableSetOf<java.util.UUID>()
     private val renderedWatchedMovies = mutableSetOf<java.util.UUID>()
@@ -106,7 +108,7 @@ constructor(
                     )
                     launch { loadStudios() }
                     launch { loadCombinedGenres() }
-                    launch { loadNewHomescreenSections() }
+                    loadNewHomescreenSections()
                     launch { loadDownloadedContent() }
                 }
             }
@@ -276,50 +278,52 @@ constructor(
         Timber.d("Updated home layout with ${finalLayout.size} sections (Stable Interleave)")
     }
 
-    private suspend fun loadNewHomescreenSections() {
-        try {
-            if (offlineModeManager.isOffline.first()) {
-                Timber.d("Skipping new sections in offline mode")
-                return
-            }
-
-            if (loadedRecommendationSections.isNotEmpty()) {
-                loadedRecommendationSections.clear()
-            }
-
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    coroutineScope {
-                        val actorTask = async { loadAllActorSections() }
-                        val directorTask = async { loadAllDirectorSections() }
-                        val writerTask = async { loadAllWriterSections() }
-                        val becauseYouWatchedTask = async { loadAllBecauseYouWatchedSections() }
-                        val actorFromRecentTask = async { loadAllActorFromRecentSections() }
-
-                        awaitAll(
-                            actorTask,
-                            directorTask,
-                            writerTask,
-                            becauseYouWatchedTask,
-                            actorFromRecentTask,
-                        )
-                    }
-
-                    Timber.d(
-                        "Loaded ${loadedRecommendationSections.size} total recommendation sections"
-                    )
-
-                    withContext(Dispatchers.Main) {
-                        appDataRepository.combinedGenres.value.let { genres ->
-                            updateCombinedSections(genres)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to load recommendation sections in background")
+    private fun loadNewHomescreenSections() {
+        recommendationLoadingJob?.cancel()
+        recommendationLoadingJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (offlineModeManager.isOffline.first()) {
+                    Timber.d("Skipping new sections in offline mode")
+                    return@launch
                 }
+
+                loadedRecommendationSections.clear()
+                renderedPeopleNames.clear()
+                renderedItemIds.clear()
+                renderedWatchedMovies.clear()
+                renderedStarringWatchedMovies.clear()
+                renderedActorNames.clear()
+
+                coroutineScope {
+                    val actorTask = async { loadAllActorSections() }
+                    val directorTask = async { loadAllDirectorSections() }
+                    val writerTask = async { loadAllWriterSections() }
+                    val becauseYouWatchedTask = async { loadAllBecauseYouWatchedSections() }
+                    val actorFromRecentTask = async { loadAllActorFromRecentSections() }
+
+                    awaitAll(
+                        actorTask,
+                        directorTask,
+                        writerTask,
+                        becauseYouWatchedTask,
+                        actorFromRecentTask,
+                    )
+                }
+
+                Timber.d(
+                    "Loaded ${loadedRecommendationSections.size} total recommendation sections"
+                )
+
+                withContext(Dispatchers.Main) {
+                    appDataRepository.combinedGenres.value.let { genres ->
+                        updateCombinedSections(genres)
+                    }
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load recommendation sections")
             }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to start recommendation sections loading")
         }
     }
 

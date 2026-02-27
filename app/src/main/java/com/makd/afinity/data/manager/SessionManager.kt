@@ -12,13 +12,10 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
@@ -68,12 +65,6 @@ constructor(
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
     private val apiClients = ConcurrentHashMap<String, ApiClient>()
-
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    init {
-        scope.launch { restoreLastSession() }
-    }
 
     suspend fun startSession(
         serverUrl: String,
@@ -206,44 +197,6 @@ constructor(
                 )
 
         return startSession(serverUrl, serverId, userId, token, caller = "switchUser")
-    }
-
-    private suspend fun restoreLastSession() {
-        Timber.d("Attempting to restore last session...")
-
-        val savedSession =
-            sessionPreferences.getActiveSession()
-                ?: run {
-                    Timber.d("No saved session found")
-                    return
-                }
-
-        val serverId = savedSession.serverId
-        val userId = savedSession.userId
-        val serverUrl = savedSession.serverUrl
-
-        val token =
-            securePrefsRepository.getServerUserToken(serverId, userId)
-                ?: run {
-                    Timber.w("Saved session exists but no token found - clearing")
-                    sessionPreferences.clearSession()
-                    return
-                }
-
-        val result =
-            startSession(
-                serverUrl,
-                serverId,
-                userId,
-                token,
-                caller = "SessionManager.restoreLastSession",
-            )
-
-        if (result.isSuccess) {
-            Timber.d("Session restored successfully")
-        } else {
-            Timber.w("Failed to restore session: ${result.exceptionOrNull()?.message}")
-        }
     }
 
     suspend fun enterOfflineMode() {
