@@ -93,7 +93,9 @@ fun AppearanceOptionsScreen(
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
@@ -152,7 +154,11 @@ private fun SettingsGroup(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
         if (title != null) {
             Text(
                 text = title,
@@ -336,7 +342,7 @@ private fun EpisodeLayoutSelectorItem(
 
     Box {
         SettingsItem(
-            icon = painterResource(id = R.drawable.ic_view_module),
+            icon = painterResource(id = R.drawable.ic_episode_layout),
             title = stringResource(R.string.pref_episode_layout_title),
             subtitle = getEpisodeLayoutDisplayName(selectedLayout),
             onClick = { expanded = true },
