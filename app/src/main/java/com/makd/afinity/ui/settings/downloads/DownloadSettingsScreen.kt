@@ -1,5 +1,8 @@
 package com.makd.afinity.ui.settings.downloads
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +29,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -59,6 +64,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.ui.downloads.DownloadsViewModel
+import java.util.Locale
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,7 +91,7 @@ fun DownloadSettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = stringResource(R.string.downloads_title),
+                        text = stringResource(R.string.pref_downloads_and_storage),
                         style =
                             MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold
@@ -111,7 +117,9 @@ fun DownloadSettingsScreen(
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
             contentPadding = PaddingValues(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
@@ -126,6 +134,24 @@ fun DownloadSettingsScreen(
                     onWifiOnlyChanged = viewModel::setDownloadOverWifiOnly,
                     formatSize = viewModel::formatStorageSize,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                SectionHeader(
+                    title = "STORAGE & CACHE",
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+            }
+
+            item {
+                ImageCacheSettingsCard(
+                    isCacheEnabled = uiState.isImageCacheEnabled,
+                    cacheSizeMb = uiState.imageCacheSizeMb.toFloat(),
+                    onCacheEnabledChange = viewModel::setImageCacheEnabled,
+                    onCacheSizeChange = { viewModel.setImageCacheSizeMb(it.toInt()) },
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
 
@@ -224,7 +250,7 @@ fun StatusHub(
                     )
 
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_storage),
+                        painter = painterResource(id = R.drawable.ic_database),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp),
@@ -377,7 +403,11 @@ fun ActiveDownloadCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top,
             ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 16.dp)
+                ) {
                     Text(
                         text = download.itemName,
                         style =
@@ -418,7 +448,10 @@ fun ActiveDownloadCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LinearProgressIndicator(
                     progress = { download.progress },
-                    modifier = Modifier.weight(1f).height(12.dp).clip(RoundedCornerShape(6.dp)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp)),
                     color =
                         if (download.status == DownloadStatus.FAILED)
                             MaterialTheme.colorScheme.error
@@ -440,15 +473,18 @@ fun ActiveDownloadCard(
                         when (download.status) {
                             DownloadStatus.QUEUED ->
                                 stringResource(R.string.download_status_queued).uppercase()
+
                             DownloadStatus.DOWNLOADING ->
                                 stringResource(R.string.download_status_downloading).uppercase()
+
                             DownloadStatus.PAUSED ->
                                 stringResource(R.string.download_status_paused).uppercase()
+
                             DownloadStatus.FAILED ->
                                 stringResource(
-                                        R.string.download_status_failed_fmt,
-                                        download.error ?: "",
-                                    )
+                                    R.string.download_status_failed_fmt,
+                                    download.error ?: "",
+                                )
                                     .uppercase()
 
                             else -> ""
@@ -463,7 +499,7 @@ fun ActiveDownloadCard(
                 Row {
                     if (
                         download.status == DownloadStatus.DOWNLOADING ||
-                            download.status == DownloadStatus.QUEUED
+                        download.status == DownloadStatus.QUEUED
                     ) {
                         IconButton(
                             onClick = { onPause(download.id) },
@@ -477,7 +513,7 @@ fun ActiveDownloadCard(
                         }
                     } else if (
                         download.status == DownloadStatus.PAUSED ||
-                            download.status == DownloadStatus.FAILED
+                        download.status == DownloadStatus.FAILED
                     ) {
                         IconButton(
                             onClick = { onResume(download.id) },
@@ -575,7 +611,9 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier) {
 @Composable
 fun EmptyDownloadsState() {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 64.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 64.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -606,5 +644,126 @@ fun EmptyDownloadsState() {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp),
         )
+    }
+}
+
+@Composable
+fun ImageCacheSettingsCard(
+    isCacheEnabled: Boolean,
+    cacheSizeMb: Float,
+    onCacheEnabledChange: (Boolean) -> Unit,
+    onCacheSizeChange: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 16.dp)
+                ) {
+                    Text(
+                        text = "Image Caching",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Save media images to disk for faster loading and reduced network usage",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                Switch(
+                    checked = isCacheEnabled,
+                    onCheckedChange = onCacheEnabledChange,
+                    modifier = Modifier.scale(0.8f),
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                    )
+                )
+            }
+
+            Text(
+                text = "Takes effect on next app launch",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            AnimatedVisibility(
+                visible = isCacheEnabled,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Maximum Disk Space",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        ) {
+                            val formattedSize = if (cacheSizeMb >= 1024f) {
+                                String.format(Locale.getDefault(), "%.1f GB", cacheSizeMb / 1024f)
+                                    .replace(".0", "").replace(",0", "")
+                            } else {
+                                "${cacheSizeMb.toInt()} MB"
+                            }
+
+                            Text(
+                                text = formattedSize,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Slider(
+                        value = cacheSizeMb,
+                        onValueChange = onCacheSizeChange,
+                        valueRange = 256f..2048f,
+                        steps = 6,
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+                            inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        )
+                    )
+                }
+            }
+        }
     }
 }

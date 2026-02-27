@@ -428,6 +428,8 @@
     <string name="layout_vertical">Vertical</string>
 
     <string name="downloads_title">Downloads</string>
+    <string name="pref_downloads_and_storage">Downloads &amp; Storage</string>
+    <string name="pref_downloads_and_storage_summary">Manage offline media and image caching</string>
     <string name="network_status_title">Network Status</string>
     <string name="network_status_offline">Offline mode</string>
     <string name="network_status_online">Online - Downloads active</string>

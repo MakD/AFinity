@@ -148,7 +148,7 @@ The Requests tab will appear in your bottom navigation once connected.
 ### Technical
 
 - [X] Background sync optimisation
-- [ ] Cache management
+- [X] Cache management
 - [X] Network quality detection
 - [ ] Performance monitoring
 

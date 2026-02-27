@@ -85,9 +85,9 @@ fun SettingsScreen(
     val effectiveOfflineMode by viewModel.effectiveOfflineMode.collectAsStateWithLifecycle()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
     val isJellyseerrAuthenticated by
-        viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
+    viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
     val isAudiobookshelfAuthenticated by
-        viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
+    viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
 
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showJellyseerrLogoutDialog by remember { mutableStateOf(false) }
@@ -199,14 +199,18 @@ fun SettingsScreen(
     ) { innerPadding ->
         if (uiState.isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
                 contentPadding = PaddingValues(vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
@@ -266,9 +270,9 @@ fun SettingsScreen(
                         )
                         SettingsDivider()
                         SettingsItem(
-                            icon = painterResource(id = R.drawable.ic_download),
-                            title = stringResource(R.string.pref_downloads),
-                            subtitle = stringResource(R.string.pref_downloads_summary),
+                            icon = painterResource(id = R.drawable.ic_database),
+                            title = stringResource(R.string.pref_downloads_and_storage),
+                            subtitle = stringResource(R.string.pref_downloads_and_storage_summary),
                             onClick = onDownloadClick,
                         )
                         SettingsDivider()
@@ -341,13 +345,16 @@ fun SettingsScreen(
                 item {
                     Box(
                         modifier =
-                            Modifier.fillMaxWidth()
+                            Modifier
+                                .fillMaxWidth()
                                 .padding(horizontal = 24.dp)
                                 .padding(bottom = 32.dp)
                     ) {
                         Button(
                             onClick = { showLogoutDialog = true },
-                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
                             colors =
                                 ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -391,7 +398,11 @@ private fun SettingsGroup(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
         if (title != null) {
             Text(
                 text = title,
@@ -428,12 +439,15 @@ fun ProfileHeader(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth().padding(top = 24.dp, bottom = 0.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp, bottom = 0.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             modifier =
-                Modifier.size(96.dp)
+                Modifier
+                    .size(96.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest),
             contentAlignment = Alignment.Center,

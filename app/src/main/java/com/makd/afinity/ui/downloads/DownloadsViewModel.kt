@@ -9,15 +9,16 @@ import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.io.File
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.File
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
 
 @HiltViewModel
 class DownloadsViewModel
@@ -40,7 +41,14 @@ constructor(
         viewModelScope.launch {
             try {
                 val wifiOnly = preferencesRepository.getDownloadOverWifiOnly()
-                _uiState.value = _uiState.value.copy(downloadOverWifiOnly = wifiOnly)
+                val isImageCacheEnabled = preferencesRepository.getImageCacheEnabled()
+                val imageCacheSizeMb = preferencesRepository.getImageCacheSizeMb()
+
+                _uiState.value = _uiState.value.copy(
+                    downloadOverWifiOnly = wifiOnly,
+                    isImageCacheEnabled = isImageCacheEnabled,
+                    imageCacheSizeMb = imageCacheSizeMb
+                )
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load download preferences")
             }
@@ -54,6 +62,28 @@ constructor(
                 _uiState.value = _uiState.value.copy(downloadOverWifiOnly = wifiOnly)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update download WiFi preference")
+            }
+        }
+    }
+
+    fun setImageCacheEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setImageCacheEnabled(enabled)
+                _uiState.value = _uiState.value.copy(isImageCacheEnabled = enabled)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update image cache enabled preference")
+            }
+        }
+    }
+
+    fun setImageCacheSizeMb(sizeMb: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setImageCacheSizeMb(sizeMb)
+                _uiState.value = _uiState.value.copy(imageCacheSizeMb = sizeMb)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update image cache size preference")
             }
         }
     }
@@ -201,9 +231,18 @@ constructor(
     fun formatStorageSize(bytes: Long): String {
         return when {
             bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> String.format("%.2f KB", bytes / 1024.0)
-            bytes < 1024 * 1024 * 1024 -> String.format("%.2f MB", bytes / (1024.0 * 1024.0))
-            else -> String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
+            bytes < 1024 * 1024 -> String.format(Locale.getDefault(), "%.2f KB", bytes / 1024.0)
+            bytes < 1024 * 1024 * 1024 -> String.format(
+                Locale.getDefault(),
+                "%.2f MB",
+                bytes / (1024.0 * 1024.0)
+            )
+
+            else -> String.format(
+                Locale.getDefault(),
+                "%.2f GB",
+                bytes / (1024.0 * 1024.0 * 1024.0)
+            )
         }
     }
 
@@ -237,6 +276,8 @@ data class DownloadsUiState(
     val totalStorageUsed: Long = 0L,
     val totalStorageUsedAllServers: Long = 0L,
     val downloadOverWifiOnly: Boolean = true,
+    val isImageCacheEnabled: Boolean = true,
+    val imageCacheSizeMb: Int = 512,
     val deviceStorageStats: DownloadsViewModel.DeviceStorageStats? = null,
     val error: String? = null,
 )

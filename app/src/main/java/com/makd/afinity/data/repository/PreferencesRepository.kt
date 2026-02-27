@@ -101,6 +101,14 @@ interface PreferencesRepository {
 
     fun getThemeModeFlow(): Flow<String>
 
+    suspend fun setImageCacheEnabled(enabled: Boolean)
+
+    suspend fun getImageCacheEnabled(): Boolean
+
+    suspend fun setImageCacheSizeMb(sizeMb: Int)
+
+    suspend fun getImageCacheSizeMb(): Int
+
     suspend fun setDynamicColors(enabled: Boolean)
 
     suspend fun getDynamicColors(): Boolean

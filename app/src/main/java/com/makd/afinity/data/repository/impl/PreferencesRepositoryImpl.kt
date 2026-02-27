@@ -21,13 +21,13 @@ import com.makd.afinity.data.models.player.SubtitleVerticalPosition
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.di.AppPreferences
-import java.io.IOException
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.io.IOException
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class PreferencesRepositoryImpl
@@ -49,6 +49,8 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
         val SKIP_OUTRO_ENABLED = booleanPreferencesKey("skip_outro_enabled")
         val USE_EXO_PLAYER = booleanPreferencesKey("use_exo_player")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val IMAGE_CACHE_ENABLED = booleanPreferencesKey("image_cache_enabled")
+        val IMAGE_CACHE_SIZE_MB = intPreferencesKey("image_cache_size_mb")
         val PIP_GESTURE_ENABLED = booleanPreferencesKey("pip_gesture_enabled")
         val PIP_BACKGROUND_PLAY = booleanPreferencesKey("pip_background_play")
         val DYNAMIC_COLORS = booleanPreferencesKey("dynamic_colors")
@@ -656,5 +658,21 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
             preferences[Keys.EPISODE_LAYOUT]?.let { EpisodeLayout.fromValue(it) }
                 ?: EpisodeLayout.HORIZONTAL
         }
+    }
+
+    override suspend fun setImageCacheEnabled(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.IMAGE_CACHE_ENABLED] = enabled }
+    }
+
+    override suspend fun getImageCacheEnabled(): Boolean {
+        return dataStore.data.first()[Keys.IMAGE_CACHE_ENABLED] ?: true
+    }
+
+    override suspend fun setImageCacheSizeMb(sizeMb: Int) {
+        dataStore.edit { preferences -> preferences[Keys.IMAGE_CACHE_SIZE_MB] = sizeMb }
+    }
+
+    override suspend fun getImageCacheSizeMb(): Int {
+        return dataStore.data.first()[Keys.IMAGE_CACHE_SIZE_MB] ?: 512
     }
 }
