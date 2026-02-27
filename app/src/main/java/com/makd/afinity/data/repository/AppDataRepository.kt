@@ -186,8 +186,8 @@ constructor(
 
                 if (
                     currentSessionId != null &&
-                        newSessionId != currentSessionId &&
-                        newSessionId != null
+                    newSessionId != currentSessionId &&
+                    newSessionId != null
                 ) {
                     Timber.d(
                         "Session changed from $currentSessionId to $newSessionId - clearing and reloading data"
@@ -321,6 +321,108 @@ constructor(
         }
     }
 
+    private suspend fun reloadLatestMoviesData() {
+        try {
+            val libraries = _libraries.value
+            val movieLibraries = libraries.filter { it.type == CollectionType.Movies }
+            if (movieLibraries.isEmpty()) return
+
+            val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
+
+            val movieResults =
+                coroutineScope {
+                    movieLibraries
+                        .map { library ->
+                            async {
+                                try {
+                                    val items =
+                                        if (useJellyfinDefault) {
+                                            jellyfinRepository
+                                                .getLatestMedia(parentId = library.id, limit = 30)
+                                                .filterIsInstance<AfinityMovie>()
+                                        } else {
+                                            jellyfinRepository.getMovies(
+                                                parentId = library.id,
+                                                sortBy = SortBy.RELEASE_DATE,
+                                                sortDescending = true,
+                                                limit = 30,
+                                                isPlayed = false,
+                                            )
+                                        }
+                                    library to items
+                                } catch (e: Exception) {
+                                    library to emptyList<AfinityMovie>()
+                                }
+                            }
+                        }
+                        .awaitAll()
+                }
+
+            _separateMovieLibrarySections.value =
+                movieResults
+                    .filter { it.second.isNotEmpty() }
+                    .map { (library, movies) -> library to movies.filter { !it.played }.take(15) }
+
+            val allMovies = movieResults.flatMap { it.second }.filter { !it.played }
+            _latestMovies.value =
+                if (useJellyfinDefault) allMovies.sortedByDescending { it.dateCreated }.take(15)
+                else allMovies.sortedByDescending { it.premiereDate }.take(15)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to reload latest movies data")
+        }
+    }
+
+    private suspend fun reloadLatestShowsData() {
+        try {
+            val libraries = _libraries.value
+            val tvLibraries = libraries.filter { it.type == CollectionType.TvShows }
+            if (tvLibraries.isEmpty()) return
+
+            val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
+
+            val showResults =
+                coroutineScope {
+                    tvLibraries
+                        .map { library ->
+                            async {
+                                try {
+                                    val items =
+                                        if (useJellyfinDefault) {
+                                            jellyfinRepository
+                                                .getLatestMedia(parentId = library.id, limit = 30)
+                                                .filterIsInstance<AfinityShow>()
+                                        } else {
+                                            jellyfinRepository.getShows(
+                                                parentId = library.id,
+                                                sortBy = SortBy.RELEASE_DATE,
+                                                sortDescending = true,
+                                                limit = 30,
+                                                isPlayed = false,
+                                            )
+                                        }
+                                    library to items
+                                } catch (e: Exception) {
+                                    library to emptyList<AfinityShow>()
+                                }
+                            }
+                        }
+                        .awaitAll()
+                }
+
+            _separateTvLibrarySections.value =
+                showResults
+                    .filter { it.second.isNotEmpty() }
+                    .map { (library, shows) -> library to shows.filter { !it.played }.take(15) }
+
+            val allShows = showResults.flatMap { it.second }.filter { !it.played }
+            _latestTvSeries.value =
+                if (useJellyfinDefault) allShows.sortedByDescending { it.dateCreated }.take(15)
+                else allShows.sortedByDescending { it.premiereDate }.take(15)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to reload latest shows data")
+        }
+    }
+
     private suspend fun loadLatestMedia(): List<AfinityItem> {
         return try {
             val allLatestMedia = jellyfinRepository.getLatestMedia(limit = 15)
@@ -418,13 +520,13 @@ constructor(
                                     async {
                                         try {
                                             library to
-                                                jellyfinRepository.getMovies(
-                                                    parentId = library.id,
-                                                    sortBy = SortBy.RELEASE_DATE,
-                                                    sortDescending = true,
-                                                    limit = 30,
-                                                    isPlayed = false,
-                                                )
+                                                    jellyfinRepository.getMovies(
+                                                        parentId = library.id,
+                                                        sortBy = SortBy.RELEASE_DATE,
+                                                        sortDescending = true,
+                                                        limit = 30,
+                                                        isPlayed = false,
+                                                    )
                                         } catch (e: Exception) {
                                             library to emptyList()
                                         }
@@ -460,13 +562,13 @@ constructor(
                                     async {
                                         try {
                                             library to
-                                                jellyfinRepository.getShows(
-                                                    parentId = library.id,
-                                                    sortBy = SortBy.RELEASE_DATE,
-                                                    sortDescending = true,
-                                                    limit = 30,
-                                                    isPlayed = false,
-                                                )
+                                                    jellyfinRepository.getShows(
+                                                        parentId = library.id,
+                                                        sortBy = SortBy.RELEASE_DATE,
+                                                        sortDescending = true,
+                                                        limit = 30,
+                                                        isPlayed = false,
+                                                    )
                                         } catch (e: Exception) {
                                             library to emptyList()
                                         }
@@ -814,7 +916,7 @@ constructor(
 
             if (
                 cached != null &&
-                    topPeopleDao.isTopPeopleCacheFresh(type.name, PEOPLE_CACHE_TTL, currentTime)
+                topPeopleDao.isTopPeopleCacheFresh(type.name, PEOPLE_CACHE_TTL, currentTime)
             ) {
                 val cachedData =
                     json.decodeFromString<List<CachedPersonWithCount>>(cached.peopleData)
@@ -914,11 +1016,11 @@ constructor(
 
             if (
                 cached != null &&
-                    personSectionDao.isSectionCacheFresh(
-                        cacheKey,
-                        PERSON_SECTION_CACHE_TTL,
-                        currentTime,
-                    )
+                personSectionDao.isSectionCacheFresh(
+                    cacheKey,
+                    PERSON_SECTION_CACHE_TTL,
+                    currentTime,
+                )
             ) {
                 val cachedPersonData =
                     PersonWithCount.fromCached(
@@ -1032,40 +1134,99 @@ constructor(
     }
 
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
+        val itemId = updatedItem.id
+
         if (updatedItem is AfinityMovie) {
             _genreMovies.update { currentMap ->
                 val newMap = currentMap.toMutableMap()
-                var updatedMovie = false
-
+                var changed = false
                 newMap.forEach { (genre, movies) ->
-                    val index = movies.indexOfFirst { it.id == updatedItem.id }
+                    val index = movies.indexOfFirst { it.id == itemId }
                     if (index != -1) {
                         val mut = movies.toMutableList()
                         mut[index] = updatedItem
                         newMap[genre] = mut
-                        updatedMovie = true
+                        changed = true
                     }
                 }
-                if (updatedMovie) newMap else currentMap
+                if (changed) newMap else currentMap
+            }
+
+            val movieIsInLatest = _latestMovies.value.any { it.id == itemId }
+            if (updatedItem.played) {
+                _latestMovies.update { movies -> movies.filterNot { it.id == itemId } }
+                _separateMovieLibrarySections.update { sections ->
+                    sections.map { (library, movies) -> library to movies.filterNot { it.id == itemId } }
+                }
+            } else if (movieIsInLatest) {
+                _latestMovies.update { movies ->
+                    val index = movies.indexOfFirst { it.id == itemId }
+                    if (index != -1) movies.toMutableList().apply { this[index] = updatedItem }
+                    else movies
+                }
+                _separateMovieLibrarySections.update { sections ->
+                    sections.map { (library, movies) ->
+                        val index = movies.indexOfFirst { it.id == itemId }
+                        library to
+                                if (index != -1) movies.toMutableList()
+                                    .apply { this[index] = updatedItem }
+                                else movies
+                    }
+                }
+            } else {
+                reloadLatestMoviesData()
             }
         }
 
         if (updatedItem is AfinityShow) {
             _genreShows.update { currentMap ->
                 val newMap = currentMap.toMutableMap()
-                var updatedShow = false
-
+                var changed = false
                 newMap.forEach { (genre, shows) ->
-                    val index = shows.indexOfFirst { it.id == updatedItem.id }
+                    val index = shows.indexOfFirst { it.id == itemId }
                     if (index != -1) {
                         val mut = shows.toMutableList()
                         mut[index] = updatedItem
                         newMap[genre] = mut
-                        updatedShow = true
+                        changed = true
                     }
                 }
-                if (updatedShow) newMap else currentMap
+                if (changed) newMap else currentMap
             }
+
+            val showIsInLatest = _latestTvSeries.value.any { it.id == itemId }
+            if (updatedItem.played) {
+                _latestTvSeries.update { shows -> shows.filterNot { it.id == itemId } }
+                _separateTvLibrarySections.update { sections ->
+                    sections.map { (library, shows) -> library to shows.filterNot { it.id == itemId } }
+                }
+            } else if (showIsInLatest) {
+                _latestTvSeries.update { shows ->
+                    val index = shows.indexOfFirst { it.id == itemId }
+                    if (index != -1) shows.toMutableList().apply { this[index] = updatedItem }
+                    else shows
+                }
+                _separateTvLibrarySections.update { sections ->
+                    sections.map { (library, shows) ->
+                        val index = shows.indexOfFirst { it.id == itemId }
+                        library to
+                                if (index != -1) shows.toMutableList()
+                                    .apply { this[index] = updatedItem }
+                                else shows
+                    }
+                }
+            } else {
+                reloadLatestShowsData()
+            }
+        }
+        _heroCarouselItems.update { items ->
+            val index = items.indexOfFirst { it.id == itemId }
+            if (index != -1) items.toMutableList().apply { this[index] = updatedItem } else items
+        }
+
+        _latestMedia.update { items ->
+            val index = items.indexOfFirst { it.id == itemId }
+            if (index != -1) items.toMutableList().apply { this[index] = updatedItem } else items
         }
 
         withContext(Dispatchers.IO) {
@@ -1073,17 +1234,46 @@ constructor(
                 if (updatedItem is AfinityMovie) {
                     val newJson = afinityTypeConverters.fromAfinityMovie(updatedItem)
                     if (newJson != null) {
-                        genreCacheDao.updateCachedMovieData(updatedItem.id.toString(), newJson)
+                        genreCacheDao.updateCachedMovieData(itemId.toString(), newJson)
                         Timber.d("Updated movie DB cache for: ${updatedItem.name}")
                     }
                 } else if (updatedItem is AfinityShow) {
                     val newJson = afinityTypeConverters.fromAfinityShow(updatedItem)
                     if (newJson != null) {
-                        genreCacheDao.updateCachedShowData(updatedItem.id.toString(), newJson)
+                        genreCacheDao.updateCachedShowData(itemId.toString(), newJson)
                         Timber.d("Updated show DB cache for: ${updatedItem.name}")
                     }
                 }
-                personSectionDao.clearAllCache()
+                val updatedJson =
+                    when (updatedItem) {
+                        is AfinityMovie -> afinityTypeConverters.fromAfinityMovie(updatedItem)
+                        is AfinityShow -> afinityTypeConverters.fromAfinityShow(updatedItem)
+                        else -> null
+                    }
+                if (updatedJson != null) {
+                    val allSections = personSectionDao.getAllCachedSections()
+                    for (section in allSections) {
+                        val itemStrings =
+                            json.decodeFromString<List<String>>(section.itemsData)
+                        var changed = false
+                        val newItemStrings =
+                            itemStrings.map { itemJson ->
+                                val existing = afinityTypeConverters.toAfinityItem(itemJson)
+                                if (existing?.id == itemId) {
+                                    changed = true
+                                    updatedJson
+                                } else {
+                                    itemJson
+                                }
+                            }
+                        if (changed) {
+                            personSectionDao.insertSection(
+                                section.copy(itemsData = json.encodeToString(newItemStrings))
+                            )
+                        }
+                    }
+                }
+                recentWatchedCache = null
             } catch (e: Exception) {
                 Timber.e(e, "Failed to update DB caches")
             }

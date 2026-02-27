@@ -31,5 +31,8 @@ interface PersonSectionDao {
     @Query("DELETE FROM person_section_cache WHERE sectionType = :type")
     suspend fun deleteSectionsByType(type: String)
 
+    @Query("SELECT * FROM person_section_cache")
+    suspend fun getAllCachedSections(): List<PersonSectionCacheEntity>
+
     @Query("DELETE FROM person_section_cache") suspend fun clearAllCache()
 }

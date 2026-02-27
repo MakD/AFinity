@@ -238,9 +238,8 @@ constructor(
                             is AfinitySeason -> jellyfinRepository.getItemById(syncedItem.seriesId)
                             else -> syncedItem
                         } ?: return@collect
-                    appDataRepository.reloadHomeData()
                     appDataRepository.updateItemInCaches(targetItem)
-                    updateItemInDynamicSections(event.itemId)
+                    updateItemInDynamicSections(targetItem)
                 }
             }
         }
@@ -1010,46 +1009,8 @@ constructor(
         }
     }
 
-    private suspend fun updateItemInDynamicSections(itemId: java.util.UUID) {
-        val syncedItem = jellyfinRepository.getItemById(itemId) ?: return
-
-        val updatedItem =
-            when (syncedItem) {
-                is AfinityEpisode -> jellyfinRepository.getItemById(syncedItem.seriesId)
-                is AfinitySeason -> jellyfinRepository.getItemById(syncedItem.seriesId)
-                else -> syncedItem
-            } ?: return
+    private suspend fun updateItemInDynamicSections(updatedItem: AfinityItem) {
         val targetId = updatedItem.id
-
-        var genreMoviesChanged = false
-        val currentGenreMovies = _uiState.value.genreMovies.toMutableMap()
-        currentGenreMovies.forEach { (genre, movies) ->
-            val index = movies.indexOfFirst { it.id == targetId }
-            if (index != -1 && updatedItem is AfinityMovie) {
-                val mutableMovies = movies.toMutableList()
-                mutableMovies[index] = updatedItem
-                currentGenreMovies[genre] = mutableMovies
-                genreMoviesChanged = true
-            }
-        }
-        if (genreMoviesChanged) {
-            _uiState.update { it.copy(genreMovies = currentGenreMovies) }
-        }
-
-        var genreShowsChanged = false
-        val currentGenreShows = _uiState.value.genreShows.toMutableMap()
-        currentGenreShows.forEach { (genre, shows) ->
-            val index = shows.indexOfFirst { it.id == targetId }
-            if (index != -1 && updatedItem is AfinityShow) {
-                val mutableShows = shows.toMutableList()
-                mutableShows[index] = updatedItem
-                currentGenreShows[genre] = mutableShows
-                genreShowsChanged = true
-            }
-        }
-        if (genreShowsChanged) {
-            _uiState.update { it.copy(genreShows = currentGenreShows) }
-        }
 
         var highestRatedChanged = false
         val currentHighestRated = _uiState.value.highestRated.toMutableList()

@@ -150,7 +150,9 @@ constructor(
 
                         if (isRelated) {
                             syncedEpisode?.let { ep ->
-                                _episodeStatusUpdates.value += (ep.id to ep.played)
+                                if (_episodeStatusUpdates.value[ep.id] != ep.played) {
+                                    _episodeStatusUpdates.value += (ep.id to ep.played)
+                                }
                             }
 
                             refreshFromCacheImmediate()
@@ -223,14 +225,6 @@ constructor(
                                     Timber.w(e, "Failed to get next episode")
                                 }
                             }
-                            launch {
-                                try {
-                                    val seasons = jellyfinRepository.getSeasons(cachedItem.id)
-                                    _uiState.value = _uiState.value.copy(seasons = seasons)
-                                } catch (e: Exception) {
-                                    Timber.w(e, "Failed to get updated seasons")
-                                }
-                            }
                         }
 
                         is AfinitySeason -> {
@@ -293,6 +287,14 @@ constructor(
                     _uiState.value = _uiState.value.copy(item = serverItem)
                 } else {
                     updateItemUserData(serverItem)
+                }
+                if (serverItem is AfinityShow) {
+                    try {
+                        val seasons = jellyfinRepository.getSeasons(serverItem.id)
+                        _uiState.value = _uiState.value.copy(seasons = seasons)
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to refresh seasons in background sync")
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -1017,8 +1019,7 @@ constructor(
                         is AfinityVideo ->
                             currentItem.copy(
                                 played = !currentItem.played,
-                                playbackPositionTicks =
-                                    if (!currentItem.played) currentItem.runtimeTicks else 0,
+                                playbackPositionTicks = 0,
                             )
 
                         else -> currentItem

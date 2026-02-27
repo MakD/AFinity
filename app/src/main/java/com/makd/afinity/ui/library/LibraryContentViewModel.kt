@@ -154,8 +154,8 @@ constructor(
             val name = libraryName ?: ""
             when {
                 name.contains("TV", ignoreCase = true) ||
-                    name.contains("Shows", ignoreCase = true) ||
-                    name.contains("Series", ignoreCase = true) -> CollectionType.TvShows
+                        name.contains("Shows", ignoreCase = true) ||
+                        name.contains("Series", ignoreCase = true) -> CollectionType.TvShows
 
                 name.contains("Movie", ignoreCase = true) -> CollectionType.Movies
                 else -> CollectionType.Mixed
@@ -165,6 +165,7 @@ constructor(
 
     private fun loadItems() {
         val type = libraryType ?: return
+        _itemUpdates.value = emptyMap()
 
         val baseFlow =
             jellyfinRepository.getItemsPaging(
@@ -264,6 +265,7 @@ constructor(
                     }
 
                 _uiState.value = _uiState.value.copy(selectedLetter = letter)
+                _itemUpdates.value = emptyMap()
 
                 val baseFlow =
                     jellyfinRepository.getItemsPaging(

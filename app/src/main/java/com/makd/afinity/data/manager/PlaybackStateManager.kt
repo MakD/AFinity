@@ -26,7 +26,7 @@ constructor(
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private val _playbackEvents = MutableSharedFlow<PlaybackEvent>()
+    private val _playbackEvents = MutableSharedFlow<PlaybackEvent>(replay = 1)
     val playbackEvents = _playbackEvents.asSharedFlow()
 
     @Volatile private var currentItemId: UUID? = null
