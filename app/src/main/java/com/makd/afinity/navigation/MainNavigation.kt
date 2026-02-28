@@ -138,8 +138,8 @@ fun MainNavigation(
 
     val useNavRail = widthSizeClass != WindowWidthSizeClass.Compact
 
-    LaunchedEffect(isOffline) {
-        if (isOffline) {
+    LaunchedEffect(isOffline, currentDestination) {
+        if (isOffline && currentDestination != null) {
             val currentRoute = currentDestination?.route
             if (currentRoute != Destination.HOME.route) {
                 Timber.d("Switching to offline mode, navigating to HOME")

@@ -863,6 +863,7 @@ constructor(
 
     private fun loadCombinedGenres() {
         viewModelScope.launch {
+            if (offlineModeManager.isOffline.first()) return@launch
             try {
                 appDataRepository.loadCombinedGenres()
             } catch (e: Exception) {
@@ -897,6 +898,7 @@ constructor(
 
     private fun loadStudios() {
         viewModelScope.launch {
+            if (offlineModeManager.isOffline.first()) return@launch
             try {
                 appDataRepository.loadStudios()
             } catch (e: Exception) {

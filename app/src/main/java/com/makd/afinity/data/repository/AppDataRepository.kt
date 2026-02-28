@@ -294,9 +294,12 @@ constructor(
 
     suspend fun reloadHomeData() {
         if (_isInitialDataLoaded.value && _libraries.value.isEmpty()) {
-            Timber.d("Libraries empty (Offline Start detected). Forcing full initial load...")
-            _isInitialDataLoaded.value = false
-            loadInitialData()
+            for (attempt in 1..MAX_RECONNECTION_RETRIES) {
+                Timber.d("Libraries empty, forcing full initial load (attempt $attempt/$MAX_RECONNECTION_RETRIES)...")
+                _isInitialDataLoaded.value = false
+                loadInitialData()
+                if (_libraries.value.isNotEmpty()) break
+            }
             return
         }
 
@@ -1312,5 +1315,9 @@ constructor(
         _loadingPhase.value = ""
         _separateMovieLibrarySections.value = emptyList()
         _separateTvLibrarySections.value = emptyList()
+    }
+
+    companion object {
+        private const val MAX_RECONNECTION_RETRIES = 3
     }
 }
