@@ -44,16 +44,16 @@ constructor(
 
     val appLoadingState =
         combine(
-                appDataRepository.isInitialDataLoaded,
-                appDataRepository.loadingProgress,
-                appDataRepository.loadingPhase,
-            ) { isLoaded, progress, phase ->
-                AppLoadingState(
-                    isLoading = !isLoaded,
-                    loadingProgress = progress,
-                    loadingPhase = phase,
-                )
-            }
+            appDataRepository.isInitialDataLoaded,
+            appDataRepository.loadingProgress,
+            appDataRepository.loadingPhase,
+        ) { isLoaded, progress, phase ->
+            AppLoadingState(
+                isLoading = !isLoaded,
+                loadingProgress = progress,
+                loadingPhase = phase,
+            )
+        }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -81,7 +81,7 @@ constructor(
             val initialAuthState = authRepository.isAuthenticated.value
 
             if (initialAuthState) {
-                loadAppData()
+                loadAppData(skipOfflineCheck = false)
             }
 
             var previousAuthState = initialAuthState
@@ -90,7 +90,7 @@ constructor(
                 if (isAuthenticated && !previousAuthState) {
                     Timber.d("Fresh login detected")
                     _hasLiveTvAccess.value = false
-                    loadAppData()
+                    loadAppData(skipOfflineCheck = true)
                 } else if (!isAuthenticated) {
                     _hasLiveTvAccess.value = false
                 }
@@ -130,15 +130,17 @@ constructor(
         }
     }
 
-    private fun loadAppData() {
+    private fun loadAppData(skipOfflineCheck: Boolean = false) {
         viewModelScope.launch {
             try {
-                val isOffline = offlineModeManager.isCurrentlyOffline()
+                if (!skipOfflineCheck) {
+                    val isOffline = offlineModeManager.isCurrentlyOffline()
 
-                if (isOffline) {
-                    Timber.d("Device is offline, skipping initial data load")
-                    appDataRepository.skipInitialDataLoad()
-                    return@launch
+                    if (isOffline) {
+                        Timber.d("Device is offline, skipping initial data load")
+                        appDataRepository.skipInitialDataLoad()
+                        return@launch
+                    }
                 }
 
                 appDataRepository.loadInitialData()
