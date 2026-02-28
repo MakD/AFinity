@@ -243,6 +243,9 @@
     <!--Person Detail Screen-->
     <string name="person_biography">Biography</string>
     <string name="person_born_fmt">Born: %1$s (%2$d years old)</string>
+    <string name="person_born_deceased_fmt">Born: %1$s</string>
+    <string name="person_died_fmt">Died: %1$s (aged %2$d)</string>
+    <string name="person_died_no_age_fmt">Died: %1$s</string>
     <string name="person_birthplace_fmt">Birth Place: %1$s</string>
     <string name="person_movies_fmt">Movies (%1$d)</string>
     <string name="person_shows_fmt">TV Shows (%1$d)</string>

@@ -436,22 +436,49 @@ private fun PersonMetadataSection(
     modifier: Modifier = Modifier,
 ) {
     val hasBirthday = person.premiereDate != null
+    val hasDeathDate = person.endDate != null
     val hasBirthplace = person.productionLocations.isNotEmpty()
     val hasExternalLinks = !person.externalUrls.isNullOrEmpty()
 
-    if (hasBirthday || hasBirthplace || hasExternalLinks) {
+    if (hasBirthday || hasDeathDate || hasBirthplace || hasExternalLinks) {
         Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val datePattern = stringResource(R.string.person_date_fmt)
+            val formatter =
+                remember(datePattern) {
+                    java.time.format.DateTimeFormatter.ofPattern(datePattern)
+                }
+
             person.premiereDate?.let { birthday ->
-                val datePattern = stringResource(R.string.person_date_fmt)
-                val formatter =
-                    remember(datePattern) {
-                        java.time.format.DateTimeFormatter.ofPattern(datePattern)
-                    }
-                val now = java.time.LocalDateTime.now()
-                val age = java.time.Period.between(birthday.toLocalDate(), now.toLocalDate()).years
+                val isDeceased = person.endDate != null
                 Text(
                     text =
-                        stringResource(R.string.person_born_fmt, birthday.format(formatter), age),
+                        if (isDeceased) {
+                            stringResource(R.string.person_born_deceased_fmt, birthday.format(formatter))
+                        } else {
+                            val age =
+                                java.time.Period.between(
+                                    birthday.toLocalDate(),
+                                    java.time.LocalDate.now(),
+                                ).years
+                            stringResource(R.string.person_born_fmt, birthday.format(formatter), age)
+                        },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            person.endDate?.let { deathDate ->
+                val age =
+                    person.premiereDate?.let { birthday ->
+                        java.time.Period.between(birthday.toLocalDate(), deathDate.toLocalDate()).years
+                    }
+                Text(
+                    text =
+                        if (age != null) {
+                            stringResource(R.string.person_died_fmt, deathDate.format(formatter), age)
+                        } else {
+                            stringResource(R.string.person_died_no_age_fmt, deathDate.format(formatter))
+                        },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
