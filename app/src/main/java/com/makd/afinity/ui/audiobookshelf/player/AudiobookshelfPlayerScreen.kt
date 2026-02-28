@@ -1,6 +1,8 @@
 package com.makd.afinity.ui.audiobookshelf.player
 
 import android.content.res.Configuration
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -61,8 +63,9 @@ import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AudiobookshelfPlayerScreen(
+fun SharedTransitionScope.AudiobookshelfPlayerScreen(
     onNavigateBack: () -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     viewModel: AudiobookshelfPlayerViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -72,11 +75,11 @@ fun AudiobookshelfPlayerScreen(
     val defaultColor = MaterialTheme.colorScheme.surface
     val dominantColor = rememberDominantColor(playbackState.coverUrl, defaultColor)
     val animatedColor by
-        animateColorAsState(
-            targetValue = dominantColor,
-            animationSpec = tween(durationMillis = 800),
-            label = "color",
-        )
+    animateColorAsState(
+        targetValue = dominantColor,
+        animationSpec = tween(durationMillis = 800),
+        label = "color",
+    )
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -94,7 +97,8 @@ fun AudiobookshelfPlayerScreen(
     ) { paddingValues ->
         Box(
             modifier =
-                Modifier.fillMaxSize()
+                Modifier
+                    .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             colors =
@@ -113,6 +117,7 @@ fun AudiobookshelfPlayerScreen(
                     animatedColor = animatedColor,
                     onNavigateBack = onNavigateBack,
                     paddingValues = paddingValues,
+                    animatedVisibilityScope = animatedVisibilityScope
                 )
             } else {
                 PortraitPlayerContent(
@@ -121,6 +126,7 @@ fun AudiobookshelfPlayerScreen(
                     animatedColor = animatedColor,
                     onNavigateBack = onNavigateBack,
                     paddingValues = paddingValues,
+                    animatedVisibilityScope = animatedVisibilityScope
                 )
             }
         }
@@ -153,19 +159,25 @@ fun AudiobookshelfPlayerScreen(
 }
 
 @Composable
-fun PortraitPlayerContent(
+fun SharedTransitionScope.PortraitPlayerContent(
     playbackState: AudiobookshelfPlaybackState,
     viewModel: AudiobookshelfPlayerViewModel,
     animatedColor: Color,
     onNavigateBack: () -> Unit,
     paddingValues: PaddingValues,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -196,11 +208,20 @@ fun PortraitPlayerContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(), contentAlignment = Alignment.Center
+        ) {
             Surface(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .aspectRatio(1f)
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "cover-${playbackState.coverUrl ?: "default"}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        )
                         .shadow(
                             elevation = 24.dp,
                             shape = RoundedCornerShape(32.dp),
@@ -253,7 +274,8 @@ fun PortraitPlayerContent(
                 color = animatedColor,
                 maxLines = 1,
                 modifier =
-                    Modifier.alpha(if (isChapterVisible) 1f else 0f)
+                    Modifier
+                        .alpha(if (isChapterVisible) 1f else 0f)
                         .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
             )
         }
@@ -276,7 +298,7 @@ fun PortraitPlayerContent(
             onNextChapter =
                 if (
                     playbackState.chapters.isNotEmpty() &&
-                        playbackState.currentChapterIndex < playbackState.chapters.lastIndex
+                    playbackState.currentChapterIndex < playbackState.chapters.lastIndex
                 ) {
                     { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
                 } else null,
@@ -287,7 +309,8 @@ fun PortraitPlayerContent(
 
         Row(
             modifier =
-                Modifier.fillMaxWidth(0.5f)
+                Modifier
+                    .fillMaxWidth(0.5f)
                     .padding(bottom = 50.dp)
                     .clip(RoundedCornerShape(50))
                     .background(Color.White.copy(alpha = 0.1f))
@@ -305,7 +328,8 @@ fun PortraitPlayerContent(
                     if (playbackState.playbackSpeed != 1.0f) {
                         Box(
                             modifier =
-                                Modifier.size(4.dp)
+                                Modifier
+                                    .size(4.dp)
                                     .background(
                                         Color.White,
                                         androidx.compose.foundation.shape.CircleShape,
@@ -341,28 +365,37 @@ fun PortraitPlayerContent(
 }
 
 @Composable
-fun LandscapePlayerContent(
+fun SharedTransitionScope.LandscapePlayerContent(
     playbackState: AudiobookshelfPlaybackState,
     viewModel: AudiobookshelfPlayerViewModel,
     animatedColor: Color,
     onNavigateBack: () -> Unit,
     paddingValues: PaddingValues,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     Row(
         modifier =
-            Modifier.fillMaxSize()
+            Modifier
+                .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 32.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(32.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier.weight(0.45f).fillMaxHeight(),
+            modifier = Modifier
+                .weight(0.45f)
+                .fillMaxHeight(),
             contentAlignment = Alignment.Center,
         ) {
             Surface(
                 modifier =
-                    Modifier.aspectRatio(1f)
+                    Modifier
+                        .aspectRatio(1f)
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "cover-${playbackState.coverUrl ?: "default"}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        )
                         .shadow(
                             elevation = 16.dp,
                             shape = RoundedCornerShape(24.dp),
@@ -383,7 +416,10 @@ fun LandscapePlayerContent(
         }
 
         Column(
-            modifier = Modifier.weight(0.55f).fillMaxHeight().verticalScroll(rememberScrollState()),
+            modifier = Modifier
+                .weight(0.55f)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -438,7 +474,8 @@ fun LandscapePlayerContent(
                 color = animatedColor,
                 maxLines = 1,
                 modifier =
-                    Modifier.alpha(if (isChapterVisible) 1f else 0f)
+                    Modifier
+                        .alpha(if (isChapterVisible) 1f else 0f)
                         .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
             )
 
@@ -462,7 +499,7 @@ fun LandscapePlayerContent(
                 onNextChapter =
                     if (
                         playbackState.chapters.isNotEmpty() &&
-                            playbackState.currentChapterIndex < playbackState.chapters.lastIndex
+                        playbackState.currentChapterIndex < playbackState.chapters.lastIndex
                     ) {
                         { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
                     } else null,
@@ -473,7 +510,8 @@ fun LandscapePlayerContent(
 
             Row(
                 modifier =
-                    Modifier.fillMaxWidth(0.5f)
+                    Modifier
+                        .fillMaxWidth(0.5f)
                         .clip(RoundedCornerShape(50))
                         .background(Color.White.copy(alpha = 0.1f))
                         .padding(vertical = 4.dp),
