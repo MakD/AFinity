@@ -20,6 +20,12 @@ enum class Destination(
         selectedIconRes = R.drawable.ic_video_library_filled,
         unselectedIconRes = R.drawable.ic_video_library,
     ),
+    LIVE_TV(
+        route = "live_tv",
+        title = "Live TV",
+        selectedIconRes = R.drawable.ic_live_tv_filled_nav,
+        unselectedIconRes = R.drawable.ic_live_tv_nav,
+    ),
     FAVORITES(
         route = "favorites",
         title = "Favorites",
@@ -43,12 +49,6 @@ enum class Destination(
         title = "Audiobooks",
         selectedIconRes = R.drawable.ic_books_filled,
         unselectedIconRes = R.drawable.ic_books,
-    ),
-    LIVE_TV(
-        route = "live_tv",
-        title = "Live TV",
-        selectedIconRes = R.drawable.ic_live_tv_filled_nav,
-        unselectedIconRes = R.drawable.ic_live_tv_nav,
     );
 
     companion object {
