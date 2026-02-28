@@ -77,7 +77,11 @@ fun LibrariesScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         when {
             uiState.isLoading && uiState.libraries.isEmpty() -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -156,7 +160,11 @@ private fun LibraryCard(
                 ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+        ) {
             Card(
                 modifier = Modifier.fillMaxSize(),
                 shape = RoundedCornerShape(12.dp),
@@ -178,7 +186,11 @@ private fun LibraryCard(
             }
 
             if (library.type != CollectionType.Unknown) {
-                Box(modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
+                ) {
                     Icon(
                         painter = getLibraryIcon(library.type),
                         contentDescription = null,
@@ -266,8 +278,8 @@ private fun getLibraryIcon(type: CollectionType): Painter {
         CollectionType.Books -> painterResource(id = R.drawable.ic_books)
         CollectionType.HomeVideos -> painterResource(id = R.drawable.ic_music_video)
         CollectionType.Playlists -> painterResource(id = R.drawable.ic_playlist)
-        CollectionType.LiveTv -> painterResource(id = R.drawable.ic_live_tv)
-        CollectionType.BoxSets -> painterResource(id = R.drawable.ic_collections_bookmark)
+        CollectionType.LiveTv -> painterResource(id = R.drawable.ic_live_tv_nav)
+        CollectionType.BoxSets -> painterResource(id = R.drawable.ic_collection)
         CollectionType.Mixed -> painterResource(id = R.drawable.ic_mixed)
         CollectionType.Unknown -> painterResource(id = R.drawable.ic_folder)
     }

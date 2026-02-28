@@ -60,12 +60,12 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
-import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
 import mx.platacard.pagerindicator.PagerWormIndicator
 import timber.log.Timber
+import java.util.Locale
 
 @Composable
 fun HeroCarousel(
@@ -174,7 +174,9 @@ fun HeroCarouselPortrait(
         }
     }
 
-    Box(modifier = modifier.fillMaxWidth().height(height)) {
+    Box(modifier = modifier
+        .fillMaxWidth()
+        .height(height)) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
@@ -191,7 +193,8 @@ fun HeroCarouselPortrait(
                 targetHeight = height,
                 contentScale = ContentScale.Crop,
                 modifier =
-                    Modifier.fillMaxSize()
+                    Modifier
+                        .fillMaxSize()
                         .graphicsLayer { alpha = 0.99f }
                         .drawWithCache {
                             val gradient =
@@ -218,10 +221,13 @@ fun HeroCarouselPortrait(
             )
         }
 
-        Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)) {
             Box(
                 modifier =
-                    Modifier.align(Alignment.BottomCenter)
+                    Modifier
+                        .align(Alignment.BottomCenter)
                         .fillMaxWidth(0.8f)
                         .padding(bottom = 144.dp)
                         .sizeIn(maxHeight = 120.dp)
@@ -239,7 +245,9 @@ fun HeroCarouselPortrait(
                                 blurHash = null,
                                 targetWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp,
                                 targetHeight = 120.dp,
-                                modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .wrapContentHeight(),
                                 contentScale = ContentScale.Fit,
                             )
                         }
@@ -266,7 +274,10 @@ fun HeroCarouselPortrait(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
-                    Modifier.align(Alignment.BottomCenter).padding(bottom = 112.dp).fillMaxWidth(),
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 112.dp)
+                        .fillMaxWidth(),
             ) {
                 Spacer(modifier = Modifier.weight(1f))
                 HeroMetadata(currentItem)
@@ -275,7 +286,10 @@ fun HeroCarouselPortrait(
 
             Box(
                 modifier =
-                    Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp).fillMaxWidth()
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 80.dp)
+                        .fillMaxWidth()
             ) {
                 val genres =
                     when (currentItem) {
@@ -298,14 +312,16 @@ fun HeroCarouselPortrait(
 
         Box(
             modifier =
-                Modifier.align(Alignment.BottomCenter)
+                Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             IconButton(
                 onClick = { onMoreInformationClick(currentItem) },
                 modifier =
-                    Modifier.align(Alignment.CenterStart)
+                    Modifier
+                        .align(Alignment.CenterStart)
                         .size(56.dp)
                         .background(
                             MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
@@ -326,7 +342,8 @@ fun HeroCarouselPortrait(
                 IconButton(
                     onClick = { onPlayTrailerClick(currentItem) },
                     modifier =
-                        Modifier.size(56.dp)
+                        Modifier
+                            .size(56.dp)
                             .background(
                                 MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                                 CircleShape,
@@ -342,11 +359,12 @@ fun HeroCarouselPortrait(
                 IconButton(
                     onClick = { onWatchNowClick(currentItem) },
                     modifier =
-                        Modifier.size(56.dp)
+                        Modifier
+                            .size(56.dp)
                             .background(MaterialTheme.colorScheme.primary, CircleShape),
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_play_arrow),
+                        painter = painterResource(id = R.drawable.ic_player_play_filled),
                         contentDescription = stringResource(R.string.hero_btn_play_media),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(28.dp),
@@ -373,7 +391,9 @@ fun HeroCarouselPortrait(
                 currentPageFraction = currentPageFractionState,
                 activeDotColor = MaterialTheme.colorScheme.primary,
                 dotColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier.align(Alignment.BottomCenter).padding(40.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(40.dp),
                 dotCount = 5,
                 activeDotSize = 8.dp,
                 minDotSize = 4.dp,
@@ -445,7 +465,9 @@ private fun HeroCarouselLandscape(
         }
     }
 
-    Box(modifier = modifier.fillMaxWidth().height(landscapeHeight)) {
+    Box(modifier = modifier
+        .fillMaxWidth()
+        .height(landscapeHeight)) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
@@ -462,7 +484,8 @@ private fun HeroCarouselLandscape(
                 targetHeight = landscapeHeight,
                 contentScale = ContentScale.Crop,
                 modifier =
-                    Modifier.fillMaxSize()
+                    Modifier
+                        .fillMaxSize()
                         .graphicsLayer { alpha = 0.99f }
                         .drawWithCache {
                             val gradient =
@@ -492,11 +515,14 @@ private fun HeroCarouselLandscape(
 
         Box(
             modifier =
-                Modifier.fillMaxSize()
+                Modifier
+                    .fillMaxSize()
                     .padding(start = 48.dp, bottom = 48.dp, top = 48.dp, end = 48.dp)
         ) {
             Column(
-                modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth(),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Column(
@@ -504,7 +530,9 @@ private fun HeroCarouselLandscape(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Box(
-                        modifier = Modifier.fillMaxWidth(0.5f).height(100.dp),
+                        modifier = Modifier
+                            .fillMaxWidth(0.5f)
+                            .height(100.dp),
                         contentAlignment = Alignment.CenterStart,
                     ) {
                         Crossfade(
@@ -524,7 +552,9 @@ private fun HeroCarouselLandscape(
                                         targetWidth =
                                             (LocalConfiguration.current.screenWidthDp * 0.4f).dp,
                                         targetHeight = 100.dp,
-                                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .wrapContentHeight(),
                                         contentScale = ContentScale.Fit,
                                         alignment = Alignment.CenterStart,
                                     )
@@ -545,7 +575,9 @@ private fun HeroCarouselLandscape(
                         }
                     }
 
-                    Box(modifier = Modifier.fillMaxWidth().height(28.dp)) {
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(28.dp)) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -554,7 +586,9 @@ private fun HeroCarouselLandscape(
                         }
                     }
 
-                    Box(modifier = Modifier.fillMaxWidth().height(20.dp)) {
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(20.dp)) {
                         val genres =
                             when (currentItem) {
                                 is AfinityMovie -> (currentItem as AfinityMovie).genres
@@ -573,7 +607,9 @@ private fun HeroCarouselLandscape(
                         }
                     }
 
-                    Box(modifier = Modifier.fillMaxWidth().height(40.dp)) {
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp)) {
                         currentItem.overview?.let { overview ->
                             Text(
                                 text = overview,
@@ -595,7 +631,8 @@ private fun HeroCarouselLandscape(
                         IconButton(
                             onClick = { onMoreInformationClick(currentItem) },
                             modifier =
-                                Modifier.size(36.dp)
+                                Modifier
+                                    .size(36.dp)
                                     .background(
                                         MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                                         CircleShape,
@@ -611,7 +648,8 @@ private fun HeroCarouselLandscape(
                         IconButton(
                             onClick = { onPlayTrailerClick(currentItem) },
                             modifier =
-                                Modifier.size(36.dp)
+                                Modifier
+                                    .size(36.dp)
                                     .background(
                                         MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                                         CircleShape,
@@ -627,11 +665,12 @@ private fun HeroCarouselLandscape(
                         IconButton(
                             onClick = { onWatchNowClick(currentItem) },
                             modifier =
-                                Modifier.size(36.dp)
+                                Modifier
+                                    .size(36.dp)
                                     .background(MaterialTheme.colorScheme.primary, CircleShape),
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_play_arrow),
+                                painter = painterResource(id = R.drawable.ic_player_play_filled),
                                 contentDescription = stringResource(R.string.hero_btn_watch_now),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(24.dp),
@@ -648,6 +687,7 @@ private fun HeroCarouselLandscape(
                                     pageOffset > 0.5f && currentPage == items.size - 1 -> 0f
                                     pageOffset < -0.5f && currentPage == 0 ->
                                         (items.size - 1).toFloat()
+
                                     else ->
                                         (currentPage + pageOffset).coerceIn(
                                             0f,
@@ -751,7 +791,8 @@ private fun HeroMetadata(item: AfinityItem) {
             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier =
-                Modifier.background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+                Modifier
+                    .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
                     .padding(horizontal = 6.dp, vertical = 2.dp),
         )
     }

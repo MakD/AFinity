@@ -84,9 +84,9 @@ import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.di.PreferencesEntryPoint
 import com.makd.afinity.ui.settings.SettingsViewModel
 import dagger.hilt.android.EntryPointAccessors
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,15 +101,15 @@ fun PlayerOptionsScreen(
     val context = LocalContext.current
     val preferencesRepository = remember {
         EntryPointAccessors.fromApplication(
-                context.applicationContext,
-                PreferencesEntryPoint::class.java,
-            )
+            context.applicationContext,
+            PreferencesEntryPoint::class.java,
+        )
             .preferencesRepository()
     }
     val subtitlePrefs by
-        preferencesRepository
-            .getSubtitlePreferencesFlow()
-            .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
+    preferencesRepository
+        .getSubtitlePreferencesFlow()
+        .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
 
     Scaffold(
         topBar = {
@@ -141,7 +141,9 @@ fun PlayerOptionsScreen(
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
@@ -156,7 +158,7 @@ fun PlayerOptionsScreen(
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
-                        icon = painterResource(id = R.drawable.ic_play_arrow),
+                        icon = painterResource(id = R.drawable.ic_player_play_filled),
                         title = stringResource(R.string.pref_autoplay_title),
                         subtitle = stringResource(R.string.pref_autoplay_summary),
                         checked = uiState.autoPlay,
@@ -322,7 +324,9 @@ fun PlayerOptionsScreen(
                         2_000_000 to "2 Mbps",
                         1_000_000 to "1 Mbps",
                     )
-                    val currentBitrateLabel = bitrateOptions.find { it.first == uiState.castMaxBitrate }?.second ?: "16 Mbps"
+                    val currentBitrateLabel =
+                        bitrateOptions.find { it.first == uiState.castMaxBitrate }?.second
+                            ?: "16 Mbps"
 
                     Box {
                         Row(
@@ -378,7 +382,9 @@ private fun SettingsGroup(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+    Column(modifier = modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp)) {
         if (title != null) {
             Text(
                 text = title,
@@ -613,6 +619,7 @@ private fun SubtitleCustomizationContent(
                     SubtitleOutlineStyle.BACKGROUND_BOX -> !useExoPlayer
                     SubtitleOutlineStyle.RAISED,
                     SubtitleOutlineStyle.DEPRESSED -> useExoPlayer
+
                     else -> true
                 }
             },
@@ -624,7 +631,7 @@ private fun SubtitleCustomizationContent(
     AnimatedVisibility(
         visible =
             subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE ||
-                subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW,
+                    subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW,
         enter = fadeIn() + expandVertically(),
         exit = fadeOut() + shrinkVertically(),
     ) {
@@ -739,14 +746,16 @@ private fun ColorPickerItem(title: String, color: Int, onColorChange: (Int) -> U
 
     Row(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .clickable { showDialog = true }
                 .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier =
-                Modifier.size(32.dp)
+                Modifier
+                    .size(32.dp)
                     .clip(CircleShape)
                     .background(Color(color))
                     .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
@@ -932,13 +941,16 @@ private fun LanguagePickerDialog(
             Column {
                 Box(
                     modifier =
-                        Modifier.fillMaxWidth()
+                        Modifier
+                            .fillMaxWidth()
                             .padding(bottom = 12.dp)
                             .clip(RoundedCornerShape(28.dp))
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
@@ -956,7 +968,9 @@ private fun LanguagePickerDialog(
                                     color = MaterialTheme.colorScheme.onSurface
                                 ),
                             singleLine = true,
-                            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(vertical = 12.dp),
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
                                     Text(
@@ -984,14 +998,17 @@ private fun LanguagePickerDialog(
                     }
                 }
 
-                LazyColumn(modifier = Modifier.fillMaxWidth().height(400.dp)) {
+                LazyColumn(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp)) {
                     items(filteredIndices.size) { filterIdx ->
                         val idx = filteredIndices[filterIdx]
                         val isSelected = languageCodes[idx] == selectedCode
 
                         Row(
                             modifier =
-                                Modifier.fillMaxWidth()
+                                Modifier
+                                    .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
                                     .then(
                                         if (isSelected)
@@ -1091,7 +1108,8 @@ private fun SimpleColorPickerDialog(
                         presetColors.forEach { presetColor ->
                             Box(
                                 modifier =
-                                    Modifier.size(48.dp)
+                                    Modifier
+                                        .size(48.dp)
                                         .clip(CircleShape)
                                         .background(Color(presetColor))
                                         .border(
@@ -1146,7 +1164,8 @@ private fun SimpleColorPickerDialog(
 
                         Box(
                             modifier =
-                                Modifier.size(48.dp)
+                                Modifier
+                                    .size(48.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (isValidHex) {
@@ -1202,7 +1221,8 @@ private fun SubtitlePreview(
 
         Box(
             modifier =
-                Modifier.background(
+                Modifier
+                    .background(
                         if (useExoPlayer) {
                             Color(subtitlePrefs.windowColor)
                         } else {
@@ -1217,10 +1237,12 @@ private fun SubtitlePreview(
         ) {
             Box(
                 modifier =
-                    Modifier.background(
+                    Modifier
+                        .background(
                             when (subtitlePrefs.outlineStyle) {
                                 SubtitleOutlineStyle.BACKGROUND_BOX ->
                                     Color(subtitlePrefs.backgroundColor)
+
                                 else -> androidx.compose.ui.graphics.Color.Transparent
                             },
                             RoundedCornerShape(4.dp),
@@ -1229,22 +1251,22 @@ private fun SubtitlePreview(
             ) {
                 if (
                     !useExoPlayer &&
-                        subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE &&
-                        subtitlePrefs.outlineSize > 0f
+                    subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE &&
+                    subtitlePrefs.outlineSize > 0f
                 ) {
                     val outlineColor = Color(subtitlePrefs.outlineColor)
                     val offsetStep = (subtitlePrefs.outlineSize * 0.3f).coerceAtMost(2f)
 
                     listOf(
-                            Offset(-offsetStep, -offsetStep),
-                            Offset(0f, -offsetStep),
-                            Offset(offsetStep, -offsetStep),
-                            Offset(-offsetStep, 0f),
-                            Offset(offsetStep, 0f),
-                            Offset(-offsetStep, offsetStep),
-                            Offset(0f, offsetStep),
-                            Offset(offsetStep, offsetStep),
-                        )
+                        Offset(-offsetStep, -offsetStep),
+                        Offset(0f, -offsetStep),
+                        Offset(offsetStep, -offsetStep),
+                        Offset(-offsetStep, 0f),
+                        Offset(offsetStep, 0f),
+                        Offset(-offsetStep, offsetStep),
+                        Offset(0f, offsetStep),
+                        Offset(offsetStep, offsetStep),
+                    )
                         .forEach { offset ->
                             Text(
                                 text = stringResource(R.string.subtitle_preview_text),
@@ -1260,15 +1282,15 @@ private fun SubtitlePreview(
                     val offsetStep = 1.5f
 
                     listOf(
-                            Offset(-offsetStep, -offsetStep),
-                            Offset(0f, -offsetStep),
-                            Offset(offsetStep, -offsetStep),
-                            Offset(-offsetStep, 0f),
-                            Offset(offsetStep, 0f),
-                            Offset(-offsetStep, offsetStep),
-                            Offset(0f, offsetStep),
-                            Offset(offsetStep, offsetStep),
-                        )
+                        Offset(-offsetStep, -offsetStep),
+                        Offset(0f, -offsetStep),
+                        Offset(offsetStep, -offsetStep),
+                        Offset(-offsetStep, 0f),
+                        Offset(offsetStep, 0f),
+                        Offset(-offsetStep, offsetStep),
+                        Offset(0f, offsetStep),
+                        Offset(offsetStep, offsetStep),
+                    )
                         .forEach { offset ->
                             Text(
                                 text = stringResource(R.string.subtitle_preview_text),
@@ -1286,9 +1308,9 @@ private fun SubtitlePreview(
                             shadow =
                                 when {
                                     !useExoPlayer &&
-                                        subtitlePrefs.outlineStyle ==
+                                            subtitlePrefs.outlineStyle ==
                                             SubtitleOutlineStyle.DROP_SHADOW &&
-                                        subtitlePrefs.outlineSize > 0f -> {
+                                            subtitlePrefs.outlineSize > 0f -> {
                                         val shadowOffset = subtitlePrefs.outlineSize
                                         Shadow(
                                             color = Color(subtitlePrefs.outlineColor),
@@ -1298,7 +1320,7 @@ private fun SubtitlePreview(
                                     }
 
                                     useExoPlayer &&
-                                        subtitlePrefs.outlineStyle ==
+                                            subtitlePrefs.outlineStyle ==
                                             SubtitleOutlineStyle.DROP_SHADOW -> {
                                         Shadow(
                                             color = Color(subtitlePrefs.outlineColor),
@@ -1308,7 +1330,7 @@ private fun SubtitlePreview(
                                     }
 
                                     useExoPlayer &&
-                                        subtitlePrefs.outlineStyle ==
+                                            subtitlePrefs.outlineStyle ==
                                             SubtitleOutlineStyle.RAISED -> {
                                         Shadow(
                                             color =
@@ -1321,7 +1343,7 @@ private fun SubtitlePreview(
                                     }
 
                                     useExoPlayer &&
-                                        subtitlePrefs.outlineStyle ==
+                                            subtitlePrefs.outlineStyle ==
                                             SubtitleOutlineStyle.DEPRESSED -> {
                                         Shadow(
                                             color =

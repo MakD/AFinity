@@ -506,7 +506,7 @@ fun ActiveDownloadCard(
                             modifier = Modifier.size(32.dp),
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_pause_outline),
+                                painter = painterResource(id = R.drawable.ic_player_pause_filled),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                             )
@@ -520,7 +520,7 @@ fun ActiveDownloadCard(
                             modifier = Modifier.size(32.dp),
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_play_arrow),
+                                painter = painterResource(id = R.drawable.ic_player_play_filled),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                             )

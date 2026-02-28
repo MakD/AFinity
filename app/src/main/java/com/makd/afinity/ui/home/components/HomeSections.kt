@@ -175,9 +175,11 @@ private fun LibraryHomeCard(
                 ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)
+        ) {
             Card(
                 modifier = Modifier.fillMaxSize(),
                 shape = RoundedCornerShape(12.dp),
@@ -198,9 +200,11 @@ private fun LibraryHomeCard(
             }
 
             if (library.type != CollectionType.Unknown) {
-                Box(modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(6.dp)) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
+                ) {
                     Icon(
                         painter = painterResource(id = libraryIconRes(library.type)),
                         contentDescription = null,
@@ -229,8 +233,8 @@ private fun libraryIconRes(type: CollectionType): Int =
         CollectionType.Books -> R.drawable.ic_books
         CollectionType.HomeVideos -> R.drawable.ic_music_video
         CollectionType.Playlists -> R.drawable.ic_playlist
-        CollectionType.LiveTv -> R.drawable.ic_live_tv
-        CollectionType.BoxSets -> R.drawable.ic_collections_bookmark
+        CollectionType.LiveTv -> R.drawable.ic_live_tv_nav
+        CollectionType.BoxSets -> R.drawable.ic_collection
         CollectionType.Mixed -> R.drawable.ic_mixed
         CollectionType.Unknown -> R.drawable.ic_folder
     }
