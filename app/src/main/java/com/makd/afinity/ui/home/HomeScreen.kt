@@ -94,6 +94,7 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.home.components.GenreSection
+import com.makd.afinity.ui.home.components.LibrariesSection
 import com.makd.afinity.ui.home.components.MovieRecommendationSection
 import com.makd.afinity.ui.home.components.NextUpSection
 import com.makd.afinity.ui.home.components.OptimizedContinueWatchingSection
@@ -194,6 +195,8 @@ fun HomeScreen(
 
                     val firstContentKey =
                         when {
+                            !uiState.isOffline && uiState.libraries.isNotEmpty() ->
+                                "libraries_section"
                             continueWatchingItems.isNotEmpty() -> "continue_watching"
                             !uiState.isOffline &&
                                 uiState.isLoading &&
@@ -236,6 +239,28 @@ fun HomeScreen(
                                     },
                                     onMoreInformationClick = onItemClick,
                                 )
+                            }
+                        }
+
+                        if (!uiState.isOffline && uiState.libraries.isNotEmpty()) {
+                            item(key = "libraries_section") {
+                                Box(modifier = getItemModifier("libraries_section")) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        LibrariesSection(
+                                            libraries = uiState.libraries,
+                                            onLibraryClick = { library ->
+                                                val route =
+                                                    Destination.createLibraryContentRoute(
+                                                        libraryId = library.id.toString(),
+                                                        libraryName = library.name,
+                                                    )
+                                                navController.navigate(route)
+                                            },
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
+                                }
                             }
                         }
 

@@ -178,6 +178,10 @@ fun MainNavigation(
                             return@forEach
                         }
 
+                        if (destination == Destination.LIBRARIES) {
+                            return@forEach
+                        }
+
                         if (destination == Destination.WATCHLIST && watchlistCount == 0) {
                             return@forEach
                         }

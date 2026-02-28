@@ -174,6 +174,12 @@ constructor(
         }
 
         viewModelScope.launch {
+            appDataRepository.libraries.collect { libs ->
+                _uiState.update { it.copy(libraries = libs) }
+            }
+        }
+
+        viewModelScope.launch {
             appDataRepository.separateTvLibrarySections.collect { sections ->
                 _uiState.update { it.copy(separateTvLibrarySections = sections) }
             }
@@ -1106,6 +1112,7 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val combineLibrarySections: Boolean = false,
+    val libraries: List<AfinityCollection> = emptyList(),
     val separateMovieLibrarySections: List<Pair<AfinityCollection, List<AfinityMovie>>> =
         emptyList(),
     val separateTvLibrarySections: List<Pair<AfinityCollection, List<AfinityShow>>> = emptyList(),
