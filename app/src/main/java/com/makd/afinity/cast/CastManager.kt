@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -318,7 +319,7 @@ constructor(
                 delay(300)
                 try {
                     castSession?.volume = volume.coerceIn(0.0, 1.0)
-                    _castState.value = _castState.value.copy(volume = volume.coerceIn(0.0, 1.0))
+                    _castState.update { it.copy(volume = volume.coerceIn(0.0, 1.0)) }
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to set cast volume")
                 }
@@ -327,7 +328,7 @@ constructor(
 
     fun setPlaybackSpeed(speed: Float) {
         remoteMediaClient?.setPlaybackRate(speed.toDouble())
-        _castState.value = _castState.value.copy(playbackSpeed = speed)
+        _castState.update { it.copy(playbackSpeed = speed) }
     }
 
     fun switchAudioTrack(
@@ -495,7 +496,7 @@ constructor(
             val client = remoteMediaClient ?: return
             val position = client.approximateStreamPosition
             if (position >= 0) {
-                _castState.value = _castState.value.copy(currentPosition = position)
+                _castState.update { it.copy(currentPosition = position) }
                 playbackStateManager.updatePlaybackPosition(position)
             }
 

@@ -8,6 +8,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 @Singleton
 class AudiobookshelfPlaybackManager @Inject constructor() {
@@ -52,19 +53,19 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
     }
 
     fun updatePlayingState(isPlaying: Boolean) {
-        _playbackState.value = _playbackState.value.copy(isPlaying = isPlaying)
+        _playbackState.update { it.copy(isPlaying = isPlaying) }
     }
 
     fun updateBufferingState(isBuffering: Boolean) {
-        _playbackState.value = _playbackState.value.copy(isBuffering = isBuffering)
+        _playbackState.update { it.copy(isBuffering = isBuffering) }
     }
 
     fun updatePlaybackSpeed(speed: Float) {
-        _playbackState.value = _playbackState.value.copy(playbackSpeed = speed)
+        _playbackState.update { it.copy(playbackSpeed = speed) }
     }
 
     fun setSleepTimer(endTimeMillis: Long?) {
-        _playbackState.value = _playbackState.value.copy(sleepTimerEndTime = endTimeMillis)
+        _playbackState.update { it.copy(sleepTimerEndTime = endTimeMillis) }
     }
 
     fun setPlaylistInfo(episodeIds: List<String>) {
