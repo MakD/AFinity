@@ -77,11 +77,10 @@ fun PlaybackSpeedSelector(
             Text(
                 text = "PLAYBACK SPEED",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 letterSpacing = 2.sp,
-                fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(24.dp))
 
