@@ -4,6 +4,12 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
@@ -31,9 +37,11 @@ import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.data.workers.HomeDataReloadWorker
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -51,12 +59,14 @@ import org.jellyfin.sdk.model.api.PersonKind.ACTOR
 import org.jellyfin.sdk.model.api.PersonKind.DIRECTOR
 import org.jellyfin.sdk.model.api.PersonKind.WRITER
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel
 @Inject
 constructor(
+    @ApplicationContext private val context: Context,
     private val appDataRepository: AppDataRepository,
     private val jellyfinRepository: JellyfinRepository,
     private val userDataRepository: UserDataRepository,
@@ -229,7 +239,7 @@ constructor(
                 if (isOffline) {
                     loadDownloadedContent()
                 } else {
-                    refresh()
+                    scheduleHomeDataReload()
                 }
             }
         }
@@ -1017,6 +1027,23 @@ constructor(
         }
     }
 
+    private fun scheduleHomeDataReload() {
+        val request =
+            OneTimeWorkRequestBuilder<HomeDataReloadWorker>()
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .setBackoffCriteria(BackoffPolicy.LINEAR, 10, TimeUnit.SECONDS)
+                .build()
+
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(WORK_HOME_RELOAD, ExistingWorkPolicy.REPLACE, request)
+
+        Timber.d("HomeDataReloadWorker scheduled")
+    }
+
     private suspend fun updateItemInDynamicSections(updatedItem: AfinityItem) {
         val targetId = updatedItem.id
 
@@ -1082,6 +1109,10 @@ constructor(
                 updateCombinedSections(appDataRepository.combinedGenres.value)
             }
         }
+    }
+
+    companion object {
+        private const val WORK_HOME_RELOAD = "home_data_reload"
     }
 }
 
