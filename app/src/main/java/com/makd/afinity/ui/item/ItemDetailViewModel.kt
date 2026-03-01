@@ -157,6 +157,8 @@ constructor(
 
                             refreshFromCacheImmediate()
                         }
+
+                        updateSimilarItemsOnSync(event.itemId)
                     }
                 }
             }
@@ -251,6 +253,27 @@ constructor(
                 launch { syncWithServerInBackground() }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh from cache")
+            }
+        }
+    }
+
+    private fun updateSimilarItemsOnSync(syncedItemId: UUID) {
+        viewModelScope.launch {
+            try {
+                val syncedItem = jellyfinRepository.getItemById(syncedItemId)
+                val targetId = when (syncedItem) {
+                    is AfinityEpisode -> syncedItem.seriesId
+                    is AfinitySeason -> syncedItem.seriesId
+                    else -> syncedItemId
+                }
+                val index = _uiState.value.similarItems.indexOfFirst { it.id == targetId }
+                if (index == -1) return@launch
+                val updatedItem = jellyfinRepository.getItemById(targetId) ?: return@launch
+                val updatedList = _uiState.value.similarItems.toMutableList()
+                updatedList[index] = updatedItem
+                _uiState.value = _uiState.value.copy(similarItems = updatedList)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update similar items on sync")
             }
         }
     }
