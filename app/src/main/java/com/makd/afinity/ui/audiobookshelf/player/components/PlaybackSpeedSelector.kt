@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -26,7 +25,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -51,7 +49,7 @@ fun PlaybackSpeedSelector(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val presets = listOf(0.5f, 0.75f, 1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f)
     val listState = rememberLazyListState()
@@ -71,18 +69,22 @@ fun PlaybackSpeedSelector(
         dragHandle = null,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 24.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "PLAYBACK SPEED",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 letterSpacing = 2.sp,
+                fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(24.dp))
+
             Text(
                 text = "${formatSpeed(currentSpeed)}x",
                 style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
@@ -92,7 +94,7 @@ fun PlaybackSpeedSelector(
             Spacer(modifier = Modifier.height(32.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -123,13 +125,8 @@ fun PlaybackSpeedSelector(
                     },
                     valueRange = presets.first()..presets.last(),
                     modifier = Modifier.weight(1f),
-                    colors =
-                        SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.onSurface,
-                            activeTrackColor = MaterialTheme.colorScheme.onSurface,
-                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                        ),
                 )
+
                 FilledIconButton(
                     onClick = {
                         val next =
@@ -154,8 +151,8 @@ fun PlaybackSpeedSelector(
 
             LazyRow(
                 state = listState,
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 0.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 items(presets) { speed ->
@@ -174,34 +171,34 @@ fun PlaybackSpeedSelector(
 private fun PresetSpeedItem(speed: Float, isSelected: Boolean, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            modifier =
-                Modifier.width(64.dp)
-                    .height(36.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent
-                    )
-                    .border(
-                        BorderStroke(
-                            1.dp,
-                            if (isSelected) Color.Transparent
-                            else MaterialTheme.colorScheme.outlineVariant,
-                        ),
-                        RoundedCornerShape(8.dp),
-                    )
-                    .clickable(onClick = onClick),
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(
+                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                    else Color.Transparent
+                )
+                .border(
+                    BorderStroke(
+                        1.dp,
+                        if (isSelected) Color.Transparent
+                        else MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                    RoundedCornerShape(50),
+                )
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = formatSpeed(speed),
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                color =
-                    if (isSelected) MaterialTheme.colorScheme.inverseOnSurface
-                    else MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurface,
             )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
         if (speed == 1.0f) {
             Text(
                 text = "Normal",

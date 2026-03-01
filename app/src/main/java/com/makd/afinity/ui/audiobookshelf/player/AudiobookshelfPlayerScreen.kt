@@ -56,6 +56,7 @@ import coil3.compose.AsyncImage
 import com.makd.afinity.R
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackState
 import com.makd.afinity.ui.audiobookshelf.player.components.ChapterSelector
+import com.makd.afinity.ui.audiobookshelf.player.components.EqualizerBottomSheet
 import com.makd.afinity.ui.audiobookshelf.player.components.PlaybackSpeedSelector
 import com.makd.afinity.ui.audiobookshelf.player.components.PlayerControls
 import com.makd.afinity.ui.audiobookshelf.player.components.SleepTimerDialog
@@ -70,6 +71,8 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val playbackState by viewModel.playbackState.collectAsState()
+    val equalizerState by viewModel.equalizerState.collectAsState()
+    val skipSilenceEnabled by viewModel.skipSilenceEnabled.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     val defaultColor = MaterialTheme.colorScheme.surface
@@ -155,6 +158,19 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                 onDismiss = viewModel::dismissSleepTimerDialog,
             )
         }
+
+        if (uiState.showEqualizer) {
+            EqualizerBottomSheet(
+                state = equalizerState,
+                skipSilenceEnabled = skipSilenceEnabled,
+                onEnabled = viewModel::setEqEnabled,
+                onPresetSelected = viewModel::applyEqPreset,
+                onBandChanged = viewModel::setEqBandGain,
+                onSkipSilenceToggle = viewModel::setSkipSilence,
+                onVolumeBoostChanged = viewModel::setVolumeBoost,
+                onDismiss = viewModel::dismissEqualizer,
+            )
+        }
     }
 }
 
@@ -197,7 +213,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
                 letterSpacing = 2.sp,
             )
 
-            IconButton(onClick = { /* Option Menu */ }) {
+            IconButton(onClick = viewModel::showEqualizer) {
                 Icon(
                     painterResource(id = R.drawable.ic_options),
                     contentDescription = "Options",
@@ -441,7 +457,7 @@ fun SharedTransitionScope.LandscapePlayerContent(
                     color = Color.White.copy(alpha = 0.7f),
                     letterSpacing = 2.sp,
                 )
-                IconButton(onClick = {}) {
+                IconButton(onClick = viewModel::showEqualizer) {
                     Icon(painterResource(id = R.drawable.ic_options), "Options", tint = Color.White)
                 }
             }

@@ -9,7 +9,10 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
@@ -19,9 +22,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.makd.afinity.MainActivity
 import com.makd.afinity.R
 import com.makd.afinity.data.repository.SecurePreferencesRepository
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -31,14 +32,26 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
+@UnstableApi
 @AndroidEntryPoint
 class AudiobookshelfPlayerService : MediaSessionService() {
 
-    @Inject lateinit var playbackManager: AudiobookshelfPlaybackManager
-    @Inject lateinit var progressSyncer: AudiobookshelfProgressSyncer
-    @Inject lateinit var securePreferencesRepository: SecurePreferencesRepository
-    @Inject lateinit var networkConnectivityMonitor: NetworkConnectivityMonitor
+    @Inject
+    lateinit var playbackManager: AudiobookshelfPlaybackManager
+
+    @Inject
+    lateinit var progressSyncer: AudiobookshelfProgressSyncer
+
+    @Inject
+    lateinit var securePreferencesRepository: SecurePreferencesRepository
+
+    @Inject
+    lateinit var equalizerManager: AudiobookshelfEqualizerManager
+
+    @Inject
+    lateinit var skipSilenceManager: AudiobookshelfSkipSilenceManager
 
     private var mediaSession: MediaSession? = null
     private var exoPlayer: ExoPlayer? = null
@@ -58,16 +71,35 @@ class AudiobookshelfPlayerService : MediaSessionService() {
                     buildMap { if (token != null) put("Authorization", "Bearer $token") }
                 )
 
+        val renderersFactory = object : DefaultRenderersFactory(this) {
+            @OptIn(UnstableApi::class)
+            override fun buildAudioSink(
+                context: android.content.Context,
+                enableFloatOutput: Boolean,
+                @Suppress("UNUSED_PARAMETER") enableAudioTrackPlaybackParams: Boolean,
+            ): AudioSink? {
+                return DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setAudioProcessors(arrayOf(skipSilenceManager.processor))
+                    .build()
+            }
+        }
+
         exoPlayer =
             ExoPlayer.Builder(this)
                 .setAudioAttributes(AudioAttributes.DEFAULT, true)
                 .setHandleAudioBecomingNoisy(true)
                 .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
+                .setRenderersFactory(renderersFactory)
                 .build()
 
         exoPlayer?.addListener(
             object : Player.Listener {
+                override fun onAudioSessionIdChanged(audioSessionId: Int) {
+                    equalizerManager.attachToSession(audioSessionId)
+                }
+
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     playbackManager.updatePlayingState(isPlaying)
                     if (isPlaying) {
@@ -130,7 +162,7 @@ class AudiobookshelfPlayerService : MediaSessionService() {
     }
 
     @UnstableApi
-    private inner class CustomMediaSessionCallback : MediaSession.Callback {
+    private class CustomMediaSessionCallback : MediaSession.Callback {
         @UnstableApi
         override fun onConnect(
             session: MediaSession,
@@ -139,6 +171,7 @@ class AudiobookshelfPlayerService : MediaSessionService() {
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session).build()
         }
 
+        @Suppress("OVERRIDE_DEPRECATION")
         override fun onPlaybackResumption(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -178,6 +211,7 @@ class AudiobookshelfPlayerService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        equalizerManager.releaseEqualizer()
         mediaSession?.run {
             player.release()
             release()
