@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -88,6 +89,7 @@ fun EqualizerBottomSheet(
                 Switch(
                     checked = state.isEnabled,
                     onCheckedChange = onEnabled,
+                    modifier = Modifier.scale(0.8f),
                 )
             }
 
@@ -164,6 +166,7 @@ fun EqualizerBottomSheet(
                 Switch(
                     checked = skipSilenceEnabled,
                     onCheckedChange = onSkipSilenceToggle,
+                    modifier = Modifier.scale(0.8f),
                 )
             }
 
@@ -275,7 +278,7 @@ private fun BandColumn(
             else MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        
+
         Slider(
             value = gainDb.toFloat(),
             onValueChange = { onGainChanged(it.roundToInt()) },
