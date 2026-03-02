@@ -6,9 +6,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,6 +49,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EpisodeListCard(
     item: AfinityEpisode,
@@ -58,14 +60,13 @@ fun EpisodeListCard(
     val interactionSource = remember { MutableInteractionSource() }
 
     Card(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick,
-                ),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            ),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
     ) {
@@ -77,20 +78,18 @@ fun EpisodeListCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier =
-                    Modifier
-                        .width(thumbnailWidth)
-                        .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)
-                        .clip(MaterialTheme.shapes.medium)
+                modifier = Modifier
+                    .width(thumbnailWidth)
+                    .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE)
+                    .clip(MaterialTheme.shapes.medium)
             ) {
                 val blurHash = item.images.primaryBlurHash
                     ?: item.images.thumbBlurHash
                     ?: item.images.backdropBlurHash
                 AsyncImage(
-                    imageUrl =
-                        item.images.primaryImageUrl
-                            ?: item.images.thumbImageUrl
-                            ?: item.images.backdropImageUrl,
+                    imageUrl = item.images.primaryImageUrl
+                        ?: item.images.thumbImageUrl
+                        ?: item.images.backdropImageUrl,
                     blurHash = blurHash,
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize(),
@@ -102,11 +101,10 @@ fun EpisodeListCard(
                     if (progress > 0f) {
                         LinearProgressIndicator(
                             progress = { progress },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(4.dp)
-                                    .align(Alignment.BottomCenter),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .align(Alignment.BottomCenter),
                             color = MaterialTheme.colorScheme.primary,
                             trackColor = Color.Black.copy(alpha = 0.3f),
                         )
@@ -115,12 +113,11 @@ fun EpisodeListCard(
 
                 if (item.played) {
                     Box(
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(24.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(24.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
@@ -134,27 +131,27 @@ fun EpisodeListCard(
             }
 
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
                         text = "S${item.parentIndexNumber}:E${item.indexNumber}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.align(Alignment.CenterVertically)
                     )
 
                     item.communityRating?.let { rating ->
-                        MetadataDot()
+                        MetadataDot(modifier = Modifier.align(Alignment.CenterVertically))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.align(Alignment.CenterVertically)
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
@@ -164,10 +161,9 @@ fun EpisodeListCard(
                             )
                             Text(
                                 text = String.format(Locale.US, "%.1f", rating),
-                                style =
-                                    MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -176,16 +172,15 @@ fun EpisodeListCard(
 
                 Text(
                     text = item.name ?: "Unknown Episode",
-                    style =
-                        MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Row(
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     item.runtimeTicks?.let { ticks ->
                         val minutes = (ticks / 600000000).toInt()
@@ -193,15 +188,19 @@ fun EpisodeListCard(
                             text = "${minutes}min",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.align(Alignment.CenterVertically)
                         )
                     }
 
                     item.premiereDate?.let { date ->
-                        if (item.runtimeTicks != null) MetadataDot()
+                        if (item.runtimeTicks != null) {
+                            MetadataDot(modifier = Modifier.align(Alignment.CenterVertically))
+                        }
                         Text(
                             text = formatDate(date),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.align(Alignment.CenterVertically)
                         )
                     }
                 }
@@ -211,11 +210,12 @@ fun EpisodeListCard(
 }
 
 @Composable
-private fun MetadataDot() {
+private fun MetadataDot(modifier: Modifier = Modifier) {
     Text(
         text = "•",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
     )
 }
 
