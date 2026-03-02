@@ -48,6 +48,7 @@ import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.extensions.showPrimaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
@@ -225,9 +226,10 @@ internal fun SeasonCard(season: AfinitySeason, onClick: () -> Unit, cardWidth: D
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
-                    imageUrl = season.images.primaryImageUrl,
+                    imageUrl = season.images.primaryImageUrl ?: season.images.showPrimaryImageUrl,
                     contentDescription = season.name,
-                    blurHash = season.images.primaryBlurHash,
+                    blurHash =
+                        season.images.primaryBlurHash ?: season.images.showPrimaryImageBlurHash,
                     targetWidth = cardWidth,
                     targetHeight = cardWidth * 3f / 2f,
                     modifier = Modifier.fillMaxSize(),
