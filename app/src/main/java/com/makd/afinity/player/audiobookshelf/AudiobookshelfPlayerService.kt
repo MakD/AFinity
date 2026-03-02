@@ -9,10 +9,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.audio.AudioSink
-import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
@@ -70,29 +67,18 @@ class AudiobookshelfPlayerService : MediaSessionService() {
                 .setDefaultRequestProperties(
                     buildMap { if (token != null) put("Authorization", "Bearer $token") }
                 )
-
-        val renderersFactory = object : DefaultRenderersFactory(this) {
-            @OptIn(UnstableApi::class)
-            override fun buildAudioSink(
-                context: android.content.Context,
-                enableFloatOutput: Boolean,
-                @Suppress("UNUSED_PARAMETER") enableAudioTrackPlaybackParams: Boolean,
-            ): AudioSink? {
-                return DefaultAudioSink.Builder(context)
-                    .setEnableFloatOutput(enableFloatOutput)
-                    .setAudioProcessors(arrayOf(skipSilenceManager.processor))
-                    .build()
-            }
-        }
-
         exoPlayer =
             ExoPlayer.Builder(this)
                 .setAudioAttributes(AudioAttributes.DEFAULT, true)
                 .setHandleAudioBecomingNoisy(true)
                 .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
-                .setRenderersFactory(renderersFactory)
                 .build()
+        serviceScope.launch {
+            skipSilenceManager.isEnabled.collect { isEnabled ->
+                exoPlayer?.skipSilenceEnabled = isEnabled
+            }
+        }
 
         exoPlayer?.addListener(
             object : Player.Listener {
