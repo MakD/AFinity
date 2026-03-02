@@ -110,6 +110,8 @@
 
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
+    <string name="meta_ends_at">Ends at %1$s</string>
+    <string name="meta_episode_count">%1$d episodes</string>
     <string name="similar_items_title">More Like This</string>
     <string name="special_features_title">Special Features</string>
     <string name="boxset_items_in_collection">Items in Collection</string>

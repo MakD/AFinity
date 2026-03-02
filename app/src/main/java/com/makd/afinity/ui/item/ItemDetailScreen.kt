@@ -432,7 +432,26 @@ private fun LandscapeItemDetailContent(
                             )
                         }
 
-                        MetadataRow(item = item)
+                        MetadataRow(
+                            item = item,
+                            totalChildRuntimeTicks =
+                                if (item is AfinityBoxSet)
+                                    boxSetItems.sumOf { it.runtimeTicks }
+                                else 0L,
+                            remainingChildRuntimeTicks =
+                                if (item is AfinityBoxSet)
+                                    boxSetItems.sumOf { boxItem ->
+                                        when {
+                                            boxItem.played -> 0L
+                                            boxItem.playbackPositionTicks > 0 ->
+                                                (boxItem.runtimeTicks -
+                                                        boxItem.playbackPositionTicks)
+                                                    .coerceAtLeast(0L)
+                                            else -> boxItem.runtimeTicks
+                                        }
+                                    }
+                                else 0L,
+                        )
 
                         val mediaSourceOptions =
                             remember(item) {
@@ -1173,7 +1192,23 @@ private fun PortraitItemDetailContent(
                     )
                 }
 
-                MetadataRow(item = item)
+                MetadataRow(
+                    item = item,
+                    totalChildRuntimeTicks =
+                        if (item is AfinityBoxSet) boxSetItems.sumOf { it.runtimeTicks } else 0L,
+                    remainingChildRuntimeTicks =
+                        if (item is AfinityBoxSet)
+                            boxSetItems.sumOf { boxItem ->
+                                when {
+                                    boxItem.played -> 0L
+                                    boxItem.playbackPositionTicks > 0 ->
+                                        (boxItem.runtimeTicks - boxItem.playbackPositionTicks)
+                                            .coerceAtLeast(0L)
+                                    else -> boxItem.runtimeTicks
+                                }
+                            }
+                        else 0L,
+                )
 
                 val mediaSourceOptions =
                     remember(item) {
