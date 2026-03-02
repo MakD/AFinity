@@ -116,6 +116,7 @@ class AfinityTypeConverters {
                 logo = images.logo?.toString(),
                 showPrimary = images.showPrimary?.toString(),
                 showBackdrop = images.showBackdrop?.toString(),
+                showThumb = images.showThumb?.toString(),
                 showLogo = images.showLogo?.toString(),
                 primaryImageBlurHash = images.primaryImageBlurHash,
                 backdropImageBlurHash = images.backdropImageBlurHash,
@@ -123,6 +124,7 @@ class AfinityTypeConverters {
                 logoImageBlurHash = images.logoImageBlurHash,
                 showPrimaryImageBlurHash = images.showPrimaryImageBlurHash,
                 showBackdropImageBlurHash = images.showBackdropImageBlurHash,
+                showThumbImageBlurHash = images.showThumbImageBlurHash,
                 showLogoImageBlurHash = images.showLogoImageBlurHash,
             )
         return json.encodeToString(serializable)
@@ -140,6 +142,7 @@ class AfinityTypeConverters {
                 logo = serializable.logo?.let { Uri.parse(it) },
                 showPrimary = serializable.showPrimary?.let { Uri.parse(it) },
                 showBackdrop = serializable.showBackdrop?.let { Uri.parse(it) },
+                showThumb = serializable.showThumb?.let { Uri.parse(it) },
                 showLogo = serializable.showLogo?.let { Uri.parse(it) },
                 primaryImageBlurHash = serializable.primaryImageBlurHash,
                 backdropImageBlurHash = serializable.backdropImageBlurHash,
@@ -147,6 +150,7 @@ class AfinityTypeConverters {
                 logoImageBlurHash = serializable.logoImageBlurHash,
                 showPrimaryImageBlurHash = serializable.showPrimaryImageBlurHash,
                 showBackdropImageBlurHash = serializable.showBackdropImageBlurHash,
+                showThumbImageBlurHash = serializable.showThumbImageBlurHash,
                 showLogoImageBlurHash = serializable.showLogoImageBlurHash,
             )
         } catch (e: Exception) {
@@ -477,6 +481,7 @@ private data class SerializableAfinityImages(
     val logo: String? = null,
     val showPrimary: String? = null,
     val showBackdrop: String? = null,
+    val showThumb: String? = null,
     val showLogo: String? = null,
     val primaryImageBlurHash: String? = null,
     val backdropImageBlurHash: String? = null,
@@ -484,6 +489,7 @@ private data class SerializableAfinityImages(
     val logoImageBlurHash: String? = null,
     val showPrimaryImageBlurHash: String? = null,
     val showBackdropImageBlurHash: String? = null,
+    val showThumbImageBlurHash: String? = null,
     val showLogoImageBlurHash: String? = null,
 )
 

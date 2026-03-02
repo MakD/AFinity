@@ -434,6 +434,14 @@ fun BaseItemDto.toAfinityImages(baseUrl: String): AfinityImages {
                     .appendQueryParameter("tag", tag)
                     .build()
             },
+        showThumb =
+            (seriesThumbImageTag ?: seriesPrimaryImageTag)?.let { tag ->
+                baseUri
+                    .buildUpon()
+                    .appendEncodedPath("Items/$seriesId/Images/Thumb")
+                    .appendQueryParameter("tag", tag)
+                    .build()
+            },
         showLogo =
             seriesPrimaryImageTag?.let { tag ->
                 baseUri
