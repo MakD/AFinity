@@ -56,9 +56,9 @@ fun ProgramCard(
     val isLive =
         remember(program, now) {
             program.startDate != null &&
-                program.endDate != null &&
-                now.isAfter(program.startDate) &&
-                now.isBefore(program.endDate)
+                    program.endDate != null &&
+                    now.isAfter(program.startDate) &&
+                    now.isBefore(program.endDate)
         }
 
     val progressPercentage =
@@ -76,7 +76,9 @@ fun ProgramCard(
     Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f),
             colors =
                 CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -108,13 +110,18 @@ fun ProgramCard(
                 }
 
                 if (isLive) {
-                    Box(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) { LiveBadge() }
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                    ) { LiveBadge() }
                 }
 
                 if (showChannelOverlay) {
                     Box(
                         modifier =
-                            Modifier.align(Alignment.BottomStart)
+                            Modifier
+                                .align(Alignment.BottomStart)
                                 .padding(8.dp)
                                 .background(
                                     MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
@@ -135,7 +142,10 @@ fun ProgramCard(
                     LinearProgressIndicator(
                         progress = { progressPercentage },
                         modifier =
-                            Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
+                            Modifier
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .align(Alignment.BottomCenter),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = Color.Black.copy(alpha = 0.3f),
                     )
