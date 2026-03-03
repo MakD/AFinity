@@ -37,6 +37,9 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,9 +48,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemKind
 import timber.log.Timber
-import java.util.UUID
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 
 @HiltViewModel
 class ItemDetailViewModel
@@ -359,7 +359,7 @@ constructor(
         val currentItem = _uiState.value.item ?: return
         val hasChanges = hasSignificantChanges(currentItem, newItem)
         if (!hasChanges) return
-        if (!hasSignificantChanges(currentItem, newItem)) return
+
         val updatedItem =
             when (currentItem) {
                 is AfinityMovie ->
@@ -416,6 +416,11 @@ constructor(
                 else -> currentItem
             }
         _uiState.value = _uiState.value.copy(item = updatedItem)
+        playbackStateManager.notifyItemChanged(
+            updatedItem.id,
+            (updatedItem as? AfinityEpisode)?.seriesId,
+            (updatedItem as? AfinityEpisode)?.seasonId,
+        )
     }
 
     private fun hasSignificantChanges(cached: AfinityItem, server: AfinityItem): Boolean {
@@ -439,13 +444,29 @@ constructor(
                 val response =
                     jellyfinRepository.getItems(
                         parentId = boxSetId,
-                        includeItemTypes = listOf("MOVIE", "SERIES"),
+                        includeItemTypes = listOf("MOVIE", "SERIES", "SEASON", "EPISODE"),
                         limit = 100,
                         sortBy = SortBy.RELEASE_DATE,
+                        fields = FieldSets.MINIMAL,
                     )
                 val items =
                     response.items?.mapNotNull { baseItem ->
-                        baseItem.toAfinityItem(jellyfinRepository.getBaseUrl())
+                        val item = baseItem.toAfinityItem(jellyfinRepository.getBaseUrl())
+                        if (item is AfinitySeason && item.runtimeTicks == 0L) {
+                            try {
+                                val series =
+                                    jellyfinRepository.getItem(
+                                        item.seriesId,
+                                        fields = FieldSets.MINIMAL,
+                                    )
+                                item.copy(runtimeTicks = series?.runTimeTicks ?: 0L)
+                            } catch (e: Exception) {
+                                Timber.w(e, "Failed to get series runtime for season in boxset")
+                                item
+                            }
+                        } else {
+                            item
+                        }
                     } ?: emptyList()
                 _uiState.value = _uiState.value.copy(boxSetItems = items)
             } catch (e: Exception) {
@@ -1135,8 +1156,14 @@ constructor(
                                         playbackPositionTicks =
                                             if (!currentItem.played) child.runtimeTicks else 0,
                                     )
-
                                 is AfinityShow -> child.copy(played = !currentItem.played)
+                                is AfinitySeason -> child.copy(played = !currentItem.played)
+                                is AfinityEpisode ->
+                                    child.copy(
+                                        played = !currentItem.played,
+                                        playbackPositionTicks = 0,
+                                    )
+
                                 else -> child
                             }
                         }

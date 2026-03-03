@@ -170,8 +170,12 @@ fun ItemDetailScreen(
                     downloadInfo = uiState.downloadInfo,
                     onPlayClick = { item, selection -> onPlayClick(item, selection) },
                     onBoxSetItemClick = { item ->
-                        val route = Destination.createItemDetailRoute(item.id.toString())
-                        navController.navigate(route)
+                        if (item is AfinityEpisode) {
+                            viewModel.selectEpisode(item)
+                        } else {
+                            val route = Destination.createItemDetailRoute(item.id.toString())
+                            navController.navigate(route)
+                        }
                     },
                     onSpecialFeatureClick = { specialFeature ->
                         val route = Destination.createItemDetailRoute(specialFeature.id.toString())
@@ -432,26 +436,7 @@ private fun LandscapeItemDetailContent(
                             )
                         }
 
-                        MetadataRow(
-                            item = item,
-                            totalChildRuntimeTicks =
-                                if (item is AfinityBoxSet)
-                                    boxSetItems.sumOf { it.runtimeTicks }
-                                else 0L,
-                            remainingChildRuntimeTicks =
-                                if (item is AfinityBoxSet)
-                                    boxSetItems.sumOf { boxItem ->
-                                        when {
-                                            boxItem.played -> 0L
-                                            boxItem.playbackPositionTicks > 0 ->
-                                                (boxItem.runtimeTicks -
-                                                        boxItem.playbackPositionTicks)
-                                                    .coerceAtLeast(0L)
-                                            else -> boxItem.runtimeTicks
-                                        }
-                                    }
-                                else 0L,
-                        )
+                        MetadataRow(item = item, boxSetItems = boxSetItems)
 
                         val mediaSourceOptions =
                             remember(item) {
@@ -1192,23 +1177,7 @@ private fun PortraitItemDetailContent(
                     )
                 }
 
-                MetadataRow(
-                    item = item,
-                    totalChildRuntimeTicks =
-                        if (item is AfinityBoxSet) boxSetItems.sumOf { it.runtimeTicks } else 0L,
-                    remainingChildRuntimeTicks =
-                        if (item is AfinityBoxSet)
-                            boxSetItems.sumOf { boxItem ->
-                                when {
-                                    boxItem.played -> 0L
-                                    boxItem.playbackPositionTicks > 0 ->
-                                        (boxItem.runtimeTicks - boxItem.playbackPositionTicks)
-                                            .coerceAtLeast(0L)
-                                    else -> boxItem.runtimeTicks
-                                }
-                            }
-                        else 0L,
-                )
+                MetadataRow(item = item, boxSetItems = boxSetItems)
 
                 val mediaSourceOptions =
                     remember(item) {

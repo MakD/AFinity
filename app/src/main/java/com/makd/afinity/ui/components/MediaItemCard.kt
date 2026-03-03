@@ -39,6 +39,7 @@ import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.theme.CardDimensions
 import java.util.Locale
@@ -91,8 +92,14 @@ fun MediaItemCard(
                         }
                     }
 
-                    item is AfinityShow -> {
-                        val displayCount = item.unplayedItemCount ?: item.episodeCount
+                    item is AfinityShow || item is AfinitySeason -> {
+                        val displayCount =
+                            when (item) {
+                                is AfinityShow -> item.unplayedItemCount ?: item.episodeCount
+                                is AfinitySeason -> item.unplayedItemCount ?: item.episodeCount
+                                else -> 0
+                            }
+
                         displayCount?.let { count ->
                             if (count > 0) {
                                 Surface(

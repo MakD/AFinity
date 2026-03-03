@@ -88,6 +88,8 @@ object FieldSets {
 
     val REFRESH_USER_DATA = emptyList<ItemFields>()
 
+    val MINIMAL = listOf(ItemFields.CHILD_COUNT, ItemFields.RECURSIVE_ITEM_COUNT)
+
     val CACHE_CONTINUE_WATCHING =
         listOf(ItemFields.OVERVIEW, ItemFields.GENRES, ItemFields.PRIMARY_IMAGE_ASPECT_RATIO)
 

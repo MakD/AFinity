@@ -15,9 +15,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityBoxSet
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
+import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
 @Composable
@@ -27,32 +33,69 @@ fun BoxSetDetailContent(
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    val cardWidth = widthSizeClass.portraitWidth
+    val portraitWidth = widthSizeClass.portraitWidth
+    val landscapeWidth = widthSizeClass.landscapeWidth
+
+    val movies = boxSetItems.filterIsInstance<AfinityMovie>()
+    val shows = boxSetItems.filterIsInstance<AfinityShow>()
+    val seasons = boxSetItems.filterIsInstance<AfinitySeason>()
+    val episodes = boxSetItems.filterIsInstance<AfinityEpisode>()
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         TaglineSection(item = item)
-
         OverviewSection(item = item)
-
         DirectorSection(item = item)
-
         WriterSection(item = item)
-
         ExternalLinksSection(item = item)
 
-        BoxSetItemsSection(items = boxSetItems, onItemClick = onItemClick, cardWidth = cardWidth)
+        if (movies.isNotEmpty()) {
+            BoxSetTypeSection(
+                title = stringResource(R.string.section_movies),
+                items = movies,
+                onItemClick = onItemClick,
+                cardWidth = portraitWidth,
+            )
+        }
+
+        if (shows.isNotEmpty()) {
+            BoxSetTypeSection(
+                title = stringResource(R.string.section_tv_shows),
+                items = shows,
+                onItemClick = onItemClick,
+                cardWidth = portraitWidth,
+            )
+        }
+
+        if (seasons.isNotEmpty()) {
+            BoxSetTypeSection(
+                title = stringResource(R.string.section_seasons),
+                items = seasons,
+                onItemClick = onItemClick,
+                cardWidth = portraitWidth,
+            )
+        }
+
+        if (episodes.isNotEmpty()) {
+            BoxSetEpisodesSection(
+                title = stringResource(R.string.section_episodes),
+                episodes = episodes,
+                onEpisodeClick = { onItemClick(it) },
+                cardWidth = landscapeWidth,
+            )
+        }
     }
 }
 
 @Composable
-internal fun BoxSetItemsSection(
+private fun BoxSetTypeSection(
+    title: String,
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     cardWidth: Dp,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = stringResource(R.string.boxset_items_in_collection),
+            text = stringResource(R.string.watchlist_section_header_fmt, title, items.size),
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -63,6 +106,35 @@ internal fun BoxSetItemsSection(
         ) {
             items(items) { item ->
                 MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxSetEpisodesSection(
+    title: String,
+    episodes: List<AfinityEpisode>,
+    onEpisodeClick: (AfinityEpisode) -> Unit,
+    cardWidth: Dp,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = stringResource(R.string.watchlist_section_header_fmt, title, episodes.size),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
+            items(episodes) { episode ->
+                ContinueWatchingCard(
+                    item = episode,
+                    onClick = { onEpisodeClick(episode) },
+                    cardWidth = cardWidth,
+                )
             }
         }
     }

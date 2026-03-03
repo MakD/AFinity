@@ -32,10 +32,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityBoxSet
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinityVideo
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -47,11 +49,68 @@ fun MetadataRow(
     item: AfinityItem,
     totalChildRuntimeTicks: Long = 0L,
     remainingChildRuntimeTicks: Long = totalChildRuntimeTicks,
+    boxSetItems: List<AfinityItem> = emptyList(),
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val horizontalAlignment = if (isLandscape) Alignment.Start else Alignment.CenterHorizontally
+    val actualTotalChildTicks =
+        if (boxSetItems.isNotEmpty()) {
+            boxSetItems.sumOf { child ->
+                val epCount =
+                    (child as? AfinityShow)?.episodeCount
+                        ?: (child as? AfinitySeason)?.episodeCount
+                        ?: 1
+                if ((child is AfinityShow || child is AfinitySeason) && epCount > 0) {
+                    child.runtimeTicks * epCount
+                } else {
+                    child.runtimeTicks
+                }
+            }
+        } else {
+            totalChildRuntimeTicks
+        }
+
+    val actualRemainingChildTicks =
+        if (boxSetItems.isNotEmpty()) {
+            boxSetItems.sumOf { child ->
+                if (child.played) {
+                    0L
+                } else {
+                    val epCountForEndsAt =
+                        (child as? AfinityShow)?.episodeCount
+                            ?: (child as? AfinitySeason)?.episodeCount
+                            ?: 1
+                    val unplayedCount =
+                        (child as? AfinityShow)?.unplayedItemCount
+                            ?: (child as? AfinitySeason)?.unplayedItemCount
+                            ?: epCountForEndsAt
+
+                    if (
+                        (child is AfinityShow || child is AfinitySeason) && child.runtimeTicks > 0
+                    ) {
+                        val inProgressRemaining =
+                            if (child.playbackPositionTicks > 0)
+                                (child.runtimeTicks - child.playbackPositionTicks).coerceAtLeast(0L)
+                            else 0L
+                        val fullyUnwatchedCount =
+                            if (child.playbackPositionTicks > 0)
+                                (unplayedCount - 1).coerceAtLeast(0)
+                            else unplayedCount
+                        fullyUnwatchedCount.toLong() * child.runtimeTicks + inProgressRemaining
+                    } else {
+                        if (child.playbackPositionTicks > 0) {
+                            (child.runtimeTicks - child.playbackPositionTicks).coerceAtLeast(0L)
+                        } else {
+                            child.runtimeTicks
+                        }
+                    }
+                }
+            }
+        } else {
+            remainingChildRuntimeTicks
+        }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         if (item !is AfinityBoxSet && item.sources.isNotEmpty()) {
@@ -179,8 +238,9 @@ fun MetadataRow(
             modifier = Modifier.fillMaxWidth(),
         ) {
             var needsSeparator = false
-
-            if (item !is AfinityBoxSet && item.playbackPositionTicks > 0 && item.runtimeTicks > 0) {
+            val isSingleMedia =
+                item is AfinityMovie || item is AfinityEpisode || item is AfinityVideo
+            if (isSingleMedia && item.playbackPositionTicks > 0 && item.runtimeTicks > 0) {
                 val progress = item.playbackPositionTicks.toFloat() / item.runtimeTicks.toFloat()
                 val remainingTicks = item.runtimeTicks - item.playbackPositionTicks
                 val remainingHours = (remainingTicks / 10_000_000 / 3600).toInt()
@@ -233,9 +293,9 @@ fun MetadataRow(
                     )
                     needsSeparator = true
                 }
-                if (totalChildRuntimeTicks > 0) {
-                    val hours = (totalChildRuntimeTicks / 10_000_000L / 3600L).toInt()
-                    val minutes = ((totalChildRuntimeTicks / 10_000_000L % 3600L) / 60L).toInt()
+                if (actualTotalChildTicks > 0) {
+                    val hours = (actualTotalChildTicks / 10_000_000L / 3600L).toInt()
+                    val minutes = ((actualTotalChildTicks / 10_000_000L % 3600L) / 60L).toInt()
                     if (needsSeparator) MetadataDot()
                     Text(
                         text =
@@ -345,6 +405,7 @@ fun MetadataRow(
                 is AfinityMovie -> item.productionYear?.toString()
                 is AfinityShow -> item.productionYear?.toString()
                 is AfinityBoxSet -> item.productionYear?.toString()
+                is AfinitySeason -> item.productionYear?.toString()
                 else -> null
             }?.let { year ->
                 if (needsSeparator) MetadataDot()
@@ -362,28 +423,36 @@ fun MetadataRow(
                 (item as? AfinityShow)?.episodeCount ?: (item as? AfinitySeason)?.episodeCount ?: 0
 
             when {
-                (item is AfinityShow || item is AfinitySeason) &&
-                    item.runtimeTicks > 0 &&
-                    epCount > 0 -> {
-                    val totalTicks = item.runtimeTicks * epCount
-                    val hours = (totalTicks / 10_000_000L / 3600L).toInt()
-                    val minutes = ((totalTicks / 10_000_000L % 3600L) / 60L).toInt()
-                    val runtimeText =
-                        if (hours > 0)
-                            stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
-                        else stringResource(R.string.meta_runtime_minutes, minutes)
-                    if (needsSeparator) MetadataDot()
-                    Text(
-                        text = runtimeText,
-                        style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                    )
-                    needsSeparator = true
+                item is AfinityShow || item is AfinitySeason -> {
+                    val totalTicks =
+                        if (actualTotalChildTicks > 0) {
+                            actualTotalChildTicks
+                        } else if (item.runtimeTicks > 0 && epCount > 0) {
+                            item.runtimeTicks * epCount
+                        } else {
+                            0L
+                        }
+
+                    if (totalTicks > 0) {
+                        val hours = (totalTicks / 10_000_000L / 3600L).toInt()
+                        val minutes = ((totalTicks / 10_000_000L % 3600L) / 60L).toInt()
+                        val runtimeText =
+                            if (hours > 0)
+                                stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
+                            else stringResource(R.string.meta_runtime_minutes, minutes)
+                        if (needsSeparator) MetadataDot()
+                        Text(
+                            text = runtimeText,
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+                        )
+                        needsSeparator = true
+                    }
                 }
-                item !is AfinityBoxSet && item.runtimeTicks > 0 -> {
+                isSingleMedia && item.runtimeTicks > 0 -> {
                     val hours = (item.runtimeTicks / 10_000_000 / 3600).toInt()
                     val minutes = ((item.runtimeTicks / 10_000_000 % 3600) / 60).toInt()
                     val runtimeText =
@@ -448,20 +517,28 @@ fun MetadataRow(
                 ?: (item as? AfinitySeason)?.unplayedItemCount
                 ?: epCountForEndsAt
 
-        if (
-            (item is AfinityShow || item is AfinitySeason) &&
-                item.runtimeTicks > 0 &&
-                epCountForEndsAt > 0
-        ) {
-            val inProgressRemaining =
-                if (item.playbackPositionTicks > 0)
-                    (item.runtimeTicks - item.playbackPositionTicks).coerceAtLeast(0L)
-                else 0L
-            val fullyUnwatchedCount =
-                if (item.playbackPositionTicks > 0) (unplayedCount - 1).coerceAtLeast(0)
-                else unplayedCount
+        val isContainerItem = item is AfinityShow || item is AfinitySeason || item is AfinityBoxSet
+
+        if (isContainerItem) {
             val remainingTicks =
-                fullyUnwatchedCount.toLong() * item.runtimeTicks + inProgressRemaining
+                if (actualRemainingChildTicks > 0) {
+                    actualRemainingChildTicks
+                } else if (
+                    (item is AfinityShow || item is AfinitySeason) &&
+                        item.runtimeTicks > 0 &&
+                        epCountForEndsAt > 0
+                ) {
+                    val inProgressRemaining =
+                        if (item.playbackPositionTicks > 0)
+                            (item.runtimeTicks - item.playbackPositionTicks).coerceAtLeast(0L)
+                        else 0L
+                    val fullyUnwatchedCount =
+                        if (item.playbackPositionTicks > 0) (unplayedCount - 1).coerceAtLeast(0)
+                        else unplayedCount
+                    fullyUnwatchedCount.toLong() * item.runtimeTicks + inProgressRemaining
+                } else {
+                    0L
+                }
 
             if (remainingTicks > 0) {
                 val totalMs = remainingTicks / 10_000L
@@ -475,25 +552,9 @@ fun MetadataRow(
                 )
             }
         }
-
-        if (item is AfinityBoxSet && remainingChildRuntimeTicks > 0) {
-            val totalMs = remainingChildRuntimeTicks / 10_000L
-            val endTimeStr = getFormattedEndTime(context, totalMs)
-            Text(
-                text = stringResource(R.string.meta_ends_at, endTimeStr),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                textAlign = if (isLandscape) TextAlign.Start else TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-        if (
-            item !is AfinityShow &&
-                item !is AfinitySeason &&
-                item !is AfinityBoxSet &&
-                item.runtimeTicks > 0
-        ) {
+        val isSingleMediaEndsAt =
+            item is AfinityMovie || item is AfinityEpisode || item is AfinityVideo
+        if (isSingleMediaEndsAt && item.runtimeTicks > 0) {
             val remainingTicks = (item.runtimeTicks - item.playbackPositionTicks).coerceAtLeast(0L)
 
             if (remainingTicks > 0) {
