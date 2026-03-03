@@ -1,6 +1,8 @@
 package com.makd.afinity.ui.item.components.shared
 
+import android.content.Context
 import android.content.res.Configuration
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,6 +37,8 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import org.jellyfin.sdk.model.api.MediaStreamType
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -464,9 +468,7 @@ fun MetadataRow(
                 fullyUnwatchedCount.toLong() * item.runtimeTicks + inProgressRemaining
             if (remainingTicks > 0) {
                 val totalMs = remainingTicks / 10_000L
-                val endDate = java.util.Date(System.currentTimeMillis() + totalMs)
-                val endTimeStr =
-                    android.text.format.DateFormat.getTimeFormat(context).format(endDate)
+                val endTimeStr = getFormattedEndTime(context, totalMs)
                 Text(
                     text = stringResource(R.string.meta_ends_at, endTimeStr),
                     style = MaterialTheme.typography.bodySmall,
@@ -479,8 +481,7 @@ fun MetadataRow(
 
         if ((item is AfinityBoxSet || item is AfinitySeason) && remainingChildRuntimeTicks > 0) {
             val totalMs = remainingChildRuntimeTicks / 10_000L
-            val endDate = java.util.Date(System.currentTimeMillis() + totalMs)
-            val endTimeStr = android.text.format.DateFormat.getTimeFormat(context).format(endDate)
+            val endTimeStr = getFormattedEndTime(context, totalMs)
             Text(
                 text = stringResource(R.string.meta_ends_at, endTimeStr),
                 style = MaterialTheme.typography.bodySmall,
@@ -539,5 +540,24 @@ private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
         )
+    }
+}
+
+private fun getFormattedEndTime(context: Context, totalMs: Long): String {
+    val endDate = Date(System.currentTimeMillis() + totalMs)
+    val twentyFourHoursMs = 24 * 60 * 60 * 1000L
+
+    return if (totalMs > twentyFourHoursMs) {
+        val is24Hour = DateFormat.is24HourFormat(context)
+        val pattern =
+            if (is24Hour) {
+                "EEE, dd MMM, HH:mm"
+            } else {
+                "EEE, dd MMM, h:mm a"
+            }
+        val formatter = SimpleDateFormat(pattern, Locale.getDefault())
+        formatter.format(endDate)
+    } else {
+        DateFormat.getTimeFormat(context).format(endDate)
     }
 }
