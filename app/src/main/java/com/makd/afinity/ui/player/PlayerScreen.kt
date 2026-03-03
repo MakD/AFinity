@@ -120,33 +120,7 @@ fun PlayerScreen(
         }
     }
 
-    LaunchedEffect(navController) {
-        viewModel.setAutoplayCallback { nextItem ->
-            try {
-                nextItem.sources.forEachIndexed { index, source ->
-                    Timber.d("Source $index: ${source.id} (${source.type})")
-                }
 
-                val mediaSourceId = nextItem.sources.firstOrNull()?.id
-                if (mediaSourceId == null) {
-                    Timber.e("No media source available for next item: ${nextItem.name}")
-                    return@setAutoplayCallback
-                }
-
-                viewModel.handlePlayerEvent(
-                    PlayerEvent.LoadMedia(
-                        item = nextItem,
-                        mediaSourceId = mediaSourceId,
-                        audioStreamIndex = null,
-                        subtitleStreamIndex = null,
-                        startPositionMs = 0L,
-                    )
-                )
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load next item: ${nextItem.name}")
-            }
-        }
-    }
 
     var hasNavigatedBack by remember { mutableStateOf(false) }
 

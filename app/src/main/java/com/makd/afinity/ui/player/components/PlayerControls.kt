@@ -108,6 +108,7 @@ fun PlayerControls(
     var showSubtitleSelector by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var showEpisodeSwitcher by remember { mutableStateOf(false) }
+    var showVersionSelector by remember { mutableStateOf(false) }
 
     val currentItem = uiState.currentItem
 
@@ -330,6 +331,8 @@ fun PlayerControls(
                         onEpisodeSwitcherToggle = { showEpisodeSwitcher = !showEpisodeSwitcher },
                         showEpisodeSwitcherButton =
                             currentItem is AfinityEpisode && playlistQueue.size > 1,
+                        onVersionToggle = { showVersionSelector = !showVersionSelector },
+                        showVersionButton = uiState.availableSources.size > 1,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }
@@ -583,6 +586,28 @@ fun PlayerControls(
             onDismiss = { showEpisodeSwitcher = false },
         )
     }
+
+    if (showVersionSelector && uiState.availableSources.size > 1) {
+        Box(
+            modifier =
+                Modifier.fillMaxSize().clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) {
+                    showVersionSelector = false
+                }
+        ) {
+            VersionPickerSheet(
+                sources = uiState.availableSources,
+                currentSourceId = uiState.currentMediaSourceId,
+                onVersionSelected = { source ->
+                    onPlayerEvent(PlayerEvent.SwitchVersion(source.id))
+                    showVersionSelector = false
+                },
+                onDismiss = { showVersionSelector = false },
+            )
+        }
+    }
 }
 
 @OptIn(UnstableApi::class)
@@ -791,6 +816,8 @@ private fun BottomControls(
     onSubtitleToggle: () -> Unit,
     onEpisodeSwitcherToggle: () -> Unit = {},
     showEpisodeSwitcherButton: Boolean = false,
+    onVersionToggle: () -> Unit = {},
+    showVersionButton: Boolean = false,
 ) {
     Box(
         modifier =
@@ -816,6 +843,20 @@ private fun BottomControls(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (showVersionButton) {
+                        IconButton(
+                            onClick = onVersionToggle,
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_versions),
+                                contentDescription = stringResource(R.string.cd_version_selector),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
+
                     if (showEpisodeSwitcherButton) {
                         IconButton(
                             onClick = onEpisodeSwitcherToggle,

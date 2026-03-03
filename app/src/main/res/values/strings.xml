@@ -274,6 +274,10 @@
 
     <string name="player_audio_title">Audio Track</string>
     <string name="player_subtitle_title">Subtitles</string>
+    <string name="player_version_title">Version</string>
+    <string name="player_version_default_label">Default</string>
+    <string name="version_dialog_subtitle">Select which version to play</string>
+    <string name="cd_version_selector">Version Selector</string>
     <string name="player_episode_header_fmt">S%1$s:E%2$s: %3$s</string>
 
     <string name="track_unknown">Unknown</string>

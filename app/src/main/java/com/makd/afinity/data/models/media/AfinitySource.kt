@@ -5,6 +5,7 @@ import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.repository.JellyfinRepository
 import java.io.File
 import java.util.UUID
+import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.MediaProtocol
 import org.jellyfin.sdk.model.api.MediaSourceInfo
 
@@ -16,6 +17,13 @@ data class AfinitySource(
     val size: Long,
     val mediaStreams: List<AfinityMediaStream>,
     val downloadId: Long? = null,
+    // Version display metadata
+    val bitrate: Long? = null,
+    val container: String? = null,
+    val videoCodec: String? = null,
+    val audioCodec: String? = null,
+    val width: Int? = null,
+    val height: Int? = null,
 )
 
 suspend fun MediaSourceInfo.toAfinitySource(
@@ -35,6 +43,12 @@ suspend fun MediaSourceInfo.toAfinitySource(
             MediaProtocol.HTTP -> this.path.orEmpty()
             else -> ""
         }
+    val videoStream = mediaStreams?.firstOrNull {
+        it.type == MediaStreamType.VIDEO
+    }
+    val audioStream = mediaStreams?.firstOrNull {
+        it.type == MediaStreamType.AUDIO
+    }
     return AfinitySource(
         id = id.orEmpty(),
         name = name.orEmpty(),
@@ -43,6 +57,12 @@ suspend fun MediaSourceInfo.toAfinitySource(
         size = size ?: 0,
         mediaStreams =
             mediaStreams?.map { it.toAfinityMediaStream(jellyfinRepository) } ?: emptyList(),
+        bitrate = bitrate?.toLong(),
+        container = container,
+        videoCodec = videoStream?.codec,
+        audioCodec = audioStream?.codec,
+        width = videoStream?.width,
+        height = videoStream?.height,
     )
 }
 

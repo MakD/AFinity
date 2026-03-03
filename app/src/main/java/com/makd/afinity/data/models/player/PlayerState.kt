@@ -86,6 +86,10 @@ sealed class PlayerEvent {
     data object CycleScreenRotation : PlayerEvent()
 
     data object RequestCastDeviceSelection : PlayerEvent()
+
+    data class SwitchVersion(val mediaSourceId: String) : PlayerEvent()
+
+    data object ToggleVersionPicker : PlayerEvent()
 }
 
 data class GestureConfig(
