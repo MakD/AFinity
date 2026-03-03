@@ -1,5 +1,7 @@
 package com.makd.afinity.ui.item.components
 
+import android.content.Context
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,9 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
@@ -44,10 +48,12 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
-import org.jellyfin.sdk.model.api.MediaStreamType
+import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.Date
 import java.util.Locale
+import org.jellyfin.sdk.model.api.MediaStreamType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +72,7 @@ fun EpisodeDetailOverlay(
     onCancelDownload: () -> Unit,
     onGoToSeries: (() -> Unit)? = null,
 ) {
+    val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -320,6 +327,22 @@ fun EpisodeDetailOverlay(
                 }
             }
 
+            if (episode.runtimeTicks > 0) {
+                val remainingTicks =
+                    (episode.runtimeTicks - episode.playbackPositionTicks).coerceAtLeast(0L)
+                if (remainingTicks > 0) {
+                    val totalMs = remainingTicks / 10_000L
+                    val endTimeStr = getFormattedEndTime(context, totalMs)
+                    Text(
+                        text = stringResource(R.string.meta_ends_at, endTimeStr),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
             if (episode.overview.isNotBlank()) {
                 Text(
                     text = episode.overview,
@@ -461,5 +484,24 @@ private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
         )
+    }
+}
+
+private fun getFormattedEndTime(context: Context, totalMs: Long): String {
+    val endDate = Date(System.currentTimeMillis() + totalMs)
+    val twentyFourHoursMs = 24 * 60 * 60 * 1000L
+
+    return if (totalMs > twentyFourHoursMs) {
+        val is24Hour = DateFormat.is24HourFormat(context)
+        val pattern =
+            if (is24Hour) {
+                "EEE, dd MMM, HH:mm"
+            } else {
+                "EEE, dd MMM, h:mm a"
+            }
+        val formatter = SimpleDateFormat(pattern, Locale.getDefault())
+        formatter.format(endDate)
+    } else {
+        DateFormat.getTimeFormat(context).format(endDate)
     }
 }

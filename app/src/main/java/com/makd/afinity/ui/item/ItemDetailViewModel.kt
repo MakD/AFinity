@@ -313,8 +313,22 @@ constructor(
                         BaseItemKind.BOX_SET ->
                             baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
 
-                        BaseItemKind.SEASON ->
-                            baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
+                        BaseItemKind.SEASON -> {
+                            val season =
+                                baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
+                            if (season.runtimeTicks == 0L) {
+                                try {
+                                    val series =
+                                        jellyfinRepository.getItem(
+                                            season.seriesId,
+                                            fields = FieldSets.REFRESH_USER_DATA,
+                                        )
+                                    season.copy(runtimeTicks = series?.runTimeTicks ?: 0L)
+                                } catch (e: Exception) {
+                                    season
+                                }
+                            } else season
+                        }
 
                         else -> null
                     }
@@ -474,7 +488,20 @@ constructor(
                                 }
 
                                 BaseItemKind.SEASON -> {
-                                    baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
+                                    val season =
+                                        baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
+                                    if (season.runtimeTicks == 0L) {
+                                        try {
+                                            val series =
+                                                jellyfinRepository.getItem(
+                                                    season.seriesId,
+                                                    fields = FieldSets.REFRESH_USER_DATA,
+                                                )
+                                            season.copy(runtimeTicks = series?.runTimeTicks ?: 0L)
+                                        } catch (e: Exception) {
+                                            season
+                                        }
+                                    } else season
                                 }
 
                                 else -> null

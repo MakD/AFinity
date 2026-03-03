@@ -358,9 +358,14 @@ fun MetadataRow(
                 needsSeparator = true
             }
 
+            val epCount =
+                (item as? AfinityShow)?.episodeCount ?: (item as? AfinitySeason)?.episodeCount ?: 0
+
             when {
-                item is AfinityShow && item.runtimeTicks > 0 && (item.episodeCount ?: 0) > 0 -> {
-                    val totalTicks = item.runtimeTicks * (item.episodeCount ?: 1)
+                (item is AfinityShow || item is AfinitySeason) &&
+                    item.runtimeTicks > 0 &&
+                    epCount > 0 -> {
+                    val totalTicks = item.runtimeTicks * epCount
                     val hours = (totalTicks / 10_000_000L / 3600L).toInt()
                     val minutes = ((totalTicks / 10_000_000L % 3600L) / 60L).toInt()
                     val runtimeText =
@@ -377,26 +382,6 @@ fun MetadataRow(
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                     )
                     needsSeparator = true
-                }
-                item is AfinitySeason -> {
-                    if (totalChildRuntimeTicks > 0) {
-                        val hours = (totalChildRuntimeTicks / 10_000_000L / 3600L).toInt()
-                        val minutes = ((totalChildRuntimeTicks / 10_000_000L % 3600L) / 60L).toInt()
-                        val runtimeText =
-                            if (hours > 0)
-                                stringResource(R.string.meta_runtime_hours_minutes, hours, minutes)
-                            else stringResource(R.string.meta_runtime_minutes, minutes)
-                        if (needsSeparator) MetadataDot()
-                        Text(
-                            text = runtimeText,
-                            style =
-                                MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                        )
-                        needsSeparator = true
-                    }
                 }
                 item !is AfinityBoxSet && item.runtimeTicks > 0 -> {
                     val hours = (item.runtimeTicks / 10_000_000 / 3600).toInt()
@@ -455,8 +440,19 @@ fun MetadataRow(
             }
         }
 
-        if (item is AfinityShow && item.runtimeTicks > 0 && (item.episodeCount ?: 0) > 0) {
-            val unplayedCount = item.unplayedItemCount ?: item.episodeCount ?: 0
+        val epCountForEndsAt =
+            (item as? AfinityShow)?.episodeCount ?: (item as? AfinitySeason)?.episodeCount ?: 0
+
+        val unplayedCount =
+            (item as? AfinityShow)?.unplayedItemCount
+                ?: (item as? AfinitySeason)?.unplayedItemCount
+                ?: epCountForEndsAt
+
+        if (
+            (item is AfinityShow || item is AfinitySeason) &&
+                item.runtimeTicks > 0 &&
+                epCountForEndsAt > 0
+        ) {
             val inProgressRemaining =
                 if (item.playbackPositionTicks > 0)
                     (item.runtimeTicks - item.playbackPositionTicks).coerceAtLeast(0L)
@@ -466,6 +462,7 @@ fun MetadataRow(
                 else unplayedCount
             val remainingTicks =
                 fullyUnwatchedCount.toLong() * item.runtimeTicks + inProgressRemaining
+
             if (remainingTicks > 0) {
                 val totalMs = remainingTicks / 10_000L
                 val endTimeStr = getFormattedEndTime(context, totalMs)
@@ -479,7 +476,7 @@ fun MetadataRow(
             }
         }
 
-        if ((item is AfinityBoxSet || item is AfinitySeason) && remainingChildRuntimeTicks > 0) {
+        if (item is AfinityBoxSet && remainingChildRuntimeTicks > 0) {
             val totalMs = remainingChildRuntimeTicks / 10_000L
             val endTimeStr = getFormattedEndTime(context, totalMs)
             Text(
@@ -489,6 +486,27 @@ fun MetadataRow(
                 textAlign = if (isLandscape) TextAlign.Start else TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+
+        if (
+            item !is AfinityShow &&
+                item !is AfinitySeason &&
+                item !is AfinityBoxSet &&
+                item.runtimeTicks > 0
+        ) {
+            val remainingTicks = (item.runtimeTicks - item.playbackPositionTicks).coerceAtLeast(0L)
+
+            if (remainingTicks > 0) {
+                val totalMs = remainingTicks / 10_000L
+                val endTimeStr = getFormattedEndTime(context, totalMs)
+                Text(
+                    text = stringResource(R.string.meta_ends_at, endTimeStr),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    textAlign = if (isLandscape) TextAlign.Start else TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
