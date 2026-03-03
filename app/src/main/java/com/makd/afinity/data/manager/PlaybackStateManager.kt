@@ -106,7 +106,11 @@ constructor(
                 mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
 
             if (refreshedItem != null) {
-                _playbackEvents.emit(PlaybackEvent.Synced(itemId))
+                val seriesId = (refreshedItem as? AfinityEpisode)?.seriesId
+                val seasonId = (refreshedItem as? AfinityEpisode)?.seasonId
+
+                _playbackEvents.emit(PlaybackEvent.Synced(itemId, seriesId, seasonId))
+
                 if (refreshedItem is AfinityEpisode && refreshedItem.played) {
                     Timber.d("Episode finished. Refreshing Next Up queue...")
                     mediaRepository.invalidateNextUpCache()
@@ -117,10 +121,10 @@ constructor(
         }
     }
 
-    fun notifyItemChanged(itemId: UUID) {
+    fun notifyItemChanged(itemId: UUID, seriesId: UUID? = null, seasonId: UUID? = null) {
         scope.launch {
             Timber.d("Broadcasting manual item change for: $itemId")
-            _playbackEvents.emit(PlaybackEvent.Synced(itemId))
+            _playbackEvents.emit(PlaybackEvent.Synced(itemId, seriesId, seasonId))
         }
     }
 
@@ -135,5 +139,6 @@ constructor(
 sealed class PlaybackEvent {
     data class Stopped(val itemId: UUID, val positionTicks: Long) : PlaybackEvent()
 
-    data class Synced(val itemId: UUID) : PlaybackEvent()
+    data class Synced(val itemId: UUID, val seriesId: UUID? = null, val seasonId: UUID? = null) :
+        PlaybackEvent()
 }
