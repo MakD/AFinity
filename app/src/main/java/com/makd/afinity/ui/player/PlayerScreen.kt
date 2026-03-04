@@ -4,9 +4,12 @@ import android.graphics.Typeface
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -20,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -43,6 +47,7 @@ import com.makd.afinity.ui.player.components.MpvSurface
 import com.makd.afinity.ui.player.components.PlayerControls
 import com.makd.afinity.ui.player.components.PlayerIndicators
 import com.makd.afinity.ui.player.components.TrickplayPreview
+import com.makd.afinity.ui.player.components.VersionPickerSheet
 import com.makd.afinity.ui.player.utils.KeepScreenOn
 import com.makd.afinity.ui.player.utils.PlayerSystemBarsController
 import com.makd.afinity.ui.player.utils.ScreenBrightnessController
@@ -85,6 +90,7 @@ fun PlayerScreen(
     var seekOriginTime by remember { mutableLongStateOf(0L) }
     var dragStartVolume by remember { mutableIntStateOf(-1) }
     var dragStartBrightness by remember { mutableFloatStateOf(-1f) }
+    var showVersionPicker by remember { mutableStateOf(false) }
     LocalLifecycleOwner.current
 
     LaunchedEffect(item.id, mediaSourceId, isLiveChannel, liveStreamUrl) {
@@ -292,6 +298,7 @@ fun PlayerScreen(
                 playlistQueue = playlistState.queue,
                 currentPlaylistIndex = playlistState.currentIndex,
                 onJumpToEpisode = viewModel::jumpToEpisode,
+                onVersionToggleRequest = { showVersionPicker = !showVersionPicker },
             )
 
             TrickplayPreview(
@@ -321,6 +328,37 @@ fun PlayerScreen(
                 },
                 modifier = Modifier.align(Alignment.Center),
             )
+
+            // Version picker — rendered here so align(BottomEnd) maps to the actual screen Box
+            if (showVersionPicker && uiState.availableSources.size > 1) {
+                Box(
+                    modifier =
+                        Modifier.fillMaxSize().clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) { showVersionPicker = false }
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.align(Alignment.BottomEnd)
+                                .padding(bottom = 110.dp, end = 56.dp)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                ) { /* consume */ }
+                    ) {
+                        VersionPickerSheet(
+                            sources = uiState.availableSources,
+                            currentSourceId = uiState.currentMediaSourceId,
+                            onVersionSelected = { source ->
+                                viewModel.handlePlayerEvent(PlayerEvent.SwitchVersion(source.id))
+                                showVersionPicker = false
+                            },
+                            onDismiss = { showVersionPicker = false },
+                        )
+                    }
+                }
+            }
         }
     }
 

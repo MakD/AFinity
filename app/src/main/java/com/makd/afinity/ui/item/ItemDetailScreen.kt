@@ -140,7 +140,7 @@ fun ItemDetailScreen(
         val remoteSources = item.sources.filter {
             it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
         }
-        if (remoteSources.size > 1) {
+        if (remoteSources.size > 1 && item !is AfinityMovie) {
             pendingPlayItem = item
             pendingPlaySelection = selection
             showVersionPickerForPlay = true

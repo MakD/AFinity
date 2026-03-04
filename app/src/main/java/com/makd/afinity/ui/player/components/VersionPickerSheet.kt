@@ -5,17 +5,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,40 +46,33 @@ fun VersionPickerSheet(
 ) {
     Box(
         modifier =
-            Modifier.fillMaxWidth().padding(bottom = 110.dp, end = 56.dp),
-        contentAlignment = Alignment.BottomEnd,
+            Modifier
+                .clickable(onClick = {}) // consume — do not propagate
+                .background(Color.Black.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
+                .padding(12.dp)
+                .width(240.dp)
+                .heightIn(max = 180.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .clickable(onClick = {}) // consume — do not propagate
-                    .background(Color.Black.copy(alpha = 0.95f), RoundedCornerShape(8.dp))
-                    .padding(12.dp)
-                    .width(240.dp),
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(R.string.player_version_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Color.White,
-                    modifier = Modifier.padding(bottom = 6.dp),
+            Text(
+                text = stringResource(R.string.player_version_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            sources.forEach { source ->
+                val isSelected = source.id == currentSourceId
+                VersionItem(
+                    source = source,
+                    isSelected = isSelected,
+                    onClick = {
+                        onVersionSelected(source)
+                        onDismiss()
+                    },
                 )
-                LazyColumn(
-                    contentPadding = PaddingValues(bottom = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    items(sources, key = { it.id }) { source ->
-                        val isSelected = source.id == currentSourceId
-                        VersionItem(
-                            source = source,
-                            isSelected = isSelected,
-                            onClick = {
-                                onVersionSelected(source)
-                                onDismiss()
-                            },
-                        )
-                    }
-                }
             }
         }
     }

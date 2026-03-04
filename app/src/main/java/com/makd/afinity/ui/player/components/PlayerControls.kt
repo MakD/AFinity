@@ -103,12 +103,12 @@ fun PlayerControls(
     playlistQueue: List<com.makd.afinity.data.models.media.AfinityItem> = emptyList(),
     currentPlaylistIndex: Int = -1,
     onJumpToEpisode: (java.util.UUID) -> Unit = {},
+    onVersionToggleRequest: () -> Unit = {},
 ) {
     var showAudioSelector by remember { mutableStateOf(false) }
     var showSubtitleSelector by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var showEpisodeSwitcher by remember { mutableStateOf(false) }
-    var showVersionSelector by remember { mutableStateOf(false) }
 
     val currentItem = uiState.currentItem
 
@@ -331,7 +331,7 @@ fun PlayerControls(
                         onEpisodeSwitcherToggle = { showEpisodeSwitcher = !showEpisodeSwitcher },
                         showEpisodeSwitcherButton =
                             currentItem is AfinityEpisode && playlistQueue.size > 1,
-                        onVersionToggle = { showVersionSelector = !showVersionSelector },
+                        onVersionToggle = onVersionToggleRequest,
                         showVersionButton = uiState.availableSources.size > 1,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
@@ -587,27 +587,7 @@ fun PlayerControls(
         )
     }
 
-    if (showVersionSelector && uiState.availableSources.size > 1) {
-        Box(
-            modifier =
-                Modifier.fillMaxSize().clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    showVersionSelector = false
-                }
-        ) {
-            VersionPickerSheet(
-                sources = uiState.availableSources,
-                currentSourceId = uiState.currentMediaSourceId,
-                onVersionSelected = { source ->
-                    onPlayerEvent(PlayerEvent.SwitchVersion(source.id))
-                    showVersionSelector = false
-                },
-                onDismiss = { showVersionSelector = false },
-            )
-        }
-    }
+
 }
 
 @OptIn(UnstableApi::class)
