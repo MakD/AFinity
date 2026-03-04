@@ -102,7 +102,11 @@ constructor(
                 }
 
                 if (user != null) {
-                    (authRepository as? JellyfinAuthRepository)?.setSessionActive(user)
+                    (authRepository as? JellyfinAuthRepository)?.setAuthenticatedUser(
+                        user = user,
+                        accessToken = accessToken,
+                        serverUrl = serverUrl,
+                    )
                     Timber.d("Synced AuthRepository with user: ${user.name}")
                 }
 
