@@ -5,6 +5,7 @@ import com.makd.afinity.BuildConfig
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.network.JellyseerrApiService
+import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.Module
 import dagger.Provides
@@ -47,6 +48,8 @@ import javax.inject.Singleton
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class JellyseerrClient
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class AudiobookshelfRetrofit
+
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class TmdbClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -560,5 +563,24 @@ object NetworkModule {
         @AudiobookshelfRetrofit retrofit: Retrofit
     ): AudiobookshelfApiService {
         return retrofit.create(AudiobookshelfApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @TmdbClient
+    fun provideTmdbRetrofit(baseOkHttpClient: OkHttpClient): Retrofit {
+        val contentType = "application/json".toMediaType()
+
+        return Retrofit.Builder()
+            .baseUrl("https://api.themoviedb.org/")
+            .client(baseOkHttpClient)
+            .addConverterFactory(jellyseerrJson.asConverterFactory(contentType))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTmdbApiService(@TmdbClient retrofit: Retrofit): TmdbApiService {
+        return retrofit.create(TmdbApiService::class.java)
     }
 }

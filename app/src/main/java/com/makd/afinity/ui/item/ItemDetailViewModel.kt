@@ -26,20 +26,21 @@ import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinityMovie
 import com.makd.afinity.data.models.media.toAfinityShow
+import com.makd.afinity.data.models.tmdb.TmdbReview
+import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.paging.EpisodesPagingSource
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.UUID
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,6 +49,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemKind
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 @HiltViewModel
 class ItemDetailViewModel
@@ -61,6 +65,9 @@ constructor(
     private val offlineModeManager: OfflineModeManager,
     private val authRepository: AuthRepository,
     private val playbackStateManager: PlaybackStateManager,
+    private val serverRepository: ServerRepository,
+    private val securePreferencesRepository: SecurePreferencesRepository,
+    private val tmdbApiService: TmdbApiService,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -640,6 +647,52 @@ constructor(
 
     private fun loadAdditionalDetails(item: AfinityItem) {
         viewModelScope.launch {
+            if (item is AfinityMovie || item is AfinityShow) {
+                launch {
+                    try {
+                        _uiState.value = _uiState.value.copy(isLoadingReviews = true)
+                        val serverId = serverRepository.currentServer.value?.id
+                        val userId = authRepository.currentUser.value?.id
+
+                        if (serverId != null && userId != null) {
+                            val tmdbKey =
+                                securePreferencesRepository.getTmdbApiKey(
+                                    serverId,
+                                    userId.toString(),
+                                )
+
+                            if (!tmdbKey.isNullOrBlank()) {
+                                val tmdbId = item.providerIds?.get("Tmdb")?.toString()
+
+                                if (tmdbId != null) {
+                                    val response =
+                                        when (item) {
+                                            is AfinityMovie ->
+                                                tmdbApiService.getMovieReviews(tmdbId, tmdbKey)
+                                            is AfinityShow ->
+                                                tmdbApiService.getSeriesReviews(tmdbId, tmdbKey)
+                                            else -> null
+                                        }
+
+                                    if (response != null && response.results.isNotEmpty()) {
+                                        _uiState.value =
+                                            _uiState.value.copy(tmdbReviews = response.results)
+                                        Timber.d(
+                                            "Fetched ${response.results.size} TMDB reviews for ${item.name}"
+                                        )
+                                    }
+                                } else {
+                                    Timber.d("No TMDB Provider ID found for item ${item.name}")
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to fetch TMDB reviews")
+                    } finally {
+                        _uiState.value = _uiState.value.copy(isLoadingReviews = false)
+                    }
+                }
+            }
             when (item) {
                 is AfinityShow -> {
                     launch {
@@ -1408,4 +1461,6 @@ data class ItemDetailUiState(
     val episodesPagingData: Flow<PagingData<AfinityEpisode>>? = null,
     val showQualityDialog: Boolean = false,
     val downloadInfo: DownloadInfo? = null,
+    val tmdbReviews: List<TmdbReview> = emptyList(),
+    val isLoadingReviews: Boolean = false,
 )

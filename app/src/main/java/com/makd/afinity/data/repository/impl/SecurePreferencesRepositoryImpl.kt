@@ -645,6 +645,17 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
         return false
     }
 
-    @Volatile
-    override var onAbsAuthInvalidated: (() -> Unit)? = null
+    override suspend fun saveTmdbApiKey(serverId: String, userId: String, apiKey: String) {
+        context.dataStore.edit { prefs ->
+            val tmdbKey = stringPreferencesKey("tmdb_api_key_${serverId}_$userId")
+            prefs[tmdbKey] = encrypt(apiKey)
+        }
+    }
+
+    override suspend fun getTmdbApiKey(serverId: String, userId: String): String? {
+        val tmdbKey = stringPreferencesKey("tmdb_api_key_${serverId}_$userId")
+        return getDecryptedString(tmdbKey)
+    }
+
+    @Volatile override var onAbsAuthInvalidated: (() -> Unit)? = null
 }

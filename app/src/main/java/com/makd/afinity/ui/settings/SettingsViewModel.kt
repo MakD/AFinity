@@ -15,13 +15,13 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel
@@ -40,6 +41,7 @@ constructor(
     @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val securePreferencesRepository: SecurePreferencesRepository,
     private val appDataRepository: AppDataRepository,
     private val serverRepository: ServerRepository,
     private val offlineModeManager: OfflineModeManager,
@@ -93,6 +95,9 @@ constructor(
             false,
         )
 
+    private val _tmdbApiKey = MutableStateFlow("")
+    val tmdbApiKey: StateFlow<String> = _tmdbApiKey.asStateFlow()
+
     init {
         loadSettings()
     }
@@ -107,6 +112,12 @@ constructor(
                     Triple(user, profileImageUrl, server)
                 }
                 .collect { (user, profileImageUrl, server) ->
+                    val tmdbKey =
+                        if (user != null && server != null) {
+                            securePreferencesRepository.getTmdbApiKey(server.id, user.id.toString())
+                                ?: ""
+                        } else ""
+
                     _uiState.value =
                         _uiState.value.copy(
                             currentUser = user,
@@ -116,8 +127,10 @@ constructor(
                             serverUrl = serverRepository.getBaseUrl().ifEmpty { null },
                             isLoading = false,
                         )
+                    _tmdbApiKey.value = tmdbKey
+
                     Timber.d(
-                        "SettingsViewModel - Updated uiState: user=${_uiState.value.currentUser?.name}, server=${_uiState.value.serverName}"
+                        "SettingsViewModel - Updated uiState: user=${user?.name}, server=${server?.name}"
                     )
                 }
         }
@@ -572,6 +585,29 @@ constructor(
                                 e.message,
                             )
                     )
+            }
+        }
+    }
+
+    fun setTmdbApiKey(apiKey: String) {
+        viewModelScope.launch {
+            try {
+                val user = authRepository.currentUser.value
+                val server = serverRepository.currentServer.value
+
+                if (user != null && server != null) {
+                    securePreferencesRepository.saveTmdbApiKey(
+                        server.id,
+                        user.id.toString(),
+                        apiKey,
+                    )
+                    _tmdbApiKey.value = apiKey
+                    Timber.d("TMDB API Key updated securely.")
+                } else {
+                    Timber.w("Failed to save TMDB API Key: User or Server is null")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error saving TMDB API key")
             }
         }
     }

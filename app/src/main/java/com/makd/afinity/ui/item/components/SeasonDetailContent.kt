@@ -30,14 +30,19 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.EpisodeListCard
 import com.makd.afinity.ui.item.components.shared.CastSection
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
+import com.makd.afinity.ui.item.components.shared.InCollectionsSection
+import com.makd.afinity.ui.item.components.shared.ReviewsSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
@@ -48,6 +53,8 @@ fun SeasonDetailContent(
     season: AfinitySeason,
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     specialFeatures: List<AfinityItem>,
+    containingBoxSets: List<AfinityBoxSet>,
+    tmdbReviews: List<TmdbReview> = emptyList(),
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
@@ -80,6 +87,19 @@ fun SeasonDetailContent(
             onItemClick = onSpecialFeatureClick,
             widthSizeClass = widthSizeClass,
         )
+
+        InCollectionsSection(
+            boxSets = containingBoxSets,
+            onBoxSetClick = { boxSet ->
+                val route = Destination.createItemDetailRoute(boxSet.id.toString())
+                navController.navigate(route)
+            },
+            widthSizeClass = widthSizeClass,
+        )
+
+        if (tmdbReviews.isNotEmpty()) {
+            ReviewsSection(reviews = tmdbReviews)
+        }
 
         CastSection(
             item = season,

@@ -73,6 +73,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
+import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.BoxSetDetailContent
@@ -95,6 +96,7 @@ import com.makd.afinity.ui.item.components.shared.MetadataRow
 import com.makd.afinity.ui.item.components.shared.NextUpSection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
+import com.makd.afinity.ui.item.components.shared.ReviewsSection
 import com.makd.afinity.ui.item.components.shared.SimilarItemsSection
 import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import com.makd.afinity.ui.item.components.shared.VideoQualitySelection
@@ -168,6 +170,7 @@ fun ItemDetailScreen(
                     isInWatchlist = uiState.item?.liked == true,
                     episodesPagingData = uiState.episodesPagingData,
                     downloadInfo = uiState.downloadInfo,
+                    tmdbReviews = uiState.tmdbReviews,
                     onPlayClick = { item, selection -> onPlayClick(item, selection) },
                     onBoxSetItemClick = { item ->
                         if (item is AfinityEpisode) {
@@ -249,6 +252,7 @@ private fun ItemDetailContent(
     isInWatchlist: Boolean,
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     downloadInfo: DownloadInfo?,
+    tmdbReviews: List<TmdbReview>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -273,6 +277,7 @@ private fun ItemDetailContent(
             isInWatchlist = isInWatchlist,
             episodesPagingData = episodesPagingData,
             downloadInfo = downloadInfo,
+            tmdbReviews = tmdbReviews,
             onPlayClick = onPlayClick,
             onBoxSetItemClick = onBoxSetItemClick,
             onSpecialFeatureClick = onSpecialFeatureClick,
@@ -294,6 +299,7 @@ private fun ItemDetailContent(
             isInWatchlist = isInWatchlist,
             episodesPagingData = episodesPagingData,
             downloadInfo = downloadInfo,
+            tmdbReviews = tmdbReviews,
             onPlayClick = onPlayClick,
             onBoxSetItemClick = onBoxSetItemClick,
             onSpecialFeatureClick = onSpecialFeatureClick,
@@ -318,6 +324,7 @@ private fun LandscapeItemDetailContent(
     isInWatchlist: Boolean,
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     downloadInfo: DownloadInfo?,
+    tmdbReviews: List<TmdbReview>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -968,6 +975,7 @@ private fun LandscapeItemDetailContent(
                                     seasons = seasons,
                                     nextEpisode = nextEpisode,
                                     specialFeatures = specialFeatures,
+                                    tmdbReviews = tmdbReviews,
                                     containingBoxSets = containingBoxSets,
                                     onEpisodeClick = { clickedEpisode ->
                                         if (clickedEpisode.sources.isEmpty()) {
@@ -1009,6 +1017,8 @@ private fun LandscapeItemDetailContent(
                                     season = item,
                                     episodesPagingData = episodesPagingData,
                                     specialFeatures = specialFeatures,
+                                    containingBoxSets = containingBoxSets,
+                                    tmdbReviews = tmdbReviews,
                                     onEpisodeClick = { episode ->
                                         viewModel.selectEpisode(episode)
                                     },
@@ -1024,6 +1034,7 @@ private fun LandscapeItemDetailContent(
                                     baseUrl = baseUrl,
                                     specialFeatures = specialFeatures,
                                     containingBoxSets = containingBoxSets,
+                                    tmdbReviews = tmdbReviews,
                                     onSpecialFeatureClick = onSpecialFeatureClick,
                                     onPlayClick = { movie, selection ->
                                         onPlayClick(movie, selection)
@@ -1055,6 +1066,9 @@ private fun LandscapeItemDetailContent(
                                     },
                                     widthSizeClass = widthSizeClass,
                                 )
+                                if (tmdbReviews.isNotEmpty()) {
+                                    ReviewsSection(reviews = tmdbReviews)
+                                }
                             }
                         }
 
@@ -1089,6 +1103,7 @@ private fun PortraitItemDetailContent(
     isInWatchlist: Boolean,
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     downloadInfo: DownloadInfo?,
+    tmdbReviews: List<TmdbReview>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -1654,6 +1669,7 @@ private fun PortraitItemDetailContent(
                             nextEpisode = nextEpisode,
                             specialFeatures = specialFeatures,
                             containingBoxSets = containingBoxSets,
+                            tmdbReviews = tmdbReviews,
                             onEpisodeClick = { clickedEpisode ->
                                 if (clickedEpisode.sources.isEmpty()) {
                                     Timber.w("Episode ${clickedEpisode.name} has no media sources")
@@ -1689,6 +1705,8 @@ private fun PortraitItemDetailContent(
                             season = item,
                             episodesPagingData = episodesPagingData,
                             specialFeatures = specialFeatures,
+                            containingBoxSets = containingBoxSets,
+                            tmdbReviews = tmdbReviews,
                             onEpisodeClick = { episode -> viewModel.selectEpisode(episode) },
                             onSpecialFeatureClick = onSpecialFeatureClick,
                             navController = navController,
@@ -1702,6 +1720,7 @@ private fun PortraitItemDetailContent(
                             baseUrl = baseUrl,
                             specialFeatures = specialFeatures,
                             containingBoxSets = containingBoxSets,
+                            tmdbReviews = tmdbReviews,
                             onSpecialFeatureClick = onSpecialFeatureClick,
                             onPlayClick = { movie, selection -> onPlayClick(movie, selection) },
                             navController = navController,
@@ -1730,6 +1749,9 @@ private fun PortraitItemDetailContent(
                             },
                             widthSizeClass = widthSizeClass,
                         )
+                        if (tmdbReviews.isNotEmpty()) {
+                            ReviewsSection(reviews = tmdbReviews)
+                        }
                     }
                 }
 
@@ -1755,6 +1777,7 @@ fun SeriesDetailContent(
     nextEpisode: AfinityEpisode?,
     specialFeatures: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
+    tmdbReviews: List<TmdbReview> = emptyList(),
     onEpisodeClick: (AfinityEpisode) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     navController: NavController,
@@ -1810,6 +1833,10 @@ fun SeriesDetailContent(
             },
             widthSizeClass = widthSizeClass,
         )
+
+        if (tmdbReviews.isNotEmpty()) {
+            ReviewsSection(reviews = tmdbReviews)
+        }
     }
 }
 

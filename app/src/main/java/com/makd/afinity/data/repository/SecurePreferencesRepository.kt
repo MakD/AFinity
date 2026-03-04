@@ -135,6 +135,10 @@ interface SecurePreferencesRepository {
 
     suspend fun hasValidAudiobookshelfAuth(): Boolean
 
+    suspend fun saveTmdbApiKey(serverId: String, userId: String, apiKey: String)
+
+    suspend fun getTmdbApiKey(serverId: String, userId: String): String?
+
     var onAbsAuthInvalidated: (() -> Unit)?
 }
 
