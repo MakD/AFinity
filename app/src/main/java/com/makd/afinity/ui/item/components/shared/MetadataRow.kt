@@ -548,7 +548,12 @@ fun MetadataRow(
                                     if (rawValue >= 60.0) R.drawable.ic_rt_fresh_popcorn
                                     else R.drawable.ic_rt_stale_popcorn
 
-                                "metacritic" -> R.drawable.ic_metacritic
+                                "metacritic" ->
+                                    when {
+                                        rawValue >= 75.0 -> R.drawable.ic_metacritic_green
+                                        rawValue >= 50.0 -> R.drawable.ic_metacritic_yellow
+                                        else -> R.drawable.ic_metacritic_red
+                                    }
                                 "rogerebert" -> R.drawable.ic_ebert
                                 "myanimelist" -> R.drawable.ic_mal
                                 else -> null

@@ -75,7 +75,6 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.Destination
@@ -138,9 +137,10 @@ fun ItemDetailScreen(
     // Intercepts play requests: shows the version picker first if the item has > 1 source,
     // otherwise fires onPlayClick immediately.
     fun interceptPlayClick(item: AfinityItem, selection: PlaybackSelection?) {
-        val remoteSources = item.sources.filter {
-            it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
-        }
+        val remoteSources =
+            item.sources.filter {
+                it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
+            }
         if (remoteSources.size > 1 && item !is AfinityMovie) {
             pendingPlayItem = item
             pendingPlaySelection = selection
@@ -253,25 +253,27 @@ fun ItemDetailScreen(
             }
         }
 
-        // Pre-play version picker: shown when tapping Play on an item with multiple merged versions.
+        // Pre-play version picker: shown when tapping Play on an item with multiple merged
+        // versions.
         if (showVersionPickerForPlay) {
             val item = pendingPlayItem
             if (item != null) {
-                val remoteSources = item.sources.filter {
-                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
-                }
+                val remoteSources =
+                    item.sources.filter {
+                        it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
+                    }
                 VersionPickerDialog(
                     sources = remoteSources,
                     onVersionSelected = { source ->
                         showVersionPickerForPlay = false
-                        val finalSelection = pendingPlaySelection?.copy(
-                            mediaSourceId = source.id,
-                        ) ?: PlaybackSelection(
-                            mediaSourceId = source.id,
-                            audioStreamIndex = null,
-                            subtitleStreamIndex = null,
-                            videoStreamIndex = null,
-                        )
+                        val finalSelection =
+                            pendingPlaySelection?.copy(mediaSourceId = source.id)
+                                ?: PlaybackSelection(
+                                    mediaSourceId = source.id,
+                                    audioStreamIndex = null,
+                                    subtitleStreamIndex = null,
+                                    videoStreamIndex = null,
+                                )
                         onPlayClick(item, finalSelection)
                         pendingPlayItem = null
                         pendingPlaySelection = null
