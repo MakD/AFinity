@@ -19,4 +19,11 @@ data class DownloadInfo(
     val updatedAt: Long,
     val serverId: String,
     val userId: UUID,
+    val imageUrl: String? = null,
+    val seriesImageUrl: String? = null,
+    val seriesName: String? = null,
+    val seasonNumber: Int? = null,
+    val episodeNumber: Int? = null,
+    val releaseYear: String? = null,
+    val runtimeTicks: Long? = null,
 )

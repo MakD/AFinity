@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.text.format.DateFormat
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -58,6 +59,7 @@ fun MetadataRow(
     remainingChildRuntimeTicks: Long = totalChildRuntimeTicks,
     boxSetItems: List<AfinityItem> = emptyList(),
     mdbRatings: List<MdbListRating> = emptyList(),
+    isRatingsFromCache: Boolean = false,
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -520,7 +522,12 @@ fun MetadataRow(
 
         AnimatedVisibility(
             visible = mdbRatings.isNotEmpty(),
-            enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+            enter =
+                if (isRatingsFromCache) {
+                    EnterTransition.None
+                } else {
+                    fadeIn(tween(300)) + expandVertically(tween(300))
+                },
             exit = fadeOut(tween(300)) + shrinkVertically(tween(300)),
         ) {
             FlowRow(

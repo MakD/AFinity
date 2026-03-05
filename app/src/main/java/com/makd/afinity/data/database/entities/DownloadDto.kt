@@ -24,6 +24,13 @@ data class DownloadDto(
     val updatedAt: Long,
     val serverId: String,
     val userId: UUID,
+    val imageUrl: String?,
+    val seriesImageUrl: String?,
+    val seriesName: String?,
+    val seasonNumber: Int?,
+    val episodeNumber: Int?,
+    val releaseYear: String?,
+    val runtimeTicks: Long?,
 )
 
 fun DownloadDto.toDownloadInfo(): DownloadInfo {
@@ -44,5 +51,12 @@ fun DownloadDto.toDownloadInfo(): DownloadInfo {
         updatedAt = updatedAt,
         serverId = serverId,
         userId = userId,
+        imageUrl = imageUrl,
+        seriesImageUrl = seriesImageUrl,
+        seriesName = seriesName,
+        seasonNumber = seasonNumber,
+        episodeNumber = episodeNumber,
+        releaseYear = releaseYear,
+        runtimeTicks = runtimeTicks,
     )
 }

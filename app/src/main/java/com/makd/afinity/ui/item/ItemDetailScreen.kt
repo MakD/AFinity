@@ -198,6 +198,7 @@ fun ItemDetailScreen(
                     downloadInfo = uiState.downloadInfo,
                     tmdbReviews = uiState.tmdbReviews,
                     mdbRatings = uiState.mdbRatings,
+                    isRatingsFromCache = uiState.isRatingsFromCache,
                     onPlayClick = { item, selection -> interceptPlayClick(item, selection) },
                     onBoxSetItemClick = { item ->
                         if (item is AfinityEpisode) {
@@ -304,6 +305,7 @@ private fun ItemDetailContent(
     downloadInfo: DownloadInfo?,
     tmdbReviews: List<TmdbReview>,
     mdbRatings: List<MdbListRating>,
+    isRatingsFromCache: Boolean,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -330,6 +332,7 @@ private fun ItemDetailContent(
             downloadInfo = downloadInfo,
             tmdbReviews = tmdbReviews,
             mdbRatings = mdbRatings,
+            isRatingsFromCache = isRatingsFromCache,
             onPlayClick = onPlayClick,
             onBoxSetItemClick = onBoxSetItemClick,
             onSpecialFeatureClick = onSpecialFeatureClick,
@@ -353,6 +356,7 @@ private fun ItemDetailContent(
             downloadInfo = downloadInfo,
             tmdbReviews = tmdbReviews,
             mdbRatings = mdbRatings,
+            isRatingsFromCache = isRatingsFromCache,
             onPlayClick = onPlayClick,
             onBoxSetItemClick = onBoxSetItemClick,
             onSpecialFeatureClick = onSpecialFeatureClick,
@@ -379,6 +383,7 @@ private fun LandscapeItemDetailContent(
     downloadInfo: DownloadInfo?,
     tmdbReviews: List<TmdbReview>,
     mdbRatings: List<MdbListRating>,
+    isRatingsFromCache: Boolean,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -497,7 +502,12 @@ private fun LandscapeItemDetailContent(
                             )
                         }
 
-                        MetadataRow(item = item, boxSetItems = boxSetItems, mdbRatings = mdbRatings)
+                        MetadataRow(
+                            item = item,
+                            boxSetItems = boxSetItems,
+                            mdbRatings = mdbRatings,
+                            isRatingsFromCache = isRatingsFromCache,
+                        )
 
                         val mediaSourceOptions =
                             remember(item) {
@@ -1148,6 +1158,7 @@ private fun PortraitItemDetailContent(
     downloadInfo: DownloadInfo?,
     tmdbReviews: List<TmdbReview>,
     mdbRatings: List<MdbListRating>,
+    isRatingsFromCache: Boolean,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -1236,7 +1247,12 @@ private fun PortraitItemDetailContent(
                     )
                 }
 
-                MetadataRow(item = item, boxSetItems = boxSetItems, mdbRatings = mdbRatings)
+                MetadataRow(
+                    item = item,
+                    boxSetItems = boxSetItems,
+                    mdbRatings = mdbRatings,
+                    isRatingsFromCache = isRatingsFromCache,
+                )
 
                 val mediaSourceOptions =
                     remember(item) {

@@ -1,11 +1,13 @@
 package com.makd.afinity.data.models.media
 
+import com.makd.afinity.data.models.mdblist.MdbListRating
+import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.data.repository.JellyfinRepository
-import java.time.LocalDateTime
-import java.util.UUID
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.PlayAccess
+import java.time.LocalDateTime
+import java.util.UUID
 
 data class AfinityShow(
     override val id: UUID,
@@ -41,6 +43,8 @@ data class AfinityShow(
     override val chapters: List<AfinityChapter> = emptyList(),
     override val providerIds: Map<String, String>?,
     override val externalUrls: List<AfinityExternalUrl>?,
+    val tmdbReviews: List<TmdbReview> = emptyList(),
+    val mdbRatings: List<MdbListRating> = emptyList(),
 ) : AfinityItem
 
 fun BaseItemDto.toAfinityShow(jellyfinRepository: JellyfinRepository): AfinityShow {
@@ -75,5 +79,7 @@ fun BaseItemDto.toAfinityShow(jellyfinRepository: JellyfinRepository): AfinitySh
         images = toAfinityImages(jellyfinRepository),
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
+        tmdbReviews = emptyList(),
+        mdbRatings = emptyList(),
     )
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -63,6 +65,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.downloads.DownloadsViewModel
 import java.util.Locale
 import java.util.UUID
@@ -117,9 +120,7 @@ fun DownloadSettingsScreen(
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentPadding = PaddingValues(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
@@ -141,7 +142,7 @@ fun DownloadSettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 SectionHeader(
                     title = "STORAGE & CACHE",
-                    modifier = Modifier.padding(horizontal = 24.dp)
+                    modifier = Modifier.padding(horizontal = 24.dp),
                 )
             }
 
@@ -151,7 +152,7 @@ fun DownloadSettingsScreen(
                     cacheSizeMb = uiState.imageCacheSizeMb.toFloat(),
                     onCacheEnabledChange = viewModel::setImageCacheEnabled,
                     onCacheSizeChange = { viewModel.setImageCacheSizeMb(it.toInt()) },
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
             }
 
@@ -391,67 +392,61 @@ fun ActiveDownloadCard(
     formatSize: (Long) -> String,
     modifier: Modifier = Modifier,
 ) {
+    val isEpisode = download.itemType.equals("Episode", ignoreCase = true)
+    val imageRatio = if (isEpisode) 16f / 9f else 2f / 3f
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 4.dp,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 16.dp)
-                ) {
-                    Text(
-                        text = download.itemName,
-                        style =
-                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = download.sourceName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AsyncImage(
+                imageUrl = download.imageUrl,
+                contentDescription = download.itemName,
+                modifier =
+                    Modifier.width(if (isEpisode) 120.dp else 80.dp)
+                        .aspectRatio(imageRatio)
+                        .clip(RoundedCornerShape(12.dp)),
+                placeholder = painterResource(id = R.drawable.ic_database),
+                contentScale = ContentScale.Crop,
+            )
 
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                ) {
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.download_progress_size_fmt,
-                                formatSize(download.bytesDownloaded),
-                                formatSize(download.totalBytes),
-                            ),
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontFamily = FontFamily.Monospace
-                            ),
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = download.itemName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                val subtitle =
+                    if (isEpisode && !download.seriesName.isNullOrBlank()) {
+                        download.seriesName
+                    } else if (!isEpisode && !download.releaseYear.isNullOrBlank()) {
+                        download.releaseYear
+                    } else {
+                        download.sourceName
+                    }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = subtitle ?: download.sourceName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 LinearProgressIndicator(
                     progress = { download.progress },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(6.dp)),
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
                     color =
                         if (download.status == DownloadStatus.FAILED)
                             MaterialTheme.colorScheme.error
@@ -459,85 +454,102 @@ fun ActiveDownloadCard(
                     trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     strokeCap = StrokeCap.Round,
                 )
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text =
-                        when (download.status) {
-                            DownloadStatus.QUEUED ->
-                                stringResource(R.string.download_status_queued).uppercase()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        val statusText =
+                            when (download.status) {
+                                DownloadStatus.QUEUED ->
+                                    stringResource(R.string.download_status_queued).uppercase()
+                                DownloadStatus.DOWNLOADING ->
+                                    stringResource(R.string.download_status_downloading).uppercase()
+                                DownloadStatus.PAUSED ->
+                                    stringResource(R.string.download_status_paused).uppercase()
+                                DownloadStatus.FAILED ->
+                                    stringResource(
+                                            R.string.download_status_failed_fmt,
+                                            download.error ?: "",
+                                        )
+                                        .uppercase()
+                                else -> ""
+                            }
 
-                            DownloadStatus.DOWNLOADING ->
-                                stringResource(R.string.download_status_downloading).uppercase()
+                        Text(
+                            text = statusText,
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                            color =
+                                if (download.status == DownloadStatus.FAILED)
+                                    MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.primary,
+                        )
 
-                            DownloadStatus.PAUSED ->
-                                stringResource(R.string.download_status_paused).uppercase()
-
-                            DownloadStatus.FAILED ->
-                                stringResource(
-                                    R.string.download_status_failed_fmt,
-                                    download.error ?: "",
-                                )
-                                    .uppercase()
-
-                            else -> ""
-                        },
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color =
-                        if (download.status == DownloadStatus.FAILED)
-                            MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                )
-
-                Row {
-                    if (
-                        download.status == DownloadStatus.DOWNLOADING ||
-                        download.status == DownloadStatus.QUEUED
-                    ) {
-                        IconButton(
-                            onClick = { onPause(download.id) },
-                            modifier = Modifier.size(32.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_player_pause_filled),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    } else if (
-                        download.status == DownloadStatus.PAUSED ||
-                        download.status == DownloadStatus.FAILED
-                    ) {
-                        IconButton(
-                            onClick = { onResume(download.id) },
-                            modifier = Modifier.size(32.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_player_play_filled),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
+                        Text(
+                            text =
+                                "${formatSize(download.bytesDownloaded)} / ${formatSize(download.totalBytes)}",
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Medium,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
 
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    IconButton(
-                        onClick = { onCancel(download.id) },
-                        modifier = Modifier.size(32.dp),
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_cancel),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        if (
+                            download.status == DownloadStatus.DOWNLOADING ||
+                                download.status == DownloadStatus.QUEUED
+                        ) {
+                            IconButton(
+                                onClick = { onPause(download.id) },
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    painter =
+                                        painterResource(id = R.drawable.ic_player_pause_filled),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else if (
+                            download.status == DownloadStatus.PAUSED ||
+                                download.status == DownloadStatus.FAILED
+                        ) {
+                            IconButton(
+                                onClick = { onResume(download.id) },
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    painter =
+                                        painterResource(id = R.drawable.ic_player_play_filled),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = { onCancel(download.id) },
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_cancel),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -551,49 +563,64 @@ fun CompletedDownloadRow(
     onDelete: (UUID) -> Unit,
     formatSize: (Long) -> String,
 ) {
+    val isEpisode = download.itemType.equals("Episode", ignoreCase = true)
+
+    val runtimeMinutes = (download.runtimeTicks ?: 0L) / 10000000 / 60
+    val runtimeStr = if (runtimeMinutes > 0) "${runtimeMinutes}m • " else ""
+
+    val subtitleText = buildString {
+        if (isEpisode) {
+            if (!download.seriesName.isNullOrBlank()) append("${download.seriesName} • ")
+            if (download.seasonNumber != null && download.episodeNumber != null) {
+                append(
+                    "S${download.seasonNumber.toString().padStart(2, '0')}:E${download.episodeNumber.toString().padStart(2, '0')} • "
+                )
+            }
+        } else {
+            if (!download.releaseYear.isNullOrBlank()) append("${download.releaseYear} • ")
+        }
+        append(runtimeStr)
+        append(formatSize(download.totalBytes))
+    }
+
     ListItem(
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        leadingContent = {
+            AsyncImage(
+                imageUrl = download.imageUrl,
+                contentDescription = null,
+                modifier =
+                    Modifier.width(56.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(6.dp)),
+                placeholder = painterResource(id = R.drawable.ic_check),
+                contentScale = ContentScale.Crop,
+            )
+        },
         headlineContent = {
             Text(
                 text = download.itemName,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         },
         supportingContent = {
             Text(
-                text = formatSize(download.totalBytes),
-                style = MaterialTheme.typography.bodySmall,
+                text = subtitleText,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-        },
-        leadingContent = {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(40.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_check),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                }
-            }
         },
         trailingContent = {
             IconButton(onClick = { onDelete(download.id) }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_delete),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.cd_delete_download),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.size(20.dp),
                 )
             }
         },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
 }
 
@@ -611,9 +638,7 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier) {
 @Composable
 fun EmptyDownloadsState() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 64.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 64.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -653,7 +678,7 @@ fun ImageCacheSettingsCard(
     cacheSizeMb: Float,
     onCacheEnabledChange: (Boolean) -> Unit,
     onCacheSizeChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -664,36 +689,35 @@ fun ImageCacheSettingsCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 16.dp)
-                ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                     Text(
                         text = "Image Caching",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "Save media images to disk for faster loading and reduced network usage",
+                        text =
+                            "Save media images to disk for faster loading and reduced network usage",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 4.dp),
                     )
                 }
                 Switch(
                     checked = isCacheEnabled,
                     onCheckedChange = onCacheEnabledChange,
                     modifier = Modifier.scale(0.8f),
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                        checkedTrackColor = MaterialTheme.colorScheme.primary,
-                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        uncheckedBorderColor = MaterialTheme.colorScheme.outline,
-                    )
+                    colors =
+                        SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                        ),
                 )
             }
 
@@ -701,46 +725,58 @@ fun ImageCacheSettingsCard(
                 text = "Takes effect on next app launch",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp),
             )
 
             AnimatedVisibility(
                 visible = isCacheEnabled,
                 enter = expandVertically(),
-                exit = shrinkVertically()
+                exit = shrinkVertically(),
             ) {
                 Column {
                     Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = "Maximum Disk Space",
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style =
+                                MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                         ) {
-                            val formattedSize = if (cacheSizeMb >= 1024f) {
-                                String.format(Locale.getDefault(), "%.1f GB", cacheSizeMb / 1024f)
-                                    .replace(".0", "").replace(",0", "")
-                            } else {
-                                "${cacheSizeMb.toInt()} MB"
-                            }
+                            val formattedSize =
+                                if (cacheSizeMb >= 1024f) {
+                                    String.format(
+                                            Locale.getDefault(),
+                                            "%.1f GB",
+                                            cacheSizeMb / 1024f,
+                                        )
+                                        .replace(".0", "")
+                                        .replace(",0", "")
+                                } else {
+                                    "${cacheSizeMb.toInt()} MB"
+                                }
 
                             Text(
                                 text = formattedSize,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold
-                                ),
+                                style =
+                                    MaterialTheme.typography.labelMedium.copy(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 color = MaterialTheme.colorScheme.primary,
                             )
@@ -754,13 +790,17 @@ fun ImageCacheSettingsCard(
                         onValueChange = onCacheSizeChange,
                         valueRange = 256f..2048f,
                         steps = 6,
-                        colors = SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.primary,
-                            activeTrackColor = MaterialTheme.colorScheme.primary,
-                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            activeTickColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                            inactiveTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                        )
+                        colors =
+                            SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor =
+                                    MaterialTheme.colorScheme.surfaceContainerHighest,
+                                activeTickColor =
+                                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+                                inactiveTickColor =
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                            ),
                     )
                 }
             }

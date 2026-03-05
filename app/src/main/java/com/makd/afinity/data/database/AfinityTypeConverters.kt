@@ -2,6 +2,7 @@ package com.makd.afinity.data.database
 
 import android.net.Uri
 import androidx.room.TypeConverter
+import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
@@ -12,6 +13,7 @@ import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.tmdb.TmdbReview
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -453,6 +455,34 @@ class AfinityTypeConverters {
             }
         }
     }
+
+    @TypeConverter
+    fun fromTmdbReviewList(reviews: List<TmdbReview>?): String? =
+        reviews?.let { json.encodeToString(it) }
+
+    @TypeConverter
+    fun toTmdbReviewList(reviewsString: String?): List<TmdbReview>? =
+        reviewsString?.let {
+            try {
+                json.decodeFromString<List<TmdbReview>>(it)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+    @TypeConverter
+    fun fromMdbRatingList(ratings: List<MdbListRating>?): String? =
+        ratings?.let { json.encodeToString(it) }
+
+    @TypeConverter
+    fun toMdbRatingList(ratingsString: String?): List<MdbListRating>? =
+        ratingsString?.let {
+            try {
+                json.decodeFromString<List<MdbListRating>>(it)
+            } catch (e: Exception) {
+                null
+            }
+        }
 }
 
 @Serializable

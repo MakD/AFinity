@@ -615,6 +615,35 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_28_29 =
+        object : Migration(28, 29) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE downloads ADD COLUMN imageUrl TEXT")
+                db.execSQL("ALTER TABLE downloads ADD COLUMN seriesName TEXT")
+                db.execSQL("ALTER TABLE downloads ADD COLUMN seasonNumber INTEGER")
+                db.execSQL("ALTER TABLE downloads ADD COLUMN episodeNumber INTEGER")
+                db.execSQL("ALTER TABLE downloads ADD COLUMN releaseYear TEXT")
+                db.execSQL("ALTER TABLE downloads ADD COLUMN runtimeTicks INTEGER")
+            }
+        }
+
+    val MIGRATION_29_30 =
+        object : Migration(29, 30) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE movies ADD COLUMN tmdbReviews TEXT")
+                db.execSQL("ALTER TABLE movies ADD COLUMN mdbRatings TEXT")
+                db.execSQL("ALTER TABLE shows ADD COLUMN tmdbReviews TEXT")
+                db.execSQL("ALTER TABLE shows ADD COLUMN mdbRatings TEXT")
+            }
+        }
+
+    val MIGRATION_30_31 =
+        object : Migration(30, 31) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE downloads ADD COLUMN seriesImageUrl TEXT")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -640,5 +669,8 @@ object DatabaseMigrations {
             MIGRATION_25_26,
             MIGRATION_26_27,
             MIGRATION_27_28,
+            MIGRATION_28_29,
+            MIGRATION_29_30,
+            MIGRATION_30_31,
         )
 }

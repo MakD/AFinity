@@ -25,10 +25,6 @@ import com.makd.afinity.data.workers.MediaDownloadWorker
 import com.makd.afinity.data.workers.SubtitleDownloadWorker
 import com.makd.afinity.data.workers.TrickplayDownloadWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +35,10 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import timber.log.Timber
+import java.io.File
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class JellyfinDownloadRepository
@@ -125,6 +125,26 @@ constructor(
                         ?: return@withContext Result.failure(Exception("Source not found"))
 
                 val downloadId = UUID.randomUUID()
+
+                val imageUrl =
+                    when (item) {
+                        is AfinityMovie -> item.images.primary?.toString()
+                        is AfinityEpisode -> item.images.primary?.toString()
+                        else -> null
+                    }
+
+                val seriesImageUrl = (item as? AfinityEpisode)?.images?.showPrimary?.toString()
+                val seriesName = (item as? AfinityEpisode)?.seriesName
+                val seasonNumber = (item as? AfinityEpisode)?.parentIndexNumber
+                val episodeNumber = (item as? AfinityEpisode)?.indexNumber
+                val releaseYear = (item as? AfinityMovie)?.productionYear?.toString()
+                val runtimeTicks =
+                    when (item) {
+                        is AfinityMovie -> item.runtimeTicks
+                        is AfinityEpisode -> item.runtimeTicks
+                        else -> 0L
+                    }
+
                 val download =
                     DownloadDto(
                         id = downloadId,
@@ -148,6 +168,13 @@ constructor(
                         updatedAt = System.currentTimeMillis(),
                         serverId = serverId,
                         userId = userId,
+                        imageUrl = imageUrl,
+                        seriesImageUrl = seriesImageUrl,
+                        seriesName = seriesName,
+                        seasonNumber = seasonNumber,
+                        episodeNumber = episodeNumber,
+                        releaseYear = releaseYear,
+                        runtimeTicks = runtimeTicks,
                     )
 
                 databaseRepository.insertDownload(download)

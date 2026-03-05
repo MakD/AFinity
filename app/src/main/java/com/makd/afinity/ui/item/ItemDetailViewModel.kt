@@ -553,6 +553,24 @@ constructor(
                 if (!isOffline) {
                     loadAdditionalDetails(item)
                 } else {
+                    val cachedReviews =
+                        when (item) {
+                            is AfinityMovie -> item.tmdbReviews
+                            is AfinityShow -> item.tmdbReviews
+                            else -> emptyList()
+                        }
+                    val cachedRatings =
+                        when (item) {
+                            is AfinityMovie -> item.mdbRatings
+                            is AfinityShow -> item.mdbRatings
+                            else -> emptyList()
+                        }
+                    _uiState.value =
+                        _uiState.value.copy(
+                            tmdbReviews = cachedReviews,
+                            mdbRatings = cachedRatings,
+                            isRatingsFromCache = true,
+                        )
                     when (item) {
                         is AfinityShow -> {
                             if (item.seasons.isNotEmpty()) {
@@ -649,71 +667,145 @@ constructor(
     private fun loadAdditionalDetails(item: AfinityItem) {
         viewModelScope.launch {
             if (item is AfinityMovie || item is AfinityShow) {
+                val userId = authRepository.currentUser.value?.id
+                val cachedItem =
+                    if (userId != null) {
+                        if (item is AfinityMovie) databaseRepository.getMovie(item.id, userId)
+                        else databaseRepository.getShow(item.id, userId)
+                    } else null
+
+                val cachedReviews =
+                    (cachedItem as? AfinityMovie)?.tmdbReviews
+                        ?: (cachedItem as? AfinityShow)?.tmdbReviews
+                        ?: emptyList()
+                val cachedRatings =
+                    (cachedItem as? AfinityMovie)?.mdbRatings
+                        ?: (cachedItem as? AfinityShow)?.mdbRatings
+                        ?: emptyList()
                 launch {
-                    try {
-                        _uiState.value = _uiState.value.copy(isLoadingReviews = true)
-                        val serverId = serverRepository.currentServer.value?.id
-                        val userId = authRepository.currentUser.value?.id
+                    if (cachedReviews.isNotEmpty()) {
+                        Timber.d(
+                            "Loaded ${cachedReviews.size} TMDB reviews from cache for ${item.name}"
+                        )
+                        _uiState.value = _uiState.value.copy(tmdbReviews = cachedReviews)
+                    } else {
+                        try {
+                            _uiState.value = _uiState.value.copy(isLoadingReviews = true)
+                            val serverId = serverRepository.currentServer.value?.id
 
-                        if (serverId != null && userId != null) {
-                            val tmdbKey =
-                                securePreferencesRepository.getTmdbApiKey(
-                                    serverId,
-                                    userId.toString(),
-                                )
+                            if (serverId != null && userId != null) {
+                                val tmdbKey =
+                                    securePreferencesRepository.getTmdbApiKey(
+                                        serverId,
+                                        userId.toString(),
+                                    )
 
-                            if (!tmdbKey.isNullOrBlank()) {
-                                val tmdbId = item.providerIds?.get("Tmdb")?.toString()
+                                if (!tmdbKey.isNullOrBlank()) {
+                                    val tmdbId = item.providerIds?.get("Tmdb")?.toString()
 
-                                if (tmdbId != null) {
-                                    val response =
-                                        when (item) {
-                                            is AfinityMovie ->
-                                                tmdbApiService.getMovieReviews(tmdbId, tmdbKey)
-                                            is AfinityShow ->
-                                                tmdbApiService.getSeriesReviews(tmdbId, tmdbKey)
-                                            else -> null
+                                    if (tmdbId != null) {
+                                        val response =
+                                            when (item) {
+                                                is AfinityMovie ->
+                                                    tmdbApiService.getMovieReviews(tmdbId, tmdbKey)
+                                                is AfinityShow ->
+                                                    tmdbApiService.getSeriesReviews(tmdbId, tmdbKey)
+                                                else -> null
+                                            }
+
+                                        if (response != null && response.results.isNotEmpty()) {
+                                            _uiState.value =
+                                                _uiState.value.copy(tmdbReviews = response.results)
+                                            Timber.d(
+                                                "Fetched ${response.results.size} TMDB reviews for ${item.name}"
+                                            )
+
+                                            try {
+                                                when (item) {
+                                                    is AfinityMovie ->
+                                                        databaseRepository.updateMovie(
+                                                            item.copy(
+                                                                tmdbReviews = response.results
+                                                            )
+                                                        )
+                                                    is AfinityShow ->
+                                                        databaseRepository.updateShow(
+                                                            item.copy(
+                                                                tmdbReviews = response.results
+                                                            )
+                                                        )
+                                                    else -> {}
+                                                }
+                                            } catch (dbError: Exception) {
+                                                Timber.e(
+                                                    dbError,
+                                                    "Failed to cache TMDB reviews to database",
+                                                )
+                                            }
                                         }
-
-                                    if (response != null && response.results.isNotEmpty()) {
-                                        _uiState.value =
-                                            _uiState.value.copy(tmdbReviews = response.results)
-                                        Timber.d(
-                                            "Fetched ${response.results.size} TMDB reviews for ${item.name}"
-                                        )
                                     }
-                                } else {
-                                    Timber.d("No TMDB Provider ID found for item ${item.name}")
                                 }
                             }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to fetch TMDB reviews")
+                        } finally {
+                            _uiState.value = _uiState.value.copy(isLoadingReviews = false)
                         }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to fetch TMDB reviews")
-                    } finally {
-                        _uiState.value = _uiState.value.copy(isLoadingReviews = false)
                     }
                 }
+
                 launch {
-                    try {
-                        val tmdbId = item.providerIds?.get("Tmdb")?.toString()
-                        if (tmdbId != null) {
-                            val isMovie = item is AfinityMovie
-                            val ratings = mediaRepository.getMdbListRatings(tmdbId, isMovie)
-
-                            val excludedSources = listOf("imdb", "tomatoes")
-                            val filteredRatings =
-                                ratings.filter { rating ->
-                                    rating.source.lowercase() !in excludedSources &&
-                                        rating.value != null
-                                }
-
-                            _uiState.value = _uiState.value.copy(mdbRatings = filteredRatings)
-                            Timber.d(
-                                "Fetched ${filteredRatings.size} MDBList ratings for ${item.name}"
+                    if (cachedRatings.isNotEmpty()) {
+                        Timber.d(
+                            "Loaded ${cachedRatings.size} MDBList ratings from cache for ${item.name}"
+                        )
+                        _uiState.value =
+                            _uiState.value.copy(
+                                mdbRatings = cachedRatings,
+                                isRatingsFromCache = true,
                             )
+                    } else {
+                        try {
+                            val tmdbId = item.providerIds?.get("Tmdb")?.toString()
+                            if (tmdbId != null) {
+                                val isMovie = item is AfinityMovie
+                                val ratings = mediaRepository.getMdbListRatings(tmdbId, isMovie)
+
+                                val excludedSources = listOf("imdb", "tomatoes")
+                                val filteredRatings =
+                                    ratings.filter { rating ->
+                                        rating.source.lowercase() !in excludedSources &&
+                                            rating.value != null
+                                    }
+
+                                _uiState.value =
+                                    _uiState.value.copy(
+                                        mdbRatings = filteredRatings,
+                                        isRatingsFromCache = false,
+                                    )
+                                Timber.d(
+                                    "Fetched ${filteredRatings.size} MDBList ratings for ${item.name}"
+                                )
+
+                                try {
+                                    when (item) {
+                                        is AfinityMovie ->
+                                            databaseRepository.updateMovie(
+                                                item.copy(mdbRatings = filteredRatings)
+                                            )
+                                        is AfinityShow ->
+                                            databaseRepository.updateShow(
+                                                item.copy(mdbRatings = filteredRatings)
+                                            )
+                                        else -> {}
+                                    }
+                                } catch (dbError: Exception) {
+                                    Timber.e(dbError, "Failed to cache MDBList ratings to database")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to fetch MDBList ratings")
                         }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to fetch MDBList ratings")
                     }
                 }
             }
@@ -1488,4 +1580,5 @@ data class ItemDetailUiState(
     val tmdbReviews: List<TmdbReview> = emptyList(),
     val isLoadingReviews: Boolean = false,
     val mdbRatings: List<MdbListRating> = emptyList(),
+    val isRatingsFromCache: Boolean = false,
 )
