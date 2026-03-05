@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.media
 
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -204,4 +205,6 @@ interface MediaRepository {
     fun getLatestMediaFlow(parentId: UUID? = null): Flow<List<AfinityItem>>
 
     fun getContinueWatchingFlow(): Flow<List<AfinityItem>>
+
+    suspend fun getMdbListRatings(tmdbId: String, isMovie: Boolean): List<MdbListRating>
 }

@@ -657,5 +657,17 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
         return getDecryptedString(tmdbKey)
     }
 
+    override suspend fun saveMdbListApiKey(serverId: String, userId: String, apiKey: String) {
+        context.dataStore.edit { prefs ->
+            val mdbKey = stringPreferencesKey("mdblist_api_key_${serverId}_$userId")
+            prefs[mdbKey] = encrypt(apiKey)
+        }
+    }
+
+    override suspend fun getMdbListApiKey(serverId: String, userId: String): String? {
+        val mdbKey = stringPreferencesKey("mdblist_api_key_${serverId}_$userId")
+        return getDecryptedString(mdbKey)
+    }
+
     @Volatile override var onAbsAuthInvalidated: (() -> Unit)? = null
 }

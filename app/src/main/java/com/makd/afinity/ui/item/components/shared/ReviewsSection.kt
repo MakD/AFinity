@@ -101,7 +101,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
                     )
 
                     selectedReview!!.author_details?.rating?.let { rating ->
-                        val displayRating = rating.toString().removeSuffix(".0")
+                        val percentage = (rating * 10).toInt()
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier =
@@ -119,7 +119,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "$displayRating/10",
+                                text = "$percentage%",
                                 style =
                                     MaterialTheme.typography.labelLarge.copy(
                                         fontWeight = FontWeight.Bold
@@ -175,7 +175,7 @@ private fun ReviewCard(review: TmdbReview, onReadMoreClick: () -> Unit) {
                 }
 
                 review.author_details?.rating?.let { rating ->
-                    val displayRating = rating.toString().removeSuffix(".0")
+                    val percentage = (rating * 10).toInt()
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier =
@@ -193,7 +193,7 @@ private fun ReviewCard(review: TmdbReview, onReadMoreClick: () -> Unit) {
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "$displayRating/10",
+                            text = "$percentage%",
                             style =
                                 MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.Bold
