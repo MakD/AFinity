@@ -37,7 +37,9 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -73,6 +75,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.Destination
@@ -87,6 +90,7 @@ import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.item.components.SeasonDetailContent
 import com.makd.afinity.ui.item.components.SeasonsSection
 import com.makd.afinity.ui.item.components.TaglineSection
+import com.makd.afinity.ui.item.components.VersionPickerDialog
 import com.makd.afinity.ui.item.components.WriterSection
 import com.makd.afinity.ui.item.components.shared.CastSection
 import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
@@ -124,6 +128,27 @@ fun ItemDetailScreen(
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+
+    // Pre-play version picker state. When an item has multiple merged versions we intercept
+    // the play action and show a VersionPickerSheet before launching the player.
+    var pendingPlayItem by remember { mutableStateOf<AfinityItem?>(null) }
+    var pendingPlaySelection by remember { mutableStateOf<PlaybackSelection?>(null) }
+    var showVersionPickerForPlay by remember { mutableStateOf(false) }
+
+    // Intercepts play requests: shows the version picker first if the item has > 1 source,
+    // otherwise fires onPlayClick immediately.
+    fun interceptPlayClick(item: AfinityItem, selection: PlaybackSelection?) {
+        val remoteSources = item.sources.filter {
+            it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
+        }
+        if (remoteSources.size > 1 && item !is AfinityMovie) {
+            pendingPlayItem = item
+            pendingPlaySelection = selection
+            showVersionPickerForPlay = true
+        } else {
+            onPlayClick(item, selection)
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         when {
@@ -200,18 +225,7 @@ fun ItemDetailScreen(
                 onDismiss = { viewModel.clearSelectedEpisode() },
                 onPlayClick = { episodeToPlay, selection ->
                     viewModel.clearSelectedEpisode()
-
-                    val seasonId = (uiState.item as? AfinitySeason)?.id
-
-                    PlayerLauncher.launch(
-                        context = context,
-                        itemId = episodeToPlay.id,
-                        mediaSourceId = selection.mediaSourceId,
-                        audioStreamIndex = selection.audioStreamIndex,
-                        subtitleStreamIndex = selection.subtitleStreamIndex,
-                        seasonId = seasonId,
-                        startPositionMs = selection.startPositionMs,
-                    )
+                    interceptPlayClick(episodeToPlay, selection)
                 },
                 onToggleFavorite = { viewModel.toggleEpisodeFavorite(episode) },
                 onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(episode) },
@@ -235,6 +249,38 @@ fun ItemDetailScreen(
                     sources = remoteSources,
                     onSourceSelected = { source -> viewModel.onQualitySelected(source.id) },
                     onDismiss = { viewModel.dismissQualityDialog() },
+                )
+            }
+        }
+
+        // Pre-play version picker: shown when tapping Play on an item with multiple merged versions.
+        if (showVersionPickerForPlay) {
+            val item = pendingPlayItem
+            if (item != null) {
+                val remoteSources = item.sources.filter {
+                    it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
+                }
+                VersionPickerDialog(
+                    sources = remoteSources,
+                    onVersionSelected = { source ->
+                        showVersionPickerForPlay = false
+                        val finalSelection = pendingPlaySelection?.copy(
+                            mediaSourceId = source.id,
+                        ) ?: PlaybackSelection(
+                            mediaSourceId = source.id,
+                            audioStreamIndex = null,
+                            subtitleStreamIndex = null,
+                            videoStreamIndex = null,
+                        )
+                        onPlayClick(item, finalSelection)
+                        pendingPlayItem = null
+                        pendingPlaySelection = null
+                    },
+                    onDismiss = {
+                        showVersionPickerForPlay = false
+                        pendingPlayItem = null
+                        pendingPlaySelection = null
+                    },
                 )
             }
         }
@@ -813,18 +859,7 @@ private fun LandscapeItemDetailContent(
                                                                 selectedMediaSource?.id
                                                                     ?: selection.mediaSourceId
                                                         )
-                                                    PlayerLauncher.launch(
-                                                        context = navController.context,
-                                                        itemId = item.id,
-                                                        mediaSourceId =
-                                                            finalSelection.mediaSourceId,
-                                                        audioStreamIndex =
-                                                            finalSelection.audioStreamIndex,
-                                                        subtitleStreamIndex =
-                                                            finalSelection.subtitleStreamIndex,
-                                                        startPositionMs =
-                                                            finalSelection.startPositionMs,
-                                                    )
+                                                    onPlayClick(item, finalSelection)
                                                 },
                                             )
                                         }
@@ -1501,15 +1536,7 @@ private fun PortraitItemDetailContent(
                                                     selectedMediaSource?.id
                                                         ?: selection.mediaSourceId
                                             )
-                                        PlayerLauncher.launch(
-                                            context = navController.context,
-                                            itemId = item.id,
-                                            mediaSourceId = finalSelection.mediaSourceId,
-                                            audioStreamIndex = finalSelection.audioStreamIndex,
-                                            subtitleStreamIndex =
-                                                finalSelection.subtitleStreamIndex,
-                                            startPositionMs = finalSelection.startPositionMs,
-                                        )
+                                        onPlayClick(item, finalSelection)
                                     },
                                 )
                             }

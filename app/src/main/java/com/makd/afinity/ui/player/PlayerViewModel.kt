@@ -36,6 +36,7 @@ import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
+import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.player.GestureConfig
 import com.makd.afinity.data.models.player.PlayerEvent
@@ -71,6 +72,8 @@ import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
+import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySources
 
 @androidx.media3.common.util.UnstableApi
 @HiltViewModel
@@ -121,7 +124,6 @@ constructor(
     private var isVideoPortrait: Boolean = false
     private var isOrientationOverridden: Boolean = false
 
-    var onAutoplayNextEpisode: ((AfinityItem) -> Unit)? = null
     var enterPictureInPicture: (() -> Unit)? = null
     var updatePipParams: (() -> Unit)? = null
     private val screenAspectRatio: Float by lazy {
@@ -511,7 +513,7 @@ constructor(
                 val nextItem = playlistManager.next()
                 if (nextItem != null) {
                     Timber.d("Episode ended, auto-advancing to: ${nextItem.name}")
-                    onAutoplayNextEpisode?.invoke(nextItem)
+                    playQueueItem(nextItem)
                 } else {
                     Timber.d("Episode ended, no next item in queue")
                 }
@@ -701,6 +703,28 @@ constructor(
                 is PlayerEvent.RequestCastDeviceSelection -> {
                     updateUiState { it.copy(showCastChooser = true) }
                 }
+
+                is PlayerEvent.ToggleVersionPicker -> {
+                    updateUiState { it.copy(showVersionPicker = !it.showVersionPicker) }
+                }
+
+                is PlayerEvent.SwitchVersion -> {
+                    val item = currentItem ?: return@launch
+                    if (event.mediaSourceId == _uiState.value.currentMediaSourceId) {
+                        // same version, just close picker
+                        updateUiState { it.copy(showVersionPicker = false) }
+                        return@launch
+                    }
+                    val resumePosition = player.currentPosition
+                    updateUiState { it.copy(isLoading = true, showVersionPicker = false) }
+                    loadMedia(
+                        item = item,
+                        mediaSourceId = event.mediaSourceId,
+                        audioStreamIndex = null,
+                        subtitleStreamIndex = null,
+                        startPositionMs = resumePosition,
+                    )
+                }
             }
         }
     }
@@ -776,6 +800,10 @@ constructor(
     ) {
         stopAudiobookshelfIfPlaying()
         try {
+            // Capture previous source before we overwrite currentItem
+            val previousSourceId = _uiState.value.currentMediaSourceId
+            val previousSource = currentItem?.sources?.firstOrNull { it.id == previousSourceId }
+
             val fullItem: AfinityItem =
                 if (item.sources.isEmpty()) {
                     Timber.d("Item ${item.name} has no sources, fetching full details...")
@@ -793,9 +821,16 @@ constructor(
 
             val chapters = fullItem.chapters
             updateUiState { it.copy(chapters = chapters) }
+
+            val finalMediaSourceId = if (mediaSourceId.isBlank() && fullItem.sources.isNotEmpty()) {
+                findBestMatchingSource(previousSource, fullItem.sources)?.id ?: ""
+            } else {
+                mediaSourceId
+            }
+
             val mediaSource =
                 fullItem.sources.firstOrNull {
-                    if (mediaSourceId.isBlank()) true else it.id == mediaSourceId
+                    if (finalMediaSourceId.isBlank()) true else it.id == finalMediaSourceId
                 } ?: fullItem.sources.firstOrNull()
 
             val actualMediaSourceId = mediaSource?.id
@@ -842,6 +877,8 @@ constructor(
                     currentItem = fullItem,
                     audioStreamIndex = audioPosition,
                     subtitleStreamIndex = subtitleStreamIndex,
+                    availableSources = fullItem.sources,
+                    currentMediaSourceId = actualMediaSourceId,
                 )
             }
             currentSessionId = UUID.randomUUID().toString()
@@ -1347,8 +1384,37 @@ constructor(
         playlistManager.clearQueue()
     }
 
-    fun setAutoplayCallback(callback: (AfinityItem) -> Unit) {
-        onAutoplayNextEpisode = callback
+    /**
+     * Given a list of [candidates] (sources of the next episode), returns the one that best
+     * matches [reference] (the source currently playing). Matching priority:
+     * 1. Exact name match (case-insensitive) — most reliable when Merge Versions plugin is used,
+     *    as it propagates the folder/file name as the source name (e.g. "1080p BluRay").
+     * 2. Resolution (height) match — catches cases where names differ slightly.
+     * 3. First candidate — default fallback.
+     */
+    fun findBestMatchingSource(
+        reference: AfinitySource?,
+        candidates: List<AfinitySource>,
+    ): AfinitySource? {
+        if (candidates.isEmpty()) return null
+        if (reference == null) return candidates.first()
+
+        // 1. Name match
+        val refName = reference.name.trim().lowercase()
+        if (refName.isNotBlank() && refName != "default") {
+            candidates.firstOrNull { it.name.trim().lowercase() == refName }
+                ?.let { return it }
+        }
+
+        // 2. Resolution match (height)
+        val refHeight = reference.height
+        if (refHeight != null && refHeight > 0) {
+            candidates.firstOrNull { it.height == refHeight }
+                ?.let { return it }
+        }
+
+        // 3. Fallback
+        return candidates.first()
     }
 
     private fun toggleControls() {
@@ -1452,10 +1518,22 @@ constructor(
     }
 
     private fun playQueueItem(item: AfinityItem) {
+        val currentSourceId = _uiState.value.currentMediaSourceId
+        val currentSource = _uiState.value.currentItem
+            ?.sources
+            ?.firstOrNull { it.id == currentSourceId }
+
+        val bestMatch = findBestMatchingSource(
+            reference = currentSource,
+            candidates = item.sources,
+        )
+
+        val mediaSourceId = bestMatch?.id ?: item.sources.firstOrNull()?.id ?: ""
+
         handlePlayerEvent(
             PlayerEvent.LoadMedia(
                 item = item,
-                mediaSourceId = item.sources.firstOrNull()?.id ?: "",
+                mediaSourceId = mediaSourceId,
                 audioStreamIndex = null,
                 subtitleStreamIndex = null,
                 startPositionMs = 0L,
@@ -1663,6 +1741,10 @@ constructor(
         val isCasting: Boolean = false,
         val showCastChooser: Boolean = false,
         val isSpeedingUp: Boolean = false,
+        // Version picker
+        val availableSources: List<AfinitySource> = emptyList(),
+        val currentMediaSourceId: String? = null,
+        val showVersionPicker: Boolean = false,
     )
 }
 

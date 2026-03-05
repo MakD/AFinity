@@ -103,6 +103,7 @@ fun PlayerControls(
     playlistQueue: List<com.makd.afinity.data.models.media.AfinityItem> = emptyList(),
     currentPlaylistIndex: Int = -1,
     onJumpToEpisode: (java.util.UUID) -> Unit = {},
+    onVersionToggleRequest: () -> Unit = {},
 ) {
     var showAudioSelector by remember { mutableStateOf(false) }
     var showSubtitleSelector by remember { mutableStateOf(false) }
@@ -330,6 +331,8 @@ fun PlayerControls(
                         onEpisodeSwitcherToggle = { showEpisodeSwitcher = !showEpisodeSwitcher },
                         showEpisodeSwitcherButton =
                             currentItem is AfinityEpisode && playlistQueue.size > 1,
+                        onVersionToggle = onVersionToggleRequest,
+                        showVersionButton = uiState.availableSources.size > 1,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }
@@ -583,6 +586,8 @@ fun PlayerControls(
             onDismiss = { showEpisodeSwitcher = false },
         )
     }
+
+
 }
 
 @OptIn(UnstableApi::class)
@@ -791,6 +796,8 @@ private fun BottomControls(
     onSubtitleToggle: () -> Unit,
     onEpisodeSwitcherToggle: () -> Unit = {},
     showEpisodeSwitcherButton: Boolean = false,
+    onVersionToggle: () -> Unit = {},
+    showVersionButton: Boolean = false,
 ) {
     Box(
         modifier =
@@ -816,6 +823,20 @@ private fun BottomControls(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (showVersionButton) {
+                        IconButton(
+                            onClick = onVersionToggle,
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_versions),
+                                contentDescription = stringResource(R.string.cd_version_selector),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
+
                     if (showEpisodeSwitcherButton) {
                         IconButton(
                             onClick = onEpisodeSwitcherToggle,
