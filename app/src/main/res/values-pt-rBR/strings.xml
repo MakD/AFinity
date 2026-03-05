@@ -1,3 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="splash_progress_fmt">%1$d%%</string>
+    <string name="splash_status_authenticating">Autenticando...</string>
+    <string name="loading_phase_connecting">Conectando ao servidor...</string>
+    <string name="loading_phase_fetching">Buscando conteúdo...</string>
+    <string name="loading_phase_processing">Processando bibliotecas...</string>
+    <string name="loading_phase_finalizing">Finalizando a tela inicial...</string>
 </resources>
