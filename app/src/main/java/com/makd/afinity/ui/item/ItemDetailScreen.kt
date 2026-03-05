@@ -198,7 +198,7 @@ fun ItemDetailScreen(
                     downloadInfo = uiState.downloadInfo,
                     tmdbReviews = uiState.tmdbReviews,
                     mdbRatings = uiState.mdbRatings,
-                    onPlayClick = { item, selection -> onPlayClick(item, selection) },
+                    onPlayClick = { item, selection -> interceptPlayClick(item, selection) },
                     onBoxSetItemClick = { item ->
                         if (item is AfinityEpisode) {
                             viewModel.selectEpisode(item)
