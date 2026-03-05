@@ -5,6 +5,7 @@ import com.makd.afinity.BuildConfig
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.network.JellyseerrApiService
+import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.Module
@@ -50,6 +51,8 @@ import javax.inject.Singleton
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class AudiobookshelfRetrofit
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class TmdbClient
+
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class MdbListClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -582,5 +585,24 @@ object NetworkModule {
     @Singleton
     fun provideTmdbApiService(@TmdbClient retrofit: Retrofit): TmdbApiService {
         return retrofit.create(TmdbApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @MdbListClient
+    fun provideMdbListRetrofit(baseOkHttpClient: OkHttpClient): Retrofit {
+        val contentType = "application/json".toMediaType()
+
+        return Retrofit.Builder()
+            .baseUrl("https://api.mdblist.com/")
+            .client(baseOkHttpClient)
+            .addConverterFactory(jellyseerrJson.asConverterFactory(contentType))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideMdbListApiService(@MdbListClient retrofit: Retrofit): MdbListApiService {
+        return retrofit.create(MdbListApiService::class.java)
     }
 }

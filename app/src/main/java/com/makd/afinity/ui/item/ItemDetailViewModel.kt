@@ -16,6 +16,7 @@ import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinitySeason
+import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -690,6 +691,29 @@ constructor(
                         Timber.e(e, "Failed to fetch TMDB reviews")
                     } finally {
                         _uiState.value = _uiState.value.copy(isLoadingReviews = false)
+                    }
+                }
+                launch {
+                    try {
+                        val tmdbId = item.providerIds?.get("Tmdb")?.toString()
+                        if (tmdbId != null) {
+                            val isMovie = item is AfinityMovie
+                            val ratings = mediaRepository.getMdbListRatings(tmdbId, isMovie)
+
+                            val excludedSources = listOf("imdb", "tomatoes")
+                            val filteredRatings =
+                                ratings.filter { rating ->
+                                    rating.source.lowercase() !in excludedSources &&
+                                        rating.value != null
+                                }
+
+                            _uiState.value = _uiState.value.copy(mdbRatings = filteredRatings)
+                            Timber.d(
+                                "Fetched ${filteredRatings.size} MDBList ratings for ${item.name}"
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to fetch MDBList ratings")
                     }
                 }
             }
@@ -1463,4 +1487,5 @@ data class ItemDetailUiState(
     val downloadInfo: DownloadInfo? = null,
     val tmdbReviews: List<TmdbReview> = emptyList(),
     val isLoadingReviews: Boolean = false,
+    val mdbRatings: List<MdbListRating> = emptyList(),
 )

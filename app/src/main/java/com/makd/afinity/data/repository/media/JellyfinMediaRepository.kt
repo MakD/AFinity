@@ -13,6 +13,7 @@ import com.makd.afinity.data.models.extensions.toAfinityPersonDetail
 import com.makd.afinity.data.models.extensions.toAfinitySeason
 import com.makd.afinity.data.models.extensions.toAfinityShow
 import com.makd.afinity.data.models.extensions.toAfinityVideo
+import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -22,7 +23,9 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -67,6 +70,8 @@ constructor(
     private val sessionManager: SessionManager,
     @ApplicationContext private val context: Context,
     private val boxSetCache: BoxSetCache,
+    private val mdbListApiService: MdbListApiService,
+    private val securePreferencesRepository: SecurePreferencesRepository,
 ) : MediaRepository {
     override suspend fun refreshItemUserData(
         itemId: UUID,
@@ -1620,4 +1625,28 @@ constructor(
             SortBy.RANDOM -> ItemSortBy.RANDOM
         }
     }
+
+    override suspend fun getMdbListRatings(tmdbId: String, isMovie: Boolean): List<MdbListRating> =
+        withContext(Dispatchers.IO) {
+            try {
+                val serverId =
+                    sessionManager.currentSession.value?.serverId ?: return@withContext emptyList()
+                val userId =
+                    sessionManager.currentSession.value?.userId?.toString()
+                        ?: return@withContext emptyList()
+
+                val apiKey = securePreferencesRepository.getMdbListApiKey(serverId, userId)
+                if (apiKey.isNullOrBlank()) {
+                    return@withContext emptyList()
+                }
+
+                val type = if (isMovie) "movie" else "show"
+                val result = mdbListApiService.getRatings(type, tmdbId, apiKey)
+
+                result.ratings
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get MDBList ratings for TMDB ID: $tmdbId")
+                emptyList()
+            }
+        }
 }

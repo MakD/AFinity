@@ -1,7 +1,7 @@
 package com.makd.afinity.data.repository
 
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 data class ServerUserToken(
     val serverId: String,
@@ -138,6 +138,10 @@ interface SecurePreferencesRepository {
     suspend fun saveTmdbApiKey(serverId: String, userId: String, apiKey: String)
 
     suspend fun getTmdbApiKey(serverId: String, userId: String): String?
+
+    suspend fun saveMdbListApiKey(serverId: String, userId: String, apiKey: String)
+
+    suspend fun getMdbListApiKey(serverId: String, userId: String): String?
 
     var onAbsAuthInvalidated: (() -> Unit)?
 }

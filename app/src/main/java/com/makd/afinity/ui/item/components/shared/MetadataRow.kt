@@ -3,6 +3,12 @@ package com.makd.afinity.ui.item.components.shared
 import android.content.Context
 import android.content.res.Configuration
 import android.text.format.DateFormat
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -50,6 +57,7 @@ fun MetadataRow(
     totalChildRuntimeTicks: Long = 0L,
     remainingChildRuntimeTicks: Long = totalChildRuntimeTicks,
     boxSetItems: List<AfinityItem> = emptyList(),
+    mdbRatings: List<MdbListRating> = emptyList(),
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -452,6 +460,7 @@ fun MetadataRow(
                         needsSeparator = true
                     }
                 }
+
                 isSingleMedia && item.runtimeTicks > 0 -> {
                     val hours = (item.runtimeTicks / 10_000_000 / 3600).toInt()
                     val minutes = ((item.runtimeTicks / 10_000_000 % 3600) / 60).toInt()
@@ -506,6 +515,83 @@ fun MetadataRow(
                         MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                 )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = mdbRatings.isNotEmpty(),
+            enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+            exit = fadeOut(tween(300)) + shrinkVertically(tween(300)),
+        ) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp, horizontalAlignment),
+                verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                mdbRatings.forEachIndexed { index, rating ->
+                    val rawValue = rating.value ?: return@forEachIndexed
+
+                    if (index > 0) MetadataDot()
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        val sourceLower = rating.source.lowercase()
+
+                        val iconRes =
+                            when (sourceLower) {
+                                "trakt" -> R.drawable.ic_trakt
+                                "tmdb" -> R.drawable.ic_tmdb
+                                "letterboxd" -> R.drawable.ic_letterboxd
+                                "popcorn" ->
+                                    if (rawValue >= 60.0) R.drawable.ic_rt_fresh_popcorn
+                                    else R.drawable.ic_rt_stale_popcorn
+
+                                "metacritic" -> R.drawable.ic_metacritic
+                                "rogerebert" -> R.drawable.ic_ebert
+                                "myanimelist" -> R.drawable.ic_mal
+                                else -> null
+                            }
+
+                        if (iconRes != null) {
+                            Icon(
+                                painter = painterResource(id = iconRes),
+                                contentDescription = rating.source,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        } else {
+                            Text(
+                                text = rating.source.replaceFirstChar { it.uppercase() },
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+                            )
+                        }
+
+                        val formattedValue =
+                            if (rawValue % 1.0 == 0.0) {
+                                rawValue.toInt().toString()
+                            } else {
+                                rawValue.toString()
+                            }
+
+                        val isPercentage = sourceLower in listOf("trakt", "tmdb", "popcorn")
+                        val displayText = if (isPercentage) "$formattedValue%" else formattedValue
+
+                        Text(
+                            text = displayText,
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+                        )
+                    }
+                }
             }
         }
 

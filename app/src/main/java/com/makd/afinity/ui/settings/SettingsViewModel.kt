@@ -98,6 +98,9 @@ constructor(
     private val _tmdbApiKey = MutableStateFlow("")
     val tmdbApiKey: StateFlow<String> = _tmdbApiKey.asStateFlow()
 
+    private val _mdbListApiKey = MutableStateFlow("")
+    val mdbListApiKey = _mdbListApiKey.asStateFlow()
+
     init {
         loadSettings()
     }
@@ -118,6 +121,14 @@ constructor(
                                 ?: ""
                         } else ""
 
+                    val mdbListKey =
+                        if (user != null && server != null) {
+                            securePreferencesRepository.getMdbListApiKey(
+                                server.id,
+                                user.id.toString(),
+                            ) ?: ""
+                        } else ""
+
                     _uiState.value =
                         _uiState.value.copy(
                             currentUser = user,
@@ -128,6 +139,7 @@ constructor(
                             isLoading = false,
                         )
                     _tmdbApiKey.value = tmdbKey
+                    _mdbListApiKey.value = mdbListKey
 
                     Timber.d(
                         "SettingsViewModel - Updated uiState: user=${user?.name}, server=${server?.name}"
@@ -608,6 +620,29 @@ constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error saving TMDB API key")
+            }
+        }
+    }
+
+    fun setMdbListApiKey(apiKey: String) {
+        viewModelScope.launch {
+            try {
+                val user = authRepository.currentUser.value
+                val server = serverRepository.currentServer.value
+
+                if (user != null && server != null) {
+                    securePreferencesRepository.saveMdbListApiKey(
+                        server.id,
+                        user.id.toString(),
+                        apiKey,
+                    )
+                    _mdbListApiKey.value = apiKey
+                    Timber.d("MDBList API Key updated securely.")
+                } else {
+                    Timber.w("Failed to save MDBList API Key: User or Server is null")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error saving MDBList API key")
             }
         }
     }

@@ -11,13 +11,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,10 +32,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,9 +70,9 @@ fun AppearanceOptionsScreen(
     val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsState()
     val episodeLayout by viewModel.episodeLayout.collectAsState()
     val tmdbApiKey by viewModel.tmdbApiKey.collectAsState()
-    var tmdbKeyInput by remember { mutableStateOf("") }
-
-    LaunchedEffect(tmdbApiKey) { tmdbKeyInput = tmdbApiKey }
+    val mdbListApiKey by viewModel.mdbListApiKey.collectAsState()
+    var showTmdbDialog by remember { mutableStateOf(false) }
+    var showMdbListDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -156,88 +156,49 @@ fun AppearanceOptionsScreen(
 
             item {
                 SettingsGroup(title = "Integrations") {
-                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_api),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp),
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "TMDB API Key (Optional)",
-                                    style =
-                                        MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
-                                Text(
-                                    text = "Enables TMDB reviews on media pages.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 2.dp),
-                                )
-                            }
-                        }
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_tmdb_short),
+                        title = "TMDB API Key",
+                        subtitle = if (tmdbApiKey.isNotBlank()) "Configured" else "Not configured",
+                        onClick = { showTmdbDialog = true },
+                    )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                    SettingsDivider()
 
-                        var isEditingTmdbKey by remember { mutableStateOf(false) }
-
-                        val isReadOnly = tmdbApiKey.isNotBlank() && !isEditingTmdbKey
-
-                        OutlinedTextField(
-                            value = tmdbKeyInput,
-                            onValueChange = { tmdbKeyInput = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Enter TMDB API Key") },
-                            singleLine = true,
-                            enabled = !isReadOnly,
-                            visualTransformation = PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            shape = RoundedCornerShape(12.dp),
-                            colors =
-                                OutlinedTextFieldDefaults.colors(
-                                    disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                    disabledTrailingIconColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                ),
-                            trailingIcon = {
-                                if (isReadOnly) {
-                                    IconButton(onClick = { isEditingTmdbKey = true }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_edit),
-                                            contentDescription = "Edit API Key",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
-                                } else if (
-                                    tmdbKeyInput != tmdbApiKey || tmdbKeyInput.isNotBlank()
-                                ) {
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.setTmdbApiKey(tmdbKeyInput)
-                                            isEditingTmdbKey = false
-                                        }
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_check),
-                                            contentDescription = "Save API Key",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
-                                }
-                            },
-                        )
-                    }
+                    SettingsItem(
+                        icon = painterResource(id = R.drawable.ic_mdblist),
+                        title = "MDBList API Key",
+                        subtitle =
+                            if (mdbListApiKey.isNotBlank()) "Configured" else "Not configured",
+                        onClick = { showMdbListDialog = true },
+                    )
                 }
             }
         }
+    }
+
+    if (showTmdbDialog) {
+        ApiKeyDialog(
+            title = "TMDB Configuration",
+            initialKey = tmdbApiKey,
+            onDismiss = { showTmdbDialog = false },
+            onSave = { newKey ->
+                viewModel.setTmdbApiKey(newKey)
+                showTmdbDialog = false
+            },
+        )
+    }
+
+    if (showMdbListDialog) {
+        ApiKeyDialog(
+            title = "MDBList Configuration",
+            initialKey = mdbListApiKey,
+            onDismiss = { showMdbListDialog = false },
+            onSave = { newKey ->
+                viewModel.setMdbListApiKey(newKey)
+                showMdbListDialog = false
+            },
+        )
     }
 }
 
@@ -498,4 +459,73 @@ private fun getEpisodeLayoutDisplayName(layout: EpisodeLayout): String {
         EpisodeLayout.HORIZONTAL -> stringResource(R.string.layout_horizontal)
         EpisodeLayout.VERTICAL -> stringResource(R.string.layout_vertical)
     }
+}
+
+@Composable
+private fun ApiKeyDialog(
+    title: String,
+    initialKey: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var input by remember { mutableStateOf(initialKey) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Enter your API key below.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                )
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    shape = RoundedCornerShape(12.dp),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        ),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(input.trim()) }) {
+                Text("Save", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            Row {
+                if (initialKey.isNotBlank()) {
+                    TextButton(
+                        onClick = { onSave("") },
+                        colors =
+                            androidx.compose.material3.ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                    ) {
+                        Text("Clear Key")
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        },
+    )
 }

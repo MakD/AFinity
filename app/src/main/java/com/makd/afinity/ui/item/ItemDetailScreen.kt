@@ -68,6 +68,7 @@ import com.makd.afinity.data.models.extensions.logoImageUrlWithTransparency
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.extensions.showBackdropImageUrl
 import com.makd.afinity.data.models.extensions.showLogoImageUrl
+import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -196,7 +197,8 @@ fun ItemDetailScreen(
                     episodesPagingData = uiState.episodesPagingData,
                     downloadInfo = uiState.downloadInfo,
                     tmdbReviews = uiState.tmdbReviews,
-                    onPlayClick = { item, selection -> interceptPlayClick(item, selection) },
+                    mdbRatings = uiState.mdbRatings,
+                    onPlayClick = { item, selection -> onPlayClick(item, selection) },
                     onBoxSetItemClick = { item ->
                         if (item is AfinityEpisode) {
                             viewModel.selectEpisode(item)
@@ -299,6 +301,7 @@ private fun ItemDetailContent(
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     downloadInfo: DownloadInfo?,
     tmdbReviews: List<TmdbReview>,
+    mdbRatings: List<MdbListRating>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -324,6 +327,7 @@ private fun ItemDetailContent(
             episodesPagingData = episodesPagingData,
             downloadInfo = downloadInfo,
             tmdbReviews = tmdbReviews,
+            mdbRatings = mdbRatings,
             onPlayClick = onPlayClick,
             onBoxSetItemClick = onBoxSetItemClick,
             onSpecialFeatureClick = onSpecialFeatureClick,
@@ -346,6 +350,7 @@ private fun ItemDetailContent(
             episodesPagingData = episodesPagingData,
             downloadInfo = downloadInfo,
             tmdbReviews = tmdbReviews,
+            mdbRatings = mdbRatings,
             onPlayClick = onPlayClick,
             onBoxSetItemClick = onBoxSetItemClick,
             onSpecialFeatureClick = onSpecialFeatureClick,
@@ -371,6 +376,7 @@ private fun LandscapeItemDetailContent(
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     downloadInfo: DownloadInfo?,
     tmdbReviews: List<TmdbReview>,
+    mdbRatings: List<MdbListRating>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -489,7 +495,7 @@ private fun LandscapeItemDetailContent(
                             )
                         }
 
-                        MetadataRow(item = item, boxSetItems = boxSetItems)
+                        MetadataRow(item = item, boxSetItems = boxSetItems, mdbRatings = mdbRatings)
 
                         val mediaSourceOptions =
                             remember(item) {
@@ -1139,6 +1145,7 @@ private fun PortraitItemDetailContent(
     episodesPagingData: Flow<PagingData<AfinityEpisode>>?,
     downloadInfo: DownloadInfo?,
     tmdbReviews: List<TmdbReview>,
+    mdbRatings: List<MdbListRating>,
     onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit,
     onBoxSetItemClick: (AfinityItem) -> Unit,
     onSpecialFeatureClick: (AfinityItem) -> Unit,
@@ -1227,7 +1234,7 @@ private fun PortraitItemDetailContent(
                     )
                 }
 
-                MetadataRow(item = item, boxSetItems = boxSetItems)
+                MetadataRow(item = item, boxSetItems = boxSetItems, mdbRatings = mdbRatings)
 
                 val mediaSourceOptions =
                     remember(item) {
