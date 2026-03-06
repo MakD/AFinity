@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -53,18 +52,15 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.livetv.AfinityChannel
-import com.makd.afinity.data.models.media.AfinityBoxSet
-import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
-import com.makd.afinity.data.models.media.AfinitySeason
-import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.components.ContinueWatchingCard
-import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.FullScreenEmpty
+import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.MediaRowSection
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.player.PlayerLauncher
@@ -109,14 +105,8 @@ fun FavoritesScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 },
-                onSearchClick = {
-                    val route = Destination.createSearchRoute()
-                    navController.navigate(route)
-                },
-                onProfileClick = {
-                    val route = Destination.createSettingsRoute()
-                    navController.navigate(route)
-                },
+                onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
+                onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
                 userProfileImageUrl = mainUiState.userProfileImageUrl,
             )
         },
@@ -124,28 +114,9 @@ fun FavoritesScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             when {
-                uiState.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
+                uiState.isLoading -> FullScreenLoading()
 
-                uiState.error != null -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_error_title),
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                        Text(
-                            text = uiState.error ?: stringResource(R.string.error_unknown),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                uiState.error != null -> FullScreenError(message = uiState.error)
 
                 else -> {
                     val hasAnyFavorites =
@@ -158,159 +129,114 @@ fun FavoritesScreen(
                             uiState.channels.isNotEmpty()
 
                     if (!hasAnyFavorites) {
-                        Column(
-                            modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.favorites_empty_title),
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onBackground,
-                            )
-                            Text(
-                                text = stringResource(R.string.favorites_empty_message),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        FullScreenEmpty(
+                            title = stringResource(R.string.favorites_empty_title),
+                            message = stringResource(R.string.favorites_empty_message),
+                        )
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(24.dp),
                         ) {
-                            if (uiState.movies.isNotEmpty()) {
-                                item {
-                                    FavoriteSection(
-                                        title =
-                                            stringResource(
-                                                R.string.favorites_header_movies,
-                                                uiState.movies.size,
-                                            )
-                                    ) {
-                                        FavoriteMoviesRow(
-                                            movies = uiState.movies,
-                                            onItemClick = onItemClick,
-                                            cardWidth = portraitWidth,
-                                        )
-                                    }
-                                }
+                            item {
+                                MediaRowSection(
+                                    title =
+                                        stringResource(
+                                            R.string.favorites_header_movies,
+                                            uiState.movies.size,
+                                        ),
+                                    items = uiState.movies,
+                                    onItemClick = onItemClick,
+                                    cardWidth = portraitWidth,
+                                )
                             }
-
-                            if (uiState.boxSets.isNotEmpty()) {
-                                item {
-                                    FavoriteSection(
-                                        title =
-                                            stringResource(
-                                                R.string.favorites_header_boxsets,
-                                                uiState.boxSets.size,
-                                            )
-                                    ) {
-                                        FavoriteBoxSetsRow(
-                                            boxSets = uiState.boxSets,
-                                            onItemClick = onItemClick,
-                                            cardWidth = portraitWidth,
-                                        )
-                                    }
-                                }
+                            item {
+                                MediaRowSection(
+                                    title =
+                                        stringResource(
+                                            R.string.favorites_header_boxsets,
+                                            uiState.boxSets.size,
+                                        ),
+                                    items = uiState.boxSets,
+                                    onItemClick = onItemClick,
+                                    cardWidth = portraitWidth,
+                                )
                             }
-
-                            if (uiState.shows.isNotEmpty()) {
-                                item {
-                                    FavoriteSection(
-                                        title =
-                                            stringResource(
-                                                R.string.favorites_header_shows,
-                                                uiState.shows.size,
-                                            )
-                                    ) {
-                                        FavoriteShowsRow(
-                                            shows = uiState.shows,
-                                            onItemClick = onItemClick,
-                                            cardWidth = portraitWidth,
-                                        )
-                                    }
-                                }
+                            item {
+                                MediaRowSection(
+                                    title =
+                                        stringResource(
+                                            R.string.favorites_header_shows,
+                                            uiState.shows.size,
+                                        ),
+                                    items = uiState.shows,
+                                    onItemClick = onItemClick,
+                                    cardWidth = portraitWidth,
+                                )
                             }
-
-                            if (uiState.seasons.isNotEmpty()) {
-                                item {
-                                    FavoriteSection(
-                                        title =
-                                            stringResource(
-                                                R.string.favorites_header_seasons,
-                                                uiState.seasons.size,
-                                            )
-                                    ) {
-                                        FavoriteSeasonsRow(
-                                            seasons = uiState.seasons,
-                                            onItemClick = onItemClick,
-                                            cardWidth = portraitWidth,
-                                        )
-                                    }
-                                }
+                            item {
+                                MediaRowSection(
+                                    title =
+                                        stringResource(
+                                            R.string.favorites_header_seasons,
+                                            uiState.seasons.size,
+                                        ),
+                                    items = uiState.seasons,
+                                    onItemClick = onItemClick,
+                                    cardWidth = portraitWidth,
+                                )
                             }
-
-                            if (uiState.episodes.isNotEmpty()) {
-                                item {
-                                    FavoriteSection(
-                                        title =
-                                            stringResource(
-                                                R.string.favorites_header_episodes,
-                                                uiState.episodes.size,
-                                            )
-                                    ) {
-                                        FavoriteEpisodesRow(
-                                            episodes = uiState.episodes,
-                                            onEpisodeClick = { episode ->
-                                                viewModel.selectEpisode(episode)
-                                            },
-                                            cardWidth = landscapeWidth,
+                            item {
+                                MediaRowSection(
+                                    title =
+                                        stringResource(
+                                            R.string.favorites_header_episodes,
+                                            uiState.episodes.size,
+                                        ),
+                                    items = uiState.episodes,
+                                    onItemClick = { episode ->
+                                        viewModel.selectEpisode(
+                                            episode
+                                                as com.makd.afinity.data.models.media.AfinityEpisode
                                         )
-                                    }
-                                }
+                                    },
+                                    cardWidth = landscapeWidth,
+                                )
                             }
 
                             if (uiState.channels.isNotEmpty()) {
                                 item {
-                                    FavoriteSection(
+                                    FavoriteChannelsSection(
                                         title =
                                             stringResource(
                                                 R.string.favorites_header_channels,
                                                 uiState.channels.size,
+                                            ),
+                                        channels = uiState.channels,
+                                        onChannelClick = { channel ->
+                                            PlayerLauncher.launchLiveChannel(
+                                                context,
+                                                channel.id,
+                                                channel.name,
                                             )
-                                    ) {
-                                        FavoriteChannelsRow(
-                                            channels = uiState.channels,
-                                            onChannelClick = { channel ->
-                                                PlayerLauncher.launchLiveChannel(
-                                                    context = context,
-                                                    channelId = channel.id,
-                                                    channelName = channel.name,
-                                                )
-                                            },
-                                            cardWidth = landscapeWidth,
-                                        )
-                                    }
+                                        },
+                                        cardWidth = landscapeWidth,
+                                    )
                                 }
                             }
-
                             if (uiState.people.isNotEmpty()) {
                                 item {
-                                    FavoriteSection(
+                                    FavoritePeopleSection(
                                         title =
                                             stringResource(
                                                 R.string.favorites_header_people,
                                                 uiState.people.size,
-                                            )
-                                    ) {
-                                        FavoritePeopleRow(
-                                            people = uiState.people,
-                                            onPersonClick = onPersonClick,
-                                            cardWidth = portraitWidth,
-                                        )
-                                    }
+                                            ),
+                                        people = uiState.people,
+                                        onPersonClick = onPersonClick,
+                                        cardWidth = portraitWidth,
+                                    )
                                 }
                             }
                         }
@@ -347,8 +273,7 @@ fun FavoritesScreen(
             onGoToSeries = {
                 viewModel.clearSelectedEpisode()
                 episode.seriesId?.let { seriesId ->
-                    val route = Destination.createItemDetailRoute(seriesId.toString())
-                    navController.navigate(route)
+                    navController.navigate(Destination.createItemDetailRoute(seriesId.toString()))
                 }
             },
         )
@@ -356,121 +281,29 @@ fun FavoritesScreen(
 }
 
 @Composable
-private fun FavoriteSection(
+private fun FavoritePeopleSection(
     title: String,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
+    people: List<AfinityPersonDetail>,
+    onPersonClick: (String) -> Unit,
+    cardWidth: Dp,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onBackground,
         )
-        content()
-    }
-}
-
-@Composable
-private fun FavoriteMoviesRow(
-    movies: List<AfinityMovie>,
-    onItemClick: (AfinityItem) -> Unit,
-    cardWidth: Dp,
-) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-    ) {
-        items(movies) { movie ->
-            MediaItemCard(item = movie, onClick = { onItemClick(movie) }, cardWidth = cardWidth)
-        }
-    }
-}
-
-@Composable
-private fun FavoriteShowsRow(
-    shows: List<AfinityShow>,
-    onItemClick: (AfinityItem) -> Unit,
-    cardWidth: Dp,
-) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-    ) {
-        items(shows) { show ->
-            MediaItemCard(item = show, onClick = { onItemClick(show) }, cardWidth = cardWidth)
-        }
-    }
-}
-
-@Composable
-private fun FavoriteBoxSetsRow(
-    boxSets: List<AfinityBoxSet>,
-    onItemClick: (AfinityItem) -> Unit,
-    cardWidth: Dp,
-) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-    ) {
-        items(boxSets) { boxSet ->
-            MediaItemCard(item = boxSet, onClick = { onItemClick(boxSet) }, cardWidth = cardWidth)
-        }
-    }
-}
-
-@Composable
-private fun FavoriteSeasonsRow(
-    seasons: List<AfinitySeason>,
-    onItemClick: (AfinityItem) -> Unit,
-    cardWidth: Dp,
-) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-    ) {
-        items(seasons) { season ->
-            MediaItemCard(item = season, onClick = { onItemClick(season) }, cardWidth = cardWidth)
-        }
-    }
-}
-
-@Composable
-private fun FavoriteEpisodesRow(
-    episodes: List<AfinityEpisode>,
-    onEpisodeClick: (AfinityEpisode) -> Unit,
-    cardWidth: Dp,
-) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-    ) {
-        items(episodes) { episode ->
-            ContinueWatchingCard(
-                item = episode,
-                onClick = { onEpisodeClick(episode) },
-                cardWidth = cardWidth,
-            )
-        }
-    }
-}
-
-@Composable
-private fun FavoritePeopleRow(
-    people: List<AfinityPersonDetail>,
-    onPersonClick: (String) -> Unit,
-    cardWidth: Dp,
-) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-    ) {
-        items(people) { person ->
-            FavoritePersonCard(
-                person = person,
-                onClick = { onPersonClick(person.id.toString()) },
-                cardWidth = cardWidth,
-            )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
+            items(people) { person ->
+                FavoritePersonCard(
+                    person = person,
+                    onClick = { onPersonClick(person.id.toString()) },
+                    cardWidth = cardWidth,
+                )
+            }
         }
     }
 }
@@ -499,9 +332,7 @@ private fun FavoritePersonCard(person: AfinityPersonDetail, onClick: () -> Unit,
             placeholder = painterResource(id = R.drawable.ic_person_heart),
             error = painterResource(id = R.drawable.ic_person_heart),
         )
-
         Spacer(modifier = Modifier.height(4.dp))
-
         Text(
             text = person.name,
             style = MaterialTheme.typography.bodySmall,
@@ -515,21 +346,29 @@ private fun FavoritePersonCard(person: AfinityPersonDetail, onClick: () -> Unit,
 }
 
 @Composable
-private fun FavoriteChannelsRow(
+private fun FavoriteChannelsSection(
+    title: String,
     channels: List<AfinityChannel>,
     onChannelClick: (AfinityChannel) -> Unit,
     cardWidth: Dp,
 ) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-    ) {
-        items(channels) { channel ->
-            FavoriteChannelCard(
-                channel = channel,
-                onClick = { onChannelClick(channel) },
-                cardWidth = cardWidth,
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
+            items(channels) { channel ->
+                FavoriteChannelCard(
+                    channel = channel,
+                    onClick = { onChannelClick(channel) },
+                    cardWidth = cardWidth,
+                )
+            }
         }
     }
 }
@@ -564,9 +403,7 @@ private fun FavoriteChannelCard(channel: AfinityChannel, onClick: () -> Unit, ca
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(8.dp))
-
         Row(verticalAlignment = Alignment.CenterVertically) {
             channel.channelNumber?.let { number ->
                 Text(

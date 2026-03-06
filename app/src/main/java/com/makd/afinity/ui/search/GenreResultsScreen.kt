@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.makd.afinity.ui.search
 
 import androidx.compose.foundation.layout.Arrangement
@@ -9,10 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,10 +40,13 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.ui.components.FullScreenEmpty
+import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.MediaItemCard
+import com.makd.afinity.ui.components.PaginatedMediaGrid
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GenreResultsScreen(
     genre: String,
@@ -55,7 +57,6 @@ fun GenreResultsScreen(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
     val movies =
         viewModel.moviesPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
     val shows =
@@ -83,31 +84,12 @@ fun GenreResultsScreen(
         )
 
         when {
-            uiState.isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            }
-
-            uiState.error != null -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.error_something_went_wrong),
-                            style = MaterialTheme.typography.headlineSmall,
-                        )
-                        Text(
-                            text = uiState.error ?: stringResource(R.string.error_unknown),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
+            uiState.isLoading -> FullScreenLoading()
+            uiState.error != null ->
+                FullScreenError(
+                    title = stringResource(R.string.error_something_went_wrong),
+                    message = uiState.error,
+                )
             else -> {
                 GenreResultsContent(
                     movies = movies,
@@ -144,17 +126,13 @@ private fun GenreResultsContent(
                 ) {
                     tabs.forEachIndexed { index, title ->
                         val isSelected = selectedTab == index
-
                         Surface(
                             onClick = { selectedTab = index },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
                             color =
-                                if (isSelected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    Color.Transparent
-                                },
+                                if (isSelected) MaterialTheme.colorScheme.primary
+                                else Color.Transparent,
                             tonalElevation = if (isSelected) 4.dp else 0.dp,
                         ) {
                             Column(
@@ -171,11 +149,8 @@ private fun GenreResultsContent(
                                                 else FontWeight.Medium
                                         ),
                                     color =
-                                        if (isSelected) {
-                                            MaterialTheme.colorScheme.onPrimary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        },
+                                        if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -184,56 +159,22 @@ private fun GenreResultsContent(
             }
         }
 
-        when (selectedTab) {
-            0 -> {
-                val isMoviesEmpty =
-                    movies.loadState.refresh is LoadState.NotLoading && movies.itemCount == 0
+        val activeList = if (selectedTab == 0) movies else shows
+        val emptyMessage =
+            if (selectedTab == 0) stringResource(R.string.empty_genre_movies)
+            else stringResource(R.string.empty_genre_tv)
+        val isEmpty =
+            activeList.loadState.refresh is LoadState.NotLoading && activeList.itemCount == 0
 
-                if (isMoviesEmpty) {
-                    EmptyStateMessage(stringResource(R.string.empty_genre_movies))
-                } else {
-                    ItemGrid(
-                        items = movies,
-                        onItemClick = onItemClick,
-                        widthSizeClass = widthSizeClass,
-                    )
-                }
-            }
-
-            1 -> {
-                val isShowsEmpty =
-                    shows.loadState.refresh is LoadState.NotLoading && shows.itemCount == 0
-
-                if (isShowsEmpty) {
-                    EmptyStateMessage(stringResource(R.string.empty_genre_tv))
-                } else {
-                    ItemGrid(
-                        items = shows,
-                        onItemClick = onItemClick,
-                        widthSizeClass = widthSizeClass,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ItemGrid(
-    items: LazyPagingItems<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit,
-    widthSizeClass: WindowWidthSizeClass,
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        items(count = items.itemCount) { index ->
-            val item = items[index]
-            if (item != null) {
+        if (isEmpty) {
+            FullScreenEmpty(message = emptyMessage)
+        } else {
+            PaginatedMediaGrid(
+                items = activeList,
+                widthSizeClass = widthSizeClass,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+            ) { item ->
                 MediaItemCard(
                     item = item,
                     onClick = { onItemClick(item) },
@@ -242,16 +183,5 @@ private fun ItemGrid(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun EmptyStateMessage(message: String) {
-    Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }

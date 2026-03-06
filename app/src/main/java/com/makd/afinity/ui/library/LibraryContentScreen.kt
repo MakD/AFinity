@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.makd.afinity.ui.library
 
 import androidx.compose.foundation.background
@@ -21,8 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -32,7 +32,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -81,11 +80,12 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
-import timber.log.Timber
+import com.makd.afinity.ui.components.FullScreenEmpty
+import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.PaginatedMediaGrid
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryContentScreen(
     onItemClick: (AfinityItem) -> Unit,
@@ -103,11 +103,8 @@ fun LibraryContentScreen(
     var showSortDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(scrollToIndex) {
-        Timber.d("Alphabet scroll: LaunchedEffect triggered with scrollToIndex: $scrollToIndex")
         if (scrollToIndex >= 0) {
-            Timber.d("Alphabet scroll: Animating to item $scrollToIndex")
             gridState.animateScrollToItem(scrollToIndex)
-            Timber.d("Alphabet scroll: Animation completed, resetting index")
             viewModel.resetScrollIndex()
         }
     }
@@ -134,23 +131,13 @@ fun LibraryContentScreen(
             )
 
             when {
-                uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize().padding(top = 16.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
+                uiState.isLoading -> FullScreenLoading(modifier = Modifier.padding(top = 16.dp))
 
-                uiState.error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize().padding(top = 16.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        ErrorMessage(message = uiState.error!!)
-                    }
-                }
+                uiState.error != null ->
+                    FullScreenError(
+                        message = uiState.error,
+                        modifier = Modifier.padding(top = 16.dp),
+                    )
 
                 lazyPagingItems.itemCount == 0 &&
                     lazyPagingItems.loadState.refresh !is LoadState.Loading -> {
@@ -166,16 +153,12 @@ fun LibraryContentScreen(
                                     onClearFilter = { viewModel.clearLetterFilter() },
                                 )
                             }
-
                             Box(
                                 modifier = Modifier.fillMaxHeight(),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 AlphabetScroller(
-                                    onLetterSelected = { letter ->
-                                        Timber.d("Alphabet scroll: Letter '$letter' selected")
-                                        viewModel.scrollToLetter(letter)
-                                    },
+                                    onLetterSelected = { viewModel.scrollToLetter(it) },
                                     selectedLetter = uiState.selectedLetter,
                                     modifier =
                                         Modifier.background(
@@ -185,30 +168,27 @@ fun LibraryContentScreen(
                             }
                         }
                     } else if (uiState.currentFilter != FilterType.ALL) {
-                        Box(
-                            modifier = Modifier.fillMaxSize().padding(top = 16.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            EmptyFilterMessage(
-                                filterType = uiState.currentFilter,
-                                onClearFilter = { viewModel.updateFilter(FilterType.ALL) },
-                            )
-                        }
+                        EmptyFilterMessage(
+                            filterType = uiState.currentFilter,
+                            onClearFilter = { viewModel.updateFilter(FilterType.ALL) },
+                            modifier = Modifier.padding(top = 16.dp),
+                        )
                     } else {
-                        Box(
-                            modifier = Modifier.fillMaxSize().padding(top = 16.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            EmptyLibraryMessage()
-                        }
+                        FullScreenEmpty(
+                            title = stringResource(R.string.library_empty_title),
+                            message = stringResource(R.string.library_empty_message),
+                            modifier = Modifier.padding(top = 16.dp),
+                        )
                     }
                 }
 
                 else -> {
                     Row(modifier = Modifier.fillMaxSize()) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
+                        PaginatedMediaGrid(
+                            items = lazyPagingItems,
+                            widthSizeClass = widthSizeClass,
                             state = gridState,
+                            modifier = Modifier.weight(1f),
                             contentPadding =
                                 PaddingValues(
                                     start = 16.dp,
@@ -216,52 +196,14 @@ fun LibraryContentScreen(
                                     top = 16.dp,
                                     bottom = 80.dp,
                                 ),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            items(
-                                count = lazyPagingItems.itemCount,
-                                key = { index -> lazyPagingItems[index]?.id ?: index },
-                            ) { index ->
-                                lazyPagingItems[index]?.let { item ->
-                                    MediaItemGridCard(
-                                        item = item,
-                                        onClick = {
-                                            viewModel.onItemClick(item)
-                                            onItemClick(item)
-                                        },
-                                    )
-                                }
-                            }
-
-                            lazyPagingItems.apply {
-                                when {
-                                    loadState.append is LoadState.Loading -> {
-                                        item {
-                                            Box(
-                                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                CircularProgressIndicator(
-                                                    modifier = Modifier.size(32.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    loadState.append is LoadState.Error -> {
-                                        item {
-                                            Box(
-                                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                Button(onClick = { retry() }) { Text("Retry") }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        ) { item ->
+                            MediaItemGridCard(
+                                item = item,
+                                onClick = {
+                                    viewModel.onItemClick(item)
+                                    onItemClick(item)
+                                },
+                            )
                         }
 
                         Box(
@@ -269,10 +211,7 @@ fun LibraryContentScreen(
                             contentAlignment = Alignment.Center,
                         ) {
                             AlphabetScroller(
-                                onLetterSelected = { letter ->
-                                    Timber.d("Alphabet scroll: Letter '$letter' selected")
-                                    viewModel.scrollToLetter(letter)
-                                },
+                                onLetterSelected = { viewModel.scrollToLetter(it) },
                                 selectedLetter = uiState.selectedLetter,
                                 modifier =
                                     Modifier.background(
@@ -309,7 +248,6 @@ fun LibraryContentScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LibraryContentTopBar(
     title: String,
@@ -592,52 +530,6 @@ private fun MediaItemGridCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ErrorMessage(message: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.home_error_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-    }
-}
-
-@Composable
-private fun EmptyLibraryMessage(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.library_empty_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-
-        Text(
-            text = stringResource(R.string.library_empty_message),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
     }
 }
 
