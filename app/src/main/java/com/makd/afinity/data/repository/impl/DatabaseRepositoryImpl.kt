@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.impl
 
 import com.makd.afinity.data.database.dao.EpisodeDao
+import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
 import com.makd.afinity.data.database.dao.SeasonDao
@@ -17,6 +18,7 @@ import com.makd.afinity.data.database.entities.AfinitySeasonDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.database.entities.toAfinityEpisodeDto
 import com.makd.afinity.data.database.entities.toAfinityMediaStreamDto
 import com.makd.afinity.data.database.entities.toAfinityMovieDto
@@ -76,6 +78,7 @@ constructor(
     private val mediaStreamDao: MediaStreamDao,
     private val userDataDao: UserDataDao,
     private val serverDatabaseDao: ServerDatabaseDao,
+    private val itemMetadataCacheDao: ItemMetadataCacheDao,
 ) : DatabaseRepository {
 
     private val sessionManager: SessionManager
@@ -768,5 +771,13 @@ constructor(
 
     override suspend fun getSources(itemId: UUID): List<AfinitySourceDto> {
         return serverDatabaseDao.getSources(itemId)
+    }
+
+    override suspend fun getItemMetadata(itemId: UUID): ItemMetadataCacheEntity? {
+        return itemMetadataCacheDao.getMetadata(itemId)
+    }
+
+    override suspend fun insertItemMetadata(metadata: ItemMetadataCacheEntity) {
+        itemMetadataCacheDao.insertOrUpdateMetadata(metadata)
     }
 }

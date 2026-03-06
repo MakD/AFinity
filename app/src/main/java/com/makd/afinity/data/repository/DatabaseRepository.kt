@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository
 
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.DownloadDto
+import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
@@ -19,8 +20,8 @@ import com.makd.afinity.data.models.server.ServerWithAddresses
 import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 interface DatabaseRepository {
 
@@ -231,4 +232,8 @@ interface DatabaseRepository {
     suspend fun deleteDownload(downloadId: UUID)
 
     suspend fun getSources(itemId: UUID): List<AfinitySourceDto>
+
+    suspend fun getItemMetadata(itemId: UUID): ItemMetadataCacheEntity?
+
+    suspend fun insertItemMetadata(metadata: ItemMetadataCacheEntity)
 }

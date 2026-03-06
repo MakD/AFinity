@@ -644,6 +644,23 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_31_32 =
+        object : Migration(31, 32) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS item_metadata_cache (
+                        itemId TEXT PRIMARY KEY NOT NULL,
+                        tmdbReviews TEXT NOT NULL,
+                        mdbRatings TEXT NOT NULL,
+                        lastUpdated INTEGER NOT NULL
+                    )
+                    """
+                        .trimIndent()
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -672,5 +689,6 @@ object DatabaseMigrations {
             MIGRATION_28_29,
             MIGRATION_29_30,
             MIGRATION_30_31,
+            MIGRATION_31_32,
         )
 }
