@@ -39,11 +39,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.EpisodeListCard
-import com.makd.afinity.ui.item.components.shared.CastSection
-import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
-import com.makd.afinity.ui.item.components.shared.InCollectionsSection
-import com.makd.afinity.ui.item.components.shared.ReviewsSection
-import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
+import com.makd.afinity.ui.item.components.shared.BaseMediaDetailContent
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import kotlinx.coroutines.flow.Flow
@@ -66,13 +62,22 @@ fun SeasonDetailContent(
             .getEpisodeLayoutFlow()
             .collectAsState(initial = EpisodeLayout.HORIZONTAL)
 
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        TaglineSection(item = season)
-
-        OverviewSection(item = season)
-
-        ExternalLinksSection(item = season)
-
+    BaseMediaDetailContent(
+        item = season,
+        specialFeatures = specialFeatures,
+        containingBoxSets = containingBoxSets,
+        tmdbReviews = tmdbReviews,
+        onSpecialFeatureClick = onSpecialFeatureClick,
+        onBoxSetClick = { boxSet ->
+            val route = Destination.createItemDetailRoute(boxSet.id.toString())
+            navController.navigate(route)
+        },
+        onPersonClick = { personId ->
+            val route = Destination.createPersonRoute(personId.toString())
+            navController.navigate(route)
+        },
+        widthSizeClass = widthSizeClass,
+    ) {
         episodesPagingData?.let { pagingData ->
             EpisodesSection(
                 episodesPagingData = pagingData,
@@ -81,35 +86,6 @@ fun SeasonDetailContent(
                 widthSizeClass = widthSizeClass,
             )
         }
-
-        SpecialFeaturesSection(
-            specialFeatures = specialFeatures,
-            onItemClick = onSpecialFeatureClick,
-            widthSizeClass = widthSizeClass,
-        )
-
-        InCollectionsSection(
-            boxSets = containingBoxSets,
-            onBoxSetClick = { boxSet ->
-                val route = Destination.createItemDetailRoute(boxSet.id.toString())
-                navController.navigate(route)
-            },
-            widthSizeClass = widthSizeClass,
-        )
-
-        if (tmdbReviews.isNotEmpty()) {
-            ReviewsSection(reviews = tmdbReviews)
-        }
-
-        CastSection(
-            item = season,
-            onPersonClick = { personId ->
-                val route =
-                    com.makd.afinity.navigation.Destination.createPersonRoute(personId.toString())
-                navController.navigate(route)
-            },
-            widthSizeClass = widthSizeClass,
-        )
     }
 }
 

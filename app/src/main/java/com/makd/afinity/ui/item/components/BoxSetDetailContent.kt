@@ -22,7 +22,7 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.ContinueWatchingCard
 import com.makd.afinity.ui.components.MediaItemCard
-import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
+import com.makd.afinity.ui.item.components.shared.BaseMediaDetailContent
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
 
@@ -41,13 +41,16 @@ fun BoxSetDetailContent(
     val seasons = boxSetItems.filterIsInstance<AfinitySeason>()
     val episodes = boxSetItems.filterIsInstance<AfinityEpisode>()
 
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        TaglineSection(item = item)
-        OverviewSection(item = item)
-        DirectorSection(item = item)
-        WriterSection(item = item)
-        ExternalLinksSection(item = item)
-
+    BaseMediaDetailContent(
+        item = item,
+        specialFeatures = emptyList(),
+        containingBoxSets = emptyList(),
+        tmdbReviews = emptyList(),
+        onSpecialFeatureClick = {},
+        onBoxSetClick = {},
+        onPersonClick = {},
+        widthSizeClass = widthSizeClass,
+    ) {
         if (movies.isNotEmpty()) {
             BoxSetTypeSection(
                 title = stringResource(R.string.section_movies),

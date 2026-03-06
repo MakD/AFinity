@@ -38,12 +38,8 @@ import com.makd.afinity.data.models.media.getChapterImageUrl
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
-import com.makd.afinity.ui.item.components.shared.CastSection
-import com.makd.afinity.ui.item.components.shared.ExternalLinksSection
-import com.makd.afinity.ui.item.components.shared.InCollectionsSection
+import com.makd.afinity.ui.item.components.shared.BaseMediaDetailContent
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
-import com.makd.afinity.ui.item.components.shared.ReviewsSection
-import com.makd.afinity.ui.item.components.shared.SpecialFeaturesSection
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import java.util.Locale
 import java.util.UUID
@@ -60,17 +56,22 @@ fun MovieDetailContent(
     navController: androidx.navigation.NavController,
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        TaglineSection(item = item)
-
-        OverviewSection(item = item)
-
-        DirectorSection(item = item)
-
-        WriterSection(item = item)
-
-        ExternalLinksSection(item = item)
-
+    BaseMediaDetailContent(
+        item = item,
+        specialFeatures = specialFeatures,
+        containingBoxSets = containingBoxSets,
+        tmdbReviews = tmdbReviews,
+        onSpecialFeatureClick = onSpecialFeatureClick,
+        onBoxSetClick = { boxSet ->
+            val route = Destination.createItemDetailRoute(boxSet.id.toString())
+            navController.navigate(route)
+        },
+        onPersonClick = { personId ->
+            val route = Destination.createPersonRoute(personId.toString())
+            navController.navigate(route)
+        },
+        widthSizeClass = widthSizeClass,
+    ) {
         if (item.chapters.isNotEmpty()) {
             ChaptersSection(
                 chapters = item.chapters,
@@ -98,34 +99,6 @@ fun MovieDetailContent(
                 widthSizeClass = widthSizeClass,
             )
         }
-
-        SpecialFeaturesSection(
-            specialFeatures = specialFeatures,
-            onItemClick = onSpecialFeatureClick,
-            widthSizeClass = widthSizeClass,
-        )
-
-        InCollectionsSection(
-            boxSets = containingBoxSets,
-            onBoxSetClick = { boxSet ->
-                val route = Destination.createItemDetailRoute(boxSet.id.toString())
-                navController.navigate(route)
-            },
-            widthSizeClass = widthSizeClass,
-        )
-
-        if (tmdbReviews.isNotEmpty()) {
-            ReviewsSection(reviews = tmdbReviews)
-        }
-
-        CastSection(
-            item = item,
-            onPersonClick = { personId ->
-                val route = Destination.createPersonRoute(personId.toString())
-                navController.navigate(route)
-            },
-            widthSizeClass = widthSizeClass,
-        )
     }
 }
 
