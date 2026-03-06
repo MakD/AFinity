@@ -3,12 +3,6 @@
 package com.makd.afinity.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
@@ -17,32 +11,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -55,24 +37,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -80,36 +54,30 @@ import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.R.drawable.ic_launcher_monochrome
 import com.makd.afinity.data.models.GenreType
-import com.makd.afinity.data.models.extensions.backdropBlurHash
-import com.makd.afinity.data.models.extensions.backdropImageUrl
-import com.makd.afinity.data.models.extensions.primaryBlurHash
-import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
-import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.HeroCarousel
+import com.makd.afinity.ui.home.components.ContinueWatchingSkeleton
 import com.makd.afinity.ui.home.components.GenreSection
+import com.makd.afinity.ui.home.components.HighestRatedSection
 import com.makd.afinity.ui.home.components.LibrariesSection
 import com.makd.afinity.ui.home.components.MovieRecommendationSection
+import com.makd.afinity.ui.home.components.MoviesSectionSkeleton
 import com.makd.afinity.ui.home.components.NextUpSection
 import com.makd.afinity.ui.home.components.OptimizedContinueWatchingSection
 import com.makd.afinity.ui.home.components.OptimizedLatestMoviesSection
 import com.makd.afinity.ui.home.components.OptimizedLatestTvSeriesSection
 import com.makd.afinity.ui.home.components.PersonFromMovieSection
 import com.makd.afinity.ui.home.components.PersonSection
+import com.makd.afinity.ui.home.components.PopularStudiosSection
 import com.makd.afinity.ui.home.components.ShowGenreSection
+import com.makd.afinity.ui.home.components.TvSeriesSectionSkeleton
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.main.MainUiState
-import com.makd.afinity.ui.theme.CardDimensions
-import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
-import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
-import java.util.Locale
+import com.makd.afinity.ui.utils.verticalLayoutOffset
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -176,7 +144,6 @@ fun HomeScreen(
             }
         }
             ?: run {
-                val configuration = LocalConfiguration.current
                 val isLandscape =
                     configuration.orientation ==
                         android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -674,587 +641,3 @@ fun HomeScreen(
         }
     }
 }
-
-@Composable
-private fun HighestRatedSection(
-    items: List<AfinityItem>,
-    onItemClick: (AfinityItem) -> Unit,
-    widthSizeClass: WindowWidthSizeClass,
-) {
-    val cardWidth = widthSizeClass.portraitWidth
-    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
-    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
-
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(
-            text = stringResource(R.string.home_critics_choice),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
-
-        val uniqueItems = items.distinctBy { it.id }
-
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(22.dp),
-            contentPadding = PaddingValues(start = 4.dp, end = 24.dp),
-        ) {
-            itemsIndexed(items = uniqueItems, key = { _, item -> item.id }) { index, item ->
-                HighestRatedCard(
-                    item = item,
-                    ranking = index + 1,
-                    onClick = { onItemClick(item) },
-                    cardWidth = cardWidth,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HighestRatedCard(item: AfinityItem, ranking: Int, onClick: () -> Unit, cardWidth: Dp) {
-    val density = LocalDensity.current
-    val fontScale = density.fontScale
-
-    val baseFontSize = MaterialTheme.typography.bodySmall.fontSize
-    val metadataFontSize =
-        remember(fontScale, baseFontSize) {
-            baseFontSize * if (fontScale > 1.3f) 0.8f else if (fontScale > 1.15f) 0.9f else 1f
-        }
-
-    val imdbIconSize =
-        remember(fontScale) {
-            if (fontScale > 1.3f) 14.dp else if (fontScale > 1.15f) 16.dp else 18.dp
-        }
-
-    val rtIconSize =
-        remember(fontScale) {
-            if (fontScale > 1.3f) 10.dp else if (fontScale > 1.15f) 11.dp else 12.dp
-        }
-
-    Column(modifier = Modifier.width(cardWidth)) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT)) {
-            Card(
-                onClick = onClick,
-                modifier = Modifier.fillMaxSize().offset(x = 16.dp),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    AsyncImage(
-                        imageUrl = item.images.primaryImageUrl ?: item.images.backdropImageUrl,
-                        contentDescription = item.name,
-                        blurHash = item.images.primaryBlurHash ?: item.images.backdropBlurHash,
-                        targetWidth = cardWidth,
-                        targetHeight = cardWidth * 3f / 2f,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-
-                    when {
-                        item.played -> {
-                            Box(
-                                modifier =
-                                    Modifier.align(Alignment.TopEnd)
-                                        .padding(8.dp)
-                                        .size(24.dp)
-                                        .background(MaterialTheme.colorScheme.primary, CircleShape),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_check),
-                                    contentDescription = stringResource(R.string.cd_watched_status),
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                            }
-                        }
-
-                        item is AfinityShow -> {
-                            val displayCount = item.unplayedItemCount ?: item.episodeCount
-                            displayCount?.let { count ->
-                                if (count > 0) {
-                                    Surface(
-                                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                                        shape = RoundedCornerShape(4.dp),
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                                    ) {
-                                        Text(
-                                            text =
-                                                if (count > 99)
-                                                    stringResource(R.string.home_episode_count_plus)
-                                                else
-                                                    stringResource(
-                                                        R.string.home_episode_count_fmt,
-                                                        count,
-                                                    ),
-                                            style =
-                                                MaterialTheme.typography.labelSmall.copy(
-                                                    fontWeight = FontWeight.Bold
-                                                ),
-                                            color = MaterialTheme.colorScheme.onPrimary,
-                                            modifier =
-                                                Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Text(
-                text = ranking.toString(),
-                style =
-                    MaterialTheme.typography.displayLarge.copy(
-                        fontSize = 82.sp,
-                        fontWeight = FontWeight.Black,
-                    ),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.align(Alignment.BottomStart).offset(y = 12.dp),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Column(modifier = Modifier.offset(x = 16.dp)) {
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                val metadataItems = mutableListOf<@Composable () -> Unit>()
-
-                when (item) {
-                    is AfinityMovie -> item.productionYear
-                    is AfinityShow -> item.productionYear
-                    else -> null
-                }?.let { year ->
-                    metadataItems.add {
-                        Text(
-                            text = year.toString(),
-                            style =
-                                MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = metadataFontSize
-                                ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
-                when (item) {
-                    is AfinityMovie -> item.communityRating
-                    is AfinityShow -> item.communityRating
-                    else -> null
-                }?.let { rating ->
-                    metadataItems.add {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = stringResource(R.string.cd_imdb),
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(imdbIconSize),
-                            )
-                            Text(
-                                text = String.format(Locale.US, "%.1f", rating),
-                                style =
-                                    MaterialTheme.typography.bodySmall.copy(
-                                        fontSize = metadataFontSize
-                                    ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-
-                if (item is AfinityMovie) {
-                    item.criticRating?.let { rtRating ->
-                        metadataItems.add {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                Icon(
-                                    painter =
-                                        painterResource(
-                                            id =
-                                                if (rtRating > 60) {
-                                                    R.drawable.ic_rotten_tomato_fresh
-                                                } else {
-                                                    R.drawable.ic_rotten_tomato_rotten
-                                                }
-                                        ),
-                                    contentDescription =
-                                        stringResource(R.string.cd_rotten_tomatoes),
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(rtIconSize),
-                                )
-                                Text(
-                                    text = "${rtRating.toInt()}%",
-                                    style =
-                                        MaterialTheme.typography.bodySmall.copy(
-                                            fontSize = metadataFontSize
-                                        ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-
-                metadataItems.forEachIndexed { index, item ->
-                    item()
-                    if (index < metadataItems.size - 1) {
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ContinueWatchingSkeleton(widthSizeClass: WindowWidthSizeClass) {
-    val cardWidth = widthSizeClass.portraitWidth
-
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Box(
-            modifier =
-                Modifier.width(200.dp)
-                    .height(24.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                    .shimmerEffect()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp),
-        ) {
-            items(5) {
-                Column(modifier = Modifier.width(cardWidth)) {
-                    Card(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
-                        shape = RoundedCornerShape(8.dp),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor =
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                            ),
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize().shimmerEffect())
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier =
-                            Modifier.width(cardWidth * 0.8f)
-                                .height(16.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .shimmerEffect()
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MoviesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
-    val cardWidth = widthSizeClass.portraitWidth
-
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Box(
-            modifier =
-                Modifier.width(150.dp)
-                    .height(24.dp)
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        RoundedCornerShape(4.dp),
-                    )
-                    .shimmerEffect()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp),
-        ) {
-            items(6) {
-                Column(modifier = Modifier.width(cardWidth)) {
-                    Card(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
-                        shape = RoundedCornerShape(8.dp),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor =
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                            ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize().shimmerEffect())
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Box(
-                        modifier =
-                            Modifier.width(cardWidth * 0.9f)
-                                .height(16.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .shimmerEffect()
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Box(
-                        modifier =
-                            Modifier.width(cardWidth * 0.6f)
-                                .height(12.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .shimmerEffect()
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TvSeriesSectionSkeleton(widthSizeClass: WindowWidthSizeClass) {
-    val cardWidth = widthSizeClass.portraitWidth
-
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Box(
-            modifier =
-                Modifier.width(180.dp)
-                    .height(24.dp)
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        RoundedCornerShape(4.dp),
-                    )
-                    .shimmerEffect()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp),
-        ) {
-            items(6) {
-                Column(modifier = Modifier.width(cardWidth)) {
-                    Card(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                                .aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
-                        shape = RoundedCornerShape(8.dp),
-                        colors =
-                            CardDefaults.cardColors(
-                                containerColor =
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                            ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            Box(modifier = Modifier.fillMaxSize().shimmerEffect())
-
-                            Box(
-                                modifier =
-                                    Modifier.align(Alignment.TopEnd)
-                                        .padding(8.dp)
-                                        .width(50.dp)
-                                        .height(20.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                                            RoundedCornerShape(4.dp),
-                                        )
-                                        .shimmerEffect()
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Box(
-                        modifier =
-                            Modifier.width(cardWidth * 0.9f)
-                                .height(16.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .shimmerEffect()
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Box(
-                        modifier =
-                            Modifier.width(cardWidth * 0.7f)
-                                .height(12.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .shimmerEffect()
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun Modifier.shimmerEffect(): Modifier = composed {
-    val transition = rememberInfiniteTransition(label = "shimmer")
-
-    val translateAnimation by
-        transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1000f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 1000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "shimmerTranslate",
-        )
-
-    val shimmerColors =
-        listOf(
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        )
-
-    val brush =
-        Brush.linearGradient(
-            colors = shimmerColors,
-            start = Offset.Zero,
-            end = Offset(x = translateAnimation, y = translateAnimation),
-        )
-
-    background(brush)
-}
-
-@Composable
-private fun PopularStudiosSection(
-    studios: List<AfinityStudio>,
-    onStudioClick: (AfinityStudio) -> Unit,
-    widthSizeClass: WindowWidthSizeClass,
-) {
-    val cardWidth = widthSizeClass.landscapeWidth
-    val cardHeight =
-        CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
-    val fixedRowHeight = cardHeight + 8.dp
-
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(
-            text = stringResource(R.string.home_popular_studios),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
-
-        LazyRow(
-            modifier = Modifier.height(fixedRowHeight),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp),
-        ) {
-            itemsIndexed(items = studios, key = { _, studio -> studio.id }) { _, studio ->
-                StudioCard(
-                    studio = studio,
-                    onClick = { onStudioClick(studio) },
-                    cardWidth = cardWidth,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StudioCard(studio: AfinityStudio, onClick: () -> Unit, cardWidth: Dp) {
-    Column(modifier = Modifier.width(cardWidth)) {
-        Card(
-            onClick = onClick,
-            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
-            colors =
-                CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                studio.primaryImageUrl?.let { imageUrl ->
-                    AsyncImage(
-                        imageUrl = imageUrl,
-                        contentDescription = studio.name,
-                        blurHash = null,
-                        targetWidth = cardWidth,
-                        targetHeight = cardWidth * 9f / 16f,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-                    ?: run {
-                        Box(
-                            modifier =
-                                Modifier.fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_tmdb_collection),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(48.dp),
-                            )
-                        }
-                    }
-            }
-        }
-    }
-}
-
-fun Modifier.verticalLayoutOffset(yOffset: Dp) =
-    this.layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        val yOffsetPx = yOffset.roundToPx()
-
-        layout(placeable.width, placeable.height + yOffsetPx) {
-            placeable.placeRelative(0, yOffsetPx)
-        }
-    }

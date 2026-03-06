@@ -39,6 +39,8 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.data.workers.HomeDataReloadWorker
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
+import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.ui.utils.IntentUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -77,6 +79,8 @@ constructor(
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
     private val playbackStateManager: PlaybackStateManager,
+    private val itemDownloadDelegate: ItemDownloadDelegate,
+    private val itemUserDataDelegate: ItemUserDataDelegate,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -295,51 +299,52 @@ constructor(
 
     private fun loadNewHomescreenSections() {
         recommendationLoadingJob?.cancel()
-        recommendationLoadingJob = viewModelScope.launch(Dispatchers.IO) {
-            try {
-                if (offlineModeManager.isOffline.first()) {
-                    Timber.d("Skipping new sections in offline mode")
-                    return@launch
-                }
-
-                loadedRecommendationSections.clear()
-                renderedPeopleNames.clear()
-                renderedItemIds.clear()
-                renderedWatchedMovies.clear()
-                renderedStarringWatchedMovies.clear()
-                renderedActorNames.clear()
-
-                coroutineScope {
-                    val actorTask = async { loadAllActorSections() }
-                    val directorTask = async { loadAllDirectorSections() }
-                    val writerTask = async { loadAllWriterSections() }
-                    val becauseYouWatchedTask = async { loadAllBecauseYouWatchedSections() }
-                    val actorFromRecentTask = async { loadAllActorFromRecentSections() }
-
-                    awaitAll(
-                        actorTask,
-                        directorTask,
-                        writerTask,
-                        becauseYouWatchedTask,
-                        actorFromRecentTask,
-                    )
-                }
-
-                Timber.d(
-                    "Loaded ${loadedRecommendationSections.size} total recommendation sections"
-                )
-
-                withContext(Dispatchers.Main) {
-                    appDataRepository.combinedGenres.value.let { genres ->
-                        updateCombinedSections(genres)
+        recommendationLoadingJob =
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    if (offlineModeManager.isOffline.first()) {
+                        Timber.d("Skipping new sections in offline mode")
+                        return@launch
                     }
+
+                    loadedRecommendationSections.clear()
+                    renderedPeopleNames.clear()
+                    renderedItemIds.clear()
+                    renderedWatchedMovies.clear()
+                    renderedStarringWatchedMovies.clear()
+                    renderedActorNames.clear()
+
+                    coroutineScope {
+                        val actorTask = async { loadAllActorSections() }
+                        val directorTask = async { loadAllDirectorSections() }
+                        val writerTask = async { loadAllWriterSections() }
+                        val becauseYouWatchedTask = async { loadAllBecauseYouWatchedSections() }
+                        val actorFromRecentTask = async { loadAllActorFromRecentSections() }
+
+                        awaitAll(
+                            actorTask,
+                            directorTask,
+                            writerTask,
+                            becauseYouWatchedTask,
+                            actorFromRecentTask,
+                        )
+                    }
+
+                    Timber.d(
+                        "Loaded ${loadedRecommendationSections.size} total recommendation sections"
+                    )
+
+                    withContext(Dispatchers.Main) {
+                        appDataRepository.combinedGenres.value.let { genres ->
+                            updateCombinedSections(genres)
+                        }
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load recommendation sections")
                 }
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load recommendation sections")
             }
-        }
     }
 
     private suspend fun loadAllActorSections() {
@@ -382,7 +387,6 @@ constructor(
                     }
                     .awaitAll()
             }
-
             Timber.d(
                 "Loaded ${loadedRecommendationSections.count { it is HomeSection.Person && it.section.sectionType == com.makd.afinity.data.models.PersonSectionType.STARRING }} actor sections (max: $maxActorSections)"
             )
@@ -436,7 +440,6 @@ constructor(
                     }
                     .awaitAll()
             }
-
             Timber.d(
                 "Loaded ${loadedRecommendationSections.count { it is HomeSection.Person && it.section.sectionType == com.makd.afinity.data.models.PersonSectionType.DIRECTED_BY }} director sections (max: $maxDirectorSections)"
             )
@@ -489,7 +492,6 @@ constructor(
                     }
                     .awaitAll()
             }
-
             Timber.d(
                 "Loaded ${loadedRecommendationSections.count { it is HomeSection.Person && it.section.sectionType == com.makd.afinity.data.models.PersonSectionType.WRITTEN_BY }} writer sections (max: $maxWriterSections)"
             )
@@ -536,7 +538,6 @@ constructor(
                     break
                 }
             }
-
             Timber.d(
                 "Loaded $loadedCount 'Because you watched' sections (max: $maxBecauseYouWatchedSections)"
             )
@@ -598,7 +599,6 @@ constructor(
                                         person.id == selectedActor.id && person.type == ACTOR
                                     }
                                 }
-
                                 else -> false
                             }
                         }
@@ -623,7 +623,6 @@ constructor(
                     )
                 }
             }
-
             Timber.d(
                 "Loaded $loadedCount 'Starring actor from recent' sections (max: $maxActorFromRecentSections)"
             )
@@ -671,8 +670,8 @@ constructor(
                     season.episodes.forEach { episode ->
                         if (
                             episode.playbackPositionTicks > 0 &&
-                            !episode.played &&
-                            episode.id in downloadedItemIds
+                                !episode.played &&
+                                episode.id in downloadedItemIds
                         ) {
                             offlineContinueWatching.add(episode)
                         }
@@ -775,23 +774,40 @@ constructor(
     }
 
     fun toggleEpisodeFavorite(episode: AfinityEpisode) {
-        viewModelScope.launch {
-            try {
-                val success =
-                    if (episode.favorite) {
-                        userDataRepository.removeFromFavorites(episode.id)
-                    } else {
-                        userDataRepository.addToFavorites(episode.id)
-                    }
-
-                if (success) {
-                    _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Error toggling episode favorite")
-            }
+        itemUserDataDelegate.toggleEpisodeFavorite(viewModelScope, episode) {
+            _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
         }
     }
+
+    fun onDownloadClick() {
+        itemDownloadDelegate.onDownloadClick(
+            scope = viewModelScope,
+            item = _selectedEpisode.value,
+            showQualityDialog = { _uiState.update { it.copy(showQualityDialog = true) } },
+        )
+    }
+
+    fun onQualitySelected(sourceId: String) {
+        itemDownloadDelegate.onQualitySelected(
+            scope = viewModelScope,
+            item = _selectedEpisode.value,
+            sourceId = sourceId,
+            hideQualityDialog = { dismissQualityDialog() },
+        )
+    }
+
+    fun dismissQualityDialog() {
+        _uiState.update { it.copy(showQualityDialog = false) }
+    }
+
+    fun pauseDownload() =
+        itemDownloadDelegate.pauseDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
+
+    fun resumeDownload() =
+        itemDownloadDelegate.resumeDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
+
+    fun cancelDownload() =
+        itemDownloadDelegate.cancelDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
 
     fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
         viewModelScope.launch {
@@ -843,9 +859,7 @@ constructor(
 
                 if (success) {
                     mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
-
                     playbackStateManager.notifyItemChanged(episode.id)
-
                     if (updatedEpisode.played) {
                         mediaRepository.invalidateNextUpCache()
                     }
@@ -923,101 +937,6 @@ constructor(
         navController.navigate(route)
     }
 
-    fun onDownloadClick() {
-        viewModelScope.launch {
-            try {
-                val episode = _selectedEpisode.value ?: return@launch
-                val sources =
-                    episode.sources.filter {
-                        it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
-                    }
-
-                if (sources.isEmpty()) {
-                    Timber.w(
-                        "No remote sources available for download for episode: ${episode.name}"
-                    )
-                    return@launch
-                }
-
-                if (sources.size == 1) {
-                    val result = downloadRepository.startDownload(episode.id, sources.first().id)
-                    result
-                        .onSuccess {
-                            Timber.i("Download started successfully for episode: ${episode.name}")
-                        }
-                        .onFailure { error ->
-                            Timber.e(error, "Failed to start download for episode: ${episode.name}")
-                        }
-                } else {
-                    _uiState.update { it.copy(showQualityDialog = true) }
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Error starting download")
-            }
-        }
-    }
-
-    fun onQualitySelected(sourceId: String) {
-        viewModelScope.launch {
-            try {
-                val episode = _selectedEpisode.value ?: return@launch
-                val result = downloadRepository.startDownload(episode.id, sourceId)
-                result
-                    .onSuccess {
-                        Timber.i("Download started successfully for episode: ${episode.name}")
-                    }
-                    .onFailure { error ->
-                        Timber.e(error, "Failed to start download for episode: ${episode.name}")
-                    }
-                _uiState.update { it.copy(showQualityDialog = false) }
-            } catch (e: Exception) {
-                Timber.e(e, "Error starting download with selected quality")
-            }
-        }
-    }
-
-    fun dismissQualityDialog() {
-        _uiState.update { it.copy(showQualityDialog = false) }
-    }
-
-    fun pauseDownload() {
-        viewModelScope.launch {
-            try {
-                val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
-                val result = downloadRepository.pauseDownload(downloadInfo.id)
-                result.onFailure { error -> Timber.e(error, "Failed to pause download") }
-            } catch (e: Exception) {
-                Timber.e(e, "Error pausing download")
-            }
-        }
-    }
-
-    fun resumeDownload() {
-        viewModelScope.launch {
-            try {
-                val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
-                val result = downloadRepository.resumeDownload(downloadInfo.id)
-                result.onFailure { error -> Timber.e(error, "Failed to resume download") }
-            } catch (e: Exception) {
-                Timber.e(e, "Error resuming download")
-            }
-        }
-    }
-
-    fun cancelDownload() {
-        viewModelScope.launch {
-            try {
-                val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
-                val result = downloadRepository.cancelDownload(downloadInfo.id)
-                result
-                    .onSuccess { Timber.i("Download cancelled successfully") }
-                    .onFailure { error -> Timber.e(error, "Failed to cancel download") }
-            } catch (e: Exception) {
-                Timber.e(e, "Error cancelling download")
-            }
-        }
-    }
-
     fun refresh() {
         viewModelScope.launch {
             appDataRepository.reloadHomeData()
@@ -1031,9 +950,7 @@ constructor(
         val request =
             OneTimeWorkRequestBuilder<HomeDataReloadWorker>()
                 .setConstraints(
-                    Constraints.Builder()
-                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .build()
+                    Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
                 )
                 .setBackoffCriteria(BackoffPolicy.LINEAR, 10, TimeUnit.SECONDS)
                 .build()
@@ -1077,7 +994,7 @@ constructor(
                         val index = items.indexOfFirst { it.id == targetId }
                         if (
                             index != -1 &&
-                            (updatedItem is AfinityMovie || updatedItem is AfinityShow)
+                                (updatedItem is AfinityMovie || updatedItem is AfinityShow)
                         ) {
                             sectionsChanged = true
                             val newItems = items.toMutableList().apply { this[index] = updatedItem }
@@ -1090,7 +1007,7 @@ constructor(
                         val index = items.indexOfFirst { it.id == targetId }
                         if (
                             index != -1 &&
-                            (updatedItem is AfinityMovie || updatedItem is AfinityShow)
+                                (updatedItem is AfinityMovie || updatedItem is AfinityShow)
                         ) {
                             sectionsChanged = true
                             val newItems = items.toMutableList().apply { this[index] = updatedItem }
