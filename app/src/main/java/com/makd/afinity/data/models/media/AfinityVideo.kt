@@ -2,6 +2,7 @@ package com.makd.afinity.data.models.media
 
 import java.time.LocalDateTime
 import java.util.UUID
+import org.jellyfin.sdk.model.api.ExtraType
 
 data class AfinityVideo(
     override val id: UUID,
@@ -33,4 +34,5 @@ data class AfinityVideo(
     val trailer: String?,
     val tagline: String?,
     val trickplayInfo: AfinityTrickplayInfo?,
+    val extraType: ExtraType?,
 ) : AfinityItem

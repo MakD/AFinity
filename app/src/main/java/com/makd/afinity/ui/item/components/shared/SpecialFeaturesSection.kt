@@ -30,8 +30,10 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
+import org.jellyfin.sdk.model.api.ExtraType
 
 @Composable
 fun SpecialFeaturesSection(
@@ -91,12 +93,36 @@ private fun SpecialFeatureCard(feature: AfinityItem, onClick: () -> Unit, cardWi
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
+            text = (feature as? AfinityVideo)?.extraType?.toDisplayString() ?: "",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.height(16.dp),
+        )
+
+        Text(
             text = feature.name,
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Start,
         )
     }
+}
+
+private fun ExtraType.toDisplayString(): String? = when (this) {
+    ExtraType.CLIP -> "Clip"
+    ExtraType.TRAILER -> "Trailer"
+    ExtraType.BEHIND_THE_SCENES -> "Behind the Scenes"
+    ExtraType.DELETED_SCENE -> "Deleted Scene"
+    ExtraType.INTERVIEW -> "Interview"
+    ExtraType.SCENE -> "Scene"
+    ExtraType.SAMPLE -> "Sample"
+    ExtraType.THEME_SONG -> "Theme Song"
+    ExtraType.THEME_VIDEO -> "Theme Video"
+    ExtraType.FEATURETTE -> "Featurette"
+    ExtraType.SHORT -> "Short"
+    ExtraType.UNKNOWN -> null
 }

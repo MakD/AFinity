@@ -114,6 +114,15 @@
     <string name="meta_episode_count">%1$d episodes</string>
     <string name="similar_items_title">More Like This</string>
     <string name="special_features_title">Special Features</string>
+    <string name="extra_type_clip">Clip</string>
+    <string name="extra_type_trailer">Trailer</string>
+    <string name="extra_type_behind_the_scenes">Behind the Scenes</string>
+    <string name="extra_type_deleted_scene">Deleted Scene</string>
+    <string name="extra_type_interview">Interview</string>
+    <string name="extra_type_scene">Scene</string>
+    <string name="extra_type_sample">Sample</string>
+    <string name="extra_type_featurette">Featurette</string>
+    <string name="extra_type_short">Short</string>
     <string name="boxset_items_in_collection">Items in Collection</string>
 
     <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>

@@ -92,6 +92,7 @@ import com.makd.afinity.ui.utils.verticalLayoutOffset
 import com.makd.afinity.util.rememberPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
+import timber.log.Timber
 
 @Composable
 fun ItemDetailScreen(
@@ -184,8 +185,25 @@ fun ItemDetailScreen(
                         }
                     },
                     onSpecialFeatureClick = { specialFeature ->
-                        val route = Destination.createItemDetailRoute(specialFeature.id.toString())
-                        navController.navigate(route)
+                        val mediaSourceId = specialFeature.sources.firstOrNull()?.id
+                        if (mediaSourceId != null) {
+                            val startPos =
+                                if (specialFeature.playbackPositionTicks > 0)
+                                    specialFeature.playbackPositionTicks / 10000
+                                else 0L
+                            PlayerLauncher.launch(
+                                context = context,
+                                itemId = specialFeature.id,
+                                mediaSourceId = mediaSourceId,
+                                audioStreamIndex = null,
+                                subtitleStreamIndex = null,
+                                startPositionMs = startPos,
+                            )
+                        } else {
+                            Timber.w(
+                                "Special feature has no playable source: name=${specialFeature.name}, type=${specialFeature::class.simpleName}"
+                            )
+                        }
                     },
                     navController = navController,
                     viewModel = viewModel,
@@ -724,7 +742,24 @@ private fun TypeSpecificContent(
                     )
                 },
                 onSpecialFeatureClick = { sf ->
-                    navController.navigate(Destination.createItemDetailRoute(sf.id.toString()))
+                    val mediaSourceId = sf.sources.firstOrNull()?.id
+                    if (mediaSourceId != null) {
+                        val startPos =
+                            if (sf.playbackPositionTicks > 0) sf.playbackPositionTicks / 10000
+                            else 0L
+                        PlayerLauncher.launch(
+                            context = navController.context,
+                            itemId = sf.id,
+                            mediaSourceId = mediaSourceId,
+                            audioStreamIndex = null,
+                            subtitleStreamIndex = null,
+                            startPositionMs = startPos,
+                        )
+                    } else {
+                        Timber.w(
+                            "Special feature (series) has no playable source: name=${sf.name}, type=${sf::class.simpleName}"
+                        )
+                    }
                 },
                 navController = navController,
                 widthSizeClass = widthSizeClass,

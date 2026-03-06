@@ -473,7 +473,44 @@ fun BaseItemDto.toAfinityVideo(baseUrl: String): AfinityVideo {
         name = name.orEmpty(),
         originalTitle = originalTitle,
         overview = overview.orEmpty(),
-        sources = emptyList(),
+        sources =
+            mediaSources?.map { mediaSource ->
+                AfinitySource(
+                    id = mediaSource.id.orEmpty(),
+                    name = mediaSource.name.orEmpty(),
+                    type = AfinitySourceType.REMOTE,
+                    path = mediaSource.path.orEmpty(),
+                    size = mediaSource.size ?: 0L,
+                    mediaStreams =
+                        mediaSource.mediaStreams?.map { mediaStream ->
+                            AfinityMediaStream(
+                                title = mediaStream.title.orEmpty(),
+                                displayTitle = mediaStream.displayTitle,
+                                language = mediaStream.language.orEmpty(),
+                                type = mediaStream.type,
+                                codec = mediaStream.codec.orEmpty(),
+                                isExternal = mediaStream.isExternal,
+                                path =
+                                    if (
+                                        mediaStream.isExternal &&
+                                            !mediaStream.deliveryUrl.isNullOrBlank()
+                                    ) {
+                                        baseUrl + mediaStream.deliveryUrl
+                                    } else {
+                                        null
+                                    },
+                                channelLayout = mediaStream.channelLayout,
+                                videoRangeType = mediaStream.videoRangeType,
+                                height = mediaStream.height,
+                                width = mediaStream.width,
+                                videoDoViTitle = mediaStream.videoDoViTitle,
+                                index = mediaStream.index,
+                                channels = mediaStream.channels,
+                                isDefault = mediaStream.isDefault,
+                            )
+                        } ?: emptyList(),
+                )
+            } ?: emptyList(),
         played = userData?.played == true,
         favorite = userData?.isFavorite == true,
         canPlay = playAccess != PlayAccess.NONE,
@@ -498,6 +535,7 @@ fun BaseItemDto.toAfinityVideo(baseUrl: String): AfinityVideo {
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
+        extraType = extraType,
     )
 }
 

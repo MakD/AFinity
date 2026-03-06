@@ -573,7 +573,11 @@ constructor(
                         enableImages = true,
                         enableUserData = true,
                     )
-                response.content?.items?.firstOrNull()
+                val item = response.content?.items?.firstOrNull()
+                if (item != null) return@withContext item
+                Timber.d("getItem: not found via ItemsApi, trying UserLibraryApi for $itemId")
+                val userLibraryApi = UserLibraryApi(apiClient)
+                userLibraryApi.getItem(userId = userId, itemId = itemId).content
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get item with id: $itemId")
                 null
