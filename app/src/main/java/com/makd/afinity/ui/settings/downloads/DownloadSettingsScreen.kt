@@ -587,7 +587,7 @@ fun CompletedDownloadRow(
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         leadingContent = {
             AsyncImage(
-                imageUrl = download.imageUrl,
+                imageUrl = if (isEpisode) download.seriesImageUrl ?: download.imageUrl else download.imageUrl,
                 contentDescription = null,
                 modifier =
                     Modifier.width(56.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(6.dp)),

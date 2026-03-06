@@ -555,24 +555,17 @@ constructor(
                 if (!isOffline) {
                     loadAdditionalDetails(item)
                 } else {
-                    val cachedReviews =
-                        when (item) {
-                            is AfinityMovie -> item.tmdbReviews
-                            is AfinityShow -> item.tmdbReviews
-                            else -> emptyList()
+                    if (item is AfinityMovie || item is AfinityShow) {
+                        val cachedMetadata = databaseRepository.getItemMetadata(item.id)
+                        if (cachedMetadata != null) {
+                            _uiState.value =
+                                _uiState.value.copy(
+                                    tmdbReviews = cachedMetadata.tmdbReviews,
+                                    mdbRatings = cachedMetadata.mdbRatings,
+                                    isRatingsFromCache = true,
+                                )
                         }
-                    val cachedRatings =
-                        when (item) {
-                            is AfinityMovie -> item.mdbRatings
-                            is AfinityShow -> item.mdbRatings
-                            else -> emptyList()
-                        }
-                    _uiState.value =
-                        _uiState.value.copy(
-                            tmdbReviews = cachedReviews,
-                            mdbRatings = cachedRatings,
-                            isRatingsFromCache = true,
-                        )
+                    }
                     when (item) {
                         is AfinityShow -> {
                             if (item.seasons.isNotEmpty()) {
