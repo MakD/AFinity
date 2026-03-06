@@ -44,16 +44,16 @@ constructor(
 
     val appLoadingState =
         combine(
-            appDataRepository.isInitialDataLoaded,
-            appDataRepository.loadingProgress,
-            appDataRepository.loadingPhase,
-        ) { isLoaded, progress, phase ->
-            AppLoadingState(
-                isLoading = !isLoaded,
-                loadingProgress = progress,
-                loadingPhase = phase,
-            )
-        }
+                appDataRepository.isInitialDataLoaded,
+                appDataRepository.loadingProgress,
+                appDataRepository.loadingPhase,
+            ) { isLoaded, progress, phase ->
+                AppLoadingState(
+                    isLoading = !isLoaded,
+                    loadingProgress = progress,
+                    loadingPhase = phase,
+                )
+            }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -132,20 +132,40 @@ constructor(
 
     private fun loadAppData(skipOfflineCheck: Boolean = false) {
         viewModelScope.launch {
-            try {
-                if (!skipOfflineCheck) {
-                    val isOffline = offlineModeManager.isCurrentlyOffline()
+            if (!skipOfflineCheck) {
+                val isOffline = offlineModeManager.isCurrentlyOffline()
 
-                    if (isOffline) {
-                        Timber.d("Device is offline, skipping initial data load")
-                        appDataRepository.skipInitialDataLoad()
-                        return@launch
+                if (isOffline) {
+                    Timber.d("Device is offline, skipping initial data load")
+                    appDataRepository.skipInitialDataLoad()
+                    return@launch
+                }
+            }
+
+            val maxRetries = 3
+            var currentAttempt = 0
+            var success = false
+
+            while (currentAttempt < maxRetries && !success) {
+                try {
+                    currentAttempt++
+                    Timber.d(
+                        "Attempting to load initial data (Attempt $currentAttempt/$maxRetries)"
+                    )
+
+                    appDataRepository.loadInitialData()
+                    success = true
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load app data on attempt $currentAttempt")
+
+                    if (currentAttempt < maxRetries) {
+                        kotlinx.coroutines.delay(1000L * currentAttempt)
                     }
                 }
-
-                appDataRepository.loadInitialData()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load app data")
+            }
+            if (!success) {
+                Timber.e("All $maxRetries attempts failed. Falling back to cached data.")
+                appDataRepository.skipInitialDataLoad()
             }
         }
     }

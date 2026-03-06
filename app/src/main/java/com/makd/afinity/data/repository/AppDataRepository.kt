@@ -186,8 +186,8 @@ constructor(
 
                 if (
                     currentSessionId != null &&
-                    newSessionId != currentSessionId &&
-                    newSessionId != null
+                        newSessionId != currentSessionId &&
+                        newSessionId != null
                 ) {
                     Timber.d(
                         "Session changed from $currentSessionId to $newSessionId - clearing and reloading data"
@@ -223,6 +223,8 @@ constructor(
 
         try {
             coroutineScope {
+                kotlinx.coroutines.delay(300)
+
                 updateProgress(0.1f, context.getString(R.string.loading_phase_connecting))
 
                 val latestMediaDeferred = async { loadLatestMedia() }
@@ -230,7 +232,13 @@ constructor(
                 val continueWatchingDeferred = async { loadContinueWatching() }
                 val nextUpDeferred = async { loadNextUp() }
                 val librariesDeferred = async { loadLibraries() }
-                val watchlistCountDeferred = async { watchlistRepository.refreshWatchlistCount() }
+                val watchlistCountDeferred = async {
+                    try {
+                        watchlistRepository.refreshWatchlistCount()
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to load watchlist count on startup")
+                    }
+                }
 
                 updateProgress(0.3f, context.getString(R.string.loading_phase_fetching))
 
@@ -329,34 +337,33 @@ constructor(
 
             val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
 
-            val movieResults =
-                coroutineScope {
-                    movieLibraries
-                        .map { library ->
-                            async {
-                                try {
-                                    val items =
-                                        if (useJellyfinDefault) {
-                                            jellyfinRepository
-                                                .getLatestMedia(parentId = library.id, limit = 30)
-                                                .filterIsInstance<AfinityMovie>()
-                                        } else {
-                                            jellyfinRepository.getMovies(
-                                                parentId = library.id,
-                                                sortBy = SortBy.RELEASE_DATE,
-                                                sortDescending = true,
-                                                limit = 30,
-                                                isPlayed = false,
-                                            )
-                                        }
-                                    library to items
-                                } catch (e: Exception) {
-                                    library to emptyList<AfinityMovie>()
-                                }
+            val movieResults = coroutineScope {
+                movieLibraries
+                    .map { library ->
+                        async {
+                            try {
+                                val items =
+                                    if (useJellyfinDefault) {
+                                        jellyfinRepository
+                                            .getLatestMedia(parentId = library.id, limit = 30)
+                                            .filterIsInstance<AfinityMovie>()
+                                    } else {
+                                        jellyfinRepository.getMovies(
+                                            parentId = library.id,
+                                            sortBy = SortBy.RELEASE_DATE,
+                                            sortDescending = true,
+                                            limit = 30,
+                                            isPlayed = false,
+                                        )
+                                    }
+                                library to items
+                            } catch (e: Exception) {
+                                library to emptyList<AfinityMovie>()
                             }
                         }
-                        .awaitAll()
-                }
+                    }
+                    .awaitAll()
+            }
 
             _separateMovieLibrarySections.value =
                 movieResults
@@ -380,34 +387,33 @@ constructor(
 
             val useJellyfinDefault = preferencesRepository.getHomeSortByDateAdded()
 
-            val showResults =
-                coroutineScope {
-                    tvLibraries
-                        .map { library ->
-                            async {
-                                try {
-                                    val items =
-                                        if (useJellyfinDefault) {
-                                            jellyfinRepository
-                                                .getLatestMedia(parentId = library.id, limit = 30)
-                                                .filterIsInstance<AfinityShow>()
-                                        } else {
-                                            jellyfinRepository.getShows(
-                                                parentId = library.id,
-                                                sortBy = SortBy.RELEASE_DATE,
-                                                sortDescending = true,
-                                                limit = 30,
-                                                isPlayed = false,
-                                            )
-                                        }
-                                    library to items
-                                } catch (e: Exception) {
-                                    library to emptyList<AfinityShow>()
-                                }
+            val showResults = coroutineScope {
+                tvLibraries
+                    .map { library ->
+                        async {
+                            try {
+                                val items =
+                                    if (useJellyfinDefault) {
+                                        jellyfinRepository
+                                            .getLatestMedia(parentId = library.id, limit = 30)
+                                            .filterIsInstance<AfinityShow>()
+                                    } else {
+                                        jellyfinRepository.getShows(
+                                            parentId = library.id,
+                                            sortBy = SortBy.RELEASE_DATE,
+                                            sortDescending = true,
+                                            limit = 30,
+                                            isPlayed = false,
+                                        )
+                                    }
+                                library to items
+                            } catch (e: Exception) {
+                                library to emptyList<AfinityShow>()
                             }
                         }
-                        .awaitAll()
-                }
+                    }
+                    .awaitAll()
+            }
 
             _separateTvLibrarySections.value =
                 showResults
@@ -520,13 +526,13 @@ constructor(
                                     async {
                                         try {
                                             library to
-                                                    jellyfinRepository.getMovies(
-                                                        parentId = library.id,
-                                                        sortBy = SortBy.RELEASE_DATE,
-                                                        sortDescending = true,
-                                                        limit = 30,
-                                                        isPlayed = false,
-                                                    )
+                                                jellyfinRepository.getMovies(
+                                                    parentId = library.id,
+                                                    sortBy = SortBy.RELEASE_DATE,
+                                                    sortDescending = true,
+                                                    limit = 30,
+                                                    isPlayed = false,
+                                                )
                                         } catch (e: Exception) {
                                             library to emptyList()
                                         }
@@ -562,13 +568,13 @@ constructor(
                                     async {
                                         try {
                                             library to
-                                                    jellyfinRepository.getShows(
-                                                        parentId = library.id,
-                                                        sortBy = SortBy.RELEASE_DATE,
-                                                        sortDescending = true,
-                                                        limit = 30,
-                                                        isPlayed = false,
-                                                    )
+                                                jellyfinRepository.getShows(
+                                                    parentId = library.id,
+                                                    sortBy = SortBy.RELEASE_DATE,
+                                                    sortDescending = true,
+                                                    limit = 30,
+                                                    isPlayed = false,
+                                                )
                                         } catch (e: Exception) {
                                             library to emptyList()
                                         }
@@ -916,7 +922,7 @@ constructor(
 
             if (
                 cached != null &&
-                topPeopleDao.isTopPeopleCacheFresh(type.name, PEOPLE_CACHE_TTL, currentTime)
+                    topPeopleDao.isTopPeopleCacheFresh(type.name, PEOPLE_CACHE_TTL, currentTime)
             ) {
                 val cachedData =
                     json.decodeFromString<List<CachedPersonWithCount>>(cached.peopleData)
@@ -1016,11 +1022,11 @@ constructor(
 
             if (
                 cached != null &&
-                personSectionDao.isSectionCacheFresh(
-                    cacheKey,
-                    PERSON_SECTION_CACHE_TTL,
-                    currentTime,
-                )
+                    personSectionDao.isSectionCacheFresh(
+                        cacheKey,
+                        PERSON_SECTION_CACHE_TTL,
+                        currentTime,
+                    )
             ) {
                 val cachedPersonData =
                     PersonWithCount.fromCached(
@@ -1156,7 +1162,9 @@ constructor(
             if (updatedItem.played) {
                 _latestMovies.update { movies -> movies.filterNot { it.id == itemId } }
                 _separateMovieLibrarySections.update { sections ->
-                    sections.map { (library, movies) -> library to movies.filterNot { it.id == itemId } }
+                    sections.map { (library, movies) ->
+                        library to movies.filterNot { it.id == itemId }
+                    }
                 }
             } else if (movieIsInLatest) {
                 _latestMovies.update { movies ->
@@ -1168,9 +1176,9 @@ constructor(
                     sections.map { (library, movies) ->
                         val index = movies.indexOfFirst { it.id == itemId }
                         library to
-                                if (index != -1) movies.toMutableList()
-                                    .apply { this[index] = updatedItem }
-                                else movies
+                            if (index != -1)
+                                movies.toMutableList().apply { this[index] = updatedItem }
+                            else movies
                     }
                 }
             } else {
@@ -1198,7 +1206,9 @@ constructor(
             if (updatedItem.played) {
                 _latestTvSeries.update { shows -> shows.filterNot { it.id == itemId } }
                 _separateTvLibrarySections.update { sections ->
-                    sections.map { (library, shows) -> library to shows.filterNot { it.id == itemId } }
+                    sections.map { (library, shows) ->
+                        library to shows.filterNot { it.id == itemId }
+                    }
                 }
             } else if (showIsInLatest) {
                 _latestTvSeries.update { shows ->
@@ -1210,9 +1220,9 @@ constructor(
                     sections.map { (library, shows) ->
                         val index = shows.indexOfFirst { it.id == itemId }
                         library to
-                                if (index != -1) shows.toMutableList()
-                                    .apply { this[index] = updatedItem }
-                                else shows
+                            if (index != -1)
+                                shows.toMutableList().apply { this[index] = updatedItem }
+                            else shows
                     }
                 }
             } else {
@@ -1253,8 +1263,7 @@ constructor(
                 if (updatedJson != null) {
                     val allSections = personSectionDao.getAllCachedSections()
                     for (section in allSections) {
-                        val itemStrings =
-                            json.decodeFromString<List<String>>(section.itemsData)
+                        val itemStrings = json.decodeFromString<List<String>>(section.itemsData)
                         var changed = false
                         val newItemStrings =
                             itemStrings.map { itemJson ->
