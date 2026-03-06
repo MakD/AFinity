@@ -49,50 +49,52 @@ fun BaseItemDto.toAfinityItem(baseUrl: String): AfinityItem? {
     }
 }
 
+private fun BaseItemDto.toAfinitySources(baseUrl: String): List<AfinitySource> =
+    mediaSources?.map { mediaSource ->
+        AfinitySource(
+            id = mediaSource.id.orEmpty(),
+            name = mediaSource.name.orEmpty(),
+            type = AfinitySourceType.REMOTE,
+            path = mediaSource.path.orEmpty(),
+            size = mediaSource.size ?: 0L,
+            mediaStreams =
+                mediaSource.mediaStreams?.map { mediaStream ->
+                    AfinityMediaStream(
+                        title = mediaStream.title.orEmpty(),
+                        displayTitle = mediaStream.displayTitle,
+                        language = mediaStream.language.orEmpty(),
+                        type = mediaStream.type,
+                        codec = mediaStream.codec.orEmpty(),
+                        isExternal = mediaStream.isExternal,
+                        path =
+                            if (
+                                mediaStream.isExternal &&
+                                    !mediaStream.deliveryUrl.isNullOrBlank()
+                            ) {
+                                baseUrl + mediaStream.deliveryUrl
+                            } else {
+                                null
+                            },
+                        channelLayout = mediaStream.channelLayout,
+                        videoRangeType = mediaStream.videoRangeType,
+                        height = mediaStream.height,
+                        width = mediaStream.width,
+                        videoDoViTitle = mediaStream.videoDoViTitle,
+                        index = mediaStream.index,
+                        channels = mediaStream.channels,
+                        isDefault = mediaStream.isDefault,
+                    )
+                } ?: emptyList(),
+        )
+    } ?: emptyList()
+
 fun BaseItemDto.toAfinityMovie(baseUrl: String): AfinityMovie {
     return AfinityMovie(
         id = id,
         name = name.orEmpty(),
         originalTitle = originalTitle,
         overview = overview.orEmpty(),
-        sources =
-            mediaSources?.map { mediaSource ->
-                AfinitySource(
-                    id = mediaSource.id.orEmpty(),
-                    name = mediaSource.name.orEmpty(),
-                    type = AfinitySourceType.REMOTE,
-                    path = mediaSource.path.orEmpty(),
-                    size = mediaSource.size ?: 0L,
-                    mediaStreams =
-                        mediaSource.mediaStreams?.map { mediaStream ->
-                            AfinityMediaStream(
-                                title = mediaStream.title.orEmpty(),
-                                displayTitle = mediaStream.displayTitle,
-                                language = mediaStream.language.orEmpty(),
-                                type = mediaStream.type,
-                                codec = mediaStream.codec.orEmpty(),
-                                isExternal = mediaStream.isExternal,
-                                path =
-                                    if (
-                                        mediaStream.isExternal &&
-                                            !mediaStream.deliveryUrl.isNullOrBlank()
-                                    ) {
-                                        baseUrl + mediaStream.deliveryUrl
-                                    } else {
-                                        null
-                                    },
-                                channelLayout = mediaStream.channelLayout,
-                                videoRangeType = mediaStream.videoRangeType,
-                                height = mediaStream.height,
-                                width = mediaStream.width,
-                                videoDoViTitle = mediaStream.videoDoViTitle,
-                                index = mediaStream.index,
-                                channels = mediaStream.channels,
-                                isDefault = mediaStream.isDefault,
-                            )
-                        } ?: emptyList(),
-                )
-            } ?: emptyList(),
+        sources = toAfinitySources(baseUrl),
         played = userData?.played == true,
         favorite = userData?.isFavorite == true,
         canPlay = playAccess != PlayAccess.NONE,
@@ -133,44 +135,7 @@ fun BaseItemDto.toAfinityShow(baseUrl: String): AfinityShow {
         name = name.orEmpty(),
         originalTitle = originalTitle,
         overview = overview.orEmpty(),
-        sources =
-            mediaSources?.map { mediaSource ->
-                AfinitySource(
-                    id = mediaSource.id.orEmpty(),
-                    name = mediaSource.name.orEmpty(),
-                    type = AfinitySourceType.REMOTE,
-                    path = mediaSource.path.orEmpty(),
-                    size = mediaSource.size ?: 0L,
-                    mediaStreams =
-                        mediaSource.mediaStreams?.map { mediaStream ->
-                            AfinityMediaStream(
-                                title = mediaStream.title.orEmpty(),
-                                displayTitle = mediaStream.displayTitle,
-                                language = mediaStream.language.orEmpty(),
-                                type = mediaStream.type,
-                                codec = mediaStream.codec.orEmpty(),
-                                isExternal = mediaStream.isExternal,
-                                path =
-                                    if (
-                                        mediaStream.isExternal &&
-                                            !mediaStream.deliveryUrl.isNullOrBlank()
-                                    ) {
-                                        baseUrl + mediaStream.deliveryUrl
-                                    } else {
-                                        null
-                                    },
-                                channelLayout = mediaStream.channelLayout,
-                                videoRangeType = mediaStream.videoRangeType,
-                                height = mediaStream.height,
-                                width = mediaStream.width,
-                                videoDoViTitle = mediaStream.videoDoViTitle,
-                                index = mediaStream.index,
-                                channels = mediaStream.channels,
-                                isDefault = mediaStream.isDefault,
-                            )
-                        } ?: emptyList(),
-                )
-            } ?: emptyList(),
+        sources = toAfinitySources(baseUrl),
         seasons = emptyList(),
         played = userData?.played == true,
         favorite = userData?.isFavorite == true,
@@ -473,44 +438,7 @@ fun BaseItemDto.toAfinityVideo(baseUrl: String): AfinityVideo {
         name = name.orEmpty(),
         originalTitle = originalTitle,
         overview = overview.orEmpty(),
-        sources =
-            mediaSources?.map { mediaSource ->
-                AfinitySource(
-                    id = mediaSource.id.orEmpty(),
-                    name = mediaSource.name.orEmpty(),
-                    type = AfinitySourceType.REMOTE,
-                    path = mediaSource.path.orEmpty(),
-                    size = mediaSource.size ?: 0L,
-                    mediaStreams =
-                        mediaSource.mediaStreams?.map { mediaStream ->
-                            AfinityMediaStream(
-                                title = mediaStream.title.orEmpty(),
-                                displayTitle = mediaStream.displayTitle,
-                                language = mediaStream.language.orEmpty(),
-                                type = mediaStream.type,
-                                codec = mediaStream.codec.orEmpty(),
-                                isExternal = mediaStream.isExternal,
-                                path =
-                                    if (
-                                        mediaStream.isExternal &&
-                                            !mediaStream.deliveryUrl.isNullOrBlank()
-                                    ) {
-                                        baseUrl + mediaStream.deliveryUrl
-                                    } else {
-                                        null
-                                    },
-                                channelLayout = mediaStream.channelLayout,
-                                videoRangeType = mediaStream.videoRangeType,
-                                height = mediaStream.height,
-                                width = mediaStream.width,
-                                videoDoViTitle = mediaStream.videoDoViTitle,
-                                index = mediaStream.index,
-                                channels = mediaStream.channels,
-                                isDefault = mediaStream.isDefault,
-                            )
-                        } ?: emptyList(),
-                )
-            } ?: emptyList(),
+        sources = toAfinitySources(baseUrl),
         played = userData?.played == true,
         favorite = userData?.isFavorite == true,
         canPlay = playAccess != PlayAccess.NONE,

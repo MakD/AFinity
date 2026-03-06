@@ -68,7 +68,7 @@ class JellyfinMediaRepository
 @Inject
 constructor(
     private val sessionManager: SessionManager,
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val boxSetCache: BoxSetCache,
     private val mdbListApiService: MdbListApiService,
     private val securePreferencesRepository: SecurePreferencesRepository,
@@ -81,18 +81,12 @@ constructor(
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val userId = getCurrentUserId() ?: return@withContext null
-                val itemsApi = ItemsApi(apiClient)
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        ids = listOf(itemId),
-                        fields = fields ?: FieldSets.REFRESH_USER_DATA,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-
-                val freshBaseItemDto = response.content?.items?.firstOrNull()
-                val freshItem = freshBaseItemDto?.toAfinityItem(getBaseUrl())
+                val userLibraryApi = UserLibraryApi(apiClient)
+                val freshItem =
+                    userLibraryApi
+                        .getItem(userId = userId, itemId = itemId)
+                        .content
+                        .toAfinityItem(getBaseUrl())
 
                 if (freshItem != null) {
                     updateItemInCache(_continueWatching, freshItem)
@@ -104,25 +98,15 @@ constructor(
                             launch {
                                 try {
                                     kotlinx.coroutines.delay(500)
-
-                                    val seriesResponse =
-                                        itemsApi.getItems(
-                                            userId = userId,
-                                            ids = listOf(seriesId),
-                                            fields = FieldSets.MEDIA_ITEM_CARDS,
-                                            enableImages = true,
-                                            enableUserData = true,
-                                        )
                                     val seriesItem =
-                                        seriesResponse.content
-                                            ?.items
-                                            ?.firstOrNull()
-                                            ?.toAfinityItem(getBaseUrl())
-
+                                        userLibraryApi
+                                            .getItem(userId = userId, itemId = seriesId)
+                                            .content
+                                            .toAfinityItem(getBaseUrl())
                                     if (seriesItem != null) {
                                         updateItemInCache(_latestMedia, seriesItem)
                                     }
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     Timber.w("Failed to background sync parent series")
                                 }
                             }
@@ -230,9 +214,9 @@ constructor(
                     )
 
                 val continueWatchingItems =
-                    response.content?.items?.mapNotNull { baseItemDto ->
+                    response.content.items.mapNotNull { baseItemDto ->
                         baseItemDto.toAfinityItem(getBaseUrl())
-                    } ?: emptyList()
+                    }
 
                 _continueWatching.value = continueWatchingItems
                 Timber.d("Full refresh of continue watching cache completed")
@@ -260,9 +244,9 @@ constructor(
                     )
 
                 val latestItems =
-                    response.content?.mapNotNull { baseItemDto ->
+                    response.content.mapNotNull { baseItemDto ->
                         baseItemDto.toAfinityItem(getBaseUrl())
-                    } ?: emptyList()
+                    }
 
                 _latestMedia.value = latestItems
                 Timber.d("Full refresh of latest media cache completed")
@@ -290,9 +274,9 @@ constructor(
                     )
 
                 val nextUpEpisodes =
-                    response.content?.items?.mapNotNull { baseItemDto ->
+                    response.content.items.mapNotNull { baseItemDto ->
                         baseItemDto.toAfinityEpisode(getBaseUrl())
-                    } ?: emptyList()
+                    }
 
                 _nextUp.value = nextUpEpisodes
                 Timber.d("Full refresh of next up cache completed")
@@ -344,12 +328,11 @@ constructor(
                 val response = userViewsApi.getUserViews(userId = userId)
 
                 val libraries =
-                    response.content
-                        ?.items
-                        ?.filter {
+                    response.content.items
+                        .filter {
                             it.collectionType != org.jellyfin.sdk.model.api.CollectionType.LIVETV
                         }
-                        ?.mapNotNull { baseItemDto ->
+                        .mapNotNull { baseItemDto ->
                             try {
                                 baseItemDto.toAfinityCollection(getBaseUrl())
                             } catch (e: Exception) {
@@ -359,7 +342,7 @@ constructor(
                                 )
                                 null
                             }
-                        } ?: emptyList()
+                        }
 
                 _libraries.value = libraries
                 Timber.d("Successfully retrieved ${libraries.size} libraries via UserViews API")
@@ -397,9 +380,9 @@ constructor(
                     )
 
                 val latestItems =
-                    response.content?.mapNotNull { baseItemDto ->
+                    response.content.mapNotNull { baseItemDto ->
                         baseItemDto.toAfinityItem(getBaseUrl())
-                    } ?: emptyList()
+                    }
 
                 _latestMedia.value = latestItems
                 latestItems
@@ -433,9 +416,9 @@ constructor(
                     )
 
                 val continueWatchingItems =
-                    response.content?.items?.mapNotNull { baseItemDto ->
+                    response.content.items.mapNotNull { baseItemDto ->
                         baseItemDto.toAfinityItem(getBaseUrl())
-                    } ?: emptyList()
+                    }
 
                 _continueWatching.value = continueWatchingItems
                 continueWatchingItems
@@ -544,11 +527,6 @@ constructor(
                         enableUserData = true,
                     )
                 response.content
-                    ?: BaseItemDtoQueryResult(
-                        items = emptyList(),
-                        totalRecordCount = 0,
-                        startIndex = 0,
-                    )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get items")
                 BaseItemDtoQueryResult(items = emptyList(), totalRecordCount = 0, startIndex = 0)
@@ -563,21 +541,7 @@ constructor(
             return@withContext try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val userId = getCurrentUserId() ?: return@withContext null
-
-                val itemsApi = ItemsApi(apiClient)
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        ids = listOf(itemId),
-                        fields = fields ?: FieldSets.ITEM_DETAIL,
-                        enableImages = true,
-                        enableUserData = true,
-                    )
-                val item = response.content?.items?.firstOrNull()
-                if (item != null) return@withContext item
-                Timber.d("getItem: not found via ItemsApi, trying UserLibraryApi for $itemId")
-                val userLibraryApi = UserLibraryApi(apiClient)
-                userLibraryApi.getItem(userId = userId, itemId = itemId).content
+                UserLibraryApi(apiClient).getItem(userId = userId, itemId = itemId).content
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get item with id: $itemId")
                 null
@@ -606,9 +570,9 @@ constructor(
                         limit = limit,
                         fields = fields ?: FieldSets.SIMILAR_ITEMS,
                     )
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityItem(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get similar items")
                 emptyList()
@@ -661,11 +625,9 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content
-                    ?.items
-                    ?.filter { it.type == BaseItemKind.MOVIE }
-                    ?.mapNotNull { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
-                    ?: emptyList()
+                response.content.items
+                    .filter { it.type == BaseItemKind.MOVIE }
+                    .mapNotNull { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get movies")
                 emptyList()
@@ -706,11 +668,9 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content
-                    ?.items
-                    ?.filter { it.type == BaseItemKind.MOVIE }
-                    ?.mapNotNull { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
-                    ?: emptyList()
+                response.content.items
+                    .filter { it.type == BaseItemKind.MOVIE }
+                    .mapNotNull { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get movies for genre: $genre")
                 emptyList()
@@ -751,10 +711,9 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content
-                    ?.items
-                    ?.filter { it.type == BaseItemKind.SERIES }
-                    ?.mapNotNull { baseItem -> baseItem.toAfinityShow(getBaseUrl()) } ?: emptyList()
+                response.content.items
+                    .filter { it.type == BaseItemKind.SERIES }
+                    .mapNotNull { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get shows for genre: $genre")
                 emptyList()
@@ -808,10 +767,9 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content
-                    ?.items
-                    ?.filter { it.type == BaseItemKind.SERIES }
-                    ?.mapNotNull { baseItem -> baseItem.toAfinityShow(getBaseUrl()) } ?: emptyList()
+                response.content.items
+                    .filter { it.type == BaseItemKind.SERIES }
+                    .mapNotNull { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get shows")
                 emptyList()
@@ -839,9 +797,9 @@ constructor(
                         enableUserData = true,
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinitySeason(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get seasons")
                 emptyList()
@@ -878,9 +836,9 @@ constructor(
                         enableUserData = true,
                         sortBy = ItemSortBy.SORT_NAME,
                     )
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityEpisode(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get episodes")
                 emptyList()
@@ -906,9 +864,9 @@ constructor(
                         enableUserData = true,
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityMovie(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite episodes")
                 emptyList()
@@ -935,9 +893,9 @@ constructor(
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
 
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityShow(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite episodes")
                 emptyList()
@@ -964,9 +922,9 @@ constructor(
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
 
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityEpisode(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite episodes")
                 emptyList()
@@ -992,9 +950,9 @@ constructor(
                         enableUserData = true,
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinitySeason(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite seasons")
                 emptyList()
@@ -1020,9 +978,9 @@ constructor(
                         enableUserData = true,
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityBoxSet(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite box sets")
                 emptyList()
@@ -1047,9 +1005,9 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityPersonDetail(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite people")
                 emptyList()
@@ -1080,9 +1038,9 @@ constructor(
                         enableUserData = true,
                     )
                 val nextUpItems =
-                    response.content?.items?.mapNotNull { baseItem ->
+                    response.content.items.mapNotNull { baseItem ->
                         baseItem.toAfinityEpisode(getBaseUrl())
-                    } ?: emptyList()
+                    }
 
                 if (seriesId == null) {
                     _nextUp.value = nextUpItems
@@ -1103,14 +1061,14 @@ constructor(
                 val userLibraryApi = UserLibraryApi(apiClient)
                 val response = userLibraryApi.getSpecialFeatures(itemId = itemId, userId = userId)
 
-                Timber.d("Special features API response: ${response.content?.size ?: 0} items")
-                response.content?.forEach { item ->
+                Timber.d("Special features API response: ${response.content.size} items")
+                response.content.forEach { item ->
                     Timber.d(
                         "Special feature: name=${item.name}, type=${item.type}, seriesId=${item.seriesId}, seasonId=${item.seasonId}"
                     )
                 }
 
-                response.content?.mapNotNull { baseItem ->
+                response.content.mapNotNull { baseItem ->
                     val result =
                         when (baseItem.type) {
                             BaseItemKind.EPISODE -> baseItem.toAfinityEpisode(getBaseUrl())
@@ -1127,7 +1085,7 @@ constructor(
                         )
                     }
                     result
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get special features for item: $itemId")
                 emptyList()
@@ -1164,9 +1122,9 @@ constructor(
                         enableImages = true,
                         enableUserData = true,
                     )
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityItem(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to search items")
                 emptyList()
@@ -1181,7 +1139,7 @@ constructor(
 
                 val userLibraryApi = UserLibraryApi(apiClient)
                 val response = userLibraryApi.getItem(itemId = personId, userId = userId)
-                response.content?.toAfinityPersonDetail(getBaseUrl())
+                response.content.toAfinityPersonDetail(getBaseUrl())
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get person details for ID: $personId")
                 null
@@ -1220,9 +1178,9 @@ constructor(
                         recursive = true,
                         limit = 150,
                     )
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityItem(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get person items for ID: $personId")
                 emptyList()
@@ -1259,9 +1217,9 @@ constructor(
                         recursive = true,
                     )
 
-                response.content?.items?.mapNotNull { baseItem ->
+                response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityMovie(getBaseUrl())
-                } ?: emptyList()
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get movies with people at index: $startIndex")
                 emptyList()
@@ -1288,11 +1246,10 @@ constructor(
                         fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                     )
 
-                response.content
-                    ?.items
-                    ?.filter { it.id != movieId }
-                    ?.mapNotNull { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
-                    ?.shuffled() ?: emptyList()
+                response.content.items
+                    .filter { it.id != movieId }
+                    .mapNotNull { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
+                    .shuffled()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get similar movies for ID: $movieId")
                 emptyList()
@@ -1335,7 +1292,7 @@ constructor(
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val trickplayApi = TrickplayApi(apiClient)
                 val response = trickplayApi.getTrickplayTileImage(itemId, width, index)
-                Timber.d("Fetched trickplay tile from API: ${response.content?.size ?: 0} bytes")
+                Timber.d("Fetched trickplay tile from API: ${response.content.size} bytes")
                 response.content
             } catch (e: Exception) {
                 Timber.w(e, "Failed to get trickplay data for tile $index")
@@ -1374,9 +1331,9 @@ constructor(
                             },
                     )
 
-                response.content?.items?.mapNotNull { genreDto ->
+                response.content.items.mapNotNull { genreDto ->
                     genreDto.name?.takeIf { it.isNotBlank() }
-                } ?: emptyList()
+                }
             } catch (e: ApiClientException) {
                 Timber.e(e, "API error getting genres: ${e.message}")
                 emptyList()
@@ -1418,10 +1375,12 @@ constructor(
                                 parentId = library.id,
                                 includeItemTypes = listOf(BaseItemKind.SERIES),
                                 enableImages = true,
+                                imageTypeLimit = 1,
+                                enableImageTypes = listOf(ImageType.THUMB),
                             )
 
-                        response.content?.items?.forEach { studioDto ->
-                            val id: UUID = studioDto.id ?: return@forEach
+                        response.content.items.forEach { studioDto ->
+                            val id: UUID = studioDto.id
                             val name: String =
                                 studioDto.name?.takeIf { it.isNotBlank() } ?: return@forEach
                             val childCount: Int = studioDto.childCount ?: 0
@@ -1436,7 +1395,7 @@ constructor(
                         }
 
                         Timber.d(
-                            "Fetched ${response.content?.items?.size ?: 0} studios from library: ${library.name}"
+                            "Fetched ${response.content.items.size} studios from library: ${library.name}"
                         )
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to fetch studios from library: ${library.name}")
@@ -1525,7 +1484,7 @@ constructor(
                 limit = null,
             )
 
-        val allBoxSets = boxSetsResponse.content?.items ?: emptyList()
+        val allBoxSets = boxSetsResponse.content.items
         Timber.d("Fetching children for ${allBoxSets.size} BoxSets")
 
         val nonEmptyBoxSets = allBoxSets.filter { (it.childCount ?: 0) > 0 }
@@ -1547,9 +1506,7 @@ constructor(
                                         enableUserData = false,
                                     )
 
-                                val childItemIds =
-                                    childrenResponse.content?.items?.mapNotNull { it.id }
-                                        ?: emptyList()
+                                val childItemIds = childrenResponse.content.items.map { it.id }
 
                                 BoxSetWithChildren(
                                     boxSetId = boxSetDto.id,
@@ -1596,9 +1553,9 @@ constructor(
                     )
 
                 val boxSets =
-                    boxSetsResponse.content?.items?.mapNotNull { boxSetDto ->
+                    boxSetsResponse.content.items.mapNotNull { boxSetDto ->
                         boxSetDto.toAfinityBoxSet(getBaseUrl())
-                    } ?: emptyList()
+                    }
 
                 Timber.d("Item $itemId is in ${boxSets.size} BoxSets (cache lookup)")
                 boxSets
