@@ -590,8 +590,12 @@ constructor(
                         _uiState.update { it.copy(isLoadingReviews = true) }
                         val cachedMetadata = databaseRepository.getItemMetadata(item.id)
 
+                        val cacheAgeMs = System.currentTimeMillis() - (cachedMetadata?.lastUpdated ?: 0L)
+                        val isCacheValid = cacheAgeMs < 48 * 60 * 60 * 1000L
+
                         if (
                             cachedMetadata != null &&
+                                isCacheValid &&
                                 (cachedMetadata.tmdbReviews.isNotEmpty() ||
                                     cachedMetadata.mdbRatings.isNotEmpty())
                         ) {
