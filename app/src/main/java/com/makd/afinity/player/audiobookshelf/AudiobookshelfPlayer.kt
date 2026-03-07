@@ -2,11 +2,13 @@ package com.makd.afinity.player.audiobookshelf
 
 import android.content.ComponentName
 import android.content.Context
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.makd.afinity.data.manager.SessionManager
@@ -15,10 +17,6 @@ import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,12 +25,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 @Singleton
 class AudiobookshelfPlayer
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val playbackManager: AudiobookshelfPlaybackManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
@@ -64,7 +66,9 @@ constructor(
             audiobookshelfRepository.isAuthenticated.collect { isAuthenticated ->
                 if (wasAuthenticated && !isAuthenticated) {
                     if (playbackManager.playbackState.value.sessionId != null) {
-                        Timber.w("Audiobookshelf auth lost while playback active - playback continues")
+                        Timber.w(
+                            "Audiobookshelf auth lost while playback active - playback continues"
+                        )
                     }
                 }
                 wasAuthenticated = isAuthenticated
@@ -72,6 +76,7 @@ constructor(
         }
     }
 
+    @UnstableApi
     private suspend fun getConnectedController(): MediaController? {
         if (mediaController != null) return mediaController
 
@@ -91,6 +96,7 @@ constructor(
         }
     }
 
+    @UnstableApi
     fun loadSession(
         session: PlaybackSession,
         baseUrl: String,
@@ -101,8 +107,7 @@ constructor(
             val controller = getConnectedController() ?: return@launch
 
             val token = securePreferencesRepository.getCachedAudiobookshelfToken()
-            val isPodcastPlaylist =
-                episodeSort != null && session.mediaType == "podcast"
+            val isPodcastPlaylist = episodeSort != null && session.mediaType == "podcast"
             val unsortedEpisodes = session.libraryItem?.media?.episodes ?: emptyList()
             val episodes =
                 if (isPodcastPlaylist) {
@@ -197,7 +202,7 @@ constructor(
                                     ?: enhancedSession.mediaMetadata?.authorName
                                     ?: ""
                             )
-                            .setArtworkUri(Uri.parse(artUrl))
+                            .setArtworkUri(artUrl?.toUri())
                             .build()
 
                     MediaItem.Builder()
@@ -241,41 +246,35 @@ constructor(
         val ascending = parts.lastOrNull() == "asc"
         val sortType = parts.dropLast(1).joinToString("_")
 
-        val cmp = Comparator<String> { a, b ->
-            val pattern = Regex("(\\d+|\\D+)")
-            val aParts = pattern.findAll(a).map { it.value }.toList()
-            val bParts = pattern.findAll(b).map { it.value }.toList()
-            for (i in 0 until minOf(aParts.size, bParts.size)) {
-                val ap = aParts[i]
-                val bp = bParts[i]
-                val aNum = ap.toBigIntegerOrNull()
-                val bNum = bp.toBigIntegerOrNull()
-                val result =
-                    if (aNum != null && bNum != null) aNum.compareTo(bNum)
-                    else ap.compareTo(bp, ignoreCase = true)
-                if (result != 0) return@Comparator result
+        val cmp =
+            Comparator<String> { a, b ->
+                val pattern = Regex("(\\d+|\\D+)")
+                val aParts = pattern.findAll(a).map { it.value }.toList()
+                val bParts = pattern.findAll(b).map { it.value }.toList()
+                for (i in 0 until minOf(aParts.size, bParts.size)) {
+                    val ap = aParts[i]
+                    val bp = bParts[i]
+                    val aNum = ap.toBigIntegerOrNull()
+                    val bNum = bp.toBigIntegerOrNull()
+                    val result =
+                        if (aNum != null && bNum != null) aNum.compareTo(bNum)
+                        else ap.compareTo(bp, ignoreCase = true)
+                    if (result != 0) return@Comparator result
+                }
+                aParts.size - bParts.size
             }
-            aParts.size - bParts.size
-        }
 
         val sorted =
             when (sortType) {
-                "pub_date" ->
-                    episodes.sortedBy { it.publishedAt ?: 0L }
-                "title" ->
-                    episodes.sortedWith(
-                        compareBy<PodcastEpisode, String>(cmp) { it.title }
-                    )
+                "pub_date" -> episodes.sortedBy { it.publishedAt ?: 0L }
+                "title" -> episodes.sortedWith(compareBy<PodcastEpisode, String>(cmp) { it.title })
                 "season" ->
                     episodes.sortedWith(
-                        compareBy<PodcastEpisode, String>(cmp) {
-                            it.season ?: ""
-                        }.thenBy(cmp) { it.episode ?: "" }
+                        compareBy<PodcastEpisode, String>(cmp) { it.season ?: "" }
+                            .thenBy(cmp) { it.episode ?: "" }
                     )
                 "episode" ->
-                    episodes.sortedWith(
-                        compareBy<PodcastEpisode, String>(cmp) { it.episode ?: "" }
-                    )
+                    episodes.sortedWith(compareBy<PodcastEpisode, String>(cmp) { it.episode ?: "" })
                 "filename" ->
                     episodes.sortedWith(
                         compareBy<PodcastEpisode, String>(cmp) {
@@ -369,8 +368,9 @@ constructor(
                         currentTime =
                             (state.currentTime - state.currentChapter.start).coerceAtLeast(0.0)
                         duration =
-                            (state.currentChapter.end - state.currentChapter.start)
-                                .coerceAtLeast(0.0)
+                            (state.currentChapter.end - state.currentChapter.start).coerceAtLeast(
+                                0.0
+                            )
                     } else {
                         currentTime = state.currentTime
                         duration = state.duration
@@ -417,7 +417,7 @@ private suspend fun <T> ListenableFuture<T>.await(): T {
         addListener(
             {
                 try {
-                    continuation.resume(get())
+                    continuation.resume(Futures.getDone(this@await))
                 } catch (e: Exception) {
                     if (isCancelled) {
                         continuation.cancel(e)

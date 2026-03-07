@@ -61,7 +61,7 @@ import kotlin.time.Duration.Companion.hours
 class AppDataRepository
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val jellyfinRepository: JellyfinRepository,
     private val preferencesRepository: PreferencesRepository,
     private val database: AfinityDatabase,
@@ -1072,13 +1072,7 @@ constructor(
                 )
 
             val itemJsonStrings =
-                selectedItems.mapNotNull {
-                    when (it) {
-                        is AfinityMovie -> afinityTypeConverters.fromAfinityMovie(it)
-                        is AfinityShow -> afinityTypeConverters.fromAfinityShow(it)
-                        else -> null
-                    }
-                }
+                selectedItems.mapNotNull { afinityTypeConverters.fromAfinityItem(it) }
             val entity =
                 PersonSectionCacheEntity(
                     cacheKey = cacheKey,
