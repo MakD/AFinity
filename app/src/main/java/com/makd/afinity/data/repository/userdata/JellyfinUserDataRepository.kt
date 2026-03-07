@@ -5,6 +5,9 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.operations.ItemsApi
@@ -263,11 +266,11 @@ class JellyfinUserDataRepository @Inject constructor(private val sessionManager:
                 val userId = getCurrentUserId() ?: return@withContext false
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 var successCount = 0
+                val itemsApi = ItemsApi(apiClient)
 
                 items.forEach { userDataDto ->
                     try {
                         userDataDto.itemId?.let { itemId ->
-                            val itemsApi = ItemsApi(apiClient)
                             itemsApi.updateItemUserData(
                                 itemId = itemId,
                                 userId = userId,
@@ -301,13 +304,12 @@ class JellyfinUserDataRepository @Inject constructor(private val sessionManager:
     override suspend fun getUserDataBatch(itemIds: List<UUID>): Map<UUID, UserItemDataDto> {
         return withContext(Dispatchers.IO) {
             try {
-                val result = mutableMapOf<UUID, UserItemDataDto>()
-
-                itemIds.forEach { itemId ->
-                    getUserData(itemId)?.let { userData -> result[itemId] = userData }
+                coroutineScope {
+                    itemIds.map { itemId -> async { itemId to getUserData(itemId) } }
+                        .awaitAll()
+                        .mapNotNull { (itemId, userData) -> userData?.let { itemId to it } }
+                        .toMap()
                 }
-
-                result
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get user data batch")
                 emptyMap()

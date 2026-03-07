@@ -37,6 +37,25 @@ constructor(
         return sessionManager.currentSession.value?.userId
     }
 
+    private fun buildDeviceProfile(maxStreamingBitrate: Int?): DeviceProfile =
+        DeviceProfile(
+            name = "Direct play all",
+            maxStaticBitrate = maxStreamingBitrate ?: 1_000_000_000,
+            maxStreamingBitrate = maxStreamingBitrate ?: 1_000_000_000,
+            codecProfiles = emptyList(),
+            containerProfiles = emptyList(),
+            directPlayProfiles = emptyList(),
+            transcodingProfiles = emptyList(),
+            subtitleProfiles =
+                listOf(
+                    SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
+                    SubtitleProfile("ass", SubtitleDeliveryMethod.EXTERNAL),
+                    SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
+                    SubtitleProfile("sub", SubtitleDeliveryMethod.EXTERNAL),
+                    SubtitleProfile("idx", SubtitleDeliveryMethod.EXTERNAL),
+                ),
+        )
+
     override suspend fun getPlaybackInfo(
         itemId: UUID,
         maxStreamingBitrate: Int?,
@@ -44,31 +63,12 @@ constructor(
         audioStreamIndex: Int?,
         subtitleStreamIndex: Int?,
         mediaSourceId: String?,
-    ): PlaybackInfoDto? {
+    ): PlaybackInfoResponse? {
         return withContext(Dispatchers.IO) {
             try {
                 val userId = getCurrentUserId() ?: return@withContext null
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val mediaInfoApi = MediaInfoApi(apiClient)
-
-                val deviceProfile =
-                    DeviceProfile(
-                        name = "Direct play all",
-                        maxStaticBitrate = maxStreamingBitrate ?: 1_000_000_000,
-                        maxStreamingBitrate = maxStreamingBitrate ?: 1_000_000_000,
-                        codecProfiles = emptyList(),
-                        containerProfiles = emptyList(),
-                        directPlayProfiles = emptyList(),
-                        transcodingProfiles = emptyList(),
-                        subtitleProfiles =
-                            listOf(
-                                SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
-                                SubtitleProfile("ass", SubtitleDeliveryMethod.EXTERNAL),
-                                SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
-                                SubtitleProfile("sub", SubtitleDeliveryMethod.EXTERNAL),
-                                SubtitleProfile("idx", SubtitleDeliveryMethod.EXTERNAL),
-                            ),
-                    )
 
                 val playbackInfoDto =
                     PlaybackInfoDto(
@@ -79,7 +79,7 @@ constructor(
                         subtitleStreamIndex = subtitleStreamIndex,
                         maxAudioChannels = maxAudioChannels,
                         mediaSourceId = mediaSourceId,
-                        deviceProfile = deviceProfile,
+                        deviceProfile = buildDeviceProfile(maxStreamingBitrate),
                         enableDirectPlay = true,
                         enableDirectStream = true,
                         enableTranscoding = true,
@@ -94,7 +94,7 @@ constructor(
                     "Got playback info response with ${response.content.mediaSources?.size ?: 0} media sources"
                 )
 
-                playbackInfoDto
+                response.content
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get playback info for item: $itemId")
                 null
@@ -120,25 +120,6 @@ constructor(
                     sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val mediaInfoApi = MediaInfoApi(apiClient)
 
-                val deviceProfile =
-                    DeviceProfile(
-                        name = "Direct play all",
-                        maxStaticBitrate = maxStreamingBitrate ?: 1_000_000_000,
-                        maxStreamingBitrate = maxStreamingBitrate ?: 1_000_000_000,
-                        codecProfiles = emptyList(),
-                        containerProfiles = emptyList(),
-                        directPlayProfiles = emptyList(),
-                        transcodingProfiles = emptyList(),
-                        subtitleProfiles =
-                            listOf(
-                                SubtitleProfile("srt", SubtitleDeliveryMethod.EXTERNAL),
-                                SubtitleProfile("ass", SubtitleDeliveryMethod.EXTERNAL),
-                                SubtitleProfile("vtt", SubtitleDeliveryMethod.EXTERNAL),
-                                SubtitleProfile("sub", SubtitleDeliveryMethod.EXTERNAL),
-                                SubtitleProfile("idx", SubtitleDeliveryMethod.EXTERNAL),
-                            ),
-                    )
-
                 val playbackInfoDto =
                     PlaybackInfoDto(
                         userId = userId,
@@ -148,7 +129,7 @@ constructor(
                         subtitleStreamIndex = subtitleStreamIndex,
                         maxAudioChannels = maxAudioChannels,
                         mediaSourceId = mediaSourceId,
-                        deviceProfile = deviceProfile,
+                        deviceProfile = buildDeviceProfile(maxStreamingBitrate),
                         enableDirectPlay = true,
                         enableDirectStream = true,
                         enableTranscoding = true,

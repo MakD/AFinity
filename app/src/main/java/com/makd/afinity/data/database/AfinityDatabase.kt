@@ -93,7 +93,7 @@ import com.makd.afinity.data.models.user.User
             AudiobookshelfProgressEntity::class,
             ItemMetadataCacheEntity::class,
         ],
-    version = 32,
+    version = 34,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)

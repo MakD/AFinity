@@ -57,6 +57,7 @@ private fun BaseItemDto.toAfinitySources(baseUrl: String): List<AfinitySource> =
             type = AfinitySourceType.REMOTE,
             path = mediaSource.path.orEmpty(),
             size = mediaSource.size ?: 0L,
+            container = mediaSource.container,
             mediaStreams =
                 mediaSource.mediaStreams?.map { mediaStream ->
                     AfinityMediaStream(
@@ -209,6 +210,7 @@ fun BaseItemDto.toAfinityEpisode(baseUrl: String): AfinityEpisode? {
                         type = AfinitySourceType.REMOTE,
                         path = mediaSource.path.orEmpty(),
                         size = mediaSource.size ?: 0L,
+                        container = mediaSource.container,
                         mediaStreams =
                             mediaSource.mediaStreams?.map { mediaStream ->
                                 AfinityMediaStream(

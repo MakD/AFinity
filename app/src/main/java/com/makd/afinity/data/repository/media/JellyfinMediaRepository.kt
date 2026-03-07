@@ -24,6 +24,7 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.network.MdbListApiService
+import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -72,6 +73,7 @@ constructor(
     private val boxSetCache: BoxSetCache,
     private val mdbListApiService: MdbListApiService,
     private val securePreferencesRepository: SecurePreferencesRepository,
+    private val databaseRepository: DatabaseRepository,
 ) : MediaRepository {
     override suspend fun refreshItemUserData(
         itemId: UUID,
@@ -84,7 +86,10 @@ constructor(
                 val userLibraryApi = UserLibraryApi(apiClient)
                 val freshItem =
                     userLibraryApi
-                        .getItem(userId = userId, itemId = itemId)
+                        .getItem(
+                            userId = userId,
+                            itemId = itemId,
+                        )
                         .content
                         .toAfinityItem(getBaseUrl())
 
@@ -100,7 +105,10 @@ constructor(
                                     kotlinx.coroutines.delay(500)
                                     val seriesItem =
                                         userLibraryApi
-                                            .getItem(userId = userId, itemId = seriesId)
+                                            .getItem(
+                                                userId = userId,
+                                                itemId = seriesId,
+                                            )
                                             .content
                                             .toAfinityItem(getBaseUrl())
                                     if (seriesItem != null) {
@@ -625,9 +633,9 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content.items
-                    .filter { it.type == BaseItemKind.MOVIE }
-                    .mapNotNull { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
+                response.content.items.mapNotNull { baseItem ->
+                    baseItem.toAfinityMovie(getBaseUrl())
+                }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get movies")
                 emptyList()
@@ -668,9 +676,9 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content.items
-                    .filter { it.type == BaseItemKind.MOVIE }
-                    .mapNotNull { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
+                response.content.items.mapNotNull { baseItem ->
+                    baseItem.toAfinityMovie(getBaseUrl())
+                }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get movies for genre: $genre")
                 emptyList()
@@ -711,9 +719,9 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content.items
-                    .filter { it.type == BaseItemKind.SERIES }
-                    .mapNotNull { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
+                response.content.items.mapNotNull { baseItem ->
+                    baseItem.toAfinityShow(getBaseUrl())
+                }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get shows for genre: $genre")
                 emptyList()
@@ -767,9 +775,9 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content.items
-                    .filter { it.type == BaseItemKind.SERIES }
-                    .mapNotNull { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
+                response.content.items.mapNotNull { baseItem ->
+                    baseItem.toAfinityShow(getBaseUrl())
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get shows")
                 emptyList()
@@ -786,16 +794,14 @@ constructor(
                     sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
 
-                val itemsApi = ItemsApi(apiClient)
+                val tvShowsApi = TvShowsApi(apiClient)
                 val response =
-                    itemsApi.getItems(
+                    tvShowsApi.getSeasons(
+                        seriesId = seriesId,
                         userId = userId,
-                        parentId = seriesId,
-                        includeItemTypes = listOf(BaseItemKind.SEASON),
                         fields = fields ?: FieldSets.SEASON_DETAIL,
                         enableImages = true,
                         enableUserData = true,
-                        sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
                 response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinitySeason(getBaseUrl())
@@ -1266,7 +1272,8 @@ constructor(
 
                 if (externalFilesDir != null) {
                     val downloadDir = File(externalFilesDir, "AFinity/Downloads")
-                    val itemDir = File(downloadDir, itemId.toString())
+                    val folderPath = databaseRepository.getDownloadByItemId(itemId)?.folderPath
+                    val itemDir = File(downloadDir, folderPath ?: itemId.toString())
                     val trickplayFile = File(itemDir, "trickplay/$width/$index.jpg")
 
                     Timber.d("Looking for trickplay file: ${trickplayFile.absolutePath}")

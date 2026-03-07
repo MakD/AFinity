@@ -44,12 +44,16 @@ import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.makd.afinity.data.models.download.DownloadStatus
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -86,6 +90,7 @@ constructor(
 
     private val _episodesPagingData = MutableStateFlow<Flow<PagingData<AfinityEpisode>>?>(null)
     private val _episodeStatusUpdates = MutableStateFlow<Map<UUID, Boolean>>(emptyMap())
+    private var bulkDownloadJob: Job? = null
     private val _seasonWatchStatusOverride = MutableStateFlow<Boolean?>(null)
 
     private val _uiState = MutableStateFlow(ItemDetailUiState())
@@ -217,20 +222,65 @@ constructor(
     private fun observeDownloadStatus() {
         viewModelScope.launch {
             try {
-                val existingDownload = downloadRepository.getDownloadByItemId(itemId)
-                if (existingDownload != null) {
-                    _uiState.value = _uiState.value.copy(downloadInfo = existingDownload)
-                }
-
-                downloadRepository.getAllDownloadsFlow().collect { downloads ->
-                    val itemDownload = downloads.find { it.itemId == itemId }
-                    _uiState.value = _uiState.value.copy(downloadInfo = itemDownload)
+                combine(
+                    _uiState.map { it.item }.distinctUntilChanged(),
+                    downloadRepository.getAllDownloadsFlow(),
+                ) { item, downloads ->
+                    computeDownloadInfo(item, downloads)
+                }.collect { downloadInfo ->
+                    _uiState.value = _uiState.value.copy(downloadInfo = downloadInfo)
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Timber.e(e, "Failed to observe download status")
             }
         }
+    }
+
+    private fun computeDownloadInfo(item: AfinityItem?, downloads: List<DownloadInfo>): DownloadInfo? {
+        return when (item) {
+            is AfinityShow -> {
+                val seriesDownloads = downloads.filter { it.seriesId == item.id.toString() }
+                aggregateDownloadInfo(seriesDownloads, item.id)
+            }
+            is AfinitySeason -> {
+                val seriesDownloads = downloads.filter {
+                    it.seriesId == item.seriesId.toString() && it.seasonNumber == item.indexNumber
+                }
+                aggregateDownloadInfo(seriesDownloads, item.id)
+            }
+            else -> downloads.find { it.itemId == itemId }
+        }
+    }
+
+    private fun aggregateDownloadInfo(downloads: List<DownloadInfo>, parentId: UUID): DownloadInfo? {
+        if (downloads.isEmpty()) return null
+        val status = when {
+            downloads.any { it.status == DownloadStatus.DOWNLOADING } -> DownloadStatus.DOWNLOADING
+            downloads.any { it.status == DownloadStatus.QUEUED } -> DownloadStatus.QUEUED
+            downloads.all { it.status == DownloadStatus.COMPLETED } -> DownloadStatus.COMPLETED
+            downloads.any { it.status == DownloadStatus.FAILED } -> DownloadStatus.FAILED
+            else -> DownloadStatus.PAUSED
+        }
+        val first = downloads.first()
+        return DownloadInfo(
+            id = parentId,
+            itemId = parentId,
+            itemName = first.seriesName ?: first.itemName,
+            itemType = first.itemType,
+            sourceId = "",
+            sourceName = "",
+            status = status,
+            progress = downloads.map { it.progress }.average().toFloat(),
+            bytesDownloaded = downloads.sumOf { it.bytesDownloaded },
+            totalBytes = downloads.sumOf { it.totalBytes },
+            filePath = null,
+            error = null,
+            createdAt = downloads.minOf { it.createdAt },
+            updatedAt = downloads.maxOf { it.updatedAt },
+            serverId = first.serverId,
+            userId = first.userId,
+        )
     }
 
     private fun refreshFromCacheImmediate() {
@@ -902,11 +952,31 @@ constructor(
     }
 
     fun onDownloadClick() {
-        itemDownloadDelegate.onDownloadClick(
-            viewModelScope,
-            _selectedEpisode.value ?: _uiState.value.item,
-        ) {
-            _uiState.value = _uiState.value.copy(showQualityDialog = true)
+        val selectedEpisode = _selectedEpisode.value
+        val currentItem = _uiState.value.item
+        when {
+            selectedEpisode != null || (currentItem !is AfinityShow && currentItem !is AfinitySeason) -> {
+                itemDownloadDelegate.onDownloadClick(
+                    viewModelScope,
+                    selectedEpisode ?: currentItem,
+                ) {
+                    _uiState.value = _uiState.value.copy(showQualityDialog = true)
+                }
+            }
+            currentItem is AfinitySeason -> {
+                bulkDownloadJob = viewModelScope.launch {
+                    downloadRepository.startSeasonDownload(currentItem.id, currentItem.seriesId)
+                        .onSuccess { count -> Timber.i("Queued $count episodes for season ${currentItem.name}") }
+                        .onFailure { Timber.e(it, "Failed to start season download") }
+                }
+            }
+            currentItem is AfinityShow -> {
+                bulkDownloadJob = viewModelScope.launch {
+                    downloadRepository.startSeriesDownload(currentItem.id)
+                        .onSuccess { count -> Timber.i("Queued $count episodes for series ${currentItem.name}") }
+                        .onFailure { Timber.e(it, "Failed to start series download") }
+                }
+            }
         }
     }
 
@@ -932,11 +1002,34 @@ constructor(
             _uiState.value.downloadInfo ?: _selectedEpisodeDownloadInfo.value,
         )
 
-    fun cancelDownload() =
-        itemDownloadDelegate.cancelDownload(
-            viewModelScope,
-            _uiState.value.downloadInfo ?: _selectedEpisodeDownloadInfo.value,
-        )
+    fun cancelDownload() {
+        val selectedEpisode = _selectedEpisode.value
+        val currentItem = _uiState.value.item
+        when {
+            selectedEpisode != null -> {
+                itemDownloadDelegate.cancelDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
+            }
+            currentItem is AfinityShow -> {
+                bulkDownloadJob?.cancel()
+                bulkDownloadJob = null
+                viewModelScope.launch {
+                    downloadRepository.cancelAllSeriesDownloads(currentItem.id)
+                        .onFailure { Timber.e(it, "Failed to cancel series downloads") }
+                }
+            }
+            currentItem is AfinitySeason -> {
+                bulkDownloadJob?.cancel()
+                bulkDownloadJob = null
+                viewModelScope.launch {
+                    downloadRepository.cancelAllSeasonDownloads(currentItem.seriesId, currentItem.indexNumber)
+                        .onFailure { Timber.e(it, "Failed to cancel season downloads") }
+                }
+            }
+            else -> {
+                itemDownloadDelegate.cancelDownload(viewModelScope, _uiState.value.downloadInfo)
+            }
+        }
+    }
 
     fun toggleFavorite() {
         val currentItem = _uiState.value.item ?: return

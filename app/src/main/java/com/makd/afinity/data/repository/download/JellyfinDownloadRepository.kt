@@ -29,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -121,8 +122,13 @@ constructor(
                     }
 
                 val source =
-                    item.sources.find { it.id == sourceId }
-                        ?: return@withContext Result.failure(Exception("Source not found"))
+                    if (sourceId.isEmpty()) {
+                        item.sources.firstOrNull { it.type == AfinitySourceType.REMOTE }
+                            ?: return@withContext Result.failure(Exception("No remote source available"))
+                    } else {
+                        item.sources.find { it.id == sourceId }
+                            ?: return@withContext Result.failure(Exception("Source not found"))
+                    }
 
                 val downloadId = UUID.randomUUID()
 
@@ -145,6 +151,14 @@ constructor(
                         else -> 0L
                     }
 
+                val folderPath =
+                    when (item) {
+                        is AfinityMovie -> "$serverId/movies/$itemId"
+                        is AfinityEpisode ->
+                            "$serverId/shows/${item.seriesId}/seasons/${item.parentIndexNumber}/$itemId"
+                        else -> "$serverId/$itemId"
+                    }
+
                 val download =
                     DownloadDto(
                         id = downloadId,
@@ -156,7 +170,7 @@ constructor(
                                 is AfinityEpisode -> "Episode"
                                 else -> "Unknown"
                             },
-                        sourceId = sourceId,
+                        sourceId = source.id,
                         sourceName = source.name,
                         status = DownloadStatus.QUEUED,
                         progress = 0f,
@@ -175,6 +189,8 @@ constructor(
                         episodeNumber = episodeNumber,
                         releaseYear = releaseYear,
                         runtimeTicks = runtimeTicks,
+                        folderPath = folderPath,
+                        seriesId = (item as? AfinityEpisode)?.seriesId?.toString(),
                     )
 
                 databaseRepository.insertDownload(download)
@@ -461,7 +477,88 @@ constructor(
 
     fun getDownloadDirectory(): File = downloadDir
 
-    fun getItemDownloadDirectory(itemId: UUID): File {
-        return File(downloadDir, itemId.toString()).also { if (!it.exists()) it.mkdirs() }
+    suspend fun getItemDownloadDirectory(itemId: UUID): File {
+        val folderPath = databaseRepository.getDownloadByItemId(itemId)?.folderPath
+        return File(downloadDir, folderPath ?: itemId.toString()).also { it.mkdirs() }
     }
+
+    fun getShowDirectory(serverId: String, showId: UUID): File =
+        File(downloadDir, "$serverId/shows/$showId").also { it.mkdirs() }
+
+    fun getSeasonDirectory(serverId: String, showId: UUID, seasonNumber: Int): File =
+        File(downloadDir, "$serverId/shows/$showId/seasons/$seasonNumber").also { it.mkdirs() }
+
+    override suspend fun startSeasonDownload(seasonId: UUID, seriesId: UUID?): Result<Int> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val episodes = mediaRepository.getEpisodes(seasonId, seriesId)
+                var started = 0
+                for (episode in episodes) {
+                    startDownload(episode.id, "")
+                        .onSuccess { started++ }
+                        .onFailure { Timber.w(it, "Skipping episode ${episode.name}: ${it.message}") }
+                }
+                Timber.i("Season download queued $started/${episodes.size} episodes")
+                Result.success(started)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to start season download")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun startSeriesDownload(showId: UUID): Result<Int> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val seasons = mediaRepository.getSeasons(showId)
+                var totalStarted = 0
+                for (season in seasons) {
+                    startSeasonDownload(season.id, showId)
+                        .onSuccess { count -> totalStarted += count }
+                        .onFailure { Timber.w(it, "Skipping season ${season.name}: ${it.message}") }
+                }
+                Timber.i("Series download queued $totalStarted episodes across ${seasons.size} seasons")
+                Result.success(totalStarted)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to start series download")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun cancelAllSeriesDownloads(showId: UUID): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val downloads = getAllDownloadsFlow().first()
+                val toCancel = downloads.filter {
+                    it.seriesId == showId.toString() && it.status != DownloadStatus.COMPLETED
+                }
+                for (download in toCancel) {
+                    cancelDownload(download.id)
+                }
+                Timber.i("Cancelled ${toCancel.size} downloads for series $showId")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to cancel series downloads")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun cancelAllSeasonDownloads(seriesId: UUID, seasonNumber: Int): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val downloads = getAllDownloadsFlow().first()
+                val toCancel = downloads.filter {
+                    it.seriesId == seriesId.toString() &&
+                        it.seasonNumber == seasonNumber &&
+                        it.status != DownloadStatus.COMPLETED
+                }
+                for (download in toCancel) {
+                    cancelDownload(download.id)
+                }
+                Timber.i("Cancelled ${toCancel.size} downloads for series $seriesId season $seasonNumber")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to cancel season downloads")
+                Result.failure(e)
+            }
+        }
 }

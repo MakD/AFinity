@@ -2,7 +2,6 @@ package com.makd.afinity.data.repository.playback
 
 import java.util.UUID
 import org.jellyfin.sdk.model.api.DeviceProfile
-import org.jellyfin.sdk.model.api.PlaybackInfoDto
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 
 interface PlaybackRepository {
@@ -14,7 +13,7 @@ interface PlaybackRepository {
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         mediaSourceId: String? = null,
-    ): PlaybackInfoDto?
+    ): PlaybackInfoResponse?
 
     suspend fun getStreamUrl(
         itemId: UUID,

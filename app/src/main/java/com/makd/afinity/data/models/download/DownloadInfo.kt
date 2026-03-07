@@ -26,4 +26,5 @@ data class DownloadInfo(
     val episodeNumber: Int? = null,
     val releaseYear: String? = null,
     val runtimeTicks: Long? = null,
+    val seriesId: String? = null,
 )

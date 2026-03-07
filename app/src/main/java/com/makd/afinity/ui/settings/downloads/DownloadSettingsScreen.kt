@@ -168,7 +168,7 @@ fun DownloadSettingsScreen(
                     )
                 }
 
-                items(uiState.activeDownloads, key = { it.id }) { download ->
+                items(uiState.activeDownloads.reversed(), key = { it.id }) { download ->
                     ActiveDownloadCard(
                         download = download,
                         onPause = viewModel::pauseDownload,
@@ -413,7 +413,6 @@ fun ActiveDownloadCard(
                     Modifier.width(if (isEpisode) 120.dp else 80.dp)
                         .aspectRatio(imageRatio)
                         .clip(RoundedCornerShape(12.dp)),
-                placeholder = painterResource(id = R.drawable.ic_database),
                 contentScale = ContentScale.Crop,
             )
 
@@ -591,7 +590,6 @@ fun CompletedDownloadRow(
                 contentDescription = null,
                 modifier =
                     Modifier.width(56.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(6.dp)),
-                placeholder = painterResource(id = R.drawable.ic_check),
                 contentScale = ContentScale.Crop,
             )
         },

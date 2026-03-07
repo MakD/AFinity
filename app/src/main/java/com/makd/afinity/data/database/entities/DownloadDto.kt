@@ -31,6 +31,8 @@ data class DownloadDto(
     val episodeNumber: Int?,
     val releaseYear: String?,
     val runtimeTicks: Long?,
+    val folderPath: String? = null,
+    val seriesId: String? = null,
 )
 
 fun DownloadDto.toDownloadInfo(): DownloadInfo {
@@ -58,5 +60,6 @@ fun DownloadDto.toDownloadInfo(): DownloadInfo {
         episodeNumber = episodeNumber,
         releaseYear = releaseYear,
         runtimeTicks = runtimeTicks,
+        seriesId = seriesId,
     )
 }

@@ -72,8 +72,6 @@ import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
-import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinitySources
 
 @androidx.media3.common.util.UnstableApi
 @HiltViewModel
@@ -822,11 +820,12 @@ constructor(
             val chapters = fullItem.chapters
             updateUiState { it.copy(chapters = chapters) }
 
-            val finalMediaSourceId = if (mediaSourceId.isBlank() && fullItem.sources.isNotEmpty()) {
-                findBestMatchingSource(previousSource, fullItem.sources)?.id ?: ""
-            } else {
-                mediaSourceId
-            }
+            val finalMediaSourceId =
+                if (mediaSourceId.isBlank() && fullItem.sources.isNotEmpty()) {
+                    findBestMatchingSource(previousSource, fullItem.sources)?.id ?: ""
+                } else {
+                    mediaSourceId
+                }
 
             val mediaSource =
                 fullItem.sources.firstOrNull {
@@ -975,8 +974,28 @@ constructor(
                             }
                             .mapNotNull { stream ->
                                 try {
+                                    val extension =
+                                        when (stream.codec.lowercase()) {
+                                            "subrip",
+                                            "srt" -> "srt"
+                                            "vtt",
+                                            "webvtt" -> "vtt"
+                                            "ass" -> "ass"
+                                            "ssa" -> "ssa"
+                                            else -> "srt"
+                                        }
+                                    val mimeType =
+                                        when (stream.codec.lowercase()) {
+                                            "subrip",
+                                            "srt" -> MimeTypes.APPLICATION_SUBRIP
+                                            "vtt",
+                                            "webvtt" -> MimeTypes.TEXT_VTT
+                                            "ass",
+                                            "ssa" -> MimeTypes.TEXT_SSA
+                                            else -> MimeTypes.APPLICATION_SUBRIP
+                                        }
                                     val subtitleUrl =
-                                        "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.srt"
+                                        "${apiClient.baseUrl}/Videos/${fullItem.id}/${actualMediaSourceId}/Subtitles/${stream.index}/Stream.$extension"
                                     MediaItem.SubtitleConfiguration.Builder(subtitleUrl.toUri())
                                         .setLabel(
                                             stream.displayTitle
@@ -986,7 +1005,7 @@ constructor(
                                                     stream.index,
                                                 )
                                         )
-                                        .setMimeType(MimeTypes.APPLICATION_SUBRIP)
+                                        .setMimeType(mimeType)
                                         .setLanguage(stream.language ?: "eng")
                                         .build()
                                 } catch (_: Exception) {
@@ -1385,10 +1404,10 @@ constructor(
     }
 
     /**
-     * Given a list of [candidates] (sources of the next episode), returns the one that best
-     * matches [reference] (the source currently playing). Matching priority:
-     * 1. Exact name match (case-insensitive) — most reliable when Merge Versions plugin is used,
-     *    as it propagates the folder/file name as the source name (e.g. "1080p BluRay").
+     * Given a list of [candidates] (sources of the next episode), returns the one that best matches
+     * [reference] (the source currently playing). Matching priority:
+     * 1. Exact name match (case-insensitive) — most reliable when Merge Versions plugin is used, as
+     *    it propagates the folder/file name as the source name (e.g. "1080p BluRay").
      * 2. Resolution (height) match — catches cases where names differ slightly.
      * 3. First candidate — default fallback.
      */
@@ -1402,15 +1421,21 @@ constructor(
         // 1. Name match
         val refName = reference.name.trim().lowercase()
         if (refName.isNotBlank() && refName != "default") {
-            candidates.firstOrNull { it.name.trim().lowercase() == refName }
-                ?.let { return it }
+            candidates
+                .firstOrNull { it.name.trim().lowercase() == refName }
+                ?.let {
+                    return it
+                }
         }
 
         // 2. Resolution match (height)
         val refHeight = reference.height
         if (refHeight != null && refHeight > 0) {
-            candidates.firstOrNull { it.height == refHeight }
-                ?.let { return it }
+            candidates
+                .firstOrNull { it.height == refHeight }
+                ?.let {
+                    return it
+                }
         }
 
         // 3. Fallback
@@ -1519,14 +1544,10 @@ constructor(
 
     private fun playQueueItem(item: AfinityItem) {
         val currentSourceId = _uiState.value.currentMediaSourceId
-        val currentSource = _uiState.value.currentItem
-            ?.sources
-            ?.firstOrNull { it.id == currentSourceId }
+        val currentSource =
+            _uiState.value.currentItem?.sources?.firstOrNull { it.id == currentSourceId }
 
-        val bestMatch = findBestMatchingSource(
-            reference = currentSource,
-            candidates = item.sources,
-        )
+        val bestMatch = findBestMatchingSource(reference = currentSource, candidates = item.sources)
 
         val mediaSourceId = bestMatch?.id ?: item.sources.firstOrNull()?.id ?: ""
 
