@@ -46,7 +46,7 @@ data class UserSession(
 class SessionSwitcherViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,

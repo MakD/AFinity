@@ -41,7 +41,7 @@ data class ServerInfo(val id: String, val name: String, val version: String, val
 class AddEditServerViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val serverRepository: ServerRepository,
     private val databaseRepository: DatabaseRepository,
     savedStateHandle: SavedStateHandle,

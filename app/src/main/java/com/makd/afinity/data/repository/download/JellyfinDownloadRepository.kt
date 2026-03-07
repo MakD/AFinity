@@ -45,7 +45,7 @@ import javax.inject.Singleton
 class JellyfinDownloadRepository
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val mediaRepository: MediaRepository,
     private val databaseRepository: DatabaseRepository,
@@ -124,7 +124,9 @@ constructor(
                 val source =
                     if (sourceId.isEmpty()) {
                         item.sources.firstOrNull { it.type == AfinitySourceType.REMOTE }
-                            ?: return@withContext Result.failure(Exception("No remote source available"))
+                            ?: return@withContext Result.failure(
+                                Exception("No remote source available")
+                            )
                     } else {
                         item.sources.find { it.id == sourceId }
                             ?: return@withContext Result.failure(Exception("Source not found"))
@@ -496,7 +498,9 @@ constructor(
                 for (episode in episodes) {
                     startDownload(episode.id, "")
                         .onSuccess { started++ }
-                        .onFailure { Timber.w(it, "Skipping episode ${episode.name}: ${it.message}") }
+                        .onFailure {
+                            Timber.w(it, "Skipping episode ${episode.name}: ${it.message}")
+                        }
                 }
                 Timber.i("Season download queued $started/${episodes.size} episodes")
                 Result.success(started)
@@ -516,7 +520,9 @@ constructor(
                         .onSuccess { count -> totalStarted += count }
                         .onFailure { Timber.w(it, "Skipping season ${season.name}: ${it.message}") }
                 }
-                Timber.i("Series download queued $totalStarted episodes across ${seasons.size} seasons")
+                Timber.i(
+                    "Series download queued $totalStarted episodes across ${seasons.size} seasons"
+                )
                 Result.success(totalStarted)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start series download")
@@ -528,9 +534,10 @@ constructor(
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val downloads = getAllDownloadsFlow().first()
-                val toCancel = downloads.filter {
-                    it.seriesId == showId.toString() && it.status != DownloadStatus.COMPLETED
-                }
+                val toCancel =
+                    downloads.filter {
+                        it.seriesId == showId.toString() && it.status != DownloadStatus.COMPLETED
+                    }
                 for (download in toCancel) {
                     cancelDownload(download.id)
                 }
@@ -546,15 +553,18 @@ constructor(
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val downloads = getAllDownloadsFlow().first()
-                val toCancel = downloads.filter {
-                    it.seriesId == seriesId.toString() &&
-                        it.seasonNumber == seasonNumber &&
-                        it.status != DownloadStatus.COMPLETED
-                }
+                val toCancel =
+                    downloads.filter {
+                        it.seriesId == seriesId.toString() &&
+                            it.seasonNumber == seasonNumber &&
+                            it.status != DownloadStatus.COMPLETED
+                    }
                 for (download in toCancel) {
                     cancelDownload(download.id)
                 }
-                Timber.i("Cancelled ${toCancel.size} downloads for series $seriesId season $seasonNumber")
+                Timber.i(
+                    "Cancelled ${toCancel.size} downloads for series $seriesId season $seasonNumber"
+                )
                 Result.success(Unit)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to cancel season downloads")

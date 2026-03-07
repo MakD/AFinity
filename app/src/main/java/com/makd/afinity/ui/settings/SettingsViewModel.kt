@@ -38,7 +38,7 @@ import javax.inject.Inject
 class SettingsViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val authRepository: AuthRepository,
     private val preferencesRepository: PreferencesRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,

@@ -36,7 +36,7 @@ import javax.inject.Inject
 class GenreResultsViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val jellyfinRepository: JellyfinRepository,
     private val appDataRepository: AppDataRepository,

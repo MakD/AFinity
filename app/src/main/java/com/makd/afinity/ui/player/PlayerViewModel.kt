@@ -78,7 +78,7 @@ import javax.inject.Inject
 class PlayerViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val application: Application,
     private val playbackRepository: PlaybackRepository,
     private val playbackStateManager: PlaybackStateManager,

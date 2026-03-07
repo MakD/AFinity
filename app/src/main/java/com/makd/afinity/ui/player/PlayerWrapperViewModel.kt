@@ -14,20 +14,20 @@ import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
 
 @HiltViewModel
 class PlayerWrapperViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val jellyfinRepository: JellyfinRepository,
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,

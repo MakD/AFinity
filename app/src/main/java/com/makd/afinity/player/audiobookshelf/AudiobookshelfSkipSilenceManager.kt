@@ -12,9 +12,7 @@ import javax.inject.Singleton
 @Singleton
 class AudiobookshelfSkipSilenceManager
 @Inject
-constructor(
-    @ApplicationContext private val context: Context,
-) {
+constructor(@param:ApplicationContext private val context: Context) {
     private val prefs =
         context.getSharedPreferences("audiobookshelf_skip_silence", Context.MODE_PRIVATE)
 

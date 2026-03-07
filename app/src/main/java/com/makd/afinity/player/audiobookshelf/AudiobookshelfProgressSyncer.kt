@@ -19,7 +19,7 @@ import javax.inject.Singleton
 class AudiobookshelfProgressSyncer
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val playbackManager: AudiobookshelfPlaybackManager,
 ) {
@@ -77,7 +77,10 @@ constructor(
         }
     }
 
-    private suspend fun syncStandardProgress(state: AudiobookshelfPlaybackState, sessionId: String) {
+    private suspend fun syncStandardProgress(
+        state: AudiobookshelfPlaybackState,
+        sessionId: String,
+    ) {
         val currentTime = state.currentTime
         val timeListenedSinceLastSync = (currentTime - lastSyncTime).coerceAtLeast(0.0)
         totalTimeListened += timeListenedSinceLastSync
@@ -107,8 +110,7 @@ constructor(
     ) {
         val currentChapter = state.currentChapter ?: return
         val chapterIndex = state.chapters.indexOf(currentChapter)
-        val episodeId =
-            state.playlistEpisodeIds.getOrNull(chapterIndex) ?: return
+        val episodeId = state.playlistEpisodeIds.getOrNull(chapterIndex) ?: return
 
         val episodeCurrentTime = (state.currentTime - currentChapter.start).coerceAtLeast(0.0)
         val episodeDuration = (currentChapter.end - currentChapter.start).coerceAtLeast(0.0)
@@ -118,8 +120,7 @@ constructor(
             return
         }
 
-        val timeListenedSinceLastSync =
-            (state.currentTime - lastSyncTime).coerceAtLeast(0.0)
+        val timeListenedSinceLastSync = (state.currentTime - lastSyncTime).coerceAtLeast(0.0)
         lastSyncTime = state.currentTime
 
         try {
@@ -152,16 +153,15 @@ constructor(
     ) {
         val itemId = state.itemId ?: return
 
-        Timber.d(
-            "Playlist episode transition: ${currentPlaylistEpisodeId} -> $newEpisodeId"
-        )
+        Timber.d("Playlist episode transition: ${currentPlaylistEpisodeId} -> $newEpisodeId")
 
         val prevEpisodeId = currentPlaylistEpisodeId
         if (prevEpisodeId != null) {
-            val prevChapter = state.chapters.find { chapter ->
-                val idx = state.chapters.indexOf(chapter)
-                state.playlistEpisodeIds.getOrNull(idx) == prevEpisodeId
-            }
+            val prevChapter =
+                state.chapters.find { chapter ->
+                    val idx = state.chapters.indexOf(chapter)
+                    state.playlistEpisodeIds.getOrNull(idx) == prevEpisodeId
+                }
             if (prevChapter != null) {
                 val prevDuration = (prevChapter.end - prevChapter.start).coerceAtLeast(0.0)
                 try {

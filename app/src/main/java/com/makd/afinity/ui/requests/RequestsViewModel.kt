@@ -35,7 +35,7 @@ import javax.inject.Inject
 class RequestsViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val jellyseerrRepository: JellyseerrRepository,
 ) : ViewModel() {
 

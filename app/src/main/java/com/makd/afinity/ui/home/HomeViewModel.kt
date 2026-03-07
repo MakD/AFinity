@@ -68,7 +68,7 @@ import javax.inject.Inject
 class HomeViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val appDataRepository: AppDataRepository,
     private val jellyfinRepository: JellyfinRepository,
     private val userDataRepository: UserDataRepository,

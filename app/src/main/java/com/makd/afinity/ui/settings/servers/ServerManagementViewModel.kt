@@ -9,12 +9,12 @@ import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.DatabaseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 data class ServerManagementState(
     val servers: List<ServerWithUserCount> = emptyList(),
@@ -29,7 +29,7 @@ data class ServerWithUserCount(val server: Server, val userCount: Int)
 class ServerManagementViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val databaseRepository: DatabaseRepository,
 ) : ViewModel() {

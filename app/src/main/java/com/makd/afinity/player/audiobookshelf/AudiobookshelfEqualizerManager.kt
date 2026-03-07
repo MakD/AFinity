@@ -39,9 +39,7 @@ data class EqualizerState(
 @Singleton
 class AudiobookshelfEqualizerManager
 @Inject
-constructor(
-    @ApplicationContext private val context: Context,
-) {
+constructor(@param:ApplicationContext private val context: Context) {
     private val prefs =
         context.getSharedPreferences("audiobookshelf_equalizer", Context.MODE_PRIVATE)
 
@@ -137,8 +135,7 @@ constructor(
         _state.value =
             _state.value.copy(currentPreset = EqualizerPreset.CUSTOM, bandGains = newGains)
         prefs.edit {
-            putString("preset", EqualizerPreset.CUSTOM.name)
-                .putInt("band_$index", clamped)
+            putString("preset", EqualizerPreset.CUSTOM.name).putInt("band_$index", clamped)
         }
     }
 
