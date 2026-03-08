@@ -1,12 +1,5 @@
 package com.makd.afinity.ui.home.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,9 +26,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -46,6 +36,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
+import com.makd.afinity.ui.utils.shimmerEffect
 
 @Composable
 fun GenreSection(
@@ -136,35 +127,3 @@ private fun GenreSkeletonRow(cardWidth: Dp, height: Dp) {
     }
 }
 
-@Composable
-fun Modifier.shimmerEffect(): Modifier = composed {
-    val transition = rememberInfiniteTransition(label = "shimmer")
-
-    val translateAnimation by
-        transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1000f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 1000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "shimmerTranslate",
-        )
-
-    val shimmerColors =
-        listOf(
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        )
-
-    val brush =
-        Brush.linearGradient(
-            colors = shimmerColors,
-            start = Offset.Zero,
-            end = Offset(x = translateAnimation, y = translateAnimation),
-        )
-
-    background(brush)
-}

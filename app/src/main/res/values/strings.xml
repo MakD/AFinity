@@ -76,14 +76,6 @@
     <string name="error_unknown">Unknown Error</string>
     <string name="favorites_empty_title">No Favorites Yet</string>
     <string name="favorites_empty_message">Items you mark as favorites will appear here</string>
-    <string name="favorites_header_movies">Movies (%1$d)</string>
-    <string name="favorites_header_boxsets">Box Sets (%1$d)</string>
-    <string name="favorites_header_shows">TV Shows (%1$d)</string>
-    <string name="favorites_header_seasons">Seasons (%1$d)</string>
-    <string name="favorites_header_episodes">Episodes (%1$d)</string>
-    <string name="favorites_header_channels">Live TV Channels (%1$d)</string>
-    <string name="favorites_header_people">People (%1$d)</string>
-
     <!--Item Screen Cast Section-->
     <string name="cast_section_title">Cast</string>
     <string name="cast_role_format">as %1$s</string>
@@ -258,8 +250,6 @@
     <string name="person_died_fmt">Died: %1$s (aged %2$d)</string>
     <string name="person_died_no_age_fmt">Died: %1$s</string>
     <string name="person_birthplace_fmt">Birth Place: %1$s</string>
-    <string name="person_movies_fmt">Movies (%1$d)</string>
-    <string name="person_shows_fmt">TV Shows (%1$d)</string>
     <string name="person_date_fmt">MMMM d, yyyy</string>
     <string name="action_show_more">Show more</string>
     <string name="action_show_less">Show less</string>
