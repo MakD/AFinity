@@ -1,5 +1,8 @@
 package com.makd.afinity.ui.settings
 
+import android.app.LocaleConfig
+import android.app.LocaleManager
+import android.os.LocaleList
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,12 +15,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -27,6 +33,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -49,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -85,11 +93,23 @@ fun SettingsScreen(
     val effectiveOfflineMode by viewModel.effectiveOfflineMode.collectAsStateWithLifecycle()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
     val isJellyseerrAuthenticated by
-    viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
+        viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
     val isAudiobookshelfAuthenticated by
-    viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
+        viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
+
+    val context = LocalContext.current
+    val defaultLangString = stringResource(R.string.lang_system_default)
+    val appLanguageSubtitle =
+        remember(defaultLangString) {
+            val localeManager = context.getSystemService(LocaleManager::class.java)
+            val appLocales = localeManager.applicationLocales
+
+            if (appLocales.isEmpty) defaultLangString
+            else appLocales.get(0).let { it.getDisplayName(it).replaceFirstChar(Char::uppercase) }
+        }
 
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
     var showJellyseerrLogoutDialog by remember { mutableStateOf(false) }
     var showAudiobookshelfLogoutDialog by remember { mutableStateOf(false) }
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
@@ -127,6 +147,10 @@ fun SettingsScreen(
             },
             onDismiss = { showAudiobookshelfLogoutDialog = false },
         )
+    }
+
+    if (showLanguageDialog) {
+        LanguagePickerDialog(onDismiss = { showLanguageDialog = false })
     }
 
     if (showJellyseerrBottomSheet) {
@@ -199,18 +223,14 @@ fun SettingsScreen(
     ) { innerPadding ->
         if (uiState.isLoading) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
                 contentPadding = PaddingValues(vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
@@ -306,6 +326,13 @@ fun SettingsScreen(
                         )
                         SettingsDivider()
                         SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_language),
+                            title = stringResource(R.string.pref_app_language),
+                            subtitle = appLanguageSubtitle,
+                            onClick = { showLanguageDialog = true },
+                        )
+                        SettingsDivider()
+                        SettingsItem(
                             icon = painterResource(id = R.drawable.ic_playback_settings),
                             title = stringResource(R.string.pref_playback),
                             subtitle = stringResource(R.string.pref_playback_summary),
@@ -345,16 +372,13 @@ fun SettingsScreen(
                 item {
                     Box(
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
+                            Modifier.fillMaxWidth()
                                 .padding(horizontal = 24.dp)
                                 .padding(bottom = 32.dp)
                     ) {
                         Button(
                             onClick = { showLogoutDialog = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
                             colors =
                                 ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -394,15 +418,11 @@ fun SettingsScreen(
 
 @Composable
 private fun SettingsGroup(
-    title: String? = null,
     modifier: Modifier = Modifier,
+    title: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         if (title != null) {
             Text(
                 text = title,
@@ -439,15 +459,12 @@ fun ProfileHeader(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 24.dp, bottom = 0.dp),
+        modifier = modifier.fillMaxWidth().padding(top = 24.dp, bottom = 0.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             modifier =
-                Modifier
-                    .size(96.dp)
+                Modifier.size(96.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest),
             contentAlignment = Alignment.Center,
@@ -718,4 +735,81 @@ private fun JellyseerrLogoutConfirmationDialog(onConfirm: () -> Unit, onDismiss:
         shape = RoundedCornerShape(28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
     )
+}
+
+@Composable
+private fun LanguagePickerDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val localeManager = remember { context.getSystemService(LocaleManager::class.java) }
+    val supportedLocales = remember { LocaleConfig(context).supportedLocales }
+    val currentLocale = remember {
+        val appLocales = localeManager.applicationLocales
+        if (appLocales.isEmpty) null else appLocales.get(0)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.dialog_select_language_title),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState())
+            ) {
+                LanguageOption(
+                    name = stringResource(R.string.lang_system_default),
+                    isSelected = currentLocale == null,
+                    onClick = {
+                        localeManager.applicationLocales = LocaleList.getEmptyLocaleList()
+                        onDismiss()
+                    },
+                )
+                if (supportedLocales != null) {
+                    repeat(supportedLocales.size()) { index ->
+                        val locale = supportedLocales.get(index)
+                        LanguageOption(
+                            name = locale.getDisplayName(locale).replaceFirstChar(Char::uppercase),
+                            isSelected =
+                                currentLocale != null &&
+                                    locale.language == currentLocale.language &&
+                                    locale.country == currentLocale.country,
+                            onClick = {
+                                localeManager.applicationLocales = LocaleList(locale)
+                                onDismiss()
+                            },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    )
+}
+
+@Composable
+private fun LanguageOption(name: String, isSelected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 4.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = isSelected, onClick = onClick)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.bodyLarge,
+            color =
+                if (isSelected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface,
+        )
+    }
 }

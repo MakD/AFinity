@@ -83,6 +83,10 @@ configure<ApplicationExtension> {
         compose = true
     }
 
+    androidResources {
+        generateLocaleConfig = true
+    }
+
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false

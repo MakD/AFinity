@@ -692,6 +692,10 @@
     <string name="pref_appearance">Appearance</string>
     <string name="pref_appearance_summary">Themes and layout</string>
 
+    <string name="pref_app_language">App Language</string>
+    <string name="lang_system_default">System Default</string>
+    <string name="dialog_select_language_title">Select Language</string>
+
     <string name="pref_playback">Playback</string>
     <string name="pref_playback_summary">Player behavior and quality</string>
 
