@@ -14,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.okhttp.OkHttpFactory
@@ -34,14 +33,6 @@ data class Session(
     val server: Server? = null,
 )
 
-sealed class ConnectionState {
-    data class Online(val session: Session) : ConnectionState()
-
-    data class Offline(val session: Session, val lastSyncTime: Long) : ConnectionState()
-
-    data object Disconnected : ConnectionState()
-}
-
 @Singleton
 class SessionManager
 @Inject
@@ -58,9 +49,6 @@ constructor(
     private val _currentSession = MutableStateFlow<Session?>(null)
     val currentSession: StateFlow<Session?> = _currentSession.asStateFlow()
 
-    private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
-
     private val apiClients = ConcurrentHashMap<String, ApiClient>()
 
     suspend fun startSession(
@@ -68,7 +56,6 @@ constructor(
         serverId: String,
         userId: UUID,
         accessToken: String,
-        caller: String = "Unknown",
     ): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
@@ -104,7 +91,7 @@ constructor(
                 audiobookshelfRepository.setActiveJellyfinSession(serverId, userId)
                 Timber.d("Linked Audiobookshelf session for user: $userId")
 
-                val session =
+                _currentSession.value =
                     Session(
                         serverId = serverId,
                         userId = userId,
@@ -112,14 +99,11 @@ constructor(
                         user = user,
                         server = server,
                     )
-                _currentSession.value = session
-                _connectionState.value = ConnectionState.Online(session)
 
                 sessionPreferences.saveActiveSession(serverId, userId, serverUrl)
                 Result.success(Unit)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start session")
-                _connectionState.value = ConnectionState.Disconnected
                 Result.failure(e)
             }
         }
@@ -137,7 +121,7 @@ constructor(
             return it
         }
 
-        val server = databaseRepository.getServer(serverId) ?: return null
+        databaseRepository.getServer(serverId) ?: return null
         val tokens = securePrefsRepository.getAllServerUserTokens()
         val tokenInfo = tokens.find { it.serverId == serverId } ?: return null
 
@@ -145,32 +129,6 @@ constructor(
         val client = getOrCreateApiClient(serverId, tokenInfo.serverUrl)
         client.update(baseUrl = tokenInfo.serverUrl, accessToken = tokenInfo.accessToken)
         return client
-    }
-
-    fun getServerIdForUrl(url: String): String? {
-        return runBlocking {
-            securePrefsRepository.getAllServerUserTokens().find { it.serverUrl == url }?.serverId
-        }
-    }
-
-    suspend fun switchServer(serverId: String): Result<Unit> {
-        val server =
-            databaseRepository.getServer(serverId)
-                ?: return Result.failure(
-                    IllegalArgumentException("Server $serverId not found in database")
-                )
-
-        val lastUserId =
-            securePrefsRepository.getLastUserIdForServer(serverId)
-                ?: return Result.failure(
-                    IllegalStateException("No user found for server $serverId")
-                )
-
-        val token =
-            securePrefsRepository.getServerUserToken(serverId, lastUserId)
-                ?: return Result.failure(IllegalStateException("No authentication token found"))
-
-        return startSession(server.address, serverId, lastUserId, token, caller = "switchServer")
     }
 
     suspend fun switchUser(serverId: String, userId: UUID): Result<Unit> {
@@ -188,47 +146,19 @@ constructor(
                     IllegalStateException("Could not find Server URL for target user")
                 )
 
-        return startSession(serverUrl, serverId, userId, token, caller = "switchUser")
-    }
-
-    suspend fun enterOfflineMode() {
-        val session =
-            _currentSession.value
-                ?: run {
-                    Timber.w("Cannot enter offline mode - no session")
-                    return
-                }
-
-        _connectionState.value =
-            ConnectionState.Offline(session = session, lastSyncTime = System.currentTimeMillis())
-        Timber.d("Entered offline mode")
-    }
-
-    suspend fun returnOnline() {
-        val session =
-            _currentSession.value
-                ?: run {
-                    Timber.w("Cannot return online - no session")
-                    return
-                }
-
-        _connectionState.value = ConnectionState.Online(session)
-        Timber.d("Returned to online mode")
+        return startSession(serverUrl, serverId, userId, token)
     }
 
     suspend fun logout() {
-        val session =
-            _currentSession.value
-                ?: run {
-                    Timber.w("No session to logout from")
-                    return
-                }
+        if (_currentSession.value == null) {
+            Timber.w("No session to logout from")
+            return
+        }
 
         sessionPreferences.clearSession()
         jellyseerrRepository.clearActiveSession()
         audiobookshelfRepository.clearActiveSession()
         _currentSession.value = null
-        _connectionState.value = ConnectionState.Disconnected
         securePrefsRepository.clearAuthenticationData()
         apiClients.clear()
 
@@ -259,34 +189,5 @@ constructor(
     fun getCurrentApiClient(): ApiClient? {
         val session = _currentSession.value ?: return null
         return apiClients[session.serverId]
-    }
-
-    fun getApiClientForServer(serverId: String): ApiClient? {
-        return apiClients[serverId]
-    }
-
-    suspend fun getAllSavedSessions(): List<SavedSession> {
-        return withContext(Dispatchers.IO) {
-            val tokens = securePrefsRepository.getAllServerUserTokens()
-            tokens.map { token ->
-                SavedSession(
-                    serverId = token.serverId,
-                    userId = token.userId,
-                    serverUrl = token.serverUrl,
-                )
-            }
-        }
-    }
-
-    suspend fun hasSavedSessions(): Boolean {
-        return getAllSavedSessions().isNotEmpty()
-    }
-
-    fun isOnline(): Boolean {
-        return _connectionState.value is ConnectionState.Online
-    }
-
-    fun hasActiveSession(): Boolean {
-        return _currentSession.value != null
     }
 }
