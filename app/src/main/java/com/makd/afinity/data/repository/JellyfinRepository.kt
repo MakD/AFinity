@@ -1,7 +1,6 @@
 package com.makd.afinity.data.repository
 
 import androidx.paging.PagingData
-import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityBoxSet
@@ -18,7 +17,6 @@ import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.ui.library.FilterType
 import kotlinx.coroutines.flow.Flow
-import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.ItemFields
@@ -31,27 +29,17 @@ interface JellyfinRepository {
 
     suspend fun setBaseUrl(baseUrl: String)
 
-    suspend fun discoverServers(): List<Server>
-
     suspend fun discoverServersFlow(): Flow<List<Server>>
 
     suspend fun validateServer(serverUrl: String): JellyfinServerRepository.ServerConnectionResult
 
     suspend fun refreshServerInfo()
 
-    suspend fun authenticateByName(username: String, password: String): AuthenticationResult?
-
-    suspend fun authenticateWithQuickConnect(secret: String): AuthenticationResult?
-
     suspend fun logout()
-
-    suspend fun initiateQuickConnect(): QuickConnectState?
-
-    suspend fun getQuickConnectState(secret: String): QuickConnectState?
 
     suspend fun getCurrentUser(): User?
 
-    suspend fun getPublicUsers(): List<User>
+    suspend fun getPublicUsers(serverUrl: String): List<User>
 
     suspend fun getUserProfileImageUrl(): String?
 

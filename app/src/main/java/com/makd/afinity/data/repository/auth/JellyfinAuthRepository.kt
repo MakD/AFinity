@@ -2,6 +2,7 @@ package com.makd.afinity.data.repository.auth
 
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.manager.SessionManager
+import org.jellyfin.sdk.Jellyfin
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
@@ -9,13 +10,14 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import java.util.UUID
 import javax.inject.Inject
-import javax.inject.Provider
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -35,21 +37,26 @@ import timber.log.Timber
 class JellyfinAuthRepository
 @Inject
 constructor(
-    private val apiClient: ApiClient,
-    private val sessionManagerProvider: Provider<SessionManager>,
+    private val jellyfin: Jellyfin,
+    private val sessionManager: SessionManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val databaseRepository: DatabaseRepository,
 ) : AuthRepository {
 
-    private val sessionManager: SessionManager
-        get() = sessionManagerProvider.get()
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private val _currentUser = MutableStateFlow<User?>(null)
-    override val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
+    override val currentUser: StateFlow<User?> by lazy {
+        sessionManager.currentSession
+            .map { it?.user }
+            .stateIn(scope, SharingStarted.Eagerly, null)
+    }
 
-    private val _isAuthenticated = MutableStateFlow(false)
-    override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+    override val isAuthenticated: StateFlow<Boolean> by lazy {
+        sessionManager.currentSession
+            .map { it != null }
+            .stateIn(scope, SharingStarted.Eagerly, false)
+    }
 
     init {
         Timber.d("AuthRepository initialized")
@@ -100,10 +107,6 @@ constructor(
                         primaryImageTag = null,
                     )
 
-                apiClient.update(baseUrl = serverUrl, accessToken = accessToken)
-                _currentUser.value = user
-                _isAuthenticated.value = true
-
                 sessionManager
                     .startSession(
                         serverUrl = serverUrl,
@@ -126,18 +129,21 @@ constructor(
                 try {
                     val response =
                         withTimeoutOrNull(5000L) {
-                            val userApi = UserApi(apiClient)
+                            val client = sessionManager.getCurrentApiClient()
+                                ?: jellyfin.createApi(baseUrl = serverUrl).also {
+                                    it.update(accessToken = accessToken)
+                                }
+                            val userApi = UserApi(client)
                             userApi.getCurrentUser()
                         }
 
-                    if (response?.content != null) {
-                        val userDto = response.content!!
+                    val userDto = response?.content
+                    if (userDto != null) {
                         val updatedUser = user.copy(primaryImageTag = userDto.primaryImageTag)
-                        _currentUser.value = updatedUser
                         sessionManager.updateCurrentUser(updatedUser)
                         try {
                             databaseRepository.insertUser(updatedUser)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             Timber.w("Failed to update user in DB during restore")
                         }
 
@@ -178,34 +184,9 @@ constructor(
         return securePreferencesRepository.hasValidAuthData()
     }
 
-    override suspend fun saveAuthenticationData(
-        authResult: AuthenticationResult,
-        serverUrl: String,
-        username: String,
-    ) {
-        try {
-            val accessToken = authResult.accessToken ?: return
-            val userId = authResult.user?.id ?: return
-            val serverId = authResult.serverId ?: ""
-
-            securePreferencesRepository.saveAuthenticationData(
-                accessToken = accessToken,
-                userId = userId,
-                serverId = serverId,
-                serverUrl = serverUrl,
-                username = username,
-            )
-
-            Timber.d("Saved authentication data to encrypted storage for user: $username")
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to save authentication data to encrypted storage")
-        }
-    }
-
     override suspend fun clearAllAuthData() {
         try {
             securePreferencesRepository.clearAuthenticationData()
-            clearAuthState()
             Timber.d("Cleared all encrypted authentication data")
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear encrypted authentication data")
@@ -213,12 +194,14 @@ constructor(
     }
 
     override suspend fun authenticateByName(
+        serverUrl: String,
         username: String,
         password: String,
     ): AuthRepository.AuthResult {
         return withContext(Dispatchers.IO) {
             try {
-                val userApi = UserApi(apiClient)
+                val client = jellyfin.createApi(baseUrl = serverUrl)
+                val userApi = UserApi(client)
                 val authRequest =
                     org.jellyfin.sdk.model.api.AuthenticateUserByName(
                         username = username,
@@ -227,16 +210,8 @@ constructor(
                 val response = userApi.authenticateUserByName(authRequest)
 
                 val authResult = response.content
-                if (authResult != null) {
-                    val serverUrl = apiClient.baseUrl ?: ""
-
-                    handleSuccessfulAuth(authResult, username)
-                    saveAuthenticationData(authResult, serverUrl, username)
-
-                    AuthRepository.AuthResult.Success(authResult)
-                } else {
-                    AuthRepository.AuthResult.Error("No authentication result returned")
-                }
+                handleSuccessfulAuth(authResult, username, client)
+                AuthRepository.AuthResult.Success(authResult)
             } catch (e: ApiClientException) {
                 Timber.e(e, "Authentication failed")
                 AuthRepository.AuthResult.Error(
@@ -251,26 +226,22 @@ constructor(
         }
     }
 
-    override suspend fun authenticateWithQuickConnect(secret: String): AuthRepository.AuthResult {
+    override suspend fun authenticateWithQuickConnect(
+        serverUrl: String,
+        secret: String,
+    ): AuthRepository.AuthResult {
         return withContext(Dispatchers.IO) {
             try {
-                val userApi = UserApi(apiClient)
+                val client = jellyfin.createApi(baseUrl = serverUrl)
+                val userApi = UserApi(client)
                 val quickConnectRequest =
                     org.jellyfin.sdk.model.api.QuickConnectDto(secret = secret)
                 val response = userApi.authenticateWithQuickConnect(quickConnectRequest)
 
                 val authResult = response.content
-                if (authResult != null) {
-                    val serverUrl = apiClient.baseUrl ?: ""
-                    val username = authResult.user?.name ?: "QuickConnect User"
-
-                    handleSuccessfulAuth(authResult, username)
-                    saveAuthenticationData(authResult, serverUrl, username)
-
-                    AuthRepository.AuthResult.Success(authResult)
-                } else {
-                    AuthRepository.AuthResult.Error("QuickConnect failed: No result returned")
-                }
+                val username = authResult.user?.name ?: "QuickConnect User"
+                handleSuccessfulAuth(authResult, username, client)
+                AuthRepository.AuthResult.Success(authResult)
             } catch (e: ApiClientException) {
                 Timber.e(e, "QuickConnect authentication failed")
                 AuthRepository.AuthResult.Error(
@@ -285,19 +256,17 @@ constructor(
         }
     }
 
-    override suspend fun initiateQuickConnect(): QuickConnectState? {
+    override suspend fun initiateQuickConnect(serverUrl: String): QuickConnectState? {
         return withContext(Dispatchers.IO) {
             try {
-                val quickConnectApi = QuickConnectApi(apiClient)
-                val response = quickConnectApi.initiateQuickConnect()
-
-                response.content?.let { result ->
-                    QuickConnectState(
-                        code = result.code ?: "",
-                        secret = result.secret ?: "",
-                        authenticated = result.authenticated ?: false,
-                    )
-                }
+                val client = jellyfin.createApi(baseUrl = serverUrl)
+                val quickConnectApi = QuickConnectApi(client)
+                val result = quickConnectApi.initiateQuickConnect().content
+                QuickConnectState(
+                    code = result.code,
+                    secret = result.secret,
+                    authenticated = result.authenticated,
+                )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to initiate QuickConnect")
                 null
@@ -308,19 +277,17 @@ constructor(
         }
     }
 
-    override suspend fun getQuickConnectState(secret: String): QuickConnectState? {
+    override suspend fun getQuickConnectState(serverUrl: String, secret: String): QuickConnectState? {
         return withContext(Dispatchers.IO) {
             try {
-                val quickConnectApi = QuickConnectApi(apiClient)
-                val response = quickConnectApi.getQuickConnectState(secret = secret)
-
-                response.content?.let { result ->
-                    QuickConnectState(
-                        code = result.code ?: "",
-                        secret = result.secret ?: "",
-                        authenticated = result.authenticated ?: false,
-                    )
-                }
+                val client = jellyfin.createApi(baseUrl = serverUrl)
+                val quickConnectApi = QuickConnectApi(client)
+                val result = quickConnectApi.getQuickConnectState(secret = secret).content
+                QuickConnectState(
+                    code = result.code,
+                    secret = result.secret,
+                    authenticated = result.authenticated,
+                )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get QuickConnect state")
                 null
@@ -335,15 +302,9 @@ constructor(
         withContext(Dispatchers.IO) {
             try {
                 sessionManager.logout()
-
-                clearAllAuthData()
-                Timber.d(
-                    "Successfully logged out and cleared encrypted data (token kept for re-login)"
-                )
+                Timber.d("Successfully logged out")
             } catch (e: Exception) {
-                Timber.e(e, "Error during logout, clearing encrypted state anyway")
-                sessionManager.logout()
-                clearAllAuthData()
+                Timber.e(e, "Error during logout")
             }
         }
     }
@@ -351,22 +312,17 @@ constructor(
     override suspend fun getCurrentUser(): User? {
         return withContext(Dispatchers.IO) {
             try {
-                if (!_isAuthenticated.value) return@withContext null
+                val client = sessionManager.getCurrentApiClient() ?: return@withContext null
 
-                val userApi = UserApi(apiClient)
-                val response = userApi.getCurrentUser()
-                response.content?.let { userDto ->
-                    val user =
-                        User(
-                            id = userDto.id,
-                            name = userDto.name ?: "",
-                            serverId = "",
-                            accessToken = apiClient.accessToken,
-                            primaryImageTag = userDto.primaryImageTag,
-                        )
-                    _currentUser.value = user
-                    user
-                }
+                val userApi = UserApi(client)
+                val userDto = userApi.getCurrentUser().content
+                User(
+                    id = userDto.id,
+                    name = userDto.name ?: "",
+                    serverId = "",
+                    accessToken = client.accessToken,
+                    primaryImageTag = userDto.primaryImageTag,
+                )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get current user")
                 null
@@ -377,12 +333,12 @@ constructor(
         }
     }
 
-    override suspend fun getPublicUsers(): List<User> {
+    override suspend fun getPublicUsers(serverUrl: String): List<User> {
         return withContext(Dispatchers.IO) {
             try {
-                val userApi = UserApi(apiClient)
-                val response = userApi.getPublicUsers()
-                response.content?.map { userDto ->
+                val client = jellyfin.createApi(baseUrl = serverUrl)
+                val userApi = UserApi(client)
+                userApi.getPublicUsers().content.map { userDto ->
                     User(
                         id = userDto.id,
                         name = userDto.name ?: "",
@@ -390,7 +346,7 @@ constructor(
                         accessToken = null,
                         primaryImageTag = userDto.primaryImageTag,
                     )
-                } ?: emptyList()
+                }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get public users")
                 emptyList()
@@ -401,32 +357,13 @@ constructor(
         }
     }
 
-    override fun hasValidToken(): Boolean {
-        return !apiClient.accessToken.isNullOrBlank() && _isAuthenticated.value
-    }
-
-    override fun getAccessToken(): String? = apiClient.accessToken
-
-    fun setAuthenticatedUser(user: User, accessToken: String, serverUrl: String) {
-
-        apiClient.update(baseUrl = serverUrl, accessToken = accessToken)
-
-        Timber.d(
-            "ApiClient AFTER update - baseUrl: ${apiClient.baseUrl}, hasToken: ${!apiClient.accessToken.isNullOrBlank()}"
-        )
-        _currentUser.value = user
-        _isAuthenticated.value = true
-    }
-
-    fun setSessionActive(user: User) {
-        _currentUser.value = user
-        _isAuthenticated.value = true
-    }
-
-    private suspend fun handleSuccessfulAuth(authResult: AuthenticationResult, username: String) {
+    private suspend fun handleSuccessfulAuth(
+        authResult: AuthenticationResult,
+        username: String,
+        client: ApiClient,
+    ) {
         authResult.accessToken?.let { token ->
-            apiClient.update(accessToken = token)
-            _isAuthenticated.value = true
+            client.update(accessToken = token)
 
             authResult.user?.let { userDto ->
                 val user =
@@ -437,7 +374,6 @@ constructor(
                         accessToken = token,
                         primaryImageTag = userDto.primaryImageTag,
                     )
-                _currentUser.value = user
 
                 try {
                     databaseRepository.insertUser(user)
@@ -445,29 +381,16 @@ constructor(
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to save user to database, continuing anyway")
                 }
-
-                val serverUrl = apiClient.baseUrl ?: ""
-                val serverId = authResult.serverId ?: ""
-                val userId = userDto.id
-
-                sessionManager
-                    .startSession(
-                        serverUrl = serverUrl,
-                        serverId = serverId,
-                        userId = userId,
-                        accessToken = token,
-                    )
-                    .onFailure { e -> Timber.e(e, "Failed to start session via SessionManager") }
             }
 
             Timber.d("Successfully authenticated user: $username")
-            CoroutineScope(Dispatchers.IO).launch { registerClientCapabilities() }
+            scope.launch { registerClientCapabilities(client) }
         } ?: run { Timber.w("Authentication succeeded but no access token received") }
     }
 
-    private suspend fun registerClientCapabilities() {
+    private suspend fun registerClientCapabilities(client: ApiClient) {
         try {
-            val sessionApi = SessionApi(apiClient)
+            val sessionApi = SessionApi(client)
             val capabilities =
                 ClientCapabilitiesDto(
                     playableMediaTypes = listOf(MediaType.VIDEO),
@@ -503,9 +426,4 @@ constructor(
         }
     }
 
-    private fun clearAuthState() {
-        apiClient.update(accessToken = null)
-        _isAuthenticated.value = false
-        _currentUser.value = null
-    }
 }

@@ -16,8 +16,6 @@ interface ServerRepository {
 
     suspend fun setBaseUrl(baseUrl: String)
 
-    suspend fun discoverServers(): List<Server>
-
     fun discoverServersFlow(): Flow<List<Server>>
 
     suspend fun testServerConnection(

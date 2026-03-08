@@ -10,7 +10,6 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
-import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -54,6 +53,7 @@ constructor(
     private val _connectedServerUrl = MutableStateFlow("")
 
     private var quickConnectJob: Job? = null
+    private var discoveryJob: Job? = null
 
     val loginState =
         combine(uiState, serverUrl, publicUsers) { ui, server, users ->
@@ -183,7 +183,7 @@ constructor(
 
     private suspend fun loadPublicUsers() {
         try {
-            val users = jellyfinRepository.getPublicUsers()
+            val users = jellyfinRepository.getPublicUsers(_connectedServerUrl.value)
             _publicUsers.value = users
             Timber.d("Loaded ${users.size} public users")
         } catch (e: Exception) {
@@ -308,8 +308,7 @@ constructor(
                         )
                         Timber.d("Updated active session persistence for: ${user.name}")
 
-                        (authRepository as? JellyfinAuthRepository)?.setSessionActive(user)
-
+                        discoveryJob?.cancel()
                         _uiState.value = _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
                         Timber.d("Successfully logged in with saved user: ${user.name}")
                     } else {
@@ -362,6 +361,7 @@ constructor(
             try {
                 val result =
                     authRepository.authenticateByName(
+                        serverUrl = _connectedServerUrl.value,
                         username = currentState.username,
                         password = currentState.password,
                     )
@@ -387,6 +387,7 @@ constructor(
                                 )
 
                             if (sessionResult.isSuccess) {
+                                discoveryJob?.cancel()
                                 _uiState.value =
                                     _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
                                 Timber.d("Successfully logged in user: ${currentState.username}")
@@ -432,7 +433,7 @@ constructor(
                     _uiState.value.copy(isLoggingIn = true, quickConnectCode = null, error = null)
 
                 try {
-                    val quickConnectState = authRepository.initiateQuickConnect()
+                    val quickConnectState = authRepository.initiateQuickConnect(_connectedServerUrl.value)
 
                     if (quickConnectState != null) {
                         _uiState.value =
@@ -466,9 +467,9 @@ constructor(
             repeat(120) {
                 delay(1000)
 
-                val state = authRepository.getQuickConnectState(secret)
+                val state = authRepository.getQuickConnectState(_connectedServerUrl.value, secret)
                 if (state?.authenticated == true) {
-                    when (val result = authRepository.authenticateWithQuickConnect(secret)) {
+                    when (val result = authRepository.authenticateWithQuickConnect(_connectedServerUrl.value, secret)) {
                         is AuthRepository.AuthResult.Success -> {
                             val sdkAuthResult = result.authResult
 
@@ -491,6 +492,7 @@ constructor(
                                     )
 
                                 if (sessionResult.isSuccess) {
+                                    discoveryJob?.cancel()
                                     _uiState.value =
                                         _uiState.value.copy(
                                             isLoggingIn = false,
@@ -571,7 +573,8 @@ constructor(
     }
 
     fun discoverServers() {
-        viewModelScope.launch {
+        discoveryJob?.cancel()
+        discoveryJob = viewModelScope.launch {
             _uiState.value =
                 _uiState.value.copy(
                     isDiscovering = true,

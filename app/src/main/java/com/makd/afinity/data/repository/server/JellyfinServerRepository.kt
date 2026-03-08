@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
@@ -97,34 +96,6 @@ constructor(
         }
     }
 
-    override suspend fun discoverServers(): List<Server> {
-        return try {
-            val discoveredServers = mutableListOf<Server>()
-
-            withTimeoutOrNull(5000) {
-                jellyfin.discovery.discoverLocalServers(timeout = 3000, maxServers = 10).collect {
-                    serverInfo ->
-                    Timber.d("Discovered server: ${serverInfo.name} at ${serverInfo.address}")
-
-                    val server =
-                        Server(
-                            id = serverInfo.id ?: UUID.randomUUID().toString(),
-                            name = serverInfo.name ?: "Jellyfin Server",
-                            version = null,
-                            address = serverInfo.address ?: "",
-                        )
-                    discoveredServers.add(server)
-                }
-            } ?: run { Timber.w("Server discovery timed out after 5 seconds") }
-
-            Timber.d("Discovered ${discoveredServers.size} local servers")
-            discoveredServers
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to discover servers")
-            emptyList()
-        }
-    }
-
     override fun discoverServersFlow(): Flow<List<Server>> = flow {
         try {
             val discoveredServers = mutableListOf<Server>()
@@ -154,9 +125,6 @@ constructor(
 
     override suspend fun testServerConnection(serverAddress: String): ServerConnectionResult {
         return withContext(Dispatchers.IO) {
-            val originalUrl = _currentBaseUrl.value
-            val originalConnected = _isConnected.value
-            val originalServer = _currentServer.value
             val cleanAddress = serverAddress.trim().removeSuffix("/")
             val urlsToTry =
                 if (!cleanAddress.startsWith("http://") && !cleanAddress.startsWith("https://")) {
@@ -169,10 +137,8 @@ constructor(
 
             for (url in urlsToTry) {
                 try {
-                    apiClient.update(baseUrl = url)
-                    _currentBaseUrl.value = url
-
-                    val systemApi = SystemApi(apiClient)
+                    val testClient = jellyfin.createApi(baseUrl = url)
+                    val systemApi = SystemApi(testClient)
                     val response = systemApi.getPublicSystemInfo()
                     val systemInfo = response.content
 
@@ -184,11 +150,6 @@ constructor(
                                 version = systemInfo.version,
                                 address = url,
                             )
-                        apiClient.update(baseUrl = originalUrl)
-                        _currentBaseUrl.value = originalUrl
-                        _isConnected.value = originalConnected
-                        _currentServer.value = originalServer
-
                         return@withContext ServerConnectionResult.Success(
                             server = server,
                             serverAddress = url,
@@ -202,10 +163,6 @@ constructor(
                     lastException = e
                 }
             }
-            apiClient.update(baseUrl = originalUrl)
-            _currentBaseUrl.value = originalUrl
-            _isConnected.value = originalConnected
-            _currentServer.value = originalServer
 
             if (lastException is ApiClientException) {
                 Timber.e(lastException, "API error testing server connection")

@@ -4,7 +4,6 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.makd.afinity.data.database.AfinityDatabase
-import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityBoxSet
@@ -31,7 +30,6 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.library.FilterType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.ItemFields
@@ -61,15 +59,6 @@ constructor(
         serverRepository.setBaseUrl(baseUrl)
     }
 
-    override suspend fun discoverServers(): List<Server> {
-        return try {
-            serverRepository.discoverServers()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to discover servers")
-            emptyList()
-        }
-    }
-
     override suspend fun discoverServersFlow(): Flow<List<Server>> {
         return try {
             serverRepository.discoverServersFlow()
@@ -96,57 +85,6 @@ constructor(
         serverRepository.refreshServerInfo()
     }
 
-    override suspend fun authenticateByName(
-        username: String,
-        password: String,
-    ): AuthenticationResult? {
-        return try {
-            when (val result = authRepository.authenticateByName(username, password)) {
-                is AuthRepository.AuthResult.Success -> result.authResult
-                is AuthRepository.AuthResult.Error -> {
-                    Timber.e("Authentication failed: ${result.message}")
-                    null
-                }
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to authenticate by name")
-            null
-        }
-    }
-
-    override suspend fun authenticateWithQuickConnect(secret: String): AuthenticationResult? {
-        return try {
-            when (val result = authRepository.authenticateWithQuickConnect(secret)) {
-                is AuthRepository.AuthResult.Success -> result.authResult
-                is AuthRepository.AuthResult.Error -> {
-                    Timber.e("QuickConnect authentication failed: ${result.message}")
-                    null
-                }
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to authenticate with QuickConnect")
-            null
-        }
-    }
-
-    override suspend fun initiateQuickConnect(): QuickConnectState? {
-        return try {
-            authRepository.initiateQuickConnect()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to initiate QuickConnect")
-            null
-        }
-    }
-
-    override suspend fun getQuickConnectState(secret: String): QuickConnectState? {
-        return try {
-            authRepository.getQuickConnectState(secret)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get QuickConnect state")
-            null
-        }
-    }
-
     override suspend fun logout() {
         try {
             authRepository.logout()
@@ -164,9 +102,9 @@ constructor(
         }
     }
 
-    override suspend fun getPublicUsers(): List<User> {
+    override suspend fun getPublicUsers(serverUrl: String): List<User> {
         return try {
-            authRepository.getPublicUsers()
+            authRepository.getPublicUsers(serverUrl)
         } catch (e: Exception) {
             Timber.e(e, "Failed to get public users")
             emptyList()

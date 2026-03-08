@@ -14,31 +14,21 @@ interface AuthRepository {
 
     suspend fun hasValidSavedAuth(): Boolean
 
-    suspend fun saveAuthenticationData(
-        authResult: AuthenticationResult,
-        serverUrl: String,
-        username: String,
-    )
-
     suspend fun clearAllAuthData()
 
-    suspend fun authenticateByName(username: String, password: String): AuthResult
+    suspend fun authenticateByName(serverUrl: String, username: String, password: String): AuthResult
 
-    suspend fun authenticateWithQuickConnect(secret: String): AuthResult
+    suspend fun authenticateWithQuickConnect(serverUrl: String, secret: String): AuthResult
 
     suspend fun logout()
 
-    suspend fun initiateQuickConnect(): QuickConnectState?
+    suspend fun initiateQuickConnect(serverUrl: String): QuickConnectState?
 
-    suspend fun getQuickConnectState(secret: String): QuickConnectState?
+    suspend fun getQuickConnectState(serverUrl: String, secret: String): QuickConnectState?
 
     suspend fun getCurrentUser(): User?
 
-    suspend fun getPublicUsers(): List<User>
-
-    fun hasValidToken(): Boolean
-
-    fun getAccessToken(): String?
+    suspend fun getPublicUsers(serverUrl: String): List<User>
 
     sealed class AuthResult {
         data class Success(val authResult: AuthenticationResult) : AuthResult()

@@ -8,8 +8,6 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
-import com.makd.afinity.data.repository.auth.AuthRepository
-import com.makd.afinity.data.repository.auth.JellyfinAuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +46,6 @@ sealed class ConnectionState {
 class SessionManager
 @Inject
 constructor(
-    private val authRepository: AuthRepository,
     private val serverRepository: ServerRepository,
     private val databaseRepository: DatabaseRepository,
     private val sessionPreferences: SessionPreferences,
@@ -99,15 +96,6 @@ constructor(
                         username = user.name,
                         serverUrl = serverUrl,
                     )
-                }
-
-                if (user != null) {
-                    (authRepository as? JellyfinAuthRepository)?.setAuthenticatedUser(
-                        user = user,
-                        accessToken = accessToken,
-                        serverUrl = serverUrl,
-                    )
-                    Timber.d("Synced AuthRepository with user: ${user.name}")
                 }
 
                 jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
@@ -241,7 +229,7 @@ constructor(
         audiobookshelfRepository.clearActiveSession()
         _currentSession.value = null
         _connectionState.value = ConnectionState.Disconnected
-        authRepository.clearAllAuthData()
+        securePrefsRepository.clearAuthenticationData()
         apiClients.clear()
 
         Timber.d("Logged out successfully (token kept for re-login)")
