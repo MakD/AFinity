@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.item.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -61,7 +60,10 @@ fun QualitySelectionDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f, fill = false),
+                ) {
                     items(sources) { source ->
                         QualityOption(
                             source = source,
@@ -101,46 +103,27 @@ private fun QualityOption(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onSelect),
+        onClick = onSelect,
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         color =
-            if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
-        tonalElevation = if (isSelected) 4.dp else 0.dp,
+            if (isSelected) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 0.dp,
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                painter =
-                    if (isSelected) painterResource(id = R.drawable.ic_radio_button_checked)
-                    else painterResource(id = R.drawable.ic_radio_button_unchecked),
-                contentDescription =
-                    if (isSelected) stringResource(R.string.cd_selected)
-                    else stringResource(R.string.cd_not_selected),
-                tint =
-                    if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = source.name,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    fontWeight = FontWeight.Medium,
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
                 val sizeInMB = source.size / (1024 * 1024)
                 val sizeText =
-                    if (sizeInMB > 1024) {
+                    if (sizeInMB >= 1024) {
                         stringResource(R.string.file_size_gb, sizeInMB / 1024.0)
                     } else {
                         stringResource(R.string.file_size_mb, sizeInMB)
@@ -150,6 +133,14 @@ private fun QualityOption(
                     text = sizeText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (isSelected) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_check),
+                    contentDescription = stringResource(R.string.cd_selected),
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
         }
