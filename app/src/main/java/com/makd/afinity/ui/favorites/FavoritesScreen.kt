@@ -141,11 +141,7 @@ fun FavoritesScreen(
                         ) {
                             item {
                                 MediaRowSection(
-                                    title =
-                                        stringResource(
-                                            R.string.favorites_header_movies,
-                                            uiState.movies.size,
-                                        ),
+                                    title = stringResource(R.string.section_movies),
                                     items = uiState.movies,
                                     onItemClick = onItemClick,
                                     cardWidth = portraitWidth,
@@ -153,11 +149,7 @@ fun FavoritesScreen(
                             }
                             item {
                                 MediaRowSection(
-                                    title =
-                                        stringResource(
-                                            R.string.favorites_header_boxsets,
-                                            uiState.boxSets.size,
-                                        ),
+                                    title = stringResource(R.string.section_boxset),
                                     items = uiState.boxSets,
                                     onItemClick = onItemClick,
                                     cardWidth = portraitWidth,
@@ -165,11 +157,7 @@ fun FavoritesScreen(
                             }
                             item {
                                 MediaRowSection(
-                                    title =
-                                        stringResource(
-                                            R.string.favorites_header_shows,
-                                            uiState.shows.size,
-                                        ),
+                                    title = stringResource(R.string.section_tv_shows),
                                     items = uiState.shows,
                                     onItemClick = onItemClick,
                                     cardWidth = portraitWidth,
@@ -177,11 +165,7 @@ fun FavoritesScreen(
                             }
                             item {
                                 MediaRowSection(
-                                    title =
-                                        stringResource(
-                                            R.string.favorites_header_seasons,
-                                            uiState.seasons.size,
-                                        ),
+                                    title = stringResource(R.string.section_seasons),
                                     items = uiState.seasons,
                                     onItemClick = onItemClick,
                                     cardWidth = portraitWidth,
@@ -189,11 +173,7 @@ fun FavoritesScreen(
                             }
                             item {
                                 MediaRowSection(
-                                    title =
-                                        stringResource(
-                                            R.string.favorites_header_episodes,
-                                            uiState.episodes.size,
-                                        ),
+                                    title = stringResource(R.string.section_episodes),
                                     items = uiState.episodes,
                                     onItemClick = { episode ->
                                         viewModel.selectEpisode(
@@ -208,11 +188,7 @@ fun FavoritesScreen(
                             if (uiState.channels.isNotEmpty()) {
                                 item {
                                     FavoriteChannelsSection(
-                                        title =
-                                            stringResource(
-                                                R.string.favorites_header_channels,
-                                                uiState.channels.size,
-                                            ),
+                                        title = stringResource(R.string.section_tv_channels),
                                         channels = uiState.channels,
                                         onChannelClick = { channel ->
                                             PlayerLauncher.launchLiveChannel(
@@ -228,11 +204,7 @@ fun FavoritesScreen(
                             if (uiState.people.isNotEmpty()) {
                                 item {
                                     FavoritePeopleSection(
-                                        title =
-                                            stringResource(
-                                                R.string.favorites_header_people,
-                                                uiState.people.size,
-                                            ),
+                                        title = stringResource(R.string.section_people),
                                         people = uiState.people,
                                         onPersonClick = onPersonClick,
                                         cardWidth = portraitWidth,

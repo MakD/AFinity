@@ -99,7 +99,6 @@ fun PersonDetailContent(
             shows = shows,
             onItemClick = onItemClick,
             onToggleFavorite = onToggleFavorite,
-            widthSizeClass = widthSizeClass,
             modifier = modifier,
         )
     } else {
@@ -122,7 +121,6 @@ private fun LandscapePersonDetailContent(
     shows: List<AfinityShow>,
     onItemClick: (AfinityItem) -> Unit,
     onToggleFavorite: () -> Unit,
-    widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
 ) {
     val paddingValues = WindowInsets.safeDrawing.asPaddingValues()
@@ -185,26 +183,12 @@ private fun LandscapePersonDetailContent(
                     )
                 }
 
-                if (person.overview.isNotBlank()) {
-                    item { PersonOverviewSection(overview = person.overview) }
-                }
-
-                if (movies.isNotEmpty()) {
-                    item {
-                        PersonFilmographySection(
-                            title = stringResource(R.string.person_movies_fmt, movies.size),
-                            items = movies,
-                            onItemClick = onItemClick,
-                            cardWidth = 140.dp,
-                        )
-                    }
-                }
-
-                if (shows.isNotEmpty()) {
-                    item {
-                        PersonFilmographySection(
-                            title = stringResource(R.string.person_shows_fmt, shows.size),
-                            items = shows,
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        PersonSharedContentBlocks(
+                            person = person,
+                            movies = movies,
+                            shows = shows,
                             onItemClick = onItemClick,
                             cardWidth = 140.dp,
                         )
@@ -229,7 +213,7 @@ private fun PortraitPersonDetailContent(
     val cardWidth = widthSizeClass.portraitWidth
 
     LazyColumn(modifier = modifier.fillMaxSize()) {
-        item { PersonHeroSection(person = person) }
+        item { PersonHeroSection(person = person, modifier = Modifier.fillParentMaxHeight(0.6f)) }
 
         item {
             Column(
@@ -253,45 +237,56 @@ private fun PortraitPersonDetailContent(
 
                 PersonMetadataSection(person = person, onToggleFavorite = onToggleFavorite)
 
-                if (person.overview.isNotBlank()) {
-                    PersonOverviewSection(overview = person.overview)
-                }
-
-                if (movies.isNotEmpty()) {
-                    PersonFilmographySection(
-                        title = stringResource(R.string.person_movies_fmt, movies.size),
-                        items = movies,
-                        onItemClick = onItemClick,
-                        cardWidth = cardWidth,
-                    )
-                }
-
-                if (shows.isNotEmpty()) {
-                    PersonFilmographySection(
-                        title = stringResource(R.string.person_shows_fmt, shows.size),
-                        items = shows,
-                        onItemClick = onItemClick,
-                        cardWidth = cardWidth,
-                    )
-                }
+                PersonSharedContentBlocks(
+                    person = person,
+                    movies = movies,
+                    shows = shows,
+                    onItemClick = onItemClick,
+                    cardWidth = cardWidth,
+                )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PersonHeroSection(person: AfinityPersonDetail) {
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
+private fun PersonSharedContentBlocks(
+    person: AfinityPersonDetail,
+    movies: List<AfinityMovie>,
+    shows: List<AfinityShow>,
+    onItemClick: (AfinityItem) -> Unit,
+    cardWidth: Dp,
+) {
+    if (person.overview.isNotBlank()) {
+        PersonOverviewSection(overview = person.overview)
+    }
 
-    Box(modifier = Modifier.fillMaxWidth().height(screenHeight * 0.6f)) {
+    if (movies.isNotEmpty()) {
+        PersonFilmographySection(
+            title = stringResource(R.string.section_movies),
+            items = movies,
+            onItemClick = onItemClick,
+            cardWidth = cardWidth,
+        )
+    }
+
+    if (shows.isNotEmpty()) {
+        PersonFilmographySection(
+            title = stringResource(R.string.section_tv_shows),
+            items = shows,
+            onItemClick = onItemClick,
+            cardWidth = cardWidth,
+        )
+    }
+}
+
+@Composable
+private fun PersonHeroSection(person: AfinityPersonDetail, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxWidth()) {
         AsyncImage(
             imageUrl = person.images.primaryImageUrl,
             contentDescription = stringResource(R.string.cd_person_image_fmt, person.name),
             blurHash = person.images.primaryBlurHash,
-            targetWidth = LocalConfiguration.current.screenWidthDp.dp,
-            targetHeight = screenHeight * 0.6f,
             modifier =
                 Modifier.fillMaxSize()
                     .graphicsLayer { alpha = 0.99f }
@@ -338,36 +333,49 @@ private fun PersonOverviewSection(overview: String, modifier: Modifier = Modifie
             color = MaterialTheme.colorScheme.onBackground,
         )
 
+        @Composable
+        fun OverviewText(text: Any) {
+            val modifier = Modifier.animateContentSize()
+            val style = MaterialTheme.typography.bodyMedium
+            val color = MaterialTheme.colorScheme.onSurfaceVariant
+            val maxLines = if (isExpanded) Int.MAX_VALUE else 4
+            val overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis
+            val lineHeight = 20.sp
+            val onTextLayout: (androidx.compose.ui.text.TextLayoutResult) -> Unit = { result ->
+                if (!isExpanded) {
+                    isEllipsized = result.hasVisualOverflow
+                }
+            }
+
+            if (text is androidx.compose.ui.text.AnnotatedString) {
+                Text(
+                    text = text,
+                    style = style,
+                    color = color,
+                    maxLines = maxLines,
+                    modifier = modifier,
+                    overflow = overflow,
+                    lineHeight = lineHeight,
+                    onTextLayout = onTextLayout,
+                )
+            } else if (text is String) {
+                Text(
+                    text = text,
+                    style = style,
+                    color = color,
+                    maxLines = maxLines,
+                    modifier = modifier,
+                    overflow = overflow,
+                    lineHeight = lineHeight,
+                    onTextLayout = onTextLayout,
+                )
+            }
+        }
+
         if (containsHtml && annotatedText != null) {
-            Text(
-                text = annotatedText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = if (isExpanded) Int.MAX_VALUE else 4,
-                modifier = Modifier.animateContentSize(),
-                overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis,
-                lineHeight = 20.sp,
-                onTextLayout = { result ->
-                    if (!isExpanded) {
-                        isEllipsized = result.hasVisualOverflow
-                    }
-                },
-            )
+            OverviewText(text = annotatedText)
         } else {
-            Text(
-                text = overview,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = if (isExpanded) Int.MAX_VALUE else 4,
-                modifier = Modifier.animateContentSize(),
-                overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis,
-                lineHeight = 20.sp,
-                onTextLayout = { result ->
-                    if (!isExpanded) {
-                        isEllipsized = result.hasVisualOverflow
-                    }
-                },
-            )
+            OverviewText(text = overview)
         }
 
         if (isEllipsized || isExpanded) {
@@ -444,23 +452,29 @@ private fun PersonMetadataSection(
         Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val datePattern = stringResource(R.string.person_date_fmt)
             val formatter =
-                remember(datePattern) {
-                    java.time.format.DateTimeFormatter.ofPattern(datePattern)
-                }
+                remember(datePattern) { java.time.format.DateTimeFormatter.ofPattern(datePattern) }
 
             person.premiereDate?.let { birthday ->
                 val isDeceased = person.endDate != null
                 Text(
                     text =
                         if (isDeceased) {
-                            stringResource(R.string.person_born_deceased_fmt, birthday.format(formatter))
+                            stringResource(
+                                R.string.person_born_deceased_fmt,
+                                birthday.format(formatter),
+                            )
                         } else {
                             val age =
                                 java.time.Period.between(
-                                    birthday.toLocalDate(),
-                                    java.time.LocalDate.now(),
-                                ).years
-                            stringResource(R.string.person_born_fmt, birthday.format(formatter), age)
+                                        birthday.toLocalDate(),
+                                        java.time.LocalDate.now(),
+                                    )
+                                    .years
+                            stringResource(
+                                R.string.person_born_fmt,
+                                birthday.format(formatter),
+                                age,
+                            )
                         },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -470,14 +484,22 @@ private fun PersonMetadataSection(
             person.endDate?.let { deathDate ->
                 val age =
                     person.premiereDate?.let { birthday ->
-                        java.time.Period.between(birthday.toLocalDate(), deathDate.toLocalDate()).years
+                        java.time.Period.between(birthday.toLocalDate(), deathDate.toLocalDate())
+                            .years
                     }
                 Text(
                     text =
                         if (age != null) {
-                            stringResource(R.string.person_died_fmt, deathDate.format(formatter), age)
+                            stringResource(
+                                R.string.person_died_fmt,
+                                deathDate.format(formatter),
+                                age,
+                            )
                         } else {
-                            stringResource(R.string.person_died_no_age_fmt, deathDate.format(formatter))
+                            stringResource(
+                                R.string.person_died_no_age_fmt,
+                                deathDate.format(formatter),
+                            )
                         },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
