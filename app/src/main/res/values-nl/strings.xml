@@ -66,13 +66,6 @@
     <string name="error_unknown">Onbekende Fout</string>
     <string name="favorites_empty_title">Nog Geen Favorieten</string>
     <string name="favorites_empty_message">Items die je als favoriet markeert, verschijnen hier</string>
-    <string name="favorites_header_movies">Films (%1$d)</string>
-    <string name="favorites_header_boxsets">Box Sets (%1$d)</string>
-    <string name="favorites_header_shows">TV Shows (%1$d)</string>
-    <string name="favorites_header_seasons">Seizoenen (%1$d)</string>
-    <string name="favorites_header_episodes">Episodes (%1$d)</string>
-    <string name="favorites_header_channels">Live TV Kanalen (%1$d)</string>
-    <string name="favorites_header_people">Mensen (%1$d)</string>
     <string name="cast_section_title">Cast</string>
     <string name="cast_role_format">als %1$s</string>
     <string name="external_links_title">Externe Links</string>

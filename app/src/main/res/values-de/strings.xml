@@ -67,13 +67,6 @@
     <string name="error_unknown">Unbekannter Fehler</string>
     <string name="favorites_empty_title">Noch keine Favoriten</string>
     <string name="favorites_empty_message">Favoriten werden hier angezeigt</string>
-    <string name="favorites_header_movies">Filme (%1$d)</string>
-    <string name="favorites_header_boxsets">Filmreihen (%1$d)</string>
-    <string name="favorites_header_shows">Serien (%1$d)</string>
-    <string name="favorites_header_seasons">Staffeln (%1$d)</string>
-    <string name="favorites_header_episodes">Episoden (%1$d)</string>
-    <string name="favorites_header_channels">Live-TV Sender (%1$d)</string>
-    <string name="favorites_header_people">Personen (%1$d)</string>
     <string name="cast_section_title">Besetzung</string>
     <string name="cast_role_format">Als %1$s</string>
     <string name="external_links_title">Externe Links</string>
@@ -195,8 +188,6 @@
     <string name="person_biography">Biografie</string>
     <string name="person_born_fmt">Geboren: %1$s (%2$d Jahre alt)</string>
     <string name="person_birthplace_fmt">Geburtsort: %1$s</string>
-    <string name="person_movies_fmt">Filme (%1$d)</string>
-    <string name="person_shows_fmt">Fernsehsendungen (%1$d)</string>
     <string name="action_show_more">Mehr anzeigen</string>
     <string name="action_show_less">Weniger anzeigen</string>
     <string name="cd_person_image_fmt">%1$s Bild</string>

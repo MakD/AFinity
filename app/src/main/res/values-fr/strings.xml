@@ -62,12 +62,6 @@
     <string name="error_unknown">Erreur inconnue</string>
     <string name="favorites_empty_title">Aucun favori pour le moment</string>
     <string name="favorites_empty_message">Les contenus ajoutés aux favoris s’afficheront ici</string>
-    <string name="favorites_header_movies">Films (%1$d)</string>
-    <string name="favorites_header_boxsets">Collections (%1$d)</string>
-    <string name="favorites_header_shows">Séries TV (%1$d)</string>
-    <string name="favorites_header_seasons">Saisons (%1$d)</string>
-    <string name="favorites_header_episodes">Épisodes (%1$d)</string>
-    <string name="favorites_header_channels">Chaînes TV en direct (%1$d)</string>
     <string name="cast_section_title">Distribution</string>
     <string name="external_links_title">Liens externes</string>
     <string name="external_link_default_name">Lien externe</string>
@@ -108,7 +102,6 @@
     <string name="cd_backdrop_fmt">%1$s Arrière-plans</string>
     <string name="cd_logo_fmt">%1$s logo</string>
     <string name="cd_shuffle_play">Lecture aléatoire</string>
-    <string name="favorites_header_people">Acteurs (%1$d)</string>
     <string name="cast_role_format">comme %1$s</string>
     <string name="meta_vision">Vision</string>
     <string name="meta_digital_plus">Digital+</string>
@@ -175,8 +168,6 @@
     <string name="person_biography">Biographie</string>
     <string name="person_born_fmt">Né(e) : %1$s (%2$d ans)</string>
     <string name="person_birthplace_fmt">Lieu de naissance :%1$s</string>
-    <string name="person_movies_fmt">Films (%1$d)</string>
-    <string name="person_shows_fmt">Séries TV (%1$d)</string>
     <string name="action_show_more">Afficher plus</string>
     <string name="action_show_less">Montrer moins</string>
     <string name="cd_person_image_fmt">%1$s image</string>

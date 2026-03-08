@@ -59,12 +59,6 @@
     <string name="error_unknown">Error desconocido</string>
     <string name="favorites_empty_title">Todavía no hay favoritos</string>
     <string name="favorites_empty_message">Los elementos que marque como favoritos aparecerán aquí</string>
-    <string name="favorites_header_movies">Películas (%1$d)</string>
-    <string name="favorites_header_shows">Series de TV (%1$d)</string>
-    <string name="favorites_header_seasons">Temporadas (%1$d)</string>
-    <string name="favorites_header_episodes">Episodios (%1$d)</string>
-    <string name="favorites_header_channels">Canales de TV en vivo (%1$d)</string>
-    <string name="favorites_header_people">Personas (%1$d)</string>
     <string name="cast_section_title">Reparto</string>
     <string name="cast_role_format">como %1$d</string>
     <string name="external_links_title">Enlaces externos</string>
