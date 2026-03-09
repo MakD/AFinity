@@ -20,6 +20,8 @@ import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
+import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
+import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -42,6 +44,8 @@ constructor(
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
     private val liveTvRepository: LiveTvRepository,
+    private val itemUserDataDelegate: ItemUserDataDelegate,
+    private val itemDownloadDelegate: ItemDownloadDelegate,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FavoritesUiState())
@@ -76,6 +80,13 @@ constructor(
             playbackStateManager.playbackEvents.collect { event ->
                 if (event is PlaybackEvent.Synced) {
                     loadFavorites()
+                    _selectedEpisode.value?.let { ep ->
+                        if (ep.id == event.itemId) {
+                            val refreshedEp =
+                                jellyfinRepository.getItemById(event.itemId) as? AfinityEpisode
+                            refreshedEp?.let { _selectedEpisode.value = it }
+                        }
+                    }
                 }
             }
         }
@@ -96,8 +107,7 @@ constructor(
                     val channelsDeferred = async {
                         try {
                             liveTvRepository.getChannels(isFavorite = true)
-                        } catch (e: Exception) {
-                            Timber.d("Live TV not available or no favorite channels")
+                        } catch (_: Exception) {
                             emptyList()
                         }
                     }
@@ -108,9 +118,6 @@ constructor(
                     val episodes = episodesDeferred.await()
                     val boxSets = boxSetsDeferred.await()
                     val people = peopleDeferred.await()
-                    Timber.d(
-                        "Favorite People loaded: Count=${people.size}, Names=${people.map { it.name }}"
-                    )
                     val channels = channelsDeferred.await()
 
                     _uiState.value =
@@ -151,9 +158,7 @@ constructor(
                         .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
                         ?.toAfinityEpisode(jellyfinRepository, null)
 
-                if (fullEpisode != null) {
-                    _selectedEpisode.value = fullEpisode
-                }
+                _selectedEpisode.value = fullEpisode ?: episode
 
                 val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
                 _selectedEpisodeWatchlistStatus.value = isInWatchlist
@@ -177,57 +182,35 @@ constructor(
     }
 
     fun toggleEpisodeFavorite(episode: AfinityEpisode) {
-        viewModelScope.launch {
-            try {
-                val success =
-                    if (episode.favorite) {
-                        userDataRepository.removeFromFavorites(episode.id)
-                    } else {
-                        userDataRepository.addToFavorites(episode.id)
-                    }
-
-                if (success) {
-                    _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
-                    loadFavorites()
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Error toggling episode favorite")
-            }
+        itemUserDataDelegate.toggleEpisodeFavorite(viewModelScope, episode) {
+            _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
+            loadFavorites()
         }
     }
 
     fun toggleEpisodeWatchlist(episode: AfinityEpisode) {
-        viewModelScope.launch {
-            try {
-                val isInWatchlist = _selectedEpisodeWatchlistStatus.value
-                _selectedEpisodeWatchlistStatus.value = !isInWatchlist
-
-                val success =
-                    if (isInWatchlist) {
-                        watchlistRepository.removeFromWatchlist(episode.id)
-                    } else {
-                        watchlistRepository.addToWatchlist(episode.id, "EPISODE")
-                    }
-
-                if (!success) {
-                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
-                    Timber.e("Failed to toggle watchlist for episode: ${episode.name}")
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Error toggling episode watchlist")
-                try {
-                    val isInWatchlist = watchlistRepository.isInWatchlist(episode.id)
-                    _selectedEpisodeWatchlistStatus.value = isInWatchlist
-                } catch (e2: Exception) {
-                    Timber.e(e2, "Failed to reload watchlist status")
-                }
-            }
-        }
+        val isLiked = _selectedEpisodeWatchlistStatus.value
+        itemUserDataDelegate.toggleWatchlist(
+            scope = viewModelScope,
+            item = episode,
+            updateOptimisticUI = {
+                _selectedEpisodeWatchlistStatus.value = !isLiked
+                _selectedEpisode.value = _selectedEpisode.value?.copy(liked = !isLiked)
+            },
+            revertUI = {
+                _selectedEpisodeWatchlistStatus.value = isLiked
+                _selectedEpisode.value = _selectedEpisode.value?.copy(liked = isLiked)
+            },
+        )
     }
 
     fun toggleEpisodeWatched(episode: AfinityEpisode) {
         viewModelScope.launch {
             try {
+                val isNowPlayed = !episode.played
+                _selectedEpisode.value =
+                    episode.copy(played = isNowPlayed, playbackPositionTicks = 0)
+
                 val success =
                     if (episode.played) {
                         userDataRepository.markUnwatched(episode.id)
@@ -236,9 +219,10 @@ constructor(
                     }
 
                 if (success) {
-                    _selectedEpisode.value = episode.copy(played = !episode.played)
                     mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
                     playbackStateManager.notifyItemChanged(episode.id)
+                } else {
+                    _selectedEpisode.value = episode
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error toggling episode watched status")
@@ -247,74 +231,19 @@ constructor(
     }
 
     fun onDownloadClick() {
-        viewModelScope.launch {
-            try {
-                val episode = _selectedEpisode.value ?: return@launch
-                val sources =
-                    episode.sources.filter {
-                        it.type == com.makd.afinity.data.models.media.AfinitySourceType.REMOTE
-                    }
-
-                if (sources.isEmpty()) {
-                    Timber.w(
-                        "No remote sources available for download for episode: ${episode.name}"
-                    )
-                    return@launch
-                }
-
-                if (sources.size == 1) {
-                    val result = downloadRepository.startDownload(episode.id, sources.first().id)
-                    result
-                        .onSuccess {
-                            Timber.i("Download started successfully for episode: ${episode.name}")
-                        }
-                        .onFailure { error ->
-                            Timber.e(error, "Failed to start download for episode: ${episode.name}")
-                        }
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Error starting download")
-            }
+        _selectedEpisode.value?.let { episode ->
+            itemDownloadDelegate.onDownloadClick(viewModelScope, episode) {}
         }
     }
 
-    fun pauseDownload() {
-        viewModelScope.launch {
-            try {
-                val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
-                val result = downloadRepository.pauseDownload(downloadInfo.id)
-                result.onFailure { error -> Timber.e(error, "Failed to pause download") }
-            } catch (e: Exception) {
-                Timber.e(e, "Error pausing download")
-            }
-        }
-    }
+    fun pauseDownload() =
+        itemDownloadDelegate.pauseDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
 
-    fun resumeDownload() {
-        viewModelScope.launch {
-            try {
-                val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
-                val result = downloadRepository.resumeDownload(downloadInfo.id)
-                result.onFailure { error -> Timber.e(error, "Failed to resume download") }
-            } catch (e: Exception) {
-                Timber.e(e, "Error resuming download")
-            }
-        }
-    }
+    fun resumeDownload() =
+        itemDownloadDelegate.resumeDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
 
-    fun cancelDownload() {
-        viewModelScope.launch {
-            try {
-                val downloadInfo = _selectedEpisodeDownloadInfo.value ?: return@launch
-                val result = downloadRepository.cancelDownload(downloadInfo.id)
-                result
-                    .onSuccess { Timber.i("Download cancelled successfully") }
-                    .onFailure { error -> Timber.e(error, "Failed to cancel download") }
-            } catch (e: Exception) {
-                Timber.e(e, "Error cancelling download")
-            }
-        }
-    }
+    fun cancelDownload() =
+        itemDownloadDelegate.cancelDownload(viewModelScope, _selectedEpisodeDownloadInfo.value)
 }
 
 data class FavoritesUiState(
