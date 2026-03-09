@@ -86,10 +86,7 @@ constructor(
                 val userLibraryApi = UserLibraryApi(apiClient)
                 val freshItem =
                     userLibraryApi
-                        .getItem(
-                            userId = userId,
-                            itemId = itemId,
-                        )
+                        .getItem(userId = userId, itemId = itemId)
                         .content
                         .toAfinityItem(getBaseUrl())
 
@@ -105,10 +102,7 @@ constructor(
                                     kotlinx.coroutines.delay(500)
                                     val seriesItem =
                                         userLibraryApi
-                                            .getItem(
-                                                userId = userId,
-                                                itemId = seriesId,
-                                            )
+                                            .getItem(userId = userId, itemId = seriesId)
                                             .content
                                             .toAfinityItem(getBaseUrl())
                                     if (seriesItem != null) {
@@ -514,6 +508,7 @@ constructor(
                         years = years,
                         isFavorite = isFavorite,
                         isPlayed = isPlayed,
+                        isMissing = false,
                         filters = filters.ifEmpty { null },
                         nameStartsWith = nameStartsWith,
                         studios = studios.ifEmpty { null },
