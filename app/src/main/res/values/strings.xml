@@ -265,6 +265,7 @@
     <string name="time_minutes_short">%1$dm</string>
     <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">Close</string>
+    <string name="playing_intro_text">Playing Intro…</string>
 
     <string name="player_speed_title_fmt">Current Speed %1$.2fx</string>
     <string name="player_speed_value_fmt">%.2f</string>
@@ -406,6 +407,8 @@
 
     <string name="media_type_movie">Movie</string>
     <string name="media_type_tv_show">TV Show</string>
+    <string name="media_type_episode">Episode</string>
+    <string name="media_type_collection">Box Set</string>
     <string name="media_type_media">Media</string>
     <string name="media_type_unknown">UNKNOWN</string>
 

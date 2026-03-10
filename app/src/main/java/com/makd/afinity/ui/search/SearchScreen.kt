@@ -1,3 +1,5 @@
+@file:androidx.annotation.OptIn(UnstableApi::class)
+
 package com.makd.afinity.ui.search
 
 import androidx.compose.foundation.background
@@ -50,6 +52,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -61,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.text.HtmlCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.extensions.primaryBlurHash
@@ -69,13 +73,17 @@ import com.makd.afinity.data.models.jellyseerr.MediaStatus
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.SearchResultItem
 import com.makd.afinity.data.models.jellyseerr.hasPermission
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,6 +94,7 @@ fun SearchScreen(
     onGenreClick: (String) -> Unit,
     onAudiobookshelfItemClick: (String) -> Unit,
     onAudiobookshelfGenreClick: (String) -> Unit,
+    onSeriesClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
@@ -95,6 +104,13 @@ fun SearchScreen(
         viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
     val isAudiobookshelfAuthenticated by
         viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
+    val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
+    val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
+    val selectedEpisodeWatchlistStatus by
+        viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
+    val selectedEpisodeDownloadInfo by
+        viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -221,19 +237,39 @@ fun SearchScreen(
 
                 isAllMode &&
                     (uiState.searchResults.isNotEmpty() ||
-                        uiState.audiobookshelfSearchResults.isNotEmpty()) -> {
+                        uiState.audiobookshelfSearchResults.isNotEmpty() ||
+                        uiState.jellyseerrSearchResults.isNotEmpty()) -> {
                     CombinedSearchResultsContent(
                         jellyfinResults = uiState.searchResults,
                         audiobookshelfResults = uiState.audiobookshelfSearchResults,
+                        jellyseerrResults = uiState.jellyseerrSearchResults,
                         isAudiobookshelfSearching = uiState.isAudiobookshelfSearching,
+                        isJellyseerrSearching = uiState.isJellyseerrSearching,
                         serverUrl = uiState.audiobookshelfServerUrl,
                         onItemClick = onItemClick,
+                        onEpisodeClick = { episode -> viewModel.selectEpisode(episode) },
                         onAudiobookshelfItemClick = onAudiobookshelfItemClick,
+                        onRequestClick = { item ->
+                            item.getMediaType()?.let { mediaType ->
+                                viewModel.showRequestDialog(
+                                    tmdbId = item.id,
+                                    mediaType = mediaType,
+                                    title = item.getDisplayTitle(),
+                                    posterUrl = item.getPosterUrl(),
+                                    availableSeasons = 0,
+                                    existingStatus = item.getDisplayStatus(),
+                                )
+                            }
+                        },
                     )
                 }
 
                 uiState.searchResults.isNotEmpty() -> {
-                    SearchResultsContent(results = uiState.searchResults, onItemClick = onItemClick)
+                    SearchResultsContent(
+                        results = uiState.searchResults,
+                        onItemClick = onItemClick,
+                        onEpisodeClick = { episode -> viewModel.selectEpisode(episode) },
+                    )
                 }
 
                 else -> {
@@ -286,8 +322,9 @@ fun SearchScreen(
                 can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
                 is4k = uiState.is4kRequested,
                 onIs4kChange = { viewModel.setIs4kRequested(it) },
-                canAdvanced = currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true ||
-                    currentUser?.hasPermission(Permissions.MANAGE_REQUESTS) == true,
+                canAdvanced =
+                    currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true ||
+                        currentUser?.hasPermission(Permissions.MANAGE_REQUESTS) == true,
                 availableServers = uiState.availableServers,
                 selectedServer = uiState.selectedServer,
                 onServerSelected = { viewModel.selectServer(it) },
@@ -297,6 +334,37 @@ fun SearchScreen(
                 selectedRootFolder = uiState.selectedRootFolder,
                 isLoadingServers = uiState.isLoadingServers,
                 isLoadingProfiles = uiState.isLoadingProfiles,
+            )
+        }
+
+        selectedEpisode?.let { episode ->
+            com.makd.afinity.ui.item.components.EpisodeDetailOverlay(
+                episode = episode,
+                isInWatchlist = selectedEpisodeWatchlistStatus,
+                downloadInfo = selectedEpisodeDownloadInfo,
+                onDismiss = { viewModel.clearSelectedEpisode() },
+                onPlayClick = { episodeToPlay, selection ->
+                    viewModel.clearSelectedEpisode()
+                    com.makd.afinity.ui.player.PlayerLauncher.launch(
+                        context = context,
+                        itemId = episodeToPlay.id,
+                        mediaSourceId = selection.mediaSourceId,
+                        audioStreamIndex = selection.audioStreamIndex,
+                        subtitleStreamIndex = selection.subtitleStreamIndex,
+                        startPositionMs = selection.startPositionMs,
+                    )
+                },
+                onToggleFavorite = { viewModel.toggleEpisodeFavorite(episode) },
+                onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(episode) },
+                onToggleWatched = { viewModel.toggleEpisodeWatched(episode) },
+                onDownloadClick = { viewModel.onDownloadClick() },
+                onPauseDownload = { viewModel.pauseDownload() },
+                onResumeDownload = { viewModel.resumeDownload() },
+                onCancelDownload = { viewModel.cancelDownload() },
+                onGoToSeries = {
+                    viewModel.clearSelectedEpisode()
+                    episode.seriesId?.let { seriesId -> onSeriesClick(seriesId.toString()) }
+                },
             )
         }
     }
@@ -474,7 +542,11 @@ private fun SearchHomeContent(
 }
 
 @Composable
-private fun SearchResultsContent(results: List<AfinityItem>, onItemClick: (AfinityItem) -> Unit) {
+private fun SearchResultsContent(
+    results: List<AfinityItem>,
+    onItemClick: (AfinityItem) -> Unit,
+    onEpisodeClick: (AfinityEpisode) -> Unit,
+) {
     LocalSoftwareKeyboardController.current
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -489,7 +561,18 @@ private fun SearchResultsContent(results: List<AfinityItem>, onItemClick: (Afini
             )
         }
 
-        items(results) { item -> SearchResultItem(item = item, onClick = { onItemClick(item) }) }
+        items(results) { item ->
+            SearchResultItem(
+                item = item,
+                onClick = {
+                    if (item is AfinityEpisode) {
+                        onEpisodeClick(item)
+                    } else {
+                        onItemClick(item)
+                    }
+                },
+            )
+        }
     }
 }
 
@@ -576,7 +659,14 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(modifier = Modifier.width(80.dp).height(120.dp)) {
+            val imageModifier =
+                if (item is AfinityEpisode) {
+                    Modifier.width(142.dp).height(80.dp)
+                } else {
+                    Modifier.width(80.dp).height(120.dp)
+                }
+
+            Box(modifier = imageModifier) {
                 Card(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(8.dp)) {
                     AsyncImage(
                         imageUrl = item.images.primaryImageUrl,
@@ -607,11 +697,16 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
             }
 
             Column(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = item.name,
+                    text =
+                        if (item is AfinityEpisode && item.seriesName.isNotEmpty()) {
+                            "${item.seriesName} - ${item.name}"
+                        } else {
+                            item.name
+                        },
                     style =
                         MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,
@@ -623,80 +718,103 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text(
-                        text =
-                            when (item) {
-                                is AfinityMovie -> stringResource(R.string.media_type_movie)
-                                is AfinityShow -> stringResource(R.string.media_type_tv_show)
-                                else -> stringResource(R.string.media_type_media)
-                            },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-
-                    when (item) {
-                        is AfinityMovie -> item.productionYear
-                        is AfinityShow -> item.productionYear
-                        else -> null
-                    }?.let { year ->
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = year.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    val elements = mutableListOf<@Composable () -> Unit>()
+                    if (item is AfinityEpisode) {
+                        val season = item.parentIndexNumber.toString().padStart(2, '0')
+                        val episode = item.indexNumber.toString().padStart(2, '0')
+                        elements.add {
+                            Text(
+                                text = "S$season:E$episode",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
 
-                    when (item) {
-                        is AfinityMovie -> item.communityRating
-                        is AfinityShow -> item.communityRating
-                        else -> null
-                    }?.let { rating ->
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_imdb_logo),
-                            contentDescription = stringResource(R.string.cd_imdb),
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            text = String.format(Locale.US, "%.1f", rating),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    val yearOrDate =
+                        when (item) {
+                            is AfinityMovie -> item.productionYear?.toString()
+                            is AfinityShow -> item.productionYear?.toString()
+                            is AfinityEpisode ->
+                                item.premiereDate?.format(
+                                    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+                                )
+                            is AfinityBoxSet -> item.productionYear?.toString()
+                            else -> null
+                        }
+                    yearOrDate?.let { date ->
+                        elements.add {
+                            Text(
+                                text = date,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+
+                    val rating =
+                        when (item) {
+                            is AfinityMovie -> item.communityRating
+                            is AfinityShow -> item.communityRating
+                            is AfinityEpisode -> item.communityRating
+                            else -> null
+                        }
+                    rating?.let { r ->
+                        elements.add {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                    contentDescription = stringResource(R.string.cd_imdb),
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Text(
+                                    text = String.format(Locale.US, "%.1f", r),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
 
                     if (item is AfinityMovie) {
                         item.criticRating?.let { rtRating ->
+                            elements.add {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                ) {
+                                    Icon(
+                                        painter =
+                                            painterResource(
+                                                id =
+                                                    if (rtRating > 60)
+                                                        R.drawable.ic_rotten_tomato_fresh
+                                                    else R.drawable.ic_rotten_tomato_rotten
+                                            ),
+                                        contentDescription =
+                                            stringResource(R.string.cd_rotten_tomatoes),
+                                        tint = Color.Unspecified,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                    Text(
+                                        text = "${rtRating.toInt()}%",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    elements.forEachIndexed { index, element ->
+                        element()
+                        if (index < elements.size - 1) {
                             Text(
                                 text = "•",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Icon(
-                                painter =
-                                    painterResource(
-                                        id =
-                                            if (rtRating > 60) {
-                                                R.drawable.ic_rotten_tomato_fresh
-                                            } else {
-                                                R.drawable.ic_rotten_tomato_rotten
-                                            }
-                                    ),
-                                contentDescription = stringResource(R.string.cd_rotten_tomatoes),
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            Text(
-                                text = "${rtRating.toInt()}%",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -709,7 +827,7 @@ private fun SearchResultItem(item: AfinityItem, onClick: () -> Unit) {
                         text = overview,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
+                        maxLines = if (item is AfinityEpisode) 2 else 3,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -836,7 +954,6 @@ private fun JellyseerrSearchResultItem(item: SearchResultItem, onRequestClick: (
                             MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
                             MediaStatus.PENDING -> MaterialTheme.colorScheme.tertiary
                             MediaStatus.PROCESSING -> MaterialTheme.colorScheme.primary
-                            MediaStatus.PARTIALLY_AVAILABLE -> MaterialTheme.colorScheme.secondary
                             MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.secondary
                             MediaStatus.DELETED -> MaterialTheme.colorScheme.error
                         },
@@ -845,8 +962,6 @@ private fun JellyseerrSearchResultItem(item: SearchResultItem, onRequestClick: (
                         when (status) {
                             MediaStatus.PENDING -> stringResource(R.string.status_pending)
                             MediaStatus.PROCESSING -> stringResource(R.string.status_processing)
-                            MediaStatus.PARTIALLY_AVAILABLE ->
-                                stringResource(R.string.status_partially_available)
                             MediaStatus.AVAILABLE -> stringResource(R.string.status_available)
                             MediaStatus.DELETED -> stringResource(R.string.status_deleted)
                             else -> stringResource(R.string.status_unknown)
@@ -861,8 +976,6 @@ private fun JellyseerrSearchResultItem(item: SearchResultItem, onRequestClick: (
                                 MediaStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
                                 MediaStatus.PENDING -> MaterialTheme.colorScheme.onTertiary
                                 MediaStatus.PROCESSING -> MaterialTheme.colorScheme.onPrimary
-                                MediaStatus.PARTIALLY_AVAILABLE ->
-                                    MaterialTheme.colorScheme.onSecondary
                                 MediaStatus.AVAILABLE -> MaterialTheme.colorScheme.onSecondary
                                 MediaStatus.DELETED -> MaterialTheme.colorScheme.onError
                             },
@@ -965,7 +1078,7 @@ private fun AudiobookshelfSearchResultItem(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(modifier = Modifier.width(80.dp).height(120.dp)) {
+            Box(modifier = Modifier.size(80.dp)) {
                 Card(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(8.dp)) {
                     AsyncImage(
                         imageUrl = serverUrl?.let { "$it/api/items/${item.id}/cover" },
@@ -1107,57 +1220,82 @@ private fun AudiobookshelfSearchResultsContent(
 }
 
 @Composable
+private fun SearchSectionHeader(title: String, isLoading: Boolean = false) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary,
+        )
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+        }
+    }
+}
+
+@Composable
 private fun CombinedSearchResultsContent(
     jellyfinResults: List<AfinityItem>,
     audiobookshelfResults: List<LibraryItem>,
+    jellyseerrResults: List<SearchResultItem>,
     isAudiobookshelfSearching: Boolean,
+    isJellyseerrSearching: Boolean,
     serverUrl: String?,
     onItemClick: (AfinityItem) -> Unit,
+    onEpisodeClick: (AfinityEpisode) -> Unit,
     onAudiobookshelfItemClick: (String) -> Unit,
+    onRequestClick: (SearchResultItem) -> Unit,
 ) {
+    val collections =
+        remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityBoxSet>() }
+    val movies = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityMovie>() }
+    val shows = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityShow>() }
+    val episodes = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityEpisode>() }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (jellyfinResults.isNotEmpty()) {
-            item {
-                Text(
-                    text = stringResource(R.string.search_results_count_fmt, jellyfinResults.size),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            items(jellyfinResults) { item ->
+        if (collections.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.media_type_collection) + "s") }
+            items(collections) { item ->
                 SearchResultItem(item = item, onClick = { onItemClick(item) })
+            }
+        }
+
+        if (movies.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.media_type_movie) + "s") }
+            items(movies) { item -> SearchResultItem(item = item, onClick = { onItemClick(item) }) }
+        }
+
+        if (shows.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.media_type_tv_show) + "s") }
+            items(shows) { item -> SearchResultItem(item = item, onClick = { onItemClick(item) }) }
+        }
+
+        if (episodes.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.media_type_episode) + "s") }
+            items(episodes) { item ->
+                SearchResultItem(item = item, onClick = { onEpisodeClick(item) })
+            }
+        }
+
+        if (jellyseerrResults.isNotEmpty() || isJellyseerrSearching) {
+            item { SearchSectionHeader("Discover & Request", isLoading = isJellyseerrSearching) }
+            items(jellyseerrResults) { item ->
+                JellyseerrSearchResultItem(item = item, onRequestClick = { onRequestClick(item) })
             }
         }
 
         if (audiobookshelfResults.isNotEmpty() || isAudiobookshelfSearching) {
             item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.search_results_count_fmt,
-                                audiobookshelfResults.size,
-                            ),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    if (isAudiobookshelfSearching) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    }
-                }
+                SearchSectionHeader("Audiobooks & Podcasts", isLoading = isAudiobookshelfSearching)
             }
-
             items(audiobookshelfResults, key = { it.id }) { item ->
                 AudiobookshelfSearchResultItem(
                     item = item,
