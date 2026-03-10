@@ -122,6 +122,7 @@ constructor(
     private var currentZoomMode: VideoZoomMode = VideoZoomMode.FIT
     private var isVideoPortrait: Boolean = false
     private var isOrientationOverridden: Boolean = false
+    private var suppressNextControlShow = false
 
     var enterPictureInPicture: (() -> Unit)? = null
     var updatePipParams: (() -> Unit)? = null
@@ -569,6 +570,8 @@ constructor(
         }
 
         val isBuffering = !isActuallyPlaying && playbackState == Player.STATE_BUFFERING
+        val isPausedState = !isActuallyPlaying && playbackState == Player.STATE_READY
+        val shouldShowPlayButton = if (isBuffering) false else !uiState.value.isControlsLocked
 
         lastKnownPosition = position
         lastKnownDuration = duration
@@ -576,10 +579,11 @@ constructor(
         _uiState.value =
             _uiState.value.copy(
                 isPlaying = isActuallyPlaying,
-                isPaused = !isActuallyPlaying && playbackState == Player.STATE_READY,
+                isPaused = isPausedState,
                 isBuffering = isBuffering,
                 currentPosition = position,
                 duration = duration,
+                showPlayButton = if (isBuffering) false else _uiState.value.showPlayButton,
             )
     }
 
@@ -802,6 +806,8 @@ constructor(
         subtitleStreamIndex: Int?,
         startPositionMs: Long,
     ) {
+        val shouldShowControls = !suppressNextControlShow
+        suppressNextControlShow = false
         stopAudiobookshelfIfPlaying()
         try {
             // Capture previous source before we overwrite currentItem
@@ -1036,7 +1042,9 @@ constructor(
                     } else {
                         player.play()
                     }
-                    showControls()
+                    if (shouldShowControls) {
+                        showControls()
+                    }
                 }
 
                 segmentsJob.join()
@@ -1467,6 +1475,7 @@ constructor(
                 applyZoomMode(VideoZoomMode.ZOOM, saveAsCurrent = false)
 
                 Timber.d("Intro found ${firstItem.name}")
+                suppressNextControlShow = true
                 handlePlayerEvent(
                     PlayerEvent.LoadMedia(
                         item = firstItem,
@@ -1480,6 +1489,7 @@ constructor(
                 pendingMainItemOptions = null
                 updateUiState { it.copy(isPlayingIntro = false) }
                 Timber.d("No intros or resuming, playing item: ${item.name}")
+                suppressNextControlShow = false
                 handlePlayerEvent(
                     PlayerEvent.LoadMedia(
                         item = item,
@@ -1637,10 +1647,14 @@ constructor(
     }
 
     private fun playQueueItem(item: AfinityItem) {
+        suppressNextControlShow = true
         if (pendingMainItemOptions?.itemId == item.id) {
             val options = pendingMainItemOptions!!
             pendingMainItemOptions = null
-            updateUiState { it.copy(isPlayingIntro = false) }
+            updateUiState {
+                it.copy(isPlayingIntro = false, showControls = false, showPlayButton = false)
+            }
+            controlsHideJob?.cancel()
             applyZoomMode(currentZoomMode, saveAsCurrent = true)
 
             Timber.d("Intro finished, restoring settings: ${item.name}")

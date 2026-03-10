@@ -297,8 +297,9 @@ fun PlayerControls(
                 }
             }
         }
+        val shouldShowControls = uiState.showControls && !uiState.isInPictureInPictureMode
         AnimatedVisibility(
-            visible = uiState.showControls && !uiState.isInPictureInPictureMode,
+            visible = shouldShowControls,
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300)),
         ) {
@@ -316,7 +317,7 @@ fun PlayerControls(
                     CenterPlayButton(
                         uiState = uiState,
                         isPlaying = uiState.isPlaying,
-                        showPlayButton = uiState.showControls,
+                        showPlayButton = uiState.showPlayButton || uiState.isBuffering,
                         isBuffering = uiState.isBuffering,
                         onPlayPauseClick = {
                             if (uiState.isPlaying) onPlayerEvent(PlayerEvent.Pause)
