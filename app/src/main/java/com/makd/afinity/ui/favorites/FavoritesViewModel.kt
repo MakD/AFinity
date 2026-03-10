@@ -221,6 +221,7 @@ constructor(
                 if (success) {
                     mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
                     playbackStateManager.notifyItemChanged(episode.id)
+                    mediaRepository.invalidateNextUpCache()
                 } else {
                     _selectedEpisode.value = episode
                 }
