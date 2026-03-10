@@ -1,18 +1,9 @@
 package com.makd.afinity.data.repository
 
 import android.content.Context
-import androidx.core.net.toUri
 import com.makd.afinity.R
-import com.makd.afinity.data.database.AfinityDatabase
-import com.makd.afinity.data.database.AfinityTypeConverters
-import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
-import com.makd.afinity.data.database.entities.GenreShowCacheEntity
-import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
-import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
 import com.makd.afinity.data.manager.SessionManager
-import com.makd.afinity.data.models.CachedPersonWithCount
 import com.makd.afinity.data.models.GenreItem
-import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.PersonSectionType
 import com.makd.afinity.data.models.PersonWithCount
@@ -23,8 +14,6 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.AfinityPerson
-import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
@@ -46,9 +35,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
 import java.util.UUID
@@ -64,23 +50,14 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val jellyfinRepository: JellyfinRepository,
     private val preferencesRepository: PreferencesRepository,
-    private val database: AfinityDatabase,
     private val sessionManager: SessionManager,
     private val jellyfinImageUrlBuilder: JellyfinImageUrlBuilder,
     private val watchlistRepository: WatchlistRepository,
+    private val genreRepository: GenreRepository,
+    private val peopleRepository: PeopleRepository,
+    private val studioRepository: StudioRepository,
 ) {
-    private val GENRE_CACHE_TTL = 12.hours.inWholeMilliseconds
-    private val PERSON_SECTION_CACHE_TTL = 48.hours.inWholeMilliseconds
-    private val PEOPLE_CACHE_TTL = 24.hours.inWholeMilliseconds
-    private val RECENT_WATCHED_CACHE_TTL = 6.hours.inWholeMilliseconds
-
-    private val genreCacheDao = database.genreCacheDao()
-    private val studioCacheDao = database.studioCacheDao()
-    private val topPeopleDao = database.topPeopleDao()
-    private val personSectionDao = database.personSectionDao()
-    private val afinityTypeConverters = AfinityTypeConverters()
-    private val json = Json { ignoreUnknownKeys = true }
-
+    private val recentCacheTTL = 6.hours.inWholeMilliseconds
     private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     val latestMedia: StateFlow<List<AfinityItem>> = _latestMedia.asStateFlow()
@@ -151,20 +128,10 @@ constructor(
     private val _highestRated = MutableStateFlow<List<AfinityItem>>(emptyList())
     val highestRated: StateFlow<List<AfinityItem>> = _highestRated.asStateFlow()
 
-    private val _studios = MutableStateFlow<List<AfinityStudio>>(emptyList())
-    val studios: StateFlow<List<AfinityStudio>> = _studios.asStateFlow()
-
-    private val _combinedGenres = MutableStateFlow<List<GenreItem>>(emptyList())
-    val combinedGenres: StateFlow<List<GenreItem>> = _combinedGenres.asStateFlow()
-
-    private val _genreMovies = MutableStateFlow<Map<String, List<AfinityMovie>>>(emptyMap())
-    val genreMovies: StateFlow<Map<String, List<AfinityMovie>>> = _genreMovies.asStateFlow()
-
-    private val _genreShows = MutableStateFlow<Map<String, List<AfinityShow>>>(emptyMap())
-    val genreShows: StateFlow<Map<String, List<AfinityShow>>> = _genreShows.asStateFlow()
-
-    private val _genreLoadingStates = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    val genreLoadingStates: StateFlow<Map<String, Boolean>> = _genreLoadingStates.asStateFlow()
+    val combinedGenres: StateFlow<List<GenreItem>> = genreRepository.combinedGenres
+    val genreMovies: StateFlow<Map<String, List<AfinityMovie>>> = genreRepository.genreMovies
+    val genreShows: StateFlow<Map<String, List<AfinityShow>>> = genreRepository.genreShows
+    val genreLoadingStates: StateFlow<Map<String, Boolean>> = genreRepository.genreLoadingStates
 
     private val _isInitialDataLoaded = MutableStateFlow(false)
     val isInitialDataLoaded: StateFlow<Boolean> = _isInitialDataLoaded.asStateFlow()
@@ -358,7 +325,7 @@ constructor(
                                     }
                                 library to items
                             } catch (e: Exception) {
-                                library to emptyList<AfinityMovie>()
+                                library to emptyList()
                             }
                         }
                     }
@@ -408,7 +375,7 @@ constructor(
                                     }
                                 library to items
                             } catch (e: Exception) {
-                                library to emptyList<AfinityShow>()
+                                library to emptyList()
                             }
                         }
                     }
@@ -641,454 +608,28 @@ constructor(
         }
     }
 
-    private suspend fun loadGenres() {
-        try {
-            val cachedGenreNames = genreCacheDao.getAllGenreNames()
-            if (cachedGenreNames.isNotEmpty()) {
-                val currentTime = System.currentTimeMillis()
-                val oldestTimestamp = genreCacheDao.getOldestCacheTimestamp() ?: 0
-                val isFresh = (currentTime - oldestTimestamp) < GENRE_CACHE_TTL
+    suspend fun loadCombinedGenres() = genreRepository.loadCombinedGenres()
 
-                if (isFresh) return
-            }
+    suspend fun loadMoviesForGenre(genre: String, limit: Int = 20) =
+        genreRepository.loadMoviesForGenre(genre, limit)
 
-            val genres =
-                jellyfinRepository.getGenres(
-                    parentId = null,
-                    limit = null,
-                    includeItemTypes = listOf("MOVIE"),
-                )
+    suspend fun loadShowsForGenre(genre: String, limit: Int = 20) =
+        genreRepository.loadShowsForGenre(genre, limit)
 
-            val timestamp = System.currentTimeMillis()
-            val genreEntities =
-                genres.map { genreName ->
-                    com.makd.afinity.data.database.entities.GenreCacheEntity(
-                        genreName = genreName,
-                        lastFetchedTimestamp = timestamp,
-                        movieCount = 0,
-                    )
-                }
-            genreCacheDao.insertGenreCaches(genreEntities)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load genres")
-        }
-    }
+    val studios: StateFlow<List<AfinityStudio>> = studioRepository.studios
 
-    suspend fun loadMoviesForGenre(genre: String, limit: Int = 20) {
-        if (_genreMovies.value.containsKey(genre)) return
-
-        withContext(Dispatchers.IO) {
-            try {
-                _genreLoadingStates.update { it + (genre to true) }
-
-                val cachedMovieEntities = genreCacheDao.getCachedMoviesForGenre(genre)
-                if (cachedMovieEntities.isNotEmpty()) {
-                    val cachedMovies =
-                        cachedMovieEntities.mapNotNull { entity ->
-                            afinityTypeConverters.toAfinityMovie(entity.movieData)
-                        }
-
-                    if (cachedMovies.isNotEmpty()) {
-                        _genreMovies.update { it + (genre to cachedMovies) }
-                        _genreLoadingStates.update { it + (genre to false) }
-
-                        val currentTime = System.currentTimeMillis()
-                        val isFresh =
-                            genreCacheDao.isGenreCacheFresh(genre, GENRE_CACHE_TTL, currentTime)
-
-                        if (isFresh) return@withContext
-                    }
-                }
-
-                val movies =
-                    jellyfinRepository.getMoviesByGenre(
-                        genre = genre,
-                        limit = limit,
-                        shuffle = true,
-                    )
-
-                if (movies.isNotEmpty()) {
-                    val timestamp = System.currentTimeMillis()
-                    val movieEntities =
-                        movies.mapIndexed { index, movie ->
-                            GenreMovieCacheEntity(
-                                genreName = genre,
-                                movieId = movie.id.toString(),
-                                movieData = afinityTypeConverters.fromAfinityMovie(movie) ?: "",
-                                position = index,
-                                cachedTimestamp = timestamp,
-                            )
-                        }
-                    genreCacheDao.cacheGenreWithMovies(genre, movieEntities, timestamp)
-                }
-
-                _genreMovies.update { it + (genre to movies) }
-                _genreLoadingStates.update { it + (genre to false) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load movies for genre: $genre")
-                _genreLoadingStates.update { it + (genre to false) }
-
-                try {
-                    val fallbackEntities = genreCacheDao.getCachedMoviesForGenre(genre)
-                    val fallbackMovies =
-                        fallbackEntities.mapNotNull { entity ->
-                            afinityTypeConverters.toAfinityMovie(entity.movieData)
-                        }
-                    if (fallbackMovies.isNotEmpty()) {
-                        _genreMovies.update { it + (genre to fallbackMovies) }
-                    }
-                } catch (cacheError: Exception) {
-                    /* Ignore */
-                }
-            }
-        }
-    }
-
-    suspend fun loadCombinedGenres() {
-        withContext(Dispatchers.IO) {
-            try {
-                coroutineScope {
-                    val movieGenresTask = async { loadGenres() }
-                    val showGenresTask = async { loadShowGenres() }
-                    movieGenresTask.await()
-                    showGenresTask.await()
-                }
-
-                val movieGenreNames = genreCacheDao.getAllGenreNames()
-                val showGenreNames = genreCacheDao.getAllShowGenreNames()
-
-                val movieGenreItems = movieGenreNames.map { GenreItem(it, GenreType.MOVIE) }
-                val showGenreItems = showGenreNames.map { GenreItem(it, GenreType.SHOW) }
-
-                val combinedList = (movieGenreItems + showGenreItems).shuffled()
-                _combinedGenres.value = combinedList
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load combined genres")
-            }
-        }
-    }
-
-    private suspend fun loadShowGenres() {
-        try {
-            val cachedGenreNames = genreCacheDao.getAllShowGenreNames()
-            if (cachedGenreNames.isNotEmpty()) {
-                val currentTime = System.currentTimeMillis()
-                val oldestTimestamp = genreCacheDao.getOldestShowCacheTimestamp() ?: 0
-                val isFresh = (currentTime - oldestTimestamp) < GENRE_CACHE_TTL
-                if (isFresh) return
-            }
-
-            val genres =
-                jellyfinRepository.getGenres(
-                    parentId = null,
-                    limit = null,
-                    includeItemTypes = listOf("SERIES"),
-                )
-
-            val timestamp = System.currentTimeMillis()
-            val genreEntities =
-                genres.map { genreName ->
-                    com.makd.afinity.data.database.entities.ShowGenreCacheEntity(
-                        genreName = genreName,
-                        lastFetchedTimestamp = timestamp,
-                        showCount = 0,
-                    )
-                }
-            genreCacheDao.insertShowGenreCaches(genreEntities)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load show genres")
-        }
-    }
-
-    suspend fun loadShowsForGenre(genre: String, limit: Int = 20) {
-        if (_genreShows.value.containsKey(genre)) return
-
-        try {
-            _genreLoadingStates.update { it + (genre to true) }
-
-            val cachedShowEntities = genreCacheDao.getCachedShowsForGenre(genre)
-            if (cachedShowEntities.isNotEmpty()) {
-                val cachedShows =
-                    cachedShowEntities.mapNotNull { entity ->
-                        afinityTypeConverters.toAfinityShow(entity.showData)
-                    }
-
-                if (cachedShows.isNotEmpty()) {
-                    _genreShows.update { it + (genre to cachedShows) }
-                    _genreLoadingStates.update { it + (genre to false) }
-
-                    val currentTime = System.currentTimeMillis()
-                    val isFresh =
-                        genreCacheDao.isShowGenreCacheFresh(genre, GENRE_CACHE_TTL, currentTime)
-                    if (isFresh) return
-                }
-            }
-
-            val shows =
-                jellyfinRepository.getShowsByGenre(genre = genre, limit = limit, shuffle = true)
-
-            if (shows.isNotEmpty()) {
-                val timestamp = System.currentTimeMillis()
-                val showEntities =
-                    shows.mapIndexed { index, show ->
-                        GenreShowCacheEntity(
-                            genreName = genre,
-                            showId = show.id.toString(),
-                            showData = afinityTypeConverters.fromAfinityShow(show) ?: "",
-                            position = index,
-                            cachedTimestamp = timestamp,
-                        )
-                    }
-                genreCacheDao.cacheGenreWithShows(genre, showEntities, timestamp)
-            }
-
-            _genreShows.update { it + (genre to shows) }
-            _genreLoadingStates.update { it + (genre to false) }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load shows for genre: $genre")
-            _genreLoadingStates.update { it + (genre to false) }
-        }
-    }
-
-    suspend fun loadStudios() {
-        try {
-            val cachedStudios = studioCacheDao.getAllCachedStudios()
-            if (cachedStudios.isNotEmpty()) {
-                val studios =
-                    cachedStudios.mapNotNull { entity ->
-                        afinityTypeConverters.toAfinityStudio(entity.studioData)
-                    }
-
-                if (studios.isNotEmpty()) {
-                    _studios.value = studios
-                    val currentTime = System.currentTimeMillis()
-                    val isFresh = studioCacheDao.isStudioCacheFresh(GENRE_CACHE_TTL, currentTime)
-                    if (isFresh) return
-                }
-            }
-
-            val studios: List<AfinityStudio> =
-                jellyfinRepository.getStudios(
-                    parentId = null,
-                    limit = 15,
-                    includeItemTypes = listOf("MOVIE", "SERIES"),
-                )
-
-            if (studios.isNotEmpty()) {
-                val timestamp = System.currentTimeMillis()
-                val studioEntities =
-                    studios.mapIndexed { index: Int, studio: AfinityStudio ->
-                        com.makd.afinity.data.database.entities.StudioCacheEntity(
-                            studioId = studio.id.toString(),
-                            studioData = afinityTypeConverters.fromAfinityStudio(studio) ?: "",
-                            position = index,
-                            cachedTimestamp = timestamp,
-                        )
-                    }
-                studioCacheDao.replaceStudios(studioEntities)
-            }
-
-            _studios.value = studios
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load studios")
-        }
-    }
-
-    private fun filterItemsByPersonRole(
-        items: List<AfinityItem>,
-        personId: UUID,
-        personType: PersonKind,
-    ): List<AfinityItem> {
-        return items.filter { item ->
-            val people =
-                when (item) {
-                    is AfinityMovie -> item.people
-                    is AfinityShow -> item.people
-                    is AfinityEpisode -> item.people
-                    else -> emptyList()
-                }
-            people.any { person -> person.id == personId && person.type == personType }
-        }
-    }
+    suspend fun loadStudios() = studioRepository.loadStudios()
 
     suspend fun getTopPeople(
         type: PersonKind,
         limit: Int = 100,
         minAppearances: Int = 10,
-    ): List<PersonWithCount> {
-        try {
-            val cached = topPeopleDao.getCachedTopPeople(type.name)
-            val currentTime = System.currentTimeMillis()
-
-            if (
-                cached != null &&
-                    topPeopleDao.isTopPeopleCacheFresh(type.name, PEOPLE_CACHE_TTL, currentTime)
-            ) {
-                val cachedData =
-                    json.decodeFromString<List<CachedPersonWithCount>>(cached.peopleData)
-                return cachedData.map { PersonWithCount.fromCached(it) }
-            }
-
-            Timber.d("Fetching top ${type.name}...")
-            val baseUrl = jellyfinRepository.getBaseUrl()
-
-            val scanLimit = 150
-            val peopleFrequency = mutableMapOf<String, Pair<AfinityPerson, Int>>()
-
-            val moviesResponse =
-                jellyfinRepository.getItems(
-                    includeItemTypes = listOf("Movie"),
-                    fields = listOf(ItemFields.PEOPLE),
-                    limit = scanLimit,
-                    sortBy = SortBy.DATE_ADDED,
-                    sortDescending = true,
-                )
-
-            val movies = moviesResponse.items ?: emptyList()
-
-            movies.forEach { movieItem ->
-                movieItem.people
-                    ?.filter { it.type == type }
-                    ?.forEach { personDto ->
-                        val key = personDto.name ?: return@forEach
-
-                        if (!peopleFrequency.containsKey(key)) {
-                            val id = personDto.id
-                            val primaryTag = personDto.primaryImageTag
-
-                            val imageUri =
-                                primaryTag?.let { tag ->
-                                    baseUrl
-                                        .toUri()
-                                        .buildUpon()
-                                        .appendEncodedPath("Items/$id/Images/Primary")
-                                        .appendQueryParameter("tag", tag)
-                                        .build()
-                                }
-
-                            val afinityPerson =
-                                AfinityPerson(
-                                    id = id,
-                                    name = key,
-                                    type = type,
-                                    role = personDto.role ?: type.name,
-                                    image = AfinityPersonImage(imageUri, null),
-                                )
-                            peopleFrequency[key] = afinityPerson to 1
-                        } else {
-                            val current = peopleFrequency[key]!!
-                            peopleFrequency[key] = current.first to (current.second + 1)
-                        }
-                    }
-            }
-
-            val mappedPeople =
-                peopleFrequency.values
-                    .filter { it.second >= 2 }
-                    .sortedByDescending { it.second }
-                    .take(limit)
-                    .map { PersonWithCount(it.first, it.second) }
-
-            Timber.d("Scan complete: Found ${mappedPeople.size} ${type.name}s")
-
-            if (mappedPeople.isNotEmpty()) {
-                val cachedData = mappedPeople.map { it.toCached() }
-                val entity =
-                    TopPeopleCacheEntity(
-                        personType = type.name,
-                        peopleData = json.encodeToString(cachedData),
-                        cachedTimestamp = System.currentTimeMillis(),
-                    )
-                topPeopleDao.insertTopPeople(entity)
-            }
-
-            return mappedPeople
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get top ${type.name}")
-            return emptyList()
-        }
-    }
+    ): List<PersonWithCount> = peopleRepository.getTopPeople(type, limit, minAppearances)
 
     suspend fun getPersonSection(
         personWithCount: PersonWithCount,
         sectionType: PersonSectionType,
-    ): PersonSection? {
-        try {
-            val person = personWithCount.person
-            val cacheKey = "${person.name}_${sectionType.name}"
-
-            val cached = personSectionDao.getCachedSection(cacheKey)
-            val currentTime = System.currentTimeMillis()
-
-            if (
-                cached != null &&
-                    personSectionDao.isSectionCacheFresh(
-                        cacheKey,
-                        PERSON_SECTION_CACHE_TTL,
-                        currentTime,
-                    )
-            ) {
-                val cachedPersonData =
-                    PersonWithCount.fromCached(
-                        json.decodeFromString<CachedPersonWithCount>(cached.personData)
-                    )
-                val cachedItems =
-                    json.decodeFromString<List<String>>(cached.itemsData).mapNotNull {
-                        afinityTypeConverters.toAfinityItem(it)
-                    }
-                return PersonSection(
-                    person = cachedPersonData.person,
-                    appearanceCount = cachedPersonData.appearanceCount,
-                    items = cachedItems,
-                    sectionType = sectionType,
-                )
-            }
-
-            val allPersonItems =
-                jellyfinRepository.getPersonItems(
-                    personId = person.id,
-                    includeItemTypes = listOf("MOVIE", "SERIES"),
-                    fields = listOf(ItemFields.PEOPLE),
-                )
-
-            val filteredItems =
-                filterItemsByPersonRole(
-                    items = allPersonItems,
-                    personId = person.id,
-                    personType = sectionType.toPersonKind(),
-                )
-
-            if (filteredItems.size < 5) return null
-
-            val selectedItems =
-                filteredItems.filter { it is AfinityMovie || it is AfinityShow }.shuffled().take(20)
-
-            val section =
-                PersonSection(
-                    person = person,
-                    appearanceCount = personWithCount.appearanceCount,
-                    items = selectedItems,
-                    sectionType = sectionType,
-                )
-
-            val itemJsonStrings =
-                selectedItems.mapNotNull { afinityTypeConverters.fromAfinityItem(it) }
-            val entity =
-                PersonSectionCacheEntity(
-                    cacheKey = cacheKey,
-                    personData = json.encodeToString(personWithCount.toCached()),
-                    itemsData = json.encodeToString(itemJsonStrings),
-                    sectionType = sectionType.name,
-                    cachedTimestamp = currentTime,
-                )
-            personSectionDao.insertSection(entity)
-
-            return section
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get person section for ${personWithCount.person.name}")
-            return null
-        }
-    }
+    ): PersonSection? = peopleRepository.getPersonSection(personWithCount, sectionType)
 
     suspend fun getRandomRecentlyWatchedMovie(excludedMovies: Set<UUID>): AfinityMovie? {
         try {
@@ -1096,7 +637,7 @@ constructor(
             val cached = recentWatchedCache
 
             val allRecentWatched =
-                if (cached != null && now - cached.first < RECENT_WATCHED_CACHE_TTL) {
+                if (cached != null && now - cached.first < recentCacheTTL) {
                     cached.second
                 } else {
                     val movies =
@@ -1177,23 +718,10 @@ constructor(
 
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
         val itemId = updatedItem.id
-
+        genreRepository.updateItemInCaches(updatedItem)
+        peopleRepository.updateItemInCaches(updatedItem)
+        recentWatchedCache = null
         if (updatedItem is AfinityMovie) {
-            _genreMovies.update { currentMap ->
-                val newMap = currentMap.toMutableMap()
-                var changed = false
-                newMap.forEach { (genre, movies) ->
-                    val index = movies.indexOfFirst { it.id == itemId }
-                    if (index != -1) {
-                        val mut = movies.toMutableList()
-                        mut[index] = updatedItem
-                        newMap[genre] = mut
-                        changed = true
-                    }
-                }
-                if (changed) newMap else currentMap
-            }
-
             val movieIsInLatest = _latestMovies.value.any { it.id == itemId }
             if (updatedItem.played) {
                 _latestMovies.update { movies -> movies.filterNot { it.id == itemId } }
@@ -1221,23 +749,7 @@ constructor(
                 reloadLatestMoviesData()
             }
         }
-
         if (updatedItem is AfinityShow) {
-            _genreShows.update { currentMap ->
-                val newMap = currentMap.toMutableMap()
-                var changed = false
-                newMap.forEach { (genre, shows) ->
-                    val index = shows.indexOfFirst { it.id == itemId }
-                    if (index != -1) {
-                        val mut = shows.toMutableList()
-                        mut[index] = updatedItem
-                        newMap[genre] = mut
-                        changed = true
-                    }
-                }
-                if (changed) newMap else currentMap
-            }
-
             val showIsInLatest = _latestTvSeries.value.any { it.id == itemId }
             if (updatedItem.played) {
                 _latestTvSeries.update { shows -> shows.filterNot { it.id == itemId } }
@@ -1274,55 +786,6 @@ constructor(
             val index = items.indexOfFirst { it.id == itemId }
             if (index != -1) items.toMutableList().apply { this[index] = updatedItem } else items
         }
-
-        withContext(Dispatchers.IO) {
-            try {
-                if (updatedItem is AfinityMovie) {
-                    val newJson = afinityTypeConverters.fromAfinityMovie(updatedItem)
-                    if (newJson != null) {
-                        genreCacheDao.updateCachedMovieData(itemId.toString(), newJson)
-                        Timber.d("Updated movie DB cache for: ${updatedItem.name}")
-                    }
-                } else if (updatedItem is AfinityShow) {
-                    val newJson = afinityTypeConverters.fromAfinityShow(updatedItem)
-                    if (newJson != null) {
-                        genreCacheDao.updateCachedShowData(itemId.toString(), newJson)
-                        Timber.d("Updated show DB cache for: ${updatedItem.name}")
-                    }
-                }
-                val updatedJson =
-                    when (updatedItem) {
-                        is AfinityMovie -> afinityTypeConverters.fromAfinityMovie(updatedItem)
-                        is AfinityShow -> afinityTypeConverters.fromAfinityShow(updatedItem)
-                        else -> null
-                    }
-                if (updatedJson != null) {
-                    val allSections = personSectionDao.getAllCachedSections()
-                    for (section in allSections) {
-                        val itemStrings = json.decodeFromString<List<String>>(section.itemsData)
-                        var changed = false
-                        val newItemStrings =
-                            itemStrings.map { itemJson ->
-                                val existing = afinityTypeConverters.toAfinityItem(itemJson)
-                                if (existing?.id == itemId) {
-                                    changed = true
-                                    updatedJson
-                                } else {
-                                    itemJson
-                                }
-                            }
-                        if (changed) {
-                            personSectionDao.insertSection(
-                                section.copy(itemsData = json.encodeToString(newItemStrings))
-                            )
-                        }
-                    }
-                }
-                recentWatchedCache = null
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to update DB caches")
-            }
-        }
     }
 
     suspend fun clearAllData() {
@@ -1330,10 +793,9 @@ constructor(
         liveDataJob?.cancel()
 
         try {
-            studioCacheDao.deleteAllStudios()
-            genreCacheDao.clearAllCache()
-            topPeopleDao.clearAllCache()
-            personSectionDao.clearAllCache()
+            studioRepository.clearAllData()
+            peopleRepository.clearAllData()
+            genreRepository.clearAllData()
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear database caches")
         }
@@ -1347,11 +809,6 @@ constructor(
         _latestMovies.value = emptyList()
         _latestTvSeries.value = emptyList()
         _highestRated.value = emptyList()
-        _studios.value = emptyList()
-        _combinedGenres.value = emptyList()
-        _genreMovies.value = emptyMap()
-        _genreShows.value = emptyMap()
-        _genreLoadingStates.value = emptyMap()
         _isInitialDataLoaded.value = false
         _loadingProgress.value = 0f
         _loadingPhase.value = ""
