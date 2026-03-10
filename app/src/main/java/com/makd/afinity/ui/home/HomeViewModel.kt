@@ -252,6 +252,7 @@ constructor(
                 if (event is PlaybackEvent.Synced) {
                     Timber.d("HomeViewModel received sync for ${event.itemId}")
                     val syncedItem = jellyfinRepository.getItemById(event.itemId) ?: return@collect
+                    appDataRepository.updatePlaybackProgressLocally(syncedItem)
                     val targetItem =
                         when (syncedItem) {
                             is AfinityEpisode -> jellyfinRepository.getItemById(syncedItem.seriesId)

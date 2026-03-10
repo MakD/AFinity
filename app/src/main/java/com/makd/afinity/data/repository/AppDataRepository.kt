@@ -1133,6 +1133,48 @@ constructor(
         _loadingPhase.value = phase
     }
 
+    suspend fun updatePlaybackProgressLocally(syncedItem: AfinityItem) {
+        val itemId = syncedItem.id
+
+        if (!syncedItem.played && syncedItem.playbackPositionTicks > 0) {
+            _continueWatching.update { currentList ->
+                val mutableList = currentList.toMutableList()
+                val index = mutableList.indexOfFirst { it.id == itemId }
+                if (index != -1) {
+                    mutableList[index] = syncedItem
+                } else {
+                    mutableList.add(0, syncedItem)
+                }
+                mutableList.take(12)
+            }
+        } else {
+            _continueWatching.update { currentList -> currentList.filterNot { it.id == itemId } }
+        }
+
+        if (syncedItem is AfinityEpisode) {
+            _nextUp.update { currentList ->
+                val mutableList = currentList.toMutableList()
+                val index = mutableList.indexOfFirst { it.id == itemId }
+
+                if (syncedItem.played) {
+                    if (index != -1) mutableList.removeAt(index)
+                } else {
+                    if (index != -1) {
+                        mutableList.removeAt(index)
+                    }
+                }
+                mutableList
+            }
+            if (syncedItem.played) {
+                try {
+                    _nextUp.value = loadNextUp()
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load next up after finishing episode")
+                }
+            }
+        }
+    }
+
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
         val itemId = updatedItem.id
 
