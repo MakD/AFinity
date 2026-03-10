@@ -20,7 +20,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import kotlin.math.abs
 
 private enum class GestureType {
@@ -32,6 +31,7 @@ private enum class GestureType {
 @Composable
 fun GestureHandler(
     modifier: Modifier = Modifier,
+    isSeekEnabled: Boolean = true,
     onSingleTap: () -> Unit,
     onDoubleTap: (isForward: Boolean) -> Unit,
     onLongPressStart: () -> Unit = {},
@@ -61,6 +61,7 @@ fun GestureHandler(
     val currentOnVolumeGesture by rememberUpdatedState(onVolumeGesture)
     val currentOnSeekGesture by rememberUpdatedState(onSeekGesture)
     val currentOnSeekPreview by rememberUpdatedState(onSeekPreview)
+    val currentIsSeekEnabled by rememberUpdatedState(isSeekEnabled)
 
     var isDragging by remember { mutableStateOf(false) }
     var isLongPressActive by remember { mutableStateOf(false) }
@@ -78,11 +79,13 @@ fun GestureHandler(
         modifier =
             modifier
                 .fillMaxSize()
-                .pointerInput(screenWidth) {
+                .pointerInput(screenWidth, currentIsSeekEnabled) {
                     detectTapGestures(
                         onDoubleTap = { offset ->
-                            val isForward = offset.x > screenWidth / 2
-                            currentOnDoubleTap(isForward)
+                            if (currentIsSeekEnabled) {
+                                val isForward = offset.x > screenWidth / 2
+                                currentOnDoubleTap(isForward)
+                            }
                         },
                         onTap = { currentOnSingleTap() },
                         onPress = { offset ->
@@ -105,7 +108,7 @@ fun GestureHandler(
                         },
                     )
                 }
-                .pointerInput(screenWidth, screenHeight) {
+                .pointerInput(screenWidth, screenHeight, currentIsSeekEnabled) {
                     detectDragGestures(
                         onDragStart = { offset ->
                             if (
@@ -128,7 +131,6 @@ fun GestureHandler(
                             totalVerticalDelta = 0f
                             gestureType = null
                             isSeeking = false
-                            Timber.d("Drag started at $offset")
                         },
                         onDragEnd = {
                             isDragging = false
@@ -139,7 +141,6 @@ fun GestureHandler(
 
                             gestureType = null
                             isSeeking = false
-                            Timber.d("Drag ended")
                         },
                         onDragCancel = {
                             isDragging = false
@@ -150,7 +151,6 @@ fun GestureHandler(
 
                             gestureType = null
                             isSeeking = false
-                            Timber.d("Drag cancelled")
                         },
                         onDrag = { change, dragAmount ->
                             if (!isDragging) return@detectDragGestures
@@ -176,7 +176,8 @@ fun GestureHandler(
                                                     else -> null
                                                 }
                                             }
-                                            else -> GestureType.SEEK
+                                            currentIsSeekEnabled -> GestureType.SEEK
+                                            else -> null
                                         }
 
                                     if (gestureType == GestureType.VOLUME)

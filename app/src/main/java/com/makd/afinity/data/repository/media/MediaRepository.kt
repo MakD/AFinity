@@ -75,6 +75,8 @@ interface MediaRepository {
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
 
+    suspend fun getIntros(itemId: UUID): List<AfinityItem>
+
     suspend fun getSimilarItems(
         itemId: UUID,
         limit: Int = 12,

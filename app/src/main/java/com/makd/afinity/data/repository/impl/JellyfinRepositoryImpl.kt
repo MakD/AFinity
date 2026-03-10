@@ -304,6 +304,15 @@ constructor(
         }
     }
 
+    override suspend fun getIntros(itemId: UUID): List<AfinityItem> {
+        return try {
+            mediaRepository.getIntros(itemId)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get intros for item: $itemId")
+            emptyList()
+        }
+    }
+
     override suspend fun getItemById(itemId: UUID): AfinityItem? {
         return try {
             val baseItemDto = mediaRepository.getItem(itemId)

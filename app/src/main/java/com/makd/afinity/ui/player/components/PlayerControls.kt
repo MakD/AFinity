@@ -213,13 +213,19 @@ fun PlayerControls(
                         modifier = Modifier.padding(start = 60.dp),
                         horizontalAlignment = Alignment.Start,
                     ) {
-                        val currentItem = uiState.currentItem
+                        val displayItem =
+                            if (uiState.isPlayingIntro) {
+                                playlistQueue.getOrNull(currentPlaylistIndex + 1)
+                                    ?: uiState.currentItem
+                            } else {
+                                uiState.currentItem
+                            }
 
-                        if (currentItem is AfinityMovie) {
-                            if (currentItem.images?.logo != null) {
+                        if (displayItem is AfinityMovie) {
+                            if (displayItem.images?.logo != null) {
                                 AsyncImage(
                                     imageUrl =
-                                        currentItem.images.logoImageUrlWithTransparency.toString(),
+                                        displayItem.images.logoImageUrlWithTransparency.toString(),
                                     contentDescription = "Logo",
                                     modifier = Modifier.height(60.dp).widthIn(max = 200.dp),
                                     contentScale = ContentScale.Fit,
@@ -227,7 +233,7 @@ fun PlayerControls(
                                 )
                             } else {
                                 Text(
-                                    text = currentItem.name,
+                                    text = displayItem.name,
                                     color = Color.White,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Medium,
@@ -237,20 +243,20 @@ fun PlayerControls(
                             }
                         }
 
-                        if (currentItem is AfinityEpisode) {
-                            val seasonNumber = currentItem.parentIndexNumber
-                            val episodeNumber = currentItem.indexNumber
-                            val episodeTitle = currentItem.name
-                            val seriesName = currentItem.seriesName
+                        if (displayItem is AfinityEpisode) {
+                            val seasonNumber = displayItem.parentIndexNumber
+                            val episodeNumber = displayItem.indexNumber
+                            val episodeTitle = displayItem.name
+                            val seriesName = displayItem.seriesName
 
                             if (seasonNumber != null && episodeNumber != null) {
                                 Column(
                                     horizontalAlignment = Alignment.Start,
                                     modifier = Modifier.wrapContentWidth(),
                                 ) {
-                                    if (currentItem.seriesLogo != null) {
+                                    if (displayItem.seriesLogo != null) {
                                         val logoUrl =
-                                            currentItem.seriesLogo.toString().let { url ->
+                                            displayItem.seriesLogo.toString().let { url ->
                                                 if (url.contains("?")) "$url&format=png"
                                                 else "$url?format=png"
                                             }
@@ -586,8 +592,6 @@ fun PlayerControls(
             onDismiss = { showEpisodeSwitcher = false },
         )
     }
-
-
 }
 
 @OptIn(UnstableApi::class)
@@ -654,13 +658,16 @@ private fun TopControls(
                         modifier = Modifier.size(40.dp),
                     ) {
                         Icon(
-                            painter = painterResource(
-                                id = if (uiState.isCasting) R.drawable.ic_cast_connected
-                                else R.drawable.ic_cast,
-                            ),
+                            painter =
+                                painterResource(
+                                    id =
+                                        if (uiState.isCasting) R.drawable.ic_cast_connected
+                                        else R.drawable.ic_cast
+                                ),
                             contentDescription = stringResource(R.string.cd_cast),
-                            tint = if (uiState.isCasting) MaterialTheme.colorScheme.primary
-                            else Color.White,
+                            tint =
+                                if (uiState.isCasting) MaterialTheme.colorScheme.primary
+                                else Color.White,
                             modifier = Modifier.size(24.dp),
                         )
                     }
@@ -709,7 +716,7 @@ private fun CenterPlayButton(
 ) {
     val hasChapters = uiState.chapters.isNotEmpty()
     val isEpisode = uiState.currentItem is AfinityEpisode
-    val showSkipButtons = isEpisode || hasChapters
+    val showSkipButtons = (isEpisode || hasChapters) && !uiState.isPlayingIntro
 
     AnimatedVisibility(
         visible = showPlayButton,
@@ -732,13 +739,15 @@ private fun CenterPlayButton(
                 }
             }
 
-            IconButton(onClick = onSeekBackward, modifier = Modifier.size(60.dp)) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_rewind_backward_10),
-                    contentDescription = stringResource(R.string.cd_rewind_10),
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp),
-                )
+            if (!uiState.isPlayingIntro) {
+                IconButton(onClick = onSeekBackward, modifier = Modifier.size(60.dp)) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_rewind_backward_10),
+                        contentDescription = stringResource(R.string.cd_rewind_10),
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
             }
 
             IconButton(onClick = onPlayPauseClick, modifier = Modifier.size(60.dp)) {
@@ -762,13 +771,15 @@ private fun CenterPlayButton(
                 }
             }
 
-            IconButton(onClick = onSeekForward, modifier = Modifier.size(60.dp)) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_rewind_forward_30),
-                    contentDescription = stringResource(R.string.cd_forward_30),
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp),
-                )
+            if (!uiState.isPlayingIntro) {
+                IconButton(onClick = onSeekForward, modifier = Modifier.size(60.dp)) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_rewind_forward_30),
+                        contentDescription = stringResource(R.string.cd_forward_30),
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
             }
 
             if (showSkipButtons) {
@@ -816,38 +827,47 @@ private fun BottomControls(
                 .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp)
     ) {
         Column {
-            SeekBar(uiState = uiState, onPlayerEvent = onPlayerEvent)
+            if (!uiState.isPlayingIntro) {
+                SeekBar(uiState = uiState, onPlayerEvent = onPlayerEvent)
+            } else {
+                Text(
+                    text = stringResource(R.string.playing_intro_text),
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (showVersionButton) {
-                        IconButton(
-                            onClick = onVersionToggle,
-                            modifier = Modifier.size(40.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_versions),
-                                contentDescription = stringResource(R.string.cd_version_selector),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp),
-                            )
+                    if (!uiState.isPlayingIntro) {
+                        if (showVersionButton) {
+                            IconButton(onClick = onVersionToggle, modifier = Modifier.size(40.dp)) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_versions),
+                                    contentDescription =
+                                        stringResource(R.string.cd_version_selector),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                            }
                         }
-                    }
 
-                    if (showEpisodeSwitcherButton) {
-                        IconButton(
-                            onClick = onEpisodeSwitcherToggle,
-                            modifier = Modifier.size(40.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_episodes_list),
-                                contentDescription = stringResource(R.string.cd_episodes),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp),
-                            )
+                        if (showEpisodeSwitcherButton) {
+                            IconButton(
+                                onClick = onEpisodeSwitcherToggle,
+                                modifier = Modifier.size(40.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_episodes_list),
+                                    contentDescription = stringResource(R.string.cd_episodes),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                            }
                         }
                     }
 

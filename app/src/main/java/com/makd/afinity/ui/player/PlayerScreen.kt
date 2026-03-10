@@ -104,29 +104,18 @@ fun PlayerScreen(
                 )
             )
         } else {
-            Timber.d("Loading media: ${item.name}")
-            viewModel.handlePlayerEvent(
-                PlayerEvent.LoadMedia(
-                    item = item,
-                    mediaSourceId = mediaSourceId,
-                    audioStreamIndex = audioStreamIndex,
-                    subtitleStreamIndex = subtitleStreamIndex,
-                    startPositionMs = startPositionMs,
-                )
+            Timber.d("Initializing playlist and playing media: ${item.name}")
+            viewModel.initializePlaylistAndPlay(
+                item = item,
+                mediaSourceId = mediaSourceId,
+                audioStreamIndex = audioStreamIndex,
+                subtitleStreamIndex = subtitleStreamIndex,
+                startPositionMs = startPositionMs,
+                seasonId = seasonId,
+                shuffle = shuffle,
             )
         }
     }
-
-    LaunchedEffect(item, seasonId, shuffle, isLiveChannel) {
-        if (!isLiveChannel) {
-            Timber.d(
-                "Initializing playlist for item: ${item.name} (${item.id}), seasonId=$seasonId, shuffle=$shuffle"
-            )
-            viewModel.initializePlaylist(item, seasonId, shuffle)
-        }
-    }
-
-
 
     var hasNavigatedBack by remember { mutableStateOf(false) }
 
@@ -188,6 +177,7 @@ fun PlayerScreen(
             )
         } else {
             GestureHandler(
+                isSeekEnabled = !uiState.isPlayingIntro,
                 onSingleTap = { viewModel.onSingleTap() },
                 onDoubleTap = { isForward ->
                     if (!uiState.isControlsLocked) viewModel.onDoubleTapSeek(isForward)
@@ -336,7 +326,9 @@ fun PlayerScreen(
                         Modifier.fillMaxSize().clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                        ) { showVersionPicker = false }
+                        ) {
+                            showVersionPicker = false
+                        }
                 ) {
                     Box(
                         modifier =
@@ -345,7 +337,8 @@ fun PlayerScreen(
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null,
-                                ) { /* consume */ }
+                                ) { /* consume */
+                                }
                     ) {
                         VersionPickerSheet(
                             sources = uiState.availableSources,

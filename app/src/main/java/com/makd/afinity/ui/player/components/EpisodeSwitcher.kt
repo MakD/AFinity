@@ -76,11 +76,28 @@ fun EpisodeSwitcher(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val displayEpisodes = remember(episodes) { episodes.filterIsInstance<AfinityEpisode>() }
+
+    val activeEpisodeIndex =
+        remember(episodes, currentIndex, displayEpisodes) {
+            val currentItem = episodes.getOrNull(currentIndex)
+            if (currentItem is AfinityEpisode) {
+                displayEpisodes.indexOfFirst { it.id == currentItem.id }.coerceAtLeast(0)
+            } else {
+                val upcomingEpisode =
+                    episodes.drop(currentIndex).firstOrNull { it is AfinityEpisode }
+                displayEpisodes.indexOfFirst { it.id == upcomingEpisode?.id }.coerceAtLeast(0)
+            }
+        }
+
     val listState =
-        rememberLazyListState(initialFirstVisibleItemIndex = (currentIndex - 1).coerceAtLeast(0))
-    LaunchedEffect(currentIndex) {
-        if (currentIndex >= 0) {
-            listState.animateScrollToItem((currentIndex - 1).coerceAtLeast(0))
+        rememberLazyListState(
+            initialFirstVisibleItemIndex = (activeEpisodeIndex - 1).coerceAtLeast(0)
+        )
+
+    LaunchedEffect(activeEpisodeIndex) {
+        if (activeEpisodeIndex >= 0) {
+            listState.animateScrollToItem((activeEpisodeIndex - 1).coerceAtLeast(0))
         }
     }
 
@@ -131,8 +148,7 @@ fun EpisodeSwitcher(
                             )
 
                             val currentSeason =
-                                (episodes.getOrNull(currentIndex) as? AfinityEpisode)
-                                    ?.parentIndexNumber
+                                displayEpisodes.getOrNull(activeEpisodeIndex)?.parentIndexNumber
                             if (currentSeason != null) {
                                 Text(
                                     text =
@@ -175,10 +191,10 @@ fun EpisodeSwitcher(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        itemsIndexed(episodes) { index, item ->
+                        itemsIndexed(displayEpisodes) { index, item ->
                             EpisodeSwitcherCard(
                                 episode = item,
-                                isCurrentlyPlaying = index == currentIndex,
+                                isCurrentlyPlaying = index == activeEpisodeIndex,
                                 isPlaying = isPlaying,
                                 onClick = { onEpisodeClick(item.id) },
                             )

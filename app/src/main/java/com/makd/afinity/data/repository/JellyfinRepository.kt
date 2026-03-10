@@ -102,6 +102,8 @@ interface JellyfinRepository {
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
 
+    suspend fun getIntros(itemId: UUID): List<AfinityItem>
+
     suspend fun getItemById(itemId: UUID): AfinityItem?
 
     suspend fun getSimilarItems(

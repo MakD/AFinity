@@ -554,6 +554,25 @@ constructor(
             }
         }
 
+    override suspend fun getIntros(itemId: UUID): List<AfinityItem> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+
+                val userLibraryApi = UserLibraryApi(apiClient)
+                val response = userLibraryApi.getIntros(itemId = itemId, userId = userId)
+
+                response.content.items.mapNotNull { baseItem ->
+                    baseItem.toAfinityItem(getBaseUrl())
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get intros for item: $itemId")
+                emptyList()
+            }
+        }
+
     override suspend fun getSimilarItems(
         itemId: UUID,
         limit: Int,

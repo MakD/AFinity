@@ -114,6 +114,7 @@ constructor(
     private var segmentCheckingJob: Job? = null
 
     private var progressReportingJob: Job? = null
+    private var pendingMainItemOptions: MainItemPlaybackOptions? = null
     private var currentItem: AfinityItem? = null
     private var currentTrickplay: Trickplay? = null
 
@@ -300,6 +301,9 @@ constructor(
                     if (_uiState.value.isLiveChannel) continue
 
                     currentItem?.let { item ->
+                        if (_uiState.value.isPlayingIntro) {
+                            return@let
+                        }
                         currentSessionId?.let { sessionId ->
                             try {
                                 val positionTicks = player.currentPosition * 10000
@@ -727,7 +731,7 @@ constructor(
         }
     }
 
-    private fun applyZoomMode(mode: VideoZoomMode) {
+    private fun applyZoomMode(mode: VideoZoomMode, saveAsCurrent: Boolean = true) {
         when (player) {
             is ExoPlayer -> {
                 playerView?.resizeMode = mode.toExoPlayerResizeMode()
@@ -738,7 +742,9 @@ constructor(
             }
         }
 
-        currentZoomMode = mode
+        if (saveAsCurrent) {
+            currentZoomMode = mode
+        }
         updateUiState { it.copy(videoZoomMode = mode) }
     }
 
@@ -1170,12 +1176,17 @@ constructor(
                         val individualThumbnails = mutableListOf<ImageBitmap>()
 
                         for (tileIndex in 0..maxTileIndex) {
+                            if (tileIndex > 0) {
+                                delay(500L)
+                            }
+
                             val imageData =
                                 mediaRepository.getTrickplayData(
                                     currentItem.id,
                                     info.width,
                                     tileIndex,
                                 )
+
                             if (imageData != null) {
                                 val tileBitmap =
                                     BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
@@ -1202,6 +1213,13 @@ constructor(
                                         }
                                     }
                                     if (individualThumbnails.size >= info.thumbnailCount) break
+                                }
+                                if (individualThumbnails.isNotEmpty()) {
+                                    currentTrickplay =
+                                        Trickplay(
+                                            interval = info.interval,
+                                            images = individualThumbnails.toList(),
+                                        )
                                 }
                             } else {
                                 Timber.d("Failed to load tile $tileIndex")
@@ -1298,6 +1316,10 @@ constructor(
     }
 
     private suspend fun reportPlaybackStart(item: AfinityItem) {
+        if (_uiState.value.isPlayingIntro) {
+            Timber.d("Skipping playback start report for Intro: ${item.name}")
+            return
+        }
         try {
             currentSessionId?.let { sessionId ->
                 playbackRepository.reportPlaybackStart(
@@ -1390,11 +1412,83 @@ constructor(
         }
     }
 
-    fun initializePlaylist(item: AfinityItem, seasonId: UUID? = null, shuffle: Boolean = false) {
+    fun initializePlaylistAndPlay(
+        item: AfinityItem,
+        mediaSourceId: String,
+        audioStreamIndex: Int?,
+        subtitleStreamIndex: Int?,
+        startPositionMs: Long,
+        seasonId: UUID? = null,
+        shuffle: Boolean = false,
+    ) {
+
+        val targetSource =
+            item.sources.firstOrNull { it.id == mediaSourceId } ?: item.sources.firstOrNull()
+        val videoStream =
+            targetSource?.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+
+        if (videoStream != null) {
+            val w = videoStream.width
+            val h = videoStream.height
+            if (w != null && h != null && w > 0 && h > 0) {
+                isVideoPortrait = h > w
+                if (!isOrientationOverridden) {
+                    updateUiState {
+                        it.copy(resolvedOrientation = computeOrientation(isVideoPortrait))
+                    }
+                }
+            }
+        } else {
+            if (!isOrientationOverridden) {
+                isVideoPortrait = false
+                updateUiState {
+                    it.copy(resolvedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE)
+                }
+            }
+        }
         viewModelScope.launch {
-            playlistManager.initializePlaylist(item, seasonId)
+            playlistManager.initializePlaylist(item, seasonId, startPositionMs)
             if (shuffle) {
                 playlistManager.shuffleQueue()
+            }
+            val firstItem = playlistManager.getCurrentItem() ?: item
+
+            if (firstItem.id != item.id) {
+                pendingMainItemOptions =
+                    MainItemPlaybackOptions(
+                        itemId = item.id,
+                        mediaSourceId = mediaSourceId,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = subtitleStreamIndex,
+                        startPositionMs = startPositionMs,
+                    )
+
+                updateUiState { it.copy(isPlayingIntro = true) }
+                applyZoomMode(VideoZoomMode.ZOOM, saveAsCurrent = false)
+
+                Timber.d("Intro found ${firstItem.name}")
+                handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = firstItem,
+                        mediaSourceId = firstItem.sources.firstOrNull()?.id ?: "",
+                        audioStreamIndex = null,
+                        subtitleStreamIndex = null,
+                        startPositionMs = 0L,
+                    )
+                )
+            } else {
+                pendingMainItemOptions = null
+                updateUiState { it.copy(isPlayingIntro = false) }
+                Timber.d("No intros or resuming, playing item: ${item.name}")
+                handlePlayerEvent(
+                    PlayerEvent.LoadMedia(
+                        item = item,
+                        mediaSourceId = mediaSourceId,
+                        audioStreamIndex = audioStreamIndex,
+                        subtitleStreamIndex = subtitleStreamIndex,
+                        startPositionMs = startPositionMs,
+                    )
+                )
             }
         }
     }
@@ -1543,12 +1637,33 @@ constructor(
     }
 
     private fun playQueueItem(item: AfinityItem) {
+        if (pendingMainItemOptions?.itemId == item.id) {
+            val options = pendingMainItemOptions!!
+            pendingMainItemOptions = null
+            updateUiState { it.copy(isPlayingIntro = false) }
+            applyZoomMode(currentZoomMode, saveAsCurrent = true)
+
+            Timber.d("Intro finished, restoring settings: ${item.name}")
+            handlePlayerEvent(
+                PlayerEvent.LoadMedia(
+                    item = item,
+                    mediaSourceId = options.mediaSourceId,
+                    audioStreamIndex = options.audioStreamIndex,
+                    subtitleStreamIndex = options.subtitleStreamIndex,
+                    startPositionMs = options.startPositionMs,
+                )
+            )
+            return
+        }
+
+        val isStillIntro = pendingMainItemOptions != null
+        updateUiState { it.copy(isPlayingIntro = isStillIntro) }
+
         val currentSourceId = _uiState.value.currentMediaSourceId
         val currentSource =
             _uiState.value.currentItem?.sources?.firstOrNull { it.id == currentSourceId }
 
         val bestMatch = findBestMatchingSource(reference = currentSource, candidates = item.sources)
-
         val mediaSourceId = bestMatch?.id ?: item.sources.firstOrNull()?.id ?: ""
 
         handlePlayerEvent(
@@ -1649,7 +1764,9 @@ constructor(
         val item = currentItem
 
         if (item != null) {
-            playbackStateManager.notifyPlaybackStopped(item.id, finalPosition)
+            if (!_uiState.value.isPlayingIntro) {
+                playbackStateManager.notifyPlaybackStopped(item.id, finalPosition)
+            }
         } else {
             Timber.w("stopPlayback called but currentItem is null")
         }
@@ -1766,6 +1883,15 @@ constructor(
         val availableSources: List<AfinitySource> = emptyList(),
         val currentMediaSourceId: String? = null,
         val showVersionPicker: Boolean = false,
+        val isPlayingIntro: Boolean = false,
+    )
+
+    data class MainItemPlaybackOptions(
+        val itemId: UUID,
+        val mediaSourceId: String,
+        val audioStreamIndex: Int?,
+        val subtitleStreamIndex: Int?,
+        val startPositionMs: Long,
     )
 }
 
