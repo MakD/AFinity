@@ -49,13 +49,15 @@ constructor(
     }
 
     fun notifyPlaybackStopped(itemId: UUID, positionMs: Long) {
+        val capturedSessionId = currentSessionId
+        val capturedMediaSourceId = lastKnownMediaSourceId
         scope.launch {
             val positionTicks = positionMs * 10000
             _playbackEvents.emit(PlaybackEvent.Stopped(itemId, positionTicks))
 
             try {
                 updatePlaybackPosition(positionMs)
-                reportPlaybackStop()
+                reportPlaybackStop(itemId, capturedSessionId, capturedMediaSourceId, positionTicks)
                 handlePlaybackStopped(itemId)
             } catch (e: Exception) {
                 Timber.e(e, "Error in notifyPlaybackStopped")
@@ -63,14 +65,14 @@ constructor(
         }
     }
 
-    private suspend fun reportPlaybackStop() {
+    private suspend fun reportPlaybackStop(
+        itemId: UUID,
+        sessionId: String?,
+        mediaSourceId: String?,
+        positionTicks: Long,
+    ) {
         try {
-            val itemId = currentItemId
-            val sessionId = currentSessionId
-            val mediaSourceId = lastKnownMediaSourceId
-            val positionTicks = lastKnownPosition * 10000
-
-            if (itemId != null && sessionId != null && !mediaSourceId.isNullOrEmpty()) {
+            if (sessionId != null && !mediaSourceId.isNullOrEmpty()) {
                 val success =
                     playbackRepository.reportPlaybackStop(
                         itemId = itemId,
@@ -81,7 +83,7 @@ constructor(
 
                 if (success) {
                     Timber.d(
-                        "Playback stop reported to Jellyfin: item=$itemId, position=${lastKnownPosition}ms"
+                        "Playback stop reported to Jellyfin: item=$itemId, positionTicks=$positionTicks"
                     )
                 } else {
                     Timber.w(
@@ -108,13 +110,11 @@ constructor(
             if (refreshedItem != null) {
                 val seriesId = (refreshedItem as? AfinityEpisode)?.seriesId
                 val seasonId = (refreshedItem as? AfinityEpisode)?.seasonId
-
-                _playbackEvents.emit(PlaybackEvent.Synced(itemId, seriesId, seasonId))
-
                 if (refreshedItem is AfinityEpisode && refreshedItem.played) {
                     Timber.d("Episode finished. Refreshing Next Up queue...")
                     mediaRepository.invalidateNextUpCache()
                 }
+                _playbackEvents.emit(PlaybackEvent.Synced(itemId, seriesId, seasonId))
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to handle playback stopped")

@@ -14,6 +14,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
@@ -689,7 +690,17 @@ constructor(
                 mutableList.take(12)
             }
         } else {
-            _continueWatching.update { currentList -> currentList.filterNot { it.id == itemId } }
+            _continueWatching.update { currentList ->
+                currentList.filterNot { item ->
+                    item.id == itemId ||
+                        (syncedItem is AfinityShow &&
+                            item is AfinityEpisode &&
+                            item.seriesId == itemId) ||
+                        (syncedItem is AfinitySeason &&
+                            item is AfinityEpisode &&
+                            item.seasonId == itemId)
+                }
+            }
         }
 
         if (syncedItem is AfinityEpisode) {
@@ -711,6 +722,20 @@ constructor(
                     _nextUp.value = loadNextUp()
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load next up after finishing episode")
+                }
+            }
+        } else if (syncedItem is AfinityShow || syncedItem is AfinitySeason) {
+            if (syncedItem.played) {
+                _nextUp.update { currentList ->
+                    currentList.filterNot { item ->
+                        (syncedItem is AfinityShow && item.seriesId == itemId) ||
+                            (syncedItem is AfinitySeason && item.seasonId == itemId)
+                    }
+                }
+                try {
+                    _nextUp.value = loadNextUp()
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to load next up after marking series/season watched")
                 }
             }
         }

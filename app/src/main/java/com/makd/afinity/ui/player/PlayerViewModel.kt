@@ -512,6 +512,7 @@ constructor(
 
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
         if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
+            reportCurrentItemStopped(isEnded = true)
             viewModelScope.launch {
                 val nextItem = playlistManager.next()
                 if (nextItem != null) {
@@ -1586,6 +1587,7 @@ constructor(
     }
 
     fun onNextEpisode() {
+        reportCurrentItemStopped()
         viewModelScope.launch {
             playlistManager.getNextItem()?.let { nextItem ->
                 playQueueItem(nextItem)
@@ -1595,6 +1597,7 @@ constructor(
     }
 
     fun onPreviousEpisode() {
+        reportCurrentItemStopped()
         viewModelScope.launch {
             playlistManager.getPreviousItem()?.let { prevItem ->
                 playQueueItem(prevItem)
@@ -1604,6 +1607,7 @@ constructor(
     }
 
     fun jumpToEpisode(episodeId: UUID) {
+        reportCurrentItemStopped()
         viewModelScope.launch {
             playlistManager.jumpToItem(episodeId)?.let { targetItem -> playQueueItem(targetItem) }
         }
@@ -1817,6 +1821,22 @@ constructor(
                     startControlsAutoHide()
                 }
             }
+    }
+
+    private fun reportCurrentItemStopped(isEnded: Boolean = false) {
+        val item = currentItem ?: return
+        if (_uiState.value.isPlayingIntro) return
+
+        val position =
+            if (isEnded && player.duration > 0) {
+                player.duration
+            } else if (_uiState.value.isCasting) {
+                castManager.castState.value.currentPosition
+            } else {
+                player.currentPosition
+            }
+
+        playbackStateManager.notifyPlaybackStopped(item.id, position)
     }
 
     override fun onCleared() {
