@@ -249,18 +249,71 @@ constructor(
         }
         viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
-                if (event is PlaybackEvent.Synced) {
-                    Timber.d("HomeViewModel received sync for ${event.itemId}")
-                    val syncedItem = jellyfinRepository.getItemById(event.itemId) ?: return@collect
-                    appDataRepository.updatePlaybackProgressLocally(syncedItem)
-                    val targetItem =
-                        when (syncedItem) {
-                            is AfinityEpisode -> jellyfinRepository.getItemById(syncedItem.seriesId)
-                            is AfinitySeason -> jellyfinRepository.getItemById(syncedItem.seriesId)
-                            else -> syncedItem
-                        } ?: return@collect
-                    appDataRepository.updateItemInCaches(targetItem)
-                    updateItemInDynamicSections(targetItem)
+                when (event) {
+                    is PlaybackEvent.Stopped -> {
+                        Timber.d("HomeViewModel received fast Stopped event for ${event.itemId}")
+                        val nextUpItem = _uiState.value.nextUp.find { it.id == event.itemId }
+                        if (nextUpItem != null) {
+                            val runtime = nextUpItem.runtimeTicks ?: 0L
+                            val isPlayed =
+                                runtime > 0 && event.positionTicks >= (runtime * 0.9).toLong()
+
+                            val optimisticItem =
+                                nextUpItem.copy(
+                                    playbackPositionTicks = event.positionTicks,
+                                    played = isPlayed,
+                                )
+                            appDataRepository.updatePlaybackProgressLocally(optimisticItem)
+                        } else {
+                            val cwItem =
+                                _uiState.value.continueWatching.find { it.id == event.itemId }
+                            if (cwItem != null) {
+                                val optimisticItem =
+                                    when (cwItem) {
+                                        is AfinityEpisode -> {
+                                            val runtime = cwItem.runtimeTicks ?: 0L
+                                            val isPlayed =
+                                                runtime > 0 &&
+                                                    event.positionTicks >= (runtime * 0.9).toLong()
+                                            cwItem.copy(
+                                                playbackPositionTicks = event.positionTicks,
+                                                played = isPlayed,
+                                            )
+                                        }
+                                        is AfinityMovie -> {
+                                            val runtime = cwItem.runtimeTicks ?: 0L
+                                            val isPlayed =
+                                                runtime > 0 &&
+                                                    event.positionTicks >= (runtime * 0.9).toLong()
+                                            cwItem.copy(
+                                                playbackPositionTicks = event.positionTicks,
+                                                played = isPlayed,
+                                            )
+                                        }
+                                        else -> cwItem
+                                    }
+                                appDataRepository.updatePlaybackProgressLocally(optimisticItem)
+                            }
+                        }
+                    }
+                    is PlaybackEvent.Synced -> {
+                        Timber.d("HomeViewModel received sync for ${event.itemId}")
+                        val syncedItem =
+                            jellyfinRepository.getItemById(event.itemId) ?: return@collect
+                        appDataRepository.updatePlaybackProgressLocally(syncedItem)
+
+                        val targetItem =
+                            when (syncedItem) {
+                                is AfinityEpisode ->
+                                    jellyfinRepository.getItemById(syncedItem.seriesId)
+                                is AfinitySeason ->
+                                    jellyfinRepository.getItemById(syncedItem.seriesId)
+                                else -> syncedItem
+                            } ?: return@collect
+
+                        appDataRepository.updateItemInCaches(targetItem)
+                        updateItemInDynamicSections(targetItem)
+                    }
                 }
             }
         }
