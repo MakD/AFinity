@@ -14,8 +14,8 @@ data class MdbListApiResult(
 data class MdbListRating(
     val source: String,
     val value: Double? = null,
-    val score: Int? = null,
+    val score: Double? = null,
     val votes: Long? = null,
-    val popular: Boolean? = null,
+    val popular: Int? = null,
     val url: String? = null,
 )
