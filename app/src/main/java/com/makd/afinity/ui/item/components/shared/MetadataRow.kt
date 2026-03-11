@@ -536,7 +536,13 @@ fun MetadataRow(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 mdbRatings.forEachIndexed { index, rating ->
-                    val rawValue = rating.value ?: return@forEachIndexed
+                    val sourceLower = rating.source.lowercase()
+                    val rawValue =
+                        if (sourceLower == "metacriticuser") {
+                            rating.score ?: (rating.value?.times(10.0)) ?: return@forEachIndexed
+                        } else {
+                            rating.value ?: return@forEachIndexed
+                        }
 
                     if (index > 0) MetadataDot()
 
@@ -544,8 +550,6 @@ fun MetadataRow(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        val sourceLower = rating.source.lowercase()
-
                         val iconRes =
                             when (sourceLower) {
                                 "trakt" -> R.drawable.ic_trakt
@@ -560,6 +564,12 @@ fun MetadataRow(
                                         rawValue >= 75.0 -> R.drawable.ic_metacritic_green
                                         rawValue >= 50.0 -> R.drawable.ic_metacritic_yellow
                                         else -> R.drawable.ic_metacritic_red
+                                    }
+                                "metacriticuser" ->
+                                    when {
+                                        rawValue >= 75.0 -> R.drawable.ic_metacritic_user_green
+                                        rawValue >= 50.0 -> R.drawable.ic_metacritic_user_yellow
+                                        else -> R.drawable.ic_metacritic_user_red
                                     }
                                 "rogerebert" -> R.drawable.ic_ebert
                                 "myanimelist" -> R.drawable.ic_mal
@@ -583,9 +593,10 @@ fun MetadataRow(
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                             )
                         }
-
                         val formattedValue =
-                            if (rawValue % 1.0 == 0.0) {
+                            if (sourceLower == "metacriticuser") {
+                                String.format(Locale.US, "%.1f", rawValue / 10.0)
+                            } else if (rawValue % 1.0 == 0.0) {
                                 rawValue.toInt().toString()
                             } else {
                                 rawValue.toString()
