@@ -163,6 +163,7 @@ interface JellyfinRepository {
         limit: Int? = null,
         startIndex: Int = 0,
         fields: List<ItemFields>? = null,
+        personTypes: List<String> = emptyList(),
     ): List<AfinityItem>
 
     suspend fun reportPlaybackStart(
@@ -227,12 +228,6 @@ interface JellyfinRepository {
     fun getLatestMediaFlow(parentId: UUID? = null): Flow<List<AfinityItem>>
 
     fun getContinueWatchingFlow(): Flow<List<AfinityItem>>
-
-    suspend fun getMoviesWithPeople(
-        startIndex: Int = 0,
-        limit: Int = 500,
-        fields: List<ItemFields>? = null,
-    ): List<AfinityMovie>
 
     suspend fun getSimilarMovies(
         movieId: UUID,

@@ -451,9 +451,10 @@ constructor(
         limit: Int?,
         startIndex: Int,
         fields: List<ItemFields>?,
+        personTypes: List<String>,
     ): List<AfinityItem> {
         return try {
-            mediaRepository.getPersonItems(personId, includeItemTypes, fields)
+            mediaRepository.getPersonItems(personId, includeItemTypes, fields, personTypes)
         } catch (e: Exception) {
             Timber.e(e, "Failed to get person items: $personId")
             emptyList()
@@ -681,14 +682,6 @@ constructor(
             Timber.e(e, "Failed to determine episode to play for season: $seasonId")
             null
         }
-    }
-
-    override suspend fun getMoviesWithPeople(
-        startIndex: Int,
-        limit: Int,
-        fields: List<ItemFields>?,
-    ): List<AfinityMovie> {
-        return mediaRepository.getMoviesWithPeople(startIndex, limit, fields)
     }
 
     override suspend fun getSimilarMovies(

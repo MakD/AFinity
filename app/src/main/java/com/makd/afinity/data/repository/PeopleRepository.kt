@@ -10,7 +10,6 @@ import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.PersonSectionType
 import com.makd.afinity.data.models.PersonWithCount
 import com.makd.afinity.data.models.common.SortBy
-import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
@@ -22,7 +21,6 @@ import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.PersonKind
 import timber.log.Timber
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.hours
@@ -38,23 +36,6 @@ constructor(private val jellyfinRepository: JellyfinRepository, database: Afinit
     private val personSectionDao = database.personSectionDao()
     private val afinityTypeConverters = AfinityTypeConverters()
     private val json = Json { ignoreUnknownKeys = true }
-
-    private fun filterItemsByPersonRole(
-        items: List<AfinityItem>,
-        personId: UUID,
-        personType: PersonKind,
-    ): List<AfinityItem> {
-        return items.filter { item ->
-            val people =
-                when (item) {
-                    is AfinityMovie -> item.people
-                    is AfinityShow -> item.people
-                    is AfinityEpisode -> item.people
-                    else -> emptyList()
-                }
-            people.any { person -> person.id == personId && person.type == personType }
-        }
-    }
 
     suspend fun getTopPeople(
         type: PersonKind,
@@ -185,18 +166,11 @@ constructor(private val jellyfinRepository: JellyfinRepository, database: Afinit
                 )
             }
 
-            val allPersonItems =
+            val filteredItems =
                 jellyfinRepository.getPersonItems(
                     personId = person.id,
                     includeItemTypes = listOf("MOVIE", "SERIES"),
-                    fields = listOf(ItemFields.PEOPLE),
-                )
-
-            val filteredItems =
-                filterItemsByPersonRole(
-                    items = allPersonItems,
-                    personId = person.id,
-                    personType = sectionType.toPersonKind(),
+                    personTypes = listOf(sectionType.toPersonKind().serialName),
                 )
 
             if (filteredItems.size < 5) return null

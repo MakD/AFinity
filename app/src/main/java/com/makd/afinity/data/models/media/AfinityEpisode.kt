@@ -1,13 +1,14 @@
 package com.makd.afinity.data.models.media
 
 import android.net.Uri
+import androidx.core.net.toUri
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
-import com.makd.afinity.data.models.extensions.logoBlurHash
 import com.makd.afinity.data.repository.JellyfinRepository
 import java.util.UUID
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.LocationType
 import org.jellyfin.sdk.model.api.PlayAccess
 
@@ -53,18 +54,11 @@ suspend fun BaseItemDto.toAfinityEpisode(
     if (database != null) {
         sources.addAll(database.getSources(id).map { it.toAfinitySource(database) })
     }
-    val seriesLogoInfo =
-        try {
-            if (seriesId != null) {
-                val seriesItem = jellyfinRepository.getItem(seriesId!!)
-                val seriesImages = seriesItem?.toAfinityImages(jellyfinRepository)
-                Pair(seriesImages?.logo, seriesImages?.logoBlurHash)
-            } else {
-                Pair(null, null)
-            }
-        } catch (e: Exception) {
-            Pair(null, null)
-        }
+    val baseUrl = jellyfinRepository.getBaseUrl()
+    val seriesLogo = parentLogoImageTag?.let { tag ->
+        "$baseUrl/Items/${parentLogoItemId ?: seriesId}/Images/Logo?tag=$tag".toUri()
+    }
+    val seriesLogoBlurHash = imageBlurHashes?.get(ImageType.LOGO)?.get(parentLogoImageTag)
     return try {
         AfinityEpisode(
             id = id,
@@ -85,8 +79,8 @@ suspend fun BaseItemDto.toAfinityEpisode(
             premiereDate = premiereDate,
             seriesName = seriesName.orEmpty(),
             seriesId = seriesId!!,
-            seriesLogo = seriesLogoInfo.first,
-            seriesLogoBlurHash = seriesLogoInfo.second,
+            seriesLogo = seriesLogo,
+            seriesLogoBlurHash = seriesLogoBlurHash,
             seasonId = seasonId!!,
             communityRating = communityRating,
             people = people?.map { it.toAfinityPerson(jellyfinRepository) } ?: emptyList(),

@@ -1159,6 +1159,7 @@ constructor(
         personId: UUID,
         includeItemTypes: List<String>,
         fields: List<ItemFields>?,
+        personTypes: List<String>,
     ): List<AfinityItem> =
         withContext(Dispatchers.IO) {
             return@withContext try {
@@ -1171,6 +1172,7 @@ constructor(
                     itemsApi.getItems(
                         userId = userId,
                         personIds = listOf(personId),
+                        personTypes = personTypes.ifEmpty { null },
                         includeItemTypes =
                             includeItemTypes.mapNotNull {
                                 try {
@@ -1192,43 +1194,6 @@ constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get person items for ID: $personId")
-                emptyList()
-            }
-        }
-
-    override suspend fun getMoviesWithPeople(
-        startIndex: Int,
-        limit: Int,
-        fields: List<ItemFields>?,
-    ): List<AfinityMovie> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val apiClient =
-                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
-                val userId = getCurrentUserId() ?: return@withContext emptyList()
-
-                val itemsApi = ItemsApi(apiClient)
-                val response =
-                    itemsApi.getItems(
-                        userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.MOVIE),
-                        fields =
-                            fields
-                                ?: listOf(
-                                    ItemFields.PEOPLE,
-                                    ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-                                    ItemFields.DATE_CREATED,
-                                    ItemFields.OVERVIEW,
-                                ),
-                        startIndex = startIndex,
-                        limit = limit,
-                        enableImages = true,
-                        recursive = true,
-                    )
-
-                response.content.items.map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get movies with people at index: $startIndex")
                 emptyList()
             }
         }

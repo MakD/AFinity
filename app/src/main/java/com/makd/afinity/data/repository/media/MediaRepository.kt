@@ -183,13 +183,8 @@ interface MediaRepository {
         personId: UUID,
         includeItemTypes: List<String> = emptyList(),
         fields: List<ItemFields>? = null,
+        personTypes: List<String> = emptyList(),
     ): List<AfinityItem>
-
-    suspend fun getMoviesWithPeople(
-        startIndex: Int = 0,
-        limit: Int = 500,
-        fields: List<ItemFields>? = null,
-    ): List<AfinityMovie>
 
     suspend fun getSimilarMovies(
         movieId: UUID,
