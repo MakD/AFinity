@@ -273,6 +273,13 @@ class PlaylistManager @Inject constructor(private val jellyfinRepository: Jellyf
         return targetItem
     }
 
+    fun markCurrentItemAsPlayed() {
+        val item = currentQueue.getOrNull(currentIndex) ?: return
+        if (item is AfinityEpisode) {
+            currentQueue[currentIndex] = item.copy(played = true, playbackPositionTicks = 0)
+        }
+    }
+
     fun clearQueue() {
         currentQueue.clear()
         currentIndex = -1

@@ -513,6 +513,7 @@ constructor(
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
         if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
             reportCurrentItemStopped(isEnded = true)
+            playlistManager.markCurrentItemAsPlayed()
             viewModelScope.launch {
                 val nextItem = playlistManager.next()
                 if (nextItem != null) {
@@ -655,6 +656,7 @@ constructor(
                         viewModelScope.launch {
                             val nextItem = playlistManager.getNextItem()
                             if (nextItem != null) {
+                                playlistManager.markCurrentItemAsPlayed()
                                 onNextEpisode()
                             } else {
                                 handlePlayerEvent(PlayerEvent.Seek(event.segment.endTicks))

@@ -191,7 +191,10 @@ fun EpisodeSwitcher(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        itemsIndexed(displayEpisodes) { index, item ->
+                        itemsIndexed(
+                            items = displayEpisodes,
+                            key = { _, item -> item.id },
+                        ) { index, item ->
                             EpisodeSwitcherCard(
                                 episode = item,
                                 isCurrentlyPlaying = index == activeEpisodeIndex,
