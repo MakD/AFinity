@@ -9,6 +9,8 @@ import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
 import coil3.memory.MemoryCache
+import coil3.annotation.ExperimentalCoilApi
+import coil3.network.cachecontrol.CacheControlCacheStrategy
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.crossfade
@@ -25,6 +27,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import com.makd.afinity.di.ImageClient
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import timber.log.Timber
@@ -46,7 +49,8 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     lateinit var castManager: CastManager
 
     @Inject
-    lateinit var okHttpClient: OkHttpClient
+    @ImageClient
+    lateinit var imageOkHttpClient: OkHttpClient
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -80,12 +84,16 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
+    @OptIn(ExperimentalCoilApi::class)
     override fun newImageLoader(context: PlatformContext): ImageLoader {
         val (isCacheEnabled, cacheSizeMb) = runBlocking { imageLoaderPrefs.await() }
 
         return ImageLoader.Builder(context)
             .components {
-                add(OkHttpNetworkFetcherFactory(callFactory = { okHttpClient }))
+                add(OkHttpNetworkFetcherFactory(
+                    callFactory = { imageOkHttpClient },
+                    cacheStrategy = { CacheControlCacheStrategy() },
+                ))
                 add(SvgDecoder.Factory())
                 add(AnimatedImageDecoder.Factory())
             }

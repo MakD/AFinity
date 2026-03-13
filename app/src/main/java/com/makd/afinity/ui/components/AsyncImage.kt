@@ -58,6 +58,24 @@ fun AsyncImage(
             }
         }
 
+    val optimizedUrl =
+        remember(imageUrl, targetWidth, density, scaleFactor) {
+            if (
+                imageUrl != null &&
+                    targetWidth != null &&
+                    imageUrl.contains("/Items/") &&
+                    imageUrl.contains("/Images/") &&
+                    !imageUrl.contains("fillWidth")
+            ) {
+                val widthPx =
+                    with(density) { (targetWidth.toPx() * scaleFactor).toInt() }.coerceAtLeast(50)
+                val separator = if ('?' in imageUrl) "&" else "?"
+                "${imageUrl}${separator}fillWidth=${widthPx}&quality=90"
+            } else {
+                imageUrl
+            }
+        }
+
     val blurHashPlaceholder =
         remember(blurHash, targetWidth, targetHeight) {
             if (!blurHash.isNullOrBlank()) {
@@ -94,7 +112,7 @@ fun AsyncImage(
     AsyncImage(
         model =
             ImageRequest.Builder(context)
-                .data(imageUrl)
+                .data(optimizedUrl)
                 .size(imageSize)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .diskCachePolicy(CachePolicy.ENABLED)

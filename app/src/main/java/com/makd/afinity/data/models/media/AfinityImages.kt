@@ -85,10 +85,10 @@ fun BaseItemDto.toAfinityImages(jellyfinRepository: JellyfinRepository): Afinity
                     .build()
             },
         showLogo =
-            seriesPrimaryImageTag?.let { tag ->
+            parentLogoImageTag?.let { tag ->
                 baseUrl
                     .buildUpon()
-                    .appendEncodedPath("Items/$seriesId/Images/Logo")
+                    .appendEncodedPath("Items/${parentLogoItemId ?: seriesId}/Images/Logo")
                     .appendQueryParameter("tag", tag)
                     .build()
             },
@@ -101,6 +101,6 @@ fun BaseItemDto.toAfinityImages(jellyfinRepository: JellyfinRepository): Afinity
         showBackdropImageBlurHash =
             imageBlurHashes?.get(ImageType.BACKDROP)?.get(parentBackdropImageTags?.firstOrNull()),
         showThumbImageBlurHash = imageBlurHashes?.get(ImageType.THUMB)?.get(seriesThumbImageTag),
-        showLogoImageBlurHash = imageBlurHashes?.get(ImageType.LOGO)?.get(seriesPrimaryImageTag),
+        showLogoImageBlurHash = imageBlurHashes?.get(ImageType.LOGO)?.get(parentLogoImageTag),
     )
 }

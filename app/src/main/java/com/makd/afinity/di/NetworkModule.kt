@@ -46,6 +46,8 @@ import javax.inject.Singleton
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class DownloadClient
 
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class ImageClient
+
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class JellyseerrClient
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class AudiobookshelfRetrofit
@@ -134,6 +136,18 @@ object NetworkModule {
         }
 
         return builder.build()
+    }
+
+    @Provides
+    @Singleton
+    @ImageClient
+    fun provideImageOkHttpClient(baseOkHttpClient: OkHttpClient): OkHttpClient {
+        val dispatcher =
+            Dispatcher().apply {
+                maxRequests = 64
+                maxRequestsPerHost = 16
+            }
+        return baseOkHttpClient.newBuilder().dispatcher(dispatcher).build()
     }
 
     @Provides
