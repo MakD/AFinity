@@ -147,6 +147,8 @@ interface JellyfinRepository {
         seasonId: UUID,
         seriesId: UUID,
         fields: List<ItemFields>? = null,
+        startIndex: Int = 0,
+        limit: Int? = null,
     ): List<AfinityEpisode>
 
     suspend fun getSeriesNextEpisode(seriesId: UUID): AfinityEpisode?

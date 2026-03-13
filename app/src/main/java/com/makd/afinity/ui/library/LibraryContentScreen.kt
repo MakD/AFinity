@@ -131,13 +131,17 @@ fun LibraryContentScreen(
             )
 
             when {
-                uiState.isLoading -> FullScreenLoading(modifier = Modifier.padding(top = 16.dp))
+                uiState.isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        FullScreenLoading()
+                    }
+                }
 
-                uiState.error != null ->
-                    FullScreenError(
-                        message = uiState.error,
-                        modifier = Modifier.padding(top = 16.dp),
-                    )
+                uiState.error != null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        FullScreenError(message = uiState.error)
+                    }
+                }
 
                 lazyPagingItems.itemCount == 0 &&
                     lazyPagingItems.loadState.refresh !is LoadState.Loading -> {
@@ -168,17 +172,25 @@ fun LibraryContentScreen(
                             }
                         }
                     } else if (uiState.currentFilter != FilterType.ALL) {
-                        EmptyFilterMessage(
-                            filterType = uiState.currentFilter,
-                            onClearFilter = { viewModel.updateFilter(FilterType.ALL) },
-                            modifier = Modifier.padding(top = 16.dp),
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            EmptyFilterMessage(
+                                filterType = uiState.currentFilter,
+                                onClearFilter = { viewModel.updateFilter(FilterType.ALL) },
+                            )
+                        }
                     } else {
-                        FullScreenEmpty(
-                            title = stringResource(R.string.library_empty_title),
-                            message = stringResource(R.string.library_empty_message),
-                            modifier = Modifier.padding(top = 16.dp),
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            FullScreenEmpty(
+                                title = stringResource(R.string.library_empty_title),
+                                message = stringResource(R.string.library_empty_message),
+                            )
+                        }
                     }
                 }
 

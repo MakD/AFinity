@@ -18,8 +18,6 @@ class EpisodesPagingSource(
         private const val PAGE_SIZE = 50
     }
 
-    private var allEpisodes: List<AfinityEpisode>? = null
-
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, AfinityEpisode> {
         return try {
             val page = params.key ?: 0
@@ -27,31 +25,21 @@ class EpisodesPagingSource(
 
             Timber.d("EpisodesPagingSource load: page=$page, startIndex=$startIndex")
 
-            if (allEpisodes == null) {
-                Timber.d("EpisodesPagingSource: Loading all episodes from API")
-                allEpisodes =
-                    mediaRepository
-                        .getEpisodes(
-                            seasonId = seasonId,
-                            seriesId = seriesId,
-                            fields = FieldSets.EPISODE_LIST,
-                        )
-                        .sortedBy { it.indexNumber ?: 0 }
-                Timber.d("EpisodesPagingSource: Loaded ${allEpisodes?.size} total episodes")
-            }
+            val episodes =
+                mediaRepository.getEpisodes(
+                    seasonId = seasonId,
+                    seriesId = seriesId,
+                    fields = FieldSets.EPISODE_LIST,
+                    startIndex = startIndex,
+                    limit = PAGE_SIZE,
+                )
 
-            val paginatedEpisodes = allEpisodes!!.drop(startIndex).take(PAGE_SIZE)
-
-            Timber.d(
-                "EpisodesPagingSource: Returning page $page with ${paginatedEpisodes.size} episodes"
-            )
+            Timber.d("EpisodesPagingSource: Loaded ${episodes.size} episodes for page $page")
 
             LoadResult.Page(
-                data = paginatedEpisodes,
+                data = episodes,
                 prevKey = if (page == 0) null else page - 1,
-                nextKey =
-                    if (startIndex + paginatedEpisodes.size >= allEpisodes!!.size) null
-                    else page + 1,
+                nextKey = if (episodes.size < PAGE_SIZE) null else page + 1,
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to load episodes page")
@@ -60,7 +48,6 @@ class EpisodesPagingSource(
     }
 
     override fun getRefreshKey(state: PagingState<Int, AfinityEpisode>): Int? {
-        allEpisodes = null
         return state.anchorPosition?.let { anchorPosition ->
             val anchorPage = state.closestPageToPosition(anchorPosition)
             anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)

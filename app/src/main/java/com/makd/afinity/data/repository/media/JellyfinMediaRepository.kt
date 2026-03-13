@@ -291,9 +291,11 @@ constructor(
 
     override suspend fun invalidateAllCaches() {
         Timber.d("Full cache invalidation requested - refreshing all caches")
-        invalidateContinueWatchingCache()
-        invalidateLatestMediaCache()
-        invalidateNextUpCache()
+        coroutineScope {
+            launch { invalidateContinueWatchingCache() }
+            launch { invalidateLatestMediaCache() }
+            launch { invalidateNextUpCache() }
+        }
     }
 
     override suspend fun invalidateItemCache(itemId: UUID) {
@@ -821,6 +823,8 @@ constructor(
         seasonId: UUID,
         seriesId: UUID?,
         fields: List<ItemFields>?,
+        startIndex: Int,
+        limit: Int?,
     ): List<AfinityEpisode> =
         withContext(Dispatchers.IO) {
             return@withContext try {
@@ -846,6 +850,8 @@ constructor(
                         enableImages = true,
                         enableUserData = true,
                         sortBy = ItemSortBy.SORT_NAME,
+                        startIndex = startIndex.takeIf { it > 0 },
+                        limit = limit,
                     )
                 response.content.items.mapNotNull { baseItem ->
                     baseItem.toAfinityEpisode(getBaseUrl())
@@ -1250,7 +1256,6 @@ constructor(
                 response.content.items
                     .filter { it.id != movieId }
                     .map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
-                    .shuffled()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get similar movies for ID: $movieId")
                 emptyList()
@@ -1356,90 +1361,39 @@ constructor(
                     sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
                 val userId = getCurrentUserId() ?: return@withContext emptyList()
 
-                val librariesResponse = getLibraries()
-                val tvLibraries = librariesResponse.filter { it.type == CollectionType.TvShows }
-
-                if (tvLibraries.isEmpty()) {
-                    Timber.d("No TV libraries found")
-                    return@withContext emptyList()
-                }
-
-                Timber.d("Found ${tvLibraries.size} TV libraries")
-
                 val studiosApi = StudiosApi(apiClient)
-                val allStudios = mutableListOf<Triple<UUID, String, Pair<String?, Int>>>()
+                val response =
+                    studiosApi.getStudios(
+                        userId = userId,
+                        parentId = parentId,
+                        includeItemTypes = listOf(BaseItemKind.SERIES),
+                        enableImages = true,
+                        imageTypeLimit = 1,
+                        enableImageTypes = listOf(ImageType.THUMB),
+                    )
 
-                for (library in tvLibraries) {
-                    try {
-                        val response =
-                            studiosApi.getStudios(
-                                userId = userId,
-                                parentId = library.id,
-                                includeItemTypes = listOf(BaseItemKind.SERIES),
-                                enableImages = true,
-                                imageTypeLimit = 1,
-                                enableImageTypes = listOf(ImageType.THUMB),
-                            )
+                Timber.d("Fetched ${response.content.items.size} studios server-wide")
 
-                        response.content.items.forEach { studioDto ->
-                            val id: UUID = studioDto.id
-                            val name: String =
-                                studioDto.name?.takeIf { it.isNotBlank() } ?: return@forEach
-                            val childCount: Int = studioDto.childCount ?: 0
-
-                            val imageTags: Map<ImageType, String>? = studioDto.imageTags
-                            val thumbImageUrl: String? =
-                                imageTags?.get(ImageType.THUMB)?.let { tag: String ->
-                                    "${getBaseUrl()}/Items/$id/Images/Thumb?tag=$tag"
-                                }
-
-                            allStudios.add(Triple(id, name, Pair(thumbImageUrl, childCount)))
-                        }
-
-                        Timber.d(
-                            "Fetched ${response.content.items.size} studios from library: ${library.name}"
+                response.content.items
+                    .mapNotNull { studioDto ->
+                        val id: UUID = studioDto.id
+                        val name = studioDto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                        val childCount = studioDto.childCount ?: 0
+                        val thumbImageUrl =
+                            studioDto.imageTags?.get(ImageType.THUMB)?.let { tag ->
+                                "${getBaseUrl()}/Items/$id/Images/Thumb?tag=$tag"
+                            }
+                        AfinityStudio(
+                            id = id,
+                            name = name,
+                            primaryImageUrl = thumbImageUrl,
+                            itemCount = childCount,
                         )
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to fetch studios from library: ${library.name}")
                     }
-                }
-
-                val uniqueStudios = mutableMapOf<UUID, Triple<String, String?, Int>>()
-                for ((id, name, imageData) in allStudios) {
-                    val (thumbUrl, childCount) = imageData
-
-                    if (uniqueStudios.containsKey(id)) {
-                        val existing = uniqueStudios[id]!!
-                        if (childCount > existing.third) {
-                            uniqueStudios[id] = Triple(name, thumbUrl, childCount)
-                        }
-                    } else {
-                        uniqueStudios[id] = Triple(name, thumbUrl, childCount)
-                    }
-                }
-
-                Timber.d("Deduplicated to ${uniqueStudios.size} unique studios")
-
-                val filteredStudios =
-                    uniqueStudios
-                        .filter { (_, data) -> data.third >= 5 }
-                        .filter { (_, data) -> data.second != null }
-
-                Timber.d("Filtered to ${filteredStudios.size} studios (min 5 shows, has Thumb)")
-
-                val sortedStudios =
-                    filteredStudios
-                        .map { (id, data) ->
-                            AfinityStudio(
-                                id = id,
-                                name = data.first,
-                                primaryImageUrl = data.second,
-                                itemCount = data.third,
-                            )
-                        }
-                        .sortedByDescending { it.itemCount }
-
-                sortedStudios.take(limit ?: 15)
+                    .filter { it.itemCount >= 5 && it.primaryImageUrl != null }
+                    .sortedByDescending { it.itemCount }
+                    .take(limit ?: 15)
+                    .also { Timber.d("Returning ${it.size} studios after filtering") }
             } catch (e: ApiClientException) {
                 Timber.e(e, "API error getting studios: ${e.message}")
                 emptyList()

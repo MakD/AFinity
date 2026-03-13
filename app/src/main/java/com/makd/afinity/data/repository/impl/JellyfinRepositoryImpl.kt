@@ -28,6 +28,8 @@ import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.library.FilterType
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -405,9 +407,11 @@ constructor(
         seasonId: UUID,
         seriesId: UUID,
         fields: List<ItemFields>?,
+        startIndex: Int,
+        limit: Int?,
     ): List<AfinityEpisode> {
         return try {
-            mediaRepository.getEpisodes(seasonId, seriesId, fields)
+            mediaRepository.getEpisodes(seasonId, seriesId, fields, startIndex, limit)
         } catch (e: Exception) {
             Timber.e(e, "Failed to get episodes for season: $seasonId")
             emptyList()
@@ -597,19 +601,28 @@ constructor(
             val seasons = getSeasons(seriesId, SortBy.NAME, sortDescending = false)
             if (seasons.isEmpty()) return null
 
-            val sortedSeasons = seasons.sortedBy { it.indexNumber ?: 0 }
+            val sortedSeasons = seasons.sortedBy { it.indexNumber }
+            val episodesBySeason = coroutineScope {
+                sortedSeasons
+                    .map { season ->
+                        season to
+                            async {
+                                getEpisodes(
+                                        season.id,
+                                        seriesId,
+                                        fields = FieldSets.PLAYABLE_EPISODE,
+                                    )
+                                    .sortedBy { it.indexNumber }
+                            }
+                    }
+                    .map { (season, deferred) -> season to deferred.await() }
+            }
+
             var firstEpisodeOfSeries: AfinityEpisode? = null
-
-            for (season in sortedSeasons) {
-                val episodes = getEpisodes(season.id, seriesId, fields = FieldSets.PLAYABLE_EPISODE)
+            for ((_, episodes) in episodesBySeason) {
                 if (episodes.isEmpty()) continue
-
-                val sortedEpisodes = episodes.sortedBy { it.indexNumber ?: 0 }
-                if (firstEpisodeOfSeries == null) {
-                    firstEpisodeOfSeries = sortedEpisodes.firstOrNull()
-                }
-
-                val nextEpisode = sortedEpisodes.firstOrNull { !it.played }
+                if (firstEpisodeOfSeries == null) firstEpisodeOfSeries = episodes.firstOrNull()
+                val nextEpisode = episodes.firstOrNull { !it.played }
                 if (nextEpisode != null) return nextEpisode
             }
             return firstEpisodeOfSeries
@@ -659,27 +672,11 @@ constructor(
     ): AfinityEpisode? {
         return try {
             Timber.d("Getting episode to play for season: $seasonId")
-            try {
-                val nextUpEpisodes =
-                    mediaRepository.getNextUp(
-                        seriesId = seriesId,
-                        limit = 50,
-                        fields = FieldSets.PLAYABLE_EPISODE,
-                    )
-                val nextUpForSeason = nextUpEpisodes.firstOrNull { it.seasonId == seasonId }
-                if (nextUpForSeason != null) {
-                    Timber.d("Found NextUp episode: ${nextUpEpisodes.first().name}")
-                    return nextUpForSeason
-                }
-            } catch (e: Exception) {
-                Timber.w(e, "NextUp API failed for season fallback")
-            }
-            Timber.d("Fallback to manual logic")
             val episodes = getEpisodes(seasonId, seriesId, fields = FieldSets.PLAYABLE_EPISODE)
             if (episodes.isEmpty()) return null
 
-            val sortedEpisodes = episodes.sortedBy { it.indexNumber ?: 0 }
-            return sortedEpisodes.firstOrNull { !it.played } ?: sortedEpisodes.firstOrNull()
+            val sortedEpisodes = episodes.sortedBy { it.indexNumber }
+            sortedEpisodes.firstOrNull { !it.played } ?: sortedEpisodes.firstOrNull()
         } catch (e: Exception) {
             Timber.e(e, "Failed to determine episode to play for season: $seasonId")
             null

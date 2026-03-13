@@ -131,6 +131,8 @@ interface MediaRepository {
         seasonId: UUID,
         seriesId: UUID? = null,
         fields: List<ItemFields>? = null,
+        startIndex: Int = 0,
+        limit: Int? = null,
     ): List<AfinityEpisode>
 
     suspend fun getFavoriteShows(fields: List<ItemFields>? = null): List<AfinityShow>
