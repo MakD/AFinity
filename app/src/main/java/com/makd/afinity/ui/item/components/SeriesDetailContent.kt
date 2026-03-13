@@ -123,7 +123,12 @@ internal fun SeasonsSection(
                 SeasonCard(
                     season = season,
                     onClick = {
-                        val route = Destination.createItemDetailRoute(season.id.toString())
+                        val route =
+                            Destination.createEpisodeListRoute(
+                                seasonId = season.id.toString(),
+                                seasonName = season.name,
+                                seriesId = season.seriesId.toString(),
+                            )
                         navController.navigate(route)
                     },
                     cardWidth = cardWidth,

@@ -618,7 +618,11 @@ fun HomeScreen(
         LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
             if (selectedEpisode == null && pendingNavigationSeriesId != null) {
                 delay(300)
-                val route = Destination.createItemDetailRoute(pendingNavigationSeriesId!!)
+                val route =
+                    Destination.createItemDetailRoute(
+                        itemId = pendingNavigationSeriesId!!,
+                        itemType = "Series",
+                    )
                 navController.navigate(route)
                 pendingNavigationSeriesId = null
             }

@@ -49,7 +49,7 @@ fun RequestsScreen(
     modifier: Modifier = Modifier,
     viewModel: RequestsViewModel = hiltViewModel(),
     onNavigateToFilteredMedia: (FilterParams) -> Unit = {},
-    onItemClick: (jellyfinItemId: String) -> Unit = {},
+    onItemClick: (jellyfinItemId: String, itemType: String?) -> Unit = { _, _ -> },
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -141,7 +141,13 @@ fun RequestsScreen(
                                     onItemClick = { item ->
                                         if (item.mediaInfo?.isFullyAvailable() == true) {
                                             item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                                onItemClick(jellyfinId)
+                                                val mappedType =
+                                                    when (item.mediaType.lowercase()) {
+                                                        "tv" -> "Series"
+                                                        "movie" -> "Movie"
+                                                        else -> null
+                                                    }
+                                                onItemClick(jellyfinId, mappedType)
                                             }
                                         } else {
                                             item.getMediaType()?.let { mediaType ->
@@ -179,7 +185,13 @@ fun RequestsScreen(
                                     onItemClick = { item ->
                                         if (item.mediaInfo?.isFullyAvailable() == true) {
                                             item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                                onItemClick(jellyfinId)
+                                                val mappedType =
+                                                    when (item.mediaType.lowercase()) {
+                                                        "tv" -> "Series"
+                                                        "movie" -> "Movie"
+                                                        else -> null
+                                                    }
+                                                onItemClick(jellyfinId, mappedType)
                                             }
                                         } else {
                                             item.getMediaType()?.let { mediaType ->
@@ -237,7 +249,13 @@ fun RequestsScreen(
                                     onItemClick = { item ->
                                         if (item.mediaInfo?.isFullyAvailable() == true) {
                                             item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                                onItemClick(jellyfinId)
+                                                val mappedType =
+                                                    when (item.mediaType.lowercase()) {
+                                                        "tv" -> "Series"
+                                                        "movie" -> "Movie"
+                                                        else -> null
+                                                    }
+                                                onItemClick(jellyfinId, mappedType)
                                             }
                                         } else {
                                             item.getMediaType()?.let { mediaType ->
@@ -292,7 +310,13 @@ fun RequestsScreen(
                                     onItemClick = { item ->
                                         if (item.mediaInfo?.isFullyAvailable() == true) {
                                             item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                                onItemClick(jellyfinId)
+                                                val mappedType =
+                                                    when (item.mediaType.lowercase()) {
+                                                        "tv" -> "Series"
+                                                        "movie" -> "Movie"
+                                                        else -> null
+                                                    }
+                                                onItemClick(jellyfinId, mappedType)
                                             }
                                         } else {
                                             item.getMediaType()?.let { mediaType ->
@@ -349,7 +373,13 @@ fun RequestsScreen(
                                     onItemClick = { item ->
                                         if (item.mediaInfo?.isFullyAvailable() == true) {
                                             item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                                onItemClick(jellyfinId)
+                                                val mappedType =
+                                                    when (item.mediaType.lowercase()) {
+                                                        "tv" -> "Series"
+                                                        "movie" -> "Movie"
+                                                        else -> null
+                                                    }
+                                                onItemClick(jellyfinId, mappedType)
                                             }
                                         } else {
                                             item.getMediaType()?.let { mediaType ->

@@ -35,6 +35,8 @@ object FieldSets {
             ItemFields.RECURSIVE_ITEM_COUNT,
         )
 
+    val PLAYABLE_EPISODE = listOf(ItemFields.MEDIA_SOURCES, ItemFields.MEDIA_STREAMS)
+
     val ITEM_DETAIL =
         listOf(
             ItemFields.OVERVIEW,

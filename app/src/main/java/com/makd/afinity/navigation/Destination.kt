@@ -54,7 +54,7 @@ enum class Destination(
     companion object {
         const val LIBRARY_CONTENT_ROUTE = "library_content/{libraryId}/{libraryName}"
         const val STUDIO_CONTENT_ROUTE = "studio_content/{studioName}"
-        const val ITEM_DETAIL_ROUTE = "item_detail/{itemId}"
+        const val ITEM_DETAIL_ROUTE = "item_detail/{itemId}?itemType={itemType}&seriesId={seriesId}"
         const val EPISODE_LIST_ROUTE = "episodes/{seasonId}/{seasonName}"
         const val PERSON_ROUTE = "person/{personId}"
         const val SEARCH_ROUTE = "search"
@@ -87,7 +87,6 @@ enum class Destination(
         fun createAudiobookshelfLibrariesRoute(): String {
             return AUDIOBOOKSHELF_LIBRARIES_ROUTE
         }
-
 
         fun createAudiobookshelfItemRoute(itemId: String): String {
             return "audiobookshelf/item/$itemId"
@@ -156,12 +155,28 @@ enum class Destination(
             return "studio_content/${studioName.replace("/", "%2F")}"
         }
 
-        fun createItemDetailRoute(itemId: String): String {
-            return "item_detail/$itemId"
+        fun createItemDetailRoute(
+            itemId: String,
+            itemType: String? = null,
+            seriesId: String? = null,
+        ): String {
+            val params = buildList {
+                if (itemType != null) add("itemType=$itemType")
+                if (seriesId != null) add("seriesId=$seriesId")
+            }
+            return if (params.isNotEmpty()) {
+                "item_detail/$itemId?${params.joinToString("&")}"
+            } else {
+                "item_detail/$itemId"
+            }
         }
 
-        fun createEpisodeListRoute(seasonId: String, seasonName: String): String {
-            return createItemDetailRoute(seasonId)
+        fun createEpisodeListRoute(seasonId: String, seasonName: String, seriesId: String): String {
+            return createItemDetailRoute(
+                itemId = seasonId,
+                itemType = "Season",
+                seriesId = seriesId,
+            )
         }
 
         fun createSearchRoute(): String {

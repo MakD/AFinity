@@ -55,7 +55,7 @@ fun FilteredMediaScreen(
     onSearchClick: () -> Unit,
     onProfileClick: () -> Unit,
     mainUiState: MainUiState,
-    onItemClick: (jellyfinItemId: String) -> Unit,
+    onItemClick: (jellyfinItemId: String, itemType: String?) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: FilteredMediaViewModel = hiltViewModel(),
     requestsViewModel: RequestsViewModel = hiltViewModel(),
@@ -131,7 +131,13 @@ fun FilteredMediaScreen(
                             onClick = {
                                 if (item.mediaInfo?.isFullyAvailable() == true) {
                                     item.mediaInfo?.getJellyfinItemId()?.let { jellyfinId ->
-                                        onItemClick(jellyfinId)
+                                        val mappedType =
+                                            when (item.mediaType.lowercase()) {
+                                                "tv" -> "Series"
+                                                "movie" -> "Movie"
+                                                else -> null
+                                            }
+                                        onItemClick(jellyfinId, mappedType)
                                     }
                                 } else {
                                     item.getMediaType()?.let { mediaType ->
@@ -192,8 +198,9 @@ fun FilteredMediaScreen(
             can4k = currentUser?.hasPermission(Permissions.REQUEST_4K) == true,
             is4k = requestsUiState.is4kRequested,
             onIs4kChange = { requestsViewModel.setIs4kRequested(it) },
-            canAdvanced = currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true ||
-                currentUser?.hasPermission(Permissions.MANAGE_REQUESTS) == true,
+            canAdvanced =
+                currentUser?.hasPermission(Permissions.REQUEST_ADVANCED) == true ||
+                    currentUser?.hasPermission(Permissions.MANAGE_REQUESTS) == true,
             availableServers = requestsUiState.availableServers,
             selectedServer = requestsUiState.selectedServer,
             onServerSelected = { requestsViewModel.selectServer(it) },

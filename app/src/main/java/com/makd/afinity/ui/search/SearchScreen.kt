@@ -42,8 +42,11 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,6 +85,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
+import kotlinx.coroutines.delay
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -115,6 +119,7 @@ fun SearchScreen(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     LocalFocusManager.current
+    var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier =
@@ -363,9 +368,16 @@ fun SearchScreen(
                 onCancelDownload = { viewModel.cancelDownload() },
                 onGoToSeries = {
                     viewModel.clearSelectedEpisode()
-                    episode.seriesId?.let { seriesId -> onSeriesClick(seriesId.toString()) }
+                    pendingNavigationSeriesId = episode.seriesId?.toString()
                 },
             )
+        }
+        LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
+            if (selectedEpisode == null && pendingNavigationSeriesId != null) {
+                delay(300)
+                onSeriesClick(pendingNavigationSeriesId!!)
+                pendingNavigationSeriesId = null
+            }
         }
     }
 }

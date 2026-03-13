@@ -20,6 +20,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
+import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.person.components.PersonDetailContent
 
 @Composable
@@ -66,7 +69,20 @@ fun PersonScreen(
                     person = uiState.person!!,
                     movies = uiState.movies,
                     shows = uiState.shows,
-                    onItemClick = { item -> navController.navigate("item_detail/${item.id}") },
+                    onItemClick = { item ->
+                        val route =
+                            Destination.createItemDetailRoute(
+                                itemId = item.id.toString(),
+                                itemType =
+                                    when (item) {
+                                        is AfinityShow -> "Series"
+                                        is AfinitySeason -> "Season"
+                                        else -> null
+                                    },
+                                seriesId = (item as? AfinitySeason)?.seriesId?.toString(),
+                            )
+                        navController.navigate(route)
+                    },
                     onToggleFavorite = { viewModel.toggleFavorite() },
                     widthSizeClass = widthSizeClass,
                 )

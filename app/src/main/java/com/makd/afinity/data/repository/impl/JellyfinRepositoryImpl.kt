@@ -579,62 +579,40 @@ constructor(
     override suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode? {
         return try {
             Timber.d("Getting episode to play for series: $seriesId")
-
             try {
                 val nextUpEpisodes =
                     mediaRepository.getNextUp(
                         seriesId = seriesId,
                         limit = 1,
-                        fields = FieldSets.ITEM_DETAIL,
-                        enableResumable = false,
+                        fields = FieldSets.PLAYABLE_EPISODE,
                     )
                 if (nextUpEpisodes.isNotEmpty()) {
-                    Timber.d("Found next up episode: ${nextUpEpisodes.first().name}")
+                    Timber.d("Found NextUp episode: ${nextUpEpisodes.first().name}")
                     return nextUpEpisodes.first()
                 }
             } catch (e: Exception) {
-                Timber.w(e, "NextUp API failed, falling back to manual logic")
+                Timber.w(e, "NextUp API failed")
             }
-
+            Timber.d("Fallback to manual logic")
             val seasons = getSeasons(seriesId, SortBy.NAME, sortDescending = false)
-            if (seasons.isEmpty()) {
-                Timber.w("No seasons found for series: $seriesId")
-                return null
-            }
+            if (seasons.isEmpty()) return null
 
             val sortedSeasons = seasons.sortedBy { it.indexNumber ?: 0 }
+            var firstEpisodeOfSeries: AfinityEpisode? = null
 
-            val allEpisodes = mutableListOf<AfinityEpisode>()
             for (season in sortedSeasons) {
-                val episodes = getEpisodes(season.id, seriesId, fields = FieldSets.ITEM_DETAIL)
-                allEpisodes.addAll(episodes)
+                val episodes = getEpisodes(season.id, seriesId, fields = FieldSets.PLAYABLE_EPISODE)
+                if (episodes.isEmpty()) continue
+
+                val sortedEpisodes = episodes.sortedBy { it.indexNumber ?: 0 }
+                if (firstEpisodeOfSeries == null) {
+                    firstEpisodeOfSeries = sortedEpisodes.firstOrNull()
+                }
+
+                val nextEpisode = sortedEpisodes.firstOrNull { !it.played }
+                if (nextEpisode != null) return nextEpisode
             }
-
-            if (allEpisodes.isEmpty()) {
-                Timber.w("No episodes found for series: $seriesId")
-                return null
-            }
-
-            val sortedEpisodes =
-                allEpisodes.sortedWith(
-                    compareBy<AfinityEpisode> { it.parentIndexNumber ?: 0 }
-                        .thenBy { it.indexNumber ?: 0 }
-                )
-
-            val nextEpisode = sortedEpisodes.firstOrNull { !it.played }
-            if (nextEpisode != null) {
-                Timber.d("Found next unwatched episode: ${nextEpisode.name}")
-                return nextEpisode
-            }
-
-            val firstEpisode = sortedEpisodes.firstOrNull()
-            if (firstEpisode != null) {
-                Timber.d("All episodes watched, returning first episode: ${firstEpisode.name}")
-                return firstEpisode
-            }
-
-            Timber.w("No episode found to play for series: $seriesId")
-            null
+            return firstEpisodeOfSeries
         } catch (e: Exception) {
             Timber.e(e, "Failed to determine episode to play for series: $seriesId")
             null
@@ -681,48 +659,27 @@ constructor(
     ): AfinityEpisode? {
         return try {
             Timber.d("Getting episode to play for season: $seasonId")
-
             try {
                 val nextUpEpisodes =
                     mediaRepository.getNextUp(
                         seriesId = seriesId,
-                        limit = 10,
-                        fields = FieldSets.ITEM_DETAIL,
-                        enableResumable = false,
+                        limit = 50,
+                        fields = FieldSets.PLAYABLE_EPISODE,
                     )
                 val nextUpForSeason = nextUpEpisodes.firstOrNull { it.seasonId == seasonId }
                 if (nextUpForSeason != null) {
-                    Timber.d("Found next up episode for season: ${nextUpForSeason.name}")
+                    Timber.d("Found NextUp episode: ${nextUpEpisodes.first().name}")
                     return nextUpForSeason
                 }
             } catch (e: Exception) {
-                Timber.w(e, "NextUp API failed for season")
+                Timber.w(e, "NextUp API failed for season fallback")
             }
-
-            val episodes = getEpisodes(seasonId, seriesId, fields = FieldSets.ITEM_DETAIL)
-            if (episodes.isEmpty()) {
-                Timber.w("No episodes found for season: $seasonId")
-                return null
-            }
+            Timber.d("Fallback to manual logic")
+            val episodes = getEpisodes(seasonId, seriesId, fields = FieldSets.PLAYABLE_EPISODE)
+            if (episodes.isEmpty()) return null
 
             val sortedEpisodes = episodes.sortedBy { it.indexNumber ?: 0 }
-
-            val nextEpisode = sortedEpisodes.firstOrNull { !it.played }
-            if (nextEpisode != null) {
-                Timber.d("Found next unwatched episode in season: ${nextEpisode.name}")
-                return nextEpisode
-            }
-
-            val firstEpisode = sortedEpisodes.firstOrNull()
-            if (firstEpisode != null) {
-                Timber.d(
-                    "All episodes watched in season, returning first episode: ${firstEpisode.name}"
-                )
-                return firstEpisode
-            }
-
-            Timber.w("No episode found to play for season: $seasonId")
-            null
+            return sortedEpisodes.firstOrNull { !it.played } ?: sortedEpisodes.firstOrNull()
         } catch (e: Exception) {
             Timber.e(e, "Failed to determine episode to play for season: $seasonId")
             null

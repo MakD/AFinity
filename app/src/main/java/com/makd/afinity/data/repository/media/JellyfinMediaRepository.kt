@@ -32,6 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -96,10 +97,10 @@ constructor(
 
                     if (freshItem is AfinityEpisode) {
                         updateEpisodeInNextUpCache(freshItem)
-                        freshItem.seriesId?.let { seriesId ->
+                        freshItem.seriesId.let { seriesId ->
                             launch {
                                 try {
-                                    kotlinx.coroutines.delay(500)
+                                    delay(500)
                                     val seriesItem =
                                         userLibraryApi
                                             .getItem(userId = userId, itemId = seriesId)
@@ -153,7 +154,7 @@ constructor(
                     Timber.d("Updated item in cache: ${updatedItem.name}")
                 }
             }
-            if (updatedItem is AfinityEpisode && updatedItem.seriesId != null) {
+            if (updatedItem is AfinityEpisode) {
                 val parentSeriesIndex =
                     newList.indexOfFirst { it is AfinityShow && it.id == updatedItem.seriesId }
 
@@ -647,9 +648,7 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityMovie(getBaseUrl())
-                }
+                response.content.items.map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get movies")
                 emptyList()
@@ -690,9 +689,7 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityMovie(getBaseUrl())
-                }
+                response.content.items.map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get movies for genre: $genre")
                 emptyList()
@@ -733,9 +730,7 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityShow(getBaseUrl())
-                }
+                response.content.items.map { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get shows for genre: $genre")
                 emptyList()
@@ -789,9 +784,7 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityShow(getBaseUrl())
-                }
+                response.content.items.map { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get shows")
                 emptyList()
@@ -817,9 +810,7 @@ constructor(
                         enableImages = true,
                         enableUserData = true,
                     )
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinitySeason(getBaseUrl())
-                }
+                response.content.items.map { baseItem -> baseItem.toAfinitySeason(getBaseUrl()) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get seasons")
                 emptyList()
@@ -884,9 +875,7 @@ constructor(
                         enableUserData = true,
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityMovie(getBaseUrl())
-                }
+                response.content.items.map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite episodes")
                 emptyList()
@@ -913,9 +902,7 @@ constructor(
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
 
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityShow(getBaseUrl())
-                }
+                response.content.items.map { baseItem -> baseItem.toAfinityShow(getBaseUrl()) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite episodes")
                 emptyList()
@@ -970,9 +957,7 @@ constructor(
                         enableUserData = true,
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinitySeason(getBaseUrl())
-                }
+                response.content.items.map { baseItem -> baseItem.toAfinitySeason(getBaseUrl()) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite seasons")
                 emptyList()
@@ -998,9 +983,7 @@ constructor(
                         enableUserData = true,
                         sortBy = listOf(ItemSortBy.SORT_NAME),
                     )
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityBoxSet(getBaseUrl())
-                }
+                response.content.items.map { baseItem -> baseItem.toAfinityBoxSet(getBaseUrl()) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get favorite box sets")
                 emptyList()
@@ -1025,7 +1008,7 @@ constructor(
                         enableUserData = true,
                     )
 
-                response.content.items.mapNotNull { baseItem ->
+                response.content.items.map { baseItem ->
                     baseItem.toAfinityPersonDetail(getBaseUrl())
                 }
             } catch (e: Exception) {
@@ -1237,9 +1220,7 @@ constructor(
                         recursive = true,
                     )
 
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityMovie(getBaseUrl())
-                }
+                response.content.items.map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get movies with people at index: $startIndex")
                 emptyList()
@@ -1268,7 +1249,7 @@ constructor(
 
                 response.content.items
                     .filter { it.id != movieId }
-                    .mapNotNull { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
+                    .map { baseItem -> baseItem.toAfinityMovie(getBaseUrl()) }
                     .shuffled()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get similar movies for ID: $movieId")
@@ -1574,7 +1555,7 @@ constructor(
                     )
 
                 val boxSets =
-                    boxSetsResponse.content.items.mapNotNull { boxSetDto ->
+                    boxSetsResponse.content.items.map { boxSetDto ->
                         boxSetDto.toAfinityBoxSet(getBaseUrl())
                     }
 

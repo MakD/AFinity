@@ -40,6 +40,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.models.media.AfinitySeason
+import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
@@ -266,7 +268,17 @@ fun MainNavigation(
                                 HomeScreen(
                                     onItemClick = { item ->
                                         val route =
-                                            Destination.createItemDetailRoute(item.id.toString())
+                                            Destination.createItemDetailRoute(
+                                                itemId = item.id.toString(),
+                                                itemType =
+                                                    when (item) {
+                                                        is AfinityShow -> "Series"
+                                                        is AfinitySeason -> "Season"
+                                                        else -> null
+                                                    },
+                                                seriesId =
+                                                    (item as? AfinitySeason)?.seriesId?.toString(),
+                                            )
                                         navController.navigate(route)
                                     },
                                     onPlayClick = { item ->
@@ -343,7 +355,17 @@ fun MainNavigation(
                                 LibraryContentScreen(
                                     onItemClick = { item ->
                                         val route =
-                                            Destination.createItemDetailRoute(item.id.toString())
+                                            Destination.createItemDetailRoute(
+                                                itemId = item.id.toString(),
+                                                itemType =
+                                                    when (item) {
+                                                        is AfinityShow -> "Series"
+                                                        is AfinitySeason -> "Season"
+                                                        else -> null
+                                                    },
+                                                seriesId =
+                                                    (item as? AfinitySeason)?.seriesId?.toString(),
+                                            )
                                         navController.navigate(route)
                                     },
                                     onProfileClick = {
@@ -364,7 +386,17 @@ fun MainNavigation(
                                 LibraryContentScreen(
                                     onItemClick = { item ->
                                         val route =
-                                            Destination.createItemDetailRoute(item.id.toString())
+                                            Destination.createItemDetailRoute(
+                                                itemId = item.id.toString(),
+                                                itemType =
+                                                    when (item) {
+                                                        is AfinityShow -> "Series"
+                                                        is AfinitySeason -> "Season"
+                                                        else -> null
+                                                    },
+                                                seriesId =
+                                                    (item as? AfinitySeason)?.seriesId?.toString(),
+                                            )
                                         navController.navigate(route)
                                     },
                                     onProfileClick = {
@@ -380,7 +412,19 @@ fun MainNavigation(
                             composable(
                                 route = Destination.ITEM_DETAIL_ROUTE,
                                 arguments =
-                                    listOf(navArgument("itemId") { type = NavType.StringType }),
+                                    listOf(
+                                        navArgument("itemId") { type = NavType.StringType },
+                                        navArgument("itemType") {
+                                            type = NavType.StringType
+                                            nullable = true
+                                            defaultValue = null
+                                        },
+                                        navArgument("seriesId") {
+                                            type = NavType.StringType
+                                            nullable = true
+                                            defaultValue = null
+                                        },
+                                    ),
                             ) {
                                 ItemDetailScreen(
                                     navController = navController,
@@ -444,7 +488,17 @@ fun MainNavigation(
                                 FavoritesScreen(
                                     onItemClick = { item ->
                                         val route =
-                                            Destination.createItemDetailRoute(item.id.toString())
+                                            Destination.createItemDetailRoute(
+                                                itemId = item.id.toString(),
+                                                itemType =
+                                                    when (item) {
+                                                        is AfinityShow -> "Series"
+                                                        is AfinitySeason -> "Season"
+                                                        else -> null
+                                                    },
+                                                seriesId =
+                                                    (item as? AfinitySeason)?.seriesId?.toString(),
+                                            )
                                         navController.navigate(route)
                                     },
                                     onPersonClick = { personId ->
@@ -462,7 +516,17 @@ fun MainNavigation(
                                 WatchlistScreen(
                                     onItemClick = { item ->
                                         val route =
-                                            Destination.createItemDetailRoute(item.id.toString())
+                                            Destination.createItemDetailRoute(
+                                                itemId = item.id.toString(),
+                                                itemType =
+                                                    when (item) {
+                                                        is AfinityShow -> "Series"
+                                                        is AfinitySeason -> "Season"
+                                                        else -> null
+                                                    },
+                                                seriesId =
+                                                    (item as? AfinitySeason)?.seriesId?.toString(),
+                                            )
                                         navController.navigate(route)
                                     },
                                     modifier = Modifier.fillMaxSize(),
@@ -491,9 +555,12 @@ fun MainNavigation(
                                             )
                                         navController.navigate(route)
                                     },
-                                    onItemClick = { jellyfinItemId ->
+                                    onItemClick = { jellyfinItemId, itemType ->
                                         val route =
-                                            Destination.createItemDetailRoute(jellyfinItemId)
+                                            Destination.createItemDetailRoute(
+                                                itemId = jellyfinItemId,
+                                                itemType = itemType,
+                                            )
                                         navController.navigate(route)
                                     },
                                     modifier = Modifier.fillMaxSize(),
@@ -542,9 +609,12 @@ fun MainNavigation(
                                         navController.navigate(route)
                                     },
                                     mainUiState = mainUiState,
-                                    onItemClick = { jellyfinItemId ->
+                                    onItemClick = { jellyfinItemId, itemType ->
                                         val route =
-                                            Destination.createItemDetailRoute(jellyfinItemId)
+                                            Destination.createItemDetailRoute(
+                                                itemId = jellyfinItemId,
+                                                itemType = itemType,
+                                            )
                                         navController.navigate(route)
                                     },
                                     modifier = Modifier.fillMaxSize(),
@@ -557,11 +627,25 @@ fun MainNavigation(
                                     onBackClick = { navController.popBackStack() },
                                     onItemClick = { item ->
                                         val route =
-                                            Destination.createItemDetailRoute(item.id.toString())
+                                            Destination.createItemDetailRoute(
+                                                itemId = item.id.toString(),
+                                                itemType =
+                                                    when (item) {
+                                                        is AfinityShow -> "Series"
+                                                        is AfinitySeason -> "Season"
+                                                        else -> null
+                                                    },
+                                                seriesId =
+                                                    (item as? AfinitySeason)?.seriesId?.toString(),
+                                            )
                                         navController.navigate(route)
                                     },
                                     onSeriesClick = { seriesId ->
-                                        val route = Destination.createItemDetailRoute(seriesId)
+                                        val route =
+                                            Destination.createItemDetailRoute(
+                                                itemId = seriesId,
+                                                itemType = "Series",
+                                            )
                                         navController.navigate(route)
                                     },
                                     onGenreClick = { genre ->
@@ -593,7 +677,17 @@ fun MainNavigation(
                                     onBackClick = { navController.popBackStack() },
                                     onItemClick = { item ->
                                         val route =
-                                            Destination.createItemDetailRoute(item.id.toString())
+                                            Destination.createItemDetailRoute(
+                                                itemId = item.id.toString(),
+                                                itemType =
+                                                    when (item) {
+                                                        is AfinityShow -> "Series"
+                                                        is AfinitySeason -> "Season"
+                                                        else -> null
+                                                    },
+                                                seriesId =
+                                                    (item as? AfinitySeason)?.seriesId?.toString(),
+                                            )
                                         navController.navigate(route)
                                     },
                                     modifier = Modifier.fillMaxSize(),

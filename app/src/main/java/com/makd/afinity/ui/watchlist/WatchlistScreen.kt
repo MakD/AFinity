@@ -14,6 +14,9 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -35,6 +38,7 @@ import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
+import kotlinx.coroutines.delay
 
 @Composable
 fun WatchlistScreen(
@@ -53,6 +57,7 @@ fun WatchlistScreen(
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+    var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) { viewModel.loadWatchlist() }
 
@@ -171,10 +176,20 @@ fun WatchlistScreen(
             onCancelDownload = { viewModel.cancelDownload() },
             onGoToSeries = {
                 viewModel.clearSelectedEpisode()
-                episode.seriesId?.let { seriesId ->
-                    navController.navigate(Destination.createItemDetailRoute(seriesId.toString()))
-                }
+                pendingNavigationSeriesId = episode.seriesId?.toString()
             },
         )
+    }
+    LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
+        if (selectedEpisode == null && pendingNavigationSeriesId != null) {
+            delay(300)
+            val route =
+                Destination.createItemDetailRoute(
+                    itemId = pendingNavigationSeriesId!!,
+                    itemType = "Series",
+                )
+            navController.navigate(route)
+            pendingNavigationSeriesId = null
+        }
     }
 }

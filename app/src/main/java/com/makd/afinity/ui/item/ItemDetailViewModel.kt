@@ -88,6 +88,16 @@ constructor(
                 ?: throw IllegalArgumentException("itemId is required")
         )
 
+    private val itemType: String? = savedStateHandle.get<String>("itemType")
+    private val seriesId: UUID? =
+        savedStateHandle.get<String>("seriesId")?.let {
+            try {
+                UUID.fromString(it)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
     private val _episodesPagingData = MutableStateFlow<Flow<PagingData<AfinityEpisode>>?>(null)
     private val _episodeStatusUpdates = MutableStateFlow<Map<UUID, Boolean>>(emptyMap())
     private var bulkDownloadJob: Job? = null
@@ -520,6 +530,12 @@ constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 val isOffline = offlineModeManager.isCurrentlyOffline()
+                if (
+                    !isOffline &&
+                        (itemType?.uppercase() == "SERIES" || itemType?.uppercase() == "SEASON")
+                ) {
+                    fetchNextUp()
+                }
                 val item =
                     if (isOffline) {
                         loadItemFromDatabase()
@@ -621,6 +637,28 @@ constructor(
                         isLoading = false,
                         error = "Failed to load item: ${e.message}",
                     )
+            }
+        }
+    }
+
+    private fun fetchNextUp() {
+        viewModelScope.launch {
+            try {
+                val nextEp =
+                    when (itemType?.uppercase()) {
+                        "SERIES" -> jellyfinRepository.getEpisodeToPlay(itemId)
+                        "SEASON" -> {
+                            if (seriesId != null)
+                                jellyfinRepository.getEpisodeToPlayForSeason(itemId, seriesId)
+                            else null
+                        }
+                        else -> null
+                    }
+                if (nextEp != null) {
+                    _uiState.update { it.copy(nextEpisode = nextEp) }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to fetch parallel next episode")
             }
         }
     }
@@ -740,14 +778,6 @@ constructor(
                 is AfinityShow -> {
                     launch {
                         try {
-                            val nextEp = jellyfinRepository.getEpisodeToPlay(item.id)
-                            _uiState.update { it.copy(nextEpisode = nextEp) }
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to get next episode")
-                        }
-                    }
-                    launch {
-                        try {
                             val similar = jellyfinRepository.getSimilarItems(itemId)
                             _uiState.update { it.copy(similarItems = similar) }
                         } catch (e: Exception) {
@@ -775,15 +805,6 @@ constructor(
                     }
                 }
                 is AfinitySeason -> {
-                    launch {
-                        try {
-                            val nextEp =
-                                jellyfinRepository.getEpisodeToPlayForSeason(item.id, item.seriesId)
-                            _uiState.update { it.copy(nextEpisode = nextEp) }
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to get next episode for season")
-                        }
-                    }
                     launch {
                         try {
                             val isCurrentlyOffline = offlineModeManager.isCurrentlyOffline()

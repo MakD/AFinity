@@ -114,6 +114,7 @@ fun ItemDetailScreen(
     var pendingPlayItem by remember { mutableStateOf<AfinityItem?>(null) }
     var pendingPlaySelection by remember { mutableStateOf<PlaybackSelection?>(null) }
     var showVersionPickerForPlay by remember { mutableStateOf(false) }
+    var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
     fun interceptPlayClick(item: AfinityItem, selection: PlaybackSelection?) {
         val remoteSources =
@@ -180,7 +181,17 @@ fun ItemDetailScreen(
                         if (item is AfinityEpisode) {
                             viewModel.selectEpisode(item)
                         } else {
-                            val route = Destination.createItemDetailRoute(item.id.toString())
+                            val route =
+                                Destination.createItemDetailRoute(
+                                    itemId = item.id.toString(),
+                                    itemType =
+                                        when (item) {
+                                            is AfinityShow -> "Series"
+                                            is AfinitySeason -> "Season"
+                                            else -> null
+                                        },
+                                    seriesId = (item as? AfinitySeason)?.seriesId?.toString(),
+                                )
                             navController.navigate(route)
                         }
                     },
@@ -229,7 +240,27 @@ fun ItemDetailScreen(
                 onPauseDownload = { viewModel.pauseDownload() },
                 onResumeDownload = { viewModel.resumeDownload() },
                 onCancelDownload = { viewModel.cancelDownload() },
+                onGoToSeries =
+                    if (uiState.item !is AfinityShow && uiState.item !is AfinitySeason) {
+                        {
+                            viewModel.clearSelectedEpisode()
+                            pendingNavigationSeriesId = episode.seriesId.toString()
+                        }
+                    } else null,
             )
+        }
+
+        LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
+            if (selectedEpisode == null && pendingNavigationSeriesId != null) {
+                kotlinx.coroutines.delay(300)
+                val route =
+                    Destination.createItemDetailRoute(
+                        itemId = pendingNavigationSeriesId!!,
+                        itemType = "Series",
+                    )
+                navController.navigate(route)
+                pendingNavigationSeriesId = null
+            }
         }
 
         if (uiState.showQualityDialog) {
@@ -802,7 +833,18 @@ private fun TypeSpecificContent(
         SimilarItemsSection(
             items = similarItems,
             onItemClick = { sim ->
-                navController.navigate(Destination.createItemDetailRoute(sim.id.toString()))
+                val route =
+                    Destination.createItemDetailRoute(
+                        itemId = sim.id.toString(),
+                        itemType =
+                            when (sim) {
+                                is AfinityShow -> "Series"
+                                is AfinitySeason -> "Season"
+                                else -> null
+                            },
+                        seriesId = (sim as? AfinitySeason)?.seriesId?.toString(),
+                    )
+                navController.navigate(route)
             },
             widthSizeClass = widthSizeClass,
         )
