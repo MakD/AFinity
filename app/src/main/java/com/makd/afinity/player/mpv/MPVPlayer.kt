@@ -35,13 +35,13 @@ import androidx.media3.common.util.ListenerSet
 import androidx.media3.common.util.Size
 import androidx.media3.common.util.Util
 import dev.jdtech.mpv.MPVLib
-import java.io.File
-import java.io.FileOutputStream
-import java.util.concurrent.CopyOnWriteArraySet
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import timber.log.Timber
+import java.io.File
+import java.io.FileOutputStream
+import java.util.concurrent.CopyOnWriteArraySet
 
 @androidx.media3.common.util.UnstableApi
 class MPVPlayer(
@@ -541,7 +541,7 @@ class MPVPlayer(
         MPVLib.command(arrayOf("playlist-remove", "current"))
         internalMediaItems = mediaItems
         initialIndex = startIndex
-        initialSeekTo = startPositionMs / 1000
+        initialSeekTo = startPositionMs
     }
 
     override fun addMediaItems(index: Int, mediaItems: MutableList<MediaItem>) {
@@ -667,31 +667,28 @@ class MPVPlayer(
     ) {
         if (mediaItemIndex == currentMediaItemIndex) {
 
-            val seekToSeconds =
-                if (positionMs != C.TIME_UNSET) {
-                    positionMs / C.MILLIS_PER_SECOND
-                } else {
-                    initialSeekTo
-                }
+            val seekTo = if (positionMs != C.TIME_UNSET) positionMs else initialSeekTo
 
             val targetMs =
                 if (positionMs != C.TIME_UNSET) {
                     positionMs
                 } else {
-                    initialSeekTo * 1000
+                    initialSeekTo
                 }
 
             initialSeekTo =
                 if (isPlayerReady) {
-                    MPVLib.command(arrayOf("seek", "$seekToSeconds", "absolute"))
+                    MPVLib.command(
+                        arrayOf("seek", "${seekTo.toDouble().div(C.MILLIS_PER_SECOND)}", "absolute")
+                    )
 
                     currentPositionMs = targetMs
 
-                    Timber.d("MPV seeking to $seekToSeconds seconds")
+                    Timber.d("MPV seeking to $seekTo seconds")
                     0L
                 } else {
-                    Timber.d("MPV not ready, storing initial seek: $seekToSeconds seconds")
-                    seekToSeconds
+                    Timber.d("MPV not ready, storing initial seek: $seekTo seconds")
+                    seekTo
                 }
         } else {
             prepareMediaItem(mediaItemIndex)
