@@ -711,7 +711,7 @@ constructor(
                 if (syncedItem.played) {
                     if (index != -1) mutableList.removeAt(index)
                 } else {
-                    if (index != -1) {
+                    if (index != -1 && syncedItem.playbackPositionTicks > 0) {
                         mutableList.removeAt(index)
                     }
                 }
