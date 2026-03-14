@@ -226,7 +226,7 @@ constructor(
                             val request =
                                 Request.Builder()
                                     .url(tileUrl)
-                                    .header("X-Emby-Token", apiClient.accessToken ?: "")
+                                    .header("Authorization", "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"")
                                     .build()
                             okHttpClient.newCall(request).execute().use { response ->
                                 if (!response.isSuccessful) {

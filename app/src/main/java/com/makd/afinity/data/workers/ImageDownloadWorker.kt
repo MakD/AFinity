@@ -231,7 +231,7 @@ constructor(
         baseName: String,
     ): android.net.Uri? {
         val request =
-            Request.Builder().url(url).header("X-Emby-Token", apiClient.accessToken ?: "").build()
+            Request.Builder().url(url).header("Authorization", "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"").build()
 
         okHttpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {

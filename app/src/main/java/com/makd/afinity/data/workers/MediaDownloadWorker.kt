@@ -226,7 +226,7 @@ constructor(
                     val requestBuilder =
                         Request.Builder()
                             .url(downloadUrl)
-                            .header("X-Emby-Token", apiClient.accessToken ?: "")
+                            .header("Authorization", "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"")
 
                     if (existingFileSize > 0) {
                         requestBuilder.header("Range", "bytes=$existingFileSize-")

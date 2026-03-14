@@ -208,7 +208,7 @@ constructor(
             val request =
                 Request.Builder()
                     .url(subtitleUrl)
-                    .header("X-Emby-Token", apiClient.accessToken ?: "")
+                    .header("Authorization", "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"")
                     .build()
 
             try {
