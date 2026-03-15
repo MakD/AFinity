@@ -93,7 +93,7 @@ constructor(
         savedStateHandle.get<String>("seriesId")?.let {
             try {
                 UUID.fromString(it)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }
@@ -167,10 +167,7 @@ constructor(
                                 if (syncedItem is AfinityEpisode) {
                                     val belongsToSeriesBySeriesId = syncedItem.seriesId == itemId
                                     val belongsToSeriesBySeasonId =
-                                        syncedItem.seasonId != null &&
-                                            _uiState.value.seasons.any {
-                                                it.id == syncedItem.seasonId
-                                            }
+                                        _uiState.value.seasons.any { it.id == syncedItem.seasonId }
                                     isRelated =
                                         (belongsToSeriesBySeriesId ||
                                             syncedItem.seasonId == itemId ||
@@ -390,7 +387,7 @@ constructor(
                                             fields = FieldSets.REFRESH_USER_DATA,
                                         )
                                     season.copy(runtimeTicks = series?.runTimeTicks ?: 0L)
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     season
                                 }
                             } else season
@@ -503,7 +500,7 @@ constructor(
                         fields = FieldSets.MINIMAL,
                     )
                 val items =
-                    response.items?.mapNotNull { baseItem ->
+                    response.items.mapNotNull { baseItem ->
                         val item = baseItem.toAfinityItem(jellyfinRepository.getBaseUrl())
                         if (item is AfinitySeason && item.runtimeTicks == 0L) {
                             try {
@@ -513,11 +510,11 @@ constructor(
                                         fields = FieldSets.MINIMAL,
                                     )
                                 item.copy(runtimeTicks = series?.runTimeTicks ?: 0L)
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 item
                             }
                         } else item
-                    } ?: emptyList()
+                    }
                 _uiState.value = _uiState.value.copy(boxSetItems = items)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load boxset items")
@@ -530,12 +527,10 @@ constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 val isOffline = offlineModeManager.isCurrentlyOffline()
-                if (
-                    !isOffline &&
-                        (itemType?.uppercase() == "SERIES" || itemType?.uppercase() == "SEASON")
-                ) {
-                    fetchNextUp()
+                if (!isOffline) {
+                    launchParallelFetches()
                 }
+
                 val item =
                     if (isOffline) {
                         loadItemFromDatabase()
@@ -561,7 +556,7 @@ constructor(
                                                     fields = FieldSets.REFRESH_USER_DATA,
                                                 )
                                             season.copy(runtimeTicks = series?.runTimeTicks ?: 0L)
-                                        } catch (e: Exception) {
+                                        } catch (_: Exception) {
                                             season
                                         }
                                     } else season
@@ -584,7 +579,12 @@ constructor(
                 _uiState.value = _uiState.value.copy(item = item, isLoading = false)
 
                 if (!isOffline) {
-                    loadAdditionalDetails(item)
+                    if (item is AfinityMovie || item is AfinityShow) {
+                        launch { loadReviewsAndRatings(item) }
+                    }
+                    if (item is AfinityBoxSet) {
+                        loadBoxSetItems(item.id)
+                    }
                 } else {
                     if (item is AfinityMovie || item is AfinityShow) {
                         val cachedMetadata = databaseRepository.getItemMetadata(item.id)
@@ -641,6 +641,115 @@ constructor(
         }
     }
 
+    private fun launchParallelFetches() {
+        when (itemType?.uppercase()) {
+            "SERIES" -> {
+                fetchNextUp()
+                viewModelScope.launch {
+                    try {
+                        val similar = jellyfinRepository.getSimilarItems(itemId)
+                        _uiState.update { it.copy(similarItems = similar) }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to get similar items")
+                    }
+                }
+                viewModelScope.launch {
+                    try {
+                        val seasons = jellyfinRepository.getSeasons(itemId)
+                        _uiState.update { it.copy(seasons = seasons) }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to get seasons")
+                    }
+                }
+                viewModelScope.launch {
+                    try {
+                        getCurrentUserId()?.let { id ->
+                            val features = jellyfinRepository.getSpecialFeatures(itemId, id)
+                            _uiState.update { it.copy(specialFeatures = features) }
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to get special features")
+                    }
+                }
+            }
+            "SEASON" -> {
+                fetchNextUp()
+                if (seriesId != null) {
+                    viewModelScope.launch {
+                        try {
+                            val basePagerFlow =
+                                Pager(
+                                        config =
+                                            PagingConfig(
+                                                pageSize = 50,
+                                                enablePlaceholders = false,
+                                                initialLoadSize = 50,
+                                            )
+                                    ) {
+                                        EpisodesPagingSource(mediaRepository, itemId, seriesId)
+                                    }
+                                    .flow
+                                    .cachedIn(viewModelScope)
+                            val combinedFlow =
+                                combine(
+                                    basePagerFlow,
+                                    _episodeStatusUpdates,
+                                    _seasonWatchStatusOverride,
+                                ) { pagingData, updates, seasonOverride ->
+                                    pagingData.map { episode ->
+                                        val isPlayed =
+                                            updates[episode.id] ?: seasonOverride ?: episode.played
+                                        episode.copy(
+                                            played = isPlayed,
+                                            playbackPositionTicks =
+                                                if (isPlayed && !episode.played) 0L
+                                                else episode.playbackPositionTicks,
+                                        )
+                                    }
+                                }
+                            _episodesPagingData.value = combinedFlow
+                            _uiState.update {
+                                it.copy(episodesPagingData = _episodesPagingData.value)
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to get episodes flow")
+                        }
+                    }
+                }
+                viewModelScope.launch {
+                    try {
+                        getCurrentUserId()?.let { id ->
+                            val features = jellyfinRepository.getSpecialFeatures(itemId, id)
+                            _uiState.update { it.copy(specialFeatures = features) }
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to get special features")
+                    }
+                }
+            }
+            else -> {
+                viewModelScope.launch {
+                    try {
+                        val similar = jellyfinRepository.getSimilarItems(itemId)
+                        _uiState.update { it.copy(similarItems = similar) }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to get similar items")
+                    }
+                }
+                viewModelScope.launch {
+                    try {
+                        getCurrentUserId()?.let { id ->
+                            val features = jellyfinRepository.getSpecialFeatures(itemId, id)
+                            _uiState.update { it.copy(specialFeatures = features) }
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to get special features")
+                    }
+                }
+            }
+        }
+    }
+
     private fun fetchNextUp() {
         viewModelScope.launch {
             try {
@@ -670,237 +779,95 @@ constructor(
                 ?: databaseRepository.getShow(itemId, userId)
                 ?: databaseRepository.getSeason(itemId, userId)
                 ?: databaseRepository.getEpisode(itemId, userId)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
 
-    private fun loadAdditionalDetails(item: AfinityItem) {
-        viewModelScope.launch {
-            if (item is AfinityMovie || item is AfinityShow) {
-                val userId = authRepository.currentUser.value?.id
-                launch {
-                    try {
-                        _uiState.update { it.copy(isLoadingReviews = true) }
-                        val cachedMetadata = databaseRepository.getItemMetadata(item.id)
+    private suspend fun loadReviewsAndRatings(item: AfinityItem) {
+        val userId = authRepository.currentUser.value?.id
+        try {
+            _uiState.update { it.copy(isLoadingReviews = true) }
+            val cachedMetadata = databaseRepository.getItemMetadata(item.id)
 
-                        val cacheAgeMs =
-                            System.currentTimeMillis() - (cachedMetadata?.lastUpdated ?: 0L)
-                        val isCacheValid = cacheAgeMs < 48 * 60 * 60 * 1000L
+            val cacheAgeMs = System.currentTimeMillis() - (cachedMetadata?.lastUpdated ?: 0L)
+            val isCacheValid = cacheAgeMs < 48 * 60 * 60 * 1000L
 
-                        if (
-                            cachedMetadata != null &&
-                                isCacheValid &&
-                                (cachedMetadata.tmdbReviews.isNotEmpty() ||
-                                    cachedMetadata.mdbRatings.isNotEmpty())
-                        ) {
-                            _uiState.update {
-                                it.copy(
-                                    tmdbReviews = cachedMetadata.tmdbReviews,
-                                    mdbRatings = cachedMetadata.mdbRatings,
-                                    isRatingsFromCache = true,
-                                    isLoadingReviews = false,
-                                )
-                            }
-                        } else {
-                            val tmdbId = item.providerIds?.get("Tmdb")?.toString()
-                            var fetchedReviews = emptyList<TmdbReview>()
-                            var fetchedRatings = emptyList<MdbListRating>()
+            if (
+                cachedMetadata != null &&
+                    isCacheValid &&
+                    (cachedMetadata.tmdbReviews.isNotEmpty() ||
+                        cachedMetadata.mdbRatings.isNotEmpty())
+            ) {
+                _uiState.update {
+                    it.copy(
+                        tmdbReviews = cachedMetadata.tmdbReviews,
+                        mdbRatings = cachedMetadata.mdbRatings,
+                        isRatingsFromCache = true,
+                        isLoadingReviews = false,
+                    )
+                }
+            } else {
+                val tmdbId = item.providerIds?.get("Tmdb")
+                var fetchedReviews = emptyList<TmdbReview>()
+                var fetchedRatings = emptyList<MdbListRating>()
 
-                            if (tmdbId != null && userId != null) {
-                                val serverId = serverRepository.currentServer.value?.id
-                                val tmdbKey =
-                                    serverId?.let {
-                                        securePreferencesRepository.getTmdbApiKey(
-                                            it,
-                                            userId.toString(),
-                                        )
-                                    }
+                if (tmdbId != null && userId != null) {
+                    val serverId = serverRepository.currentServer.value?.id
+                    val tmdbKey =
+                        serverId?.let {
+                            securePreferencesRepository.getTmdbApiKey(it, userId.toString())
+                        }
 
-                                val reviewsDeferred = async {
-                                    if (!tmdbKey.isNullOrBlank()) {
-                                        when (item) {
-                                            is AfinityMovie ->
-                                                tmdbApiService
-                                                    .getMovieReviews(tmdbId, tmdbKey)
-                                                    ?.results ?: emptyList()
-                                            is AfinityShow ->
-                                                tmdbApiService
-                                                    .getSeriesReviews(tmdbId, tmdbKey)
-                                                    ?.results ?: emptyList()
-                                            else -> emptyList()
-                                        }
-                                    } else emptyList()
+                    val reviewsDeferred =
+                        viewModelScope.async {
+                            if (!tmdbKey.isNullOrBlank()) {
+                                when (item) {
+                                    is AfinityMovie ->
+                                        tmdbApiService.getMovieReviews(tmdbId, tmdbKey).results
+                                    is AfinityShow ->
+                                        tmdbApiService.getSeriesReviews(tmdbId, tmdbKey).results
+                                    else -> emptyList()
                                 }
+                            } else emptyList()
+                        }
 
-                                val ratingsDeferred = async {
-                                    val ratings =
-                                        mediaRepository.getMdbListRatings(
-                                            tmdbId,
-                                            item is AfinityMovie,
-                                        )
-                                    ratings.filter {
-                                        it.source.lowercase() !in listOf("imdb", "tomatoes") &&
-                                            it.value != null
-                                    }
-                                }
-                                fetchedReviews = reviewsDeferred.await()
-                                fetchedRatings = ratingsDeferred.await()
-                            }
-
-                            _uiState.update {
-                                it.copy(
-                                    tmdbReviews = fetchedReviews,
-                                    mdbRatings = fetchedRatings,
-                                    isRatingsFromCache = false,
-                                    isLoadingReviews = false,
-                                )
-                            }
-
-                            if (fetchedReviews.isNotEmpty() || fetchedRatings.isNotEmpty()) {
-                                databaseRepository.insertItemMetadata(
-                                    ItemMetadataCacheEntity(
-                                        itemId = item.id,
-                                        tmdbReviews = fetchedReviews,
-                                        mdbRatings = fetchedRatings,
-                                    )
-                                )
+                    val ratingsDeferred =
+                        viewModelScope.async {
+                            val ratings =
+                                mediaRepository.getMdbListRatings(tmdbId, item is AfinityMovie)
+                            ratings.filter {
+                                it.source.lowercase() !in listOf("imdb", "tomatoes") &&
+                                    it.value != null
                             }
                         }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to load reviews/ratings")
-                        _uiState.update { it.copy(isLoadingReviews = false) }
-                    }
+
+                    fetchedReviews = reviewsDeferred.await()
+                    fetchedRatings = ratingsDeferred.await()
+                }
+
+                _uiState.update {
+                    it.copy(
+                        tmdbReviews = fetchedReviews,
+                        mdbRatings = fetchedRatings,
+                        isRatingsFromCache = false,
+                        isLoadingReviews = false,
+                    )
+                }
+
+                if (fetchedReviews.isNotEmpty() || fetchedRatings.isNotEmpty()) {
+                    databaseRepository.insertItemMetadata(
+                        ItemMetadataCacheEntity(
+                            itemId = item.id,
+                            tmdbReviews = fetchedReviews,
+                            mdbRatings = fetchedRatings,
+                        )
+                    )
                 }
             }
-
-            when (item) {
-                is AfinityShow -> {
-                    launch {
-                        try {
-                            val similar = jellyfinRepository.getSimilarItems(itemId)
-                            _uiState.update { it.copy(similarItems = similar) }
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to get similar items")
-                        }
-                    }
-                    launch {
-                        try {
-                            val seasonsList =
-                                item.seasons.ifEmpty { jellyfinRepository.getSeasons(item.id) }
-                            _uiState.update { it.copy(seasons = seasonsList) }
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to get seasons")
-                        }
-                    }
-                    launch {
-                        try {
-                            getCurrentUserId()?.let { id ->
-                                val features = jellyfinRepository.getSpecialFeatures(itemId, id)
-                                _uiState.update { it.copy(specialFeatures = features) }
-                            }
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to get special features")
-                        }
-                    }
-                }
-                is AfinitySeason -> {
-                    launch {
-                        try {
-                            val isCurrentlyOffline = offlineModeManager.isCurrentlyOffline()
-                            val basePagerFlow =
-                                if (isCurrentlyOffline) {
-                                    if (item.episodes.isNotEmpty())
-                                        kotlinx.coroutines.flow.flowOf(
-                                            PagingData.from(item.episodes.toList())
-                                        )
-                                    else kotlinx.coroutines.flow.flowOf(PagingData.empty())
-                                } else {
-                                    Pager(
-                                            config =
-                                                PagingConfig(
-                                                    pageSize = 50,
-                                                    enablePlaceholders = false,
-                                                    initialLoadSize = 50,
-                                                )
-                                        ) {
-                                            EpisodesPagingSource(
-                                                mediaRepository,
-                                                item.id,
-                                                item.seriesId,
-                                            )
-                                        }
-                                        .flow
-                                        .cachedIn(viewModelScope)
-                                }
-                            val combinedFlow =
-                                combine(
-                                    basePagerFlow,
-                                    _episodeStatusUpdates,
-                                    _seasonWatchStatusOverride,
-                                ) { pagingData, updates, seasonOverride ->
-                                    pagingData.map { episode ->
-                                        val isPlayed =
-                                            updates[episode.id] ?: seasonOverride ?: episode.played
-                                        episode.copy(
-                                            played = isPlayed,
-                                            playbackPositionTicks =
-                                                if (isPlayed && !episode.played) 0L
-                                                else episode.playbackPositionTicks,
-                                        )
-                                    }
-                                }
-                            _episodesPagingData.value = combinedFlow
-                            _uiState.update {
-                                it.copy(episodesPagingData = _episodesPagingData.value)
-                            }
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to get episodes flow")
-                        }
-                    }
-                    launch {
-                        try {
-                            getCurrentUserId()?.let { id ->
-                                val features = jellyfinRepository.getSpecialFeatures(item.id, id)
-                                _uiState.update { it.copy(specialFeatures = features) }
-                            }
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to get special features")
-                        }
-                    }
-                }
-                is AfinityBoxSet -> loadBoxSetItems(item.id)
-                is AfinityMovie -> {
-                    launch {
-                        try {
-                            val similar = jellyfinRepository.getSimilarItems(item.id)
-                            _uiState.update { it.copy(similarItems = similar) }
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to get similar items")
-                        }
-                    }
-                    launch {
-                        try {
-                            getCurrentUserId()?.let { id ->
-                                val features = jellyfinRepository.getSpecialFeatures(itemId, id)
-                                _uiState.update { it.copy(specialFeatures = features) }
-                            }
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to get special features")
-                        }
-                    }
-                }
-                is AfinityEpisode -> {
-                    launch {
-                        try {
-                            val similar = jellyfinRepository.getSimilarItems(item.id)
-                            _uiState.update { it.copy(similarItems = similar) }
-                        } catch (e: Exception) {
-                            Timber.e(e, "Failed to get similar items")
-                        }
-                    }
-                }
-            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load reviews/ratings")
+            _uiState.update { it.copy(isLoadingReviews = false) }
         }
     }
 
@@ -915,7 +882,7 @@ constructor(
     private suspend fun getCurrentUserId(): UUID? =
         try {
             jellyfinRepository.getCurrentUser()?.id
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
 
@@ -938,12 +905,12 @@ constructor(
                         jellyfinRepository
                             .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
                             ?.toAfinityEpisode(jellyfinRepository, null)
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         try {
                             authRepository.currentUser.value?.id?.let {
                                 databaseRepository.getEpisode(episode.id, it)
                             }
-                        } catch (dbError: Exception) {
+                        } catch (_: Exception) {
                             null
                         }
                     }
@@ -953,7 +920,7 @@ constructor(
                 try {
                     _selectedEpisodeDownloadInfo.value =
                         downloadRepository.getDownloadByItemId(episode.id)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     _selectedEpisodeDownloadInfo.value = null
                 }
 
@@ -965,7 +932,7 @@ constructor(
                     }
                 }
                 _isLoadingEpisode.value = false
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _selectedEpisode.value = episode
                 _selectedEpisodeWatchlistStatus.value = false
                 _isLoadingEpisode.value = false
@@ -1293,7 +1260,7 @@ constructor(
                     _episodeStatusUpdates.value += (episode.id to revertedStatus)
                     _selectedEpisode.value = episode
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _selectedEpisode.value = episode
             }
         }

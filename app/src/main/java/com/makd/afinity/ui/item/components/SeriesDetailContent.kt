@@ -214,7 +214,7 @@ internal fun SeasonCard(season: AfinitySeason, onClick: () -> Unit, cardWidth: D
             text = season.name,
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Start,
         )
