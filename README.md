@@ -192,6 +192,8 @@ directly in your browser without needing any technical knowledge.
 
 <div align="center">
 
+![Alt](https://repobeats.axiom.co/api/embed/c0c6ab47b71fd258c83ab3175cb7df5845ff835d.svg "Repobeats analytics image")
+
 <a href="https://star-history.com/#MakD/AFinity&Date">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=MakD/AFinity&type=Datee&legend=bottom-right&theme=dark" />
