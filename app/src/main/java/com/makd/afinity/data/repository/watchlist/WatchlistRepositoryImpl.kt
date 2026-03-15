@@ -1,10 +1,12 @@
 package com.makd.afinity.data.repository.watchlist
 
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.toAfinityBoxSet
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinitySeason
 import com.makd.afinity.data.repository.FieldSets
@@ -65,6 +67,27 @@ constructor(
 
     override fun isInWatchlistFlow(itemId: UUID): Flow<Boolean> {
         return flow { emit(isInWatchlist(itemId)) }.flowOn(Dispatchers.IO)
+    }
+
+    override suspend fun getWatchlistBoxSets(): List<AfinityBoxSet> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response =
+                    mediaRepository.getItems(
+                        isLiked = true,
+                        includeItemTypes = listOf("BOX_SET"),
+                        sortBy = SortBy.DATE_ADDED,
+                        sortDescending = true,
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                    )
+                response.items
+                    ?.filter { it.type?.name == "BOX_SET" }
+                    ?.map { it.toAfinityBoxSet(jellyfinRepository) } ?: emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load liked box sets")
+                emptyList()
+            }
+        }
     }
 
     override suspend fun getWatchlistMovies(): List<AfinityMovie> {

@@ -90,7 +90,8 @@ fun WatchlistScreen(
             uiState.error != null ->
                 FullScreenError(message = uiState.error, modifier = Modifier.padding(innerPadding))
 
-            uiState.movies.isEmpty() &&
+            uiState.boxSets.isEmpty() &&
+                uiState.movies.isEmpty() &&
                 uiState.shows.isEmpty() &&
                 uiState.seasons.isEmpty() &&
                 uiState.episodes.isEmpty() -> {
@@ -106,44 +107,63 @@ fun WatchlistScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    item {
-                        MediaRowSection(
-                            title = stringResource(R.string.section_movies),
-                            items = uiState.movies,
-                            onItemClick = onItemClick,
-                            cardWidth = portraitWidth,
-                        )
+                    if (uiState.boxSets.isNotEmpty()) {
+                        item {
+                            MediaRowSection(
+                                title = stringResource(R.string.section_boxset),
+                                items = uiState.boxSets,
+                                onItemClick = onItemClick,
+                                cardWidth = portraitWidth,
+                            )
+                        }
                     }
 
-                    item {
-                        MediaRowSection(
-                            title = stringResource(R.string.section_tv_shows),
-                            items = uiState.shows,
-                            onItemClick = onItemClick,
-                            cardWidth = portraitWidth,
-                        )
+                    if (uiState.movies.isNotEmpty()) {
+                        item {
+                            MediaRowSection(
+                                title = stringResource(R.string.section_movies),
+                                items = uiState.movies,
+                                onItemClick = onItemClick,
+                                cardWidth = portraitWidth,
+                            )
+                        }
                     }
 
-                    item {
-                        MediaRowSection(
-                            title = stringResource(R.string.section_seasons),
-                            items = uiState.seasons,
-                            onItemClick = onItemClick,
-                            cardWidth = portraitWidth,
-                        )
+                    if (uiState.shows.isNotEmpty()) {
+                        item {
+                            MediaRowSection(
+                                title = stringResource(R.string.section_tv_shows),
+                                items = uiState.shows,
+                                onItemClick = onItemClick,
+                                cardWidth = portraitWidth,
+                            )
+                        }
                     }
 
-                    item {
-                        MediaRowSection(
-                            title = stringResource(R.string.section_episodes),
-                            items = uiState.episodes,
-                            onItemClick = { episode ->
-                                viewModel.selectEpisode(
-                                    episode as com.makd.afinity.data.models.media.AfinityEpisode
-                                )
-                            },
-                            cardWidth = landscapeWidth,
-                        )
+                    if (uiState.seasons.isNotEmpty()) {
+                        item {
+                            MediaRowSection(
+                                title = stringResource(R.string.section_seasons),
+                                items = uiState.seasons,
+                                onItemClick = onItemClick,
+                                cardWidth = portraitWidth,
+                            )
+                        }
+                    }
+
+                    if (uiState.episodes.isNotEmpty()) {
+                        item {
+                            MediaRowSection(
+                                title = stringResource(R.string.section_episodes),
+                                items = uiState.episodes,
+                                onItemClick = { episode ->
+                                    viewModel.selectEpisode(
+                                        episode as com.makd.afinity.data.models.media.AfinityEpisode
+                                    )
+                                },
+                                cardWidth = landscapeWidth,
+                            )
+                        }
                     }
                 }
             }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.download.DownloadInfo
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -95,11 +96,13 @@ constructor(
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
                 coroutineScope {
+                    val boxSetsDeferred = async { watchlistRepository.getWatchlistBoxSets() }
                     val moviesDeferred = async { watchlistRepository.getWatchlistMovies() }
                     val showsDeferred = async { watchlistRepository.getWatchlistShows() }
                     val seasonsDeferred = async { watchlistRepository.getWatchlistSeasons() }
                     val episodesDeferred = async { watchlistRepository.getWatchlistEpisodes() }
 
+                    val boxSets = boxSetsDeferred.await()
                     val movies = moviesDeferred.await()
                     val shows = showsDeferred.await()
                     val seasons = seasonsDeferred.await()
@@ -108,6 +111,7 @@ constructor(
                     _uiState.value =
                         _uiState.value.copy(
                             isLoading = false,
+                            boxSets = boxSets.sortedBy { it.name },
                             movies = movies.sortedBy { it.name },
                             shows = shows.sortedBy { it.name },
                             seasons = seasons.sortedBy { it.name },
@@ -230,6 +234,7 @@ constructor(
 }
 
 data class WatchlistUiState(
+    val boxSets: List<AfinityBoxSet> = emptyList(),
     val movies: List<AfinityMovie> = emptyList(),
     val shows: List<AfinityShow> = emptyList(),
     val seasons: List<AfinitySeason> = emptyList(),
