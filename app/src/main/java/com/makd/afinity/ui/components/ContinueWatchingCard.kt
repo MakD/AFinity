@@ -63,14 +63,25 @@ fun ContinueWatchingCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                val blurHash = item.images.primaryBlurHash
-                    ?: item.images.thumbBlurHash
-                    ?: item.images.backdropBlurHash
+                val blurHash = if (item is AfinityMovie) {
+                    item.images.thumbBlurHash
+                        ?: item.images.backdropBlurHash
+                        ?: item.images.primaryBlurHash
+                } else {
+                    item.images.primaryBlurHash
+                        ?: item.images.thumbBlurHash
+                        ?: item.images.backdropBlurHash
+                }
                 AsyncImage(
-                    imageUrl =
+                    imageUrl = if (item is AfinityMovie) {
+                        item.images.thumbImageUrl
+                            ?: item.images.backdropImageUrl
+                            ?: item.images.primaryImageUrl
+                    } else {
                         item.images.primaryImageUrl
                             ?: item.images.thumbImageUrl
-                            ?: item.images.backdropImageUrl,
+                            ?: item.images.backdropImageUrl
+                    },
                     blurHash = blurHash,
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize(),
