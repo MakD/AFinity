@@ -1,9 +1,751 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
+    
+    <string name="splash_powered_by">Desenvolvido por Jellyfin</string>
     <string name="splash_progress_fmt">%1$d%%</string>
     <string name="splash_status_authenticating">Autenticando...</string>
+    <string name="loading_phase_offline">Pronto (modo offline)</string>
     <string name="loading_phase_connecting">Conectando ao servidor...</string>
     <string name="loading_phase_fetching">Buscando conteúdo...</string>
     <string name="loading_phase_processing">Processando bibliotecas...</string>
     <string name="loading_phase_finalizing">Finalizando a tela inicial...</string>
+    <string name="loading_phase_ready">Preparar!</string>
+
+    
+    <string name="app_name" translatable="false">AFinity</string>
+    <string name="login_connect_to_jellyfin">Conecte-se ao Jellyfin</string>
+    <string name="login_welcome_back">Bem vindo de volta</string>
+    <string name="login_saved_servers">Servidores salvos</string>
+    <string name="login_add_new_server">Adicionar novo</string>
+    <string name="login_server_url_label">URL do servidor</string>
+    <string name="login_server_url_placeholder">https://jellyfin.example.com</string>
+    <string name="login_btn_connect">Conectar</string>
+    <string name="login_btn_cancel">Cancelar</string>
+    <string name="login_local_network">Rede local</string>
+    <string name="login_no_servers_found">Nenhum servidor encontrado nas proximidades</string>
+    <string name="login_refresh">Atualizar</string>
+    <string name="login_switch_server">Trocar servidor</string>
+    <string name="login_method_password">Senha</string>
+    <string name="login_method_quick_connect">Conexão rápida</string>
+    <string name="login_username_label">Nome de usuário</string>
+    <string name="login_password_label">Senha</string>
+    <string name="login_btn_sign_in">Entrar</string>
+    <string name="login_quick_connect_description">Use o Quick Connect para fazer login sem senha por meio do painel do Jellyfin.</string>
+    <string name="login_btn_generate_code">Gerar código</string>
+    <string name="login_quick_connect_instructions">Digite este código no seu navegador</string>
+    <string name="cd_server_icon">Ícone do servidor</string>
+
+    
+    <string name="top_bar_search_hint">Procurar</string>
+    <string name="cd_search_icon">Procurar</string>
+    <string name="cd_profile_icon">Perfil</string>
+    <string name="cd_offline_mode">Modo off-line</string>
+
+    
+    <string name="home_error_title">Algo deu errado</string>
+    <string name="home_error_message">Os dados serão atualizados automaticamente</string>
+    <string name="home_downloaded_movies">Filmes baixados</string>
+    <string name="home_downloaded_shows">Programas baixados</string>
+    <string name="home_critics_choice">Críticos\' Escolha</string>
+    <string name="home_popular_studios">Estúdios populares</string>
+    <string name="home_episode_count_fmt">%1$d PE</string>
+    <string name="home_episode_count_plus">Mais de 99 EPs</string>
+    <string name="cd_app_logo">Logotipo do aplicativo</string>
+    <string name="cd_watched_status">Assistido</string>
+    <string name="cd_imdb">IMDB</string>
+    <string name="cd_rotten_tomatoes">Tomates podres</string>
+    <string name="home_continue_watching">Continuar assistindo</string>
+    <string name="home_latest_movies">Filmes mais recentes</string>
+    <string name="home_latest_tv_series">Últimas séries de TV</string>
+    <string name="home_next_up">Próximo</string>
+    <string name="home_genre_movies_title">%1$s Filmes</string>
+    <string name="home_genre_shows_title">%1$s Programas</string>
+    <string name="home_person_starring">Estrelando %1$s</string>
+    <string name="home_person_directed_by">Dirigido por %1$s</string>
+    <string name="home_person_written_by">Escrito por %1$s</string>
+    <string name="home_because_you_watched">Porque você assistiu %1$s</string>
+    <string name="home_starring_from_watched">Estrelando %1$s porque você assistiu %2$s</string>
+    <string name="hero_btn_more_info">Mais informações</string>
+    <string name="hero_btn_play_trailer">Reproduzir trailer</string>
+    <string name="hero_btn_play_media">Reproduzir mídia</string>
+    <string name="hero_btn_watch_now">Assista agora</string>
+    <string name="hero_season_single">1 temporada</string>
+    <string name="hero_season_plural">%1$d Temporadas</string>
+
+    
+    <string name="favorites_title">Favoritos</string>
+    <string name="error_unknown">Erro desconhecido</string>
+    <string name="favorites_empty_title">Ainda não há favoritos</string>
+    <string name="favorites_empty_message">Os itens que você marcar como favoritos aparecerão aqui</string>
+    
+    <string name="cast_section_title">Elenco</string>
+    <string name="cast_role_format">como %1$s</string>
+
+    <string name="external_links_title">Links externos</string>
+    <string name="external_link_default_name">Link Externo</string>
+
+    <string name="collections_included_in">Incluído em</string>
+
+    <string name="meta_res_4k">4K</string>
+    <string name="meta_res_hd">alta definição</string>
+    <string name="meta_res_sd">SD</string>
+
+    <string name="meta_vision">Visão</string>
+    <string name="meta_digital">Digital</string>
+    <string name="meta_digital_plus">Digitais+</string>
+    <string name="meta_truehd">TrueHD</string>
+    <string name="meta_cc">CC</string>
+
+    <string name="meta_time_remaining_hours_minutes">%1$dh %2$dm restante</string>
+    <string name="meta_time_remaining_minutes">%1$destou à esquerda</string>
+
+    <string name="meta_boxset_count">%1$d Unid</string>
+
+    <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="meta_runtime_minutes">%1$dm</string>
+    <string name="meta_ends_at">Termina em %1$s</string>
+    <string name="meta_episode_count">%1$d episódios</string>
+    <string name="similar_items_title">Mais como este</string>
+    <string name="special_features_title">Recursos especiais</string>
+    <string name="extra_type_clip">Grampo</string>
+    <string name="extra_type_trailer">Reboque</string>
+    <string name="extra_type_behind_the_scenes">Nos bastidores</string>
+    <string name="extra_type_deleted_scene">Cena excluída</string>
+    <string name="extra_type_interview">Entrevista</string>
+    <string name="extra_type_scene">Cena</string>
+    <string name="extra_type_sample">Amostra</string>
+    <string name="extra_type_featurette">Destaque</string>
+    <string name="extra_type_short">Curto</string>
+    <string name="boxset_items_in_collection">Itens da coleção</string>
+
+    <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
+    <string name="episode_duration_format">%1$dm</string>
+    <string name="episode_play">Jogar</string>
+    <string name="episode_resume">Retomar</string>
+
+    <string name="cd_air_date">Data de transmissão</string>
+    <string name="cd_duration">Duração</string>
+    <string name="cd_go_to_series">Ir para a série</string>
+    <string name="cd_watchlist">Lista de observação</string>
+    <string name="cd_favorite">Favorito</string>
+    <string name="cd_toggle_watched">Alternar status assistido</string>
+    <string name="chapters_title">Capítulos</string>
+
+    <string name="quality_dialog_title">Selecione Qualidade de download</string>
+    <string name="quality_dialog_subtitle">Escolha qual qualidade baixar</string>
+    <string name="action_download">Download</string>
+
+    <string name="cd_selected">Selecionado</string>
+    <string name="cd_not_selected">Não selecionado</string>
+
+    <string name="file_size_gb">%,2f GB</string>
+    <string name="file_size_mb">%d MB</string>
+
+    <string name="season_episodes_title">Episódios</string>
+
+    <string name="action_see_more">Ver mais</string>
+    <string name="action_see_less">Ver menos</string>
+    <string name="cd_expand">Expandir</string>
+    <string name="cd_collapse">Colapso</string>
+
+    <string name="director_prefix">Diretor: %1$s</string>
+    <string name="writers_prefix">Escritores: %1$s</string>
+
+    <string name="seasons_title">Temporadas</string>
+
+    <string name="action_play">Jogar</string>
+    <string name="action_rewatch">Assistir novamente</string>
+    <string name="action_resume_playback">Retomar a reprodução</string>
+    <string name="status_loading">Carregando...</string>
+
+    <string name="cd_backdrop_fmt">%1$s pano de fundo</string>
+    <string name="cd_logo_fmt">%1$s logotipo</string>
+    <string name="cd_shuffle_play">Reprodução aleatória</string>
+
+    <string name="cd_watchlist_add">Adicionar à lista de observação</string>
+    <string name="cd_watchlist_remove">Remover da lista de observação</string>
+
+    <string name="cd_favorite_add">Adicionar aos Favoritos</string>
+    <string name="cd_favorite_remove">Remover dos Favoritos</string>
+
+    <string name="cd_watched_mark">Marcar como assistido</string>
+    <string name="cd_watched_unmark">Marcar como não assistido</string>
+
+    
+    <string name="libraries_title">Bibliotecas</string>
+    <string name="libraries_empty_title">Nenhuma biblioteca encontrada</string>
+    <string name="libraries_empty_message">Seu servidor Jellyfin não\'ainda não tenho nenhuma biblioteca configurada.</string>
+
+    
+    <string name="action_search">Procurar</string>
+    <string name="action_show_all">Mostrar tudo</string>
+    <string name="action_clear_filter">Limpar filtro</string>
+    <string name="action_apply">Aplicar</string>
+    <string name="cd_profile">Perfil</string>
+
+    <string name="library_empty_title">Nenhum item encontrado</string>
+    <string name="library_empty_message">Esta biblioteca parece estar vazia ou o conteúdo\'ainda não foi verificado.</string>
+    <string name="library_empty_letter_fmt">Nenhum conteúdo começando com \"%1$s\"</string>
+
+    <string name="filter_all">Todos</string>
+    <string name="filter_watched">Assistido</string>
+    <string name="filter_unwatched">Não assistido</string>
+    <string name="filter_watchlist">Lista de observação</string>
+    <string name="filter_favorites">Favoritos</string>
+
+    <string name="filter_empty_watched">Nenhum item monitorado encontrado</string>
+    <string name="filter_empty_unwatched">Nenhum item não assistido encontrado</string>
+    <string name="filter_empty_watchlist">Nenhum item em sua lista de observação</string>
+    <string name="filter_empty_favorites">Nenhum item favorito encontrado</string>
+    <string name="filter_empty_all">Nenhum item encontrado</string>
+
+    <string name="sort_title">Ordenar por</string>
+    <string name="sort_ascending">Ascendente</string>
+    <string name="sort_descending">Descendente</string>
+    <string name="sort_option_title">Título</string>
+    <string name="sort_option_imdb">Classificação IMDB</string>
+    <string name="sort_option_parental">Avaliação parental</string>
+    <string name="sort_option_date_added">Data adicionada</string>
+    <string name="sort_option_date_played">Data de reprodução</string>
+    <string name="sort_option_release_date">Data de lançamento</string>
+    <string name="cd_sort_fab">Organizar</string>
+
+    
+    <string name="livetv_unknown_program">Programa desconhecido</string>
+    <string name="livetv_program_time_fmt">%1$s • %2$s - %3$s</string>
+    <string name="livetv_time_pattern">h:mm a</string>
+    <string name="livetv_epg_time_range">%1$s - %2$s</string>
+    <string name="livetv_time_header_pattern">ha</string>
+    <string name="livetv_live_badge">AO VIVO</string>
+    <string name="livetv_cat_on_now">Ativado agora</string>
+    <string name="livetv_cat_movies">Filmes</string>
+    <string name="livetv_cat_shows">Programas</string>
+    <string name="livetv_cat_sports">Esportes</string>
+    <string name="livetv_cat_kids">Para crianças</string>
+    <string name="livetv_cat_news">Notícias</string>
+    <string name="livetv_empty_letter_fmt">Nenhum canal começando com \'%1$s\'</string>
+    <string name="livetv_empty_generic">Nenhum canal disponível</string>
+    <string name="action_show_all_channels">Mostrar todos os canais</string>
+    <string name="livetv_header_letter_fmt">Canais (%1$s)</string>
+    <string name="livetv_header_all">Todos os canais</string>
+    <string name="livetv_count_fmt">%1$d canais encontrados</string>
+    <string name="livetv_guide_date_fmt">EEE, MMM d</string>
+    <string name="livetv_guide_time_range_fmt">%1$d:00 - %2$d:00</string>
+    <string name="action_now">Agora</string>
+    <string name="cd_guide_previous_time">Bloco de tempo anterior</string>
+    <string name="cd_guide_next_time">Bloco da próxima vez</string>
+    <string name="livetv_home_empty_title">Nenhum programa disponível</string>
+    <string name="livetv_home_empty_message">Volte mais tarde para ver as listas de programas</string>
+    <string name="livetv_title">TV ao vivo</string>
+    <string name="livetv_tab_programs">Programas</string>
+    <string name="livetv_tab_guide">Guia de TV</string>
+    <string name="livetv_tab_channels">Canais</string>
+
+    <string name="livetv_error_not_available_title">TV ao vivo não disponível</string>
+    <string name="livetv_error_not_available_message">Configure a TV ao vivo em seu servidor Jellyfin</string>
+
+    
+    <string name="person_biography">Biografia</string>
+    <string name="person_born_fmt">Nascido: %1$s (%2$d anos)</string>
+    <string name="person_born_deceased_fmt">Nascer: %1$s</string>
+    <string name="person_died_fmt">Morreu: %1$s (idade %2$d)</string>
+    <string name="person_died_no_age_fmt">Morreu: %1$s</string>
+    <string name="person_birthplace_fmt">Local de nascimento: %1$s</string>
+    <string name="person_date_fmt">MMMM d, aaaa</string>
+    <string name="action_show_more">Mostrar mais</string>
+    <string name="action_show_less">Mostrar menos</string>
+    <string name="cd_person_image_fmt">%1$s imagem</string>
+    <string name="cd_external_link">Link Externo</string>
+    <string name="action_retry">Tente novamente</string>
+
+    
+    <string name="player_error_title">Erro de reprodução</string>
+    <string name="player_up_next">A seguir</string>
+    <string name="player_season_fmt">Temporada %1$d</string>
+    <string name="player_season_episode_fmt">Temporada %1$d : Episódio %2$d</string>
+    <string name="time_minutes_short">%1$dm</string>
+    <string name="time_seconds_short">%1$ds</string>
+    <string name="cd_close">Fechar</string>
+
+    <string name="player_speed_title_fmt">Velocidade atual %1$.2fx</string>
+    <string name="player_speed_value_fmt">%.2f</string>
+    <string name="cd_speed_decrease">Diminuir velocidade</string>
+    <string name="cd_speed_increase">Aumentar a velocidade</string>
+
+    <string name="player_audio_title">Faixa de áudio</string>
+    <string name="player_subtitle_title">Legendas</string>
+    <string name="player_version_title">Versão</string>
+    <string name="player_version_default_label">Padrão</string>
+    <string name="version_dialog_subtitle">Selecione qual versão jogar</string>
+    <string name="cd_version_selector">Seletor de versão</string>
+    <string name="player_episode_header_fmt">S%1$s:E%2$s: %3$s</string>
+
+    <string name="track_unknown">Desconhecido</string>
+    <string name="track_none">Nenhum</string>
+    <string name="track_number_fmt">Acompanhar %1$d</string>
+    <string name="audio_channel_fmt">(%1$dch)</string>
+    <string name="playback_channel_name">Reprodução de audiolivro AFinity</string>
+
+    <string name="cd_logo">Logotipo</string>
+    <string name="cd_series_logo">Logotipo da série</string>
+    <string name="cd_back">Voltar</string>
+    <string name="cd_lock">Trancar</string>
+    <string name="cd_unlock">Desbloquear</string>
+    <string name="cd_enter_pip">Insira imagem em imagem</string>
+    <string name="cd_previous">Anterior</string>
+    <string name="cd_next">Próximo</string>
+    <string name="cd_rewind_10">Retroceder 10 segundos</string>
+    <string name="cd_forward_30">Avançar 30 segundos</string>
+    <string name="cd_play">Jogar</string>
+    <string name="cd_pause">Pausa</string>
+    <string name="cd_episodes">Episódios</string>
+    <string name="cd_speed">Velocidade de reprodução</string>
+    <string name="cd_audio_settings">Configurações de áudio</string>
+    <string name="cd_subtitle_settings">Configurações de legenda</string>
+    <string name="cd_aspect_ratio">Proporção</string>
+    <string name="cd_screen_rotation">Rotação da tela</string>
+
+    <string name="cd_fast_forward">Avanço rápido</string>
+    <string name="cd_rewind">Retroceder</string>
+    <string name="seek_forward_text">+10s</string>
+    <string name="seek_rewind_text">-10s</string>
+    <string name="cd_brightness">Brilho</string>
+    <string name="cd_volume">Volume</string>
+    <string name="percent_fmt">%1$d%%</string>
+
+    <string name="cd_skip_button_icon">Pular</string>
+
+    <string name="player_live_tuning_fmt">Afinação %1$s...</string>
+    <string name="player_error_stream_load">Falha ao carregar fluxo</string>
+    <string name="player_error_media_load">Falha ao carregar mídia</string>
+    <string name="channel_default_name">TV ao vivo</string>
+
+    <string name="error_no_media_sources">Nenhuma fonte de mídia disponível.</string>
+    <string name="error_load_stream">Falha ao carregar o fluxo.</string>
+    <string name="error_unexpected">Ocorreu um erro inesperado.</string>
+    <string name="error_load_live_channel">Falha ao carregar o canal ao vivo.</string>
+
+    <string name="skip_intro">Pular introdução</string>
+    <string name="skip_outro">Pular outro</string>
+    <string name="skip_recap">Pular recapitulação</string>
+    <string name="skip_preview">Pular visualização</string>
+    <string name="skip_commercial">Pular Comercial</string>
+    <string name="skip_generic">Pular</string>
+
+    <string name="error_get_stream_url">Falha ao obter o URL da transmissão</string>
+    <string name="error_load_channel_fmt">Falha ao carregar o canal: %1$s</string>
+
+    
+    <string name="status_unknown">Desconhecido</string>
+    <string name="status_pending">Pendente</string>
+    <string name="status_processing">Processamento</string>
+    <string name="status_partially_available">Parcialmente disponível</string>
+    <string name="status_available">Disponível</string>
+    <string name="status_deleted">Excluído</string>
+    <string name="manage_request_title">Gerenciar solicitação</string>
+
+    <string name="cd_tmdb_rating">Classificação TMDB</string>
+
+    <string name="error_title">Erro</string>
+    <string name="error_no_content">Nenhum conteúdo disponível</string>
+
+    <string name="error_load_content_generic">Falha ao carregar conteúdo</string>
+
+    <string name="status_declined">Recusado</string>
+    <string name="cd_approve">Aprovar</string>
+    <string name="cd_decline">Declínio</string>
+    <string name="requested_by_fmt">Solicitado por %1$s</string>
+    <string name="user_unknown">Desconhecido</string>
+
+    <string name="requests_title">Solicitações</string>
+    <string name="jellyseerr_connect_title">Conecte-se ao Seer</string>
+    <string name="jellyseerr_connect_message">Faça login no Seerr para solicitar filmes e programas de TV</string>
+    <string name="empty_content_message">Volte mais tarde para novos conteúdos</string>
+
+    <string name="section_trending">Tendências agora</string>
+    <string name="section_popular_movies">Filmes populares</string>
+    <string name="section_upcoming_movies">Próximos filmes</string>
+    <string name="section_popular_tv">Programas de TV populares</string>
+    <string name="section_upcoming_tv">Próximos programas de TV</string>
+
+    <string name="section_recent_requests">Solicitações recentes</string>
+    <string name="section_studios">Estúdios</string>
+    <string name="section_networks">Redes</string>
+    <string name="section_movie_genres">Gêneros de filmes</string>
+    <string name="section_tv_genres">Gêneros de TV</string>
+    <string name="cd_view_all">Ver tudo</string>
+
+    <string name="error_requests_load_failed">Falha ao carregar solicitações</string>
+    <string name="error_request_delete_failed_fmt">Falha ao excluir solicitação: %1$s</string>
+    <string name="error_request_approve_failed_fmt">Falha ao aprovar a solicitação: %1$s</string>
+    <string name="error_request_decline_failed_fmt">Falha ao recusar a solicitação: %1$s</string>
+    <string name="error_search_no_results_fmt">Nenhum resultado encontrado para \'%1$s\'</string>
+    <string name="error_search_failed_fmt">Falha na pesquisa: %1$s</string>
+    <string name="error_request_create_failed_fmt">Falha ao criar solicitação: %1$s</string>
+
+    
+    <string name="error_something_went_wrong">Algo deu errado</string>
+    <string name="tab_movies">Filmes</string>
+    <string name="tab_tv_shows">Programas de TV</string>
+    <string name="empty_genre_movies">Nenhum filme encontrado neste gênero</string>
+    <string name="empty_genre_tv">Nenhum programa de TV encontrado neste gênero</string>
+    <string name="empty_genre_audiobooks">Nenhum audiolivro encontrado neste gênero</string>
+    <string name="empty_genre_podcasts">Nenhum podcast encontrado neste gênero</string>
+    <string name="error_unknown_occurred">Ocorreu um erro desconhecido</string>
+
+    <string name="search_no_results">Nenhum resultado encontrado</string>
+    <string name="search_placeholder">Pesquise filmes e programas de TV</string>
+    <string name="cd_clear">Claro</string>
+    <string name="filter_request">Solicitar</string>
+    <string name="filter_audiobooks">Audiolivros</string>
+    <string name="explore_genres">Explorar gêneros</string>
+    <string name="search_results_count_fmt">%1$d resultados encontrados</string>
+    <string name="cd_watched">Assistido</string>
+    <string name="cd_finished">Finalizado</string>
+    <string name="media_type_book">Livro</string>
+    <string name="media_type_podcast">Podcast</string>
+
+    <string name="media_type_movie">Filme</string>
+    <string name="media_type_tv_show">Programa de TV</string>
+    <string name="media_type_media">Mídia</string>
+    <string name="media_type_unknown">DESCONHECIDO</string>
+
+    <string name="cd_request_add">Solicitar</string>
+
+    
+    <string name="appearance_title">Aparência</string>
+    <string name="settings_group_theme">Tema</string>
+    <string name="pref_theme_mode_title">Modo Tema</string>
+    <string name="pref_dynamic_colors_title">Cores Dinâmicas</string>
+    <string name="pref_dynamic_colors_summary">Use cores do seu papel de parede</string>
+
+    <string name="settings_group_home_screen">Tela inicial</string>
+    <string name="pref_combine_library_title">Combinar seções da biblioteca</string>
+    <string name="pref_combine_library_summary">Mesclar filmes e programas de TV em listas únicas</string>
+    <string name="pref_sort_date_added_title">Classificar por data de adição</string>
+    <string name="pref_sort_date_added_summary">Mostrar o conteúdo mais recente primeiro na tela inicial</string>
+
+    <string name="settings_group_content_layout">Layout de conteúdo</string>
+    <string name="pref_episode_layout_title">Layout do episódio</string>
+
+    <string name="theme_system">Padrão do sistema</string>
+    <string name="theme_light">Luz</string>
+    <string name="theme_dark">Escuro</string>
+    <string name="theme_amoled">Amolado</string>
+
+    <string name="layout_horizontal">Horizontal</string>
+    <string name="layout_vertical">Vertical</string>
+
+    <string name="downloads_title">Transferências</string>
+    <string name="pref_downloads_and_storage">Downloads e armazenamento</string>
+    <string name="pref_downloads_and_storage_summary">Gerenciar mídia offline e cache de imagens</string>
+    <string name="network_status_title">Status da rede</string>
+    <string name="network_status_offline">Modo off-line</string>
+    <string name="network_status_online">On-line - Downloads ativos</string>
+    <string name="active_downloads_header_fmt">Downloads ativos (%1$d)</string>
+    <string name="completed_downloads_header_fmt">Downloads concluídos (%1$d)</string>
+    <string name="download_count_fmt">%1$d  %2$s</string>
+    <string name="download_singular">download</string>
+    <string name="download_plural">downloads</string>
+    <string name="download_item_info_fmt">%1$s • %2$s</string>
+    <string name="download_progress_size_fmt">%1$s / %2$s</string>
+    <string name="download_status_queued">Na fila</string>
+    <string name="download_status_downloading">Baixando</string>
+    <string name="download_status_paused">Pausado</string>
+    <string name="download_status_failed_fmt">Fracassado: %1$s</string>
+    <string name="empty_downloads_title">Sem downloads</string>
+    <string name="empty_downloads_message">O conteúdo baixado aparecerá aqui</string>
+    <string name="storage_free_on_device_fmt">%1$s grátis no dispositivo</string>
+    <string name="storage_this_server">Este servidor</string>
+    <string name="storage_all_servers_fmt">%1$s total em todos os servidores</string>
+
+    <string name="download_preferences_title">Baixar configurações</string>
+    <string name="pref_download_wifi_only_title">Apenas Wi-Fi</string>
+    <string name="pref_download_wifi_only_subtitle">Baixe apenas por Wi-Fi</string>
+    <string name="pref_download_mobile_data_warning">O download por dados móveis pode incorrer em cobranças de dados adicionais da sua operadora</string>
+
+    <string name="cd_storage_stats">Estatísticas de armazenamento</string>
+    <string name="cd_pause_download">Pausar download</string>
+    <string name="cd_resume_download">Retomar download</string>
+    <string name="cd_cancel_download">Cancelar download</string>
+    <string name="cd_delete_download">Excluir download</string>
+    <string name="cd_status_failed">Fracassado</string>
+    <string name="cd_status_completed">Concluído</string>
+
+    <string name="player_options_title">Opções do jogador</string>
+
+    <string name="pref_group_engine">Motor e Comportamento</string>
+    <string name="pref_use_exoplayer_title">Usar ExoPlayer</string>
+    <string name="pref_use_exoplayer_summary">Usa LibMPV quando desabilitado</string>
+    <string name="pref_group_mpv">Opções de MPV</string>
+    <string name="pref_mpv_hwdec_title">Decodificação de hardware</string>
+    <string name="pref_mpv_hwdec_summary">Aceleração de hardware para decodificação de vídeo</string>
+    <string name="pref_mpv_video_output_title">Saída de vídeo</string>
+    <string name="pref_mpv_video_output_summary">Back-end de renderização de GPU</string>
+    <string name="pref_mpv_audio_output_title">Saída de áudio</string>
+    <string name="pref_mpv_audio_output_summary">Driver de saída de áudio</string>
+    <string name="pref_group_language">Linguagem</string>
+    <string name="pref_preferred_audio_language_title">Idioma de áudio preferido</string>
+    <string name="pref_preferred_audio_language_summary">Seleção automática de faixa de áudio por idioma</string>
+    <string name="pref_preferred_subtitle_language_title">Idioma de legenda preferido</string>
+    <string name="pref_preferred_subtitle_language_summary">Seleção automática de faixa de legenda por idioma</string>
+    <string name="pref_language_search_hint">Pesquisar idiomas…</string>
+    <string name="pref_autoplay_title">Reprodução automática</string>
+    <string name="pref_autoplay_summary">Reproduzir automaticamente o próximo episódio</string>
+
+    <string name="pref_group_pip">Imagem em imagem</string>
+    <string name="pref_pip_gesture_title">Gesto inicial</string>
+    <string name="pref_pip_gesture_summary">Digite PiP ao deslizar para casa</string>
+    <string name="pref_pip_background_title">Áudio de fundo</string>
+    <string name="pref_pip_background_summary">Continue reproduzindo áudio quando a tela estiver desligada</string>
+
+    <string name="pref_group_interface">Interface</string>
+    <string name="pref_skip_intro_title">Botão Pular introdução</string>
+    <string name="pref_skip_intro_summary">Mostrar botão quando a introdução for detectada</string>
+    <string name="pref_skip_outro_title">Botão Pular Outro</string>
+    <string name="pref_skip_outro_summary">Mostrar botão quando outro for detectado</string>
+    <string name="pref_autohide_logo_title">Ocultar logotipo automaticamente</string>
+    <string name="pref_autohide_logo_summary">Ocultar o logotipo do título com os controles do player</string>
+    <string name="pref_default_zoom_title">Zoom padrão</string>
+
+    <string name="pref_group_subtitles">Legendas</string>
+    <string name="pref_sub_text_color">Cor do texto</string>
+    <string name="pref_sub_text_size">Tamanho do texto</string>
+    <string name="pref_sub_bold">Texto em negrito</string>
+    <string name="pref_sub_bold_summary">Torne as legendas mais grossas</string>
+    <string name="pref_sub_italic">Texto em itálico</string>
+    <string name="pref_sub_italic_summary">Estilo de texto inclinado</string>
+    <string name="pref_sub_outline_style">Estilo de contorno</string>
+    <string name="pref_sub_shadow_color">Cor da sombra</string>
+    <string name="pref_sub_outline_color">Cor do contorno</string>
+    <string name="pref_sub_shadow_size">Tamanho da sombra</string>
+    <string name="pref_sub_outline_size">Tamanho do contorno</string>
+    <string name="pref_sub_background_color">Cor de fundo</string>
+    <string name="pref_sub_window_color">Cor da janela</string>
+    <string name="pref_sub_vertical_pos">Posição vertical</string>
+    <string name="pref_sub_horizontal_align">Alinhamento horizontal</string>
+    <string name="action_reset_defaults">Redefinir padrões</string>
+    <string name="subtitle_preview_text">Pré-visualização da legenda</string>
+
+    <string name="color_picker_title">Selecione a cor</string>
+    <string name="color_picker_presets">Cores predefinidas</string>
+    <string name="color_picker_custom">Cor personalizada (Hex)</string>
+    <string name="color_picker_hex_label">Código hexadecimal</string>
+    <string name="color_picker_hex_hint">#AARRGGBB</string>
+    <string name="color_picker_invalid">Formato hexadecimal inválido</string>
+    <string name="color_picker_apply">Aplicar cor personalizada</string>
+    <string name="action_cancel">Cancelar</string>
+
+    <string name="zoom_fit">Ajustar</string>
+    <string name="zoom_zoom">Zoom</string>
+    <string name="zoom_stretch">Esticar</string>
+
+    <string name="outline_none">Nenhum</string>
+    <string name="outline_outline">Contorno</string>
+    <string name="outline_drop_shadow">Sombra projetada</string>
+    <string name="outline_raised">Criado</string>
+    <string name="outline_depressed">Deprimido</string>
+    <string name="outline_background">Caixa de fundo</string>
+    <string name="align_left">Esquerda</string>
+    <string name="align_center">Centro</string>
+    <string name="align_right">Certo</string>
+    <string name="align_top">Principal</string>
+    <string name="align_bottom">Fundo</string>
+
+    <string name="title_add_server">Adicionar servidor</string>
+    <string name="title_edit_server">Editar servidor</string>
+    <string name="server_details_subtitle">Insira os detalhes do seu servidor Jellyfin</string>
+    <string name="label_server_url">URL do servidor</string>
+    <string name="placeholder_server_url">https://exemplo.jellyfin.com</string>
+    <string name="label_server_name_optional">Nome do servidor (opcional)</string>
+    <string name="placeholder_server_name">Meu servidor Jellyfin</string>
+    <string name="btn_test_connection">Conexão de teste</string>
+    <string name="btn_testing">Testando...</string>
+    <string name="btn_save_server">Salvar servidor</string>
+    <string name="btn_save_changes">Salvar alterações</string>
+    <string name="connection_success_title">Conexão bem-sucedida</string>
+    <string name="connection_success_fmt">Encontrado %1$s (v%2$s)</string>
+    <string name="connection_failed_title">Falha na conexão</string>
+
+    <string name="error_load_server_failed_fmt">Falha ao carregar o servidor: %1$s</string>
+    <string name="error_enter_server_url">Insira um URL do servidor</string>
+    <string name="error_connection_test_failed_fmt">Falha no teste de conexão: %1$s</string>
+    <string name="error_url_required">O URL do servidor é obrigatório</string>
+    <string name="error_test_connection_first">Por favor, teste a conexão primeiro</string>
+    <string name="error_save_server_failed_fmt">Falha ao salvar o servidor: %1$s</string>
+
+    <string name="server_management_title">Gerenciar servidores</string>
+    <string name="cd_add_server">Adicionar servidor</string>
+    <string name="cd_edit_server">Editar servidor</string>
+    <string name="cd_delete_server">Excluir servidor</string>
+    <string name="empty_servers_title">Nenhum servidor encontrado</string>
+    <string name="empty_servers_message">Toque no botão + para adicionar seu primeiro servidor Jellyfin.</string>
+    <string name="user_count_fmt">%1$d  %2$s</string>
+    <string name="user_singular">usuário</string>
+    <string name="user_plural">Usuários</string>
+
+    <string name="dialog_delete_server_title">Excluir servidor?</string>
+    <string name="dialog_delete_server_message_fmt">Tem certeza de que deseja excluir \"%1$s\"?</string>
+    <string name="dialog_delete_server_warning_fmt">Isso removerá os usuários salvos %1$d e todos os dados associados.</string>
+    <string name="action_delete">Excluir</string>
+
+    <string name="error_load_servers_failed">Falha ao carregar servidores</string>
+    <string name="error_delete_active_server">Não é possível excluir o servidor atualmente ativo. Por favor, mude para outro servidor primeiro.</string>
+    <string name="error_delete_server_failed">Falha ao excluir servidor</string>
+
+    <string name="update_available_title">Atualização disponível</string>
+    <string name="update_whats_new">O que\'há de novo</string>
+    <string name="update_version_fmt">v%1$s</string>
+    <string name="btn_download_update">Baixar atualização</string>
+    <string name="btn_downloading">Baixando...</string>
+    <string name="btn_install_restart">Instalar e reiniciar</string>
+    <string name="action_not_now">Agora não</string>
+
+    <string name="pref_group_updates">Atualizações</string>
+    <string name="pref_check_updates_title">Verifique se há atualizações</string>
+    <string name="update_status_checking">Verificando...</string>
+    <string name="update_status_downloading">Baixando...</string>
+    <string name="update_status_uptodate_fmt">Atualizado • %1$s</string>
+    <string name="update_status_failed_fmt">Falha na verificação • %1$s</string>
+    <string name="update_status_last_check_fmt">Última verificação: %1$s</string>
+    <string name="update_progress_fmt">%1$d%%</string>
+    <string name="pref_check_frequency_title">Verifique a frequência</string>
+
+    <string name="freq_on_app_open">Ao abrir o aplicativo</string>
+    <string name="freq_6_hours">A cada 6 horas</string>
+    <string name="freq_12_hours">A cada 12 horas</string>
+    <string name="freq_24_hours">A cada 24 horas</string>
+    <string name="update_never_checked">Nunca</string>
+
+    <string name="jellyseerr_connect_subtitle">Insira os detalhes do seu servidor para ativar solicitações de conteúdo</string>
+    <string name="jellyseerr_placeholder_url">https://seerr.example.com</string>
+    <string name="label_login_method">Método de login</string>
+    <string name="login_method_jellyfin">Conta Jellyfin</string>
+    <string name="login_method_local">Conta local</string>
+    <string name="label_jellyfin_username">Nome de usuário Jellyfin</string>
+    <string name="label_seerr_email">E-mail do Seer</string>
+    <string name="placeholder_username">Nome de usuário</string>
+    <string name="placeholder_email_example">usuário@exemplo.com</string>
+    <string name="label_jellyfin_password">Senha Jellyfin</string>
+    <string name="label_seerr_password">Senha do Seeer</string>
+    <string name="cd_show_password">Mostrar senha</string>
+    <string name="cd_hide_password">Ocultar senha</string>
+    <string name="btn_login">Conecte-se</string>
+
+    <string name="licenses_title">Licenças de código aberto</string>
+    <string name="licenses_header_title">Dependências de código aberto</string>
+    <string name="licenses_header_subtitle">Este aplicativo usa as seguintes bibliotecas de código aberto</string>
+    <string name="licenses_footer_built_with">Construído com software de código aberto</string>
+    <string name="licenses_footer_terms">Licenciado sob seus respectivos termos</string>
+
+    <string name="session_switcher_title">Trocar de sessão</string>
+    <string name="action_login_server">Faça login neste servidor</string>
+    <string name="action_add_account">Adicionar outra conta</string>
+    <string name="empty_sessions_title">Nenhuma sessão salva</string>
+    <string name="empty_sessions_message">Faça login em um servidor para criar uma sessão</string>
+
+    <string name="cd_user_avatar">Avatar do usuário</string>
+    <string name="cd_current_session">Sessão atual</string>
+
+    <string name="error_session_token_not_found">Token de sessão não encontrado</string>
+    <string name="error_server_not_found">Servidor não encontrado</string>
+    <string name="error_switch_session_failed_fmt">Falha ao mudar de sessão: %1$s</string>
+    <string name="error_switch_session_error_fmt">Erro ao mudar de sessão: %1$s</string>
+
+    <string name="settings_title">Configurações</string>
+    <string name="unknown_user">Usuário desconhecido</string>
+    <string name="unknown_server">Servidor desconhecido</string>
+    <string name="cd_profile_picture">Foto do perfil</string>
+
+    <string name="pref_group_general">Em geral</string>
+    <string name="pref_offline_mode">Modo off-line</string>
+    <string name="offline_mode_no_connection">Off-line (sem conexão)</string>
+    <string name="offline_mode_manual">Ativado manualmente</string>
+    <string name="offline_mode_force">Forçar modo offline</string>
+
+    <string name="pref_discovery_requests">Descoberta e solicitações</string>
+    <string name="discovery_connected">Conectado via Seerr</string>
+    <string name="discovery_connect">Conecte-se para solicitar conteúdo</string>
+
+    <string name="pref_audiobookshelf">Estante de audiolivros</string>
+    <string name="audiobookshelf_connected">Conectado à estante de audiolivros</string>
+    <string name="audiobookshelf_connect">Conecte-se para navegar pelos audiolivros</string>
+    <string name="dialog_disconnect_audiobookshelf_title">Desconectar a estante de audiolivros</string>
+    <string name="dialog_disconnect_audiobookshelf_message">A desconexão removerá a configuração do Audiobookshelf. Você pode se reconectar a qualquer momento.</string>
+    <string name="error_audiobookshelf_logout_failed_fmt">Falha ao desconectar do Audiobookshelf: %1$s</string>
+
+    <string name="notification_permission_title">Habilitar notificações</string>
+    <string name="notification_permission_message">AFinity precisa de permissão de notificação para mostrar o media player em seu painel de notificação e tela de bloqueio enquanto reproduz audiolivros ou podcasts.\n\nSe você mudar de ideia mais tarde, poderá ativá-lo manualmente em Informações do aplicativo → Permissões → Notificações.</string>
+    <string name="notification_permission_yes">Permitir</string>
+    <string name="notification_permission_no">Não, obrigado</string>
+
+    <string name="pref_downloads">Transferências</string>
+    <string name="pref_downloads_summary">Gerenciar conteúdo off-line</string>
+
+    <string name="pref_switch_session">Trocar de sessão</string>
+    <string name="pref_switch_session_summary">Alterar usuário ou servidor</string>
+
+    <string name="pref_group_connections">Conexões</string>
+    <string name="pref_manage_servers">Gerenciar servidores</string>
+    <string name="pref_manage_servers_summary">Adicionar ou remover servidores Jellyfin</string>
+
+    <string name="pref_group_preferences">Preferências</string>
+    <string name="pref_appearance">Aparência</string>
+    <string name="pref_appearance_summary">Temas e layout</string>
+
+    <string name="pref_playback">Reprodução</string>
+    <string name="pref_playback_summary">Comportamento e qualidade do jogador</string>
+
+    <string name="pref_group_about">Sobre</string>
+    <string name="pref_version">Versão</string>
+    <string name="version_fmt">%1$s (%2$s)</string>
+    <string name="build_debug">Depurar compilação</string>
+    <string name="build_release">Versão de lançamento</string>
+
+    <string name="pref_licenses">Licenças</string>
+    <string name="pref_licenses_summary">Bibliotecas de código aberto</string>
+
+    <string name="action_logout">Sair</string>
+
+    <string name="dialog_logout_title">Sair</string>
+    <string name="dialog_logout_message">Tem certeza de que deseja sair? Você precisará fazer login novamente para acessar o conteúdo.</string>
+
+    <string name="dialog_disconnect_seerr_title">Desconectar Seerr</string>
+    <string name="dialog_disconnect_seerr_message">A desconexão impedirá que você faça novas solicitações. Você pode se reconectar a qualquer momento.</string>
+    <string name="action_disconnect">Desconectar</string>
+    <string name="dialog_error_title">Erro</string>
+    <string name="action_ok">OK</string>
+
+    <string name="error_logout_failed_fmt">Falha no logout: %1$s</string>
+    <string name="error_jellyseerr_logout_failed_fmt">Falha ao sair do Seerr: %1$s</string>
+
+    <string name="watchlist_title">Lista de observação</string>
+    <string name="watchlist_empty">Sua lista de observação está vazia</string>
+    <string name="watchlist_section_header_fmt">%1$s (%2$d)</string>
+
+    <string name="section_movies">Filmes</string>
+    <string name="section_boxset">Conjuntos de caixas</string>
+    <string name="section_tv_shows">Programas de TV</string>
+    <string name="section_seasons">Temporadas</string>
+    <string name="section_episodes">Episódios</string>
+    <string name="section_tv_channels">Canais de TV ao vivo</string>
+    <string name="section_people">Pessoas</string>
+
+    
+    <string name="cd_cast">Elenco</string>
+    <string name="cast_connected_to">Transmitindo para %1$s</string>
+    <string name="cast_stop">Pare de transmitir</string>
+    <string name="cast_settings">Configurações de reprodução</string>
+    <string name="cast_quality">Qualidade</string>
+    <string name="cast_volume">Volume</string>
+    <string name="cast_info">Informações</string>
+    <string name="cast_device_info">Informações do dispositivo</string>
+    <string name="cast_device">Dispositivo</string>
+    <string name="cast_bitrate">Taxa de bits</string>
+    <string name="cast_playback_speed">Velocidade de reprodução</string>
+    <string name="cast_now_playing">Agora jogando</string>
+    <string name="pref_group_chromecast">Chromecast</string>
+    <string name="pref_cast_hevc_title">Habilitar HEVC</string>
+    <string name="pref_cast_hevc_description">Ativar para Chromecast Ultra/Google TV</string>
+    <string name="pref_cast_max_bitrate_title">Taxa máxima de bits</string>
 </resources>
