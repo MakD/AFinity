@@ -75,6 +75,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
@@ -430,6 +431,30 @@ private fun MediaItemGridCard(
                                     color = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 )
+                            }
+                        }
+                    }
+
+                    item is AfinityBoxSet -> {
+                        val displayCount = item.unplayedItemCount ?: item.itemCount
+                        displayCount?.let { count ->
+                            if (count > 0) {
+                                Surface(
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                                ) {
+                                    Text(
+                                        text = "$count",
+                                        style =
+                                            MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        modifier =
+                                            Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    )
+                                }
                             }
                         }
                     }

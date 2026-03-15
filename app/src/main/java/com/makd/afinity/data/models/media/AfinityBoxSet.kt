@@ -39,6 +39,8 @@ fun BaseItemDto.toAfinityBoxSet(jellyfinRepository: JellyfinRepository): Afinity
         played = userData?.played == true,
         favorite = userData?.isFavorite == true,
         liked = userData?.likes == true,
+        unplayedItemCount = userData?.unplayedItemCount,
+        itemCount = childCount,
         images = toAfinityImages(jellyfinRepository),
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
