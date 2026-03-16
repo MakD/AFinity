@@ -17,6 +17,8 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.util.JellyfinImageUrlBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -49,7 +51,7 @@ class AppDataRepository
 @Inject
 constructor(
     @param:ApplicationContext private val context: Context,
-    private val jellyfinRepository: JellyfinRepository,
+    private val mediaRepository: MediaRepository,
     private val preferencesRepository: PreferencesRepository,
     private val sessionManager: SessionManager,
     private val jellyfinImageUrlBuilder: JellyfinImageUrlBuilder,
@@ -247,13 +249,13 @@ constructor(
         liveDataJob =
             scope.launch {
                 launch {
-                    jellyfinRepository.getContinueWatchingFlow().collect { liveData ->
+                    mediaRepository.getContinueWatchingFlow().collect { liveData ->
                         _continueWatching.value = liveData
                     }
                 }
 
                 launch {
-                    jellyfinRepository.getLatestMediaFlow().collect { liveData ->
+                    mediaRepository.getLatestMediaFlow().collect { liveData ->
                         val filteredData =
                             liveData.filter { item -> item is AfinityMovie || item is AfinityShow }
                         _latestMedia.value = filteredData
@@ -261,7 +263,7 @@ constructor(
                 }
 
                 launch {
-                    jellyfinRepository.getNextUpFlow().collect { liveData ->
+                    mediaRepository.getNextUpFlow().collect { liveData ->
                         _nextUp.value = liveData
                     }
                 }
@@ -312,11 +314,11 @@ constructor(
                             try {
                                 val items =
                                     if (useJellyfinDefault) {
-                                        jellyfinRepository
+                                        mediaRepository
                                             .getLatestMedia(parentId = library.id, limit = 30)
                                             .filterIsInstance<AfinityMovie>()
                                     } else {
-                                        jellyfinRepository.getMovies(
+                                        mediaRepository.getMovies(
                                             parentId = library.id,
                                             sortBy = SortBy.RELEASE_DATE,
                                             sortDescending = true,
@@ -362,11 +364,11 @@ constructor(
                             try {
                                 val items =
                                     if (useJellyfinDefault) {
-                                        jellyfinRepository
+                                        mediaRepository
                                             .getLatestMedia(parentId = library.id, limit = 30)
                                             .filterIsInstance<AfinityShow>()
                                     } else {
-                                        jellyfinRepository.getShows(
+                                        mediaRepository.getShows(
                                             parentId = library.id,
                                             sortBy = SortBy.RELEASE_DATE,
                                             sortDescending = true,
@@ -399,7 +401,7 @@ constructor(
 
     private suspend fun loadLatestMedia(): List<AfinityItem> {
         return try {
-            val allLatestMedia = jellyfinRepository.getLatestMedia(limit = 15)
+            val allLatestMedia = mediaRepository.getLatestMedia(limit = 15)
             allLatestMedia.filter { item -> item is AfinityMovie || item is AfinityShow }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load latest media")
@@ -409,9 +411,9 @@ constructor(
 
     private suspend fun loadHeroCarousel(): List<AfinityItem> {
         return try {
-            val baseUrl = jellyfinRepository.getBaseUrl()
+            val baseUrl = mediaRepository.getBaseUrl()
             val randomHeroItems =
-                jellyfinRepository.getItems(
+                mediaRepository.getItems(
                     includeItemTypes = listOf("MOVIE", "SERIES"),
                     sortBy = SortBy.RANDOM,
                     sortDescending = false,
@@ -431,7 +433,7 @@ constructor(
 
     private suspend fun loadContinueWatching(): List<AfinityItem> {
         return try {
-            jellyfinRepository.getContinueWatching(limit = 12)
+            mediaRepository.getContinueWatching(limit = 12)
         } catch (e: Exception) {
             Timber.e(e, "Failed to load continue watching")
             emptyList()
@@ -440,7 +442,7 @@ constructor(
 
     private suspend fun loadNextUp(): List<AfinityEpisode> {
         return try {
-            jellyfinRepository.getNextUp(limit = 16)
+            mediaRepository.getNextUp(limit = 16, enableResumable = false, fields = FieldSets.NEXT_UP)
         } catch (e: Exception) {
             Timber.e(e, "Failed to load next up")
             emptyList()
@@ -449,7 +451,7 @@ constructor(
 
     private suspend fun loadLibraries(): List<AfinityCollection> {
         return try {
-            jellyfinRepository.getLibraries()
+            mediaRepository.getLibraries()
         } catch (e: Exception) {
             Timber.e(e, "Failed to load libraries")
             emptyList()
@@ -475,7 +477,7 @@ constructor(
                                     async {
                                         try {
                                             val items =
-                                                jellyfinRepository
+                                                mediaRepository
                                                     .getLatestMedia(
                                                         parentId = library.id,
                                                         limit = 30,
@@ -494,7 +496,7 @@ constructor(
                                     async {
                                         try {
                                             library to
-                                                jellyfinRepository.getMovies(
+                                                mediaRepository.getMovies(
                                                     parentId = library.id,
                                                     sortBy = SortBy.RELEASE_DATE,
                                                     sortDescending = true,
@@ -517,7 +519,7 @@ constructor(
                                     async {
                                         try {
                                             val items =
-                                                jellyfinRepository
+                                                mediaRepository
                                                     .getLatestMedia(
                                                         parentId = library.id,
                                                         limit = 30,
@@ -536,7 +538,7 @@ constructor(
                                     async {
                                         try {
                                             library to
-                                                jellyfinRepository.getShows(
+                                                mediaRepository.getShows(
                                                     parentId = library.id,
                                                     sortBy = SortBy.RELEASE_DATE,
                                                     sortDescending = true,
@@ -642,7 +644,7 @@ constructor(
                     cached.second
                 } else {
                     val movies =
-                        jellyfinRepository.getMovies(
+                        mediaRepository.getMovies(
                             sortBy = SortBy.DATE_PLAYED,
                             sortDescending = true,
                             limit = 10,

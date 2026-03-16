@@ -1,5 +1,6 @@
 package com.makd.afinity.data.repository.media
 
+import androidx.paging.PagingData
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.mdblist.MdbListRating
@@ -7,6 +8,7 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.ui.library.FilterType
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
@@ -19,6 +21,8 @@ import org.jellyfin.sdk.model.api.ItemFields
 import java.util.UUID
 
 interface MediaRepository {
+
+    fun getBaseUrl(): String
 
     val libraries: Flow<List<AfinityCollection>>
     val latestMedia: Flow<List<AfinityItem>>
@@ -74,6 +78,8 @@ interface MediaRepository {
     ): BaseItemDtoQueryResult
 
     suspend fun getItem(itemId: UUID, fields: List<ItemFields>? = null): BaseItemDto?
+
+    suspend fun getItemById(itemId: UUID): AfinityItem?
 
     suspend fun getIntros(itemId: UUID): List<AfinityItem>
 
@@ -198,6 +204,17 @@ interface MediaRepository {
     ): List<AfinityBoxSet>
 
     suspend fun ensureBoxSetCacheBuilt()
+
+    fun getItemsPaging(
+        parentId: UUID?,
+        libraryType: CollectionType,
+        sortBy: SortBy,
+        sortDescending: Boolean,
+        filter: FilterType,
+        nameStartsWith: String? = null,
+        fields: List<ItemFields>? = null,
+        studioName: String? = null,
+    ): Flow<PagingData<AfinityItem>>
 
     fun getLibrariesFlow(): Flow<List<AfinityCollection>>
 

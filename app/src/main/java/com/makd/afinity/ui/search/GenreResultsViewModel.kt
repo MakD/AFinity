@@ -17,7 +17,6 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.repository.AppDataRepository
-import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,7 +37,6 @@ class GenreResultsViewModel
 constructor(
     @param:ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
-    private val jellyfinRepository: JellyfinRepository,
     private val appDataRepository: AppDataRepository,
     private val playbackStateManager: PlaybackStateManager,
 ) : ViewModel() {
@@ -71,12 +69,12 @@ constructor(
         viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
                 if (event is PlaybackEvent.Synced) {
-                    val syncedItem = jellyfinRepository.getItemById(event.itemId) ?: return@collect
+                    val syncedItem = mediaRepository.getItemById(event.itemId) ?: return@collect
 
                     val targetItem =
                         when (syncedItem) {
-                            is AfinityEpisode -> jellyfinRepository.getItemById(syncedItem.seriesId)
-                            is AfinitySeason -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                            is AfinityEpisode -> mediaRepository.getItemById(syncedItem.seriesId)
+                            is AfinitySeason -> mediaRepository.getItemById(syncedItem.seriesId)
                             else -> syncedItem
                         } ?: return@collect
 
@@ -94,14 +92,14 @@ constructor(
 
         val moviesBaseFlow =
             Pager(PagingConfig(pageSize = 50)) {
-                    GenrePagingSource(mediaRepository, jellyfinRepository, genre, "MOVIE")
+                    GenrePagingSource(mediaRepository, genre, "MOVIE")
                 }
                 .flow
         _moviesPagingData.value = applyUpdatesToPagingFlow(moviesBaseFlow)
 
         val showsBaseFlow =
             Pager(PagingConfig(pageSize = 50)) {
-                    GenrePagingSource(mediaRepository, jellyfinRepository, genre, "SERIES")
+                    GenrePagingSource(mediaRepository, genre, "SERIES")
                 }
                 .flow
         _showsPagingData.value = applyUpdatesToPagingFlow(showsBaseFlow)
@@ -112,7 +110,6 @@ data class GenreResultsUiState(val isLoading: Boolean = false, val error: String
 
 class GenrePagingSource(
     private val mediaRepository: MediaRepository,
-    private val jellyfinRepository: JellyfinRepository,
     private val genre: String,
     private val itemType: String,
 ) : PagingSource<Int, AfinityItem>() {
@@ -131,7 +128,7 @@ class GenrePagingSource(
             val items =
                 response.items?.mapNotNull { baseItemDto ->
                     try {
-                        baseItemDto.toAfinityItem(jellyfinRepository.getBaseUrl())
+                        baseItemDto.toAfinityItem(mediaRepository.getBaseUrl())
                     } catch (e: Exception) {
                         null
                     }

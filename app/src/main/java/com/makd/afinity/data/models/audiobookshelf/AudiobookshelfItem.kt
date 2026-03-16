@@ -1,5 +1,6 @@
 package com.makd.afinity.data.models.audiobookshelf
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -10,7 +11,6 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
 
 @Serializable
 data class LibraryItem(
@@ -122,6 +122,7 @@ object SeriesItemListSerializer : KSerializer<List<SeriesItem>?> {
 
     override val descriptor: SerialDescriptor = listSerializer.descriptor
 
+    @OptIn(ExperimentalSerializationApi::class)
     override fun serialize(encoder: Encoder, value: List<SeriesItem>?) {
         if (value != null) {
             listSerializer.serialize(encoder, value)

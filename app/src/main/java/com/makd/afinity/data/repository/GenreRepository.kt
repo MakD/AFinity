@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -27,7 +28,7 @@ import kotlin.time.Duration.Companion.hours
 @Singleton
 class GenreRepository
 @Inject
-constructor(private val jellyfinRepository: JellyfinRepository, database: AfinityDatabase) {
+constructor(private val mediaRepository: MediaRepository, database: AfinityDatabase) {
     private val genreCacheTTL = 12.hours.inWholeMilliseconds
     private val genreCacheDao = database.genreCacheDao()
     private val afinityTypeConverters = AfinityTypeConverters()
@@ -80,7 +81,7 @@ constructor(private val jellyfinRepository: JellyfinRepository, database: Afinit
             }
 
             val genres =
-                jellyfinRepository.getGenres(
+                mediaRepository.getGenres(
                     parentId = null,
                     limit = null,
                     includeItemTypes = listOf("MOVIE"),
@@ -112,7 +113,7 @@ constructor(private val jellyfinRepository: JellyfinRepository, database: Afinit
             }
 
             val genres =
-                jellyfinRepository.getGenres(
+                mediaRepository.getGenres(
                     parentId = null,
                     limit = null,
                     includeItemTypes = listOf("SERIES"),
@@ -160,7 +161,7 @@ constructor(private val jellyfinRepository: JellyfinRepository, database: Afinit
                 }
 
                 val movies =
-                    jellyfinRepository.getMoviesByGenre(
+                    mediaRepository.getMoviesByGenre(
                         genre = genre,
                         limit = limit,
                         shuffle = true,
@@ -228,7 +229,7 @@ constructor(private val jellyfinRepository: JellyfinRepository, database: Afinit
             }
 
             val shows =
-                jellyfinRepository.getShowsByGenre(genre = genre, limit = limit, shuffle = true)
+                mediaRepository.getShowsByGenre(genre = genre, limit = limit, shuffle = true)
 
             if (shows.isNotEmpty()) {
                 val timestamp = System.currentTimeMillis()

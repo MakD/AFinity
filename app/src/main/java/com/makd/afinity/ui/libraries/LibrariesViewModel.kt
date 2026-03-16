@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.repository.AppDataRepository
-import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +17,7 @@ import timber.log.Timber
 class LibrariesViewModel
 @Inject
 constructor(
-    private val jellyfinRepository: JellyfinRepository,
+    private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
 ) : ViewModel() {
 
@@ -41,7 +41,7 @@ constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
-                val libraries = jellyfinRepository.getLibraries()
+                val libraries = mediaRepository.getLibraries()
                 _uiState.value =
                     _uiState.value.copy(libraries = libraries, isLoading = false, error = null)
 

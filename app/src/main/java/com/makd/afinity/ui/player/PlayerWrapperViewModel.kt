@@ -10,7 +10,7 @@ import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.media.AfinityImages
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.DatabaseRepository
-import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -28,7 +28,7 @@ class PlayerWrapperViewModel
 @Inject
 constructor(
     @param:ApplicationContext private val context: Context,
-    private val jellyfinRepository: JellyfinRepository,
+    private val mediaRepository: MediaRepository,
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
     private val liveTvRepository: LiveTvRepository,
@@ -141,7 +141,7 @@ constructor(
                 if (loadedItem == null) {
                     Timber.d("PlayerWrapperViewModel: Trying to load from API")
                     try {
-                        loadedItem = jellyfinRepository.getItemById(itemId)
+                        loadedItem = mediaRepository.getItemById(itemId)
                         if (loadedItem != null) {
                             Timber.d(
                                 "PlayerWrapperViewModel: Loaded item from API: ${loadedItem.name}"

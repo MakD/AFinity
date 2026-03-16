@@ -163,7 +163,7 @@ constructor(
 
                         if (!isRelated) {
                             try {
-                                val syncedItem = jellyfinRepository.getItemById(event.itemId)
+                                val syncedItem = mediaRepository.getItemById(event.itemId)
                                 if (syncedItem is AfinityEpisode) {
                                     val belongsToSeriesBySeriesId = syncedItem.seriesId == itemId
                                     val belongsToSeriesBySeasonId =
@@ -181,7 +181,7 @@ constructor(
                             }
                         } else {
                             try {
-                                val syncedItem = jellyfinRepository.getItemById(event.itemId)
+                                val syncedItem = mediaRepository.getItemById(event.itemId)
                                 if (syncedItem is AfinityEpisode) {
                                     syncedEpisode = syncedItem
                                 }
@@ -304,7 +304,7 @@ constructor(
     private fun refreshFromCacheImmediate() {
         viewModelScope.launch {
             try {
-                val cachedItem = jellyfinRepository.getItemById(itemId)
+                val cachedItem = mediaRepository.getItemById(itemId)
                 if (cachedItem != null) {
                     updateItemUserData(cachedItem)
                     when (cachedItem) {
@@ -347,14 +347,14 @@ constructor(
         viewModelScope.launch {
             try {
                 val targetId =
-                    when (val syncedItem = jellyfinRepository.getItemById(syncedItemId)) {
+                    when (val syncedItem = mediaRepository.getItemById(syncedItemId)) {
                         is AfinityEpisode -> syncedItem.seriesId
                         is AfinitySeason -> syncedItem.seriesId
                         else -> syncedItemId
                     }
                 val index = _uiState.value.similarItems.indexOfFirst { it.id == targetId }
                 if (index == -1) return@launch
-                val updatedItem = jellyfinRepository.getItemById(targetId) ?: return@launch
+                val updatedItem = mediaRepository.getItemById(targetId) ?: return@launch
                 val updatedList = _uiState.value.similarItems.toMutableList()
                 updatedList[index] = updatedItem
                 _uiState.value = _uiState.value.copy(similarItems = updatedList)
@@ -367,13 +367,13 @@ constructor(
     private suspend fun syncWithServerInBackground() {
         try {
             val serverItem =
-                jellyfinRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let {
+                mediaRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let {
                     baseItemDto ->
                     when (baseItemDto.type) {
-                        BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(jellyfinRepository, null)
-                        BaseItemKind.SERIES -> baseItemDto.toAfinityShow(jellyfinRepository)
+                        BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(jellyfinRepository.getBaseUrl(), null)
+                        BaseItemKind.SERIES -> baseItemDto.toAfinityShow(jellyfinRepository.getBaseUrl())
                         BaseItemKind.EPISODE ->
-                            baseItemDto.toAfinityEpisode(jellyfinRepository, null)
+                            baseItemDto.toAfinityEpisode(jellyfinRepository.getBaseUrl(), null)
                         BaseItemKind.BOX_SET ->
                             baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
                         BaseItemKind.SEASON -> {
@@ -382,7 +382,7 @@ constructor(
                             if (season.runtimeTicks == 0L) {
                                 try {
                                     val series =
-                                        jellyfinRepository.getItem(
+                                        mediaRepository.getItem(
                                             season.seriesId,
                                             fields = FieldSets.REFRESH_USER_DATA,
                                         )
@@ -405,7 +405,7 @@ constructor(
                 }
                 if (serverItem is AfinityShow) {
                     try {
-                        val seasons = jellyfinRepository.getSeasons(serverItem.id)
+                        val seasons = mediaRepository.getSeasons(serverItem.id)
                         _uiState.value = _uiState.value.copy(seasons = seasons)
                     } catch (e: Exception) {
                         Timber.w(e, "Failed to refresh seasons in background sync")
@@ -492,7 +492,7 @@ constructor(
         viewModelScope.launch {
             try {
                 val response =
-                    jellyfinRepository.getItems(
+                    mediaRepository.getItems(
                         parentId = boxSetId,
                         includeItemTypes = listOf("MOVIE", "SERIES", "SEASON", "EPISODE"),
                         limit = 100,
@@ -501,11 +501,11 @@ constructor(
                     )
                 val items =
                     response.items.mapNotNull { baseItem ->
-                        val item = baseItem.toAfinityItem(jellyfinRepository.getBaseUrl())
+                        val item = baseItem.toAfinityItem(mediaRepository.getBaseUrl())
                         if (item is AfinitySeason && item.runtimeTicks == 0L) {
                             try {
                                 val series =
-                                    jellyfinRepository.getItem(
+                                    mediaRepository.getItem(
                                         item.seriesId,
                                         fields = FieldSets.MINIMAL,
                                     )
@@ -535,14 +535,14 @@ constructor(
                     if (isOffline) {
                         loadItemFromDatabase()
                     } else {
-                        jellyfinRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let {
+                        mediaRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let {
                             baseItemDto ->
                             when (baseItemDto.type) {
                                 BaseItemKind.MOVIE ->
-                                    baseItemDto.toAfinityMovie(jellyfinRepository, null)
-                                BaseItemKind.SERIES -> baseItemDto.toAfinityShow(jellyfinRepository)
+                                    baseItemDto.toAfinityMovie(jellyfinRepository.getBaseUrl(), null)
+                                BaseItemKind.SERIES -> baseItemDto.toAfinityShow(jellyfinRepository.getBaseUrl())
                                 BaseItemKind.EPISODE ->
-                                    baseItemDto.toAfinityEpisode(jellyfinRepository, null)
+                                    baseItemDto.toAfinityEpisode(jellyfinRepository.getBaseUrl(), null)
                                 BaseItemKind.BOX_SET ->
                                     baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
                                 BaseItemKind.SEASON -> {
@@ -551,7 +551,7 @@ constructor(
                                     if (season.runtimeTicks == 0L) {
                                         try {
                                             val series =
-                                                jellyfinRepository.getItem(
+                                                mediaRepository.getItem(
                                                     season.seriesId,
                                                     fields = FieldSets.REFRESH_USER_DATA,
                                                 )
@@ -647,7 +647,7 @@ constructor(
                 fetchNextUp()
                 viewModelScope.launch {
                     try {
-                        val similar = jellyfinRepository.getSimilarItems(itemId)
+                        val similar = mediaRepository.getSimilarItems(itemId)
                         _uiState.update { it.copy(similarItems = similar) }
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to get similar items")
@@ -655,7 +655,7 @@ constructor(
                 }
                 viewModelScope.launch {
                     try {
-                        val seasons = jellyfinRepository.getSeasons(itemId)
+                        val seasons = mediaRepository.getSeasons(itemId)
                         _uiState.update { it.copy(seasons = seasons) }
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to get seasons")
@@ -664,7 +664,7 @@ constructor(
                 viewModelScope.launch {
                     try {
                         getCurrentUserId()?.let { id ->
-                            val features = jellyfinRepository.getSpecialFeatures(itemId, id)
+                            val features = mediaRepository.getSpecialFeatures(itemId, id)
                             _uiState.update { it.copy(specialFeatures = features) }
                         }
                     } catch (e: Exception) {
@@ -719,7 +719,7 @@ constructor(
                 viewModelScope.launch {
                     try {
                         getCurrentUserId()?.let { id ->
-                            val features = jellyfinRepository.getSpecialFeatures(itemId, id)
+                            val features = mediaRepository.getSpecialFeatures(itemId, id)
                             _uiState.update { it.copy(specialFeatures = features) }
                         }
                     } catch (e: Exception) {
@@ -730,7 +730,7 @@ constructor(
             else -> {
                 viewModelScope.launch {
                     try {
-                        val similar = jellyfinRepository.getSimilarItems(itemId)
+                        val similar = mediaRepository.getSimilarItems(itemId)
                         _uiState.update { it.copy(similarItems = similar) }
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to get similar items")
@@ -739,7 +739,7 @@ constructor(
                 viewModelScope.launch {
                     try {
                         getCurrentUserId()?.let { id ->
-                            val features = jellyfinRepository.getSpecialFeatures(itemId, id)
+                            val features = mediaRepository.getSpecialFeatures(itemId, id)
                             _uiState.update { it.copy(specialFeatures = features) }
                         }
                     } catch (e: Exception) {
@@ -902,9 +902,9 @@ constructor(
                 _isLoadingEpisode.value = true
                 val fullEpisode =
                     try {
-                        jellyfinRepository
+                        mediaRepository
                             .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
-                            ?.toAfinityEpisode(jellyfinRepository, null)
+                            ?.toAfinityEpisode(jellyfinRepository.getBaseUrl(), null)
                     } catch (_: Exception) {
                         try {
                             authRepository.currentUser.value?.id?.let {

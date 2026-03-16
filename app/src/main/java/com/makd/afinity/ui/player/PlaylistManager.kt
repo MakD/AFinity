@@ -1,9 +1,8 @@
 package com.makd.afinity.ui.player
 
-import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +20,7 @@ data class PlaylistState(
 )
 
 @Singleton
-class PlaylistManager @Inject constructor(private val jellyfinRepository: JellyfinRepository) {
+class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepository) {
     private val _playlistState = MutableStateFlow(PlaylistState())
     val playlistState: StateFlow<PlaylistState> = _playlistState.asStateFlow()
 
@@ -51,7 +50,7 @@ class PlaylistManager @Inject constructor(private val jellyfinRepository: Jellyf
             val intros =
                 try {
                     if (startPositionMs == 0L) {
-                        jellyfinRepository.getIntros(startingItem.id)
+                        mediaRepository.getIntros(startingItem.id)
                     } else {
                         Timber.d("Resuming media at ${startPositionMs}ms, skipping intros")
                         emptyList()
@@ -88,7 +87,7 @@ class PlaylistManager @Inject constructor(private val jellyfinRepository: Jellyf
         return try {
             if (seasonId != null) {
                 Timber.d("Loading episodes for season $seasonId only")
-                val episodes = jellyfinRepository.getEpisodes(seasonId, startingEpisode.seriesId)
+                val episodes = mediaRepository.getEpisodes(seasonId, startingEpisode.seriesId)
 
                 if (episodes.isEmpty()) {
                     val fallbackQueue = intros.toMutableList().apply { add(startingEpisode) }
@@ -116,12 +115,7 @@ class PlaylistManager @Inject constructor(private val jellyfinRepository: Jellyf
             }
 
             Timber.d("Loading episodes for entire series")
-            val seasons =
-                jellyfinRepository.getSeasons(
-                    startingEpisode.seriesId,
-                    SortBy.NAME,
-                    sortDescending = false,
-                )
+            val seasons = mediaRepository.getSeasons(startingEpisode.seriesId)
 
             if (seasons.isEmpty()) {
                 val fallbackQueue = intros.toMutableList().apply { add(startingEpisode) }
@@ -134,7 +128,7 @@ class PlaylistManager @Inject constructor(private val jellyfinRepository: Jellyf
             for (season in seasons.sortedBy { it.indexNumber ?: 0 }) {
                 try {
                     val episodes =
-                        jellyfinRepository.getEpisodes(season.id, startingEpisode.seriesId)
+                        mediaRepository.getEpisodes(season.id, startingEpisode.seriesId)
 
                     if (episodes.isNotEmpty()) {
                         allEpisodes.addAll(episodes.sortedBy { it.indexNumber ?: 0 })

@@ -1,9 +1,10 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
+import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.extensions.toAfinityChannel
+import com.makd.afinity.data.models.extensions.toAfinityFolder
 import com.makd.afinity.data.models.extensions.toAfinityVideo
-import com.makd.afinity.data.repository.JellyfinRepository
 import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -29,18 +30,18 @@ interface AfinityItem {
 }
 
 suspend fun BaseItemDto.toAfinityItem(
-    jellyfinRepository: JellyfinRepository,
+    baseUrl: String,
     serverDatabase: ServerDatabaseDao? = null,
 ): AfinityItem? {
     return when (type) {
-        BaseItemKind.MOVIE -> toAfinityMovie(jellyfinRepository, serverDatabase)
-        BaseItemKind.EPISODE -> toAfinityEpisode(jellyfinRepository)
-        BaseItemKind.SEASON -> toAfinitySeason(jellyfinRepository)
-        BaseItemKind.SERIES -> toAfinityShow(jellyfinRepository)
-        BaseItemKind.BOX_SET -> toAfinityBoxSet(jellyfinRepository)
-        BaseItemKind.FOLDER -> toAfinityFolder(jellyfinRepository)
-        BaseItemKind.VIDEO -> toAfinityVideo(jellyfinRepository.getBaseUrl())
-        BaseItemKind.TV_CHANNEL -> toAfinityChannel(jellyfinRepository.getBaseUrl())
+        BaseItemKind.MOVIE -> toAfinityMovie(baseUrl, serverDatabase)
+        BaseItemKind.EPISODE -> toAfinityEpisode(baseUrl)
+        BaseItemKind.SEASON -> toAfinitySeason(baseUrl)
+        BaseItemKind.SERIES -> toAfinityShow(baseUrl)
+        BaseItemKind.BOX_SET -> toAfinityBoxSet(baseUrl)
+        BaseItemKind.FOLDER -> toAfinityFolder(baseUrl)
+        BaseItemKind.VIDEO -> toAfinityVideo(baseUrl)
+        BaseItemKind.TV_CHANNEL -> toAfinityChannel(baseUrl)
         else -> null
     }
 }

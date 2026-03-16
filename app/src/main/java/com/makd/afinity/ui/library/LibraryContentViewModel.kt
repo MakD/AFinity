@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +43,7 @@ enum class FilterType {
 class LibraryContentViewModel
 @Inject
 constructor(
+    private val mediaRepository: MediaRepository,
     private val jellyfinRepository: JellyfinRepository,
     private val appDataRepository: AppDataRepository,
     private val playbackStateManager: PlaybackStateManager,
@@ -116,11 +118,11 @@ constructor(
         viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
                 if (event is PlaybackEvent.Synced) {
-                    val syncedItem = jellyfinRepository.getItemById(event.itemId) ?: return@collect
+                    val syncedItem = mediaRepository.getItemById(event.itemId) ?: return@collect
                     val targetItem =
                         when (syncedItem) {
-                            is AfinityEpisode -> jellyfinRepository.getItemById(syncedItem.seriesId)
-                            is AfinitySeason -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                            is AfinityEpisode -> mediaRepository.getItemById(syncedItem.seriesId)
+                            is AfinitySeason -> mediaRepository.getItemById(syncedItem.seriesId)
                             else -> syncedItem
                         } ?: return@collect
                     _itemUpdates.value += (targetItem.id to targetItem)
@@ -145,7 +147,7 @@ constructor(
         }
 
         return try {
-            val libraries = jellyfinRepository.getLibraries()
+            val libraries = mediaRepository.getLibraries()
             val library = libraries.find { it.id.toString() == libraryId }
             Timber.d("Library '$libraryName' has type: ${library?.type}")
             library?.type ?: CollectionType.Mixed
@@ -168,7 +170,7 @@ constructor(
         _itemUpdates.value = emptyMap()
 
         val baseFlow =
-            jellyfinRepository.getItemsPaging(
+            mediaRepository.getItemsPaging(
                 parentId = libraryId?.let { UUID.fromString(it) },
                 libraryType = type,
                 sortBy = currentSortBy,
@@ -268,7 +270,7 @@ constructor(
                 _itemUpdates.value = emptyMap()
 
                 val baseFlow =
-                    jellyfinRepository.getItemsPaging(
+                    mediaRepository.getItemsPaging(
                         parentId = libraryId?.let { UUID.fromString(it) },
                         libraryType = type,
                         sortBy = currentSortBy,

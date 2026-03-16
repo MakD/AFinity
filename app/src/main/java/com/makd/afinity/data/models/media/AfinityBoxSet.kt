@@ -1,6 +1,5 @@
 package com.makd.afinity.data.models.media
 
-import com.makd.afinity.data.repository.JellyfinRepository
 import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -31,18 +30,3 @@ data class AfinityBoxSet(
     override val externalUrls: List<AfinityExternalUrl>?,
 ) : AfinityItem
 
-fun BaseItemDto.toAfinityBoxSet(jellyfinRepository: JellyfinRepository): AfinityBoxSet {
-    return AfinityBoxSet(
-        id = id,
-        name = name.orEmpty(),
-        overview = overview.orEmpty(),
-        played = userData?.played == true,
-        favorite = userData?.isFavorite == true,
-        liked = userData?.likes == true,
-        unplayedItemCount = userData?.unplayedItemCount,
-        itemCount = childCount,
-        images = toAfinityImages(jellyfinRepository),
-        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
-        externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
-    )
-}

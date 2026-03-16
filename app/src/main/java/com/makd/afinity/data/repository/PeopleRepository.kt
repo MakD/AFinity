@@ -15,6 +15,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -28,7 +29,7 @@ import kotlin.time.Duration.Companion.hours
 @Singleton
 class PeopleRepository
 @Inject
-constructor(private val jellyfinRepository: JellyfinRepository, database: AfinityDatabase) {
+constructor(private val mediaRepository: MediaRepository, database: AfinityDatabase) {
     private val personCacheTTL = 48.hours.inWholeMilliseconds
     private val peopleCacheTTL = 24.hours.inWholeMilliseconds
 
@@ -56,13 +57,13 @@ constructor(private val jellyfinRepository: JellyfinRepository, database: Afinit
             }
 
             Timber.d("Fetching top ${type.name}...")
-            val baseUrl = jellyfinRepository.getBaseUrl()
+            val baseUrl = mediaRepository.getBaseUrl()
 
             val scanLimit = 150
             val peopleFrequency = mutableMapOf<String, Pair<AfinityPerson, Int>>()
 
             val moviesResponse =
-                jellyfinRepository.getItems(
+                mediaRepository.getItems(
                     includeItemTypes = listOf("Movie"),
                     fields = listOf(ItemFields.PEOPLE),
                     limit = scanLimit,
@@ -167,7 +168,7 @@ constructor(private val jellyfinRepository: JellyfinRepository, database: Afinit
             }
 
             val filteredItems =
-                jellyfinRepository.getPersonItems(
+                mediaRepository.getPersonItems(
                     personId = person.id,
                     includeItemTypes = listOf("MOVIE", "SERIES"),
                     personTypes = listOf(sectionType.toPersonKind().serialName),

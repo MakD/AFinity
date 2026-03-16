@@ -14,7 +14,6 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
@@ -35,7 +34,6 @@ import javax.inject.Inject
 class WatchlistViewModel
 @Inject
 constructor(
-    private val jellyfinRepository: JellyfinRepository,
     private val watchlistRepository: WatchlistRepository,
     private val userDataRepository: UserDataRepository,
     private val downloadRepository: DownloadRepository,
@@ -81,7 +79,8 @@ constructor(
                     _selectedEpisode.value?.let { ep ->
                         if (ep.id == event.itemId) {
                             val refreshedEp =
-                                jellyfinRepository.getItemById(event.itemId) as? AfinityEpisode
+                                mediaRepository.getItem(event.itemId)
+                                    ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                             refreshedEp?.let { _selectedEpisode.value = it }
                         }
                     }
@@ -140,9 +139,9 @@ constructor(
                 _isLoadingEpisode.value = true
 
                 val fullEpisode =
-                    jellyfinRepository
+                    mediaRepository
                         .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
-                        ?.toAfinityEpisode(jellyfinRepository, null)
+                        ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
 
                 _selectedEpisode.value = fullEpisode ?: episode
 

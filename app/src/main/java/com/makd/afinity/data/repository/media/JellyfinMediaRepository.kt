@@ -1,11 +1,14 @@
 package com.makd.afinity.data.repository.media
 
 import android.content.Context
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
-import com.makd.afinity.data.models.extensions.toAfinityCollection
+import com.makd.afinity.data.models.media.toAfinityCollection
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinityMovie
@@ -33,6 +36,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import com.makd.afinity.data.paging.JellyfinItemsPagingSource
+import com.makd.afinity.ui.library.FilterType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -319,9 +324,33 @@ constructor(
             return@withContext sessionManager.currentSession.value?.userId
         }
 
-    private fun getBaseUrl(): String {
+    override fun getBaseUrl(): String {
         return sessionManager.currentSession.value?.serverUrl ?: ""
     }
+
+    override fun getItemsPaging(
+        parentId: UUID?,
+        libraryType: CollectionType,
+        sortBy: SortBy,
+        sortDescending: Boolean,
+        filter: FilterType,
+        nameStartsWith: String?,
+        fields: List<ItemFields>?,
+        studioName: String?,
+    ): Flow<PagingData<AfinityItem>> =
+        Pager(config = PagingConfig(pageSize = 50, enablePlaceholders = false, initialLoadSize = 50)) {
+            JellyfinItemsPagingSource(
+                mediaRepository = this,
+                parentId = parentId,
+                libraryType = libraryType,
+                sortBy = sortBy,
+                sortDescending = sortDescending,
+                filter = filter,
+                baseUrl = getBaseUrl(),
+                nameStartsWith = nameStartsWith,
+                studioName = studioName,
+            )
+        }.flow
 
     override suspend fun getLibraries(): List<AfinityCollection> =
         withContext(Dispatchers.IO) {
@@ -556,6 +585,9 @@ constructor(
                 null
             }
         }
+
+    override suspend fun getItemById(itemId: UUID): AfinityItem? =
+        getItem(itemId)?.toAfinityItem(getBaseUrl())
 
     override suspend fun getIntros(itemId: UUID): List<AfinityItem> =
         withContext(Dispatchers.IO) {

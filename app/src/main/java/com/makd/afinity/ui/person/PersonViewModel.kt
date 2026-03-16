@@ -7,7 +7,7 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
-import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +23,7 @@ import javax.inject.Inject
 class PersonViewModel
 @Inject
 constructor(
-    private val jellyfinRepository: JellyfinRepository,
+    private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
     private val userDataRepository: UserDataRepository,
     savedStateHandle: SavedStateHandle,
@@ -63,14 +63,14 @@ constructor(
             try {
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
-                val person = jellyfinRepository.getPersonDetail(personId)
+                val person = mediaRepository.getPerson(personId)
                 if (person == null) {
                     _uiState.update { it.copy(isLoading = false, error = "Person not found") }
                     return@launch
                 }
 
                 val personItems =
-                    jellyfinRepository.getPersonItems(
+                    mediaRepository.getPersonItems(
                         personId = personId,
                         includeItemTypes = listOf("Movie", "Series"),
                     )

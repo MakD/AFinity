@@ -4,7 +4,8 @@ import android.net.Uri
 import androidx.core.net.toUri
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
-import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.models.extensions.toAfinityImages
+import com.makd.afinity.data.models.extensions.toAfinityPerson
 import java.util.UUID
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -46,15 +47,14 @@ data class AfinityEpisode(
 ) : AfinityItem, AfinitySources
 
 suspend fun BaseItemDto.toAfinityEpisode(
-    jellyfinRepository: JellyfinRepository,
+    baseUrl: String,
     database: ServerDatabaseDao? = null,
 ): AfinityEpisode? {
     val sources = mutableListOf<AfinitySource>()
-    sources.addAll(mediaSources?.map { it.toAfinitySource(jellyfinRepository, id) } ?: emptyList())
+    sources.addAll(mediaSources?.map { it.toAfinitySource(baseUrl, id) } ?: emptyList())
     if (database != null) {
         sources.addAll(database.getSources(id).map { it.toAfinitySource(database) })
     }
-    val baseUrl = jellyfinRepository.getBaseUrl()
     val seriesLogo = parentLogoImageTag?.let { tag ->
         "$baseUrl/Items/${parentLogoItemId ?: seriesId}/Images/Logo?tag=$tag".toUri()
     }
@@ -83,9 +83,9 @@ suspend fun BaseItemDto.toAfinityEpisode(
             seriesLogoBlurHash = seriesLogoBlurHash,
             seasonId = seasonId!!,
             communityRating = communityRating,
-            people = people?.map { it.toAfinityPerson(jellyfinRepository) } ?: emptyList(),
+            people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
             missing = locationType == LocationType.VIRTUAL,
-            images = toAfinityImages(jellyfinRepository),
+            images = toAfinityImages(baseUrl),
             chapters = toAfinityChapters(),
             trickplayInfo =
                 trickplay?.mapValues { it.value[it.value.keys.max()]!!.toAfinityTrickplayInfo() },

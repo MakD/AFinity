@@ -14,7 +14,6 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -36,7 +35,6 @@ import javax.inject.Inject
 class FavoritesViewModel
 @Inject
 constructor(
-    private val jellyfinRepository: JellyfinRepository,
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
     private val playbackStateManager: PlaybackStateManager,
@@ -83,7 +81,8 @@ constructor(
                     _selectedEpisode.value?.let { ep ->
                         if (ep.id == event.itemId) {
                             val refreshedEp =
-                                jellyfinRepository.getItemById(event.itemId) as? AfinityEpisode
+                                mediaRepository.getItem(event.itemId)
+                                    ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                             refreshedEp?.let { _selectedEpisode.value = it }
                         }
                     }
@@ -98,12 +97,12 @@ constructor(
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
                 coroutineScope {
-                    val moviesDeferred = async { jellyfinRepository.getFavoriteMovies() }
-                    val showsDeferred = async { jellyfinRepository.getFavoriteShows() }
-                    val seasonsDeferred = async { jellyfinRepository.getFavoriteSeasons() }
-                    val episodesDeferred = async { jellyfinRepository.getFavoriteEpisodes() }
-                    val boxSetsDeferred = async { jellyfinRepository.getFavoriteBoxSets() }
-                    val peopleDeferred = async { jellyfinRepository.getFavoritePeople() }
+                    val moviesDeferred = async { mediaRepository.getFavoriteMovies() }
+                    val showsDeferred = async { mediaRepository.getFavoriteShows() }
+                    val seasonsDeferred = async { mediaRepository.getFavoriteSeasons() }
+                    val episodesDeferred = async { mediaRepository.getFavoriteEpisodes() }
+                    val boxSetsDeferred = async { mediaRepository.getFavoriteBoxSets() }
+                    val peopleDeferred = async { mediaRepository.getFavoritePeople() }
                     val channelsDeferred = async {
                         try {
                             liveTvRepository.getChannels(isFavorite = true)
@@ -154,9 +153,9 @@ constructor(
                 _isLoadingEpisode.value = true
 
                 val fullEpisode =
-                    jellyfinRepository
+                    mediaRepository
                         .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
-                        ?.toAfinityEpisode(jellyfinRepository, null)
+                        ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
 
                 _selectedEpisode.value = fullEpisode ?: episode
 

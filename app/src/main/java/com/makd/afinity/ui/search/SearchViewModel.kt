@@ -30,7 +30,6 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -66,7 +65,6 @@ class SearchViewModel
 @Inject
 constructor(
     private val mediaRepository: MediaRepository,
-    private val jellyfinRepository: JellyfinRepository,
     private val jellyseerrRepository: JellyseerrRepository,
     private val appDataRepository: AppDataRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
@@ -148,13 +146,13 @@ constructor(
         viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
                 if (event is PlaybackEvent.Synced) {
-                    val syncedItem = jellyfinRepository.getItemById(event.itemId) ?: return@collect
+                    val syncedItem = mediaRepository.getItemById(event.itemId) ?: return@collect
                     updateItemInSearchResults(syncedItem)
                     val parentItem =
                         when (syncedItem) {
                             is AfinityEpisode ->
-                                syncedItem.seriesId?.let { jellyfinRepository.getItemById(it) }
-                            is AfinitySeason -> jellyfinRepository.getItemById(syncedItem.seriesId)
+                                syncedItem.seriesId?.let { mediaRepository.getItemById(it) }
+                            is AfinitySeason -> mediaRepository.getItemById(syncedItem.seriesId)
                             else -> null
                         }
 
@@ -172,9 +170,9 @@ constructor(
                 _isLoadingEpisode.value = true
                 val fullEpisode =
                     try {
-                        jellyfinRepository
+                        mediaRepository
                             .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
-                            ?.toAfinityEpisode(jellyfinRepository, null)
+                            ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                     } catch (e: Exception) {
                         try {
                             authRepository.currentUser.value?.id?.let {
@@ -434,7 +432,7 @@ constructor(
                                         try {
                                             val item =
                                                 baseItemDto.toAfinityItem(
-                                                    jellyfinRepository.getBaseUrl()
+                                                    mediaRepository.getBaseUrl()
                                                 )
                                             when (item) {
                                                 is AfinityMovie,

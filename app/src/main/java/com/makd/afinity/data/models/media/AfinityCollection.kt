@@ -1,7 +1,7 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.models.common.CollectionType
-import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.models.extensions.toAfinityImages
 import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -26,7 +26,7 @@ data class AfinityCollection(
     override val externalUrls: List<AfinityExternalUrl>?,
 ) : AfinityItem
 
-fun BaseItemDto.toAfinityCollection(jellyfinRepository: JellyfinRepository): AfinityCollection? {
+fun BaseItemDto.toAfinityCollection(baseUrl: String): AfinityCollection? {
     val type = CollectionType.fromString(collectionType?.serialName)
 
     if (type !in CollectionType.supported) {
@@ -40,7 +40,7 @@ fun BaseItemDto.toAfinityCollection(jellyfinRepository: JellyfinRepository): Afi
         played = userData?.played == true,
         favorite = userData?.isFavorite == true,
         liked = userData?.likes == true,
-        images = toAfinityImages(jellyfinRepository),
+        images = toAfinityImages(baseUrl),
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
     )

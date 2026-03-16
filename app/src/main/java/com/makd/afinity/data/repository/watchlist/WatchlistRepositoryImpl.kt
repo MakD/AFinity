@@ -6,11 +6,10 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
-import com.makd.afinity.data.models.media.toAfinityBoxSet
+import com.makd.afinity.data.models.extensions.toAfinityBoxSet
 import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.models.media.toAfinitySeason
 import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +31,6 @@ class WatchlistRepositoryImpl
 constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
-    private val jellyfinRepository: JellyfinRepository,
 ) : WatchlistRepository {
     private val _watchlistCountFlow = MutableStateFlow<Int?>(null)
     override val watchlistCountFlow: StateFlow<Int?> = _watchlistCountFlow.asStateFlow()
@@ -82,7 +80,7 @@ constructor(
                     )
                 response.items
                     ?.filter { it.type?.name == "BOX_SET" }
-                    ?.map { it.toAfinityBoxSet(jellyfinRepository) } ?: emptyList()
+                    ?.map { it.toAfinityBoxSet(mediaRepository.getBaseUrl()) } ?: emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked box sets")
                 emptyList()
@@ -135,7 +133,7 @@ constructor(
                     )
                 response.items
                     ?.filter { it.type?.name == "SEASON" }
-                    ?.mapNotNull { it.toAfinitySeason(jellyfinRepository) } ?: emptyList()
+                    ?.mapNotNull { it.toAfinitySeason(mediaRepository.getBaseUrl()) } ?: emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked seasons")
                 emptyList()
@@ -156,7 +154,7 @@ constructor(
                     )
                 response.items
                     ?.filter { it.type?.name == "EPISODE" }
-                    ?.mapNotNull { it.toAfinityEpisode(jellyfinRepository) } ?: emptyList()
+                    ?.mapNotNull { it.toAfinityEpisode(mediaRepository.getBaseUrl()) } ?: emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load liked episodes")
                 emptyList()

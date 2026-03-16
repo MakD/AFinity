@@ -821,7 +821,7 @@ constructor(
                 if (item.sources.isEmpty()) {
                     Timber.d("Item ${item.name} has no sources, fetching full details...")
                     try {
-                        (jellyfinRepository.getItemById(item.id) as? AfinityItem) ?: item
+                        mediaRepository.getItemById(item.id) ?: item
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to fetch full item details")
                         item

@@ -1,6 +1,7 @@
 package com.makd.afinity.data.models.media
 
-import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.models.extensions.toAfinityImages
+import com.makd.afinity.data.models.extensions.toAfinityPerson
 import java.time.LocalDateTime
 import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -34,7 +35,7 @@ data class AfinitySeason(
     override val externalUrls: List<AfinityExternalUrl>?,
 ) : AfinityItem
 
-fun BaseItemDto.toAfinitySeason(jellyfinRepository: JellyfinRepository): AfinitySeason {
+fun BaseItemDto.toAfinitySeason(baseUrl: String): AfinitySeason {
     return AfinitySeason(
         id = id,
         name = name.orEmpty(),
@@ -51,11 +52,11 @@ fun BaseItemDto.toAfinitySeason(jellyfinRepository: JellyfinRepository): Afinity
         episodes = emptyList(),
         seriesId = seriesId!!,
         seriesName = seriesName.orEmpty(),
-        images = toAfinityImages(jellyfinRepository),
+        images = toAfinityImages(baseUrl),
         episodeCount = childCount,
         productionYear = productionYear,
         premiereDate = premiereDate,
-        people = people?.map { it.toAfinityPerson(jellyfinRepository) } ?: emptyList(),
+        people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
     )

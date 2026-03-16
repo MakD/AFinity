@@ -1,7 +1,6 @@
 package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.database.entities.AfinityMediaStreamDto
-import com.makd.afinity.data.repository.JellyfinRepository
 import org.jellyfin.sdk.model.api.MediaStream
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.VideoRangeType
@@ -24,7 +23,7 @@ data class AfinityMediaStream(
     val isDefault: Boolean,
 )
 
-fun MediaStream.toAfinityMediaStream(jellyfinRepository: JellyfinRepository): AfinityMediaStream {
+fun MediaStream.toAfinityMediaStream(baseUrl: String): AfinityMediaStream {
     return AfinityMediaStream(
         title = title.orEmpty(),
         displayTitle = displayTitle,
@@ -34,7 +33,7 @@ fun MediaStream.toAfinityMediaStream(jellyfinRepository: JellyfinRepository): Af
         isExternal = isExternal,
         path =
             if (isExternal && !deliveryUrl.isNullOrBlank()) {
-                jellyfinRepository.getBaseUrl() + deliveryUrl
+                baseUrl + deliveryUrl
             } else {
                 null
             },

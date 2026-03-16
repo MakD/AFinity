@@ -1,13 +1,11 @@
 package com.makd.afinity.data.models.extensions
 
 import androidx.core.net.toUri
-import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityChapter
-import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityExternalUrl
 import com.makd.afinity.data.models.media.AfinityFolder
@@ -315,23 +313,6 @@ fun BaseItemDto.toAfinityFolder(baseUrl: String): AfinityFolder {
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = toAfinityExternalUrls(),
         liked = userData?.likes == true,
-    )
-}
-
-fun BaseItemDto.toAfinityCollection(baseUrl: String): AfinityCollection? {
-    val type = CollectionType.fromString(collectionType?.serialName)
-
-    if (type !in CollectionType.supported) {
-        return null
-    }
-
-    return AfinityCollection(
-        id = id,
-        name = name.orEmpty(),
-        type = type,
-        images = toAfinityImages(baseUrl),
-        providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
-        externalUrls = toAfinityExternalUrls(),
     )
 }
 

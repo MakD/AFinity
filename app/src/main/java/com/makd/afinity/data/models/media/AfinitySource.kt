@@ -2,7 +2,6 @@ package com.makd.afinity.data.models.media
 
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.entities.AfinitySourceDto
-import com.makd.afinity.data.repository.JellyfinRepository
 import java.io.File
 import java.util.UUID
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -27,19 +26,11 @@ data class AfinitySource(
 )
 
 suspend fun MediaSourceInfo.toAfinitySource(
-    jellyfinRepository: JellyfinRepository,
+    baseUrl: String,
     itemId: UUID,
-    includePath: Boolean = false,
 ): AfinitySource {
     val path =
         when (protocol) {
-            MediaProtocol.FILE -> {
-                try {
-                    if (includePath) jellyfinRepository.getStreamUrl(itemId, id.orEmpty()) else ""
-                } catch (e: Exception) {
-                    ""
-                }
-            }
             MediaProtocol.HTTP -> this.path.orEmpty()
             else -> ""
         }
@@ -56,7 +47,7 @@ suspend fun MediaSourceInfo.toAfinitySource(
         path = path,
         size = size ?: 0,
         mediaStreams =
-            mediaStreams?.map { it.toAfinityMediaStream(jellyfinRepository) } ?: emptyList(),
+            mediaStreams?.map { it.toAfinityMediaStream(baseUrl) } ?: emptyList(),
         bitrate = bitrate?.toLong(),
         container = container,
         videoCodec = videoStream?.codec,

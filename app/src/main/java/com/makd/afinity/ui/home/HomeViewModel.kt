@@ -31,7 +31,6 @@ import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -70,7 +69,6 @@ class HomeViewModel
 constructor(
     @param:ApplicationContext private val context: Context,
     private val appDataRepository: AppDataRepository,
-    private val jellyfinRepository: JellyfinRepository,
     private val userDataRepository: UserDataRepository,
     private val watchlistRepository: WatchlistRepository,
     private val databaseRepository: DatabaseRepository,
@@ -299,15 +297,15 @@ constructor(
                     is PlaybackEvent.Synced -> {
                         Timber.d("HomeViewModel received sync for ${event.itemId}")
                         val syncedItem =
-                            jellyfinRepository.getItemById(event.itemId) ?: return@collect
+                            mediaRepository.getItemById(event.itemId) ?: return@collect
                         appDataRepository.updatePlaybackProgressLocally(syncedItem)
 
                         val targetItem =
                             when (syncedItem) {
                                 is AfinityEpisode ->
-                                    jellyfinRepository.getItemById(syncedItem.seriesId)
+                                    mediaRepository.getItemById(syncedItem.seriesId)
                                 is AfinitySeason ->
-                                    jellyfinRepository.getItemById(syncedItem.seriesId)
+                                    mediaRepository.getItemById(syncedItem.seriesId)
                                 else -> syncedItem
                             } ?: return@collect
 
@@ -567,7 +565,7 @@ constructor(
                 renderedWatchedMovies.add(referenceMovie.id)
 
                 val similarMovies =
-                    jellyfinRepository
+                    mediaRepository
                         .getSimilarMovies(movieId = referenceMovie.id, limit = 32)
                         .filterNot { it.id in renderedItemIds }
                         .shuffled()
@@ -613,12 +611,12 @@ constructor(
                 renderedStarringWatchedMovies.add(randomMovie.id)
 
                 val movieItem =
-                    jellyfinRepository.getItem(
+                    mediaRepository.getItem(
                         itemId = randomMovie.id,
                         fields = listOf(org.jellyfin.sdk.model.api.ItemFields.PEOPLE),
                     )
 
-                val movieWithPeople = movieItem?.toAfinityMovie(jellyfinRepository.getBaseUrl())
+                val movieWithPeople = movieItem?.toAfinityMovie(mediaRepository.getBaseUrl())
                 if (movieWithPeople == null) {
                     Timber.d("Failed to fetch or convert movie '${randomMovie.name}'")
                     continue
@@ -638,7 +636,7 @@ constructor(
                 renderedActorNames.add(selectedActor.name)
 
                 val allActorItems =
-                    jellyfinRepository.getPersonItems(
+                    mediaRepository.getPersonItems(
                         personId = selectedActor.id,
                         includeItemTypes = listOf("MOVIE"),
                         fields = listOf(org.jellyfin.sdk.model.api.ItemFields.PEOPLE),
@@ -778,9 +776,9 @@ constructor(
                 _isLoadingEpisode.value = true
 
                 val fullEpisode =
-                    jellyfinRepository
+                    mediaRepository
                         .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
-                        ?.toAfinityEpisode(jellyfinRepository, null)
+                        ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
 
                 if (fullEpisode != null) {
                     _selectedEpisode.value = fullEpisode

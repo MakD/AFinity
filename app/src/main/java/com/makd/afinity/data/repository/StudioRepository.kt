@@ -4,6 +4,7 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.AfinityTypeConverters
 import com.makd.afinity.data.database.entities.StudioCacheEntity
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +16,7 @@ import kotlin.time.Duration.Companion.hours
 @Singleton
 class StudioRepository
 @Inject
-constructor(private val jellyfinRepository: JellyfinRepository, database: AfinityDatabase) {
+constructor(private val mediaRepository: MediaRepository, database: AfinityDatabase) {
     private val studioCacheTTL = 6.hours.inWholeMilliseconds
     private val studioCacheDao = database.studioCacheDao()
     private val afinityTypeConverters = AfinityTypeConverters()
@@ -41,7 +42,7 @@ constructor(private val jellyfinRepository: JellyfinRepository, database: Afinit
             }
 
             val studiosList: List<AfinityStudio> =
-                jellyfinRepository.getStudios(
+                mediaRepository.getStudios(
                     parentId = null,
                     limit = 15,
                     includeItemTypes = listOf("MOVIE", "SERIES"),

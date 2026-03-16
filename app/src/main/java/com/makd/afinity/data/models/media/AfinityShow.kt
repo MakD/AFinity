@@ -1,8 +1,9 @@
 package com.makd.afinity.data.models.media
 
+import com.makd.afinity.data.models.extensions.toAfinityImages
+import com.makd.afinity.data.models.extensions.toAfinityPerson
 import com.makd.afinity.data.models.mdblist.MdbListRating
 import com.makd.afinity.data.models.tmdb.TmdbReview
-import com.makd.afinity.data.repository.JellyfinRepository
 import org.jellyfin.sdk.model.DateTime
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.PlayAccess
@@ -47,7 +48,7 @@ data class AfinityShow(
     val mdbRatings: List<MdbListRating> = emptyList(),
 ) : AfinityItem
 
-fun BaseItemDto.toAfinityShow(jellyfinRepository: JellyfinRepository): AfinityShow {
+fun BaseItemDto.toAfinityShow(baseUrl: String): AfinityShow {
     return AfinityShow(
         id = id,
         name = name.orEmpty(),
@@ -62,7 +63,7 @@ fun BaseItemDto.toAfinityShow(jellyfinRepository: JellyfinRepository): AfinitySh
         sources = emptyList(),
         seasons = emptyList(),
         genres = genres ?: emptyList(),
-        people = people?.map { it.toAfinityPerson(jellyfinRepository) } ?: emptyList(),
+        people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
         runtimeTicks = runTimeTicks ?: 0,
         communityRating = communityRating,
         officialRating = officialRating,
@@ -76,7 +77,7 @@ fun BaseItemDto.toAfinityShow(jellyfinRepository: JellyfinRepository): AfinitySh
         trailer = remoteTrailers?.getOrNull(0)?.url,
         seasonCount = childCount,
         episodeCount = recursiveItemCount,
-        images = toAfinityImages(jellyfinRepository),
+        images = toAfinityImages(baseUrl),
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
         externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
         tmdbReviews = emptyList(),
