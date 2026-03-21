@@ -21,8 +21,6 @@ import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,19 +61,21 @@ constructor(
 
     init {
         viewModelScope.launch {
-            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
-                if (isLoaded) {
-                    loadWatchlist()
-                } else {
-                    _uiState.value = WatchlistUiState()
-                    clearSelectedEpisode()
-                }
+            appDataRepository.watchlistData.collect { data ->
+                _uiState.value = WatchlistUiState(
+                    boxSets = data.boxSets,
+                    movies = data.movies,
+                    shows = data.shows,
+                    seasons = data.seasons,
+                    episodes = data.episodes,
+                    isLoading = false,
+                    error = null,
+                )
             }
         }
         viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
                 if (event is PlaybackEvent.Synced) {
-                    loadWatchlist()
                     _selectedEpisode.value?.let { ep ->
                         if (ep.id == event.itemId) {
                             val refreshedEp =
@@ -91,41 +91,7 @@ constructor(
 
     fun loadWatchlist() {
         viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
-                coroutineScope {
-                    val boxSetsDeferred = async { watchlistRepository.getWatchlistBoxSets() }
-                    val moviesDeferred = async { watchlistRepository.getWatchlistMovies() }
-                    val showsDeferred = async { watchlistRepository.getWatchlistShows() }
-                    val seasonsDeferred = async { watchlistRepository.getWatchlistSeasons() }
-                    val episodesDeferred = async { watchlistRepository.getWatchlistEpisodes() }
-
-                    val boxSets = boxSetsDeferred.await()
-                    val movies = moviesDeferred.await()
-                    val shows = showsDeferred.await()
-                    val seasons = seasonsDeferred.await()
-                    val episodes = episodesDeferred.await()
-
-                    _uiState.value =
-                        _uiState.value.copy(
-                            isLoading = false,
-                            boxSets = boxSets.sortedBy { it.name },
-                            movies = movies.sortedBy { it.name },
-                            shows = shows.sortedBy { it.name },
-                            seasons = seasons.sortedBy { it.name },
-                            episodes = episodes.sortedBy { it.name },
-                            error = null,
-                        )
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load watchlist")
-                _uiState.value =
-                    _uiState.value.copy(
-                        isLoading = false,
-                        error = "Failed to load watchlist: ${e.message}",
-                    )
-            }
+            appDataRepository.reloadWatchlist()
         }
     }
 
@@ -180,7 +146,6 @@ constructor(
             updateOptimisticUI = {
                 _selectedEpisodeWatchlistStatus.value = !isLiked
                 _selectedEpisode.value = _selectedEpisode.value?.copy(liked = !isLiked)
-                loadWatchlist()
             },
             revertUI = {
                 _selectedEpisodeWatchlistStatus.value = isLiked

@@ -291,15 +291,9 @@ constructor(
     }
 
     fun loadLibraries() {
-        viewModelScope.launch {
-            try {
-                val libraries = mediaRepository.getLibraries()
-                _uiState.value = _uiState.value.copy(libraries = libraries)
-                Timber.d("Loaded ${libraries.size} libraries")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load libraries")
-            }
-        }
+        val libraries = appDataRepository.libraries.value
+        _uiState.value = _uiState.value.copy(libraries = libraries)
+        Timber.d("Loaded ${libraries.size} libraries")
     }
 
     fun loadGenres() {

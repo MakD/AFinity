@@ -3,6 +3,7 @@ package com.makd.afinity.ui.item.delegates
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -14,6 +15,7 @@ class ItemUserDataDelegate
 constructor(
     private val userDataRepository: UserDataRepository,
     private val playbackStateManager: PlaybackStateManager,
+    private val appDataRepository: AppDataRepository,
 ) {
     fun toggleFavorite(
         scope: CoroutineScope,
@@ -35,6 +37,7 @@ constructor(
                     Timber.w("Failed to toggle favorite status, reverted UI")
                     revertUI()
                 } else {
+                    appDataRepository.updateFavoriteStatus(item, !item.favorite)
                     playbackStateManager.notifyItemChanged(
                         item.id,
                         (item as? AfinityEpisode)?.seriesId,
@@ -63,6 +66,7 @@ constructor(
                     Timber.w("Failed to toggle like status, reverted UI")
                     revertUI()
                 } else {
+                    appDataRepository.updateWatchlistStatus(item, !item.liked)
                     playbackStateManager.notifyItemChanged(
                         item.id,
                         (item as? AfinityEpisode)?.seriesId,
@@ -90,6 +94,7 @@ constructor(
                         userDataRepository.addToFavorites(episode.id)
                     }
                 if (success) {
+                    appDataRepository.updateFavoriteStatus(episode, !episode.favorite)
                     onSuccess()
                 }
             } catch (e: Exception) {

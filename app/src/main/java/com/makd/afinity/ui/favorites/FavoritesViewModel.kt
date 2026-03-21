@@ -15,15 +15,12 @@ import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.download.DownloadRepository
-import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,7 +38,6 @@ constructor(
     private val watchlistRepository: WatchlistRepository,
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
-    private val liveTvRepository: LiveTvRepository,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val itemDownloadDelegate: ItemDownloadDelegate,
 ) : ViewModel() {
@@ -65,19 +61,23 @@ constructor(
 
     init {
         viewModelScope.launch {
-            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
-                if (isLoaded) {
-                    loadFavorites()
-                } else {
-                    _uiState.value = FavoritesUiState()
-                    clearSelectedEpisode()
-                }
+            appDataRepository.favoritesData.collect { data ->
+                _uiState.value = FavoritesUiState(
+                    movies = data.movies,
+                    shows = data.shows,
+                    seasons = data.seasons,
+                    episodes = data.episodes,
+                    boxSets = data.boxSets,
+                    channels = data.channels,
+                    people = data.people,
+                    isLoading = false,
+                    error = null,
+                )
             }
         }
         viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
                 if (event is PlaybackEvent.Synced) {
-                    loadFavorites()
                     _selectedEpisode.value?.let { ep ->
                         if (ep.id == event.itemId) {
                             val refreshedEp =
@@ -93,53 +93,7 @@ constructor(
 
     fun loadFavorites() {
         viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
-                coroutineScope {
-                    val moviesDeferred = async { mediaRepository.getFavoriteMovies() }
-                    val showsDeferred = async { mediaRepository.getFavoriteShows() }
-                    val seasonsDeferred = async { mediaRepository.getFavoriteSeasons() }
-                    val episodesDeferred = async { mediaRepository.getFavoriteEpisodes() }
-                    val boxSetsDeferred = async { mediaRepository.getFavoriteBoxSets() }
-                    val peopleDeferred = async { mediaRepository.getFavoritePeople() }
-                    val channelsDeferred = async {
-                        try {
-                            liveTvRepository.getChannels(isFavorite = true)
-                        } catch (_: Exception) {
-                            emptyList()
-                        }
-                    }
-
-                    val movies = moviesDeferred.await()
-                    val shows = showsDeferred.await()
-                    val seasons = seasonsDeferred.await()
-                    val episodes = episodesDeferred.await()
-                    val boxSets = boxSetsDeferred.await()
-                    val people = peopleDeferred.await()
-                    val channels = channelsDeferred.await()
-
-                    _uiState.value =
-                        _uiState.value.copy(
-                            isLoading = false,
-                            movies = movies.sortedBy { it.name },
-                            shows = shows.sortedBy { it.name },
-                            seasons = seasons.sortedBy { it.name },
-                            episodes = episodes.sortedBy { it.name },
-                            boxSets = boxSets.sortedBy { it.name },
-                            channels = channels.sortedBy { it.channelNumber ?: it.name },
-                            people = people.sortedBy { it.name },
-                            error = null,
-                        )
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load favorites")
-                _uiState.value =
-                    _uiState.value.copy(
-                        isLoading = false,
-                        error = "Failed to load favorites: ${e.message}",
-                    )
-            }
+            appDataRepository.reloadFavorites()
         }
     }
 
@@ -183,7 +137,6 @@ constructor(
     fun toggleEpisodeFavorite(episode: AfinityEpisode) {
         itemUserDataDelegate.toggleEpisodeFavorite(viewModelScope, episode) {
             _selectedEpisode.value = episode.copy(favorite = !episode.favorite)
-            loadFavorites()
         }
     }
 

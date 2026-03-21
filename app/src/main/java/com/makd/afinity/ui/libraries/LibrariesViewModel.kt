@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.repository.AppDataRepository
-import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +16,6 @@ import timber.log.Timber
 class LibrariesViewModel
 @Inject
 constructor(
-    private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
 ) : ViewModel() {
 
@@ -26,33 +24,12 @@ constructor(
 
     init {
         viewModelScope.launch {
-            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
-                if (isLoaded) {
-                    loadLibraries(forceRefresh = true)
-                } else {
-                    _uiState.value = LibrariesUiState()
-                }
-            }
-        }
-    }
-
-    private fun loadLibraries(forceRefresh: Boolean = false) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
-            try {
-                val libraries = mediaRepository.getLibraries()
-                _uiState.value =
-                    _uiState.value.copy(libraries = libraries, isLoading = false, error = null)
-
-                Timber.d("Successfully loaded ${libraries.size} libraries")
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load libraries")
-                _uiState.value =
-                    _uiState.value.copy(
-                        isLoading = false,
-                        error = "Failed to load libraries: ${e.message}",
-                    )
+            appDataRepository.libraries.collect { libraries ->
+                _uiState.value = LibrariesUiState(
+                    libraries = libraries,
+                    isLoading = false,
+                    error = null,
+                )
             }
         }
     }
