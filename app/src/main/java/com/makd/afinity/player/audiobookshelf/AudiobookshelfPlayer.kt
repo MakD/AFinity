@@ -3,6 +3,7 @@ package com.makd.afinity.player.audiobookshelf
 import android.content.ComponentName
 import android.content.Context
 import androidx.core.net.toUri
+import androidx.media3.common.Player
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
@@ -287,7 +288,13 @@ constructor(
         return if (ascending) sorted else sorted.reversed()
     }
 
-    fun play() = mediaController?.play()
+    fun play() {
+        val controller = mediaController ?: return
+        if (controller.playbackState == Player.STATE_IDLE || controller.playerError != null) {
+            controller.prepare()
+        }
+        controller.play()
+    }
 
     fun pause() = mediaController?.pause()
 

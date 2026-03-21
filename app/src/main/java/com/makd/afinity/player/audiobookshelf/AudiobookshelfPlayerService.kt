@@ -107,14 +107,16 @@ class AudiobookshelfPlayerService : MediaSessionService() {
                             stopPositionUpdates()
                             serviceScope.launch { progressSyncer.syncNow() }
                         }
-
-                        else -> {}
+                        Player.STATE_IDLE -> {
+                            playbackManager.updateBufferingState(false)
+                        }
                     }
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
                     Timber.e(error, "Player error")
                     playbackManager.updatePlayingState(false)
+                    playbackManager.updateBufferingState(false)
                 }
             }
         )
