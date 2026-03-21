@@ -223,4 +223,10 @@ interface MediaRepository {
     fun getContinueWatchingFlow(): Flow<List<AfinityItem>>
 
     suspend fun getMdbListRatings(tmdbId: String, isMovie: Boolean): List<MdbListRating>
+
+    suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode?
+
+    suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode?
+
+    suspend fun getSeriesNextEpisode(seriesId: UUID): AfinityEpisode?
 }

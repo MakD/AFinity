@@ -10,6 +10,7 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
+import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
@@ -31,6 +32,7 @@ constructor(
     private val appDataRepository: AppDataRepository,
     private val authRepository: AuthRepository,
     private val jellyfinRepository: JellyfinRepository,
+    private val mediaRepository: MediaRepository,
     val watchlistRepository: WatchlistRepository,
     val jellyseerrRepository: JellyseerrRepository,
     val audiobookshelfRepository: AudiobookshelfRepository,
@@ -177,7 +179,7 @@ constructor(
     suspend fun resolvePlayableItem(item: AfinityItem): AfinityItem? {
         return try {
             if (item is AfinityShow) {
-                val episode = jellyfinRepository.getEpisodeToPlay(item.id)
+                val episode = mediaRepository.getEpisodeToPlay(item.id)
                 if (episode == null) {
                     Timber.w("No episode found to play for series: ${item.name}")
                 }

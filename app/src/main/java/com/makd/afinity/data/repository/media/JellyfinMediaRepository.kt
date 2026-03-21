@@ -1563,4 +1563,82 @@ constructor(
                 emptyList()
             }
         }
+
+    override suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode? {
+        return try {
+            Timber.d("Getting episode to play for series: $seriesId")
+            try {
+                val nextUpEpisodes =
+                    getNextUp(
+                        seriesId = seriesId,
+                        limit = 1,
+                        fields = FieldSets.PLAYABLE_EPISODE,
+                    )
+                if (nextUpEpisodes.isNotEmpty()) {
+                    Timber.d("Found NextUp episode: ${nextUpEpisodes.first().name}")
+                    return nextUpEpisodes.first()
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "NextUp API failed")
+            }
+            Timber.d("Fallback to manual logic")
+            val seasons = getSeasons(seriesId)
+            if (seasons.isEmpty()) return null
+
+            val sortedSeasons = seasons.sortedBy { it.indexNumber }
+            val episodesBySeason = coroutineScope {
+                sortedSeasons
+                    .map { season ->
+                        season to
+                            async {
+                                getEpisodes(
+                                        season.id,
+                                        seriesId,
+                                        fields = FieldSets.PLAYABLE_EPISODE,
+                                    )
+                                    .sortedBy { it.indexNumber }
+                            }
+                    }
+                    .map { (season, deferred) -> season to deferred.await() }
+            }
+
+            var firstEpisodeOfSeries: AfinityEpisode? = null
+            for ((_, episodes) in episodesBySeason) {
+                if (episodes.isEmpty()) continue
+                if (firstEpisodeOfSeries == null) firstEpisodeOfSeries = episodes.firstOrNull()
+                val nextEpisode = episodes.firstOrNull { !it.played }
+                if (nextEpisode != null) return nextEpisode
+            }
+            return firstEpisodeOfSeries
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to determine episode to play for series: $seriesId")
+            null
+        }
+    }
+
+    override suspend fun getEpisodeToPlayForSeason(
+        seasonId: UUID,
+        seriesId: UUID,
+    ): AfinityEpisode? {
+        return try {
+            Timber.d("Getting episode to play for season: $seasonId")
+            val episodes = getEpisodes(seasonId, seriesId, fields = FieldSets.PLAYABLE_EPISODE)
+            if (episodes.isEmpty()) return null
+
+            val sortedEpisodes = episodes.sortedBy { it.indexNumber }
+            sortedEpisodes.firstOrNull { !it.played } ?: sortedEpisodes.firstOrNull()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to determine episode to play for season: $seasonId")
+            null
+        }
+    }
+
+    override suspend fun getSeriesNextEpisode(seriesId: UUID): AfinityEpisode? {
+        return try {
+            getNextUp(seriesId, limit = 1).firstOrNull()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get next episode for series: $seriesId")
+            null
+        }
+    }
 }

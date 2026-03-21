@@ -12,6 +12,7 @@ import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
@@ -34,7 +35,6 @@ import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.paging.EpisodesPagingSource
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
-import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -66,9 +66,9 @@ import kotlin.coroutines.cancellation.CancellationException
 class ItemDetailViewModel
 @Inject
 constructor(
-    private val jellyfinRepository: JellyfinRepository,
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
+    private val sessionManager: SessionManager,
     private val downloadRepository: DownloadRepository,
     private val databaseRepository: DatabaseRepository,
     private val offlineModeManager: OfflineModeManager,
@@ -312,7 +312,7 @@ constructor(
                             launch {
                                 try {
                                     val nextEpisode =
-                                        jellyfinRepository.getEpisodeToPlay(cachedItem.id)
+                                        mediaRepository.getEpisodeToPlay(cachedItem.id)
                                     _uiState.value = _uiState.value.copy(nextEpisode = nextEpisode)
                                 } catch (e: Exception) {
                                     Timber.w(e, "Failed to get next episode")
@@ -323,7 +323,7 @@ constructor(
                             launch {
                                 try {
                                     val nextEpisode =
-                                        jellyfinRepository.getEpisodeToPlayForSeason(
+                                        mediaRepository.getEpisodeToPlayForSeason(
                                             cachedItem.id,
                                             cachedItem.seriesId,
                                         )
@@ -370,15 +370,15 @@ constructor(
                 mediaRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let {
                     baseItemDto ->
                     when (baseItemDto.type) {
-                        BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(jellyfinRepository.getBaseUrl(), null)
-                        BaseItemKind.SERIES -> baseItemDto.toAfinityShow(jellyfinRepository.getBaseUrl())
+                        BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
+                        BaseItemKind.SERIES -> baseItemDto.toAfinityShow(mediaRepository.getBaseUrl())
                         BaseItemKind.EPISODE ->
-                            baseItemDto.toAfinityEpisode(jellyfinRepository.getBaseUrl(), null)
+                            baseItemDto.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                         BaseItemKind.BOX_SET ->
-                            baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
+                            baseItemDto.toAfinityBoxSet(mediaRepository.getBaseUrl())
                         BaseItemKind.SEASON -> {
                             val season =
-                                baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
+                                baseItemDto.toAfinitySeason(mediaRepository.getBaseUrl())
                             if (season.runtimeTicks == 0L) {
                                 try {
                                     val series =
@@ -539,15 +539,15 @@ constructor(
                             baseItemDto ->
                             when (baseItemDto.type) {
                                 BaseItemKind.MOVIE ->
-                                    baseItemDto.toAfinityMovie(jellyfinRepository.getBaseUrl(), null)
-                                BaseItemKind.SERIES -> baseItemDto.toAfinityShow(jellyfinRepository.getBaseUrl())
+                                    baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
+                                BaseItemKind.SERIES -> baseItemDto.toAfinityShow(mediaRepository.getBaseUrl())
                                 BaseItemKind.EPISODE ->
-                                    baseItemDto.toAfinityEpisode(jellyfinRepository.getBaseUrl(), null)
+                                    baseItemDto.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                                 BaseItemKind.BOX_SET ->
-                                    baseItemDto.toAfinityBoxSet(jellyfinRepository.getBaseUrl())
+                                    baseItemDto.toAfinityBoxSet(mediaRepository.getBaseUrl())
                                 BaseItemKind.SEASON -> {
                                     val season =
-                                        baseItemDto.toAfinitySeason(jellyfinRepository.getBaseUrl())
+                                        baseItemDto.toAfinitySeason(mediaRepository.getBaseUrl())
                                     if (season.runtimeTicks == 0L) {
                                         try {
                                             val series =
@@ -755,10 +755,10 @@ constructor(
             try {
                 val nextEp =
                     when (itemType?.uppercase()) {
-                        "SERIES" -> jellyfinRepository.getEpisodeToPlay(itemId)
+                        "SERIES" -> mediaRepository.getEpisodeToPlay(itemId)
                         "SEASON" -> {
                             if (seriesId != null)
-                                jellyfinRepository.getEpisodeToPlayForSeason(itemId, seriesId)
+                                mediaRepository.getEpisodeToPlayForSeason(itemId, seriesId)
                             else null
                         }
                         else -> null
@@ -879,12 +879,8 @@ constructor(
             else -> null
         }
 
-    private suspend fun getCurrentUserId(): UUID? =
-        try {
-            jellyfinRepository.getCurrentUser()?.id
-        } catch (_: Exception) {
-            null
-        }
+    private fun getCurrentUserId(): UUID? =
+        sessionManager.currentSession.value?.userId
 
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
     val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
@@ -904,7 +900,7 @@ constructor(
                     try {
                         mediaRepository
                             .getItem(episode.id, fields = FieldSets.ITEM_DETAIL)
-                            ?.toAfinityEpisode(jellyfinRepository.getBaseUrl(), null)
+                            ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                     } catch (_: Exception) {
                         try {
                             authRepository.currentUser.value?.id?.let {
@@ -1298,7 +1294,7 @@ constructor(
         _uiState.value = _uiState.value.copy(showQualityDialog = false)
     }
 
-    fun getBaseUrl(): String = jellyfinRepository.getBaseUrl()
+    fun getBaseUrl(): String = mediaRepository.getBaseUrl()
 
     private fun getNextEpisodeOffline(show: AfinityShow): AfinityEpisode? {
         val allEpisodes =

@@ -15,7 +15,6 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.repository.AppDataRepository
-import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,7 +43,6 @@ class LibraryContentViewModel
 @Inject
 constructor(
     private val mediaRepository: MediaRepository,
-    private val jellyfinRepository: JellyfinRepository,
     private val appDataRepository: AppDataRepository,
     private val playbackStateManager: PlaybackStateManager,
     private val preferencesRepository: PreferencesRepository,
@@ -116,6 +114,11 @@ constructor(
             }
         }
         viewModelScope.launch {
+            appDataRepository.userProfileImageUrl.collect { url ->
+                _uiState.update { it.copy(userProfileImageUrl = url) }
+            }
+        }
+        viewModelScope.launch {
             playbackStateManager.playbackEvents.collect { event ->
                 if (event is PlaybackEvent.Synced) {
                     val syncedItem = mediaRepository.getItemById(event.itemId) ?: return@collect
@@ -128,15 +131,6 @@ constructor(
                     _itemUpdates.value += (targetItem.id to targetItem)
                 }
             }
-        }
-    }
-
-    private suspend fun loadUserProfileImage(): String? {
-        return try {
-            jellyfinRepository.getUserProfileImageUrl()
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to get user profile image URL")
-            null
         }
     }
 
@@ -187,7 +181,6 @@ constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
-                val userProfileImageUrl = loadUserProfileImage()
                 val type = determineLibraryType()
                 libraryType = type
 
@@ -197,7 +190,6 @@ constructor(
                 _uiState.value =
                     _uiState.value.copy(
                         libraryType = type,
-                        userProfileImageUrl = userProfileImageUrl,
                         currentSortBy = currentSortBy,
                         currentSortDescending = currentSortDescending,
                         currentFilter = currentFilter,

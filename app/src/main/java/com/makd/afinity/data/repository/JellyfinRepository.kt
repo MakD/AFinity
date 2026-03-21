@@ -1,6 +1,5 @@
 package com.makd.afinity.data.repository
 
-import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
@@ -26,12 +25,6 @@ interface JellyfinRepository {
     suspend fun getPublicUsers(serverUrl: String): List<User>
 
     suspend fun getUserProfileImageUrl(): String?
-
-    suspend fun getEpisodeToPlay(seriesId: UUID): AfinityEpisode?
-
-    suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode?
-
-    suspend fun getSeriesNextEpisode(seriesId: UUID): AfinityEpisode?
 
     suspend fun reportPlaybackStart(
         itemId: UUID,

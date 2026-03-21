@@ -45,7 +45,6 @@ import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.Trickplay
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.repository.AppDataRepository
-import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -84,7 +83,6 @@ constructor(
     private val playbackStateManager: PlaybackStateManager,
     val castManager: CastManager,
     private val mediaRepository: MediaRepository,
-    private val jellyfinRepository: JellyfinRepository,
     private val segmentsRepository: SegmentsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val playlistManager: PlaylistManager,
