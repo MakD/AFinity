@@ -359,10 +359,11 @@ private fun MediaItemGridCard(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth().clickable { onClick() },
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Card(
+            onClick = onClick,
             modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f),
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
