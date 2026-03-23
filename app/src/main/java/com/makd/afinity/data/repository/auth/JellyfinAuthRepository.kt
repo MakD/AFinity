@@ -2,15 +2,11 @@ package com.makd.afinity.data.repository.auth
 
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.data.manager.SessionManager
-import org.jellyfin.sdk.Jellyfin
 import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,6 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
@@ -32,6 +29,9 @@ import org.jellyfin.sdk.model.api.ClientCapabilitiesDto
 import org.jellyfin.sdk.model.api.GeneralCommandType
 import org.jellyfin.sdk.model.api.MediaType
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class JellyfinAuthRepository
@@ -47,9 +47,7 @@ constructor(
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override val currentUser: StateFlow<User?> by lazy {
-        sessionManager.currentSession
-            .map { it?.user }
-            .stateIn(scope, SharingStarted.Eagerly, null)
+        sessionManager.currentSession.map { it?.user }.stateIn(scope, SharingStarted.Eagerly, null)
     }
 
     override val isAuthenticated: StateFlow<Boolean> by lazy {
@@ -106,7 +104,6 @@ constructor(
                         accessToken = accessToken,
                         primaryImageTag = null,
                     )
-
                 sessionManager
                     .startSession(
                         serverUrl = serverUrl,
@@ -118,7 +115,7 @@ constructor(
                         Timber.w(e, "SessionManager start failed during restore (non-fatal)")
                     }
 
-                Timber.d("Optimistically restored session for user: $username")
+                Timber.d("Optimistically restored session for user: $username (url: $serverUrl)")
 
                 val isConnected = networkConnectivityMonitor.isCurrentlyConnected()
                 if (!isConnected) {
@@ -129,10 +126,11 @@ constructor(
                 try {
                     val response =
                         withTimeoutOrNull(5000L) {
-                            val client = sessionManager.getCurrentApiClient()
-                                ?: jellyfin.createApi(baseUrl = serverUrl).also {
-                                    it.update(accessToken = accessToken)
-                                }
+                            val client =
+                                sessionManager.getCurrentApiClient()
+                                    ?: jellyfin.createApi(baseUrl = serverUrl).also {
+                                        it.update(accessToken = accessToken)
+                                    }
                             val userApi = UserApi(client)
                             userApi.getCurrentUser()
                         }
@@ -277,7 +275,10 @@ constructor(
         }
     }
 
-    override suspend fun getQuickConnectState(serverUrl: String, secret: String): QuickConnectState? {
+    override suspend fun getQuickConnectState(
+        serverUrl: String,
+        secret: String,
+    ): QuickConnectState? {
         return withContext(Dispatchers.IO) {
             try {
                 val client = jellyfin.createApi(baseUrl = serverUrl)
@@ -425,5 +426,4 @@ constructor(
             Timber.e(e, "Unexpected error registering client capabilities")
         }
     }
-
 }

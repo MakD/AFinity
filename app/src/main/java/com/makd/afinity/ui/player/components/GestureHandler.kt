@@ -15,7 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -42,16 +42,12 @@ fun GestureHandler(
     onSeekPreview: (isActive: Boolean) -> Unit = {},
     content: @Composable () -> Unit,
 ) {
-    val configuration = LocalConfiguration.current
     val density = LocalDensity.current
+    var componentWidth by remember { mutableFloatStateOf(0f) }
+    var componentHeight by remember { mutableFloatStateOf(0f) }
 
-    val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
-    val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
-    val exclusionHorizontal = with(density) { 32.dp.toPx() }
-    val exclusionVertical = with(density) { 48.dp.toPx() }
-
-    val leftZoneWidth = screenWidth * 0.35f
-    val rightZoneStart = screenWidth * 0.65f
+    val exclusionHorizontal = with(density) { 16.dp.toPx() }
+    val exclusionVertical = with(density) { 24.dp.toPx() }
 
     val currentOnSingleTap by rememberUpdatedState(onSingleTap)
     val currentOnDoubleTap by rememberUpdatedState(onDoubleTap)
@@ -79,16 +75,20 @@ fun GestureHandler(
         modifier =
             modifier
                 .fillMaxSize()
-                .pointerInput(screenWidth, currentIsSeekEnabled) {
+                .onSizeChanged { size ->
+                    componentWidth = size.width.toFloat()
+                    componentHeight = size.height.toFloat()
+                }
+                .pointerInput(currentIsSeekEnabled) {
                     detectTapGestures(
                         onDoubleTap = { offset ->
                             if (currentIsSeekEnabled) {
-                                val isForward = offset.x > screenWidth / 2
+                                val isForward = offset.x > componentWidth / 2
                                 currentOnDoubleTap(isForward)
                             }
                         },
                         onTap = { currentOnSingleTap() },
-                        onPress = { offset ->
+                        onPress = { _ ->
                             val job =
                                 coroutineScope.launch {
                                     delay(500)
@@ -108,14 +108,14 @@ fun GestureHandler(
                         },
                     )
                 }
-                .pointerInput(screenWidth, screenHeight, currentIsSeekEnabled) {
+                .pointerInput(currentIsSeekEnabled) {
                     detectDragGestures(
                         onDragStart = { offset ->
                             if (
                                 offset.y < exclusionVertical ||
-                                    offset.y > screenHeight - exclusionVertical ||
+                                    offset.y > componentHeight - exclusionVertical ||
                                     offset.x < exclusionHorizontal ||
-                                    offset.x > screenWidth - exclusionHorizontal
+                                    offset.x > componentWidth - exclusionHorizontal
                             ) {
                                 return@detectDragGestures
                             }
@@ -152,22 +152,27 @@ fun GestureHandler(
                             gestureType = null
                             isSeeking = false
                         },
-                        onDrag = { change, dragAmount ->
+                        onDrag = { _, dragAmount ->
                             if (!isDragging) return@detectDragGestures
 
                             val verticalDrag = -dragAmount.y
                             val horizontalDrag = dragAmount.x
+                            totalHorizontalDelta += horizontalDrag
+                            totalVerticalDelta += verticalDrag
+
+                            val leftZoneWidth = componentWidth * 0.35f
+                            val rightZoneStart = componentWidth * 0.65f
 
                             if (gestureType == null) {
-                                val minimumDragDistance = 20f
+                                val minimumDragDistance = 10f
 
                                 if (
-                                    abs(verticalDrag) > minimumDragDistance ||
-                                        abs(horizontalDrag) > minimumDragDistance
+                                    abs(totalVerticalDelta) > minimumDragDistance ||
+                                        abs(totalHorizontalDelta) > minimumDragDistance
                                 ) {
                                     gestureType =
                                         when {
-                                            abs(verticalDrag) > abs(horizontalDrag) -> {
+                                            abs(totalVerticalDelta) > abs(totalHorizontalDelta) -> {
                                                 when {
                                                     dragStartOffset.x < leftZoneWidth ->
                                                         GestureType.BRIGHTNESS
@@ -189,31 +194,24 @@ fun GestureHandler(
 
                             when (gestureType) {
                                 GestureType.BRIGHTNESS -> {
-                                    totalVerticalDelta += verticalDrag
-                                    val distanceFull = screenHeight * 0.5f
+                                    val distanceFull = componentHeight * 0.5f
                                     val accumulatedPercent = totalVerticalDelta / distanceFull
                                     currentOnBrightnessGesture(accumulatedPercent, true)
                                 }
 
                                 GestureType.VOLUME -> {
-                                    totalVerticalDelta += verticalDrag
-                                    val distanceFull = screenHeight * 0.5f
+                                    val distanceFull = componentHeight * 0.5f
                                     val accumulatedPercent = totalVerticalDelta / distanceFull
                                     currentOnVolumeGesture(accumulatedPercent, true)
                                 }
 
                                 GestureType.SEEK -> {
-                                    totalHorizontalDelta += horizontalDrag
-                                    val seekActivationThreshold = 20f
-
-                                    if (abs(totalHorizontalDelta) > seekActivationThreshold) {
-                                        if (!isSeeking) {
-                                            isSeeking = true
-                                            currentOnSeekPreview(true)
-                                        }
-                                        val normalizedDelta = totalHorizontalDelta / screenWidth
-                                        currentOnSeekGesture(normalizedDelta)
+                                    if (!isSeeking) {
+                                        isSeeking = true
+                                        currentOnSeekPreview(true)
                                     }
+                                    val normalizedDelta = totalHorizontalDelta / componentWidth
+                                    currentOnSeekGesture(normalizedDelta)
                                 }
                                 null -> {}
                             }

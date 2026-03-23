@@ -10,9 +10,9 @@ import com.makd.afinity.data.models.PersonWithCount
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityItem
-import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.media.AfinityBoxSet
+import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
@@ -20,9 +20,9 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
-import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.util.JellyfinImageUrlBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,6 +38,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -64,6 +67,7 @@ constructor(
     private val genreRepository: GenreRepository,
     private val peopleRepository: PeopleRepository,
     private val studioRepository: StudioRepository,
+    private val serverRepository: ServerRepository,
 ) {
     private val recentCacheTTL = 6.hours.inWholeMilliseconds
     private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
@@ -187,6 +191,25 @@ constructor(
                 currentSessionId = newSessionId
             }
         }
+
+        scope.launch {
+            serverRepository.currentBaseUrl
+                .filter { it.isNotBlank() }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { newUrl ->
+                    if (!_isInitialDataLoaded.value) return@collect
+                    Timber.d(
+                        "Server base URL changed to $newUrl — clearing all URL-dependent caches and reloading"
+                    )
+                    try {
+                        clearAllData()
+                        loadInitialData()
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to reload data after base URL change")
+                    }
+                }
+        }
     }
 
     fun skipInitialDataLoad() {
@@ -278,9 +301,7 @@ constructor(
                 }
 
                 launch {
-                    mediaRepository.getNextUpFlow().collect { liveData ->
-                        _nextUp.value = liveData
-                    }
+                    mediaRepository.getNextUpFlow().collect { liveData -> _nextUp.value = liveData }
                 }
             }
     }
@@ -457,7 +478,11 @@ constructor(
 
     private suspend fun loadNextUp(): List<AfinityEpisode> {
         return try {
-            mediaRepository.getNextUp(limit = 16, enableResumable = false, fields = FieldSets.NEXT_UP)
+            mediaRepository.getNextUp(
+                limit = 16,
+                enableResumable = false,
+                fields = FieldSets.NEXT_UP,
+            )
         } catch (e: Exception) {
             Timber.e(e, "Failed to load next up")
             emptyList()
@@ -831,19 +856,43 @@ constructor(
 
         _favoritesData.update { current ->
             current.copy(
-                movies = current.movies.map { if (it.id == itemId && updatedItem is AfinityMovie) updatedItem else it },
-                shows = current.shows.map { if (it.id == itemId && updatedItem is AfinityShow) updatedItem else it },
-                seasons = current.seasons.map { if (it.id == itemId && updatedItem is AfinitySeason) updatedItem else it },
-                episodes = current.episodes.map { if (it.id == itemId && updatedItem is AfinityEpisode) updatedItem else it },
+                movies =
+                    current.movies.map {
+                        if (it.id == itemId && updatedItem is AfinityMovie) updatedItem else it
+                    },
+                shows =
+                    current.shows.map {
+                        if (it.id == itemId && updatedItem is AfinityShow) updatedItem else it
+                    },
+                seasons =
+                    current.seasons.map {
+                        if (it.id == itemId && updatedItem is AfinitySeason) updatedItem else it
+                    },
+                episodes =
+                    current.episodes.map {
+                        if (it.id == itemId && updatedItem is AfinityEpisode) updatedItem else it
+                    },
             )
         }
 
         _watchlistData.update { current ->
             current.copy(
-                movies = current.movies.map { if (it.id == itemId && updatedItem is AfinityMovie) updatedItem else it },
-                shows = current.shows.map { if (it.id == itemId && updatedItem is AfinityShow) updatedItem else it },
-                seasons = current.seasons.map { if (it.id == itemId && updatedItem is AfinitySeason) updatedItem else it },
-                episodes = current.episodes.map { if (it.id == itemId && updatedItem is AfinityEpisode) updatedItem else it },
+                movies =
+                    current.movies.map {
+                        if (it.id == itemId && updatedItem is AfinityMovie) updatedItem else it
+                    },
+                shows =
+                    current.shows.map {
+                        if (it.id == itemId && updatedItem is AfinityShow) updatedItem else it
+                    },
+                seasons =
+                    current.seasons.map {
+                        if (it.id == itemId && updatedItem is AfinitySeason) updatedItem else it
+                    },
+                episodes =
+                    current.episodes.map {
+                        if (it.id == itemId && updatedItem is AfinityEpisode) updatedItem else it
+                    },
             )
         }
     }
@@ -865,15 +914,16 @@ constructor(
                     }
                 }
 
-                _favoritesData.value = FavoritesData(
-                    movies = moviesDeferred.await().sortedBy { it.name },
-                    shows = showsDeferred.await().sortedBy { it.name },
-                    seasons = seasonsDeferred.await().sortedBy { it.name },
-                    episodes = episodesDeferred.await().sortedBy { it.name },
-                    boxSets = boxSetsDeferred.await().sortedBy { it.name },
-                    people = peopleDeferred.await().sortedBy { it.name },
-                    channels = channelsDeferred.await().sortedBy { it.channelNumber ?: it.name },
-                )
+                _favoritesData.value =
+                    FavoritesData(
+                        movies = moviesDeferred.await().sortedBy { it.name },
+                        shows = showsDeferred.await().sortedBy { it.name },
+                        seasons = seasonsDeferred.await().sortedBy { it.name },
+                        episodes = episodesDeferred.await().sortedBy { it.name },
+                        boxSets = boxSetsDeferred.await().sortedBy { it.name },
+                        people = peopleDeferred.await().sortedBy { it.name },
+                        channels = channelsDeferred.await().sortedBy { it.channelNumber ?: it.name },
+                    )
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load favorites data")
@@ -889,13 +939,14 @@ constructor(
                 val seasonsDeferred = async { watchlistRepository.getWatchlistSeasons() }
                 val episodesDeferred = async { watchlistRepository.getWatchlistEpisodes() }
 
-                _watchlistData.value = WatchlistData(
-                    boxSets = boxSetsDeferred.await().sortedBy { it.name },
-                    movies = moviesDeferred.await().sortedBy { it.name },
-                    shows = showsDeferred.await().sortedBy { it.name },
-                    seasons = seasonsDeferred.await().sortedBy { it.name },
-                    episodes = episodesDeferred.await().sortedBy { it.name },
-                )
+                _watchlistData.value =
+                    WatchlistData(
+                        boxSets = boxSetsDeferred.await().sortedBy { it.name },
+                        movies = moviesDeferred.await().sortedBy { it.name },
+                        shows = showsDeferred.await().sortedBy { it.name },
+                        seasons = seasonsDeferred.await().sortedBy { it.name },
+                        episodes = episodesDeferred.await().sortedBy { it.name },
+                    )
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load watchlist data")
@@ -906,20 +957,30 @@ constructor(
         _favoritesData.update { current ->
             if (isFavorite) {
                 when (item) {
-                    is AfinityMovie -> current.copy(movies = (current.movies + item).sortedBy { it.name })
-                    is AfinityShow -> current.copy(shows = (current.shows + item).sortedBy { it.name })
-                    is AfinitySeason -> current.copy(seasons = (current.seasons + item).sortedBy { it.name })
-                    is AfinityEpisode -> current.copy(episodes = (current.episodes + item).sortedBy { it.name })
-                    is AfinityBoxSet -> current.copy(boxSets = (current.boxSets + item).sortedBy { it.name })
+                    is AfinityMovie ->
+                        current.copy(movies = (current.movies + item).sortedBy { it.name })
+                    is AfinityShow ->
+                        current.copy(shows = (current.shows + item).sortedBy { it.name })
+                    is AfinitySeason ->
+                        current.copy(seasons = (current.seasons + item).sortedBy { it.name })
+                    is AfinityEpisode ->
+                        current.copy(episodes = (current.episodes + item).sortedBy { it.name })
+                    is AfinityBoxSet ->
+                        current.copy(boxSets = (current.boxSets + item).sortedBy { it.name })
                     else -> current
                 }
             } else {
                 when (item) {
-                    is AfinityMovie -> current.copy(movies = current.movies.filterNot { it.id == item.id })
-                    is AfinityShow -> current.copy(shows = current.shows.filterNot { it.id == item.id })
-                    is AfinitySeason -> current.copy(seasons = current.seasons.filterNot { it.id == item.id })
-                    is AfinityEpisode -> current.copy(episodes = current.episodes.filterNot { it.id == item.id })
-                    is AfinityBoxSet -> current.copy(boxSets = current.boxSets.filterNot { it.id == item.id })
+                    is AfinityMovie ->
+                        current.copy(movies = current.movies.filterNot { it.id == item.id })
+                    is AfinityShow ->
+                        current.copy(shows = current.shows.filterNot { it.id == item.id })
+                    is AfinitySeason ->
+                        current.copy(seasons = current.seasons.filterNot { it.id == item.id })
+                    is AfinityEpisode ->
+                        current.copy(episodes = current.episodes.filterNot { it.id == item.id })
+                    is AfinityBoxSet ->
+                        current.copy(boxSets = current.boxSets.filterNot { it.id == item.id })
                     else -> current
                 }
             }
@@ -930,20 +991,30 @@ constructor(
         _watchlistData.update { current ->
             if (isOnWatchlist) {
                 when (item) {
-                    is AfinityBoxSet -> current.copy(boxSets = (current.boxSets + item).sortedBy { it.name })
-                    is AfinityMovie -> current.copy(movies = (current.movies + item).sortedBy { it.name })
-                    is AfinityShow -> current.copy(shows = (current.shows + item).sortedBy { it.name })
-                    is AfinitySeason -> current.copy(seasons = (current.seasons + item).sortedBy { it.name })
-                    is AfinityEpisode -> current.copy(episodes = (current.episodes + item).sortedBy { it.name })
+                    is AfinityBoxSet ->
+                        current.copy(boxSets = (current.boxSets + item).sortedBy { it.name })
+                    is AfinityMovie ->
+                        current.copy(movies = (current.movies + item).sortedBy { it.name })
+                    is AfinityShow ->
+                        current.copy(shows = (current.shows + item).sortedBy { it.name })
+                    is AfinitySeason ->
+                        current.copy(seasons = (current.seasons + item).sortedBy { it.name })
+                    is AfinityEpisode ->
+                        current.copy(episodes = (current.episodes + item).sortedBy { it.name })
                     else -> current
                 }
             } else {
                 when (item) {
-                    is AfinityBoxSet -> current.copy(boxSets = current.boxSets.filterNot { it.id == item.id })
-                    is AfinityMovie -> current.copy(movies = current.movies.filterNot { it.id == item.id })
-                    is AfinityShow -> current.copy(shows = current.shows.filterNot { it.id == item.id })
-                    is AfinitySeason -> current.copy(seasons = current.seasons.filterNot { it.id == item.id })
-                    is AfinityEpisode -> current.copy(episodes = current.episodes.filterNot { it.id == item.id })
+                    is AfinityBoxSet ->
+                        current.copy(boxSets = current.boxSets.filterNot { it.id == item.id })
+                    is AfinityMovie ->
+                        current.copy(movies = current.movies.filterNot { it.id == item.id })
+                    is AfinityShow ->
+                        current.copy(shows = current.shows.filterNot { it.id == item.id })
+                    is AfinitySeason ->
+                        current.copy(seasons = current.seasons.filterNot { it.id == item.id })
+                    is AfinityEpisode ->
+                        current.copy(episodes = current.episodes.filterNot { it.id == item.id })
                     else -> current
                 }
             }

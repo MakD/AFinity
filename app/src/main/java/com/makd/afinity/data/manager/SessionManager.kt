@@ -108,6 +108,17 @@ constructor(
             }
         }
 
+    suspend fun updateSessionUrl(newUrl: String) {
+        val current = _currentSession.value ?: return
+        if (current.serverUrl == newUrl) return
+
+        _currentSession.value = current.copy(serverUrl = newUrl)
+        apiClients[current.serverId]?.update(baseUrl = newUrl)
+        sessionPreferences.saveActiveSession(current.serverId, current.userId, newUrl)
+
+        Timber.d("Session URL updated: $newUrl")
+    }
+
     fun updateCurrentUser(user: User) {
         val current = _currentSession.value
         if (current != null && current.userId == user.id) {

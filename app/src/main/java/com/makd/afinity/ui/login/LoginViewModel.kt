@@ -10,7 +10,9 @@ import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
+import com.makd.afinity.data.repository.server.AddressResolutionResult
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
+import com.makd.afinity.data.repository.server.ServerAddressResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -33,6 +35,7 @@ constructor(
     private val databaseRepository: DatabaseRepository,
     private val sessionManager: SessionManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
+    private val serverAddressResolver: ServerAddressResolver,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -217,10 +220,16 @@ constructor(
 
                 Timber.d("Selecting server: ${server.name} (${server.address})")
 
-                jellyfinRepository.setBaseUrl(server.address)
+                val resolvedUrl = when (val result = serverAddressResolver.resolveAddress(server.id)) {
+                    is AddressResolutionResult.Success -> result.address
+                    is AddressResolutionResult.AllFailed -> server.address
+                }
+                Timber.d("Resolved server URL: $resolvedUrl")
+
+                jellyfinRepository.setBaseUrl(resolvedUrl)
                 jellyfinRepository.refreshServerInfo()
-                _serverUrl.value = server.address
-                _connectedServerUrl.value = server.address
+                _serverUrl.value = resolvedUrl
+                _connectedServerUrl.value = resolvedUrl
 
                 loadSavedUsers(server.id)
 
@@ -287,8 +296,11 @@ constructor(
                         return@launch
                     }
 
-                    val serverUrl = server.address
-                    Timber.d("Using server URL from database: $serverUrl")
+                    val serverUrl = when (val result = serverAddressResolver.resolveAddress(user.serverId)) {
+                        is AddressResolutionResult.Success -> result.address
+                        is AddressResolutionResult.AllFailed -> server.address
+                    }
+                    Timber.d("Resolved server URL: $serverUrl")
 
                     val result =
                         sessionManager.startSession(

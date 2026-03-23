@@ -34,6 +34,7 @@ import com.makd.afinity.data.database.entities.AfinitySegmentDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
+import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
@@ -45,6 +46,7 @@ import com.makd.afinity.data.database.entities.GenreCacheEntity
 import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
 import com.makd.afinity.data.database.entities.GenreShowCacheEntity
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
+import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
 import com.makd.afinity.data.database.entities.LibraryCacheEntity
@@ -92,8 +94,10 @@ import com.makd.afinity.data.models.user.User
             AudiobookshelfItemEntity::class,
             AudiobookshelfProgressEntity::class,
             ItemMetadataCacheEntity::class,
+            JellyseerrAddressEntity::class,
+            AudiobookshelfAddressEntity::class,
         ],
-    version = 34,
+    version = 35,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)

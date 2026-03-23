@@ -675,6 +675,28 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_34_35 =
+        object : Migration(34, 35) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS jellyseerr_addresses (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        jellyfinServerId TEXT NOT NULL,
+                        jellyfinUserId TEXT NOT NULL,
+                        address TEXT NOT NULL
+                    )"""
+                )
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS audiobookshelf_addresses (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        jellyfinServerId TEXT NOT NULL,
+                        jellyfinUserId TEXT NOT NULL,
+                        address TEXT NOT NULL
+                    )"""
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -706,5 +728,6 @@ object DatabaseMigrations {
             MIGRATION_31_32,
             MIGRATION_32_33,
             MIGRATION_33_34,
+            MIGRATION_34_35,
         )
 }

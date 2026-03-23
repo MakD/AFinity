@@ -39,6 +39,9 @@
     <string name="cd_search_icon">Search</string>
     <string name="cd_profile_icon">Profile</string>
     <string name="cd_offline_mode">Offline Mode</string>
+    <string name="cd_local_connection">Local Connection</string>
+    <string name="cd_tailscale_connection">Tailscale Connection</string>
+    <string name="cd_remote_connection">Remote Connection</string>
 
     <!--HomeScreen-->
     <string name="home_error_title">Something went wrong</string>
@@ -575,6 +578,13 @@
     <string name="error_url_required">Server URL is required</string>
     <string name="error_test_connection_first">Please test the connection first</string>
     <string name="error_save_server_failed_fmt">Failed to save server: %1$s</string>
+    <string name="error_all_addresses_unreachable">Could not reach server at any saved address</string>
+
+    <string name="address_added_to_existing_server">Address added to %1$s</string>
+    <string name="address_already_saved">This address is already saved for this server</string>
+    <string name="label_primary_address">Primary</string>
+    <string name="action_set_primary">Set as primary</string>
+    <string name="error_cannot_delete_primary">Cannot delete the primary address</string>
 
     <string name="server_management_title">Manage Servers</string>
     <string name="cd_add_server">Add Server</string>
@@ -721,6 +731,7 @@
     <string name="action_disconnect">Disconnect</string>
     <string name="dialog_error_title">Error</string>
     <string name="action_ok">OK</string>
+    <string name="action_close">Close</string>
 
     <string name="error_logout_failed_fmt">Logout failed: %1$s</string>
     <string name="error_jellyseerr_logout_failed_fmt">Failed to logout from Seerr: %1$s</string>

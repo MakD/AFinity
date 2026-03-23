@@ -8,6 +8,9 @@ import com.makd.afinity.data.models.audiobookshelf.FilterDataResponse
 import com.makd.afinity.data.models.audiobookshelf.ItemResponse
 import com.makd.afinity.data.models.audiobookshelf.ItemsInProgressResponse
 import com.makd.afinity.data.models.audiobookshelf.LibrariesResponse
+import com.makd.afinity.data.models.audiobookshelf.LibraryStats
+import com.makd.afinity.data.models.audiobookshelf.ListeningSessionsResponse
+import com.makd.afinity.data.models.audiobookshelf.ListeningStats
 import com.makd.afinity.data.models.audiobookshelf.LibraryItemsResponse
 import com.makd.afinity.data.models.audiobookshelf.LibraryResponse
 import com.makd.afinity.data.models.audiobookshelf.LoginRequest
@@ -88,10 +91,22 @@ interface AudiobookshelfApiService {
         @Query("include") include: String? = "progress",
     ): Response<ItemResponse>
 
+    @GET("api/libraries/{libraryId}/stats")
+    suspend fun getLibraryStats(@Path("libraryId") libraryId: String): Response<LibraryStats>
+
     @GET("api/libraries/{libraryId}/filterdata")
     suspend fun getFilterData(@Path("libraryId") libraryId: String): Response<FilterDataResponse>
 
     @GET("api/me") suspend fun getMe(): Response<AudiobookshelfUser>
+
+    @GET("api/me/listening-stats")
+    suspend fun getListeningStats(): Response<ListeningStats>
+
+    @GET("api/me/listening-sessions")
+    suspend fun getListeningSessions(
+        @Query("itemsPerPage") itemsPerPage: Int = 15,
+        @Query("page") page: Int = 0,
+    ): Response<ListeningSessionsResponse>
 
     @GET("api/me/items-in-progress")
     suspend fun getItemsInProgress(

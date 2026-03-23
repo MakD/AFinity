@@ -69,6 +69,9 @@ fun AddEditServerScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val duplicateMessage = state.duplicateServerName?.let { name ->
+        stringResource(R.string.address_added_to_existing_server, name)
+    }
 
     LaunchedEffect(state.error) {
         state.error?.let { error ->
@@ -79,6 +82,9 @@ fun AddEditServerScreen(
 
     LaunchedEffect(state.saveSuccess) {
         if (state.saveSuccess) {
+            if (state.duplicateServerDetected && duplicateMessage != null) {
+                snackbarHostState.showSnackbar(duplicateMessage)
+            }
             onBackClick()
         }
     }

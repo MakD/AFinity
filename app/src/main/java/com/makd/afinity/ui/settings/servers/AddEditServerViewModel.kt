@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
 import com.makd.afinity.data.models.server.Server
+import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.UUID
 import javax.inject.Inject
 
 data class AddEditServerState(
@@ -27,6 +29,8 @@ data class AddEditServerState(
     val isSaving: Boolean = false,
     val error: String? = null,
     val saveSuccess: Boolean = false,
+    val duplicateServerDetected: Boolean = false,
+    val duplicateServerName: String? = null,
 )
 
 sealed class ConnectionTestResult {
@@ -172,20 +176,81 @@ constructor(
                 _state.value = _state.value.copy(isSaving = true, error = null)
 
                 val serverInfo = testResult.serverInfo
-                val server =
-                    Server(
-                        id = currentState.serverId ?: serverInfo.id,
-                        name = name.ifBlank { serverInfo.name },
-                        version = serverInfo.version,
-                        address = url,
-                    )
 
                 if (currentState.serverId != null) {
+                    val existingServer = databaseRepository.getServer(currentState.serverId)
+                    if (existingServer != null && existingServer.address != url) {
+                        val oldAddressExists =
+                            databaseRepository.getServerAddressByUrl(
+                                currentState.serverId,
+                                existingServer.address,
+                            )
+                        if (oldAddressExists == null) {
+                            databaseRepository.insertServerAddress(
+                                ServerAddress(
+                                    id = UUID.randomUUID(),
+                                    serverId = currentState.serverId,
+                                    address = existingServer.address,
+                                )
+                            )
+                        }
+                    }
+                    val server =
+                        Server(
+                            id = currentState.serverId,
+                            name = name.ifBlank { serverInfo.name },
+                            version = serverInfo.version,
+                            address = url,
+                        )
                     databaseRepository.updateServer(server)
                     Timber.d("Server updated: ${server.name}")
                 } else {
-                    databaseRepository.insertServer(server)
-                    Timber.d("Server saved: ${server.name}")
+                    val existingServer = databaseRepository.getServer(serverInfo.id)
+                    if (existingServer != null) {
+                        val addressExists =
+                            databaseRepository.getServerAddressByUrl(serverInfo.id, url)
+                        if (addressExists != null) {
+                            _state.value =
+                                _state.value.copy(
+                                    isSaving = false,
+                                    error = context.getString(R.string.address_already_saved),
+                                )
+                            return@launch
+                        }
+                        databaseRepository.insertServerAddress(
+                            ServerAddress(
+                                id = UUID.randomUUID(),
+                                serverId = serverInfo.id,
+                                address = url,
+                            )
+                        )
+                        Timber.d("Alternate address added to server: ${existingServer.name}")
+                        _state.value =
+                            _state.value.copy(
+                                isSaving = false,
+                                saveSuccess = true,
+                                duplicateServerDetected = true,
+                                duplicateServerName = existingServer.name,
+                            )
+                        return@launch
+                    } else {
+                        val server =
+                            Server(
+                                id = serverInfo.id,
+                                name = name.ifBlank { serverInfo.name },
+                                version = serverInfo.version,
+                                address = url,
+                            )
+                        databaseRepository.insertServer(server)
+                        databaseRepository.insertServerAddress(
+                            ServerAddress(
+                                id = UUID.randomUUID(),
+                                serverId = serverInfo.id,
+                                address = url,
+                            )
+                        )
+                        Timber.d("Server saved: ${server.name}")
+                    }
                 }
 
                 _state.value = _state.value.copy(isSaving = false, saveSuccess = true)

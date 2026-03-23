@@ -345,6 +345,10 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
 
     override fun getCachedJellyseerrServerUrl(): String? = cachedJellyseerrUrl
 
+    override fun updateCachedJellyseerrServerUrl(url: String) {
+        cachedJellyseerrUrl = url
+    }
+
     override fun getCachedJellyseerrCookie(): String? = cachedJellyseerrCookie
 
     private suspend fun getDecryptedString(key: Preferences.Key<String>): String? {
@@ -607,6 +611,10 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
     }
 
     override fun getCachedAudiobookshelfServerUrl(): String? = cachedAudiobookshelfUrl
+
+    override fun updateCachedAudiobookshelfServerUrl(url: String) {
+        cachedAudiobookshelfUrl = url
+    }
 
     override fun getCachedAudiobookshelfToken(): String? = cachedAudiobookshelfToken
 

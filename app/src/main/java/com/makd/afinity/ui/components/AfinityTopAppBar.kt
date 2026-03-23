@@ -40,14 +40,39 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.util.isLocalAddress
+import com.makd.afinity.util.isTailscaleAddress
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
-import timber.log.Timber
+
+enum class ConnectionType {
+    LOCAL,
+    TAILSCALE,
+    REMOTE,
+    OFFLINE,
+}
 
 @HiltViewModel
-class AfinityTopAppBarViewModel @Inject constructor(offlineModeManager: OfflineModeManager) :
-    ViewModel() {
+class AfinityTopAppBarViewModel
+@Inject
+constructor(offlineModeManager: OfflineModeManager, sessionManager: SessionManager) : ViewModel() {
     val isOffline = offlineModeManager.isOffline
+
+    val connectionType =
+        combine(
+            offlineModeManager.isOffline,
+            sessionManager.currentSession.map { it?.serverUrl },
+        ) { offline, serverUrl ->
+            when {
+                offline -> ConnectionType.OFFLINE
+                serverUrl != null && isLocalAddress(serverUrl) -> ConnectionType.LOCAL
+                serverUrl != null && isTailscaleAddress(serverUrl) -> ConnectionType.TAILSCALE
+                else -> ConnectionType.REMOTE
+            }
+        }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,7 +87,8 @@ fun AfinityTopAppBar(
     actions: @Composable (RowScope.() -> Unit) = {},
     viewModel: AfinityTopAppBarViewModel = hiltViewModel(),
 ) {
-    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle(initialValue = false)
+    val connectionType by
+        viewModel.connectionType.collectAsStateWithLifecycle(initialValue = ConnectionType.REMOTE)
 
     TopAppBar(
         title = title,
@@ -132,26 +158,43 @@ fun AfinityTopAppBar(
                         }
                     }
 
-                    if (isOffline) {
-                        Timber.d("OfflineMode Toggled, icon to be shown")
-                        Box(
-                            modifier =
-                                Modifier.align(Alignment.BottomEnd)
-                                    .size(20.dp)
-                                    .background(
-                                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                                        shape = CircleShape,
-                                    )
-                                    .padding(4.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_cloud_off),
-                                contentDescription = stringResource(R.string.cd_offline_mode),
-                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                modifier = Modifier.size(14.dp),
-                            )
+                    val indicatorColor =
+                        when (connectionType) {
+                            ConnectionType.LOCAL -> Color(0xFF4CAF50)
+                            ConnectionType.TAILSCALE -> Color(0xFF2196F3)
+                            ConnectionType.REMOTE -> Color(0xFFFF9800)
+                            ConnectionType.OFFLINE -> Color(0xFFF44336)
                         }
+                    val indicatorIcon =
+                        when (connectionType) {
+                            ConnectionType.LOCAL -> R.drawable.ic_wifi
+                            ConnectionType.TAILSCALE -> R.drawable.ic_security
+                            ConnectionType.REMOTE -> R.drawable.ic_link
+                            ConnectionType.OFFLINE -> R.drawable.ic_cloud_off
+                        }
+                    val indicatorContentDescription =
+                        when (connectionType) {
+                            ConnectionType.LOCAL -> stringResource(R.string.cd_local_connection)
+                            ConnectionType.TAILSCALE ->
+                                stringResource(R.string.cd_tailscale_connection)
+                            ConnectionType.REMOTE -> stringResource(R.string.cd_remote_connection)
+                            ConnectionType.OFFLINE -> stringResource(R.string.cd_offline_mode)
+                        }
+
+                    Box(
+                        modifier =
+                            Modifier.align(Alignment.BottomEnd)
+                                .size(20.dp)
+                                .background(color = indicatorColor, shape = CircleShape)
+                                .padding(4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = indicatorIcon),
+                            contentDescription = indicatorContentDescription,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp),
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.width(16.dp))

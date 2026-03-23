@@ -4,8 +4,10 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -72,4 +74,29 @@ interface JellyseerrDao {
         "DELETE FROM jellyseerr_config WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )
     suspend fun clearConfig(serverId: String, userId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAddress(address: JellyseerrAddressEntity)
+
+    @Query(
+        "SELECT * FROM jellyseerr_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    suspend fun getAddresses(serverId: String, userId: String): List<JellyseerrAddressEntity>
+
+    @Query(
+        "SELECT * FROM jellyseerr_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND address = :address"
+    )
+    suspend fun getAddressByUrl(
+        serverId: String,
+        userId: String,
+        address: String,
+    ): JellyseerrAddressEntity?
+
+    @Query("DELETE FROM jellyseerr_addresses WHERE id = :addressId")
+    suspend fun deleteAddress(addressId: UUID)
+
+    @Query(
+        "DELETE FROM jellyseerr_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    suspend fun deleteAllAddresses(serverId: String, userId: String)
 }

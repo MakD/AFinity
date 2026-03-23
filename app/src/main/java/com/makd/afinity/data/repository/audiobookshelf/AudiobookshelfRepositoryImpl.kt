@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository.audiobookshelf
 import android.os.Build
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.database.AfinityDatabase
+import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
@@ -12,6 +13,9 @@ import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.DeviceInfo
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.data.models.audiobookshelf.LibraryStats
+import com.makd.afinity.data.models.audiobookshelf.ListeningSessionsResponse
+import com.makd.afinity.data.models.audiobookshelf.ListeningStats
 import com.makd.afinity.data.models.audiobookshelf.LoginRequest
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.MediaProgressSyncData
@@ -28,8 +32,10 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.SeriesItemsResult
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +45,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import timber.log.Timber
@@ -54,15 +61,51 @@ constructor(
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val database: AfinityDatabase,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val addressResolver: AudiobookshelfAddressResolver,
 ) : AudiobookshelfRepository {
 
     private val audiobookshelfDao = database.audiobookshelfDao()
     private val json = Json { ignoreUnknownKeys = true }
 
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     init {
         securePreferencesRepository.onAbsAuthInvalidated = {
             _isAuthenticated.value = false
             Timber.d("Audiobookshelf auth invalidated by token refresh failure")
+        }
+
+        repositoryScope.launch {
+            networkConnectivityMonitor.isNetworkAvailable.collect { isAvailable ->
+                if (!isAvailable) return@collect
+                val (serverId, userId) = activeContext ?: return@collect
+                if (!_isAuthenticated.value) return@collect
+
+                val config =
+                    audiobookshelfDao.getConfig(serverId, userId.toString()) ?: return@collect
+                try {
+                    val result =
+                        addressResolver.resolveAddress(
+                            serverId,
+                            userId.toString(),
+                            config.serverUrl,
+                        )
+                    if (
+                        result is AudiobookshelfAddressResult.Success &&
+                            result.address !=
+                                securePreferencesRepository.getCachedAudiobookshelfServerUrl()
+                    ) {
+                        Timber.d("Audiobookshelf: Network changed, switching to ${result.address}")
+                        securePreferencesRepository.updateCachedAudiobookshelfServerUrl(
+                            result.address
+                        )
+                        _currentConfig.value =
+                            _currentConfig.value?.copy(serverUrl = result.address)
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Audiobookshelf: Failed to re-resolve address on network change")
+                }
+            }
         }
     }
 
@@ -111,9 +154,36 @@ constructor(
 
         if (hasAuth && config?.isLoggedIn == true) {
             _isAuthenticated.value = true
+
+            var activeUrl = config.serverUrl
+            if (networkConnectivityMonitor.isCurrentlyConnected()) {
+                try {
+                    val result =
+                        addressResolver.resolveAddress(
+                            serverId,
+                            userId.toString(),
+                            config.serverUrl,
+                        )
+                    if (
+                        result is AudiobookshelfAddressResult.Success &&
+                            result.address != config.serverUrl
+                    ) {
+                        Timber.d(
+                            "Audiobookshelf: Resolved to ${result.address} (config: ${config.serverUrl})"
+                        )
+                        securePreferencesRepository.updateCachedAudiobookshelfServerUrl(
+                            result.address
+                        )
+                        activeUrl = result.address
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "Audiobookshelf: Address resolution failed, using config URL")
+                }
+            }
+
             _currentConfig.value =
                 AudiobookshelfConfig(
-                    serverUrl = config.serverUrl,
+                    serverUrl = activeUrl,
                     absUserId = config.absUserId,
                     username = config.username,
                 )
@@ -178,6 +248,48 @@ constructor(
                         username = user.username,
                         refreshToken = refreshToken,
                     )
+                    val existingConfig =
+                        audiobookshelfDao.getConfig(currentServerId, currentUserId.toString())
+                    if (
+                        existingConfig != null &&
+                            existingConfig.serverUrl != serverUrl &&
+                            existingConfig.serverUrl.isNotBlank()
+                    ) {
+                        val oldExists =
+                            audiobookshelfDao.getAddressByUrl(
+                                currentServerId,
+                                currentUserId.toString(),
+                                existingConfig.serverUrl,
+                            )
+                        if (oldExists == null) {
+                            audiobookshelfDao.insertAddress(
+                                AudiobookshelfAddressEntity(
+                                    id = UUID.randomUUID(),
+                                    jellyfinServerId = currentServerId,
+                                    jellyfinUserId = currentUserId.toString(),
+                                    address = existingConfig.serverUrl,
+                                )
+                            )
+                        }
+                    }
+                    if (serverUrl.isNotBlank()) {
+                        val newExists =
+                            audiobookshelfDao.getAddressByUrl(
+                                currentServerId,
+                                currentUserId.toString(),
+                                serverUrl,
+                            )
+                        if (newExists == null) {
+                            audiobookshelfDao.insertAddress(
+                                AudiobookshelfAddressEntity(
+                                    id = UUID.randomUUID(),
+                                    jellyfinServerId = currentServerId,
+                                    jellyfinUserId = currentUserId.toString(),
+                                    address = serverUrl,
+                                )
+                            )
+                        }
+                    }
 
                     audiobookshelfDao.insertConfig(
                         AudiobookshelfConfigEntity(
@@ -354,6 +466,29 @@ constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get library")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getLibraryStats(libraryId: String): Result<LibraryStats> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!networkConnectivityMonitor.isCurrentlyConnected()) {
+                    return@withContext Result.failure(Exception("No network connection"))
+                }
+
+                val response = apiService.get().getLibraryStats(libraryId)
+
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    Result.failure(
+                        Exception("Failed to fetch library stats: ${response.message()}")
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get library stats")
                 Result.failure(e)
             }
         }
@@ -1245,6 +1380,42 @@ constructor(
             addedAt = addedAt,
             updatedAt = updatedAt,
         )
+    }
+
+    override suspend fun getListeningStats(): Result<ListeningStats> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.get().getListeningStats()
+                if (response.isSuccessful) {
+                    Result.success(response.body() ?: ListeningStats())
+                } else {
+                    Result.failure(Exception("Failed to get listening stats: ${response.code()}"))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error fetching listening stats")
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun getListeningSessions(
+        itemsPerPage: Int
+    ): Result<ListeningSessionsResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.get().getListeningSessions(itemsPerPage = itemsPerPage)
+                if (response.isSuccessful) {
+                    Result.success(response.body() ?: ListeningSessionsResponse())
+                } else {
+                    Result.failure(
+                        Exception("Failed to get listening sessions: ${response.code()}")
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error fetching listening sessions")
+                Result.failure(e)
+            }
+        }
     }
 
     private fun AudiobookshelfProgressEntity.toMediaProgress(): MediaProgress {

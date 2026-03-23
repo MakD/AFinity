@@ -22,6 +22,8 @@ interface ServerRepository {
         serverAddress: String
     ): JellyfinServerRepository.ServerConnectionResult
 
+    suspend fun pingServer(address: String, timeoutMs: Long = 3000L): Boolean
+
     suspend fun getServerInfo(): Server?
 
     fun isConnectedToServer(): Boolean

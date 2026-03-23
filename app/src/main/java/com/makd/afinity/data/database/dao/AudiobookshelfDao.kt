@@ -4,10 +4,12 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfLibraryEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -209,4 +211,29 @@ interface AudiobookshelfDao {
         "DELETE FROM audiobookshelf_libraries WHERE cachedAt < :expiryTime AND jellyfinServerId = :serverId AND jellyfinUserId = :userId"
     )
     suspend fun deleteExpiredLibraries(expiryTime: Long, serverId: String, userId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAddress(address: AudiobookshelfAddressEntity)
+
+    @Query(
+        "SELECT * FROM audiobookshelf_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    suspend fun getAddresses(serverId: String, userId: String): List<AudiobookshelfAddressEntity>
+
+    @Query(
+        "SELECT * FROM audiobookshelf_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId AND address = :address"
+    )
+    suspend fun getAddressByUrl(
+        serverId: String,
+        userId: String,
+        address: String,
+    ): AudiobookshelfAddressEntity?
+
+    @Query("DELETE FROM audiobookshelf_addresses WHERE id = :addressId")
+    suspend fun deleteAddress(addressId: UUID)
+
+    @Query(
+        "DELETE FROM audiobookshelf_addresses WHERE jellyfinServerId = :serverId AND jellyfinUserId = :userId"
+    )
+    suspend fun deleteAllAddresses(serverId: String, userId: String)
 }

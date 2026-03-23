@@ -45,6 +45,8 @@ interface DatabaseRepository {
 
     suspend fun getServerAddresses(serverId: String): List<ServerAddress>
 
+    suspend fun getServerAddressByUrl(serverId: String, address: String): ServerAddress?
+
     suspend fun getServerWithAddresses(serverId: String): ServerWithAddresses?
 
     suspend fun getServerWithAddressesAndUsers(serverId: String): ServerWithAddressesAndUsers?

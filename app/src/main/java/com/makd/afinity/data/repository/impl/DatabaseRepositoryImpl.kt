@@ -124,6 +124,10 @@ constructor(
         return serverAddressDao.getServerAddresses(serverId)
     }
 
+    override suspend fun getServerAddressByUrl(serverId: String, address: String): ServerAddress? {
+        return serverAddressDao.getServerAddressByUrl(serverId, address)
+    }
+
     override suspend fun getServerWithAddresses(serverId: String): ServerWithAddresses? {
         return serverDao.getServerWithAddresses(serverId)
     }

@@ -96,6 +96,8 @@ interface SecurePreferencesRepository {
 
     fun getCachedJellyseerrServerUrl(): String?
 
+    fun updateCachedJellyseerrServerUrl(url: String)
+
     fun getCachedJellyseerrCookie(): String?
 
     suspend fun saveJellyseerrCookie(cookie: String)
@@ -126,6 +128,8 @@ interface SecurePreferencesRepository {
     suspend fun clearAudiobookshelfAuthForUser(jellyfinServerId: String, jellyfinUserId: UUID)
 
     fun getCachedAudiobookshelfServerUrl(): String?
+
+    fun updateCachedAudiobookshelfServerUrl(url: String)
 
     fun getCachedAudiobookshelfToken(): String?
 

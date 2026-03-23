@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository.server
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -10,9 +11,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
@@ -31,10 +34,15 @@ constructor(
     private val apiClient: ApiClient,
     private val sessionManagerProvider: Provider<SessionManager>,
     private val databaseRepository: DatabaseRepository,
+    private val networkConnectivityMonitor: NetworkConnectivityMonitor,
+    private val serverAddressResolverProvider: Provider<ServerAddressResolver>,
 ) : ServerRepository {
 
     private val sessionManager: SessionManager
         get() = sessionManagerProvider.get()
+
+    private val serverAddressResolver: ServerAddressResolver
+        get() = serverAddressResolverProvider.get()
 
     private val _currentBaseUrl = MutableStateFlow("")
     override val currentBaseUrl: StateFlow<String> = _currentBaseUrl.asStateFlow()
@@ -73,6 +81,28 @@ constructor(
                     _currentBaseUrl.value = ""
                     _isConnected.value = false
                     Timber.d("JellyfinServerRepository: Session cleared, current server reset")
+                }
+            }
+        }
+        scope.launch {
+            networkConnectivityMonitor.isNetworkAvailable.drop(1).collect { isAvailable ->
+                if (!isAvailable) return@collect
+                val session = sessionManager.currentSession.value ?: return@collect
+                if (_currentBaseUrl.value.isBlank()) return@collect
+                try {
+                    val result = serverAddressResolver.resolveAddress(session.serverId)
+                    if (
+                        result is AddressResolutionResult.Success &&
+                            result.address != _currentBaseUrl.value
+                    ) {
+                        Timber.d(
+                            "Network changed, switching from ${_currentBaseUrl.value} to ${result.address}"
+                        )
+                        setBaseUrl(result.address)
+                        sessionManager.updateSessionUrl(result.address)
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to re-resolve address on network change")
                 }
             }
         }
@@ -174,6 +204,24 @@ constructor(
                 ServerConnectionResult.Error(
                     "Failed to connect: ${lastException?.message ?: "Check server address and network connection"}"
                 )
+            }
+        }
+    }
+
+    override suspend fun pingServer(address: String, timeoutMs: Long): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result =
+                    withTimeoutOrNull(timeoutMs) {
+                        val testClient = jellyfin.createApi(baseUrl = address)
+                        val systemApi = SystemApi(testClient)
+                        systemApi.getPingSystem()
+                        true
+                    }
+                result == true
+            } catch (e: Exception) {
+                Timber.d("Ping failed for $address: ${e.message}")
+                false
             }
         }
     }
