@@ -63,7 +63,7 @@ constructor(
                         val server = databaseRepository.getServer(session.serverId)
                         if (server != null) {
                             _currentServer.value = server
-                            _currentBaseUrl.value = server.address
+                            _currentBaseUrl.value = session.serverUrl
                             _isConnected.value = true
                             Timber.d(
                                 "JellyfinServerRepository: Updated current server to ${server.name} (${server.id})"

@@ -3,13 +3,17 @@ package com.makd.afinity.data.repository.jellyseerr
 import com.makd.afinity.data.database.dao.JellyseerrDao
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.isLocalAddress
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,8 +31,8 @@ constructor(
 ) {
 
     private val pingClient = OkHttpClient.Builder()
-        .connectTimeout(3, TimeUnit.SECONDS)
-        .readTimeout(3, TimeUnit.SECONDS)
+        .connectTimeout(2, TimeUnit.SECONDS)
+        .readTimeout(2, TimeUnit.SECONDS)
         .build()
 
     suspend fun resolveAddress(
@@ -51,22 +55,50 @@ constructor(
         }
 
         Timber.d(
-            "Jellyseerr: Resolving address, trying ${orderedAddresses.size} address(es), onWifi=$onWifi"
+            "Jellyseerr: Resolving address, onWifi=$onWifi, " +
+                "addresses=${orderedAddresses.map { "${it}[${if (isLocalAddress(it)) "local" else "ext"}]" }}"
         )
 
-        for (address in orderedAddresses) {
-            Timber.d("Jellyseerr: Pinging $address...")
-            if (pingService(address)) {
-                Timber.d("Jellyseerr: Address resolved: $address")
-                return JellyseerrAddressResult.Success(address)
+        val startTime = System.currentTimeMillis()
+
+        return coroutineScope {
+            val winningAddress = CompletableDeferred<String?>()
+            val failureCount = AtomicInteger(0)
+            val totalAddresses = orderedAddresses.size
+
+            val jobs = orderedAddresses.map { address ->
+                val tag = if (isLocalAddress(address)) "local" else "ext"
+                launch {
+                    val pingStart = System.currentTimeMillis()
+                    val success = pingService(address)
+                    val elapsed = System.currentTimeMillis() - pingStart
+                    Timber.d("Jellyseerr: Ping $address [$tag] → ${if (success) "OK" else "FAIL"} (${elapsed}ms)")
+                    if (success) {
+                        winningAddress.complete(address)
+                    } else {
+                        if (failureCount.incrementAndGet() == totalAddresses) {
+                            winningAddress.complete(null)
+                        }
+                    }
+                }
+            }
+
+            val bestAddress = winningAddress.await()
+            val totalElapsed = System.currentTimeMillis() - startTime
+            jobs.forEach { it.cancel() }
+
+            if (bestAddress != null) {
+                val tag = if (isLocalAddress(bestAddress)) "local" else "ext"
+                Timber.d("Jellyseerr: Resolved → $bestAddress [$tag] (${totalElapsed}ms)")
+                JellyseerrAddressResult.Success(bestAddress)
+            } else {
+                Timber.w("Jellyseerr: All $totalAddresses addresses failed (${totalElapsed}ms)")
+                JellyseerrAddressResult.AllFailed(orderedAddresses)
             }
         }
-
-        Timber.w("Jellyseerr: All ${orderedAddresses.size} addresses failed")
-        return JellyseerrAddressResult.AllFailed(orderedAddresses)
     }
 
-    private suspend fun pingService(address: String, timeoutMs: Long = 3000L): Boolean {
+    private suspend fun pingService(address: String, timeoutMs: Long = 2000L): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 val result = withTimeoutOrNull(timeoutMs) {

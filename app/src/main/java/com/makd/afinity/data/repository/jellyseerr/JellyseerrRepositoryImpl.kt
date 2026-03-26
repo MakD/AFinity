@@ -27,12 +27,6 @@ import com.makd.afinity.data.repository.RequestEvent
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.Lazy
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -51,6 +45,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class JellyseerrRepositoryImpl
@@ -122,7 +122,6 @@ constructor(
         val config = jellyseerrDao.getConfig(serverId, userId.toString())
 
         if (hasAuth && config?.isLoggedIn == true) {
-            _isAuthenticated.value = true
             if (networkConnectivityMonitor.isCurrentlyConnected()) {
                 try {
                     val result =
@@ -139,11 +138,14 @@ constructor(
                             "Jellyseerr: Resolved to ${result.address} (config: ${config.serverUrl})"
                         )
                         securePreferencesRepository.updateCachedJellyseerrServerUrl(result.address)
+                    } else if (result is JellyseerrAddressResult.AllFailed) {
+                        Timber.w("Jellyseerr: All addresses failed: ${result.attemptedAddresses}")
                     }
                 } catch (e: Exception) {
                     Timber.w(e, "Jellyseerr: Address resolution failed, using config URL")
                 }
             }
+            _isAuthenticated.value = true
         }
 
         Timber.d("Jellyseerr Context Switched. Authenticated: ${_isAuthenticated.value}")

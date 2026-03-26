@@ -3,9 +3,11 @@ package com.makd.afinity.data.repository.server
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.isLocalAddress
-import kotlinx.coroutines.async
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -47,39 +49,44 @@ constructor(
             }
 
         Timber.d(
-            "Resolving address for server $serverId, " +
-                "trying ${orderedAddresses.size} address(es), onWifi=$onWifi"
+            "Jellyfin: Resolving address, onWifi=$onWifi, " +
+                "addresses=${orderedAddresses.map { "${it}[${if (isLocalAddress(it)) "local" else "ext"}]" }}"
         )
 
-        if (orderedAddresses.size == 1) {
-            val address = orderedAddresses.first()
-            Timber.d("Pinging $address...")
-            if (serverRepository.pingServer(address, timeoutMs = 2000L)) {
-                Timber.d("Address resolved: $address")
-                return AddressResolutionResult.Success(address, serverId)
-            }
-            Timber.w("Single address $address failed for server $serverId")
-            return AddressResolutionResult.AllFailed(serverId, orderedAddresses)
-        }
+        val startTime = System.currentTimeMillis()
+
         return coroutineScope {
-            val deferreds =
-                orderedAddresses.mapIndexed { index, address ->
-                    async {
-                        Timber.d("Pinging $address...")
-                        val success = serverRepository.pingServer(address, timeoutMs = 2000L)
-                        Triple(address, success, index)
+            val winningAddress = CompletableDeferred<String?>()
+            val failureCount = AtomicInteger(0)
+            val totalAddresses = orderedAddresses.size
+
+            val jobs = orderedAddresses.map { address ->
+                val tag = if (isLocalAddress(address)) "local" else "ext"
+                launch {
+                    val pingStart = System.currentTimeMillis()
+                    val success = serverRepository.pingServer(address, timeoutMs = 2000L)
+                    val elapsed = System.currentTimeMillis() - pingStart
+                    Timber.d("Jellyfin: Ping $address [$tag] → ${if (success) "OK" else "FAIL"} (${elapsed}ms)")
+                    if (success) {
+                        winningAddress.complete(address)
+                    } else {
+                        if (failureCount.incrementAndGet() == totalAddresses) {
+                            winningAddress.complete(null)
+                        }
                     }
                 }
+            }
 
-            val results = deferreds.map { it.await() }
-            val successful = results.filter { it.second }.sortedBy { it.third }
+            val bestAddress = winningAddress.await()
+            val totalElapsed = System.currentTimeMillis() - startTime
+            jobs.forEach { it.cancel() }
 
-            if (successful.isNotEmpty()) {
-                val best = successful.first().first
-                Timber.d("Address resolved: $best (from ${successful.size} reachable)")
-                AddressResolutionResult.Success(best, serverId)
+            if (bestAddress != null) {
+                val tag = if (isLocalAddress(bestAddress)) "local" else "ext"
+                Timber.d("Jellyfin: Resolved → $bestAddress [$tag] (${totalElapsed}ms)")
+                AddressResolutionResult.Success(bestAddress, serverId)
             } else {
-                Timber.w("All ${orderedAddresses.size} addresses failed for server $serverId")
+                Timber.w("Jellyfin: All $totalAddresses addresses failed (${totalElapsed}ms)")
                 AddressResolutionResult.AllFailed(serverId, orderedAddresses)
             }
         }

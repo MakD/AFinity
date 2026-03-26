@@ -153,8 +153,6 @@ constructor(
         val config = audiobookshelfDao.getConfig(serverId, userId.toString())
 
         if (hasAuth && config?.isLoggedIn == true) {
-            _isAuthenticated.value = true
-
             var activeUrl = config.serverUrl
             if (networkConnectivityMonitor.isCurrentlyConnected()) {
                 try {
@@ -187,6 +185,7 @@ constructor(
                     absUserId = config.absUserId,
                     username = config.username,
                 )
+            _isAuthenticated.value = true
         }
 
         Timber.d("Audiobookshelf Context Switched. Authenticated: ${_isAuthenticated.value}")
