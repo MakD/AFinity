@@ -8,12 +8,17 @@ import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.repository.server.AddressResolutionResult
+import com.makd.afinity.data.repository.server.ServerAddressResolver
 import com.makd.afinity.data.repository.server.ServerRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.okhttp.OkHttpFactory
@@ -43,13 +48,18 @@ constructor(
     private val securePrefsRepository: SecurePreferencesRepository,
     private val jellyseerrRepository: JellyseerrRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val serverAddressResolver: ServerAddressResolver,
     private val okHttpFactory: OkHttpFactory,
     @param:ApplicationContext private val context: Context,
 ) {
     private val _currentSession = MutableStateFlow<Session?>(null)
     val currentSession: StateFlow<Session?> = _currentSession.asStateFlow()
 
+    private val _isServerReachable = MutableStateFlow(true)
+    val isServerReachable: StateFlow<Boolean> = _isServerReachable.asStateFlow()
+
     private val apiClients = ConcurrentHashMap<String, ApiClient>()
+    private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     suspend fun startSession(
         serverUrl: String,
@@ -61,17 +71,41 @@ constructor(
             try {
                 val user = databaseRepository.getUser(userId)
                 val server = databaseRepository.getServer(serverId)
+                val resolvedUrl =
+                    try {
+                        val result = serverAddressResolver.resolveAddress(serverId)
+                        if (result is AddressResolutionResult.Success) {
+                            Timber.d(
+                                "Resolved server address: ${result.address} (saved: $serverUrl)"
+                            )
+                            _isServerReachable.value = true
+                            result.address
+                        } else {
+                            Timber.w(
+                                "Address resolution failed, starting in offline mode. Saved URL: $serverUrl"
+                            )
+                            _isServerReachable.value = false
+                            serverUrl
+                        }
+                    } catch (e: Exception) {
+                        Timber.w(
+                            e,
+                            "Address resolution error, starting in offline mode. Saved URL: $serverUrl",
+                        )
+                        _isServerReachable.value = false
+                        serverUrl
+                    }
 
-                serverRepository.setBaseUrl(serverUrl)
+                serverRepository.setBaseUrl(resolvedUrl)
 
-                val apiClient = getOrCreateApiClient(serverId, serverUrl)
-                apiClient.update(baseUrl = serverUrl, accessToken = accessToken)
+                val apiClient = getOrCreateApiClient(serverId, resolvedUrl)
+                apiClient.update(baseUrl = resolvedUrl, accessToken = accessToken)
 
                 securePrefsRepository.saveAuthenticationData(
                     accessToken = accessToken,
                     userId = userId,
                     serverId = serverId,
-                    serverUrl = serverUrl,
+                    serverUrl = resolvedUrl,
                     username = user?.name ?: "User",
                 )
 
@@ -81,32 +115,45 @@ constructor(
                         userId = userId,
                         accessToken = accessToken,
                         username = user.name,
-                        serverUrl = serverUrl,
+                        serverUrl = resolvedUrl,
                     )
                 }
-
-                jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
-                Timber.d("Linked Jellyseerr session for user: $userId")
-
-                audiobookshelfRepository.setActiveJellyfinSession(serverId, userId)
-                Timber.d("Linked Audiobookshelf session for user: $userId")
 
                 _currentSession.value =
                     Session(
                         serverId = serverId,
                         userId = userId,
-                        serverUrl = serverUrl,
+                        serverUrl = resolvedUrl,
                         user = user,
                         server = server,
                     )
 
-                sessionPreferences.saveActiveSession(serverId, userId, serverUrl)
+                sessionPreferences.saveActiveSession(serverId, userId, resolvedUrl)
+                sessionScope.launch {
+                    try {
+                        jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to link Jellyseerr session")
+                    }
+                }
+                sessionScope.launch {
+                    try {
+                        audiobookshelfRepository.setActiveJellyfinSession(serverId, userId)
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to link Audiobookshelf session")
+                    }
+                }
+
                 Result.success(Unit)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start session")
                 Result.failure(e)
             }
         }
+
+    fun setServerReachable(reachable: Boolean) {
+        _isServerReachable.value = reachable
+    }
 
     suspend fun updateSessionUrl(newUrl: String) {
         val current = _currentSession.value ?: return

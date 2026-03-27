@@ -115,6 +115,10 @@ data class ServerWithUserCount(
     val isActiveServer: Boolean = false,
     val jellyseerrAddresses: List<JellyseerrAddressEntity> = emptyList(),
     val audiobookshelfAddresses: List<AudiobookshelfAddressEntity> = emptyList(),
+    val jellyseerrConnectionUrl: String? = null,
+    val jellyseerrConnectionType: AddressType? = null,
+    val audiobookshelfConnectionUrl: String? = null,
+    val audiobookshelfConnectionType: AddressType? = null,
 )
 
 @HiltViewModel
@@ -575,6 +579,15 @@ constructor(
                         server.address
                     }
 
+                val jellyseerrUrl =
+                    if (isActive && currentUserStatus.jellyseerrConfigured) {
+                        securePreferencesRepository.getCachedJellyseerrServerUrl()
+                    } else null
+                val audiobookshelfUrl =
+                    if (isActive && currentUserStatus.audiobookshelfConfigured) {
+                        securePreferencesRepository.getCachedAudiobookshelfServerUrl()
+                    } else null
+
                 ServerWithUserCount(
                     server = server,
                     addresses = addresses,
@@ -587,6 +600,10 @@ constructor(
                     isActiveServer = isActive,
                     jellyseerrAddresses = allJellyseerrAddresses,
                     audiobookshelfAddresses = allAudiobookshelfAddresses,
+                    jellyseerrConnectionUrl = jellyseerrUrl,
+                    jellyseerrConnectionType = jellyseerrUrl?.let { classifyAddress(it) },
+                    audiobookshelfConnectionUrl = audiobookshelfUrl,
+                    audiobookshelfConnectionType = audiobookshelfUrl?.let { classifyAddress(it) },
                 )
             }
 

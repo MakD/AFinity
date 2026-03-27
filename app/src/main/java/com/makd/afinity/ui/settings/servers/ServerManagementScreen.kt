@@ -7,6 +7,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,9 +31,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingActionButton
@@ -82,6 +85,8 @@ import java.util.UUID
 
 private val JellyseerrColor = Color(0xFFA88AFA)
 private val AudiobookshelfColor = Color(0xFFCD9E46)
+private val tmdbColor = Color(0xFF3CBEC9)
+private val mdblistColor = Color(0xFF4283C9)
 private val LocalColor = Color(0xFF4CAF50)
 private val TailscaleColor = Color(0xFF2196F3)
 private val RemoteColor = Color(0xFFFF9800)
@@ -240,27 +245,7 @@ private fun ServiceStatusIcon(
 }
 
 @Composable
-private fun ConnectionTypeIcon(
-    addressType: AddressType,
-    modifier: Modifier = Modifier,
-    size: Int = 14,
-) {
-    val (iconRes, tint, description) =
-        when (addressType) {
-            AddressType.LOCAL -> Triple(R.drawable.ic_wifi, LocalColor, "Local")
-            AddressType.TAILSCALE -> Triple(R.drawable.ic_security, TailscaleColor, "Tailscale")
-            AddressType.REMOTE -> Triple(R.drawable.ic_link, RemoteColor, "Remote")
-        }
-    Icon(
-        painter = painterResource(id = iconRes),
-        contentDescription = description,
-        tint = tint,
-        modifier = modifier.size(size.dp),
-    )
-}
-
-@Composable
-private fun ServerCard(
+fun ServerCard(
     serverWithCount: ServerWithUserCount,
     onClick: () -> Unit,
     onEditClick: () -> Unit,
@@ -268,13 +253,16 @@ private fun ServerCard(
     modifier: Modifier = Modifier,
 ) {
     val status = serverWithCount.currentUserServiceStatus
+    var menuExpanded by remember { mutableStateOf(false) }
 
-    Card(
+    ElevatedCard(
         modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(20.dp),
         colors =
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(
@@ -283,10 +271,10 @@ private fun ServerCard(
             ) {
                 Box(
                     modifier =
-                        Modifier.size(52.dp)
+                        Modifier.size(44.dp)
                             .background(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(16.dp),
+                                MaterialTheme.colorScheme.primaryContainer,
+                                RoundedCornerShape(12.dp),
                             ),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -294,7 +282,7 @@ private fun ServerCard(
                         painter = painterResource(id = R.drawable.ic_server),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(26.dp),
+                        modifier = Modifier.size(22.dp),
                     )
                 }
 
@@ -310,51 +298,86 @@ private fun ServerCard(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
 
-                    if (serverWithCount.userCount > 0) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_user),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            val userText =
-                                if (serverWithCount.userCount == 1)
-                                    stringResource(R.string.user_singular)
-                                else stringResource(R.string.user_plural)
-                            Text(
-                                text =
-                                    stringResource(
-                                        R.string.user_count_fmt,
-                                        serverWithCount.userCount,
-                                        userText,
-                                    ),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 2.dp),
+                    ) {
+                        val (connIcon, connColor, connText) =
+                            when (serverWithCount.currentConnectionType) {
+                                AddressType.LOCAL -> Triple(R.drawable.ic_wifi, LocalColor, "Local")
+                                AddressType.TAILSCALE ->
+                                    Triple(R.drawable.ic_security, TailscaleColor, "Tailscale")
+                                AddressType.REMOTE ->
+                                    Triple(R.drawable.ic_link, RemoteColor, "Remote")
+                            }
+                        Icon(
+                            painter = painterResource(id = connIcon),
+                            contentDescription = null,
+                            tint = connColor,
+                            modifier = Modifier.size(12.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = connText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
 
-                Row(horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = onEditClick) {
+                Box {
+                    IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(28.dp)) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_edit),
-                            contentDescription = stringResource(R.string.cd_edit_server),
+                            painter = painterResource(id = R.drawable.ic_dots_vertical),
+                            contentDescription = "Server Options",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp),
                         )
                     }
-                    IconButton(onClick = onDeleteClick) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_delete),
-                            contentDescription = stringResource(R.string.cd_delete_server),
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp),
+
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text("Edit Server", style = MaterialTheme.typography.bodyMedium)
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onEditClick()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painterResource(id = R.drawable.ic_edit),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "Delete Server",
+                                    style =
+                                        MaterialTheme.typography.bodyMedium.copy(
+                                            color = MaterialTheme.colorScheme.error
+                                        ),
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onDeleteClick()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painterResource(id = R.drawable.ic_delete),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
                         )
                     }
                 }
@@ -362,68 +385,151 @@ private fun ServerCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
-                    modifier =
-                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ServiceStatusIcon(
-                            activeIconRes = R.drawable.ic_seerr_logo_colored,
-                            inactiveIconRes = R.drawable.ic_seerr_logo,
-                            contentDescription = "Jellyseerr",
-                            isActive = status.jellyseerrConfigured,
-                            haloColor = JellyseerrColor,
-                        )
-                        ServiceStatusIcon(
-                            activeIconRes = R.drawable.ic_audiobookshelf_colored,
-                            inactiveIconRes = R.drawable.ic_audiobookshelf_light,
-                            contentDescription = "Audiobookshelf",
-                            isActive = status.audiobookshelfConfigured,
-                            haloColor = AudiobookshelfColor,
-                        )
-                        ServiceStatusIcon(
-                            activeIconRes = R.drawable.ic_tmdb,
-                            contentDescription = "TMDB",
-                            isActive = status.tmdbConfigured,
-                        )
-                        ServiceStatusIcon(
-                            activeIconRes = R.drawable.ic_mdblist,
-                            contentDescription = "MDBList",
-                            isActive = status.mdbListConfigured,
-                        )
-                    }
+                    ServiceChip(
+                        label = "Seerr",
+                        activeColor = JellyseerrColor,
+                        addressType =
+                            serverWithCount.jellyseerrConnectionType ?: AddressType.REMOTE,
+                        isActive = status.jellyseerrConfigured,
+                    )
 
+                    ServiceChip(
+                        label = "ABS",
+                        activeColor = AudiobookshelfColor,
+                        addressType =
+                            serverWithCount.audiobookshelfConnectionType ?: AddressType.REMOTE,
+                        isActive = status.audiobookshelfConfigured,
+                    )
+
+                    Spacer(modifier = Modifier.width(2.dp))
+
+                    LedIndicator(
+                        activeColor = tmdbColor,
+                        label = "TMDB",
+                        isActive = status.tmdbConfigured,
+                    )
+                    LedIndicator(
+                        activeColor = mdblistColor,
+                        label = "MDBList",
+                        isActive = status.mdbListConfigured,
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.padding(start = 12.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
-                        ConnectionTypeIcon(addressType = serverWithCount.currentConnectionType)
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_user),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text =
-                                serverWithCount.currentConnectionUrl
-                                    .removePrefix("https://")
-                                    .removePrefix("http://"),
-                            style = MaterialTheme.typography.labelMedium,
+                            text = serverWithCount.userCount.toString(),
+                            style =
+                                MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
                         )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ServiceChip(
+    label: String,
+    activeColor: Color,
+    addressType: AddressType,
+    isActive: Boolean,
+) {
+    val connIcon =
+        when (addressType) {
+            AddressType.LOCAL -> R.drawable.ic_wifi
+            AddressType.TAILSCALE -> R.drawable.ic_security
+            AddressType.REMOTE -> R.drawable.ic_link
+        }
+
+    val contentColor =
+        if (isActive) activeColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+    val bgColor =
+        if (isActive) activeColor.copy(alpha = 0.12f)
+        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f)
+    val borderColor =
+        if (isActive) activeColor.copy(alpha = 0.2f)
+        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = bgColor,
+        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+        ) {
+            Text(
+                text = label.uppercase(),
+                style =
+                    MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 9.sp,
+                        fontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                    ),
+                color = contentColor,
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                painter = painterResource(id = connIcon),
+                contentDescription = addressType.name,
+                tint = contentColor.copy(alpha = if (isActive) 0.8f else 0.5f),
+                modifier = Modifier.size(10.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LedIndicator(activeColor: Color, label: String, isActive: Boolean) {
+    val dotColor =
+        if (isActive) activeColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+    val textColor =
+        if (isActive) MaterialTheme.colorScheme.onSurfaceVariant
+        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 4.dp)) {
+        Box(modifier = Modifier.size(6.dp).background(color = dotColor, shape = CircleShape))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = label,
+            style =
+                MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 9.sp,
+                    fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                ),
+            color = textColor,
+        )
     }
 }
 
@@ -444,7 +550,7 @@ private enum class DetailTab(
 }
 
 @Composable
-private fun ModernSegmentedTabBar(
+private fun SegmentedTabBar(
     tabs: List<DetailTab>,
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
@@ -604,7 +710,7 @@ private fun ServerDetailDialog(
                 }
 
                 if (tabs.size > 1) {
-                    ModernSegmentedTabBar(
+                    SegmentedTabBar(
                         tabs = tabs,
                         selectedTabIndex = selectedTabIndex,
                         onTabSelected = { selectedTabIndex = it },
@@ -796,32 +902,35 @@ private fun JellyseerrTabContent(
 
                         val permissions = buildList {
                             if (user.hasPermission(Permissions.REQUEST)) add("Request")
-                            if (user.hasPermission(Permissions.AUTO_APPROVE)) add("Auto-approve")
+                            if (user.hasPermission(Permissions.AUTO_APPROVE)) add("Auto-Approve")
                             if (user.hasPermission(Permissions.REQUEST_4K)) add("4K")
                             if (user.hasPermission(Permissions.MANAGE_REQUESTS)) add("Manage")
                         }
                         if (permissions.isNotEmpty()) {
                             DetailRow(label = "Permissions", value = permissions.joinToString(", "))
                         }
-
-                        if (user.movieQuotaLimit != null && user.movieQuotaLimit > 0) {
-                            DetailRow(
-                                label = "Movie quota",
-                                value = "${user.movieQuotaLimit} / ${user.movieQuotaDays ?: 7}d",
-                            )
-                        }
-                        if (user.tvQuotaLimit != null && user.tvQuotaLimit > 0) {
-                            DetailRow(
-                                label = "TV quota",
-                                value = "${user.tvQuotaLimit} / ${user.tvQuotaDays ?: 7}d",
-                            )
-                        }
+                        DetailRow(
+                            label = "Movie quota",
+                            value =
+                                if (user.movieQuotaLimit != null && user.movieQuotaLimit > 0) {
+                                    "${user.movieQuotaLimit} / ${user.movieQuotaDays ?: 7} days"
+                                } else {
+                                    "Unlimited"
+                                },
+                        )
+                        DetailRow(
+                            label = "TV quota",
+                            value =
+                                if (user.tvQuotaLimit != null && user.tvQuotaLimit > 0) {
+                                    "${user.tvQuotaLimit} / ${user.tvQuotaDays ?: 7} days"
+                                } else {
+                                    "Unlimited"
+                                },
+                        )
                     }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SectionHeader("Request Stats")
@@ -966,8 +1075,6 @@ private fun AudiobookshelfTabContent(
                 modifier = Modifier.weight(1f),
             )
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SectionHeader("Activity")

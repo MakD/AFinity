@@ -3,6 +3,7 @@ package com.makd.afinity.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AppDataRepository
@@ -40,6 +41,7 @@ constructor(
     val audiobookshelfPlaybackManager: AudiobookshelfPlaybackManager,
     private val liveTvRepository: LiveTvRepository,
     private val offlineModeManager: OfflineModeManager,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
     private val _hasLiveTvAccess = MutableStateFlow(true)
     val hasLiveTvAccess = _hasLiveTvAccess.asStateFlow()
@@ -119,8 +121,8 @@ constructor(
         viewModelScope.launch {
             try {
                 val isOffline = offlineModeManager.isCurrentlyOffline()
-                if (isOffline) {
-                    Timber.d("Device is offline, skipping server info refresh")
+                if (isOffline || !sessionManager.isServerReachable.value) {
+                    Timber.d("Device is offline or server unreachable, skipping server info refresh")
                     return@launch
                 }
 
@@ -139,6 +141,12 @@ constructor(
 
                 if (isOffline) {
                     Timber.d("Device is offline, skipping initial data load")
+                    appDataRepository.skipInitialDataLoad()
+                    return@launch
+                }
+
+                if (!sessionManager.isServerReachable.value) {
+                    Timber.d("Server unreachable (address resolution failed), starting in offline mode")
                     appDataRepository.skipInitialDataLoad()
                     return@launch
                 }

@@ -91,15 +91,15 @@ constructor(
                 if (_currentBaseUrl.value.isBlank()) return@collect
                 try {
                     val result = serverAddressResolver.resolveAddress(session.serverId)
-                    if (
-                        result is AddressResolutionResult.Success &&
-                            result.address != _currentBaseUrl.value
-                    ) {
-                        Timber.d(
-                            "Network changed, switching from ${_currentBaseUrl.value} to ${result.address}"
-                        )
-                        setBaseUrl(result.address)
-                        sessionManager.updateSessionUrl(result.address)
+                    if (result is AddressResolutionResult.Success) {
+                        sessionManager.setServerReachable(true)
+                        if (result.address != _currentBaseUrl.value) {
+                            Timber.d(
+                                "Network changed, switching from ${_currentBaseUrl.value} to ${result.address}"
+                            )
+                            setBaseUrl(result.address)
+                            sessionManager.updateSessionUrl(result.address)
+                        }
                     }
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to re-resolve address on network change")
