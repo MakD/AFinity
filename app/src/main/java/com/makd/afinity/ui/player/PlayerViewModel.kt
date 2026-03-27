@@ -1347,6 +1347,10 @@ constructor(
     }
 
     private suspend fun loadSegments(itemId: UUID) {
+        segmentCheckingJob?.cancel()
+        currentMediaSegments = emptyList()
+        updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+
         currentMediaSegments =
             try {
                 segmentsRepository.getSegments(itemId)
@@ -1755,14 +1759,17 @@ constructor(
         }
     }
 
+    private var playStatus = false
+
     fun onResume() {
-        if (!_uiState.value.isCasting) {
+        if (!_uiState.value.isCasting && playStatus) {
             player.play()
         }
     }
 
     fun onPause() {
         if (!_uiState.value.isCasting) {
+            playStatus = player.isPlaying
             player.pause()
         }
         onLongPressEnd()
