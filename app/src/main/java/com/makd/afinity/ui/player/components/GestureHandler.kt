@@ -17,10 +17,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.sign
 
 private enum class GestureType {
     BRIGHTNESS,
@@ -43,6 +45,9 @@ fun GestureHandler(
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
+    val viewConfiguration = LocalViewConfiguration.current
+    val touchSlop = viewConfiguration.touchSlop
+
     var componentWidth by remember { mutableFloatStateOf(0f) }
     var componentHeight by remember { mutableFloatStateOf(0f) }
 
@@ -92,7 +97,7 @@ fun GestureHandler(
                             val job =
                                 coroutineScope.launch {
                                     delay(500)
-                                    if (!isDragging) {
+                                    if (!isDragging && gestureType == null) {
                                         isLongPressActive = true
                                         currentOnLongPressStart()
                                     }
@@ -119,13 +124,6 @@ fun GestureHandler(
                             ) {
                                 return@detectDragGestures
                             }
-
-                            isDragging = true
-                            if (isLongPressActive) {
-                                isLongPressActive = false
-                                currentOnLongPressEnd()
-                            }
-
                             dragStartOffset = offset
                             totalHorizontalDelta = 0f
                             totalVerticalDelta = 0f
@@ -152,9 +150,7 @@ fun GestureHandler(
                             gestureType = null
                             isSeeking = false
                         },
-                        onDrag = { _, dragAmount ->
-                            if (!isDragging) return@detectDragGestures
-
+                        onDrag = { change, dragAmount ->
                             val verticalDrag = -dragAmount.y
                             val horizontalDrag = dragAmount.x
                             totalHorizontalDelta += horizontalDrag
@@ -164,12 +160,19 @@ fun GestureHandler(
                             val rightZoneStart = componentWidth * 0.65f
 
                             if (gestureType == null) {
-                                val minimumDragDistance = 10f
-
                                 if (
-                                    abs(totalVerticalDelta) > minimumDragDistance ||
-                                        abs(totalHorizontalDelta) > minimumDragDistance
+                                    abs(totalVerticalDelta) > touchSlop ||
+                                        abs(totalHorizontalDelta) > touchSlop
                                 ) {
+
+                                    isDragging = true
+                                    change.consume()
+
+                                    if (isLongPressActive) {
+                                        isLongPressActive = false
+                                        currentOnLongPressEnd()
+                                    }
+
                                     gestureType =
                                         when {
                                             abs(totalVerticalDelta) > abs(totalHorizontalDelta) -> {
@@ -185,12 +188,24 @@ fun GestureHandler(
                                             else -> null
                                         }
 
+                                    if (abs(totalVerticalDelta) > touchSlop) {
+                                        totalVerticalDelta -= sign(totalVerticalDelta) * touchSlop
+                                    }
+                                    if (abs(totalHorizontalDelta) > touchSlop) {
+                                        totalHorizontalDelta -=
+                                            sign(totalHorizontalDelta) * touchSlop
+                                    }
+
                                     if (gestureType == GestureType.VOLUME)
                                         currentOnVolumeGesture(0f, true)
                                     if (gestureType == GestureType.BRIGHTNESS)
                                         currentOnBrightnessGesture(0f, true)
                                 }
+                            } else {
+                                change.consume()
                             }
+
+                            if (!isDragging) return@detectDragGestures
 
                             when (gestureType) {
                                 GestureType.BRIGHTNESS -> {

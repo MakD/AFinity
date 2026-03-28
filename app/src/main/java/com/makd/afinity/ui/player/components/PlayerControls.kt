@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -60,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import com.makd.afinity.R
@@ -125,8 +128,8 @@ fun PlayerControls(
                     ?.filter { it.type == MediaStreamType.AUDIO }
                     ?.mapIndexed { index, stream ->
                         val displayName = buildString {
-                            append(stream.language?.uppercase() ?: unknownLang)
-                            append(" • ${stream.codec?.uppercase() ?: "N/A"}")
+                            append(stream.language.uppercase())
+                            append(" • ${stream.codec.uppercase()}")
                             if ((stream.channels ?: 0) > 0) {
                                 append(String.format(channelFmt, stream.channels))
                             }
@@ -158,7 +161,7 @@ fun PlayerControls(
                 )
             )
             player.currentTracks.groups
-                .filter { it.type == androidx.media3.common.C.TRACK_TYPE_TEXT && it.isSupported }
+                .filter { it.type == C.TRACK_TYPE_TEXT && it.isSupported }
                 .forEachIndexed { index, trackGroup ->
                     val format = trackGroup.mediaTrackGroup.getFormat(0)
                     val displayName =
@@ -222,7 +225,7 @@ fun PlayerControls(
                             }
 
                         if (displayItem is AfinityMovie) {
-                            if (displayItem.images?.logo != null) {
+                            if (displayItem.images.logo != null) {
                                 AsyncImage(
                                     imageUrl =
                                         displayItem.images.logoImageUrlWithTransparency.toString(),
@@ -249,48 +252,46 @@ fun PlayerControls(
                             val episodeTitle = displayItem.name
                             val seriesName = displayItem.seriesName
 
-                            if (seasonNumber != null && episodeNumber != null) {
-                                Column(
-                                    horizontalAlignment = Alignment.Start,
-                                    modifier = Modifier.wrapContentWidth(),
-                                ) {
-                                    if (displayItem.seriesLogo != null) {
-                                        val logoUrl =
-                                            displayItem.seriesLogo.toString().let { url ->
-                                                if (url.contains("?")) "$url&format=png"
-                                                else "$url?format=png"
-                                            }
-                                        AsyncImage(
-                                            imageUrl = logoUrl,
-                                            contentDescription =
-                                                stringResource(R.string.cd_series_logo),
-                                            modifier = Modifier.height(60.dp).widthIn(max = 200.dp),
-                                            contentScale = ContentScale.Fit,
-                                        )
-                                    } else {
-                                        Text(
-                                            text = seriesName ?: "",
-                                            color = Color.White.copy(alpha = 0.8f),
-                                            fontSize = 18.sp,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
+                            Column(
+                                horizontalAlignment = Alignment.Start,
+                                modifier = Modifier.wrapContentWidth(),
+                            ) {
+                                if (displayItem.seriesLogo != null) {
+                                    val logoUrl =
+                                        displayItem.seriesLogo.toString().let { url ->
+                                            if (url.contains("?")) "$url&format=png"
+                                            else "$url?format=png"
+                                        }
+                                    AsyncImage(
+                                        imageUrl = logoUrl,
+                                        contentDescription =
+                                            stringResource(R.string.cd_series_logo),
+                                        modifier = Modifier.height(60.dp).widthIn(max = 200.dp),
+                                        contentScale = ContentScale.Fit,
+                                    )
+                                } else {
                                     Text(
-                                        text =
-                                            stringResource(
-                                                R.string.player_episode_header_fmt,
-                                                seasonNumber.toString().padStart(2, '0'),
-                                                episodeNumber.toString().padStart(2, '0'),
-                                                episodeTitle ?: "",
-                                            ),
+                                        text = seriesName,
                                         color = Color.White.copy(alpha = 0.8f),
-                                        fontSize = 14.sp,
+                                        fontSize = 18.sp,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.padding(top = 4.dp),
                                     )
                                 }
+                                Text(
+                                    text =
+                                        stringResource(
+                                            R.string.player_episode_header_fmt,
+                                            seasonNumber.toString().padStart(2, '0'),
+                                            episodeNumber.toString().padStart(2, '0'),
+                                            episodeTitle,
+                                        ),
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 14.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
                             }
                         }
                     }
@@ -373,225 +374,237 @@ fun PlayerControls(
                 }
             }
         }
-    }
-    if (uiState.showSkipButton && uiState.currentSegment != null) {
-        Box(
+        val currentSegment = uiState.currentSegment
+        AnimatedVisibility(
+            visible = uiState.showSkipButton && currentSegment != null,
             modifier =
-                Modifier.fillMaxSize()
+                Modifier.align(Alignment.BottomEnd)
                     .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(
-                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-                        )
+                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
                     )
+                    .padding(end = 16.dp, bottom = 110.dp),
+            enter =
+                fadeIn(tween(300)) +
+                    scaleIn(
+                        initialScale = 0.8f,
+                        animationSpec = tween(300),
+                        transformOrigin = TransformOrigin(1f, 1f),
+                    ),
+            exit =
+                fadeOut(tween(300)) +
+                    scaleOut(
+                        targetScale = 0.8f,
+                        animationSpec = tween(300),
+                        transformOrigin = TransformOrigin(1f, 1f),
+                    ),
         ) {
-            SkipButton(
-                segment = uiState.currentSegment,
-                skipButtonText = uiState.skipButtonText,
-                onClick = { onPlayerEvent(PlayerEvent.SkipSegment(uiState.currentSegment)) },
-                modifier =
-                    Modifier.align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = if (uiState.showControls) 70.dp else 16.dp),
-            )
+            if (currentSegment != null) {
+                SkipButton(
+                    segment = currentSegment,
+                    skipButtonText = uiState.skipButtonText,
+                    onClick = { onPlayerEvent(PlayerEvent.SkipSegment(currentSegment)) },
+                )
+            }
         }
-    }
 
-    if (showAudioSelector && audioStreamOptions.isNotEmpty()) {
-        Box(
-            modifier =
-                Modifier.fillMaxSize().clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    showAudioSelector = false
-                }
-        ) {
+        if (showAudioSelector && audioStreamOptions.isNotEmpty()) {
             Box(
                 modifier =
-                    Modifier.align(Alignment.BottomEnd)
-                        .padding(bottom = 110.dp, end = 56.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) { /* Consume clicks */
-                        }
+                    Modifier.fillMaxSize().clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {
+                        showAudioSelector = false
+                    }
             ) {
                 Box(
                     modifier =
-                        Modifier.background(
-                                Color.Black.copy(alpha = 0.95f),
-                                RoundedCornerShape(8.dp),
-                            )
-                            .padding(12.dp)
-                            .widthIn(min = 200.dp, max = 280.dp)
-                            .heightIn(max = 400.dp)
+                        Modifier.align(Alignment.BottomEnd)
+                            .padding(bottom = 110.dp, end = 56.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) { /* Consume clicks */
+                            }
                 ) {
-                    Column(
-                        modifier = Modifier.verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    Box(
+                        modifier =
+                            Modifier.background(
+                                    Color.Black.copy(alpha = 0.95f),
+                                    RoundedCornerShape(8.dp),
+                                )
+                                .padding(12.dp)
+                                .widthIn(min = 200.dp, max = 280.dp)
+                                .heightIn(max = 400.dp)
                     ) {
-                        Text(
-                            text = stringResource(R.string.player_audio_title),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.White,
-                            modifier = Modifier.padding(bottom = 4.dp),
-                        )
-                        audioStreamOptions.forEach { option ->
-                            Row(
-                                modifier =
-                                    Modifier.fillMaxWidth()
-                                        .clickable {
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.player_audio_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.White,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                            audioStreamOptions.forEach { option ->
+                                Row(
+                                    modifier =
+                                        Modifier.fillMaxWidth()
+                                            .clickable {
+                                                onPlayerEvent(
+                                                    PlayerEvent.SwitchToTrack(
+                                                        C.TRACK_TYPE_AUDIO,
+                                                        option.position,
+                                                    )
+                                                )
+                                                showAudioSelector = false
+                                            }
+                                            .padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    RadioButton(
+                                        selected = uiState.audioStreamIndex == option.position,
+                                        onClick = {
                                             onPlayerEvent(
                                                 PlayerEvent.SwitchToTrack(
-                                                    androidx.media3.common.C.TRACK_TYPE_AUDIO,
+                                                    C.TRACK_TYPE_AUDIO,
                                                     option.position,
                                                 )
                                             )
                                             showAudioSelector = false
-                                        }
-                                        .padding(vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                RadioButton(
-                                    selected = uiState.audioStreamIndex == option.position,
-                                    onClick = {
-                                        onPlayerEvent(
-                                            PlayerEvent.SwitchToTrack(
-                                                androidx.media3.common.C.TRACK_TYPE_AUDIO,
-                                                option.position,
-                                            )
-                                        )
-                                        showAudioSelector = false
-                                    },
-                                    colors =
-                                        RadioButtonDefaults.colors(
-                                            selectedColor = MaterialTheme.colorScheme.primary
-                                        ),
-                                    modifier = Modifier.size(20.dp),
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = option.displayName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                                        },
+                                        colors =
+                                            RadioButtonDefaults.colors(
+                                                selectedColor = MaterialTheme.colorScheme.primary
+                                            ),
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = option.displayName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.White,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
 
-    if (showSubtitleSelector && subtitleStreamOptions.isNotEmpty()) {
-        Box(
-            modifier =
-                Modifier.fillMaxSize().clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    showSubtitleSelector = false
-                }
-        ) {
+        if (showSubtitleSelector && subtitleStreamOptions.isNotEmpty()) {
             Box(
                 modifier =
-                    Modifier.align(Alignment.BottomEnd)
-                        .padding(bottom = 110.dp, end = 8.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) { /* Consume clicks */
-                        }
+                    Modifier.fillMaxSize().clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {
+                        showSubtitleSelector = false
+                    }
             ) {
                 Box(
                     modifier =
-                        Modifier.background(
-                                Color.Black.copy(alpha = 0.95f),
-                                RoundedCornerShape(8.dp),
-                            )
-                            .padding(12.dp)
-                            .widthIn(min = 200.dp, max = 280.dp)
-                            .heightIn(max = 400.dp)
+                        Modifier.align(Alignment.BottomEnd)
+                            .padding(bottom = 110.dp, end = 8.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) { /* Consume clicks */
+                            }
                 ) {
-                    Column(
-                        modifier = Modifier.verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    Box(
+                        modifier =
+                            Modifier.background(
+                                    Color.Black.copy(alpha = 0.95f),
+                                    RoundedCornerShape(8.dp),
+                                )
+                                .padding(12.dp)
+                                .widthIn(min = 200.dp, max = 280.dp)
+                                .heightIn(max = 400.dp)
                     ) {
-                        Text(
-                            text = stringResource(R.string.player_subtitle_title),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.White,
-                            modifier = Modifier.padding(bottom = 4.dp),
-                        )
-                        subtitleStreamOptions.forEach { option ->
-                            Row(
-                                modifier =
-                                    Modifier.fillMaxWidth()
-                                        .clickable {
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.player_subtitle_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.White,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                            subtitleStreamOptions.forEach { option ->
+                                Row(
+                                    modifier =
+                                        Modifier.fillMaxWidth()
+                                            .clickable {
+                                                onPlayerEvent(
+                                                    PlayerEvent.SwitchToTrack(
+                                                        C.TRACK_TYPE_TEXT,
+                                                        option.index,
+                                                    )
+                                                )
+                                                showSubtitleSelector = false
+                                            }
+                                            .padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    RadioButton(
+                                        selected = uiState.subtitleStreamIndex == option.index,
+                                        onClick = {
                                             onPlayerEvent(
                                                 PlayerEvent.SwitchToTrack(
-                                                    androidx.media3.common.C.TRACK_TYPE_TEXT,
+                                                    C.TRACK_TYPE_TEXT,
                                                     option.index,
                                                 )
                                             )
                                             showSubtitleSelector = false
-                                        }
-                                        .padding(vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                RadioButton(
-                                    selected = uiState.subtitleStreamIndex == option.index,
-                                    onClick = {
-                                        onPlayerEvent(
-                                            PlayerEvent.SwitchToTrack(
-                                                androidx.media3.common.C.TRACK_TYPE_TEXT,
-                                                option.index,
-                                            )
-                                        )
-                                        showSubtitleSelector = false
-                                    },
-                                    colors =
-                                        RadioButtonDefaults.colors(
-                                            selectedColor = MaterialTheme.colorScheme.primary
-                                        ),
-                                    modifier = Modifier.size(20.dp),
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = option.displayName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                                        },
+                                        colors =
+                                            RadioButtonDefaults.colors(
+                                                selectedColor = MaterialTheme.colorScheme.primary
+                                            ),
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = option.displayName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.White,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
 
-    if (showSpeedDialog) {
-        PlaybackSpeedDialog(
-            currentSpeed = uiState.playbackSpeed,
-            onSpeedChange = { speed -> onPlayerEvent(PlayerEvent.SetPlaybackSpeed(speed)) },
-            onDismiss = { showSpeedDialog = false },
-        )
-    }
+        if (showSpeedDialog) {
+            PlaybackSpeedDialog(
+                currentSpeed = uiState.playbackSpeed,
+                onSpeedChange = { speed -> onPlayerEvent(PlayerEvent.SetPlaybackSpeed(speed)) },
+                onDismiss = { showSpeedDialog = false },
+            )
+        }
 
-    if (showEpisodeSwitcher && playlistQueue.isNotEmpty()) {
-        EpisodeSwitcher(
-            episodes = playlistQueue,
-            currentIndex = currentPlaylistIndex,
-            isPlaying = uiState.isPlaying,
-            onEpisodeClick = { episodeId ->
-                onJumpToEpisode(episodeId)
-                showEpisodeSwitcher = false
-            },
-            onDismiss = { showEpisodeSwitcher = false },
-        )
+        if (showEpisodeSwitcher && playlistQueue.isNotEmpty()) {
+            EpisodeSwitcher(
+                episodes = playlistQueue,
+                currentIndex = currentPlaylistIndex,
+                isPlaying = uiState.isPlaying,
+                onEpisodeClick = { episodeId ->
+                    onJumpToEpisode(episodeId)
+                    showEpisodeSwitcher = false
+                },
+                onDismiss = { showEpisodeSwitcher = false },
+            )
+        }
     }
 }
 
