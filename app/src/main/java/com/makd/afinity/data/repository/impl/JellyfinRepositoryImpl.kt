@@ -1,5 +1,8 @@
 package com.makd.afinity.data.repository.impl
 
+import com.makd.afinity.data.database.dao.JellyfinStatsDao
+import com.makd.afinity.data.database.entities.JellyfinStatsCacheEntity
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.JellyfinRepository
@@ -7,8 +10,12 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
+import com.makd.afinity.ui.settings.servers.JellyfinStats
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import org.jellyfin.sdk.api.operations.LibraryApi
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -21,6 +28,8 @@ constructor(
     private val serverRepository: ServerRepository,
     private val authRepository: AuthRepository,
     private val playbackRepository: PlaybackRepository,
+    private val jellyfinStatsDao: JellyfinStatsDao,
+    private val sessionManager: SessionManager,
 ) : JellyfinRepository {
 
     override fun getBaseUrl(): String {
@@ -94,6 +103,51 @@ constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to get user profile image URL")
             null
+        }
+    }
+
+    override fun getLibraryStatsFlow(serverId: String): Flow<JellyfinStats> = flow {
+        val cached = jellyfinStatsDao.getStatsFlow(serverId).firstOrNull()
+        if (cached != null) {
+            emit(
+                JellyfinStats(
+                    movieCount = cached.movieCount,
+                    seriesCount = cached.seriesCount,
+                    episodeCount = cached.episodeCount,
+                    boxsetCount = cached.boxsetCount,
+                )
+            )
+        } else {
+            emit(JellyfinStats())
+        }
+
+        try {
+            val apiClient = sessionManager.getCurrentApiClient()
+            if (apiClient != null) {
+                val libraryApi = LibraryApi(apiClient)
+                val counts = libraryApi.getItemCounts().content
+
+                val freshStats =
+                    JellyfinStatsCacheEntity(
+                        serverId = serverId,
+                        movieCount = counts.movieCount ?: 0,
+                        seriesCount = counts.seriesCount ?: 0,
+                        episodeCount = counts.episodeCount ?: 0,
+                        boxsetCount = counts.boxSetCount ?: 0,
+                    )
+
+                jellyfinStatsDao.insertStats(freshStats)
+                emit(
+                    JellyfinStats(
+                        movieCount = freshStats.movieCount,
+                        seriesCount = freshStats.seriesCount,
+                        episodeCount = freshStats.episodeCount,
+                        boxsetCount = freshStats.boxsetCount,
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to refresh remote Jellyfin stats")
         }
     }
 
@@ -200,5 +254,4 @@ constructor(
             ""
         }
     }
-
 }

@@ -697,6 +697,25 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_35_36 =
+        object : Migration(35, 36) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS jellyfin_stats_cache (
+                        serverId TEXT PRIMARY KEY NOT NULL,
+                        movieCount INTEGER NOT NULL,
+                        seriesCount INTEGER NOT NULL,
+                        episodeCount INTEGER NOT NULL,
+                        boxsetCount INTEGER NOT NULL,
+                        lastUpdated INTEGER NOT NULL
+                    )
+                    """
+                        .trimIndent()
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -729,5 +748,6 @@ object DatabaseMigrations {
             MIGRATION_32_33,
             MIGRATION_33_34,
             MIGRATION_34_35,
+            MIGRATION_35_36,
         )
 }

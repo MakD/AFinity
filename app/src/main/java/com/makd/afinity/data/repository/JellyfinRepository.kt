@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
+import com.makd.afinity.ui.settings.servers.JellyfinStats
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -25,6 +26,8 @@ interface JellyfinRepository {
     suspend fun getPublicUsers(serverUrl: String): List<User>
 
     suspend fun getUserProfileImageUrl(): String?
+
+    fun getLibraryStatsFlow(serverId: String): Flow<JellyfinStats>
 
     suspend fun reportPlaybackStart(
         itemId: UUID,
@@ -59,5 +62,4 @@ interface JellyfinRepository {
         maxHeight: Int? = null,
         quality: Int? = null,
     ): String
-
 }

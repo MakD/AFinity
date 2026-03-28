@@ -16,6 +16,7 @@ import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.server.ServerAddress
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.DatabaseRepository
+import com.makd.afinity.data.repository.JellyfinRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.server.ServerRepository
@@ -23,7 +24,6 @@ import com.makd.afinity.util.isLocalAddress
 import com.makd.afinity.util.isTailscaleAddress
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,7 +32,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
-import org.jellyfin.sdk.api.operations.LibraryApi
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -134,6 +133,7 @@ constructor(
     private val serverRepository: ServerRepository,
     private val jellyseerrRepositoryProvider: Provider<JellyseerrRepository>,
     private val audiobookshelfRepositoryProvider: Provider<AudiobookshelfRepository>,
+    private val jellyfinRepositoryProvider: Provider<JellyfinRepository>,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ServerManagementState())
@@ -251,7 +251,7 @@ constructor(
         _state.value =
             _state.value.copy(
                 detailServer = serverWithUserCount,
-                detailStats = null,
+                detailStats = ServerDetailStats(),
                 statsLoading = serverWithUserCount.isActiveServer,
             )
         if (serverWithUserCount.isActiveServer) {
@@ -264,48 +264,53 @@ constructor(
     }
 
     private fun loadDetailStats(serverWithCount: ServerWithUserCount) {
+        val status = serverWithCount.currentUserServiceStatus
+        val serverId = serverWithCount.server.id
+
         viewModelScope.launch {
             try {
-                val status = serverWithCount.currentUserServiceStatus
+                val jellyfinRepository = jellyfinRepositoryProvider.get()
+                jellyfinRepository.getLibraryStatsFlow(serverId).collect { freshJellyfinStats ->
+                    val currentStats = _state.value.detailStats ?: ServerDetailStats()
 
-                val jellyfinDeferred = async { loadJellyfinStats() }
-                val jellyseerrDeferred =
-                    if (status.jellyseerrConfigured) {
-                        async { loadJellyseerrStats() }
-                    } else null
-                val audiobookshelfDeferred =
-                    if (status.audiobookshelfConfigured) {
-                        async { loadAudiobookshelfStats() }
-                    } else null
-
-                val stats =
-                    ServerDetailStats(
-                        jellyfinStats = jellyfinDeferred.await(),
-                        jellyseerrStats = jellyseerrDeferred?.await(),
-                        audiobookshelfStats = audiobookshelfDeferred?.await(),
-                    )
-                _state.value = _state.value.copy(detailStats = stats, statsLoading = false)
+                    _state.value =
+                        _state.value.copy(
+                            detailStats = currentStats.copy(jellyfinStats = freshJellyfinStats),
+                            statsLoading = false,
+                        )
+                }
             } catch (e: Exception) {
-                Timber.e(e, "Error loading server stats")
+                Timber.e(e, "Error loading Jellyfin stats")
                 _state.value = _state.value.copy(statsLoading = false)
             }
         }
-    }
 
-    private suspend fun loadJellyfinStats(): JellyfinStats {
-        return try {
-            val apiClient = sessionManager.getCurrentApiClient() ?: return JellyfinStats()
-            val libraryApi = LibraryApi(apiClient)
-            val counts = libraryApi.getItemCounts().content
-            JellyfinStats(
-                movieCount = counts.movieCount,
-                seriesCount = counts.seriesCount,
-                episodeCount = counts.episodeCount,
-                boxsetCount = counts.boxSetCount,
-            )
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to load Jellyfin stats")
-            JellyfinStats()
+        if (status.jellyseerrConfigured) {
+            viewModelScope.launch {
+                try {
+                    val stats = loadJellyseerrStats()
+                    val currentStats = _state.value.detailStats ?: ServerDetailStats()
+                    _state.value =
+                        _state.value.copy(detailStats = currentStats.copy(jellyseerrStats = stats))
+                } catch (e: Exception) {
+                    Timber.e(e, "Error loading Jellyseerr stats")
+                }
+            }
+        }
+
+        if (status.audiobookshelfConfigured) {
+            viewModelScope.launch {
+                try {
+                    val stats = loadAudiobookshelfStats()
+                    val currentStats = _state.value.detailStats ?: ServerDetailStats()
+                    _state.value =
+                        _state.value.copy(
+                            detailStats = currentStats.copy(audiobookshelfStats = stats)
+                        )
+                } catch (e: Exception) {
+                    Timber.e(e, "Error loading Audiobookshelf stats")
+                }
+            }
         }
     }
 
@@ -456,6 +461,7 @@ constructor(
             try {
                 val currentSession = sessionManager.currentSession.value ?: return@launch
                 if (currentSession.serverId != serverId) return@launch
+                val cleanAddress = sanitizeUrl(address)
                 val userId = currentSession.userId.toString()
                 val existing = jellyseerrDao.getAddressByUrl(serverId, userId, address)
                 if (existing != null) {
@@ -467,7 +473,7 @@ constructor(
                         id = UUID.randomUUID(),
                         jellyfinServerId = serverId,
                         jellyfinUserId = userId,
-                        address = address,
+                        address = cleanAddress,
                     )
                 )
                 reloadAndRefreshDetail()
@@ -484,6 +490,7 @@ constructor(
             try {
                 val currentSession = sessionManager.currentSession.value ?: return@launch
                 if (currentSession.serverId != serverId) return@launch
+                val cleanAddress = sanitizeUrl(address)
                 val userId = currentSession.userId.toString()
                 val existing = audiobookshelfDao.getAddressByUrl(serverId, userId, address)
                 if (existing != null) {
@@ -495,7 +502,7 @@ constructor(
                         id = UUID.randomUUID(),
                         jellyfinServerId = serverId,
                         jellyfinUserId = userId,
-                        address = address,
+                        address = cleanAddress,
                     )
                 )
                 reloadAndRefreshDetail()
@@ -608,6 +615,15 @@ constructor(
             }
 
         _state.value = _state.value.copy(servers = serversWithCounts, isLoading = false)
+    }
+
+    private fun sanitizeUrl(url: String): String {
+        val trimmed = url.trim().removeSuffix("/")
+        return if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            "http://$trimmed"
+        } else {
+            trimmed
+        }
     }
 
     fun clearError() {

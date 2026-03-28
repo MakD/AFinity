@@ -10,6 +10,7 @@ import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.EpisodeDao
 import com.makd.afinity.data.database.dao.GenreCacheDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
+import com.makd.afinity.data.database.dao.JellyfinStatsDao
 import com.makd.afinity.data.database.dao.JellyseerrDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
@@ -46,6 +47,7 @@ import com.makd.afinity.data.database.entities.GenreCacheEntity
 import com.makd.afinity.data.database.entities.GenreMovieCacheEntity
 import com.makd.afinity.data.database.entities.GenreShowCacheEntity
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
+import com.makd.afinity.data.database.entities.JellyfinStatsCacheEntity
 import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
@@ -96,8 +98,9 @@ import com.makd.afinity.data.models.user.User
             ItemMetadataCacheEntity::class,
             JellyseerrAddressEntity::class,
             AudiobookshelfAddressEntity::class,
+            JellyfinStatsCacheEntity::class,
         ],
-    version = 35,
+    version = 36,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -144,6 +147,8 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun audiobookshelfDao(): AudiobookshelfDao
 
     abstract fun itemMetadataCacheDao(): ItemMetadataCacheDao
+
+    abstract fun jellyfinStatsDao(): JellyfinStatsDao
 
     companion object {
         @Volatile private var INSTANCE: AfinityDatabase? = null

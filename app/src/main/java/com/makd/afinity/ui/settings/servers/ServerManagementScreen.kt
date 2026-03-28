@@ -1,21 +1,24 @@
 package com.makd.afinity.ui.settings.servers
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +30,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -69,6 +74,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -90,6 +97,11 @@ private val mdblistColor = Color(0xFF4283C9)
 private val LocalColor = Color(0xFF4CAF50)
 private val TailscaleColor = Color(0xFF2196F3)
 private val RemoteColor = Color(0xFFFF9800)
+
+private enum class DialogView {
+    STATS,
+    MANAGE_ADDRESSES,
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -638,127 +650,315 @@ private fun ServerDetailDialog(
         if (status.jellyseerrConfigured) add(DetailTab.JELLYSEERR)
         if (status.audiobookshelfConfigured) add(DetailTab.AUDIOBOOKSHELF)
     }
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+
+    var selectedTabIndex by remember(serverWithCount.server.id) { mutableIntStateOf(0) }
+    var dialogView by remember(serverWithCount.server.id) { mutableStateOf(DialogView.STATS) }
 
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f).padding(16.dp),
+            modifier = Modifier.fillMaxWidth().height(750.dp).padding(16.dp),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             tonalElevation = 2.dp,
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .padding(start = 24.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier =
-                            Modifier.size(48.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                    RoundedCornerShape(14.dp),
-                                ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_server),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(24.dp),
-                        )
+            AnimatedContent(
+                targetState = dialogView,
+                modifier = Modifier.fillMaxSize(),
+                transitionSpec = {
+                    if (targetState == DialogView.MANAGE_ADDRESSES) {
+                        (slideInHorizontally { it } + fadeIn()) togetherWith
+                            (slideOutHorizontally { -it } + fadeOut())
+                    } else {
+                        (slideInHorizontally { -it } + fadeIn()) togetherWith
+                            (slideOutHorizontally { it } + fadeOut())
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = serverWithCount.server.name,
-                            style =
-                                MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (serverWithCount.server.version != null) {
-                            Text(
-                                text = "v${serverWithCount.server.version}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                },
+                label = "DialogTransition",
+            ) { viewState ->
+                when (viewState) {
+                    DialogView.STATS -> {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Row(
+                                modifier =
+                                    Modifier.fillMaxWidth()
+                                        .padding(
+                                            start = 24.dp,
+                                            end = 16.dp,
+                                            top = 24.dp,
+                                            bottom = 16.dp,
+                                        ),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(
+                                    modifier =
+                                        Modifier.size(48.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.primaryContainer,
+                                                RoundedCornerShape(14.dp),
+                                            ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_server),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = serverWithCount.server.name,
+                                        style =
+                                            MaterialTheme.typography.titleLarge.copy(
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    if (serverWithCount.server.version != null) {
+                                        Text(
+                                            text = "v${serverWithCount.server.version}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                                IconButton(
+                                    onClick = onDismiss,
+                                    modifier =
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            CircleShape,
+                                        ),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_close),
+                                        contentDescription = stringResource(R.string.action_close),
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
+
+                            if (tabs.size > 1) {
+                                SegmentedTabBar(
+                                    tabs = tabs,
+                                    selectedTabIndex = selectedTabIndex,
+                                    onTabSelected = { selectedTabIndex = it },
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            Crossfade(
+                                targetState =
+                                    tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN,
+                                animationSpec = tween(300),
+                                modifier = Modifier.weight(1f),
+                                label = "TabContentCrossfade",
+                            ) { currentTab ->
+                                Column(
+                                    modifier =
+                                        Modifier.fillMaxSize()
+                                            .verticalScroll(rememberScrollState())
+                                            .padding(horizontal = 24.dp, vertical = 12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                                ) {
+                                    when (currentTab) {
+                                        DetailTab.JELLYFIN ->
+                                            JellyfinTabContent(
+                                                serverWithCount = serverWithCount,
+                                                jellyfinStats = stats?.jellyfinStats,
+                                                statsLoading = statsLoading,
+                                                onManageClick = {
+                                                    dialogView = DialogView.MANAGE_ADDRESSES
+                                                },
+                                            )
+                                        DetailTab.JELLYSEERR ->
+                                            JellyseerrTabContent(
+                                                serverWithCount = serverWithCount,
+                                                jellyseerrStats = stats?.jellyseerrStats,
+                                                statsLoading = statsLoading,
+                                                onManageClick = {
+                                                    dialogView = DialogView.MANAGE_ADDRESSES
+                                                },
+                                            )
+                                        DetailTab.AUDIOBOOKSHELF ->
+                                            AudiobookshelfTabContent(
+                                                serverWithCount = serverWithCount,
+                                                absStats = stats?.audiobookshelfStats,
+                                                statsLoading = statsLoading,
+                                                onManageClick = {
+                                                    dialogView = DialogView.MANAGE_ADDRESSES
+                                                },
+                                            )
+                                    }
+                                }
+                            }
                         }
                     }
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier =
-                            Modifier.background(
-                                MaterialTheme.colorScheme.surfaceContainerHigh,
-                                CircleShape,
-                            ),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_close),
-                            contentDescription = stringResource(R.string.action_close),
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
+                    DialogView.MANAGE_ADDRESSES -> {
+                        val currentTab = tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN
+                        ManageAddressesView(
+                            title = "Manage Connections",
+                            onBack = { dialogView = DialogView.STATS },
+                        ) {
+                            when (currentTab) {
+                                DetailTab.JELLYFIN -> {
+                                    val primaryAddress = serverWithCount.server.address
+                                    val allAddresses = buildList {
+                                        add(primaryAddress)
+                                        serverWithCount.addresses
+                                            .map { it.address }
+                                            .filter { it != primaryAddress }
+                                            .forEach { add(it) }
+                                    }
+                                    JellyfinManageAddresses(
+                                        allAddresses,
+                                        primaryAddress,
+                                        serverWithCount,
+                                        onDeleteAddress,
+                                        onSetPrimary,
+                                    )
+                                }
+                                DetailTab.JELLYSEERR ->
+                                    JellyseerrManageAddresses(
+                                        serverWithCount,
+                                        onDeleteJellyseerrAddress,
+                                        onAddJellyseerrAddress,
+                                    )
+                                DetailTab.AUDIOBOOKSHELF ->
+                                    AudiobookshelfManageAddresses(
+                                        serverWithCount,
+                                        onDeleteAudiobookshelfAddress,
+                                        onAddAudiobookshelfAddress,
+                                    )
+                            }
+                        }
                     }
                 }
+            }
+        }
+    }
+}
 
-                if (tabs.size > 1) {
-                    SegmentedTabBar(
-                        tabs = tabs,
-                        selectedTabIndex = selectedTabIndex,
-                        onTabSelected = { selectedTabIndex = it },
+@Composable
+private fun ManageAddressesView(
+    title: String,
+    onBack: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        ) {
+            IconButton(
+                onClick = onBack,
+                modifier =
+                    Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_chevron_left),
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+
+        Column(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun ActiveConnectionCard(
+    activeAddress: String,
+    totalAddresses: Int,
+    onManageClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_link),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Active Connection",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = activeAddress,
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (totalAddresses > 1) {
+                    Text(
+                        text = "+ ${totalAddresses - 1} backup route(s)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+            }
 
-                Crossfade(
-                    targetState = tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN,
-                    animationSpec = tween(300),
-                    modifier = Modifier.weight(1f),
-                    label = "TabContentCrossfade",
-                ) { currentTab ->
-                    Column(
-                        modifier =
-                            Modifier.fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 24.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(20.dp),
-                    ) {
-                        when (currentTab) {
-                            DetailTab.JELLYFIN ->
-                                JellyfinTabContent(
-                                    serverWithCount = serverWithCount,
-                                    jellyfinStats = stats?.jellyfinStats,
-                                    statsLoading = statsLoading,
-                                    onDeleteAddress = onDeleteAddress,
-                                    onSetPrimary = onSetPrimary,
-                                )
-                            DetailTab.JELLYSEERR ->
-                                JellyseerrTabContent(
-                                    serverWithCount = serverWithCount,
-                                    jellyseerrStats = stats?.jellyseerrStats,
-                                    statsLoading = statsLoading,
-                                    onDeleteAddress = onDeleteJellyseerrAddress,
-                                    onAddAddress = onAddJellyseerrAddress,
-                                )
-                            DetailTab.AUDIOBOOKSHELF ->
-                                AudiobookshelfTabContent(
-                                    serverWithCount = serverWithCount,
-                                    absStats = stats?.audiobookshelfStats,
-                                    statsLoading = statsLoading,
-                                    onDeleteAddress = onDeleteAudiobookshelfAddress,
-                                    onAddAddress = onAddAudiobookshelfAddress,
-                                )
-                        }
-                    }
-                }
+            FilledIconButton(
+                onClick = onManageClick,
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors =
+                    IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_edit),
+                    contentDescription = "Manage Addresses",
+                    modifier = Modifier.size(20.dp),
+                )
             }
         }
     }
@@ -769,17 +969,10 @@ private fun JellyfinTabContent(
     serverWithCount: ServerWithUserCount,
     jellyfinStats: JellyfinStats?,
     statsLoading: Boolean,
-    onDeleteAddress: (UUID) -> Unit,
-    onSetPrimary: (String) -> Unit,
+    onManageClick: () -> Unit,
 ) {
     val primaryAddress = serverWithCount.server.address
-    val allAddresses = buildList {
-        add(primaryAddress)
-        serverWithCount.addresses
-            .map { it.address }
-            .filter { it != primaryAddress }
-            .forEach { add(it) }
-    }
+    val allAddressesCount = serverWithCount.addresses.size + 1
 
     if (statsLoading) {
         LoadingState()
@@ -826,7 +1019,6 @@ private fun JellyfinTabContent(
                 serverWithCount.userServices.find {
                     it.serviceStatus == serverWithCount.currentUserServiceStatus
                 } ?: serverWithCount.userServices.first()
-
             UserServiceRow(userInfo = currentUser)
 
             val otherCount = serverWithCount.userServices.size - 1
@@ -847,21 +1039,34 @@ private fun JellyfinTabContent(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        ManageAddressesSection(addressCount = allAddresses.size) {
-            allAddresses.forEach { address ->
-                SelectableAddressRow(
-                    address = address,
-                    isPrimary = address == primaryAddress,
-                    onSelect = { if (address != primaryAddress) onSetPrimary(address) },
-                    onDelete =
-                        if (address != primaryAddress) {
-                            val serverAddr =
-                                serverWithCount.addresses.find { it.address == address }
-                            serverAddr?.let { { onDeleteAddress(it.id) } }
-                        } else null,
-                )
-            }
-        }
+        SectionHeader("Network")
+        ActiveConnectionCard(
+            activeAddress = primaryAddress,
+            totalAddresses = allAddressesCount,
+            onManageClick = onManageClick,
+        )
+    }
+}
+
+@Composable
+private fun JellyfinManageAddresses(
+    allAddresses: List<String>,
+    primaryAddress: String,
+    serverWithCount: ServerWithUserCount,
+    onDeleteAddress: (UUID) -> Unit,
+    onSetPrimary: (String) -> Unit,
+) {
+    allAddresses.forEach { address ->
+        SelectableAddressRow(
+            address = address,
+            isPrimary = address == primaryAddress,
+            onSelect = { if (address != primaryAddress) onSetPrimary(address) },
+            onDelete =
+                if (address != primaryAddress) {
+                    val serverAddr = serverWithCount.addresses.find { it.address == address }
+                    serverAddr?.let { { onDeleteAddress(it.id) } }
+                } else null,
+        )
     }
 }
 
@@ -870,8 +1075,7 @@ private fun JellyseerrTabContent(
     serverWithCount: ServerWithUserCount,
     jellyseerrStats: JellyseerrStats?,
     statsLoading: Boolean,
-    onDeleteAddress: (UUID) -> Unit,
-    onAddAddress: (String) -> Unit,
+    onManageClick: () -> Unit,
 ) {
     if (statsLoading) {
         LoadingState()
@@ -899,7 +1103,6 @@ private fun JellyseerrTabContent(
                                 if (user.isAdmin()) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurface,
                         )
-
                         val permissions = buildList {
                             if (user.hasPermission(Permissions.REQUEST)) add("Request")
                             if (user.hasPermission(Permissions.AUTO_APPROVE)) add("Auto-Approve")
@@ -912,20 +1115,16 @@ private fun JellyseerrTabContent(
                         DetailRow(
                             label = "Movie quota",
                             value =
-                                if (user.movieQuotaLimit != null && user.movieQuotaLimit > 0) {
+                                if (user.movieQuotaLimit != null && user.movieQuotaLimit > 0)
                                     "${user.movieQuotaLimit} / ${user.movieQuotaDays ?: 7} days"
-                                } else {
-                                    "Unlimited"
-                                },
+                                else "Unlimited",
                         )
                         DetailRow(
                             label = "TV quota",
                             value =
-                                if (user.tvQuotaLimit != null && user.tvQuotaLimit > 0) {
+                                if (user.tvQuotaLimit != null && user.tvQuotaLimit > 0)
                                     "${user.tvQuotaLimit} / ${user.tvQuotaDays ?: 7} days"
-                                } else {
-                                    "Unlimited"
-                                },
+                                else "Unlimited",
                         )
                     }
                 }
@@ -970,25 +1169,40 @@ private fun JellyseerrTabContent(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        ManageAddressesSection(addressCount = serverWithCount.jellyseerrAddresses.size) {
-            if (serverWithCount.jellyseerrAddresses.isNotEmpty()) {
-                serverWithCount.jellyseerrAddresses.forEach { address ->
-                    ServiceAddressItem(
-                        address = address.address,
-                        onDelete = { onDeleteAddress(address.id) },
-                    )
-                }
-            } else {
-                Text(
-                    text = "No alternate addresses configured.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
-                )
-            }
-            AddAddressField(placeholder = "https://seerr.example.com", onAdd = onAddAddress)
-        }
+        SectionHeader("Network")
+        val activeAddress =
+            serverWithCount.jellyseerrAddresses.firstOrNull()?.address ?: "Default (Proxy)"
+        val total = serverWithCount.jellyseerrAddresses.size
+        ActiveConnectionCard(
+            activeAddress = activeAddress,
+            totalAddresses = total,
+            onManageClick = onManageClick,
+        )
     }
+}
+
+@Composable
+private fun JellyseerrManageAddresses(
+    serverWithCount: ServerWithUserCount,
+    onDeleteAddress: (UUID) -> Unit,
+    onAddAddress: (String) -> Unit,
+) {
+    if (serverWithCount.jellyseerrAddresses.isNotEmpty()) {
+        serverWithCount.jellyseerrAddresses.forEach { address ->
+            ServiceAddressItem(
+                address = address.address,
+                onDelete = { onDeleteAddress(address.id) },
+            )
+        }
+    } else {
+        Text(
+            text = "No alternate addresses configured.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
+        )
+    }
+    AddAddressField(placeholder = "https://seerr.example.com", onAdd = onAddAddress)
 }
 
 @Composable
@@ -996,8 +1210,7 @@ private fun AudiobookshelfTabContent(
     serverWithCount: ServerWithUserCount,
     absStats: AudiobookshelfStats?,
     statsLoading: Boolean,
-    onDeleteAddress: (UUID) -> Unit,
-    onAddAddress: (String) -> Unit,
+    onManageClick: () -> Unit,
 ) {
     if (statsLoading) {
         LoadingState()
@@ -1179,25 +1392,40 @@ private fun AudiobookshelfTabContent(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        ManageAddressesSection(addressCount = serverWithCount.audiobookshelfAddresses.size) {
-            if (serverWithCount.audiobookshelfAddresses.isNotEmpty()) {
-                serverWithCount.audiobookshelfAddresses.forEach { address ->
-                    ServiceAddressItem(
-                        address = address.address,
-                        onDelete = { onDeleteAddress(address.id) },
-                    )
-                }
-            } else {
-                Text(
-                    text = "No alternate addresses configured.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
-                )
-            }
-            AddAddressField(placeholder = "https://abs.example.com", onAdd = onAddAddress)
-        }
+        SectionHeader("Network")
+        val activeAddress =
+            serverWithCount.audiobookshelfAddresses.firstOrNull()?.address ?: "Default (Proxy)"
+        val total = serverWithCount.audiobookshelfAddresses.size
+        ActiveConnectionCard(
+            activeAddress = activeAddress,
+            totalAddresses = total,
+            onManageClick = onManageClick,
+        )
     }
+}
+
+@Composable
+private fun AudiobookshelfManageAddresses(
+    serverWithCount: ServerWithUserCount,
+    onDeleteAddress: (UUID) -> Unit,
+    onAddAddress: (String) -> Unit,
+) {
+    if (serverWithCount.audiobookshelfAddresses.isNotEmpty()) {
+        serverWithCount.audiobookshelfAddresses.forEach { address ->
+            ServiceAddressItem(
+                address = address.address,
+                onDelete = { onDeleteAddress(address.id) },
+            )
+        }
+    } else {
+        Text(
+            text = "No alternate addresses configured.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
+        )
+    }
+    AddAddressField(placeholder = "https://abs.example.com", onAdd = onAddAddress)
 }
 
 @Composable
@@ -1278,71 +1506,12 @@ private fun StatChip(
     }
 }
 
-@Composable
-private fun ManageAddressesSection(addressCount: Int, content: @Composable () -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    val interactionSource = remember { MutableInteractionSource() }
-
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier.fillMaxWidth().animateContentSize(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .clickable(interactionSource = interactionSource, indication = null) {
-                            expanded = !expanded
-                        }
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text(
-                        text = "Connection Addresses",
-                        style =
-                            MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = "$addressCount configured",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Icon(
-                    painter =
-                        painterResource(
-                            id =
-                                if (expanded) R.drawable.ic_keyboard_arrow_up
-                                else R.drawable.ic_keyboard_arrow_down
-                        ),
-                    contentDescription = if (expanded) "Collapse" else "Expand",
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            if (expanded) {
-                Column(
-                    modifier =
-                        Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    content()
-                }
-            }
-        }
-    }
-}
-
 private fun formatListeningDuration(seconds: Double): String {
     val h = (seconds / 3600).toInt()
     val m = ((seconds % 3600) / 60).toInt()
     return when {
-        h > 0 -> "${h}h ${m}m"
+        h > 0 && m > 0 -> "${h}h ${m}m"
+        h > 0 -> "${h}h"
         m > 0 -> "${m}m"
         seconds > 0 -> "<1m"
         else -> "0m"
@@ -1555,6 +1724,18 @@ private fun AddAddressField(placeholder: String, onAdd: (String) -> Unit) {
             placeholder = { Text(text = placeholder, style = MaterialTheme.typography.bodyMedium) },
             textStyle = MaterialTheme.typography.bodyMedium,
             singleLine = true,
+            keyboardOptions =
+                KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
+            keyboardActions =
+                KeyboardActions(
+                    onDone = {
+                        val trimmed = text.trim()
+                        if (trimmed.isNotBlank()) {
+                            onAdd(trimmed)
+                            text = ""
+                        }
+                    }
+                ),
             shape = RoundedCornerShape(16.dp),
             colors =
                 OutlinedTextFieldDefaults.colors(
