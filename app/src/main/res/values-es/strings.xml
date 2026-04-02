@@ -50,7 +50,7 @@
     <string name="home_continue_watching">Continuar viendo</string>
     <string name="home_latest_movies">Últimas películas</string>
     <string name="home_latest_tv_series">Última serie de televisión</string>
-    <string name="home_next_up">Siguiente</string>
+    <string name="home_next_up">Subir Siguiente</string>
     <string name="home_genre_movies_title">%1$s Cine</string>
     <string name="home_genre_shows_title">%1$s Espectáculos</string>
     <string name="home_person_starring">Protagonizada %1$s</string>
