@@ -230,7 +230,7 @@
     <string name="player_version_default_label">Por defecto</string>
     <string name="version_dialog_subtitle">Selecciona cual versión a reproducir</string>
     <string name="cd_version_selector">Selector de versión</string>
-    <string name="player_episode_header_fmt">S%1$s:MI%2$s: %3$s</string>
+    <string name="player_episode_header_fmt">S%1$s:E%2$s: %3$s</string>
     <string name="track_unknown">Desconocido</string>
     <string name="track_none">Ninguno</string>
     <string name="track_number_fmt">Pista %1$d</string>
@@ -355,7 +355,7 @@
     <string name="theme_system">Valor predeterminado del sistema</string>
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Oscuro</string>
-    <string name="theme_amoled">AMOLED</string>
+    <string name="theme_amoled">Amoled</string>
     <string name="layout_horizontal">Horizontal</string>
     <string name="layout_vertical">Vertical</string>
     <string name="downloads_title">Descargas</string>
