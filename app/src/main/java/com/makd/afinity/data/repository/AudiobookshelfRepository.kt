@@ -113,7 +113,9 @@ interface AudiobookshelfRepository {
         duration: Double,
     ): Result<Unit>
 
-    suspend fun syncPendingProgress(): Result<Int>
+    val currentActiveContext: Pair<String, UUID>?
+
+    suspend fun syncPendingProgress(serverId: String, userId: UUID): Result<Int>
 
     suspend fun getGenres(libraryIds: List<String>): Result<List<String>>
 

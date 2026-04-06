@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.MovieSection
 import com.makd.afinity.data.models.PersonFromMovieSection
 import com.makd.afinity.data.models.PersonSection
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.toAfinityMovie
 import com.makd.afinity.data.models.media.AfinityCollection
@@ -31,6 +32,7 @@ import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
@@ -73,6 +75,7 @@ constructor(
     private val watchlistRepository: WatchlistRepository,
     private val databaseRepository: DatabaseRepository,
     private val downloadRepository: DownloadRepository,
+    private val absDownloadRepository: AbsDownloadRepository,
     private val offlineModeManager: OfflineModeManager,
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
@@ -272,28 +275,31 @@ constructor(
                                             val runtime = cwItem.runtimeTicks ?: 0L
                                             val isPlayed =
                                                 runtime > 0 &&
-                                                    event.positionTicks >= (runtime * 0.9).toLong()
+                                                        event.positionTicks >= (runtime * 0.9).toLong()
                                             cwItem.copy(
                                                 playbackPositionTicks = event.positionTicks,
                                                 played = isPlayed,
                                             )
                                         }
+
                                         is AfinityMovie -> {
                                             val runtime = cwItem.runtimeTicks ?: 0L
                                             val isPlayed =
                                                 runtime > 0 &&
-                                                    event.positionTicks >= (runtime * 0.9).toLong()
+                                                        event.positionTicks >= (runtime * 0.9).toLong()
                                             cwItem.copy(
                                                 playbackPositionTicks = event.positionTicks,
                                                 played = isPlayed,
                                             )
                                         }
+
                                         else -> cwItem
                                     }
                                 appDataRepository.updatePlaybackProgressLocally(optimisticItem)
                             }
                         }
                     }
+
                     is PlaybackEvent.Synced -> {
                         Timber.d("HomeViewModel received sync for ${event.itemId}")
                         val syncedItem =
@@ -304,8 +310,10 @@ constructor(
                             when (syncedItem) {
                                 is AfinityEpisode ->
                                     mediaRepository.getItemById(syncedItem.seriesId)
+
                                 is AfinitySeason ->
                                     mediaRepository.getItemById(syncedItem.seriesId)
+
                                 else -> syncedItem
                             } ?: return@collect
 
@@ -651,6 +659,7 @@ constructor(
                                         person.id == selectedActor.id && person.type == ACTOR
                                     }
                                 }
+
                                 else -> false
                             }
                         }
@@ -722,8 +731,8 @@ constructor(
                     season.episodes.forEach { episode ->
                         if (
                             episode.playbackPositionTicks > 0 &&
-                                !episode.played &&
-                                episode.id in downloadedItemIds
+                            !episode.played &&
+                            episode.id in downloadedItemIds
                         ) {
                             offlineContinueWatching.add(episode)
                         }
@@ -744,11 +753,27 @@ constructor(
                 "Found ${sortedOfflineContinueWatching.size} items to continue watching offline"
             )
 
+            val absCompleted = absDownloadRepository.getCompletedDownloadsFlow().first()
+            val downloadedAudiobooks = absCompleted.filter { it.mediaType == "book" }
+            val downloadedPodcastEpisodes = absCompleted
+                .filter { it.mediaType == "podcast" }
+                .groupBy { it.libraryItemId }
+                .map { (_, episodes) ->
+                    val rep = episodes.maxByOrNull { it.updatedAt }!!
+                    val count = episodes.size
+                    rep.copy(
+                        title = rep.authorName?.takeIf { it.isNotBlank() } ?: rep.title,
+                        authorName = "$count episode${if (count > 1) "s" else ""} downloaded",
+                    )
+                }
+
             _uiState.update {
                 it.copy(
                     downloadedMovies = downloadedMovies,
                     downloadedShows = downloadedShows,
                     offlineContinueWatching = sortedOfflineContinueWatching,
+                    downloadedAudiobooks = downloadedAudiobooks,
+                    downloadedPodcastEpisodes = downloadedPodcastEpisodes,
                 )
             }
         } catch (e: Exception) {
@@ -1046,7 +1071,7 @@ constructor(
                         val index = items.indexOfFirst { it.id == targetId }
                         if (
                             index != -1 &&
-                                (updatedItem is AfinityMovie || updatedItem is AfinityShow)
+                            (updatedItem is AfinityMovie || updatedItem is AfinityShow)
                         ) {
                             sectionsChanged = true
                             val newItems = items.toMutableList().apply { this[index] = updatedItem }
@@ -1059,7 +1084,7 @@ constructor(
                         val index = items.indexOfFirst { it.id == targetId }
                         if (
                             index != -1 &&
-                                (updatedItem is AfinityMovie || updatedItem is AfinityShow)
+                            (updatedItem is AfinityMovie || updatedItem is AfinityShow)
                         ) {
                             sectionsChanged = true
                             val newItems = items.toMutableList().apply { this[index] = updatedItem }
@@ -1111,6 +1136,8 @@ data class HomeUiState(
     val genreLoadingStates: Map<String, Boolean> = emptyMap(),
     val downloadedMovies: List<AfinityMovie> = emptyList(),
     val downloadedShows: List<AfinityShow> = emptyList(),
+    val downloadedAudiobooks: List<AbsDownloadInfo> = emptyList(),
+    val downloadedPodcastEpisodes: List<AbsDownloadInfo> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val combineLibrarySections: Boolean = false,

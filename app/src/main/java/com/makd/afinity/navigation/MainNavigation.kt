@@ -316,6 +316,11 @@ fun MainNavigation(
                                         val route = Destination.createSettingsRoute()
                                         navController.navigate(route)
                                     },
+                                    onAbsItemClick = { itemId ->
+                                        navController.navigate(
+                                            Destination.createAudiobookshelfItemRoute(itemId)
+                                        )
+                                    },
                                     navController = navController,
                                     mainUiState = mainUiState,
                                     modifier = Modifier.fillMaxSize(),
@@ -746,6 +751,11 @@ fun MainNavigation(
                             composable(Destination.DOWNLOAD_SETTINGS_ROUTE) {
                                 DownloadSettingsScreen(
                                     onBackClick = { navController.popBackStack() },
+                                    onNavigateToAbsItem = { itemId ->
+                                        navController.navigate(
+                                            Destination.createAudiobookshelfItemRoute(itemId)
+                                        )
+                                    },
                                     offlineModeManager = offlineModeManager,
                                     modifier = Modifier.fillMaxSize(),
                                 )

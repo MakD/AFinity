@@ -60,6 +60,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.home.components.ContinueWatchingSkeleton
+import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.HighestRatedSection
 import com.makd.afinity.ui.home.components.LibrariesSection
@@ -91,6 +92,7 @@ fun HomeScreen(
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
+    onAbsItemClick: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -168,8 +170,10 @@ fun HomeScreen(
                             !uiState.isOffline &&
                                 uiState.isLoading &&
                                 uiState.latestMedia.isNotEmpty() -> "cw_skeleton"
-                            uiState.downloadedMovies.isNotEmpty() -> "downloaded_movies"
-                            uiState.downloadedShows.isNotEmpty() -> "downloaded_shows"
+                            uiState.isOffline && uiState.downloadedMovies.isNotEmpty() -> "downloaded_movies"
+                            uiState.isOffline && uiState.downloadedShows.isNotEmpty() -> "downloaded_shows"
+                            uiState.isOffline && uiState.downloadedAudiobooks.isNotEmpty() -> "downloaded_audiobooks"
+                            uiState.isOffline && uiState.downloadedPodcastEpisodes.isNotEmpty() -> "downloaded_podcasts"
                             !uiState.isOffline && uiState.nextUp.isNotEmpty() -> "next_up"
                             else -> null
                         }
@@ -265,7 +269,7 @@ fun HomeScreen(
                             }
                         }
 
-                        if (uiState.downloadedMovies.isNotEmpty()) {
+                        if (uiState.isOffline && uiState.downloadedMovies.isNotEmpty()) {
                             item(key = "downloaded_movies") {
                                 Box(modifier = getItemModifier("downloaded_movies")) {
                                     Column {
@@ -281,7 +285,7 @@ fun HomeScreen(
                             }
                         }
 
-                        if (uiState.downloadedShows.isNotEmpty()) {
+                        if (uiState.isOffline && uiState.downloadedShows.isNotEmpty()) {
                             item(key = "downloaded_shows") {
                                 Box(modifier = getItemModifier("downloaded_shows")) {
                                     Column {
@@ -291,6 +295,36 @@ fun HomeScreen(
                                             items = uiState.downloadedShows,
                                             onItemClick = onItemClick,
                                             widthSizeClass = widthSizeClass,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (uiState.isOffline && uiState.downloadedAudiobooks.isNotEmpty()) {
+                            item(key = "downloaded_audiobooks") {
+                                Box(modifier = getItemModifier("downloaded_audiobooks")) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        DownloadedAudiobooksSection(
+                                            title = "Downloaded Audiobooks",
+                                            items = uiState.downloadedAudiobooks,
+                                            onItemClick = { onAbsItemClick(it.libraryItemId) },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (uiState.isOffline && uiState.downloadedPodcastEpisodes.isNotEmpty()) {
+                            item(key = "downloaded_podcasts") {
+                                Box(modifier = getItemModifier("downloaded_podcasts")) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        DownloadedAudiobooksSection(
+                                            title = "Downloaded Episodes",
+                                            items = uiState.downloadedPodcastEpisodes,
+                                            onItemClick = { onAbsItemClick(it.libraryItemId) },
                                         )
                                     }
                                 }

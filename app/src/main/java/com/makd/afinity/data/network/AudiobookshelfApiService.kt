@@ -1,5 +1,6 @@
 package com.makd.afinity.data.network
 
+import okhttp3.ResponseBody
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.AuthorizeResponse
 import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
@@ -89,6 +90,7 @@ interface AudiobookshelfApiService {
         @Path("itemId") id: String,
         @Query("expanded") expanded: Int = 1,
         @Query("include") include: String? = "progress",
+        @Query("episode") episode: String? = null,
     ): Response<ItemResponse>
 
     @GET("api/libraries/{libraryId}/stats")
@@ -117,14 +119,14 @@ interface AudiobookshelfApiService {
     suspend fun updateProgress(
         @Path("itemId") id: String,
         @Body progress: ProgressUpdateRequest,
-    ): Response<MediaProgress>
+    ): Response<ResponseBody>
 
     @PATCH("api/me/progress/{itemId}/{episodeId}")
     suspend fun updateEpisodeProgress(
         @Path("itemId") itemId: String,
         @Path("episodeId") episodeId: String,
         @Body progress: ProgressUpdateRequest,
-    ): Response<MediaProgress>
+    ): Response<ResponseBody>
 
     @POST("api/items/{itemId}/play")
     suspend fun startPlaybackSession(

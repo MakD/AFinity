@@ -322,17 +322,21 @@ fun ServerCard(
                                 AddressType.REMOTE ->
                                     Triple(R.drawable.ic_link, RemoteColor, "Remote")
                             }
+                        val mutedColor =
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                         Icon(
                             painter = painterResource(id = connIcon),
                             contentDescription = null,
-                            tint = connColor,
+                            tint = if (serverWithCount.isActiveServer) connColor else mutedColor,
                             modifier = Modifier.size(12.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = connText,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color =
+                                if (serverWithCount.isActiveServer) MaterialTheme.colorScheme.onSurfaceVariant
+                                else mutedColor,
                         )
                     }
                 }

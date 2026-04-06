@@ -67,8 +67,7 @@ private fun BaseItemDto.toAfinitySources(baseUrl: String): List<AfinitySource> =
                         isExternal = mediaStream.isExternal,
                         path =
                             if (
-                                mediaStream.isExternal &&
-                                    !mediaStream.deliveryUrl.isNullOrBlank()
+                                mediaStream.isExternal && !mediaStream.deliveryUrl.isNullOrBlank()
                             ) {
                                 baseUrl + mediaStream.deliveryUrl
                             } else {
@@ -117,9 +116,7 @@ fun BaseItemDto.toAfinityMovie(baseUrl: String): AfinityMovie {
         trickplayInfo =
             trickplay
                 ?.flatMap { (_, widthMap) ->
-                    widthMap.map { (width, info) ->
-                        width.toString() to info.toAfinityTrickplayInfo()
-                    }
+                    widthMap.map { (width, info) -> width to info.toAfinityTrickplayInfo() }
                 }
                 ?.toMap(),
         providerIds = providerIds?.mapNotNull { (key, value) -> value?.let { key to it } }?.toMap(),
@@ -259,9 +256,7 @@ fun BaseItemDto.toAfinityEpisode(baseUrl: String): AfinityEpisode? {
             trickplayInfo =
                 trickplay
                     ?.flatMap { (_, widthMap) ->
-                        widthMap.map { (width, info) ->
-                            width.toString() to info.toAfinityTrickplayInfo()
-                        }
+                        widthMap.map { (width, info) -> width to info.toAfinityTrickplayInfo() }
                     }
                     ?.toMap(),
             providerIds =

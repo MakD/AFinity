@@ -716,6 +716,62 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_36_37 =
+        object : Migration(36, 37) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS abs_downloads (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        libraryItemId TEXT NOT NULL,
+                        episodeId TEXT,
+                        jellyfinServerId TEXT NOT NULL,
+                        jellyfinUserId TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        authorName TEXT,
+                        mediaType TEXT NOT NULL,
+                        coverUrl TEXT,
+                        duration REAL NOT NULL,
+                        status TEXT NOT NULL,
+                        progress REAL NOT NULL,
+                        bytesDownloaded INTEGER NOT NULL,
+                        totalBytes INTEGER NOT NULL,
+                        tracksTotal INTEGER NOT NULL,
+                        tracksDownloaded INTEGER NOT NULL,
+                        error TEXT,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL,
+                        localDirPath TEXT,
+                        serializedSession TEXT
+                    )
+                    """
+                        .trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_abs_downloads_item
+                    ON abs_downloads (libraryItemId, episodeId, jellyfinServerId, jellyfinUserId)
+                    """
+                        .trimIndent()
+                )
+            }
+        }
+
+    val MIGRATION_37_38 =
+        object : Migration(37, 38) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE audiobookshelf_items ADD COLUMN serializedEpisodes TEXT")
+            }
+        }
+
+    val MIGRATION_38_39 =
+        object : Migration(38, 39) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE abs_downloads ADD COLUMN episodeDescription TEXT")
+                db.execSQL("ALTER TABLE abs_downloads ADD COLUMN publishedAt INTEGER")
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -749,5 +805,8 @@ object DatabaseMigrations {
             MIGRATION_33_34,
             MIGRATION_34_35,
             MIGRATION_35_36,
+            MIGRATION_36_37,
+            MIGRATION_37_38,
+            MIGRATION_38_39,
         )
 }

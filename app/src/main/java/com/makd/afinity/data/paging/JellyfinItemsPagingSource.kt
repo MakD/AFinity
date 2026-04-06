@@ -8,8 +8,8 @@ import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.ui.library.FilterType
-import java.util.UUID
 import timber.log.Timber
+import java.util.UUID
 
 class JellyfinItemsPagingSource(
     private val mediaRepository: MediaRepository,
@@ -79,7 +79,7 @@ class JellyfinItemsPagingSource(
                             studios = if (studioName != null) listOf(studioName) else emptyList(),
                         )
 
-                    response.items?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
+                    response.items.mapNotNull { it.toAfinityItem(baseUrl) }
                 } else {
                     when (libraryType) {
                         CollectionType.TvShows -> {
@@ -100,8 +100,7 @@ class JellyfinItemsPagingSource(
                                         isPlayed = filterIsPlayed,
                                         isLiked = filterIsLiked,
                                     )
-                                response.items?.mapNotNull { it.toAfinityItem(baseUrl) }
-                                    ?: emptyList()
+                                response.items.mapNotNull { it.toAfinityItem(baseUrl) }
                             } else {
                                 mediaRepository.getShows(
                                     parentId = parentId,
@@ -132,8 +131,7 @@ class JellyfinItemsPagingSource(
                                         isPlayed = filterIsPlayed,
                                         isLiked = filterIsLiked,
                                     )
-                                response.items?.mapNotNull { it.toAfinityItem(baseUrl) }
-                                    ?: emptyList()
+                                response.items.mapNotNull { it.toAfinityItem(baseUrl) }
                             } else {
                                 mediaRepository.getMovies(
                                     parentId = parentId,
@@ -171,7 +169,7 @@ class JellyfinItemsPagingSource(
                                     isPlayed = filterIsPlayed,
                                     isLiked = filterIsLiked,
                                 )
-                            response.items?.mapNotNull { it.toAfinityItem(baseUrl) } ?: emptyList()
+                            response.items.mapNotNull { it.toAfinityItem(baseUrl) }
                         }
                     }
                 }

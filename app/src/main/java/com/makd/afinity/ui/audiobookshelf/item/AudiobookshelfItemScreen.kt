@@ -60,14 +60,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
+import com.makd.afinity.ui.audiobookshelf.item.components.ChapterListDialog
+import com.makd.afinity.ui.audiobookshelf.item.components.EpisodeListDialog
 import com.makd.afinity.ui.audiobookshelf.item.components.ExpandableSynopsis
 import com.makd.afinity.ui.audiobookshelf.item.components.IncludedInSeriesSection
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemDetailsSection
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeader
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeaderContent
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
-import com.makd.afinity.ui.audiobookshelf.item.components.ChapterListDialog
-import com.makd.afinity.ui.audiobookshelf.item.components.EpisodeListDialog
 import com.makd.afinity.ui.audiobookshelf.item.components.chapterListItems
 import com.makd.afinity.ui.audiobookshelf.item.components.episodeListItems
 
@@ -110,6 +111,9 @@ fun AudiobookshelfItemScreen(
     val progress by viewModel.progress.collectAsStateWithLifecycle()
     val config by viewModel.currentConfig.collectAsStateWithLifecycle()
     val episodeProgressMap by viewModel.episodeProgressMap.collectAsStateWithLifecycle()
+    val downloadInfo by viewModel.downloadInfo.collectAsStateWithLifecycle()
+    val episodeDownloadMap by viewModel.episodeDownloadMap.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
 
     val isPodcast = item?.mediaType?.lowercase() == "podcast"
     val configuration = LocalConfiguration.current
@@ -124,77 +128,84 @@ fun AudiobookshelfItemScreen(
     var expandedEpisodeId by remember { mutableStateOf<String?>(null) }
 
     val sortedEpisodes by
-        remember(uiState.episodes, sortOption, sortAscending) {
-            derivedStateOf {
-                val episodes = uiState.episodes
-                val cmp = naturalOrderComparator
-                val sorted =
-                    when (sortOption) {
-                        EpisodeSortOption.PUB_DATE -> episodes.sortedBy { it.publishedAt ?: 0L }
-                        EpisodeSortOption.TITLE ->
-                            episodes.sortedWith(
-                                compareBy<
-                                    com.makd.afinity.data.models.audiobookshelf.PodcastEpisode,
-                                    String,
-                                >(
-                                    cmp
-                                ) {
-                                    it.title
-                                }
-                            )
-                        EpisodeSortOption.SEASON ->
-                            episodes.sortedWith(
-                                compareBy<
-                                        com.makd.afinity.data.models.audiobookshelf.PodcastEpisode,
-                                        String,
-                                    >(
-                                        cmp
-                                    ) {
-                                        it.season ?: ""
-                                    }
-                                    .thenBy(cmp) { it.episode ?: "" }
-                            )
-                        EpisodeSortOption.EPISODE ->
-                            episodes.sortedWith(
-                                compareBy<
-                                    com.makd.afinity.data.models.audiobookshelf.PodcastEpisode,
-                                    String,
-                                >(
-                                    cmp
-                                ) {
-                                    it.episode ?: ""
-                                }
-                            )
-                        EpisodeSortOption.FILENAME ->
-                            episodes.sortedWith(
-                                compareBy<
-                                    com.makd.afinity.data.models.audiobookshelf.PodcastEpisode,
-                                    String,
-                                >(
-                                    cmp
-                                ) {
-                                    it.audioFile?.metadata?.filename ?: ""
-                                }
-                            )
-                    }
-                if (sortAscending) sorted else sorted.reversed()
+    remember(uiState.episodes, sortOption, sortAscending, isOffline, episodeDownloadMap) {
+        derivedStateOf {
+            val episodes = if (isOffline) {
+                uiState.episodes.filter { episodeDownloadMap[it.id]?.status == AbsDownloadStatus.COMPLETED }
+            } else {
+                uiState.episodes
             }
+            val cmp = naturalOrderComparator
+            val sorted =
+                when (sortOption) {
+                    EpisodeSortOption.PUB_DATE -> episodes.sortedBy { it.publishedAt ?: 0L }
+                    EpisodeSortOption.TITLE ->
+                        episodes.sortedWith(
+                            compareBy<
+                                    com.makd.afinity.data.models.audiobookshelf.PodcastEpisode,
+                                    String,
+                                    >(
+                                cmp
+                            ) {
+                                it.title
+                            }
+                        )
+
+                    EpisodeSortOption.SEASON ->
+                        episodes.sortedWith(
+                            compareBy<
+                                    com.makd.afinity.data.models.audiobookshelf.PodcastEpisode,
+                                    String,
+                                    >(
+                                cmp
+                            ) {
+                                it.season ?: ""
+                            }
+                                .thenBy(cmp) { it.episode ?: "" }
+                        )
+
+                    EpisodeSortOption.EPISODE ->
+                        episodes.sortedWith(
+                            compareBy<
+                                    com.makd.afinity.data.models.audiobookshelf.PodcastEpisode,
+                                    String,
+                                    >(
+                                cmp
+                            ) {
+                                it.episode ?: ""
+                            }
+                        )
+
+                    EpisodeSortOption.FILENAME ->
+                        episodes.sortedWith(
+                            compareBy<
+                                    com.makd.afinity.data.models.audiobookshelf.PodcastEpisode,
+                                    String,
+                                    >(
+                                cmp
+                            ) {
+                                it.audioFile?.metadata?.filename ?: ""
+                            }
+                        )
+                }
+            if (sortAscending) sorted else sorted.reversed()
         }
+    }
 
     val currentSortParam by
-        remember(sortOption, sortAscending) {
-            derivedStateOf {
-                val key =
-                    when (sortOption) {
-                        EpisodeSortOption.PUB_DATE -> "pub_date"
-                        EpisodeSortOption.TITLE -> "title"
-                        EpisodeSortOption.SEASON -> "season"
-                        EpisodeSortOption.EPISODE -> "episode"
-                        EpisodeSortOption.FILENAME -> "filename"
-                    }
-                "${key}_${if (sortAscending) "asc" else "desc"}"
-            }
+    remember(sortOption, sortAscending) {
+        derivedStateOf {
+            val key =
+                when (sortOption) {
+                    EpisodeSortOption.PUB_DATE -> "pub_date"
+                    EpisodeSortOption.TITLE -> "title"
+                    EpisodeSortOption.SEASON -> "season"
+                    EpisodeSortOption.EPISODE -> "episode"
+                    EpisodeSortOption.FILENAME -> "filename"
+                }
+            "${key}_${if (sortAscending) "asc" else "desc"}"
         }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -213,11 +224,14 @@ fun AudiobookshelfItemScreen(
 
                     Row(
                         modifier =
-                            Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout)
+                            Modifier
+                                .fillMaxSize()
+                                .windowInsetsPadding(WindowInsets.displayCutout)
                     ) {
                         Column(
                             modifier =
-                                Modifier.weight(1f)
+                                Modifier
+                                    .weight(1f)
                                     .fillMaxHeight()
                                     .verticalScroll(rememberScrollState())
                                     .padding(bottom = 24.dp)
@@ -228,8 +242,9 @@ fun AudiobookshelfItemScreen(
                                 coverUrl = coverUrl,
                                 onPlay = {
                                     val resumeEpisodeId = if (isPodcast) {
+                                        val downloadedIds = sortedEpisodes.map { it.id }.toSet()
                                         episodeProgressMap.values
-                                            .filter { !it.isFinished && it.currentTime > 0 }
+                                            .filter { !it.isFinished && it.currentTime > 0 && (!isOffline || it.episodeId in downloadedIds) }
                                             .maxByOrNull { it.lastUpdate }
                                             ?.episodeId
                                             ?: sortedEpisodes.firstOrNull()?.id
@@ -241,12 +256,17 @@ fun AudiobookshelfItemScreen(
                                         if (isPodcast) currentSortParam else null,
                                     )
                                 },
+                                downloadInfo = if (!isPodcast) downloadInfo else null,
+                                onDownload = if (!isPodcast) ({ viewModel.startDownload() }) else null,
+                                onCancelDownload = if (!isPodcast) ({ viewModel.cancelDownload() }) else null,
+                                onDeleteDownload = if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
                             )
                         }
 
                         LazyColumn(
                             modifier =
-                                Modifier.weight(1f)
+                                Modifier
+                                    .weight(1f)
                                     .fillMaxHeight()
                                     .background(
                                         MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
@@ -329,6 +349,10 @@ fun AudiobookshelfItemScreen(
                                             expandedEpisodeId = expandedEpisodeId,
                                             onExpandEpisode = { expandedEpisodeId = it },
                                             episodeProgressMap = episodeProgressMap,
+                                            episodeDownloadMap = episodeDownloadMap,
+                                            onEpisodeDownload = { viewModel.startDownload(it) },
+                                            onEpisodeCancelDownload = { viewModel.cancelDownload(it) },
+                                            onEpisodeDeleteDownload = { viewModel.deleteDownload(it) },
                                         )
 
                                         item {
@@ -369,8 +393,9 @@ fun AudiobookshelfItemScreen(
                                 serverUrl = config?.serverUrl,
                                 onPlay = {
                                     val resumeEpisodeId = if (isPodcast) {
+                                        val downloadedIds = sortedEpisodes.map { it.id }.toSet()
                                         episodeProgressMap.values
-                                            .filter { !it.isFinished && it.currentTime > 0 }
+                                            .filter { !it.isFinished && it.currentTime > 0 && (!isOffline || it.episodeId in downloadedIds) }
                                             .maxByOrNull { it.lastUpdate }
                                             ?.episodeId
                                             ?: sortedEpisodes.firstOrNull()?.id
@@ -382,6 +407,10 @@ fun AudiobookshelfItemScreen(
                                         if (isPodcast) currentSortParam else null,
                                     )
                                 },
+                                downloadInfo = if (!isPodcast) downloadInfo else null,
+                                onDownload = if (!isPodcast) ({ viewModel.startDownload() }) else null,
+                                onCancelDownload = if (!isPodcast) ({ viewModel.cancelDownload() }) else null,
+                                onDeleteDownload = if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
                             )
                         }
 
@@ -424,7 +453,11 @@ fun AudiobookshelfItemScreen(
                         item {
                             ItemDetailsSection(
                                 item = item!!,
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                                modifier = Modifier.padding(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    top = 16.dp
+                                ),
                             )
                         }
 
@@ -468,7 +501,8 @@ fun AudiobookshelfItemScreen(
         ) {
             Card(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .padding(16.dp)
                         .padding(WindowInsets.navigationBars.asPaddingValues()),
                 colors =
@@ -516,6 +550,10 @@ fun AudiobookshelfItemScreen(
                 episodeProgressMap = episodeProgressMap,
                 onDismiss = { showListDialog = false },
                 onSortClick = { showSortDialog = true },
+                episodeDownloadMap = episodeDownloadMap,
+                onEpisodeDownload = { viewModel.startDownload(it) },
+                onEpisodeCancelDownload = { viewModel.cancelDownload(it) },
+                onEpisodeDeleteDownload = { viewModel.deleteDownload(it) },
             )
         } else if (uiState.chapters.isNotEmpty()) {
             ChapterListDialog(
@@ -714,7 +752,10 @@ private fun EpisodeSortDialog(
 @Composable
 private fun EpisodeSortOptionRow(label: String, selected: Boolean, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(selected = selected, onClick = onClick)

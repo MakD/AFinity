@@ -46,6 +46,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.core.text.HtmlCompat
 import com.makd.afinity.R
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import java.text.SimpleDateFormat
@@ -60,17 +62,27 @@ fun LazyListScope.episodeListItems(
     expandedEpisodeId: String?,
     onExpandEpisode: (String?) -> Unit,
     episodeProgressMap: Map<String, MediaProgress> = emptyMap(),
+    episodeDownloadMap: Map<String, AbsDownloadInfo> = emptyMap(),
+    onEpisodeDownload: ((String) -> Unit)? = null,
+    onEpisodeCancelDownload: ((String) -> Unit)? = null,
+    onEpisodeDeleteDownload: ((String) -> Unit)? = null,
 ) {
     items(items = episodes, key = { it.id }) { episode ->
         val isExpanded = expandedEpisodeId == episode.id
 
-        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)) {
             ExpandableEpisodeItem(
                 episode = episode,
                 isExpanded = isExpanded,
                 onPlay = { onEpisodePlay(episode) },
                 onExpandToggle = { onExpandEpisode(if (isExpanded) null else episode.id) },
                 progress = episodeProgressMap[episode.id],
+                downloadInfo = episodeDownloadMap[episode.id],
+                onDownload = onEpisodeDownload?.let { { it(episode.id) } },
+                onCancelDownload = onEpisodeCancelDownload?.let { { it(episode.id) } },
+                onDeleteDownload = onEpisodeDeleteDownload?.let { { it(episode.id) } },
             )
         }
     }
@@ -83,10 +95,15 @@ private fun ExpandableEpisodeItem(
     onPlay: () -> Unit,
     onExpandToggle: () -> Unit,
     progress: MediaProgress? = null,
+    downloadInfo: AbsDownloadInfo? = null,
+    onDownload: (() -> Unit)? = null,
+    onCancelDownload: (() -> Unit)? = null,
+    onDeleteDownload: (() -> Unit)? = null,
 ) {
     Row(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier
+                .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .clickable { onExpandToggle() }
                 .padding(12.dp)
@@ -173,35 +190,93 @@ private fun ExpandableEpisodeItem(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        if (progress != null && progress.isFinished) {
-            Box(
-                modifier =
-                    Modifier.size(40.dp)
-                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_check),
-                    contentDescription = "Finished",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp),
-                )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (progress != null && progress.isFinished) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(40.dp)
+                            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_check),
+                        contentDescription = "Finished",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            } else {
+                FilledIconButton(
+                    onClick = onPlay,
+                    modifier = Modifier.size(40.dp),
+                    colors =
+                        IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.primary,
+                        ),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_player_play_filled),
+                        contentDescription = "Play episode",
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
             }
-        } else {
-            FilledIconButton(
-                onClick = onPlay,
-                modifier = Modifier.size(40.dp),
-                colors =
-                    IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.primary,
-                    ),
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_player_play_filled),
-                    contentDescription = "Play episode",
-                    modifier = Modifier.size(24.dp),
-                )
+
+            if (onDownload != null || downloadInfo != null) {
+                when {
+                    downloadInfo?.status == AbsDownloadStatus.COMPLETED ->
+                        IconButton(
+                            onClick = { onDeleteDownload?.invoke() },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_check),
+                                contentDescription = "Downloaded — tap to delete",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+
+                    downloadInfo?.status == AbsDownloadStatus.DOWNLOADING ||
+                            downloadInfo?.status == AbsDownloadStatus.QUEUED -> {
+                        Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(
+                                progress = { downloadInfo.progress },
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            IconButton(
+                                onClick = { onCancelDownload?.invoke() },
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_cancel),
+                                    contentDescription = "Cancel download",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            }
+                        }
+                    }
+
+                    else ->
+                        IconButton(
+                            onClick = { onDownload?.invoke() },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_download),
+                                contentDescription = "Download episode",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                }
             }
         }
     }
@@ -269,10 +344,16 @@ fun EpisodeListDialog(
     episodeProgressMap: Map<String, MediaProgress>,
     onDismiss: () -> Unit,
     onSortClick: () -> Unit,
+    episodeDownloadMap: Map<String, AbsDownloadInfo> = emptyMap(),
+    onEpisodeDownload: ((String) -> Unit)? = null,
+    onEpisodeCancelDownload: ((String) -> Unit)? = null,
+    onEpisodeDeleteDownload: ((String) -> Unit)? = null,
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            modifier = Modifier.fillMaxWidth().height(600.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(600.dp),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 6.dp,
@@ -280,7 +361,8 @@ fun EpisodeListDialog(
             Column(modifier = Modifier.fillMaxSize()) {
                 Row(
                     modifier =
-                        Modifier.fillMaxWidth()
+                        Modifier
+                            .fillMaxWidth()
                             .padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
@@ -308,7 +390,9 @@ fun EpisodeListDialog(
                         }
                     }
                 }
-                LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                LazyColumn(modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)) {
                     episodeListItems(
                         episodes = episodes,
                         onEpisodePlay = { episode ->
@@ -318,6 +402,10 @@ fun EpisodeListDialog(
                         expandedEpisodeId = expandedEpisodeId,
                         onExpandEpisode = onExpandEpisode,
                         episodeProgressMap = episodeProgressMap,
+                        episodeDownloadMap = episodeDownloadMap,
+                        onEpisodeDownload = onEpisodeDownload,
+                        onEpisodeCancelDownload = onEpisodeCancelDownload,
+                        onEpisodeDeleteDownload = onEpisodeDeleteDownload,
                     )
                 }
             }
