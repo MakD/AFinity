@@ -14,6 +14,7 @@ import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.GenreItem
+import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.MovieSection
 import com.makd.afinity.data.models.PersonFromMovieSection
 import com.makd.afinity.data.models.PersonSection
@@ -88,6 +89,7 @@ constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val loadedRecommendationSections = mutableListOf<HomeSection>()
+    private val loadedSpotlightSections = mutableListOf<HomeSection.Spotlight>()
 
     private var cachedShuffledGenres: List<HomeSection.Genre> = emptyList()
 
@@ -109,6 +111,7 @@ constructor(
                         "Data cleared detected (Session Switch/Clear), resetting HomeViewModel UI state"
                     )
                     loadedRecommendationSections.clear()
+                    loadedSpotlightSections.clear()
                     cachedShuffledGenres = emptyList()
                     renderedPeopleNames.clear()
                     renderedItemIds.clear()
@@ -121,10 +124,14 @@ constructor(
                     Timber.d(
                         "Initial Data Loaded: Triggering secondary content load (Studios, Genres, Recs)"
                     )
-                    launch { loadStudios() }
-                    launch { loadCombinedGenres() }
-                    loadNewHomescreenSections()
-                    launch { loadDownloadedContent() }
+                    launch {
+                        coroutineScope {
+                            launch { loadStudios() }
+                            launch { loadCombinedGenres() }
+                        }
+                        loadNewHomescreenSections()
+                        loadDownloadedContent()
+                    }
                 }
             }
         }
@@ -275,7 +282,7 @@ constructor(
                                             val runtime = cwItem.runtimeTicks ?: 0L
                                             val isPlayed =
                                                 runtime > 0 &&
-                                                        event.positionTicks >= (runtime * 0.9).toLong()
+                                                    event.positionTicks >= (runtime * 0.9).toLong()
                                             cwItem.copy(
                                                 playbackPositionTicks = event.positionTicks,
                                                 played = isPlayed,
@@ -286,7 +293,7 @@ constructor(
                                             val runtime = cwItem.runtimeTicks ?: 0L
                                             val isPlayed =
                                                 runtime > 0 &&
-                                                        event.positionTicks >= (runtime * 0.9).toLong()
+                                                    event.positionTicks >= (runtime * 0.9).toLong()
                                             cwItem.copy(
                                                 playbackPositionTicks = event.positionTicks,
                                                 played = isPlayed,
@@ -302,8 +309,7 @@ constructor(
 
                     is PlaybackEvent.Synced -> {
                         Timber.d("HomeViewModel received sync for ${event.itemId}")
-                        val syncedItem =
-                            mediaRepository.getItemById(event.itemId) ?: return@collect
+                        val syncedItem = mediaRepository.getItemById(event.itemId) ?: return@collect
                         appDataRepository.updatePlaybackProgressLocally(syncedItem)
 
                         val targetItem =
@@ -311,8 +317,7 @@ constructor(
                                 is AfinityEpisode ->
                                     mediaRepository.getItemById(syncedItem.seriesId)
 
-                                is AfinitySeason ->
-                                    mediaRepository.getItemById(syncedItem.seriesId)
+                                is AfinitySeason -> mediaRepository.getItemById(syncedItem.seriesId)
 
                                 else -> syncedItem
                             } ?: return@collect
@@ -353,8 +358,21 @@ constructor(
             finalLayout.add(recIterator.next())
         }
 
+        if (loadedSpotlightSections.isNotEmpty()) {
+            val positions =
+                computeSpotlightPositions(finalLayout.size, loadedSpotlightSections.size)
+            positions.sorted().forEachIndexed { offset, pos ->
+                finalLayout.add(
+                    (pos + offset).coerceAtMost(finalLayout.size),
+                    loadedSpotlightSections[offset],
+                )
+            }
+        }
+
         _uiState.update { it.copy(combinedSections = finalLayout) }
-        Timber.d("Updated home layout with ${finalLayout.size} sections (Stable Interleave)")
+        Timber.d(
+            "Updated home layout with ${finalLayout.size} sections (${loadedSpotlightSections.size} spotlights)"
+        )
     }
 
     private fun loadNewHomescreenSections() {
@@ -380,6 +398,7 @@ constructor(
                         val writerTask = async { loadAllWriterSections() }
                         val becauseYouWatchedTask = async { loadAllBecauseYouWatchedSections() }
                         val actorFromRecentTask = async { loadAllActorFromRecentSections() }
+                        val spotlightTask = async { loadSpotlightSections() }
 
                         awaitAll(
                             actorTask,
@@ -387,6 +406,7 @@ constructor(
                             writerTask,
                             becauseYouWatchedTask,
                             actorFromRecentTask,
+                            spotlightTask,
                         )
                     }
 
@@ -460,8 +480,9 @@ constructor(
             val topDirectors =
                 appDataRepository.getTopPeople(type = DIRECTOR, limit = 75, minAppearances = 5)
 
-            val availableDirectors =
-                topDirectors.filterNot { it.person.name in renderedPeopleNames }
+            val availableDirectors = topDirectors.filterNot {
+                it.person.name in renderedPeopleNames
+            }
             val maxDirectorSections = 8
             val selectedDirectors = availableDirectors.shuffled().take(maxDirectorSections)
 
@@ -692,6 +713,136 @@ constructor(
         }
     }
 
+    private suspend fun loadSpotlightSections() {
+        try {
+            loadedSpotlightSections.clear()
+            val genres = appDataRepository.combinedGenres.value
+            val movieGenres = genres.filter { it.type == GenreType.MOVIE }.shuffled().take(4)
+            val showGenres = genres.filter { it.type == GenreType.SHOW }.shuffled().take(4)
+            val studios =
+                try {
+                    mediaRepository.getStudios(limit = 50)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            val selectedStudios = studios.shuffled().take(4)
+
+            coroutineScope {
+                val tasks = buildList {
+                    movieGenres.forEach { genre ->
+                        add(
+                            async {
+                                try {
+                                    val items =
+                                        mediaRepository.getTopRatedByGenre(
+                                            genre.name,
+                                            GenreType.MOVIE,
+                                            limit = 20,
+                                        )
+                                    if (items.size >= 3) {
+                                        recommendationMutex.withLock {
+                                            loadedSpotlightSections.add(
+                                                HomeSection.Spotlight(
+                                                    title = "Top ${genre.name} Movies",
+                                                    type = SpotlightType.GENRE_MOVIE,
+                                                    items = items,
+                                                )
+                                            )
+                                        }
+                                        Timber.d(
+                                            "Loaded genre spotlight: ${genre.name} Movies (${items.size} items)"
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Failed spotlight for movie genre: ${genre.name}")
+                                }
+                            }
+                        )
+                    }
+                    showGenres.forEach { genre ->
+                        add(
+                            async {
+                                try {
+                                    val items =
+                                        mediaRepository.getTopRatedByGenre(
+                                            genre.name,
+                                            GenreType.SHOW,
+                                            limit = 20,
+                                        )
+                                    if (items.size >= 3) {
+                                        recommendationMutex.withLock {
+                                            loadedSpotlightSections.add(
+                                                HomeSection.Spotlight(
+                                                    title = "Top ${genre.name} Series",
+                                                    type = SpotlightType.GENRE_SHOW,
+                                                    items = items,
+                                                )
+                                            )
+                                        }
+                                        Timber.d(
+                                            "Loaded genre spotlight: ${genre.name} Series (${items.size} items)"
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Failed spotlight for show genre: ${genre.name}")
+                                }
+                            }
+                        )
+                    }
+                    selectedStudios.forEach { studio ->
+                        add(
+                            async {
+                                try {
+                                    val items =
+                                        mediaRepository.getTopRatedByStudio(studio.name, limit = 20)
+                                    if (items.size >= 3) {
+                                        recommendationMutex.withLock {
+                                            loadedSpotlightSections.add(
+                                                HomeSection.Spotlight(
+                                                    title = "Best of ${studio.name}",
+                                                    type = SpotlightType.STUDIO,
+                                                    items = items,
+                                                )
+                                            )
+                                        }
+                                        Timber.d(
+                                            "Loaded studio spotlight: ${studio.name} (${items.size} items)"
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    Timber.w(e, "Failed studio spotlight")
+                                }
+                            }
+                        )
+                    }
+                }
+                tasks.awaitAll()
+            }
+            val seenIds = mutableSetOf<java.util.UUID>()
+            val deduplicated = loadedSpotlightSections.mapNotNull { section ->
+                val uniqueItems = section.items.filter { seenIds.add(it.id) }.take(10)
+                if (uniqueItems.size < 3) null else section.copy(items = uniqueItems)
+            }
+            loadedSpotlightSections.clear()
+            loadedSpotlightSections.addAll(deduplicated)
+
+            if (loadedSpotlightSections.size > 12) {
+                loadedSpotlightSections.subList(12, loadedSpotlightSections.size).clear()
+            }
+            Timber.d("Loaded ${loadedSpotlightSections.size} spotlight sections total")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load spotlight sections")
+        }
+    }
+
+    private fun computeSpotlightPositions(listSize: Int, count: Int): List<Int> {
+        if (listSize == 0 || count == 0) return emptyList()
+        val chunkSize = (listSize / (count + 1)).coerceAtLeast(1)
+        return (1..count).map { i -> (i * chunkSize + (-2..2).random()).coerceIn(1, listSize) }
+    }
+
     private suspend fun loadDownloadedContent() {
         try {
             val userId = authRepository.currentUser.value?.id ?: return
@@ -707,12 +858,11 @@ constructor(
                 }
 
             val allShows = databaseRepository.getAllShows(userId)
-            val downloadedShows =
-                allShows.filter { show ->
-                    show.seasons.any { season ->
-                        season.episodes.any { episode -> episode.id in downloadedItemIds }
-                    }
+            val downloadedShows = allShows.filter { show ->
+                show.seasons.any { season ->
+                    season.episodes.any { episode -> episode.id in downloadedItemIds }
                 }
+            }
 
             Timber.d(
                 "Found ${downloadedMovies.size} movies and ${downloadedShows.size} shows with downloads"
@@ -731,8 +881,8 @@ constructor(
                     season.episodes.forEach { episode ->
                         if (
                             episode.playbackPositionTicks > 0 &&
-                            !episode.played &&
-                            episode.id in downloadedItemIds
+                                !episode.played &&
+                                episode.id in downloadedItemIds
                         ) {
                             offlineContinueWatching.add(episode)
                         }
@@ -740,14 +890,13 @@ constructor(
                 }
             }
 
-            val sortedOfflineContinueWatching =
-                offlineContinueWatching.sortedByDescending { item ->
-                    when (item) {
-                        is AfinityMovie -> item.playbackPositionTicks
-                        is AfinityEpisode -> item.playbackPositionTicks
-                        else -> 0L
-                    }
+            val sortedOfflineContinueWatching = offlineContinueWatching.sortedByDescending { item ->
+                when (item) {
+                    is AfinityMovie -> item.playbackPositionTicks
+                    is AfinityEpisode -> item.playbackPositionTicks
+                    else -> 0L
                 }
+            }
 
             Timber.d(
                 "Found ${sortedOfflineContinueWatching.size} items to continue watching offline"
@@ -755,17 +904,18 @@ constructor(
 
             val absCompleted = absDownloadRepository.getCompletedDownloadsFlow().first()
             val downloadedAudiobooks = absCompleted.filter { it.mediaType == "book" }
-            val downloadedPodcastEpisodes = absCompleted
-                .filter { it.mediaType == "podcast" }
-                .groupBy { it.libraryItemId }
-                .map { (_, episodes) ->
-                    val rep = episodes.maxByOrNull { it.updatedAt }!!
-                    val count = episodes.size
-                    rep.copy(
-                        title = rep.authorName?.takeIf { it.isNotBlank() } ?: rep.title,
-                        authorName = "$count episode${if (count > 1) "s" else ""} downloaded",
-                    )
-                }
+            val downloadedPodcastEpisodes =
+                absCompleted
+                    .filter { it.mediaType == "podcast" }
+                    .groupBy { it.libraryItemId }
+                    .map { (_, episodes) ->
+                        val rep = episodes.maxByOrNull { it.updatedAt }!!
+                        val count = episodes.size
+                        rep.copy(
+                            title = rep.authorName?.takeIf { it.isNotBlank() } ?: rep.title,
+                            authorName = "$count episode${if (count > 1) "s" else ""} downloaded",
+                        )
+                    }
 
             _uiState.update {
                 it.copy(
@@ -962,14 +1112,12 @@ constructor(
         IntentUtils.openYouTubeUrl(context, trailerUrl)
     }
 
-    private fun loadCombinedGenres() {
-        viewModelScope.launch {
-            if (offlineModeManager.isOffline.first()) return@launch
-            try {
-                appDataRepository.loadCombinedGenres()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load combined genres")
-            }
+    private suspend fun loadCombinedGenres() {
+        if (offlineModeManager.isOffline.first()) return
+        try {
+            appDataRepository.loadCombinedGenres()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load combined genres")
         }
     }
 
@@ -997,14 +1145,12 @@ constructor(
         }
     }
 
-    private fun loadStudios() {
-        viewModelScope.launch {
-            if (offlineModeManager.isOffline.first()) return@launch
-            try {
-                appDataRepository.loadStudios()
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load studios")
-            }
+    private suspend fun loadStudios() {
+        if (offlineModeManager.isOffline.first()) return
+        try {
+            appDataRepository.loadStudios()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load studios")
         }
     }
 
@@ -1017,8 +1163,12 @@ constructor(
     fun refresh() {
         viewModelScope.launch {
             appDataRepository.reloadHomeData()
-            loadStudios()
-            loadCombinedGenres()
+
+            coroutineScope {
+                launch { loadStudios() }
+                launch { loadCombinedGenres() }
+            }
+
             loadNewHomescreenSections()
         }
     }
@@ -1053,48 +1203,47 @@ constructor(
         }
 
         var sectionsChanged = false
-        val updatedSections =
-            loadedRecommendationSections.map { section ->
-                when (section) {
-                    is HomeSection.Movie -> {
-                        val items = section.section.recommendedItems
-                        val index = items.indexOfFirst { it.id == targetId }
-                        if (index != -1 && updatedItem is AfinityMovie) {
-                            sectionsChanged = true
-                            val newItems = items.toMutableList().apply { this[index] = updatedItem }
-                            HomeSection.Movie(section.section.copy(recommendedItems = newItems))
-                        } else section
-                    }
-
-                    is HomeSection.Person -> {
-                        val items = section.section.items
-                        val index = items.indexOfFirst { it.id == targetId }
-                        if (
-                            index != -1 &&
-                            (updatedItem is AfinityMovie || updatedItem is AfinityShow)
-                        ) {
-                            sectionsChanged = true
-                            val newItems = items.toMutableList().apply { this[index] = updatedItem }
-                            HomeSection.Person(section.section.copy(items = newItems))
-                        } else section
-                    }
-
-                    is HomeSection.PersonFromMovie -> {
-                        val items = section.section.items
-                        val index = items.indexOfFirst { it.id == targetId }
-                        if (
-                            index != -1 &&
-                            (updatedItem is AfinityMovie || updatedItem is AfinityShow)
-                        ) {
-                            sectionsChanged = true
-                            val newItems = items.toMutableList().apply { this[index] = updatedItem }
-                            HomeSection.PersonFromMovie(section.section.copy(items = newItems))
-                        } else section
-                    }
-
-                    is HomeSection.Genre -> section
+        val updatedSections = loadedRecommendationSections.map { section ->
+            when (section) {
+                is HomeSection.Movie -> {
+                    val items = section.section.recommendedItems
+                    val index = items.indexOfFirst { it.id == targetId }
+                    if (index != -1 && updatedItem is AfinityMovie) {
+                        sectionsChanged = true
+                        val newItems = items.toMutableList().apply { this[index] = updatedItem }
+                        HomeSection.Movie(section.section.copy(recommendedItems = newItems))
+                    } else section
                 }
+
+                is HomeSection.Person -> {
+                    val items = section.section.items
+                    val index = items.indexOfFirst { it.id == targetId }
+                    if (
+                        index != -1 && (updatedItem is AfinityMovie || updatedItem is AfinityShow)
+                    ) {
+                        sectionsChanged = true
+                        val newItems = items.toMutableList().apply { this[index] = updatedItem }
+                        HomeSection.Person(section.section.copy(items = newItems))
+                    } else section
+                }
+
+                is HomeSection.PersonFromMovie -> {
+                    val items = section.section.items
+                    val index = items.indexOfFirst { it.id == targetId }
+                    if (
+                        index != -1 && (updatedItem is AfinityMovie || updatedItem is AfinityShow)
+                    ) {
+                        sectionsChanged = true
+                        val newItems = items.toMutableList().apply { this[index] = updatedItem }
+                        HomeSection.PersonFromMovie(section.section.copy(items = newItems))
+                    } else section
+                }
+
+                is HomeSection.Genre -> section
+
+                is HomeSection.Spotlight -> section
             }
+        }
 
         if (sectionsChanged) {
             loadedRecommendationSections.clear()
@@ -1118,6 +1267,15 @@ sealed interface HomeSection {
     data class PersonFromMovie(val section: PersonFromMovieSection) : HomeSection
 
     data class Genre(val genreItem: GenreItem) : HomeSection
+
+    data class Spotlight(val title: String, val type: SpotlightType, val items: List<AfinityItem>) :
+        HomeSection
+}
+
+enum class SpotlightType {
+    GENRE_MOVIE,
+    GENRE_SHOW,
+    STUDIO,
 }
 
 data class HomeUiState(

@@ -60,6 +60,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.home.components.ContinueWatchingSkeleton
+import com.makd.afinity.ui.home.components.SpotlightCarousel
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.HighestRatedSection
@@ -467,6 +468,8 @@ fun HomeScreen(
                                             "person_movie_${section.section.hashCode()}"
                                         is HomeSection.Genre ->
                                             "genre_${section.genreItem.name}_${section.genreItem.type}"
+                                        is HomeSection.Spotlight ->
+                                            "spotlight_${section.title}"
                                     }
                                 },
                             ) { section ->
@@ -494,6 +497,15 @@ fun HomeScreen(
                                                 section = section.section,
                                                 onItemClick = { movie -> onItemClick(movie) },
                                                 widthSizeClass = widthSizeClass,
+                                            )
+                                        }
+
+                                        is HomeSection.Spotlight -> {
+                                            SpotlightCarousel(
+                                                title = section.title,
+                                                items = section.items,
+                                                onItemClick = onItemClick,
+                                                onPlayClick = onPlayClick,
                                             )
                                         }
 

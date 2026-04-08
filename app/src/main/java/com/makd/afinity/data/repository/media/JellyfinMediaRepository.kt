@@ -5,6 +5,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
@@ -770,6 +771,77 @@ constructor(
                 emptyList()
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error getting shows for genre: $genre")
+                emptyList()
+            }
+        }
+
+    override suspend fun getTopRatedByGenre(
+        genre: String,
+        type: GenreType,
+        limit: Int,
+    ): List<AfinityItem> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val itemsApi = ItemsApi(apiClient)
+                val includeTypes =
+                    when (type) {
+                        GenreType.MOVIE -> listOf(BaseItemKind.MOVIE)
+                        GenreType.SHOW -> listOf(BaseItemKind.SERIES)
+                    }
+                val response =
+                    itemsApi.getItems(
+                        userId = userId,
+                        includeItemTypes = includeTypes,
+                        recursive = true,
+                        genres = listOf(genre),
+                        limit = limit,
+                        sortBy = listOf(ItemSortBy.COMMUNITY_RATING),
+                        sortOrder = listOf(SortOrder.DESCENDING),
+                        imageTypes = listOf(ImageType.BACKDROP),
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                        enableImages = true,
+                        enableUserData = true,
+                    )
+                response.content.items.mapNotNull { it.toAfinityItem(getBaseUrl()) }
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to get top-rated items for genre: $genre")
+                emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error getting top-rated items for genre: $genre")
+                emptyList()
+            }
+        }
+
+    override suspend fun getTopRatedByStudio(studioName: String, limit: Int): List<AfinityItem> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val itemsApi = ItemsApi(apiClient)
+                val response =
+                    itemsApi.getItems(
+                        userId = userId,
+                        includeItemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
+                        recursive = true,
+                        studios = listOf(studioName),
+                        limit = limit,
+                        sortBy = listOf(ItemSortBy.COMMUNITY_RATING),
+                        sortOrder = listOf(SortOrder.DESCENDING),
+                        imageTypes = listOf(ImageType.BACKDROP),
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                        enableImages = true,
+                        enableUserData = true,
+                    )
+                response.content.items.mapNotNull { it.toAfinityItem(getBaseUrl()) }
+            } catch (e: ApiClientException) {
+                Timber.e(e, "Failed to get top-rated items for studio: $studioName")
+                emptyList()
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error getting top-rated items for studio: $studioName")
                 emptyList()
             }
         }
