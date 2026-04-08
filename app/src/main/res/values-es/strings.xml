@@ -355,7 +355,7 @@
     <string name="theme_system">Valor predeterminado del sistema</string>
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Oscuro</string>
-    <string name="theme_amoled">Amoled</string>
+    <string name="theme_amoled">AMOLED</string>
     <string name="layout_horizontal">Horizontal</string>
     <string name="layout_vertical">Vertical</string>
     <string name="downloads_title">Descargas</string>
