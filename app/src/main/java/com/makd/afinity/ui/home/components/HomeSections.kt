@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -34,7 +35,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -268,6 +272,60 @@ fun OptimizedLatestTvSeriesSection(
         ) {
             items(items = uniqueItems, key = { item -> "latest_tv_${item.id}" }) { item ->
                 MediaItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
+            }
+        }
+    }
+}
+
+@Composable
+fun DownloadedAudiobooksSection(
+    title: String,
+    items: List<AbsDownloadInfo>,
+    onItemClick: (AbsDownloadInfo) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 16.dp),
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
+            items(items = items, key = { "abs_${it.id}" }) { download ->
+                Column(
+                    modifier = Modifier.width(100.dp).clickable { onItemClick(download) },
+                ) {
+                    Card(
+                        modifier = Modifier.width(100.dp).aspectRatio(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        ),
+                    ) {
+                        AsyncImage(
+                            imageUrl = download.coverUrl,
+                            contentDescription = download.title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = download.title,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.width(100.dp),
+                    )
+                }
             }
         }
     }

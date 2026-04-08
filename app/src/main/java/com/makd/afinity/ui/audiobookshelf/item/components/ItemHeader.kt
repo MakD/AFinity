@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,6 +31,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +72,10 @@ fun ItemHeader(
     progress: MediaProgress?,
     serverUrl: String?,
     onPlay: () -> Unit,
+    downloadInfo: AbsDownloadInfo? = null,
+    onDownload: (() -> Unit)? = null,
+    onCancelDownload: (() -> Unit)? = null,
+    onDeleteDownload: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val coverUrl =
@@ -80,7 +88,16 @@ fun ItemHeader(
             ItemHeroBackground(coverUrl = coverUrl)
         }
 
-        ItemHeaderContent(item = item, progress = progress, coverUrl = coverUrl, onPlay = onPlay)
+        ItemHeaderContent(
+            item = item,
+            progress = progress,
+            coverUrl = coverUrl,
+            onPlay = onPlay,
+            downloadInfo = downloadInfo,
+            onDownload = onDownload,
+            onCancelDownload = onCancelDownload,
+            onDeleteDownload = onDeleteDownload,
+        )
     }
 }
 
@@ -127,6 +144,10 @@ fun ItemHeaderContent(
     progress: MediaProgress?,
     coverUrl: String?,
     onPlay: () -> Unit,
+    downloadInfo: AbsDownloadInfo? = null,
+    onDownload: (() -> Unit)? = null,
+    onCancelDownload: (() -> Unit)? = null,
+    onDeleteDownload: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -354,37 +375,113 @@ fun ItemHeaderContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(
-            onClick = onPlay,
+        val showSplit = onDownload != null
+        val primaryColors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        )
+
+        Row(
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
+            Button(
+                onClick = onPlay,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                shape = if (showSplit)
+                    RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
+                else
+                    RoundedCornerShape(28.dp),
+                colors = primaryColors,
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_player_play_filled),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text =
-                        when {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_player_play_filled),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = when {
                             progress != null && progress.isFinished -> "Listen Again"
                             progress != null && progress.progress > 0 -> "Continue Listening"
                             else -> "Play"
                         },
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            if (showSplit) {
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f))
                 )
+
+                Button(
+                    onClick = {
+                        when (downloadInfo?.status) {
+                            AbsDownloadStatus.QUEUED,
+                            AbsDownloadStatus.DOWNLOADING -> onCancelDownload?.invoke()
+                            AbsDownloadStatus.COMPLETED -> onDeleteDownload?.invoke()
+                            else -> onDownload?.invoke()
+                        }
+                    },
+                    modifier = Modifier.width(64.dp).fillMaxHeight(),
+                    shape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp),
+                    colors = primaryColors,
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                    contentPadding = PaddingValues(0.dp),
+                ) {
+                    when (downloadInfo?.status) {
+                        AbsDownloadStatus.DOWNLOADING -> {
+                            Box(contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(
+                                    progress = { downloadInfo.progress },
+                                    modifier = Modifier.size(30.dp),
+                                    strokeWidth = 2.5.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f),
+                                )
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_cancel),
+                                    contentDescription = "Cancel download",
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            }
+                        }
+                        AbsDownloadStatus.QUEUED -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f),
+                            )
+                        }
+                        AbsDownloadStatus.COMPLETED -> {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_delete),
+                                contentDescription = "Delete download",
+                                modifier = Modifier.size(22.dp),
+                                tint = MaterialTheme.colorScheme.errorContainer,
+                            )
+                        }
+                        else -> {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_download),
+                                contentDescription = "Download",
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                    }
+                }
             }
         }
     }

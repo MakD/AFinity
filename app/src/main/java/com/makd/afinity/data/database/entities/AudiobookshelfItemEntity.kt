@@ -27,4 +27,5 @@ data class AudiobookshelfItemEntity(
     val addedAt: Long?,
     val updatedAt: Long?,
     val cachedAt: Long,
+    val serializedEpisodes: String? = null,
 )

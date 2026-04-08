@@ -8,6 +8,7 @@ import com.makd.afinity.data.database.dao.AudiobookshelfDao
 import com.makd.afinity.data.database.dao.JellyseerrDao
 import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
+import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.ListeningStats
@@ -25,9 +26,11 @@ import com.makd.afinity.util.isTailscaleAddress
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -126,6 +129,7 @@ class ServerManagementViewModel
 constructor(
     @param:ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
+    private val offlineModeManager: OfflineModeManager,
     private val databaseRepository: DatabaseRepository,
     private val jellyseerrDao: JellyseerrDao,
     private val audiobookshelfDao: AudiobookshelfDao,
@@ -138,6 +142,9 @@ constructor(
 
     private val _state = MutableStateFlow(ServerManagementState())
     val state: StateFlow<ServerManagementState> = _state.asStateFlow()
+
+    val isOffline: StateFlow<Boolean> = offlineModeManager.isOffline
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     init {
         loadServers()

@@ -8,6 +8,7 @@ import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -61,12 +62,13 @@ class AudiobookshelfPlayerService : MediaSessionService() {
         super.onCreate()
 
         val token = securePreferencesRepository.getCachedAudiobookshelfToken()
-        val dataSourceFactory =
+        val httpDataSourceFactory =
             DefaultHttpDataSource.Factory()
                 .setAllowCrossProtocolRedirects(true)
                 .setDefaultRequestProperties(
                     buildMap { if (token != null) put("Authorization", "Bearer $token") }
                 )
+        val dataSourceFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
         exoPlayer =
             ExoPlayer.Builder(this)
                 .setAudioAttributes(AudioAttributes.DEFAULT, true)
@@ -107,6 +109,7 @@ class AudiobookshelfPlayerService : MediaSessionService() {
                             stopPositionUpdates()
                             serviceScope.launch { progressSyncer.syncNow() }
                         }
+
                         Player.STATE_IDLE -> {
                             playbackManager.updateBufferingState(false)
                         }

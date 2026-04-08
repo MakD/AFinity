@@ -273,6 +273,7 @@ fun SettingsScreen(
                                 if (enabled) showJellyseerrBottomSheet = true
                                 else showJellyseerrLogoutDialog = true
                             },
+                            enabled = !effectiveOfflineMode,
                         )
                         SettingsDivider()
                         SettingsSwitchItem(
@@ -287,6 +288,7 @@ fun SettingsScreen(
                                 if (enabled) showAudiobookshelfBottomSheet = true
                                 else showAudiobookshelfLogoutDialog = true
                             },
+                            enabled = !effectiveOfflineMode,
                         )
                         SettingsDivider()
                         SettingsItem(
@@ -300,7 +302,9 @@ fun SettingsScreen(
                             icon = painterResource(id = R.drawable.ic_user),
                             title = stringResource(R.string.pref_switch_session),
                             subtitle = stringResource(R.string.pref_switch_session_summary),
-                            onClick = { showSessionSwitcherSheet = true },
+                            onClick = if (!effectiveOfflineMode) {
+                                { showSessionSwitcherSheet = true }
+                            } else null,
                         )
                     }
                 }

@@ -3,21 +3,25 @@ package com.makd.afinity.ui.audiobookshelf.item
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.models.audiobookshelf.SeriesItem
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class AudiobookshelfItemViewModel
@@ -25,6 +29,8 @@ class AudiobookshelfItemViewModel
 constructor(
     savedStateHandle: SavedStateHandle,
     private val audiobookshelfRepository: AudiobookshelfRepository,
+    private val absDownloadRepository: AbsDownloadRepository,
+    private val offlineModeManager: OfflineModeManager,
 ) : ViewModel() {
 
     val itemId: String = savedStateHandle.get<String>("itemId") ?: ""
@@ -46,6 +52,54 @@ constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val currentConfig = audiobookshelfRepository.currentConfig
+
+    val isOffline: StateFlow<Boolean> =
+        offlineModeManager.isOffline
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val downloadInfo: StateFlow<AbsDownloadInfo?> =
+        absDownloadRepository.getActiveDownloadsFlow()
+            .combine(absDownloadRepository.getCompletedDownloadsFlow()) { active, completed ->
+                (active + completed).find { it.libraryItemId == itemId && it.episodeId == null }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val episodeDownloadMap: StateFlow<Map<String, AbsDownloadInfo>> =
+        absDownloadRepository.getActiveDownloadsFlow()
+            .combine(absDownloadRepository.getCompletedDownloadsFlow()) { active, completed ->
+                (active + completed)
+                    .filter { it.libraryItemId == itemId && it.episodeId != null }
+                    .associateBy { it.episodeId!! }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    fun startDownload(episodeId: String? = null) {
+        viewModelScope.launch {
+            absDownloadRepository.startDownload(itemId, episodeId)
+                .onFailure { Timber.e(it, "Failed to start download") }
+        }
+    }
+
+    fun cancelDownload(episodeId: String? = null) {
+        viewModelScope.launch {
+            val info = if (episodeId == null) downloadInfo.value
+            else episodeDownloadMap.value[episodeId]
+            info?.let {
+                absDownloadRepository.cancelDownload(it.id)
+                    .onFailure { e -> Timber.e(e, "Failed to cancel download") }
+            }
+        }
+    }
+
+    fun deleteDownload(episodeId: String? = null) {
+        viewModelScope.launch {
+            val info = if (episodeId == null) downloadInfo.value
+            else episodeDownloadMap.value[episodeId]
+            info?.let {
+                absDownloadRepository.deleteDownload(it.id)
+                    .onFailure { e -> Timber.e(e, "Failed to delete download") }
+            }
+        }
+    }
 
     init {
         loadItem()

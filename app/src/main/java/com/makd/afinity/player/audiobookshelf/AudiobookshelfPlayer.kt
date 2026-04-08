@@ -3,9 +3,9 @@ package com.makd.afinity.player.audiobookshelf
 import android.content.ComponentName
 import android.content.Context
 import androidx.core.net.toUri
-import androidx.media3.common.Player
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -17,6 +17,7 @@ import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +41,7 @@ constructor(
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val sessionManager: SessionManager,
+    private val absSyncScheduler: AbsProgressSyncScheduler,
 ) {
     private var mediaController: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -108,7 +110,9 @@ constructor(
             val controller = getConnectedController() ?: return@launch
 
             val token = securePreferencesRepository.getCachedAudiobookshelfToken()
-            val isPodcastPlaylist = episodeSort != null && session.mediaType == "podcast"
+            val isLocalSession = session.id.startsWith("local_")
+            val isPodcastPlaylist =
+                !isLocalSession && episodeSort != null && session.mediaType == "podcast"
             val unsortedEpisodes = session.libraryItem?.media?.episodes ?: emptyList()
             val episodes =
                 if (isPodcastPlaylist) {
@@ -178,13 +182,19 @@ constructor(
             val mediaItems =
                 audioTracks.mapIndexed { index, track ->
                     val url =
-                        if (track.contentUrl?.startsWith("http") == true) track.contentUrl
+                        if (track.contentUrl?.startsWith("http") == true ||
+                            track.contentUrl?.startsWith("file") == true
+                        ) track.contentUrl
                         else "$baseUrl${track.contentUrl}"
 
                     val artUrl =
-                        if (baseUrl.isNotEmpty()) {
+                        if (enhancedSession.id?.startsWith("local_") == true) {
+                            enhancedSession.coverPath
+                        } else if (baseUrl.isNotEmpty()) {
                             "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?token=$token"
-                        } else enhancedSession.coverPath
+                        } else {
+                            enhancedSession.coverPath
+                        }
 
                     val itemTitle =
                         if (isPodcastPlaylist && track.title != null) {
@@ -274,14 +284,17 @@ constructor(
                         compareBy<PodcastEpisode, String>(cmp) { it.season ?: "" }
                             .thenBy(cmp) { it.episode ?: "" }
                     )
+
                 "episode" ->
                     episodes.sortedWith(compareBy<PodcastEpisode, String>(cmp) { it.episode ?: "" })
+
                 "filename" ->
                     episodes.sortedWith(
                         compareBy<PodcastEpisode, String>(cmp) {
                             it.audioFile?.metadata?.filename ?: ""
                         }
                     )
+
                 else -> episodes
             }
 
@@ -365,6 +378,7 @@ constructor(
         cancelSleepTimer()
         val state = playbackManager.playbackState.value
         val sessionId = state.sessionId
+        Timber.d("closeSession: sessionId=$sessionId itemId=${state.itemId} episodeId=${state.episodeId} currentTime=${state.currentTime} isLocal=${sessionId?.startsWith("local_")}")
         if (sessionId != null) {
             scope.launch {
                 try {
@@ -381,6 +395,28 @@ constructor(
                     } else {
                         currentTime = state.currentTime
                         duration = state.duration
+                    }
+
+                    if (sessionId.startsWith("local_")) {
+                        val itemId = state.itemId
+                        val episodeId = state.episodeId
+                        val activeContext = audiobookshelfRepository.currentActiveContext
+                        Timber.d("closeSession[local]: saving final position itemId=$itemId episodeId=$episodeId currentTime=$currentTime duration=$duration")
+                        if (itemId != null && activeContext != null) {
+                            val (serverId, userId) = activeContext
+                            audiobookshelfRepository.updateProgress(
+                                itemId = itemId,
+                                episodeId = episodeId,
+                                currentTime = currentTime,
+                                duration = duration,
+                                isFinished = duration > 0 && currentTime / duration >= 0.99,
+                            )
+                            absSyncScheduler.scheduleSync(serverId, userId)
+                            Timber.d("closeSession[local]: final position saved and sync scheduled")
+                        } else {
+                            Timber.w("closeSession[local]: itemId or activeContext is null, skipping final position save")
+                        }
+                        return@launch
                     }
 
                     val result =

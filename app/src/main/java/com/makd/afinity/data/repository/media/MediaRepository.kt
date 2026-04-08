@@ -1,6 +1,7 @@
 package com.makd.afinity.data.repository.media
 
 import androidx.paging.PagingData
+import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.mdblist.MdbListRating
@@ -229,4 +230,8 @@ interface MediaRepository {
     suspend fun getEpisodeToPlayForSeason(seasonId: UUID, seriesId: UUID): AfinityEpisode?
 
     suspend fun getSeriesNextEpisode(seriesId: UUID): AfinityEpisode?
+
+    suspend fun getTopRatedByGenre(genre: String, type: GenreType, limit: Int = 10): List<AfinityItem>
+
+    suspend fun getTopRatedByStudio(studioName: String, limit: Int = 10): List<AfinityItem>
 }

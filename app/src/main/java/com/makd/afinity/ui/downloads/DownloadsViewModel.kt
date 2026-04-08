@@ -4,9 +4,11 @@ import android.os.Environment
 import android.os.StatFs
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +27,7 @@ class DownloadsViewModel
 @Inject
 constructor(
     private val downloadRepository: DownloadRepository,
+    private val absDownloadRepository: AbsDownloadRepository,
     private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
 
@@ -113,6 +116,32 @@ constructor(
                     }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to observe completed downloads")
+            }
+        }
+
+        viewModelScope.launch {
+            try {
+                absDownloadRepository
+                    .getActiveDownloadsFlow()
+                    .catch { e -> Timber.e(e, "Error observing ABS active downloads") }
+                    .collect { absActive ->
+                        _uiState.value = _uiState.value.copy(absActiveDownloads = absActive)
+                    }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to observe ABS active downloads")
+            }
+        }
+
+        viewModelScope.launch {
+            try {
+                absDownloadRepository
+                    .getCompletedDownloadsFlow()
+                    .catch { e -> Timber.e(e, "Error observing ABS completed downloads") }
+                    .collect { absCompleted ->
+                        _uiState.value = _uiState.value.copy(absCompletedDownloads = absCompleted)
+                    }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to observe ABS completed downloads")
             }
         }
     }
@@ -209,6 +238,38 @@ constructor(
         }
     }
 
+    fun cancelAbsDownload(downloadId: UUID) {
+        viewModelScope.launch {
+            try {
+                absDownloadRepository.cancelDownload(downloadId)
+                    .onFailure { Timber.e(it, "Failed to cancel ABS download") }
+            } catch (e: Exception) {
+                Timber.e(e, "Error cancelling ABS download")
+            }
+        }
+    }
+
+    fun deleteAbsDownload(downloadId: UUID) {
+        viewModelScope.launch {
+            try {
+                absDownloadRepository.deleteDownload(downloadId)
+                    .onSuccess { loadStorageInfo() }
+                    .onFailure { Timber.e(it, "Failed to delete ABS download") }
+            } catch (e: Exception) {
+                Timber.e(e, "Error deleting ABS download")
+            }
+        }
+    }
+
+    fun deleteAbsPodcast(libraryItemId: String) {
+        viewModelScope.launch {
+            uiState.value.absCompletedDownloads
+                .filter { it.libraryItemId == libraryItemId }
+                .forEach { absDownloadRepository.deleteDownload(it.id) }
+            loadStorageInfo()
+        }
+    }
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
@@ -273,6 +334,8 @@ constructor(
 data class DownloadsUiState(
     val activeDownloads: List<DownloadInfo> = emptyList(),
     val completedDownloads: List<DownloadInfo> = emptyList(),
+    val absActiveDownloads: List<AbsDownloadInfo> = emptyList(),
+    val absCompletedDownloads: List<AbsDownloadInfo> = emptyList(),
     val totalStorageUsed: Long = 0L,
     val totalStorageUsedAllServers: Long = 0L,
     val downloadOverWifiOnly: Boolean = true,

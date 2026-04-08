@@ -113,6 +113,7 @@ fun ServerManagementScreen(
     viewModel: ServerManagementViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) { viewModel.loadServers() }
@@ -149,9 +150,13 @@ fun ServerManagementScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddServerClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                onClick = { if (!isOffline) onAddServerClick() },
+                containerColor =
+                    if (isOffline) MaterialTheme.colorScheme.surfaceContainerHighest
+                    else MaterialTheme.colorScheme.primary,
+                contentColor =
+                    if (isOffline) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    else MaterialTheme.colorScheme.onPrimary,
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Icon(
@@ -322,17 +327,21 @@ fun ServerCard(
                                 AddressType.REMOTE ->
                                     Triple(R.drawable.ic_link, RemoteColor, "Remote")
                             }
+                        val mutedColor =
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                         Icon(
                             painter = painterResource(id = connIcon),
                             contentDescription = null,
-                            tint = connColor,
+                            tint = if (serverWithCount.isActiveServer) connColor else mutedColor,
                             modifier = Modifier.size(12.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = connText,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color =
+                                if (serverWithCount.isActiveServer) MaterialTheme.colorScheme.onSurfaceVariant
+                                else mutedColor,
                         )
                     }
                 }
