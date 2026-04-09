@@ -1,7 +1,33 @@
 package com.makd.afinity.data.models.audiobookshelf
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
+
+private object NullableInt : KSerializer<Int?> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("NullableIntFromAny", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): Int? {
+        val jsonDecoder = decoder as? JsonDecoder ?: return decoder.decodeInt()
+        val primitive = jsonDecoder.decodeJsonElement().jsonPrimitive
+        return if (primitive.isString) primitive.content.toIntOrNull() else primitive.int
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun serialize(encoder: Encoder, value: Int?) {
+        if (value == null) encoder.encodeNull() else encoder.encodeInt(value)
+    }
+}
 
 @Serializable
 data class AudioTrack(
@@ -93,7 +119,7 @@ data class DeviceInfo(
     @SerialName("deviceType") val deviceType: String? = null,
     @SerialName("manufacturer") val manufacturer: String? = null,
     @SerialName("model") val model: String? = null,
-    @SerialName("sdkVersion") val sdkVersion: Int? = null,
+    @Serializable(with = NullableInt::class) @SerialName("sdkVersion") val sdkVersion: Int? = null,
     @SerialName("clientName") val clientName: String? = null,
     @SerialName("clientVersion") val clientVersion: String? = null,
 )
