@@ -4,6 +4,7 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.AfinityTypeConverters
 import com.makd.afinity.data.database.entities.StudioCacheEntity
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,9 +29,10 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
         try {
             val cachedStudios = studioCacheDao.getAllCachedStudios()
             if (cachedStudios.isNotEmpty()) {
+                val currentBaseUrl = mediaRepository.getBaseUrl()
                 val studiosList =
                     cachedStudios.mapNotNull { entity ->
-                        afinityTypeConverters.toAfinityStudio(entity.studioData)
+                        afinityTypeConverters.toAfinityStudio(entity.studioData)?.withBaseUrl(currentBaseUrl)
                     }
 
                 if (studiosList.isNotEmpty()) {

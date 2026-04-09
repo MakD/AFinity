@@ -16,6 +16,7 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
+import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
@@ -319,11 +320,21 @@ constructor(
         try {
             val libraries = _libraries.value
             if (libraries.isNotEmpty()) {
-                Timber.d("Reloading home data (preserving highest rated)...")
+                Timber.d("Reloading home data...")
+                val currentBaseUrl = mediaRepository.getBaseUrl()
+                val patchedExisting = _highestRated.value
+                    .map { item ->
+                        when (item) {
+                            is AfinityMovie -> item.copy(images = item.images.withBaseUrl(currentBaseUrl))
+                            is AfinityShow -> item.copy(images = item.images.withBaseUrl(currentBaseUrl))
+                            else -> item
+                        }
+                    }
+                    .takeIf { it.isNotEmpty() }
                 val (latestMovies, latestTvSeries, highestRated) =
                     loadHomeSpecificData(
                         libraries = libraries,
-                        existingHighestRated = _highestRated.value,
+                        existingHighestRated = patchedExisting,
                     )
                 _latestMovies.value = latestMovies
                 _latestTvSeries.value = latestTvSeries
