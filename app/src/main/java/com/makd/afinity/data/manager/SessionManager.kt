@@ -20,8 +20,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.okhttp.OkHttpFactory
+import org.jellyfin.sdk.api.operations.UserApi
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
 import timber.log.Timber
@@ -61,6 +64,13 @@ constructor(
     private val apiClients = ConcurrentHashMap<String, ApiClient>()
     private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private val jellyfin = createJellyfin {
+        this.context = this@SessionManager.context
+        this.clientInfo = ClientInfo(name = "AFinity", version = BuildConfig.VERSION_NAME)
+        this.apiClientFactory = okHttpFactory
+        this.socketConnectionFactory = okHttpFactory
+    }
+
     suspend fun startSession(
         serverUrl: String,
         serverId: String,
@@ -71,9 +81,28 @@ constructor(
             try {
                 val user = databaseRepository.getUser(userId)
                 val server = databaseRepository.getServer(serverId)
+
+                val validator: suspend (String) -> Boolean = { address ->
+                    try {
+                        val tempClient = jellyfin.createApi(baseUrl = address).also {
+                            it.update(accessToken = accessToken)
+                        }
+                        val response = withTimeoutOrNull(3000L) {
+                            UserApi(tempClient).getCurrentUser()
+                        }
+                        response?.content != null
+                    } catch (e: InvalidStatusException) {
+                        if (e.status == 401) throw e
+                        false
+                    } catch (_: Exception) {
+                        false
+                    }
+                }
+
+                var authRejected = false
                 val resolvedUrl =
                     try {
-                        val result = serverAddressResolver.resolveAddress(serverId)
+                        val result = serverAddressResolver.resolveAddress(serverId, validator)
                         if (result is AddressResolutionResult.Success) {
                             Timber.d(
                                 "Resolved server address: ${result.address} (saved: $serverUrl)"
@@ -87,6 +116,10 @@ constructor(
                             _isServerReachable.value = false
                             serverUrl
                         }
+                    } catch (e: InvalidStatusException) {
+                        Timber.e("Token rejected by server during address resolution (401)")
+                        authRejected = true
+                        serverUrl
                     } catch (e: Exception) {
                         Timber.w(
                             e,
@@ -95,6 +128,8 @@ constructor(
                         _isServerReachable.value = false
                         serverUrl
                     }
+
+                if (authRejected) return@withContext Result.failure(InvalidStatusException(401, null))
 
                 serverRepository.setBaseUrl(resolvedUrl)
 
@@ -233,12 +268,6 @@ constructor(
         }
 
         Timber.d("Creating NEW ApiClient for server: $serverId with baseUrl: $serverUrl")
-        val jellyfin = createJellyfin {
-            this.context = this@SessionManager.context
-            this.clientInfo = ClientInfo(name = "AFinity", version = BuildConfig.VERSION_NAME)
-            this.apiClientFactory = okHttpFactory
-            this.socketConnectionFactory = okHttpFactory
-        }
         val newClient = jellyfin.createApi(baseUrl = serverUrl)
         apiClients[serverId] = newClient
         return newClient

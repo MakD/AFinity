@@ -27,7 +27,13 @@ constructor(
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
 ) {
 
-    suspend fun resolveAddress(serverId: String): AddressResolutionResult {
+    suspend fun resolveAddress(serverId: String): AddressResolutionResult =
+        resolveAddress(serverId) { address -> serverRepository.pingServer(address, timeoutMs = 2000L) }
+
+    suspend fun resolveAddress(
+        serverId: String,
+        validator: suspend (String) -> Boolean,
+    ): AddressResolutionResult {
         val server =
             databaseRepository.getServer(serverId)
                 ?: return AddressResolutionResult.AllFailed(serverId, emptyList())
@@ -64,9 +70,9 @@ constructor(
                 val tag = if (isLocalAddress(address)) "local" else "ext"
                 launch {
                     val pingStart = System.currentTimeMillis()
-                    val success = serverRepository.pingServer(address, timeoutMs = 2000L)
+                    val success = validator(address)
                     val elapsed = System.currentTimeMillis() - pingStart
-                    Timber.d("Jellyfin: Ping $address [$tag] → ${if (success) "OK" else "FAIL"} (${elapsed}ms)")
+                    Timber.d("Jellyfin: Probe $address [$tag] → ${if (success) "OK" else "FAIL"} (${elapsed}ms)")
                     if (success) {
                         winningAddress.complete(address)
                     } else {

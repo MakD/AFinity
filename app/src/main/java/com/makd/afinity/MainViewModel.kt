@@ -42,21 +42,13 @@ constructor(
             try {
                 Timber.d("Checking authentication state...")
 
-                val hasValidSavedAuth = authRepository.hasValidSavedAuth()
-
-                if (!hasValidSavedAuth) {
-                    Timber.d("No valid saved authentication, user needs to login")
-                    _authenticationState.value = AuthenticationState.NotAuthenticated
-                    return@launch
-                }
-
                 val restored = authRepository.restoreAuthenticationState()
 
                 if (restored) {
                     Timber.d("Authentication restored successfully")
                     _authenticationState.value = AuthenticationState.Authenticated
                 } else {
-                    Timber.d("Failed to restore authentication, user needs to login")
+                    Timber.d("No valid saved authentication, user needs to login")
                     _authenticationState.value = AuthenticationState.NotAuthenticated
                 }
             } catch (e: Exception) {

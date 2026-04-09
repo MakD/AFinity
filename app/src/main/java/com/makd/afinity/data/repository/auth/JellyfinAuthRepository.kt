@@ -6,7 +6,6 @@ import com.makd.afinity.data.models.auth.QuickConnectState
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,7 +15,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.ApiClientException
@@ -40,7 +38,6 @@ constructor(
     private val jellyfin: Jellyfin,
     private val sessionManager: SessionManager,
     private val securePreferencesRepository: SecurePreferencesRepository,
-    private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val databaseRepository: DatabaseRepository,
 ) : AuthRepository {
 
@@ -96,81 +93,27 @@ constructor(
                         return@withContext false
                     }
 
-                val user =
-                    User(
-                        id = userUuid,
-                        name = username,
-                        serverId = serverId ?: "",
-                        accessToken = accessToken,
-                        primaryImageTag = null,
-                    )
-                sessionManager
-                    .startSession(
-                        serverUrl = serverUrl,
-                        serverId = serverId ?: "",
-                        userId = userUuid,
-                        accessToken = accessToken,
-                    )
-                    .onFailure { e ->
-                        Timber.w(e, "SessionManager start failed during restore (non-fatal)")
-                    }
+                val startResult = sessionManager.startSession(
+                    serverUrl = serverUrl,
+                    serverId = serverId ?: "",
+                    userId = userUuid,
+                    accessToken = accessToken,
+                )
 
-                Timber.d("Optimistically restored session for user: $username (url: $serverUrl)")
-
-                val isConnected = networkConnectivityMonitor.isCurrentlyConnected()
-                if (!isConnected) {
-                    Timber.d("Device offline - keeping optimistic session")
-                    return@withContext true
-                }
-
-                try {
-                    val response =
-                        withTimeoutOrNull(5000L) {
-                            val client =
-                                sessionManager.getCurrentApiClient()
-                                    ?: jellyfin.createApi(baseUrl = serverUrl).also {
-                                        it.update(accessToken = accessToken)
-                                    }
-                            val userApi = UserApi(client)
-                            userApi.getCurrentUser()
-                        }
-
-                    val userDto = response?.content
-                    if (userDto != null) {
-                        val updatedUser = user.copy(primaryImageTag = userDto.primaryImageTag)
-                        sessionManager.updateCurrentUser(updatedUser)
-                        try {
-                            databaseRepository.insertUser(updatedUser)
-                        } catch (_: Exception) {
-                            Timber.w("Failed to update user in DB during restore")
-                        }
-
-                        Timber.d(
-                            "Session validated with server successfully (ImageTag: ${updatedUser.primaryImageTag})"
-                        )
-                        return@withContext true
-                    } else {
-                        Timber.w(
-                            "Server validation timed out - keeping optimistic session (assuming server reachable but slow)"
-                        )
-                        return@withContext true
-                    }
-                } catch (e: InvalidStatusException) {
-                    if (e.status == 401) {
+                val startFailure = startResult.exceptionOrNull()
+                if (startFailure != null) {
+                    val is401 = startFailure is InvalidStatusException && startFailure.status == 401
+                        || startFailure.message?.contains("401") == true
+                    if (is401) {
                         Timber.e("Token rejected by server (401) - Logging out")
                         clearAllAuthData()
                         return@withContext false
                     }
-
-                    Timber.w("Server returned error ${e.status} - keeping optimistic session")
-                    return@withContext true
-                } catch (e: ApiClientException) {
-                    Timber.w(e, "ApiClient error during validation - keeping optimistic session")
-                    return@withContext true
-                } catch (e: Exception) {
-                    Timber.e(e, "Unexpected error during validation - keeping optimistic session")
-                    return@withContext true
+                    Timber.w(startFailure, "SessionManager start failed during restore (non-fatal)")
                 }
+
+                Timber.d("Session restored for user: $username (url: $serverUrl)")
+                return@withContext true
             } catch (e: Exception) {
                 Timber.e(e, "Critical error during auth restoration")
                 return@withContext false
