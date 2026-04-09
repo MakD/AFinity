@@ -53,7 +53,8 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
             ) {
                 val cachedData =
                     json.decodeFromString<List<CachedPersonWithCount>>(cached.peopleData)
-                return cachedData.map { PersonWithCount.fromCached(it) }
+                val baseUrl = mediaRepository.getBaseUrl()
+                return cachedData.map { PersonWithCount.fromCached(it, baseUrl) }
             }
 
             Timber.d("Fetching top ${type.name}...")
@@ -151,9 +152,11 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
                 cached != null &&
                     personSectionDao.isSectionCacheFresh(cacheKey, personCacheTTL, currentTime)
             ) {
+                val baseUrl = mediaRepository.getBaseUrl()
                 val cachedPersonData =
                     PersonWithCount.fromCached(
-                        json.decodeFromString<CachedPersonWithCount>(cached.personData)
+                        json.decodeFromString<CachedPersonWithCount>(cached.personData),
+                        baseUrl,
                     )
                 val cachedItems =
                     json.decodeFromString<List<String>>(cached.itemsData).mapNotNull {

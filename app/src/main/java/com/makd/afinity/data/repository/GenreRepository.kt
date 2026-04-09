@@ -11,6 +11,7 @@ import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -143,9 +144,12 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
 
                 val cachedMovieEntities = genreCacheDao.getCachedMoviesForGenre(genre)
                 if (cachedMovieEntities.isNotEmpty()) {
+                    val currentBaseUrl = mediaRepository.getBaseUrl()
                     val cachedMovies =
                         cachedMovieEntities.mapNotNull { entity ->
-                            afinityTypeConverters.toAfinityMovie(entity.movieData)
+                            afinityTypeConverters.toAfinityMovie(entity.movieData)?.let { movie ->
+                                movie.copy(images = movie.images.withBaseUrl(currentBaseUrl))
+                            }
                         }
 
                     if (cachedMovies.isNotEmpty()) {
@@ -212,9 +216,12 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
 
             val cachedShowEntities = genreCacheDao.getCachedShowsForGenre(genre)
             if (cachedShowEntities.isNotEmpty()) {
+                val currentBaseUrl = mediaRepository.getBaseUrl()
                 val cachedShows =
                     cachedShowEntities.mapNotNull { entity ->
-                        afinityTypeConverters.toAfinityShow(entity.showData)
+                        afinityTypeConverters.toAfinityShow(entity.showData)?.let { show ->
+                            show.copy(images = show.images.withBaseUrl(currentBaseUrl))
+                        }
                     }
 
                 if (cachedShows.isNotEmpty()) {

@@ -1,5 +1,6 @@
 package com.makd.afinity.data.models
 
+import androidx.core.net.toUri
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
@@ -15,6 +16,7 @@ data class CachedPersonWithCount(
     val personType: String,
     val personRole: String,
     val appearanceCount: Int,
+    val imageTag: String? = null,
 )
 
 data class PersonWithCount(val person: AfinityPerson, val appearanceCount: Int) {
@@ -25,11 +27,18 @@ data class PersonWithCount(val person: AfinityPerson, val appearanceCount: Int) 
             personType = person.type.name,
             personRole = person.role,
             appearanceCount = appearanceCount,
+            imageTag = person.image.uri?.getQueryParameter("tag"),
         )
     }
 
     companion object {
-        fun fromCached(cached: CachedPersonWithCount): PersonWithCount {
+        fun fromCached(cached: CachedPersonWithCount, baseUrl: String): PersonWithCount {
+            val imageUri = cached.imageTag?.let { tag ->
+                baseUrl.toUri().buildUpon()
+                    .appendEncodedPath("Items/${cached.personId}/Images/Primary")
+                    .appendQueryParameter("tag", tag)
+                    .build()
+            }
             return PersonWithCount(
                 person =
                     AfinityPerson(
@@ -37,7 +46,7 @@ data class PersonWithCount(val person: AfinityPerson, val appearanceCount: Int) 
                         name = cached.personName,
                         type = PersonKind.valueOf(cached.personType),
                         role = cached.personRole,
-                        image = AfinityPersonImage(uri = null, blurHash = null),
+                        image = AfinityPersonImage(uri = imageUri, blurHash = null),
                     ),
                 appearanceCount = cached.appearanceCount,
             )
