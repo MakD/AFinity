@@ -114,6 +114,7 @@ fun AudiobookshelfItemScreen(
     val downloadInfo by viewModel.downloadInfo.collectAsStateWithLifecycle()
     val episodeDownloadMap by viewModel.episodeDownloadMap.collectAsStateWithLifecycle()
     val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
+    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
 
     val isPodcast = item?.mediaType?.lowercase() == "podcast"
     val configuration = LocalConfiguration.current
@@ -257,7 +258,7 @@ fun AudiobookshelfItemScreen(
                                     )
                                 },
                                 downloadInfo = if (!isPodcast) downloadInfo else null,
-                                onDownload = if (!isPodcast) ({ viewModel.startDownload() }) else null,
+                                onDownload = if (!isPodcast && canDownload) ({ viewModel.startDownload() }) else null,
                                 onCancelDownload = if (!isPodcast) ({ viewModel.cancelDownload() }) else null,
                                 onDeleteDownload = if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
                             )
@@ -350,7 +351,7 @@ fun AudiobookshelfItemScreen(
                                             onExpandEpisode = { expandedEpisodeId = it },
                                             episodeProgressMap = episodeProgressMap,
                                             episodeDownloadMap = episodeDownloadMap,
-                                            onEpisodeDownload = { viewModel.startDownload(it) },
+                                            onEpisodeDownload = if (canDownload) ({ viewModel.startDownload(it) }) else null,
                                             onEpisodeCancelDownload = { viewModel.cancelDownload(it) },
                                             onEpisodeDeleteDownload = { viewModel.deleteDownload(it) },
                                         )
@@ -408,7 +409,7 @@ fun AudiobookshelfItemScreen(
                                     )
                                 },
                                 downloadInfo = if (!isPodcast) downloadInfo else null,
-                                onDownload = if (!isPodcast) ({ viewModel.startDownload() }) else null,
+                                onDownload = if (!isPodcast && canDownload) ({ viewModel.startDownload() }) else null,
                                 onCancelDownload = if (!isPodcast) ({ viewModel.cancelDownload() }) else null,
                                 onDeleteDownload = if (!isPodcast) ({ viewModel.deleteDownload() }) else null,
                             )
@@ -551,7 +552,7 @@ fun AudiobookshelfItemScreen(
                 onDismiss = { showListDialog = false },
                 onSortClick = { showSortDialog = true },
                 episodeDownloadMap = episodeDownloadMap,
-                onEpisodeDownload = { viewModel.startDownload(it) },
+                onEpisodeDownload = if (canDownload) ({ viewModel.startDownload(it) }) else null,
                 onEpisodeCancelDownload = { viewModel.cancelDownload(it) },
                 onEpisodeDeleteDownload = { viewModel.deleteDownload(it) },
             )

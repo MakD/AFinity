@@ -110,6 +110,7 @@ fun ItemDetailScreen(
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
 
     var pendingPlayItem by remember { mutableStateOf<AfinityItem?>(null) }
     var pendingPlaySelection by remember { mutableStateOf<PlaybackSelection?>(null) }
@@ -240,6 +241,7 @@ fun ItemDetailScreen(
                 onPauseDownload = { viewModel.pauseDownload() },
                 onResumeDownload = { viewModel.resumeDownload() },
                 onCancelDownload = { viewModel.cancelDownload() },
+                canDownload = canDownload,
                 onGoToSeries =
                     if (uiState.item !is AfinityShow && uiState.item !is AfinitySeason) {
                         {
@@ -416,6 +418,7 @@ private fun LandscapeItemDetailContent(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val preferencesRepository = rememberPreferencesRepository()
+    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val density = androidx.compose.ui.platform.LocalDensity.current
     val statusBarHeight = WindowInsets.statusBars.getTop(density)
     val displayCutoutLeft =
@@ -534,6 +537,7 @@ private fun LandscapeItemDetailContent(
                                 onPauseDownload = { viewModel.pauseDownload() },
                                 onResumeDownload = { viewModel.resumeDownload() },
                                 onCancelDownload = { viewModel.cancelDownload() },
+                                canDownload = canDownload,
                                 isLandscape = true,
                                 modifier = Modifier.weight(2f),
                             )
@@ -597,6 +601,7 @@ private fun PortraitItemDetailContent(
 ) {
     val preferencesRepository = rememberPreferencesRepository()
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -656,6 +661,7 @@ private fun PortraitItemDetailContent(
                     onPauseDownload = { viewModel.pauseDownload() },
                     onResumeDownload = { viewModel.resumeDownload() },
                     onCancelDownload = { viewModel.cancelDownload() },
+                    canDownload = canDownload,
                     isLandscape = false,
                 )
 

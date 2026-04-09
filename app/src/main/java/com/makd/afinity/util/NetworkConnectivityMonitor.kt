@@ -12,6 +12,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import timber.log.Timber
 
 @Singleton
@@ -89,4 +90,6 @@ constructor(@ApplicationContext private val context: Context) {
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
+
+    val isOnWifiFlow: Flow<Boolean> = isNetworkAvailable.map { isOnWifi() }
 }

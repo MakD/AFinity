@@ -57,6 +57,7 @@ fun WatchlistScreen(
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) { viewModel.loadWatchlist() }
@@ -175,6 +176,7 @@ fun WatchlistScreen(
             episode = episode,
             isInWatchlist = selectedEpisodeWatchlistStatus,
             downloadInfo = selectedEpisodeDownloadInfo,
+            canDownload = canDownload,
             onDismiss = { viewModel.clearSelectedEpisode() },
             onPlayClick = { episodeToPlay, selection ->
                 viewModel.clearSelectedEpisode()

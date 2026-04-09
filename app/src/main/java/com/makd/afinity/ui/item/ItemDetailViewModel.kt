@@ -35,6 +35,7 @@ import com.makd.afinity.data.network.TmdbApiService
 import com.makd.afinity.data.paging.EpisodesPagingSource
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -44,16 +45,19 @@ import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -79,6 +83,8 @@ constructor(
     private val tmdbApiService: TmdbApiService,
     private val itemDownloadDelegate: ItemDownloadDelegate,
     private val itemUserDataDelegate: ItemUserDataDelegate,
+    private val preferencesRepository: PreferencesRepository,
+    private val networkMonitor: NetworkConnectivityMonitor,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -105,6 +111,12 @@ constructor(
 
     private val _uiState = MutableStateFlow(ItemDetailUiState())
     val uiState: StateFlow<ItemDetailUiState> = _uiState.asStateFlow()
+
+    val canDownload: StateFlow<Boolean> =
+        preferencesRepository
+            .getDownloadWifiOnlyFlow()
+            .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     private val _selectedMediaSource = MutableStateFlow<MediaSourceOption?>(null)
     val selectedMediaSource = _selectedMediaSource.asStateFlow()
@@ -255,11 +267,9 @@ constructor(
                 aggregateDownloadInfo(seriesDownloads, item.id)
             }
             is AfinitySeason -> {
-                val seriesDownloads =
-                    downloads.filter {
-                        it.seriesId == item.seriesId.toString() &&
-                            it.seasonNumber == item.indexNumber
-                    }
+                val seriesDownloads = downloads.filter {
+                    it.seriesId == item.seriesId.toString() && it.seasonNumber == item.indexNumber
+                }
                 aggregateDownloadInfo(seriesDownloads, item.id)
             }
             else -> downloads.find { it.itemId == itemId }
@@ -367,18 +377,19 @@ constructor(
     private suspend fun syncWithServerInBackground() {
         try {
             val serverItem =
-                mediaRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let {
-                    baseItemDto ->
+                mediaRepository.getItem(itemId, fields = FieldSets.ITEM_DETAIL)?.let { baseItemDto
+                    ->
                     when (baseItemDto.type) {
-                        BaseItemKind.MOVIE -> baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
-                        BaseItemKind.SERIES -> baseItemDto.toAfinityShow(mediaRepository.getBaseUrl())
+                        BaseItemKind.MOVIE ->
+                            baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
+                        BaseItemKind.SERIES ->
+                            baseItemDto.toAfinityShow(mediaRepository.getBaseUrl())
                         BaseItemKind.EPISODE ->
                             baseItemDto.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                         BaseItemKind.BOX_SET ->
                             baseItemDto.toAfinityBoxSet(mediaRepository.getBaseUrl())
                         BaseItemKind.SEASON -> {
-                            val season =
-                                baseItemDto.toAfinitySeason(mediaRepository.getBaseUrl())
+                            val season = baseItemDto.toAfinitySeason(mediaRepository.getBaseUrl())
                             if (season.runtimeTicks == 0L) {
                                 try {
                                     val series =
@@ -540,7 +551,8 @@ constructor(
                             when (baseItemDto.type) {
                                 BaseItemKind.MOVIE ->
                                     baseItemDto.toAfinityMovie(mediaRepository.getBaseUrl(), null)
-                                BaseItemKind.SERIES -> baseItemDto.toAfinityShow(mediaRepository.getBaseUrl())
+                                BaseItemKind.SERIES ->
+                                    baseItemDto.toAfinityShow(mediaRepository.getBaseUrl())
                                 BaseItemKind.EPISODE ->
                                     baseItemDto.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
                                 BaseItemKind.BOX_SET ->
@@ -814,33 +826,29 @@ constructor(
 
                 if (tmdbId != null && userId != null) {
                     val serverId = serverRepository.currentServer.value?.id
-                    val tmdbKey =
-                        serverId?.let {
-                            securePreferencesRepository.getTmdbApiKey(it, userId.toString())
-                        }
+                    val tmdbKey = serverId?.let {
+                        securePreferencesRepository.getTmdbApiKey(it, userId.toString())
+                    }
 
-                    val reviewsDeferred =
-                        viewModelScope.async {
-                            if (!tmdbKey.isNullOrBlank()) {
-                                when (item) {
-                                    is AfinityMovie ->
-                                        tmdbApiService.getMovieReviews(tmdbId, tmdbKey).results
-                                    is AfinityShow ->
-                                        tmdbApiService.getSeriesReviews(tmdbId, tmdbKey).results
-                                    else -> emptyList()
-                                }
-                            } else emptyList()
-                        }
-
-                    val ratingsDeferred =
-                        viewModelScope.async {
-                            val ratings =
-                                mediaRepository.getMdbListRatings(tmdbId, item is AfinityMovie)
-                            ratings.filter {
-                                it.source.lowercase() !in listOf("imdb", "tomatoes") &&
-                                    it.value != null
+                    val reviewsDeferred = viewModelScope.async {
+                        if (!tmdbKey.isNullOrBlank()) {
+                            when (item) {
+                                is AfinityMovie ->
+                                    tmdbApiService.getMovieReviews(tmdbId, tmdbKey).results
+                                is AfinityShow ->
+                                    tmdbApiService.getSeriesReviews(tmdbId, tmdbKey).results
+                                else -> emptyList()
                             }
+                        } else emptyList()
+                    }
+
+                    val ratingsDeferred = viewModelScope.async {
+                        val ratings =
+                            mediaRepository.getMdbListRatings(tmdbId, item is AfinityMovie)
+                        ratings.filter {
+                            it.source.lowercase() !in listOf("imdb", "tomatoes") && it.value != null
                         }
+                    }
 
                     fetchedReviews = reviewsDeferred.await()
                     fetchedRatings = ratingsDeferred.await()
@@ -879,8 +887,7 @@ constructor(
             else -> null
         }
 
-    private fun getCurrentUserId(): UUID? =
-        sessionManager.currentSession.value?.userId
+    private fun getCurrentUserId(): UUID? = sessionManager.currentSession.value?.userId
 
     private val _selectedEpisode = MutableStateFlow<AfinityEpisode?>(null)
     val selectedEpisode: StateFlow<AfinityEpisode?> = _selectedEpisode.asStateFlow()
@@ -956,26 +963,24 @@ constructor(
                 }
             }
             currentItem is AfinitySeason -> {
-                bulkDownloadJob =
-                    viewModelScope.launch {
-                        downloadRepository
-                            .startSeasonDownload(currentItem.id, currentItem.seriesId)
-                            .onSuccess { count ->
-                                Timber.i("Queued $count episodes for season ${currentItem.name}")
-                            }
-                            .onFailure { Timber.e(it, "Failed to start season download") }
-                    }
+                bulkDownloadJob = viewModelScope.launch {
+                    downloadRepository
+                        .startSeasonDownload(currentItem.id, currentItem.seriesId)
+                        .onSuccess { count ->
+                            Timber.i("Queued $count episodes for season ${currentItem.name}")
+                        }
+                        .onFailure { Timber.e(it, "Failed to start season download") }
+                }
             }
             currentItem is AfinityShow -> {
-                bulkDownloadJob =
-                    viewModelScope.launch {
-                        downloadRepository
-                            .startSeriesDownload(currentItem.id)
-                            .onSuccess { count ->
-                                Timber.i("Queued $count episodes for series ${currentItem.name}")
-                            }
-                            .onFailure { Timber.e(it, "Failed to start series download") }
-                    }
+                bulkDownloadJob = viewModelScope.launch {
+                    downloadRepository
+                        .startSeriesDownload(currentItem.id)
+                        .onSuccess { count ->
+                            Timber.i("Queued $count episodes for series ${currentItem.name}")
+                        }
+                        .onFailure { Timber.e(it, "Failed to start series download") }
+                }
             }
         }
     }

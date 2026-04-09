@@ -89,6 +89,7 @@ fun FavoritesScreen(
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) { viewModel.loadFavorites() }
@@ -237,6 +238,7 @@ fun FavoritesScreen(
             episode = episode,
             isInWatchlist = selectedEpisodeWatchlistStatus,
             downloadInfo = selectedEpisodeDownloadInfo,
+            canDownload = canDownload,
             onDismiss = { viewModel.clearSelectedEpisode() },
             onPlayClick = { episodeToPlay, selection ->
                 viewModel.clearSelectedEpisode()

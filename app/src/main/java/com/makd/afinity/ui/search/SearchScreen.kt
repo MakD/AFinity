@@ -114,6 +114,7 @@ fun SearchScreen(
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
+    val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
@@ -347,6 +348,7 @@ fun SearchScreen(
                 episode = episode,
                 isInWatchlist = selectedEpisodeWatchlistStatus,
                 downloadInfo = selectedEpisodeDownloadInfo,
+                canDownload = canDownload,
                 onDismiss = { viewModel.clearSelectedEpisode() },
                 onPlayClick = { episodeToPlay, selection ->
                     viewModel.clearSelectedEpisode()

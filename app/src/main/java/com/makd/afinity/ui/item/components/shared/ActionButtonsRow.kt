@@ -36,6 +36,7 @@ fun ActionButtonsRow(
     onPauseDownload: () -> Unit,
     onResumeDownload: () -> Unit,
     onCancelDownload: () -> Unit,
+    canDownload: Boolean = true,
     isLandscape: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -115,6 +116,7 @@ fun ActionButtonsRow(
             onPauseClick = onPauseDownload,
             onResumeClick = onResumeDownload,
             onCancelClick = onCancelDownload,
+            canDownload = canDownload,
             isLandscape = isLandscape,
         )
     }

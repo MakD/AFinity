@@ -12,6 +12,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
+import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
@@ -51,9 +53,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -83,9 +88,16 @@ constructor(
     private val playbackStateManager: PlaybackStateManager,
     private val itemDownloadDelegate: ItemDownloadDelegate,
     private val itemUserDataDelegate: ItemUserDataDelegate,
+    private val preferencesRepository: PreferencesRepository,
+    private val networkMonitor: NetworkConnectivityMonitor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
+
+    val canDownload: StateFlow<Boolean> =
+        preferencesRepository.getDownloadWifiOnlyFlow()
+            .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val loadedRecommendationSections = mutableListOf<HomeSection>()

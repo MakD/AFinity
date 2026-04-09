@@ -70,6 +70,7 @@ fun EpisodeDetailOverlay(
     onPauseDownload: () -> Unit,
     onResumeDownload: () -> Unit,
     onCancelDownload: () -> Unit,
+    canDownload: Boolean = true,
     onGoToSeries: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -430,6 +431,7 @@ fun EpisodeDetailOverlay(
                         onPauseClick = onPauseDownload,
                         onResumeClick = onResumeDownload,
                         onCancelClick = onCancelDownload,
+                        canDownload = canDownload,
                     )
                 }
             }

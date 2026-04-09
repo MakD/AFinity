@@ -294,6 +294,9 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
         return dataStore.data.first()[Keys.DOWNLOAD_WIFI_ONLY] ?: true
     }
 
+    override fun getDownloadWifiOnlyFlow(): Flow<Boolean> =
+        dataStore.data.map { it[Keys.DOWNLOAD_WIFI_ONLY] ?: true }
+
     override suspend fun setDownloadQuality(quality: String) {
         dataStore.edit { preferences -> preferences[Keys.DOWNLOAD_QUALITY] = quality }
     }

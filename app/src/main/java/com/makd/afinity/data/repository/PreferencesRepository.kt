@@ -147,6 +147,8 @@ interface PreferencesRepository {
 
     suspend fun getDownloadOverWifiOnly(): Boolean
 
+    fun getDownloadWifiOnlyFlow(): Flow<Boolean>
+
     suspend fun setDownloadQuality(quality: String)
 
     suspend fun getDownloadQuality(): String

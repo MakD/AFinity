@@ -23,9 +23,15 @@ fun DownloadProgressIndicator(
     onPauseClick: () -> Unit,
     onResumeClick: () -> Unit,
     onCancelClick: () -> Unit,
+    canDownload: Boolean = true,
     isLandscape: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val isStartDownloadState = downloadInfo?.status == null ||
+        downloadInfo.status == DownloadStatus.FAILED ||
+        downloadInfo.status == DownloadStatus.CANCELLED
+    val enabled = canDownload || !isStartDownloadState
+
     IconButton(
         onClick = {
             when (downloadInfo?.status) {
@@ -38,6 +44,7 @@ fun DownloadProgressIndicator(
                 DownloadStatus.COMPLETED -> onCancelClick()
             }
         },
+        enabled = enabled,
         modifier = modifier,
     ) {
         when (downloadInfo?.status) {
@@ -47,7 +54,8 @@ fun DownloadProgressIndicator(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_download),
                     contentDescription = "Download",
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    tint = if (enabled) MaterialTheme.colorScheme.onBackground
+                           else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.38f),
                     modifier = Modifier.size(28.dp),
                 )
             }

@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
+import com.makd.afinity.data.repository.PreferencesRepository
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -31,6 +34,8 @@ constructor(
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val absDownloadRepository: AbsDownloadRepository,
     private val offlineModeManager: OfflineModeManager,
+    private val preferencesRepository: PreferencesRepository,
+    private val networkMonitor: NetworkConnectivityMonitor,
 ) : ViewModel() {
 
     val itemId: String = savedStateHandle.get<String>("itemId") ?: ""
@@ -56,6 +61,12 @@ constructor(
     val isOffline: StateFlow<Boolean> =
         offlineModeManager.isOffline
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val canDownload: StateFlow<Boolean> =
+        preferencesRepository.getDownloadWifiOnlyFlow()
+            .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     val downloadInfo: StateFlow<AbsDownloadInfo?> =
         absDownloadRepository.getActiveDownloadsFlow()
             .combine(absDownloadRepository.getCompletedDownloadsFlow()) { active, completed ->
