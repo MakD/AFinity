@@ -28,7 +28,9 @@ constructor(
 ) {
 
     suspend fun resolveAddress(serverId: String): AddressResolutionResult =
-        resolveAddress(serverId) { address -> serverRepository.pingServer(address, timeoutMs = 2000L) }
+        resolveAddress(serverId) { address ->
+            serverRepository.pingServer(address, timeoutMs = 2000L)
+        }
 
     suspend fun resolveAddress(
         serverId: String,
@@ -51,13 +53,20 @@ constructor(
             if (onWifi) {
                 localAddresses + externalAddresses
             } else {
-                externalAddresses + localAddresses
+                externalAddresses
             }
 
         Timber.d(
             "Jellyfin: Resolving address, onWifi=$onWifi, " +
                 "addresses=${orderedAddresses.map { "${it}[${if (isLocalAddress(it)) "local" else "ext"}]" }}"
         )
+
+        if (orderedAddresses.isEmpty()) {
+            Timber.w(
+                "Jellyfin: No reachable addresses (onWifi=$onWifi, skipped ${localAddresses.size} local-only)"
+            )
+            return AddressResolutionResult.AllFailed(serverId, addressesToTry)
+        }
 
         val startTime = System.currentTimeMillis()
 
@@ -72,7 +81,9 @@ constructor(
                     val pingStart = System.currentTimeMillis()
                     val success = validator(address)
                     val elapsed = System.currentTimeMillis() - pingStart
-                    Timber.d("Jellyfin: Probe $address [$tag] → ${if (success) "OK" else "FAIL"} (${elapsed}ms)")
+                    Timber.d(
+                        "Jellyfin: Probe $address [$tag] → ${if (success) "OK" else "FAIL"} (${elapsed}ms)"
+                    )
                     if (success) {
                         winningAddress.complete(address)
                     } else {
