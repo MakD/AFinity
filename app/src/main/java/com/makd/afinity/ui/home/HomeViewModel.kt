@@ -12,8 +12,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
-import com.makd.afinity.data.repository.PreferencesRepository
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
@@ -35,6 +33,7 @@ import com.makd.afinity.data.models.media.toAfinityEpisode
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsDownloadRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
@@ -46,6 +45,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.ui.utils.IntentUtils
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -95,7 +95,8 @@ constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
 
     val canDownload: StateFlow<Boolean> =
-        preferencesRepository.getDownloadWifiOnlyFlow()
+        preferencesRepository
+            .getDownloadWifiOnlyFlow()
             .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -729,15 +730,15 @@ constructor(
         try {
             loadedSpotlightSections.clear()
             val genres = appDataRepository.combinedGenres.value
-            val movieGenres = genres.filter { it.type == GenreType.MOVIE }.shuffled().take(4)
-            val showGenres = genres.filter { it.type == GenreType.SHOW }.shuffled().take(4)
+            val movieGenres = genres.filter { it.type == GenreType.MOVIE }.shuffled().take(7)
+            val showGenres = genres.filter { it.type == GenreType.SHOW }.shuffled().take(7)
             val studios =
                 try {
                     mediaRepository.getStudios(limit = 50)
                 } catch (e: Exception) {
                     emptyList()
                 }
-            val selectedStudios = studios.shuffled().take(4)
+            val selectedStudios = studios.shuffled().take(10)
 
             coroutineScope {
                 val tasks = buildList {
@@ -831,10 +832,11 @@ constructor(
                 tasks.awaitAll()
             }
             val seenIds = mutableSetOf<java.util.UUID>()
-            val deduplicated = loadedSpotlightSections.mapNotNull { section ->
-                val uniqueItems = section.items.filter { seenIds.add(it.id) }.take(10)
-                if (uniqueItems.size < 3) null else section.copy(items = uniqueItems)
-            }
+            val deduplicated =
+                loadedSpotlightSections.shuffled().mapNotNull { section ->
+                    val uniqueItems = section.items.filter { seenIds.add(it.id) }.take(10)
+                    if (uniqueItems.size < 3) null else section.copy(items = uniqueItems)
+                }
             loadedSpotlightSections.clear()
             loadedSpotlightSections.addAll(deduplicated)
 
