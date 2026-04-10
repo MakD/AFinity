@@ -580,7 +580,9 @@
     <string name="error_save_server_failed_fmt">Failed to save server: %1$s</string>
     <string name="error_all_addresses_unreachable">Could not reach server at any saved address</string>
 
-    <string name="address_added_to_existing_server">Address added to %1$s</string>
+    <string name="address_added_title">Address Added</string>
+    <string name="address_added_to_existing_server">This address has been added to your existing server "%1$s".</string>
+    <string name="btn_ok">OK</string>
     <string name="address_already_saved">This address is already saved for this server</string>
     <string name="label_primary_address">Primary</string>
     <string name="action_set_primary">Set as primary</string>
