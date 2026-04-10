@@ -11,12 +11,14 @@ import com.makd.afinity.data.database.entities.AudiobookshelfProgressEntity
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfSeries
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
+import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
 import com.makd.afinity.data.models.audiobookshelf.DeviceInfo
 import com.makd.afinity.data.models.audiobookshelf.Library
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.audiobookshelf.LibraryStats
 import com.makd.afinity.data.models.audiobookshelf.ListeningSessionsResponse
 import com.makd.afinity.data.models.audiobookshelf.ListeningStats
+import com.makd.afinity.data.models.audiobookshelf.LocalSessionData
 import com.makd.afinity.data.models.audiobookshelf.LoginRequest
 import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.MediaProgressSyncData
@@ -24,8 +26,6 @@ import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSessionRequest
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
-import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
-import com.makd.afinity.data.models.audiobookshelf.LocalSessionData
 import com.makd.afinity.data.models.audiobookshelf.ProgressUpdateRequest
 import com.makd.afinity.data.models.audiobookshelf.SearchResponse
 import com.makd.afinity.data.network.AudiobookshelfApiService
@@ -97,8 +97,8 @@ constructor(
                         )
                     if (
                         result is AudiobookshelfAddressResult.Success &&
-                        result.address !=
-                        securePreferencesRepository.getCachedAudiobookshelfServerUrl()
+                            result.address !=
+                                securePreferencesRepository.getCachedAudiobookshelfServerUrl()
                     ) {
                         Timber.d("Audiobookshelf: Network changed, switching to ${result.address}")
                         securePreferencesRepository.updateCachedAudiobookshelfServerUrl(
@@ -143,9 +143,9 @@ constructor(
         val currentContext = activeContext
         if (
             currentContext != null &&
-            currentContext.first == serverId &&
-            currentContext.second == userId &&
-            _isAuthenticated.value
+                currentContext.first == serverId &&
+                currentContext.second == userId &&
+                _isAuthenticated.value
         ) {
             Timber.d("Already in Audiobookshelf context for Server: $serverId, User: $userId")
             return
@@ -172,7 +172,7 @@ constructor(
                         )
                     if (
                         result is AudiobookshelfAddressResult.Success &&
-                        result.address != config.serverUrl
+                            result.address != config.serverUrl
                     ) {
                         Timber.d(
                             "Audiobookshelf: Resolved to ${result.address} (config: ${config.serverUrl})"
@@ -195,7 +195,9 @@ constructor(
                 )
             _isAuthenticated.value = true
             absSyncScheduler.scheduleSync(serverId, userId)
-            Timber.d("Audiobookshelf authenticated via context switch — pending progress sync scheduled")
+            Timber.d(
+                "Audiobookshelf authenticated via context switch — pending progress sync scheduled"
+            )
         }
 
         Timber.d("Audiobookshelf Context Switched. Authenticated: ${_isAuthenticated.value}")
@@ -261,8 +263,8 @@ constructor(
                         audiobookshelfDao.getConfig(currentServerId, currentUserId.toString())
                     if (
                         existingConfig != null &&
-                        existingConfig.serverUrl != serverUrl &&
-                        existingConfig.serverUrl.isNotBlank()
+                            existingConfig.serverUrl != serverUrl &&
+                            existingConfig.serverUrl.isNotBlank()
                     ) {
                         val oldExists =
                             audiobookshelfDao.getAddressByUrl(
@@ -314,7 +316,9 @@ constructor(
 
                     _isAuthenticated.value = true
                     absSyncScheduler.scheduleSync(currentServerId, currentUserId)
-                    Timber.d("Audiobookshelf authenticated via login — pending progress sync scheduled")
+                    Timber.d(
+                        "Audiobookshelf authenticated via login — pending progress sync scheduled"
+                    )
                     _currentConfig.value =
                         AudiobookshelfConfig(
                             serverUrl = serverUrl,
@@ -430,22 +434,21 @@ constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val libraries = response.body()!!.libraries
 
-                    val entities =
-                        libraries.mapIndexed { index, library ->
-                            AudiobookshelfLibraryEntity(
-                                id = library.id,
-                                jellyfinServerId = currentServerId,
-                                jellyfinUserId = currentUserId.toString(),
-                                name = library.name,
-                                mediaType = library.mediaType,
-                                icon = library.icon,
-                                displayOrder = library.displayOrder ?: index,
-                                totalItems = library.stats?.totalItems ?: 0,
-                                totalDuration = library.stats?.totalDuration,
-                                lastUpdated = library.lastUpdate ?: System.currentTimeMillis(),
-                                cachedAt = System.currentTimeMillis(),
-                            )
-                        }
+                    val entities = libraries.mapIndexed { index, library ->
+                        AudiobookshelfLibraryEntity(
+                            id = library.id,
+                            jellyfinServerId = currentServerId,
+                            jellyfinUserId = currentUserId.toString(),
+                            name = library.name,
+                            mediaType = library.mediaType,
+                            icon = library.icon,
+                            displayOrder = library.displayOrder ?: index,
+                            totalItems = library.stats?.totalItems ?: 0,
+                            totalDuration = library.stats?.totalDuration,
+                            lastUpdated = library.lastUpdate ?: System.currentTimeMillis(),
+                            cachedAt = System.currentTimeMillis(),
+                        )
+                    }
 
                     audiobookshelfDao.deleteAllLibraries(currentServerId, currentUserId.toString())
                     audiobookshelfDao.insertLibraries(entities)
@@ -553,10 +556,9 @@ constructor(
                         total = body.total
                         val items = body.results
 
-                        val entities =
-                            items.map { item ->
-                                item.toEntity(currentServerId, currentUserId.toString())
-                            }
+                        val entities = items.map { item ->
+                            item.toEntity(currentServerId, currentUserId.toString())
+                        }
 
                         if (isFirstPage) {
                             audiobookshelfDao.deleteItemsByLibrary(
@@ -605,16 +607,20 @@ constructor(
                 if (!networkConnectivityMonitor.isCurrentlyConnected()) {
                     val cached =
                         audiobookshelfDao.getItem(itemId, currentServerId, currentUserId.toString())
-                    Timber.d("getItemDetails offline: itemId=$itemId serverId=$currentServerId userId=$currentUserId cached=${cached != null} hasEpisodes=${cached?.serializedEpisodes != null}")
+                    Timber.d(
+                        "getItemDetails offline: itemId=$itemId serverId=$currentServerId userId=$currentUserId cached=${cached != null} hasEpisodes=${cached?.serializedEpisodes != null}"
+                    )
                     if (cached != null) {
                         var item = cached.toLibraryItem()
                         if (item.media.episodes == null && cached.mediaType == "podcast") {
-                            val downloadedEpisodes = database.absDownloadDao()
-                                .getCompletedEpisodesForItem(
-                                    itemId,
-                                    currentServerId,
-                                    currentUserId.toString()
-                                )
+                            val downloadedEpisodes =
+                                database
+                                    .absDownloadDao()
+                                    .getCompletedEpisodesForItem(
+                                        itemId,
+                                        currentServerId,
+                                        currentUserId.toString(),
+                                    )
                             if (downloadedEpisodes.isNotEmpty()) {
                                 val syntheticEpisodes = downloadedEpisodes.map { dl ->
                                     PodcastEpisode(
@@ -629,10 +635,14 @@ constructor(
                                 }
                                 item =
                                     item.copy(media = item.media.copy(episodes = syntheticEpisodes))
-                                Timber.d("getItemDetails offline: synthesized ${syntheticEpisodes.size} episodes from downloads")
+                                Timber.d(
+                                    "getItemDetails offline: synthesized ${syntheticEpisodes.size} episodes from downloads"
+                                )
                             }
                         }
-                        Timber.d("getItemDetails offline: returning cached item episodes=${item.media.episodes?.size}")
+                        Timber.d(
+                            "getItemDetails offline: returning cached item episodes=${item.media.episodes?.size}"
+                        )
                         return@withContext Result.success(item)
                     }
                     return@withContext Result.failure(Exception("No network connection"))
@@ -754,13 +764,13 @@ constructor(
 
                 val encodedFilter =
                     "series." +
-                            java.net.URLEncoder.encode(
-                                android.util.Base64.encodeToString(
-                                    seriesId.toByteArray(),
-                                    android.util.Base64.NO_WRAP,
-                                ),
-                                "UTF-8",
-                            )
+                        java.net.URLEncoder.encode(
+                            android.util.Base64.encodeToString(
+                                seriesId.toByteArray(),
+                                android.util.Base64.NO_WRAP,
+                            ),
+                            "UTF-8",
+                        )
 
                 val response =
                     apiService
@@ -896,15 +906,16 @@ constructor(
                         isFinished = isFinished,
                     )
 
-                val synced = if (networkConnectivityMonitor.isCurrentlyConnected()) {
-                    val response =
-                        if (episodeId != null) {
-                            apiService.get().updateEpisodeProgress(itemId, episodeId, request)
-                        } else {
-                            apiService.get().updateProgress(itemId, request)
-                        }
-                    response.isSuccessful
-                } else false
+                val synced =
+                    if (networkConnectivityMonitor.isCurrentlyConnected()) {
+                        val response =
+                            if (episodeId != null) {
+                                apiService.get().updateEpisodeProgress(itemId, episodeId, request)
+                            } else {
+                                apiService.get().updateProgress(itemId, request)
+                            }
+                        response.isSuccessful
+                    } else false
 
                 val localProgress =
                     AudiobookshelfProgressEntity(
@@ -948,14 +959,14 @@ constructor(
         return _activeContextFlow.flatMapLatest { context ->
             if (context == null) return@flatMapLatest flowOf(emptyMap())
             val (serverId, userId) = context
-            audiobookshelfDao.getEpisodeProgressFlow(itemId, serverId, userId.toString())
-                .map { progressList ->
-                    progressList
-                        .mapNotNull { entity ->
-                            entity.episodeId?.let { epId -> epId to entity.toMediaProgress() }
-                        }
-                        .toMap()
-                }
+            audiobookshelfDao.getEpisodeProgressFlow(itemId, serverId, userId.toString()).map {
+                progressList ->
+                progressList
+                    .mapNotNull { entity ->
+                        entity.episodeId?.let { epId -> epId to entity.toMediaProgress() }
+                    }
+                    .toMap()
+            }
         }
     }
 
@@ -965,9 +976,18 @@ constructor(
             if (context == null) return@flatMapLatest flowOf(emptyMap())
             val (serverId, userId) = context
             audiobookshelfDao.getAllProgressFlow(serverId, userId.toString()).map { progressList ->
-                progressList
-                    .filter { it.episodeId.isNullOrEmpty() }
-                    .associate { it.libraryItemId to it.toMediaProgress() }
+                val bookProgress =
+                    progressList
+                        .filter { it.episodeId.isNullOrEmpty() }
+                        .associate { it.libraryItemId to it.toMediaProgress() }
+                val podcastProgress =
+                    progressList
+                        .filter { !it.episodeId.isNullOrEmpty() }
+                        .groupBy { it.libraryItemId }
+                        .mapValues { (_, episodes) ->
+                            episodes.maxBy { it.lastUpdate }.toMediaProgress()
+                        }
+                podcastProgress + bookProgress
             }
         }
     }
@@ -978,43 +998,71 @@ constructor(
     ): Result<PlaybackSession> {
         return withContext(Dispatchers.IO) {
             try {
-                val (currentServerId, currentUserId) = activeContext
-                    ?: return@withContext Result.failure(Exception("No active session"))
-                var downloadEntity = if (episodeId != null) {
-                    database.absDownloadDao().getDownloadForEpisode(
-                        itemId,
-                        episodeId,
-                        currentServerId,
-                        currentUserId.toString()
-                    )
-                } else {
-                    database.absDownloadDao()
-                        .getDownloadForBook(itemId, currentServerId, currentUserId.toString())
-                }
-                Timber.d("startPlaybackSession: itemId=$itemId episodeId=$episodeId serverId=$currentServerId userId=$currentUserId downloadEntity=${downloadEntity?.id} status=${downloadEntity?.status} hasSession=${downloadEntity?.serializedSession != null}")
+                val (currentServerId, currentUserId) =
+                    activeContext
+                        ?: return@withContext Result.failure(Exception("No active session"))
+                var downloadEntity =
+                    if (episodeId != null) {
+                        database
+                            .absDownloadDao()
+                            .getDownloadForEpisode(
+                                itemId,
+                                episodeId,
+                                currentServerId,
+                                currentUserId.toString(),
+                            )
+                    } else {
+                        database
+                            .absDownloadDao()
+                            .getDownloadForBook(itemId, currentServerId, currentUserId.toString())
+                    }
+                Timber.d(
+                    "startPlaybackSession: itemId=$itemId episodeId=$episodeId serverId=$currentServerId userId=$currentUserId downloadEntity=${downloadEntity?.id} status=${downloadEntity?.status} hasSession=${downloadEntity?.serializedSession != null}"
+                )
                 if (downloadEntity == null && !networkConnectivityMonitor.isCurrentlyConnected()) {
-                    downloadEntity = database.absDownloadDao()
-                        .getFirstCompletedEpisodeForItem(
-                            itemId,
-                            currentServerId,
-                            currentUserId.toString()
-                        )
+                    downloadEntity =
+                        database
+                            .absDownloadDao()
+                            .getFirstCompletedEpisodeForItem(
+                                itemId,
+                                currentServerId,
+                                currentUserId.toString(),
+                            )
                     if (downloadEntity != null) {
-                        Timber.d("startPlaybackSession: offline episode fallback → using downloaded episodeId=${downloadEntity.episodeId}")
+                        Timber.d(
+                            "startPlaybackSession: offline episode fallback → using downloaded episodeId=${downloadEntity.episodeId}"
+                        )
                     }
                 }
-                if (downloadEntity?.status == AbsDownloadStatus.COMPLETED && downloadEntity.serializedSession != null) {
-                    Timber.d("startPlaybackSession: returning local session for $itemId / ${downloadEntity.episodeId}")
+                if (
+                    downloadEntity?.status == AbsDownloadStatus.COMPLETED &&
+                        downloadEntity.serializedSession != null
+                ) {
+                    Timber.d(
+                        "startPlaybackSession: returning local session for $itemId / ${downloadEntity.episodeId}"
+                    )
                     var session =
                         json.decodeFromString<PlaybackSession>(downloadEntity.serializedSession)
                     val savedEpisodeId = downloadEntity.episodeId
-                    val progressEntity = if (savedEpisodeId != null) {
-                        audiobookshelfDao.getProgressForEpisode(itemId, savedEpisodeId, currentServerId, currentUserId.toString())
-                    } else {
-                        audiobookshelfDao.getProgressForItem(itemId, currentServerId, currentUserId.toString())
-                    }
+                    val progressEntity =
+                        if (savedEpisodeId != null) {
+                            audiobookshelfDao.getProgressForEpisode(
+                                itemId,
+                                savedEpisodeId,
+                                currentServerId,
+                                currentUserId.toString(),
+                            )
+                        } else {
+                            audiobookshelfDao.getProgressForItem(
+                                itemId,
+                                currentServerId,
+                                currentUserId.toString(),
+                            )
+                        }
                     if (progressEntity != null && progressEntity.currentTime > 0) {
-                        Timber.d("startPlaybackSession: overriding stale currentTime=${session.currentTime} with saved progress ${progressEntity.currentTime}")
+                        Timber.d(
+                            "startPlaybackSession: overriding stale currentTime=${session.currentTime} with saved progress ${progressEntity.currentTime}"
+                        )
                         session = session.copy(currentTime = progressEntity.currentTime)
                     }
                     return@withContext Result.success(session)
@@ -1170,10 +1218,9 @@ constructor(
                     return@withContext Result.success(emptyList())
                 }
 
-                val deferredResponses =
-                    libraryIds.map { libraryId ->
-                        async { apiService.get().getFilterData(libraryId) }
-                    }
+                val deferredResponses = libraryIds.map { libraryId ->
+                    async { apiService.get().getFilterData(libraryId) }
+                }
 
                 val responses = deferredResponses.awaitAll()
 
@@ -1207,13 +1254,13 @@ constructor(
 
                 val encodedFilter =
                     "genres." +
-                            java.net.URLEncoder.encode(
-                                android.util.Base64.encodeToString(
-                                    genre.toByteArray(),
-                                    android.util.Base64.NO_WRAP,
-                                ),
-                                "UTF-8",
-                            )
+                        java.net.URLEncoder.encode(
+                            android.util.Base64.encodeToString(
+                                genre.toByteArray(),
+                                android.util.Base64.NO_WRAP,
+                            ),
+                            "UTF-8",
+                        )
 
                 val allItems = mutableListOf<LibraryItem>()
                 var currentPage = 0
@@ -1270,13 +1317,13 @@ constructor(
 
                 val encodedFilter =
                     "genres." +
-                            java.net.URLEncoder.encode(
-                                android.util.Base64.encodeToString(
-                                    genre.toByteArray(),
-                                    android.util.Base64.NO_WRAP,
-                                ),
-                                "UTF-8",
-                            )
+                        java.net.URLEncoder.encode(
+                            android.util.Base64.encodeToString(
+                                genre.toByteArray(),
+                                android.util.Base64.NO_WRAP,
+                            ),
+                            "UTF-8",
+                        )
 
                 val response =
                     apiService
@@ -1321,12 +1368,16 @@ constructor(
                         currentUserId.toString(),
                     )
 
-                Timber.d("syncPendingProgress: found ${pendingProgress.size} pending records for serverId=$currentServerId userId=$currentUserId")
+                Timber.d(
+                    "syncPendingProgress: found ${pendingProgress.size} pending records for serverId=$currentServerId userId=$currentUserId"
+                )
 
                 if (pendingProgress.isEmpty()) return@withContext Result.success(0)
 
                 pendingProgress.forEach { p ->
-                    Timber.d("syncPendingProgress: pending → itemId=${p.libraryItemId} episodeId=${p.episodeId} currentTime=${p.currentTime} duration=${p.duration}")
+                    Timber.d(
+                        "syncPendingProgress: pending → itemId=${p.libraryItemId} episodeId=${p.episodeId} currentTime=${p.currentTime} duration=${p.duration}"
+                    )
                 }
 
                 val sessions = pendingProgress.map { progress ->
@@ -1335,7 +1386,10 @@ constructor(
                         libraryItemId = progress.libraryItemId,
                         episodeId = progress.episodeId,
                         currentTime = progress.currentTime,
-                        timeListening = ((progress.lastUpdate - progress.startedAt) / 1000.0).coerceAtLeast(0.0),
+                        timeListening =
+                            ((progress.lastUpdate - progress.startedAt) / 1000.0).coerceAtLeast(
+                                0.0
+                            ),
                         duration = progress.duration,
                         progress = progress.progress,
                         startedAt = progress.startedAt,
@@ -1343,30 +1397,39 @@ constructor(
                     )
                 }
 
-                val response = apiService.get().syncAllLocalSessions(BatchLocalSessionRequest(sessions))
+                val response =
+                    apiService.get().syncAllLocalSessions(BatchLocalSessionRequest(sessions))
                 Timber.d("syncPendingProgress: batch response ${response.code()}")
 
                 if (!response.isSuccessful) {
-                    Timber.w("syncPendingProgress: FAILED ${response.code()} ${response.message()} body=${response.errorBody()?.string()}")
+                    Timber.w(
+                        "syncPendingProgress: FAILED ${response.code()} ${response.message()} body=${response.errorBody()?.string()}"
+                    )
                     return@withContext Result.failure(Exception("Sync failed: ${response.code()}"))
                 }
 
                 val batchResult = response.body()
-                val successfulIds = batchResult?.results
-                    ?.filter { it.success }
-                    ?.map { it.id }
-                    ?.toSet()
-                    ?: emptySet()
+                val successfulIds =
+                    batchResult?.results?.filter { it.success }?.map { it.id }?.toSet()
+                        ?: emptySet()
 
                 var syncedCount = 0
                 pendingProgress.forEach { progress ->
                     val sessionId = "local_${progress.libraryItemId}_${progress.episodeId ?: ""}"
                     if (successfulIds.isEmpty() || sessionId in successfulIds) {
-                        audiobookshelfDao.markSynced(progress.id, currentServerId, currentUserId.toString())
+                        audiobookshelfDao.markSynced(
+                            progress.id,
+                            currentServerId,
+                            currentUserId.toString(),
+                        )
                         syncedCount++
-                        Timber.d("syncPendingProgress: synced itemId=${progress.libraryItemId} episodeId=${progress.episodeId}")
+                        Timber.d(
+                            "syncPendingProgress: synced itemId=${progress.libraryItemId} episodeId=${progress.episodeId}"
+                        )
                     } else {
-                        Timber.w("syncPendingProgress: server rejected itemId=${progress.libraryItemId} episodeId=${progress.episodeId}")
+                        Timber.w(
+                            "syncPendingProgress: server rejected itemId=${progress.libraryItemId} episodeId=${progress.episodeId}"
+                        )
                     }
                 }
 
@@ -1442,22 +1505,20 @@ constructor(
     }
 
     private fun AudiobookshelfItemEntity.toLibraryItem(): LibraryItem {
-        val genres =
-            genres?.let {
-                try {
-                    json.decodeFromString<List<String>>(it)
-                } catch (e: Exception) {
-                    null
-                }
+        val genres = genres?.let {
+            try {
+                json.decodeFromString<List<String>>(it)
+            } catch (e: Exception) {
+                null
             }
-        val episodes =
-            serializedEpisodes?.let {
-                try {
-                    json.decodeFromString<List<PodcastEpisode>>(it)
-                } catch (e: Exception) {
-                    null
-                }
+        }
+        val episodes = serializedEpisodes?.let {
+            try {
+                json.decodeFromString<List<PodcastEpisode>>(it)
+            } catch (e: Exception) {
+                null
             }
+        }
 
         return LibraryItem(
             id = id,

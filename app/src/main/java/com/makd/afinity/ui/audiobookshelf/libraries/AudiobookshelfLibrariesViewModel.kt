@@ -71,7 +71,16 @@ constructor(private val audiobookshelfRepository: AudiobookshelfRepository) : Vi
         combine(_personalizedSections, _genreSections, progressMap) { personalized, genres, progress
                 ->
                 (personalized + genres).map { section ->
-                    section.copy(items = enrichItems(section.items, progress))
+                    val enriched = enrichItems(section.items, progress)
+                    if (section.id == "continue-listening") {
+                        section.copy(
+                            items = enriched.sortedByDescending {
+                                it.userMediaProgress?.lastUpdate ?: 0L
+                            }
+                        )
+                    } else {
+                        section.copy(items = enriched)
+                    }
                 }
             }
             .flowOn(Dispatchers.Default)
