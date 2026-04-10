@@ -253,6 +253,7 @@ fun PlayerScreen(
                     is MPVPlayer -> {
                         MpvSurface(
                             modifier = Modifier.fillMaxSize(),
+                            mpv = player.mpv,
                             videoOutput = viewModel.mpvVideoOutputValue,
                             onSurfaceCreated = { Timber.d("MPV surface created in player screen") },
                             onSurfaceDestroyed = {
@@ -337,7 +338,8 @@ fun PlayerScreen(
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null,
-                                ) { /* consume */
+                                ) {
+                                    /* consume */
                                 }
                     ) {
                         VersionPickerSheet(

@@ -12,6 +12,7 @@ import timber.log.Timber
 @Composable
 fun MpvSurface(
     modifier: Modifier = Modifier,
+    mpv: MPVLib,
     videoOutput: String = "gpu",
     onSurfaceCreated: () -> Unit = {},
     onSurfaceDestroyed: () -> Unit = {},
@@ -23,10 +24,10 @@ fun MpvSurface(
                 holder.addCallback(
                     object : SurfaceHolder.Callback {
                         override fun surfaceCreated(holder: SurfaceHolder) {
-                            MPVLib.attachSurface(holder.surface)
-                            MPVLib.setOptionString("force-window", "yes")
-                            MPVLib.setOptionString("vo", videoOutput)
-                            MPVLib.setOptionString("vid", "auto")
+                            mpv.attachSurface(holder.surface)
+                            mpv.setOptionString("force-window", "yes")
+                            mpv.setOptionString("vo", videoOutput)
+                            mpv.setOptionString("vid", "auto")
                             onSurfaceCreated()
                             Timber.d("MPV surface created and attached")
                         }
@@ -37,15 +38,15 @@ fun MpvSurface(
                             width: Int,
                             height: Int,
                         ) {
-                            MPVLib.setPropertyString("android-surface-size", "${width}x$height")
+                            mpv.setPropertyString("android-surface-size", "${width}x$height")
                             Timber.d("MPV surface changed: ${width}x${height}")
                         }
 
                         override fun surfaceDestroyed(holder: SurfaceHolder) {
-                            MPVLib.setOptionString("vid", "no")
-                            MPVLib.setOptionString("vo", "null")
-                            MPVLib.setOptionString("force-window", "no")
-                            MPVLib.detachSurface()
+                            mpv.setOptionString("vid", "no")
+                            mpv.setOptionString("vo", "null")
+                            mpv.setOptionString("force-window", "no")
+                            mpv.detachSurface()
                             onSurfaceDestroyed()
                             Timber.d("MPV surface destroyed and detached")
                         }
