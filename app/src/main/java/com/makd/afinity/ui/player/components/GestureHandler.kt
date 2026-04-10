@@ -3,7 +3,9 @@ package com.makd.afinity.ui.player.components
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -17,11 +19,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.sign
 
 private enum class GestureType {
@@ -47,12 +51,18 @@ fun GestureHandler(
     val density = LocalDensity.current
     val viewConfiguration = LocalViewConfiguration.current
     val touchSlop = viewConfiguration.touchSlop
+    val layoutDirection = LocalLayoutDirection.current
 
     var componentWidth by remember { mutableFloatStateOf(0f) }
     var componentHeight by remember { mutableFloatStateOf(0f) }
 
-    val exclusionHorizontal = with(density) { 16.dp.toPx() }
-    val exclusionVertical = with(density) { 24.dp.toPx() }
+    val systemGestures = WindowInsets.systemGestures
+    val leftGestureInset = systemGestures.getLeft(density, layoutDirection).toFloat()
+    val rightGestureInset = systemGestures.getRight(density, layoutDirection).toFloat()
+
+    val exclusionLeft = max(with(density) { 48.dp.toPx() }, leftGestureInset)
+    val exclusionRight = max(with(density) { 48.dp.toPx() }, rightGestureInset)
+    val exclusionVertical = with(density) { 48.dp.toPx() }
 
     val currentOnSingleTap by rememberUpdatedState(onSingleTap)
     val currentOnDoubleTap by rememberUpdatedState(onDoubleTap)
@@ -73,6 +83,7 @@ fun GestureHandler(
     var totalHorizontalDelta by remember { mutableFloatStateOf(0f) }
     var totalVerticalDelta by remember { mutableFloatStateOf(0f) }
     var isSeeking by remember { mutableStateOf(false) }
+    var isGestureRejected by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -94,14 +105,13 @@ fun GestureHandler(
                         },
                         onTap = { currentOnSingleTap() },
                         onPress = { _ ->
-                            val job =
-                                coroutineScope.launch {
-                                    delay(500)
-                                    if (!isDragging && gestureType == null) {
-                                        isLongPressActive = true
-                                        currentOnLongPressStart()
-                                    }
+                            val job = coroutineScope.launch {
+                                delay(500)
+                                if (!isDragging && gestureType == null) {
+                                    isLongPressActive = true
+                                    currentOnLongPressStart()
                                 }
+                            }
 
                             tryAwaitRelease()
                             job.cancel()
@@ -119,11 +129,13 @@ fun GestureHandler(
                             if (
                                 offset.y < exclusionVertical ||
                                     offset.y > componentHeight - exclusionVertical ||
-                                    offset.x < exclusionHorizontal ||
-                                    offset.x > componentWidth - exclusionHorizontal
+                                    offset.x < exclusionLeft ||
+                                    offset.x > componentWidth - exclusionRight
                             ) {
+                                isGestureRejected = true
                                 return@detectDragGestures
                             }
+                            isGestureRejected = false
                             dragStartOffset = offset
                             totalHorizontalDelta = 0f
                             totalVerticalDelta = 0f
@@ -131,6 +143,7 @@ fun GestureHandler(
                             isSeeking = false
                         },
                         onDragEnd = {
+                            isGestureRejected = false
                             isDragging = false
                             if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(0f, false)
                             if (gestureType == GestureType.BRIGHTNESS)
@@ -141,6 +154,7 @@ fun GestureHandler(
                             isSeeking = false
                         },
                         onDragCancel = {
+                            isGestureRejected = false
                             isDragging = false
                             if (gestureType == GestureType.VOLUME) currentOnVolumeGesture(0f, false)
                             if (gestureType == GestureType.BRIGHTNESS)
@@ -151,6 +165,7 @@ fun GestureHandler(
                             isSeeking = false
                         },
                         onDrag = { change, dragAmount ->
+                            if (isGestureRejected) return@detectDragGestures
                             val verticalDrag = -dragAmount.y
                             val horizontalDrag = dragAmount.x
                             totalHorizontalDelta += horizontalDrag
