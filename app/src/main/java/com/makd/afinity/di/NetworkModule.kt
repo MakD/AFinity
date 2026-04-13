@@ -48,6 +48,8 @@ import javax.inject.Singleton
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class ImageClient
 
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class GitHubClient
+
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class JellyseerrClient
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class AudiobookshelfRetrofit
@@ -149,6 +151,16 @@ object NetworkModule {
             }
         return baseOkHttpClient.newBuilder().dispatcher(dispatcher).build()
     }
+
+    @Provides
+    @Singleton
+    @GitHubClient
+    fun provideGitHubOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(45, TimeUnit.SECONDS)
+            .build()
 
     @Provides
     @Singleton

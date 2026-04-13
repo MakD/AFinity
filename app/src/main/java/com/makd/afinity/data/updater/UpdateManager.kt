@@ -5,10 +5,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.net.Uri
-import android.os.Build
 import android.os.Environment
+import android.provider.Settings
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.models.GitHubRelease
@@ -106,11 +106,19 @@ constructor(
     }
 
     fun downloadUpdate(release: GitHubRelease) {
+        currentDownloadId?.let {
+            downloadManager.remove(it)
+            progressJob?.cancel()
+            Timber.d("Cancelled previous download: $it")
+        }
+
         currentRelease = release
+
         val existingFile = getDownloadedApkFile(release)
         if (existingFile != null) {
             Timber.d("Found existing file, skipping download: ${existingFile.absolutePath}")
             _updateState.value = UpdateState.Downloaded(existingFile, release)
+            return
         }
 
         val currentAbi = getCurrentAbi()
@@ -130,7 +138,7 @@ constructor(
 
         try {
             val request =
-                DownloadManager.Request(Uri.parse(apkAsset.downloadUrl))
+                DownloadManager.Request(apkAsset.downloadUrl.toUri())
                     .setTitle("AFinity Update")
                     .setDescription("Downloading version ${release.tagName}")
                     .setNotificationVisibility(
@@ -154,93 +162,110 @@ constructor(
         }
     }
 
+    fun triggerAutoDownload() {
+        coroutineScope.launch {
+            val currentState = _updateState.value
+            if (currentState is UpdateState.Downloaded) {
+                return@launch
+            }
+            if (currentState is UpdateState.Downloading) {
+                return@launch
+            }
+            val release =
+                if (currentState is UpdateState.Available) {
+                    currentState.release
+                } else {
+                    checkForUpdates()
+                }
+            release?.let { downloadUpdate(it) }
+        }
+    }
+
     private fun trackDownloadProgress() {
         progressJob?.cancel()
-        progressJob =
-            coroutineScope.launch {
-                while (isActive && currentDownloadId != null) {
-                    val query = DownloadManager.Query().setFilterById(currentDownloadId!!)
-                    val cursor = downloadManager.query(query)
+        progressJob = coroutineScope.launch {
+            while (isActive && currentDownloadId != null) {
+                val query = DownloadManager.Query().setFilterById(currentDownloadId!!)
+                val cursor = downloadManager.query(query)
 
-                    if (cursor.moveToFirst()) {
-                        val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
-                        val status = cursor.getInt(statusIndex)
+                if (cursor.moveToFirst()) {
+                    val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                    val status = cursor.getInt(statusIndex)
 
-                        val bytesDownloadedIndex =
-                            cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                        val totalBytesIndex =
-                            cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
-                        val bytesDownloaded = cursor.getLong(bytesDownloadedIndex)
-                        val totalBytes = cursor.getLong(totalBytesIndex)
+                    val bytesDownloadedIndex =
+                        cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                    val totalBytesIndex =
+                        cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                    val bytesDownloaded = cursor.getLong(bytesDownloadedIndex)
+                    val totalBytes = cursor.getLong(totalBytesIndex)
 
-                        Timber.d("Download status: $status, bytes: $bytesDownloaded / $totalBytes")
+                    Timber.d("Download status: $status, bytes: $bytesDownloaded / $totalBytes")
 
-                        when (status) {
-                            DownloadManager.STATUS_RUNNING -> {
-                                if (totalBytes > 0) {
-                                    val progress =
-                                        ((bytesDownloaded * 100) / totalBytes)
-                                            .toInt()
-                                            .coerceIn(0, 99)
-                                    _updateState.value = UpdateState.Downloading(progress)
-                                    Timber.d("Download progress: $progress%")
-                                }
-                            }
-
-                            DownloadManager.STATUS_SUCCESSFUL -> {
-                                Timber.d("Download successful, stopping progress tracking")
-                                cursor.close()
-                                delay(1000)
-                                if (_updateState.value is UpdateState.Downloading) {
-                                    Timber.w(
-                                        "Broadcast receiver didn't fire, handling completion manually"
-                                    )
-                                    handleDownloadComplete(currentDownloadId!!)
-                                }
-                                return@launch
-                            }
-
-                            DownloadManager.STATUS_FAILED -> {
-                                val reasonIndex =
-                                    cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
-                                val reason = cursor.getInt(reasonIndex)
-                                Timber.e("Download failed with reason: $reason")
-                                _updateState.value = UpdateState.Error("Download failed: $reason")
-                                cursor.close()
-                                return@launch
+                    when (status) {
+                        DownloadManager.STATUS_RUNNING -> {
+                            if (totalBytes > 0) {
+                                val progress =
+                                    ((bytesDownloaded * 100) / totalBytes).toInt().coerceIn(0, 99)
+                                _updateState.value = UpdateState.Downloading(progress)
+                                Timber.d("Download progress: $progress%")
                             }
                         }
-                    } else {
-                        cursor.close()
-                        return@launch
+
+                        DownloadManager.STATUS_SUCCESSFUL -> {
+                            Timber.d("Download successful, stopping progress tracking")
+                            cursor.close()
+                            delay(1000)
+                            if (_updateState.value is UpdateState.Downloading) {
+                                Timber.w(
+                                    "Broadcast receiver didn't fire, handling completion manually"
+                                )
+                                handleDownloadComplete(currentDownloadId!!)
+                            }
+                            return@launch
+                        }
+
+                        DownloadManager.STATUS_FAILED -> {
+                            val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                            val reason = cursor.getInt(reasonIndex)
+                            Timber.e("Download failed with reason: $reason")
+                            _updateState.value = UpdateState.Error("Download failed: $reason")
+                            cursor.close()
+                            return@launch
+                        }
                     }
+                } else {
                     cursor.close()
-                    delay(500)
+                    return@launch
                 }
+                cursor.close()
+                delay(500)
             }
+        }
     }
 
     fun installUpdate(file: File) {
         try {
+            if (!context.packageManager.canRequestPackageInstalls()) {
+                val settingsIntent =
+                    Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = "package:${context.packageName}".toUri()
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                context.startActivity(settingsIntent)
+                return
+            }
+
             val intent =
                 Intent(Intent.ACTION_VIEW).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        val uri =
-                            FileProvider.getUriForFile(
-                                context,
-                                "${context.packageName}.fileprovider",
-                                file,
-                            )
-                        setDataAndType(uri, "application/vnd.android.package-archive")
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    } else {
-                        setDataAndType(
-                            Uri.fromFile(file),
-                            "application/vnd.android.package-archive",
+                    val uri =
+                        FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            file,
                         )
-                    }
+                    setDataAndType(uri, "application/vnd.android.package-archive")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
 
             context.startActivity(intent)
@@ -271,7 +296,7 @@ constructor(
                     if (uriString != null) {
                         val file =
                             if (uriString.startsWith("file://")) {
-                                File(Uri.parse(uriString).path ?: "")
+                                File(uriString.toUri().path ?: "")
                             } else {
                                 val localFileIndex =
                                     cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME)
@@ -283,9 +308,14 @@ constructor(
                                 }
                             }
 
-                        if (file?.exists() == true) {
-                            _updateState.value = UpdateState.Downloaded(file, currentRelease!!)
+                        val release = currentRelease
+                        if (file?.exists() == true && release != null) {
+                            _updateState.value = UpdateState.Downloaded(file, release)
                             Timber.d("Download completed: ${file.absolutePath}")
+                        } else if (release == null) {
+                            Timber.e("currentRelease is null after download completed")
+                            _updateState.value =
+                                UpdateState.Error("Download completed but release info missing")
                         } else {
                             Timber.e("File not found at: ${file?.absolutePath}")
                             _updateState.value = UpdateState.Error("Downloaded file not found")
@@ -362,20 +392,11 @@ constructor(
     }
 
     private fun getCurrentAbi(): String {
-        return Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
+        return android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
     }
 
     fun resetState() {
         _updateState.value = UpdateState.Idle
         currentRelease = null
-    }
-
-    fun cleanup() {
-        progressJob?.cancel()
-        try {
-            context.unregisterReceiver(downloadReceiver)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to unregister download receiver")
-        }
     }
 }

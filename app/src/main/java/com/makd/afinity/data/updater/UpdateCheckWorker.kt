@@ -1,5 +1,6 @@
 package com.makd.afinity.data.updater
 
+import android.app.ActivityManager
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -22,21 +23,28 @@ constructor(
     override suspend fun doWork(): Result {
         Timber.d("UpdateCheckWorker: Starting update check")
 
-        return try {
-            val release = updateManager.checkForUpdates()
+        val release = updateManager.checkForUpdates()
 
-            if (release != null) {
-                Timber.d("UpdateCheckWorker: Update available - ${release.tagName}")
+        if (release != null) {
+            Timber.d("UpdateCheckWorker: Update available - ${release.tagName}")
+            if (!isAppForegrounded()) {
                 notificationManager.showUpdateAvailableNotification(release)
             } else {
-                Timber.d("UpdateCheckWorker: No update available")
+                Timber.d("UpdateCheckWorker: App is foregrounded, skipping notification")
             }
-
-            Result.success()
-        } catch (e: Exception) {
-            Timber.e(e, "UpdateCheckWorker: Failed to check for updates")
-            Result.retry()
+        } else {
+            Timber.d("UpdateCheckWorker: No update available")
         }
+
+        return Result.success()
+    }
+
+    private fun isAppForegrounded(): Boolean {
+        val am = applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return am.runningAppProcesses?.any {
+            it.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
+                it.processName == applicationContext.packageName
+        } == true
     }
 
     companion object {

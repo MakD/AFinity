@@ -6,10 +6,10 @@ import androidx.work.Configuration
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
+import coil3.annotation.ExperimentalCoilApi
 import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
 import coil3.memory.MemoryCache
-import coil3.annotation.ExperimentalCoilApi
 import coil3.network.cachecontrol.CacheControlCacheStrategy
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.CachePolicy
@@ -19,6 +19,7 @@ import com.makd.afinity.cast.CastManager
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
+import com.makd.afinity.di.ImageClient
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -27,7 +28,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import com.makd.afinity.di.ImageClient
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import timber.log.Timber
@@ -36,21 +36,15 @@ import javax.inject.Inject
 @HiltAndroidApp
 class AfinityApplication : Application(), Configuration.Provider, SingletonImageLoader.Factory {
 
-    @Inject
-    lateinit var workerFactory: HiltWorkerFactory
+    @Inject lateinit var workerFactory: HiltWorkerFactory
 
-    @Inject
-    lateinit var updateScheduler: UpdateScheduler
+    @Inject lateinit var updateScheduler: UpdateScheduler
 
-    @Inject
-    lateinit var preferencesRepository: PreferencesRepository
+    @Inject lateinit var preferencesRepository: PreferencesRepository
 
-    @Inject
-    lateinit var castManager: CastManager
+    @Inject lateinit var castManager: CastManager
 
-    @Inject
-    @ImageClient
-    lateinit var imageOkHttpClient: OkHttpClient
+    @Inject @ImageClient lateinit var imageOkHttpClient: OkHttpClient
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -59,12 +53,13 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     override fun onCreate() {
         super.onCreate()
 
-        imageLoaderPrefs = applicationScope.async(Dispatchers.IO) {
-            Pair(
-                preferencesRepository.getImageCacheEnabled(),
-                preferencesRepository.getImageCacheSizeMb(),
-            )
-        }
+        imageLoaderPrefs =
+            applicationScope.async(Dispatchers.IO) {
+                Pair(
+                    preferencesRepository.getImageCacheEnabled(),
+                    preferencesRepository.getImageCacheSizeMb(),
+                )
+            }
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
@@ -90,10 +85,12 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
 
         return ImageLoader.Builder(context)
             .components {
-                add(OkHttpNetworkFetcherFactory(
-                    callFactory = { imageOkHttpClient },
-                    cacheStrategy = { CacheControlCacheStrategy() },
-                ))
+                add(
+                    OkHttpNetworkFetcherFactory(
+                        callFactory = { imageOkHttpClient },
+                        cacheStrategy = { CacheControlCacheStrategy() },
+                    )
+                )
                 add(SvgDecoder.Factory())
                 add(AnimatedImageDecoder.Factory())
             }
@@ -104,9 +101,7 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
                     .weakReferencesEnabled(true)
                     .build()
             }
-            .diskCachePolicy(
-                if (isCacheEnabled) CachePolicy.ENABLED else CachePolicy.DISABLED
-            )
+            .diskCachePolicy(if (isCacheEnabled) CachePolicy.ENABLED else CachePolicy.DISABLED)
             .diskCache {
                 DiskCache.Builder()
                     .directory(context.cacheDir.resolve("image_cache").toOkioPath())

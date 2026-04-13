@@ -1,5 +1,6 @@
 package com.makd.afinity
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,6 +31,7 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.UpdateManager
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
+import com.makd.afinity.data.updater.notification.UpdateNotificationManager
 import com.makd.afinity.navigation.MainNavigation
 import com.makd.afinity.ui.components.AfinitySplashScreen
 import com.makd.afinity.ui.login.LoginScreen
@@ -101,6 +103,17 @@ class MainActivity : ComponentActivity() {
             if (frequency == UpdateCheckFrequency.ON_APP_OPEN.hours) {
                 updateManager.checkForUpdates()
             }
+        }
+
+        if (intent.getBooleanExtra(UpdateNotificationManager.EXTRA_AUTO_DOWNLOAD_UPDATE, false)) {
+            lifecycleScope.launch { updateManager.triggerAutoDownload() }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.getBooleanExtra(UpdateNotificationManager.EXTRA_AUTO_DOWNLOAD_UPDATE, false)) {
+            lifecycleScope.launch { updateManager.triggerAutoDownload() }
         }
     }
 }
