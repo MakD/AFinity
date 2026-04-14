@@ -17,6 +17,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Cache
 import okhttp3.ConnectionPool
+import okhttp3.Cookie
+import okhttp3.CookieJar
 import okhttp3.Dispatcher
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -39,6 +41,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
@@ -61,6 +64,45 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    private class SeerrCookieJar : CookieJar {
+        private val store = ConcurrentHashMap<String, MutableList<Cookie>>()
+
+        override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+            val bucket = store.getOrPut(url.host) { mutableListOf() }
+            synchronized(bucket) {
+                for (c in cookies) {
+                    bucket.removeIf { it.name == c.name }
+                    if (c.value.isNotEmpty()) bucket.add(c)
+                }
+            }
+        }
+
+        override fun loadForRequest(url: HttpUrl): List<Cookie> {
+            val bucket = store[url.host] ?: return emptyList()
+            synchronized(bucket) {
+                return bucket.filter { !it.secure || url.scheme == "https" }
+            }
+        }
+
+        fun preloadSessionCookie(url: HttpUrl, rawSetCookie: String?) {
+            rawSetCookie ?: return
+            Cookie.parse(url, rawSetCookie)?.let { saveFromResponse(url, listOf(it)) }
+        }
+
+        fun hasXsrfToken(host: String): Boolean {
+            val bucket = store[host] ?: return false
+            synchronized(bucket) { return bucket.any { it.name == "XSRF-TOKEN" } }
+        }
+
+        fun getXsrfToken(host: String): String? {
+            val bucket = store[host] ?: return null
+            synchronized(bucket) { return bucket.find { it.name == "XSRF-TOKEN" }?.value }
+        }
+
+        fun clear() = store.clear()
+    }
+
+    private val seerrCookieJar = SeerrCookieJar()
 
     @Provides
     @Singleton
@@ -280,19 +322,25 @@ object NetworkModule {
         baseOkHttpClient: OkHttpClient,
         securePreferencesRepository: SecurePreferencesRepository,
     ): OkHttpClient {
+        val csrfSeedClient =
+            baseOkHttpClient
+                .newBuilder()
+                .cookieJar(seerrCookieJar)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .callTimeout(15, TimeUnit.SECONDS)
+                .build()
+
         return baseOkHttpClient
             .newBuilder()
+            .cookieJar(seerrCookieJar)
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
 
                 val savedUrl = securePreferencesRepository.getCachedJellyseerrServerUrl()
                 val currentBaseUrl =
                     try {
-                        if (!savedUrl.isNullOrBlank()) {
-                            normalizeJellyseerrUrl(savedUrl)
-                        } else {
-                            null
-                        }
+                        if (!savedUrl.isNullOrBlank()) normalizeJellyseerrUrl(savedUrl) else null
                     } catch (e: Exception) {
                         null
                     }
@@ -303,12 +351,20 @@ object NetworkModule {
                     )
                 }
 
+                val baseHttpUrl =
+                    currentBaseUrl.toHttpUrlOrNull()
+                        ?: throw IOException("Failed to parse Jellyseerr URL")
+
+                seerrCookieJar.preloadSessionCookie(
+                    baseHttpUrl,
+                    securePreferencesRepository.getCachedJellyseerrCookie(),
+                )
+
                 val newUrl =
-                    currentBaseUrl
-                        .toHttpUrlOrNull()
-                        ?.newBuilder()
-                        ?.addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
-                        ?.apply {
+                    baseHttpUrl
+                        .newBuilder()
+                        .addPathSegments(originalRequest.url.encodedPath.removePrefix("/"))
+                        .apply {
                             for (i in 0 until originalRequest.url.querySize) {
                                 addQueryParameter(
                                     originalRequest.url.queryParameterName(i),
@@ -316,20 +372,54 @@ object NetworkModule {
                                 )
                             }
                         }
-                        ?.build() ?: throw IOException("Failed to build Jellyseerr URL")
+                        .build()
+
+                val isMutating = originalRequest.method in listOf("POST", "PUT", "DELETE", "PATCH")
+
+                if (isMutating && !seerrCookieJar.hasXsrfToken(baseHttpUrl.host)) {
+                    val candidates = buildList {
+                        add(currentBaseUrl)
+                        if (currentBaseUrl.startsWith("https://"))
+                            add("http://" + currentBaseUrl.removePrefix("https://"))
+                    }
+                    for (url in candidates) {
+                        try {
+                            csrfSeedClient
+                                .newCall(Request.Builder().url(url).get().build())
+                                .execute()
+                                .close()
+                            if (seerrCookieJar.hasXsrfToken(baseHttpUrl.host)) {
+                                if (url != currentBaseUrl)
+                                    securePreferencesRepository.updateCachedJellyseerrServerUrl(
+                                        url.trimEnd('/')
+                                    )
+                                break
+                            }
+                        } catch (e: Exception) {
+                            Timber.w(e, "Jellyseerr: CSRF seed failed for $url")
+                        }
+                    }
+                }
 
                 val newRequest =
                     originalRequest
                         .newBuilder()
                         .url(newUrl)
                         .apply {
-                            val cookie = securePreferencesRepository.getCachedJellyseerrCookie()
-                            cookie?.let { addHeader("Cookie", it) }
                             addHeader("Content-Type", "application/json")
+                            seerrCookieJar.getXsrfToken(baseHttpUrl.host)?.let {
+                                addHeader("XSRF-TOKEN", it)
+                            }
                         }
                         .build()
 
-                chain.proceed(newRequest)
+                val response = chain.proceed(newRequest)
+
+                if (response.code == 403) {
+                    seerrCookieJar.clear()
+                }
+
+                response
             }
             .build()
     }
