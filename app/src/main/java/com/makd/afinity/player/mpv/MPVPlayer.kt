@@ -1,6 +1,5 @@
 package com.makd.afinity.player.mpv
 
-import android.app.Application
 import android.content.Context
 import android.content.res.AssetManager
 import android.media.AudioManager
@@ -41,6 +40,7 @@ import org.json.JSONObject
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.concurrent.CopyOnWriteArraySet
 
 @androidx.media3.common.util.UnstableApi
@@ -53,8 +53,8 @@ class MPVPlayer(
     private val seekBackIncrement: Long = C.DEFAULT_SEEK_BACK_INCREMENT_MS,
     private val seekForwardIncrement: Long = C.DEFAULT_SEEK_FORWARD_INCREMENT_MS,
     private val pauseAtEndOfMediaItems: Boolean = false,
-    private val videoOutput: String = "gpu",
-    private val audioOutput: String = "audiotrack",
+    private val videoOutput: String = "gpu-next",
+    private val audioOutput: String = "aaudio",
     private val hwDec: String = "mediacodec",
 ) : BasePlayer(), MPVLib.EventObserver, AudioManager.OnAudioFocusChangeListener {
 
@@ -98,10 +98,10 @@ class MPVPlayer(
         var pauseAtEndOfMediaItems: Boolean = false
             private set
 
-        var videoOutput: String = "gpu"
+        var videoOutput: String = "gpu-next"
             private set
 
-        var audioOutput: String = "audiotrack"
+        var audioOutput: String = "aaudio"
             private set
 
         var hwDec: String = "mediacodec"
@@ -140,29 +140,21 @@ class MPVPlayer(
     }
 
     init {
-        require(context is Application)
-        val mpvDir = File(context.getExternalFilesDir(null) ?: context.filesDir, "mpv")
-        Timber.i("mpv config dir: $mpvDir")
-        if (!mpvDir.exists()) mpvDir.mkdirs()
+        val configDir = File(context.filesDir, "mpv")
+        val cacheDir = File(context.cacheDir, "mpv")
 
-        arrayOf("mpv.conf", "subfont.ttf").forEach { fileName ->
-            val file = File(mpvDir, fileName)
-            if (file.exists()) return@forEach
-            try {
-                context.assets
-                    .open(fileName, AssetManager.ACCESS_STREAMING)
-                    .copyTo(FileOutputStream(file))
-            } catch (e: Exception) {
-                Timber.w("Could not copy $fileName: ${e.message}")
-            }
-        }
+        setupDirectories(context, configDir, cacheDir)
 
-        mpv = MPVLib.create(context)!!
+        mpv = MPVLib.create(context) ?: throw IllegalStateException("MPVLib.create() returned null")
 
         Timber.d("MPVPlayer init: vo=$videoOutput, ao=$audioOutput, hwdec=$hwDec")
 
         mpv.setOptionString("config", "yes")
-        mpv.setOptionString("config-dir", mpvDir.path)
+        mpv.setOptionString("config-dir", configDir.path)
+        for (opt in arrayOf("gpu-shader-cache-dir", "icc-cache-dir")) mpv.setOptionString(
+            opt,
+            cacheDir.path,
+        )
         mpv.setOptionString("profile", "fast")
         mpv.setOptionString("vo", videoOutput)
         mpv.setOptionString("ao", audioOutput)
@@ -177,7 +169,7 @@ class MPVPlayer(
 
         mpv.setOptionString("cache", "yes")
         mpv.setOptionString("cache-pause-initial", "yes")
-        mpv.setOptionString("demuxer-max-bytes", "32MiB")
+        mpv.setOptionString("demuxer-max-bytes", "64MiB")
         mpv.setOptionString("demuxer-max-back-bytes", "32MiB")
 
         mpv.setOptionString("sub-scale-with-window", "yes")
@@ -186,15 +178,19 @@ class MPVPlayer(
         mpv.setOptionString("force-window", "no")
         mpv.setOptionString("keep-open", "always")
         mpv.setOptionString("save-position-on-quit", "no")
-
-        mpv.setOptionString("sub-font-provider", "none")
-
         mpv.setOptionString("ytdl", "no")
+        mpv.setOptionString("audio-set-media-role", "yes")
 
         mpv.init()
 
         mpv.setOptionString("sub-auto", "exact")
         mpv.setOptionString("sub-visibility", "yes")
+
+        val audioSessionId = audioManager.generateAudioSessionId()
+        if (audioSessionId != AudioManager.ERROR) {
+            mpv.setPropertyInt("audiotrack-session-id", audioSessionId)
+            mpv.setPropertyInt("aaudio-session-id", audioSessionId)
+        }
 
         mpv.addObserver(this)
 
@@ -225,6 +221,69 @@ class MPVPlayer(
             if (res != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                 mpv.setPropertyBoolean("pause", true)
             }
+        }
+    }
+
+    private fun setupDirectories(context: Context, configDir: File, cacheDir: File) {
+        Timber.i("mpv config dir: $configDir, cache dir: $cacheDir")
+        if (!configDir.exists()) configDir.mkdirs()
+        if (!cacheDir.exists()) cacheDir.mkdirs()
+
+        val mpvConf = File(configDir, "mpv.conf")
+        if (!mpvConf.exists()) {
+            try {
+                context.assets
+                    .open("mpv.conf", AssetManager.ACCESS_STREAMING)
+                    .copyTo(FileOutputStream(mpvConf))
+            } catch (e: Exception) {
+                Timber.w("Could not copy mpv.conf: ${e.message}")
+            }
+        }
+
+        writeFontsConf(context, configDir)
+    }
+
+    private fun writeFontsConf(context: Context, configDir: File) {
+        val configFile = File(configDir, "fonts.conf")
+        if (configFile.exists()) return
+
+        val fontcacheDir = File(context.cacheDir, "fontconfig")
+        if (!fontcacheDir.exists()) fontcacheDir.mkdirs()
+
+        val config =
+            """
+            <fontconfig>
+                <dir>/system/fonts/</dir>
+                <dir>/product/fonts/</dir>
+
+                <cachedir>${fontcacheDir.path}</cachedir>
+
+                <alias>
+                    <family>serif</family>
+                    <prefer><family>Noto Serif</family></prefer>
+                </alias>
+
+                <alias>
+                    <family>sans-serif</family>
+                    <prefer>
+                        <family>Roboto</family>
+                        <family>Noto Sans</family>
+                    </prefer>
+                </alias>
+
+                <alias>
+                    <family>monospace</family>
+                    <prefer><family>Droid Sans Mono</family></prefer>
+                </alias>
+
+            </fontconfig>
+        """
+                .trimIndent()
+
+        try {
+            configFile.writeText(config)
+        } catch (e: IOException) {
+            Timber.w("Failed to write fonts.conf: $e")
         }
     }
 
