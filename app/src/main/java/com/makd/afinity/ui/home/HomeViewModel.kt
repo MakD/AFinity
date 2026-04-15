@@ -273,57 +273,18 @@ constructor(
                 when (event) {
                     is PlaybackEvent.Stopped -> {
                         Timber.d("HomeViewModel received fast Stopped event for ${event.itemId}")
-                        val nextUpItem = _uiState.value.nextUp.find { it.id == event.itemId }
-                        if (nextUpItem != null) {
-                            val runtime = nextUpItem.runtimeTicks ?: 0L
-                            val isPlayed =
-                                runtime > 0 && event.positionTicks >= (runtime * 0.9).toLong()
-
-                            val optimisticItem =
-                                nextUpItem.copy(
-                                    playbackPositionTicks = event.positionTicks,
-                                    played = isPlayed,
-                                )
-                            appDataRepository.updatePlaybackProgressLocally(optimisticItem)
-                        } else {
-                            val cwItem =
-                                _uiState.value.continueWatching.find { it.id == event.itemId }
-                            if (cwItem != null) {
-                                val optimisticItem =
-                                    when (cwItem) {
-                                        is AfinityEpisode -> {
-                                            val runtime = cwItem.runtimeTicks ?: 0L
-                                            val isPlayed =
-                                                runtime > 0 &&
-                                                    event.positionTicks >= (runtime * 0.9).toLong()
-                                            cwItem.copy(
-                                                playbackPositionTicks = event.positionTicks,
-                                                played = isPlayed,
-                                            )
-                                        }
-
-                                        is AfinityMovie -> {
-                                            val runtime = cwItem.runtimeTicks ?: 0L
-                                            val isPlayed =
-                                                runtime > 0 &&
-                                                    event.positionTicks >= (runtime * 0.9).toLong()
-                                            cwItem.copy(
-                                                playbackPositionTicks = event.positionTicks,
-                                                played = isPlayed,
-                                            )
-                                        }
-
-                                        else -> cwItem
-                                    }
-                                appDataRepository.updatePlaybackProgressLocally(optimisticItem)
-                            }
+                        _uiState.update { state ->
+                            state.copy(
+                                continueWatching =
+                                    state.continueWatching.filterNot { it.id == event.itemId },
+                                nextUp = state.nextUp.filterNot { it.id == event.itemId },
+                            )
                         }
                     }
 
                     is PlaybackEvent.Synced -> {
                         Timber.d("HomeViewModel received sync for ${event.itemId}")
                         val syncedItem = mediaRepository.getItemById(event.itemId) ?: return@collect
-                        appDataRepository.updatePlaybackProgressLocally(syncedItem)
 
                         val targetItem =
                             when (syncedItem) {
