@@ -206,6 +206,11 @@ interface MediaRepository {
 
     suspend fun ensureBoxSetCacheBuilt()
 
+    suspend fun getBoxSetsForSpotlight(
+        minChildCount: Int = 3,
+        maxBoxSets: Int = 15,
+    ): List<Pair<AfinityBoxSet, List<AfinityItem>>>
+
     fun getItemsPaging(
         parentId: UUID?,
         libraryType: CollectionType,

@@ -789,6 +789,33 @@ constructor(
                             }
                         )
                     }
+
+                    add(
+                        async {
+                            try {
+                                val boxSets =
+                                    mediaRepository.getBoxSetsForSpotlight(
+                                        minChildCount = 3,
+                                        maxBoxSets = 15,
+                                    )
+                                val selected = boxSets.shuffled().take(8)
+                                selected.forEach { (boxSet, children) ->
+                                    recommendationMutex.withLock {
+                                        loadedSpotlightSections.add(
+                                            HomeSection.Spotlight(
+                                                title = boxSet.name,
+                                                type = SpotlightType.BOXSET,
+                                                items = children,
+                                            )
+                                        )
+                                    }
+                                }
+                                Timber.d("Loaded ${selected.size} boxset spotlight sections")
+                            } catch (e: Exception) {
+                                Timber.w(e, "Failed to load boxset spotlights")
+                            }
+                        }
+                    )
                 }
                 tasks.awaitAll()
             }
@@ -801,8 +828,8 @@ constructor(
             loadedSpotlightSections.clear()
             loadedSpotlightSections.addAll(deduplicated)
 
-            if (loadedSpotlightSections.size > 12) {
-                loadedSpotlightSections.subList(12, loadedSpotlightSections.size).clear()
+            if (loadedSpotlightSections.size > 20) {
+                loadedSpotlightSections.subList(20, loadedSpotlightSections.size).clear()
             }
             Timber.d("Loaded ${loadedSpotlightSections.size} spotlight sections total")
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -815,7 +842,23 @@ constructor(
     private fun computeSpotlightPositions(listSize: Int, count: Int): List<Int> {
         if (listSize == 0 || count == 0) return emptyList()
         val chunkSize = (listSize / (count + 1)).coerceAtLeast(1)
-        return (1..count).map { i -> (i * chunkSize + (-2..2).random()).coerceIn(1, listSize) }
+
+        val rawPositions =
+            (1..count)
+                .map { i -> (i * chunkSize + (-2..2).random()).coerceIn(1, listSize) }
+                .sorted()
+
+        val adjustedPositions = mutableListOf<Int>()
+        var lastPos = -2
+
+        for (pos in rawPositions) {
+            var newPos = if (pos <= lastPos + 1) lastPos + 2 else pos
+            newPos = newPos.coerceAtMost(listSize)
+            adjustedPositions.add(newPos)
+            lastPos = newPos
+        }
+
+        return adjustedPositions.distinct()
     }
 
     private suspend fun loadDownloadedContent() {
@@ -1251,6 +1294,7 @@ enum class SpotlightType {
     GENRE_MOVIE,
     GENRE_SHOW,
     STUDIO,
+    BOXSET,
 }
 
 data class HomeUiState(

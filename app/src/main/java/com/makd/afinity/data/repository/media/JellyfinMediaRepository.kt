@@ -1493,6 +1493,83 @@ constructor(
             }
         }
 
+    override suspend fun getBoxSetsForSpotlight(
+        minChildCount: Int,
+        maxBoxSets: Int,
+    ): List<Pair<AfinityBoxSet, List<AfinityItem>>> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val itemsApi = ItemsApi(apiClient)
+                val baseUrl = getBaseUrl()
+
+                val boxSetsResponse =
+                    itemsApi.getItems(
+                        userId = userId,
+                        includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                        recursive = true,
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                        enableImages = true,
+                        enableUserData = false,
+                    )
+
+                val qualifying =
+                    boxSetsResponse.content.items
+                        .filter { (it.childCount ?: 0) >= minChildCount }
+                        .shuffled()
+                        .take(maxBoxSets)
+
+                Timber.d(
+                    "BoxSet spotlight: ${qualifying.size} qualifying sets (min $minChildCount children)"
+                )
+
+                val semaphore = Semaphore(5)
+                coroutineScope {
+                    qualifying
+                        .map { boxSetDto ->
+                            async {
+                                semaphore.withPermit {
+                                    try {
+                                        val childrenResponse =
+                                            itemsApi.getItems(
+                                                userId = userId,
+                                                parentId = boxSetDto.id,
+                                                recursive = false,
+                                                fields = FieldSets.MEDIA_ITEM_CARDS,
+                                                enableImages = true,
+                                                enableUserData = false,
+                                                sortBy = listOf(ItemSortBy.PRODUCTION_YEAR),
+                                            )
+                                        val children =
+                                            childrenResponse.content.items.mapNotNull {
+                                                it.toAfinityItem(baseUrl)
+                                            }
+                                        if (children.size >= minChildCount) {
+                                            boxSetDto.toAfinityBoxSet(baseUrl) to children
+                                        } else {
+                                            null
+                                        }
+                                    } catch (e: Exception) {
+                                        Timber.w(
+                                            e,
+                                            "Failed to fetch children for BoxSet spotlight: ${boxSetDto.name}",
+                                        )
+                                        null
+                                    }
+                                }
+                            }
+                        }
+                        .awaitAll()
+                        .filterNotNull()
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get boxsets for spotlight")
+                emptyList()
+            }
+        }
+
     private suspend fun fetchAllBoxSetsWithChildren(): List<BoxSetWithChildren> {
         val apiClient = sessionManager.getCurrentApiClient() ?: return emptyList()
         val userId = getCurrentUserId() ?: return emptyList()
