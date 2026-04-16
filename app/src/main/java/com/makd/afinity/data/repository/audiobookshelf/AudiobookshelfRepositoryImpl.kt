@@ -408,6 +408,9 @@ constructor(
         return _isAuthenticated.value && _currentConfig.value != null
     }
 
+    override suspend fun getAllKnownAddresses(): List<String> =
+        withContext(Dispatchers.IO) { audiobookshelfDao.getAllAddressStrings() }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun getLibrariesFlow(): Flow<List<Library>> {
         return _activeContextFlow.flatMapLatest { context ->

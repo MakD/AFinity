@@ -363,6 +363,9 @@ constructor(
         }
     }
 
+    override suspend fun getAllKnownAddresses(): List<String> =
+        withContext(Dispatchers.IO) { jellyseerrDao.getAllAddressStrings() }
+
     override suspend fun createRequest(
         mediaId: Int,
         mediaType: MediaType,

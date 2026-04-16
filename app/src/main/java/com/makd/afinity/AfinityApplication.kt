@@ -20,6 +20,8 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.updater.UpdateScheduler
 import com.makd.afinity.data.updater.models.UpdateCheckFrequency
 import com.makd.afinity.di.ImageClient
+import com.makd.afinity.util.logging.CrashFileExporter
+import com.makd.afinity.util.logging.RingBufferTree
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -47,6 +49,8 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     @Inject @ImageClient lateinit var imageOkHttpClient: OkHttpClient
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    var ringBufferTree: RingBufferTree? = null
+        private set
 
     private lateinit var imageLoaderPrefs: Deferred<Pair<Boolean, Int>>
 
@@ -61,10 +65,16 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
                 )
             }
 
+        ringBufferTree = RingBufferTree()
+        Timber.plant(ringBufferTree!!)
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
             Timber.d("Afinity Application started")
         }
+
+        Thread.setDefaultUncaughtExceptionHandler(
+            CrashFileExporter(this, ringBufferTree, Thread.getDefaultUncaughtExceptionHandler())
+        )
 
         castManager.initialize(this)
 

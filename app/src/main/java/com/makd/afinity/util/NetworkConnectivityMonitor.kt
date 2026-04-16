@@ -6,14 +6,19 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import timber.log.Timber
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class NetworkConnectivityMonitor
@@ -22,7 +27,9 @@ constructor(@ApplicationContext private val context: Context) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    val isNetworkAvailable: Flow<Boolean> =
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    val isNetworkAvailable: StateFlow<Boolean> =
         callbackFlow {
                 val callback =
                     object : ConnectivityManager.NetworkCallback() {
@@ -67,7 +74,6 @@ constructor(@ApplicationContext private val context: Context) {
                         .build()
 
                 connectivityManager.registerNetworkCallback(networkRequest, callback)
-
                 trySend(isCurrentlyConnected())
 
                 awaitClose {
@@ -76,11 +82,15 @@ constructor(@ApplicationContext private val context: Context) {
                 }
             }
             .distinctUntilChanged()
+            .stateIn(
+                scope = scope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = isCurrentlyConnected(),
+            )
 
     fun isCurrentlyConnected(): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
@@ -91,5 +101,12 @@ constructor(@ApplicationContext private val context: Context) {
         return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
-    val isOnWifiFlow: Flow<Boolean> = isNetworkAvailable.map { isOnWifi() }
+    val isOnWifiFlow: StateFlow<Boolean> =
+        isNetworkAvailable
+            .map { isOnWifi() }
+            .stateIn(
+                scope = scope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = isOnWifi(),
+            )
 }

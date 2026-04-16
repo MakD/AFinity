@@ -229,6 +229,9 @@ interface AudiobookshelfDao {
         address: String,
     ): AudiobookshelfAddressEntity?
 
+    @Query("SELECT address FROM audiobookshelf_addresses")
+    suspend fun getAllAddressStrings(): List<String>
+
     @Query("DELETE FROM audiobookshelf_addresses WHERE id = :addressId")
     suspend fun deleteAddress(addressId: UUID)
 

@@ -302,9 +302,10 @@ fun SettingsScreen(
                             icon = painterResource(id = R.drawable.ic_user),
                             title = stringResource(R.string.pref_switch_session),
                             subtitle = stringResource(R.string.pref_switch_session_summary),
-                            onClick = if (!effectiveOfflineMode) {
-                                { showSessionSwitcherSheet = true }
-                            } else null,
+                            onClick =
+                                if (!effectiveOfflineMode) {
+                                    { showSessionSwitcherSheet = true }
+                                } else null,
                         )
                     }
                 }
@@ -369,6 +370,16 @@ fun SettingsScreen(
                             title = stringResource(R.string.pref_licenses),
                             subtitle = stringResource(R.string.pref_licenses_summary),
                             onClick = onLicensesClick,
+                        )
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = painterResource(id = R.drawable.ic_logs),
+                            title = stringResource(R.string.pref_send_logs),
+                            subtitle = stringResource(R.string.pref_send_logs_summary),
+                            onClick = if (uiState.isExportingLogs) null else ({ viewModel.exportLogs() }),
+                            trailing = if (uiState.isExportingLogs) ({
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            }) else null,
                         )
                     }
                 }

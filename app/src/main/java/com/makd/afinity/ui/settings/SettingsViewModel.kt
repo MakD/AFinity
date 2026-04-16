@@ -9,10 +9,12 @@ import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvVideoOutput
+import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.VideoZoomMode
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.AudiobookshelfRepository
+import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.JellyseerrRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
@@ -20,6 +22,7 @@ import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.util.NetworkConnectivityMonitor
+import com.makd.afinity.util.logging.LogExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.NonCancellable
@@ -44,6 +47,7 @@ constructor(
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val appDataRepository: AppDataRepository,
     private val serverRepository: ServerRepository,
+    private val databaseRepository: DatabaseRepository,
     private val offlineModeManager: OfflineModeManager,
     private val networkConnectivityMonitor: NetworkConnectivityMonitor,
     private val jellyseerrRepository: JellyseerrRepository,
@@ -178,14 +182,14 @@ constructor(
         }
 
         viewModelScope.launch {
-            preferencesRepository.getSkipIntroEnabledFlow().collect {
-                _uiState.value = _uiState.value.copy(skipIntroEnabled = it)
+            preferencesRepository.getSkipIntroModeFlow().collect {
+                _uiState.value = _uiState.value.copy(skipIntroMode = it)
             }
         }
 
         viewModelScope.launch {
-            preferencesRepository.getSkipOutroEnabledFlow().collect {
-                _uiState.value = _uiState.value.copy(skipOutroEnabled = it)
+            preferencesRepository.getSkipOutroModeFlow().collect {
+                _uiState.value = _uiState.value.copy(skipOutroMode = it)
             }
         }
 
@@ -383,24 +387,24 @@ constructor(
         }
     }
 
-    fun toggleSkipIntro(enabled: Boolean) {
+    fun setSkipIntroMode(mode: SkipMode) {
         viewModelScope.launch {
             try {
-                preferencesRepository.setSkipIntroEnabled(enabled)
-                Timber.d("Skip intro set to: $enabled")
+                preferencesRepository.setSkipIntroMode(mode)
+                Timber.d("Skip intro mode set to: ${mode.name}")
             } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle skip intro")
+                Timber.e(e, "Failed to set skip intro mode")
             }
         }
     }
 
-    fun toggleSkipOutro(enabled: Boolean) {
+    fun setSkipOutroMode(mode: SkipMode) {
         viewModelScope.launch {
             try {
-                preferencesRepository.setSkipOutroEnabled(enabled)
-                Timber.d("Skip outro set to: $enabled")
+                preferencesRepository.setSkipOutroMode(mode)
+                Timber.d("Skip outro mode set to: ${mode.name}")
             } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle skip outro")
+                Timber.e(e, "Failed to set skip outro mode")
             }
         }
     }
@@ -650,6 +654,41 @@ constructor(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
+
+    fun exportLogs() {
+        if (_uiState.value.isExportingLogs) return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isExportingLogs = true)
+            val app = context.applicationContext as? com.makd.afinity.AfinityApplication
+            val secrets = buildList {
+                _uiState.value.serverUrl?.let { add(it) }
+                securePreferencesRepository.getAccessToken()?.let { add(it) }
+                securePreferencesRepository.getSavedUsername()?.let { add(it) }
+                securePreferencesRepository.getAllServerUserTokens().forEach { token ->
+                    add(token.serverUrl)
+                    add(token.accessToken)
+                    add(token.username)
+                }
+                databaseRepository.getAllServers().forEach { server ->
+                    add(server.address)
+                    databaseRepository.getServerAddresses(server.id).forEach { sa ->
+                        add(sa.address)
+                    }
+                }
+                securePreferencesRepository.getCachedJellyseerrServerUrl()?.let { add(it) }
+                securePreferencesRepository.getCachedJellyseerrCookie()?.let { add(it) }
+                addAll(jellyseerrRepository.getAllKnownAddresses())
+                securePreferencesRepository.getCachedAudiobookshelfServerUrl()?.let { add(it) }
+                securePreferencesRepository.getCachedAudiobookshelfToken()?.let { add(it) }
+                securePreferencesRepository.getCachedAudiobookshelfRefreshToken()?.let { add(it) }
+                addAll(audiobookshelfRepository.getAllKnownAddresses())
+                _tmdbApiKey.value.takeIf { it.isNotBlank() }?.let { add(it) }
+                _mdbListApiKey.value.takeIf { it.isNotBlank() }?.let { add(it) }
+            }
+            LogExporter.export(context, app?.ringBufferTree, secrets)
+            _uiState.value = _uiState.value.copy(isExportingLogs = false)
+        }
+    }
 }
 
 data class SettingsUiState(
@@ -663,8 +702,8 @@ data class SettingsUiState(
     val autoPlay: Boolean = true,
     val pipGestureEnabled: Boolean = false,
     val pipBackgroundPlay: Boolean = true,
-    val skipIntroEnabled: Boolean = true,
-    val skipOutroEnabled: Boolean = true,
+    val skipIntroMode: SkipMode = SkipMode.BUTTON,
+    val skipOutroMode: SkipMode = SkipMode.BUTTON,
     val useExoPlayer: Boolean = true,
     val logoAutoHide: Boolean = false,
     val defaultVideoZoomMode: VideoZoomMode = VideoZoomMode.FIT,
@@ -677,5 +716,6 @@ data class SettingsUiState(
     val castMaxBitrate: Int = 16_000_000,
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,
+    val isExportingLogs: Boolean = false,
     val error: String? = null,
 )

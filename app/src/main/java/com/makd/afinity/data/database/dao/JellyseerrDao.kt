@@ -7,8 +7,8 @@ import androidx.room.Query
 import com.makd.afinity.data.database.entities.JellyseerrAddressEntity
 import com.makd.afinity.data.database.entities.JellyseerrConfigEntity
 import com.makd.afinity.data.database.entities.JellyseerrRequestEntity
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 @Dao
 interface JellyseerrDao {
@@ -91,6 +91,9 @@ interface JellyseerrDao {
         userId: String,
         address: String,
     ): JellyseerrAddressEntity?
+
+    @Query("SELECT address FROM jellyseerr_addresses")
+    suspend fun getAllAddressStrings(): List<String>
 
     @Query("DELETE FROM jellyseerr_addresses WHERE id = :addressId")
     suspend fun deleteAddress(addressId: UUID)

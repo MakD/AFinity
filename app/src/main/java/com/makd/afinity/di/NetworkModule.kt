@@ -519,12 +519,7 @@ object NetworkModule {
                 val response = chain.proceed(newRequest)
 
                 if (newUrl.encodedPath.contains("/play")) {
-                    val responseBody = response.body
-                    val source = responseBody.source()
-                    source.request(Long.MAX_VALUE)
-                    val buffer = source.buffer.clone()
-                    val responseString = buffer.readUtf8()
-                    Timber.d("ABS Play Response [${response.code}]: $responseString")
+                    Timber.d("ABS Play Response [${response.code}]")
                 }
 
                 if (response.code == 401 && !newUrl.encodedPath.contains("auth")) {
@@ -627,7 +622,6 @@ object NetworkModule {
             val response = refreshClient.newCall(request).execute()
             if (response.isSuccessful) {
                 val body = response.body.string()
-                Timber.d("ABS token refresh response: $body")
                 val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
                 val jsonObj = json.parseToJsonElement(body).jsonObject
                 val userObj = jsonObj["user"]?.jsonObject

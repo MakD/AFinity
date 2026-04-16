@@ -4,4 +4,8 @@
         name="public_downloads"
         path="Download/" />
 
+    <cache-path
+        name="logs"
+        path="logs/" />
+
 </paths>
