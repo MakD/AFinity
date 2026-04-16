@@ -14,6 +14,7 @@ import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvVideoOutput
+import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
@@ -45,8 +46,10 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
 
         val AUTO_PLAY = booleanPreferencesKey("auto_play")
         val MAX_BITRATE = intPreferencesKey("max_bitrate")
-        val SKIP_INTRO_ENABLED = booleanPreferencesKey("skip_intro_enabled")
-        val SKIP_OUTRO_ENABLED = booleanPreferencesKey("skip_outro_enabled")
+        val SKIP_INTRO_ENABLED_LEGACY = booleanPreferencesKey("skip_intro_enabled")
+        val SKIP_OUTRO_ENABLED_LEGACY = booleanPreferencesKey("skip_outro_enabled")
+        val SKIP_INTRO_MODE = stringPreferencesKey("skip_intro_mode")
+        val SKIP_OUTRO_MODE = stringPreferencesKey("skip_outro_mode")
         val USE_EXO_PLAYER = booleanPreferencesKey("use_exo_player")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val IMAGE_CACHE_ENABLED = booleanPreferencesKey("image_cache_enabled")
@@ -230,20 +233,31 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
         }
     }
 
-    override suspend fun setSkipIntroEnabled(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[Keys.SKIP_INTRO_ENABLED] = enabled }
+    override suspend fun setSkipIntroMode(mode: SkipMode) {
+        dataStore.edit { it[Keys.SKIP_INTRO_MODE] = mode.name }
     }
 
-    override suspend fun getSkipIntroEnabled(): Boolean {
-        return dataStore.data.first()[Keys.SKIP_INTRO_ENABLED] ?: true
+    override suspend fun getSkipIntroMode(): SkipMode {
+        val prefs = dataStore.data.first()
+        prefs[Keys.SKIP_INTRO_MODE]?.let {
+            return SkipMode.fromString(it)
+        }
+        // Migrate from legacy boolean: true → BUTTON, false → DISABLED
+        return if (prefs[Keys.SKIP_INTRO_ENABLED_LEGACY] == false) SkipMode.DISABLED
+        else SkipMode.BUTTON
     }
 
-    override suspend fun setSkipOutroEnabled(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[Keys.SKIP_OUTRO_ENABLED] = enabled }
+    override suspend fun setSkipOutroMode(mode: SkipMode) {
+        dataStore.edit { it[Keys.SKIP_OUTRO_MODE] = mode.name }
     }
 
-    override suspend fun getSkipOutroEnabled(): Boolean {
-        return dataStore.data.first()[Keys.SKIP_OUTRO_ENABLED] ?: true
+    override suspend fun getSkipOutroMode(): SkipMode {
+        val prefs = dataStore.data.first()
+        prefs[Keys.SKIP_OUTRO_MODE]?.let {
+            return SkipMode.fromString(it)
+        }
+        return if (prefs[Keys.SKIP_OUTRO_ENABLED_LEGACY] == false) SkipMode.DISABLED
+        else SkipMode.BUTTON
     }
 
     override suspend fun setThemeMode(mode: String) {
@@ -264,11 +278,19 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
     override fun getAutoPlayFlow(): Flow<Boolean> =
         dataStore.data.map { it[Keys.AUTO_PLAY] ?: true }
 
-    override fun getSkipIntroEnabledFlow(): Flow<Boolean> =
-        dataStore.data.map { it[Keys.SKIP_INTRO_ENABLED] ?: true }
+    override fun getSkipIntroModeFlow(): Flow<SkipMode> =
+        dataStore.data.map { prefs ->
+            prefs[Keys.SKIP_INTRO_MODE]?.let { SkipMode.fromString(it) }
+                ?: if (prefs[Keys.SKIP_INTRO_ENABLED_LEGACY] == false) SkipMode.DISABLED
+                else SkipMode.BUTTON
+        }
 
-    override fun getSkipOutroEnabledFlow(): Flow<Boolean> =
-        dataStore.data.map { it[Keys.SKIP_OUTRO_ENABLED] ?: true }
+    override fun getSkipOutroModeFlow(): Flow<SkipMode> =
+        dataStore.data.map { prefs ->
+            prefs[Keys.SKIP_OUTRO_MODE]?.let { SkipMode.fromString(it) }
+                ?: if (prefs[Keys.SKIP_OUTRO_ENABLED_LEGACY] == false) SkipMode.DISABLED
+                else SkipMode.BUTTON
+        }
 
     override suspend fun setDynamicColors(enabled: Boolean) {
         dataStore.edit { preferences -> preferences[Keys.DYNAMIC_COLORS] = enabled }

@@ -40,6 +40,7 @@ import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
 import com.makd.afinity.data.models.player.GestureConfig
 import com.makd.afinity.data.models.player.PlayerEvent
+import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.Trickplay
@@ -293,40 +294,39 @@ constructor(
 
     private fun startProgressReporting() {
         progressReportingJob?.cancel()
-        progressReportingJob =
-            viewModelScope.launch {
-                while (true) {
-                    delay(5000L)
-                    if (_uiState.value.isLiveChannel) continue
+        progressReportingJob = viewModelScope.launch {
+            while (true) {
+                delay(5000L)
+                if (_uiState.value.isLiveChannel) continue
 
-                    currentItem?.let { item ->
-                        if (_uiState.value.isPlayingIntro) {
-                            return@let
-                        }
-                        currentSessionId?.let { sessionId ->
-                            try {
-                                val positionTicks = player.currentPosition * 10000
-                                val isPaused = !player.isPlaying
+                currentItem?.let { item ->
+                    if (_uiState.value.isPlayingIntro) {
+                        return@let
+                    }
+                    currentSessionId?.let { sessionId ->
+                        try {
+                            val positionTicks = player.currentPosition * 10000
+                            val isPaused = !player.isPlaying
 
-                                playbackStateManager.updatePlaybackPosition(player.currentPosition)
+                            playbackStateManager.updatePlaybackPosition(player.currentPosition)
 
-                                playbackRepository.reportPlaybackProgress(
-                                    itemId = item.id,
-                                    sessionId = sessionId,
-                                    positionTicks = positionTicks,
-                                    isPaused = isPaused,
-                                    playMethod = "DirectPlay",
-                                )
-                                Timber.d(
-                                    "Reported progress: ${player.currentPosition}ms, paused: $isPaused"
-                                )
-                            } catch (e: Exception) {
-                                Timber.e(e, "Failed to report periodic progress")
-                            }
+                            playbackRepository.reportPlaybackProgress(
+                                itemId = item.id,
+                                sessionId = sessionId,
+                                positionTicks = positionTicks,
+                                isPaused = isPaused,
+                                playMethod = "DirectPlay",
+                            )
+                            Timber.d(
+                                "Reported progress: ${player.currentPosition}ms, paused: $isPaused"
+                            )
+                        } catch (e: Exception) {
+                            Timber.e(e, "Failed to report periodic progress")
                         }
                     }
                 }
             }
+        }
     }
 
     private fun initializePlayer() {
@@ -608,11 +608,10 @@ constructor(
                     }
 
                     volumeHideJob?.cancel()
-                    volumeHideJob =
-                        viewModelScope.launch {
-                            delay(2000)
-                            updateUiState { it.copy(showVolumeIndicator = false) }
-                        }
+                    volumeHideJob = viewModelScope.launch {
+                        delay(2000)
+                        updateUiState { it.copy(showVolumeIndicator = false) }
+                    }
                 }
 
                 is PlayerEvent.SetBrightness -> {
@@ -1368,14 +1367,13 @@ constructor(
 
     private fun startSegmentMonitoring() {
         segmentCheckingJob?.cancel()
-        segmentCheckingJob =
-            viewModelScope.launch {
-                delay(2000L)
-                while (true) {
-                    updateCurrentSegment()
-                    delay(1000L)
-                }
+        segmentCheckingJob = viewModelScope.launch {
+            delay(2000L)
+            while (true) {
+                updateCurrentSegment()
+                delay(1000L)
             }
+        }
     }
 
     private suspend fun updateCurrentSegment() {
@@ -1383,33 +1381,35 @@ constructor(
 
         val currentPositionMs = uiState.value.currentPosition
 
-        val currentSegment =
-            currentMediaSegments.find { segment ->
-                currentPositionMs in segment.startTicks..<(segment.endTicks - 100L)
-            }
+        val currentSegment = currentMediaSegments.find { segment ->
+            currentPositionMs in segment.startTicks..<(segment.endTicks - 100L)
+        }
 
         currentSegment?.let { segment ->
-            val skipIntroEnabled = preferencesRepository.getSkipIntroEnabled()
-            val skipOutroEnabled = preferencesRepository.getSkipOutroEnabled()
-
-            val shouldShowSkipButton =
+            val skipMode =
                 when (segment.type) {
-                    AfinitySegmentType.INTRO -> skipIntroEnabled
-                    AfinitySegmentType.OUTRO -> skipOutroEnabled
-                    else -> false
+                    AfinitySegmentType.INTRO -> preferencesRepository.getSkipIntroMode()
+                    AfinitySegmentType.OUTRO -> preferencesRepository.getSkipOutroMode()
+                    else -> SkipMode.DISABLED
                 }
 
-            if (shouldShowSkipButton) {
-                val skipButtonText = getSkipButtonText(segment)
-                updateUiState {
-                    it.copy(
-                        currentSegment = segment,
-                        skipButtonText = skipButtonText,
-                        showSkipButton = true,
-                    )
+            when (skipMode) {
+                SkipMode.AUTO_SKIP -> {
+                    updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+                    handlePlayerEvent(PlayerEvent.SkipSegment(segment))
                 }
-            } else {
-                updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
+                SkipMode.BUTTON -> {
+                    val skipButtonText = getSkipButtonText(segment)
+                    updateUiState {
+                        it.copy(
+                            currentSegment = segment,
+                            skipButtonText = skipButtonText,
+                            showSkipButton = true,
+                        )
+                    }
+                }
+                SkipMode.DISABLED ->
+                    updateUiState { it.copy(currentSegment = null, showSkipButton = false) }
             }
         } ?: run { updateUiState { it.copy(currentSegment = null, showSkipButton = false) } }
     }
@@ -1715,11 +1715,10 @@ constructor(
         updateUiState { it.copy(showBrightnessIndicator = true, brightnessLevel = newBrightness) }
 
         brightnessHideJob?.cancel()
-        brightnessHideJob =
-            viewModelScope.launch {
-                delay(2000)
-                updateUiState { it.copy(showBrightnessIndicator = false) }
-            }
+        brightnessHideJob = viewModelScope.launch {
+            delay(2000)
+            updateUiState { it.copy(showBrightnessIndicator = false) }
+        }
     }
 
     private var volumeHideJob: Job? = null
@@ -1815,19 +1814,14 @@ constructor(
 
     private fun startControlsAutoHide() {
         controlsHideJob?.cancel()
-        controlsHideJob =
-            viewModelScope.launch {
-                delay(3000)
-                if (
-                    uiState.value.isPlaying &&
-                        uiState.value.showControls &&
-                        !uiState.value.isSeeking
-                ) {
-                    hideControls()
-                } else if (uiState.value.isSeeking) {
-                    startControlsAutoHide()
-                }
+        controlsHideJob = viewModelScope.launch {
+            delay(3000)
+            if (uiState.value.isPlaying && uiState.value.showControls && !uiState.value.isSeeking) {
+                hideControls()
+            } else if (uiState.value.isSeeking) {
+                startControlsAutoHide()
             }
+        }
     }
 
     private fun reportCurrentItemStopped(isEnded: Boolean = false) {

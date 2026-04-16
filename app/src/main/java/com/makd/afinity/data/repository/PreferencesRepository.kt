@@ -6,6 +6,7 @@ import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvVideoOutput
 import com.makd.afinity.data.models.player.SubtitlePreferences
+import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.VideoZoomMode
 import kotlinx.coroutines.flow.Flow
 
@@ -49,17 +50,17 @@ interface PreferencesRepository {
 
     suspend fun getMaxBitrate(): Int?
 
-    suspend fun setSkipIntroEnabled(enabled: Boolean)
+    suspend fun setSkipIntroMode(mode: SkipMode)
 
-    suspend fun getSkipIntroEnabled(): Boolean
+    suspend fun getSkipIntroMode(): SkipMode
 
-    fun getSkipIntroEnabledFlow(): Flow<Boolean>
+    fun getSkipIntroModeFlow(): Flow<SkipMode>
 
-    suspend fun setSkipOutroEnabled(enabled: Boolean)
+    suspend fun setSkipOutroMode(mode: SkipMode)
 
-    suspend fun getSkipOutroEnabled(): Boolean
+    suspend fun getSkipOutroMode(): SkipMode
 
-    fun getSkipOutroEnabledFlow(): Flow<Boolean>
+    fun getSkipOutroModeFlow(): Flow<SkipMode>
 
     val useExoPlayer: Flow<Boolean>
 

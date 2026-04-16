@@ -76,6 +76,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvVideoOutput
+import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleHorizontalAlignment
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
 import com.makd.afinity.data.models.player.SubtitlePreferences
@@ -101,15 +102,15 @@ fun PlayerOptionsScreen(
     val context = LocalContext.current
     val preferencesRepository = remember {
         EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            PreferencesEntryPoint::class.java,
-        )
+                context.applicationContext,
+                PreferencesEntryPoint::class.java,
+            )
             .preferencesRepository()
     }
     val subtitlePrefs by
-    preferencesRepository
-        .getSubtitlePreferencesFlow()
-        .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
+        preferencesRepository
+            .getSubtitlePreferencesFlow()
+            .collectAsStateWithLifecycle(initialValue = SubtitlePreferences.DEFAULT)
 
     Scaffold(
         topBar = {
@@ -141,9 +142,7 @@ fun PlayerOptionsScreen(
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
@@ -250,20 +249,18 @@ fun PlayerOptionsScreen(
 
             item {
                 SettingsGroup(title = stringResource(R.string.pref_group_interface)) {
-                    SettingsSwitchItem(
+                    SkipModeSelectorItem(
                         icon = painterResource(id = R.drawable.ic_skip_next),
                         title = stringResource(R.string.pref_skip_intro_title),
-                        subtitle = stringResource(R.string.pref_skip_intro_summary),
-                        checked = uiState.skipIntroEnabled,
-                        onCheckedChange = viewModel::toggleSkipIntro,
+                        selectedMode = uiState.skipIntroMode,
+                        onModeSelected = viewModel::setSkipIntroMode,
                     )
                     SettingsDivider()
-                    SettingsSwitchItem(
+                    SkipModeSelectorItem(
                         icon = painterResource(id = R.drawable.ic_fast_forward),
                         title = stringResource(R.string.pref_skip_outro_title),
-                        subtitle = stringResource(R.string.pref_skip_outro_summary),
-                        checked = uiState.skipOutroEnabled,
-                        onCheckedChange = viewModel::toggleSkipOutro,
+                        selectedMode = uiState.skipOutroMode,
+                        onModeSelected = viewModel::setSkipOutroMode,
                     )
                     SettingsDivider()
                     SettingsSwitchItem(
@@ -317,23 +314,24 @@ fun PlayerOptionsScreen(
                     SettingsDivider()
 
                     var showBitrateMenu by remember { mutableStateOf(false) }
-                    val bitrateOptions = listOf(
-                        16_000_000 to "16 Mbps",
-                        8_000_000 to "8 Mbps",
-                        4_000_000 to "4 Mbps",
-                        2_000_000 to "2 Mbps",
-                        1_000_000 to "1 Mbps",
-                    )
+                    val bitrateOptions =
+                        listOf(
+                            16_000_000 to "16 Mbps",
+                            8_000_000 to "8 Mbps",
+                            4_000_000 to "4 Mbps",
+                            2_000_000 to "2 Mbps",
+                            1_000_000 to "1 Mbps",
+                        )
                     val currentBitrateLabel =
                         bitrateOptions.find { it.first == uiState.castMaxBitrate }?.second
                             ?: "16 Mbps"
 
                     Box {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showBitrateMenu = true }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            modifier =
+                                Modifier.fillMaxWidth()
+                                    .clickable { showBitrateMenu = true }
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
@@ -378,13 +376,11 @@ fun PlayerOptionsScreen(
 
 @Composable
 private fun SettingsGroup(
-    title: String? = null,
     modifier: Modifier = Modifier,
+    title: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier = modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp)) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         if (title != null) {
             Text(
                 text = title,
@@ -414,11 +410,11 @@ private fun SettingsDivider() {
 
 @Composable
 private fun SettingsItem(
+    modifier: Modifier = Modifier,
     icon: Painter? = null,
     title: String,
     subtitle: String? = null,
     onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
     trailing: @Composable (() -> Unit)? = null,
 ) {
     Row(
@@ -507,6 +503,67 @@ private fun SettingsSwitchItem(
         },
     )
 }
+
+@Composable
+private fun SkipModeSelectorItem(
+    icon: Painter,
+    title: String,
+    selectedMode: SkipMode,
+    onModeSelected: (SkipMode) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        SettingsItem(
+            icon = icon,
+            title = title,
+            subtitle = getSkipModeDisplayName(selectedMode),
+            onClick = { expanded = true },
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            SkipMode.entries.forEach { mode ->
+                DropdownMenuItem(
+                    text = { Text(getSkipModeDisplayName(mode)) },
+                    onClick = {
+                        onModeSelected(mode)
+                        expanded = false
+                    },
+                    leadingIcon =
+                        if (selectedMode == mode) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun getSkipModeDisplayName(mode: SkipMode): String =
+    when (mode) {
+        SkipMode.BUTTON -> stringResource(R.string.skip_mode_button)
+        SkipMode.AUTO_SKIP -> stringResource(R.string.skip_mode_auto_skip)
+        SkipMode.DISABLED -> stringResource(R.string.skip_mode_disabled)
+    }
 
 @Composable
 private fun VideoZoomModeSelectorItem(
@@ -631,7 +688,7 @@ private fun SubtitleCustomizationContent(
     AnimatedVisibility(
         visible =
             subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE ||
-                    subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW,
+                subtitlePrefs.outlineStyle == SubtitleOutlineStyle.DROP_SHADOW,
         enter = fadeIn() + expandVertically(),
         exit = fadeOut() + shrinkVertically(),
     ) {
@@ -746,16 +803,14 @@ private fun ColorPickerItem(title: String, color: Int, onColorChange: (Int) -> U
 
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
+            Modifier.fillMaxWidth()
                 .clickable { showDialog = true }
                 .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier =
-                Modifier
-                    .size(32.dp)
+                Modifier.size(32.dp)
                     .clip(CircleShape)
                     .background(Color(color))
                     .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
@@ -941,16 +996,13 @@ private fun LanguagePickerDialog(
             Column {
                 Box(
                     modifier =
-                        Modifier
-                            .fillMaxWidth()
+                        Modifier.fillMaxWidth()
                             .padding(bottom = 12.dp)
                             .clip(RoundedCornerShape(28.dp))
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
@@ -968,9 +1020,7 @@ private fun LanguagePickerDialog(
                                     color = MaterialTheme.colorScheme.onSurface
                                 ),
                             singleLine = true,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(vertical = 12.dp),
+                            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
                                     Text(
@@ -998,17 +1048,14 @@ private fun LanguagePickerDialog(
                     }
                 }
 
-                LazyColumn(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp)) {
+                LazyColumn(modifier = Modifier.fillMaxWidth().height(400.dp)) {
                     items(filteredIndices.size) { filterIdx ->
                         val idx = filteredIndices[filterIdx]
                         val isSelected = languageCodes[idx] == selectedCode
 
                         Row(
                             modifier =
-                                Modifier
-                                    .fillMaxWidth()
+                                Modifier.fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
                                     .then(
                                         if (isSelected)
@@ -1108,8 +1155,7 @@ private fun SimpleColorPickerDialog(
                         presetColors.forEach { presetColor ->
                             Box(
                                 modifier =
-                                    Modifier
-                                        .size(48.dp)
+                                    Modifier.size(48.dp)
                                         .clip(CircleShape)
                                         .background(Color(presetColor))
                                         .border(
@@ -1164,8 +1210,7 @@ private fun SimpleColorPickerDialog(
 
                         Box(
                             modifier =
-                                Modifier
-                                    .size(48.dp)
+                                Modifier.size(48.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (isValidHex) {
@@ -1221,8 +1266,7 @@ private fun SubtitlePreview(
 
         Box(
             modifier =
-                Modifier
-                    .background(
+                Modifier.background(
                         if (useExoPlayer) {
                             Color(subtitlePrefs.windowColor)
                         } else {
@@ -1237,8 +1281,7 @@ private fun SubtitlePreview(
         ) {
             Box(
                 modifier =
-                    Modifier
-                        .background(
+                    Modifier.background(
                             when (subtitlePrefs.outlineStyle) {
                                 SubtitleOutlineStyle.BACKGROUND_BOX ->
                                     Color(subtitlePrefs.backgroundColor)
@@ -1251,22 +1294,22 @@ private fun SubtitlePreview(
             ) {
                 if (
                     !useExoPlayer &&
-                    subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE &&
-                    subtitlePrefs.outlineSize > 0f
+                        subtitlePrefs.outlineStyle == SubtitleOutlineStyle.OUTLINE &&
+                        subtitlePrefs.outlineSize > 0f
                 ) {
                     val outlineColor = Color(subtitlePrefs.outlineColor)
                     val offsetStep = (subtitlePrefs.outlineSize * 0.3f).coerceAtMost(2f)
 
                     listOf(
-                        Offset(-offsetStep, -offsetStep),
-                        Offset(0f, -offsetStep),
-                        Offset(offsetStep, -offsetStep),
-                        Offset(-offsetStep, 0f),
-                        Offset(offsetStep, 0f),
-                        Offset(-offsetStep, offsetStep),
-                        Offset(0f, offsetStep),
-                        Offset(offsetStep, offsetStep),
-                    )
+                            Offset(-offsetStep, -offsetStep),
+                            Offset(0f, -offsetStep),
+                            Offset(offsetStep, -offsetStep),
+                            Offset(-offsetStep, 0f),
+                            Offset(offsetStep, 0f),
+                            Offset(-offsetStep, offsetStep),
+                            Offset(0f, offsetStep),
+                            Offset(offsetStep, offsetStep),
+                        )
                         .forEach { offset ->
                             Text(
                                 text = stringResource(R.string.subtitle_preview_text),
@@ -1282,15 +1325,15 @@ private fun SubtitlePreview(
                     val offsetStep = 1.5f
 
                     listOf(
-                        Offset(-offsetStep, -offsetStep),
-                        Offset(0f, -offsetStep),
-                        Offset(offsetStep, -offsetStep),
-                        Offset(-offsetStep, 0f),
-                        Offset(offsetStep, 0f),
-                        Offset(-offsetStep, offsetStep),
-                        Offset(0f, offsetStep),
-                        Offset(offsetStep, offsetStep),
-                    )
+                            Offset(-offsetStep, -offsetStep),
+                            Offset(0f, -offsetStep),
+                            Offset(offsetStep, -offsetStep),
+                            Offset(-offsetStep, 0f),
+                            Offset(offsetStep, 0f),
+                            Offset(-offsetStep, offsetStep),
+                            Offset(0f, offsetStep),
+                            Offset(offsetStep, offsetStep),
+                        )
                         .forEach { offset ->
                             Text(
                                 text = stringResource(R.string.subtitle_preview_text),
@@ -1308,9 +1351,9 @@ private fun SubtitlePreview(
                             shadow =
                                 when {
                                     !useExoPlayer &&
-                                            subtitlePrefs.outlineStyle ==
+                                        subtitlePrefs.outlineStyle ==
                                             SubtitleOutlineStyle.DROP_SHADOW &&
-                                            subtitlePrefs.outlineSize > 0f -> {
+                                        subtitlePrefs.outlineSize > 0f -> {
                                         val shadowOffset = subtitlePrefs.outlineSize
                                         Shadow(
                                             color = Color(subtitlePrefs.outlineColor),
@@ -1320,7 +1363,7 @@ private fun SubtitlePreview(
                                     }
 
                                     useExoPlayer &&
-                                            subtitlePrefs.outlineStyle ==
+                                        subtitlePrefs.outlineStyle ==
                                             SubtitleOutlineStyle.DROP_SHADOW -> {
                                         Shadow(
                                             color = Color(subtitlePrefs.outlineColor),
@@ -1330,7 +1373,7 @@ private fun SubtitlePreview(
                                     }
 
                                     useExoPlayer &&
-                                            subtitlePrefs.outlineStyle ==
+                                        subtitlePrefs.outlineStyle ==
                                             SubtitleOutlineStyle.RAISED -> {
                                         Shadow(
                                             color =
@@ -1343,7 +1386,7 @@ private fun SubtitlePreview(
                                     }
 
                                     useExoPlayer &&
-                                            subtitlePrefs.outlineStyle ==
+                                        subtitlePrefs.outlineStyle ==
                                             SubtitleOutlineStyle.DEPRESSED -> {
                                         Shadow(
                                             color =
