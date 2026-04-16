@@ -417,9 +417,7 @@
     <string name="pref_pip_background_summary">Sigue reproduciendo audio cuando la pantalla está apagada</string>
     <string name="pref_group_interface">Interfaz</string>
     <string name="pref_skip_intro_title">Botón omitir introducción</string>
-    <string name="pref_skip_intro_summary">Mostrar botón cuando se detecta la introducción</string>
     <string name="pref_skip_outro_title">Botón Omitir otro</string>
-    <string name="pref_skip_outro_summary">Mostrar botón cuando se detecta otro</string>
     <string name="pref_autohide_logo_title">Ocultar logotipo automáticamente</string>
     <string name="pref_autohide_logo_summary">Ocultar el logotipo del título con los controles del reproductor</string>
     <string name="pref_default_zoom_title">Zoom predeterminado</string>

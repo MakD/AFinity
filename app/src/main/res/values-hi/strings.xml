@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    
+
     <string name="splash_powered_by">जेलीफिन द्वारा संचालित</string>
     <string name="splash_progress_fmt">%1$d%%</string>
     <string name="splash_status_authenticating">प्रमाणित किया जा रहा है...</string>
@@ -11,7 +11,7 @@
     <string name="loading_phase_finalizing">होम स्क्रीन को अंतिम रूप दिया जा रहा है...</string>
     <string name="loading_phase_ready">तैयार!</string>
 
-    
+
     <string name="app_name" translatable="false">AFinity</string>
     <string name="login_connect_to_jellyfin">जेलीफिन से कनेक्ट करें</string>
     <string name="login_welcome_back">वापसी पर स्वागत है</string>
@@ -35,13 +35,13 @@
     <string name="login_quick_connect_instructions">इस कोड को अपने ब्राउज़र में दर्ज करें</string>
     <string name="cd_server_icon">सर्वर चिह्न</string>
 
-    
+
     <string name="top_bar_search_hint">खोज</string>
     <string name="cd_search_icon">खोज</string>
     <string name="cd_profile_icon">प्रोफ़ाइल</string>
     <string name="cd_offline_mode">ऑफ़लाइन मोड</string>
 
-    
+
     <string name="home_error_title">कुछ गलत हो गया</string>
     <string name="home_error_message">डेटा स्वचालित रूप से ताज़ा हो जाएगा</string>
     <string name="home_downloaded_movies">डाउनलोड की गई फिल्में</string>
@@ -72,12 +72,12 @@
     <string name="hero_season_single">1 सीज़न</string>
     <string name="hero_season_plural">%1$d मौसम के</string>
 
-    
+
     <string name="favorites_title">पसंदीदा</string>
     <string name="error_unknown">अज्ञात त्रुटि</string>
     <string name="favorites_empty_title">अभी तक कोई पसंदीदा नहीं</string>
     <string name="favorites_empty_message">जिन आइटमों को आप पसंदीदा के रूप में चिह्नित करेंगे वे यहां दिखाई देंगे</string>
-    
+
     <string name="cast_section_title">ढालना</string>
     <string name="cast_role_format">जैसा %1$s</string>
 
@@ -171,12 +171,12 @@
     <string name="cd_watched_mark">देखे गए के रूप में चिह्नित करें</string>
     <string name="cd_watched_unmark">न देखे गए के रूप में चिह्नित करें</string>
 
-    
+
     <string name="libraries_title">पुस्तकालय</string>
     <string name="libraries_empty_title">कोई लाइब्रेरी नहीं मिली</string>
     <string name="libraries_empty_message">आपका जेलीफ़िन सर्वर काम नहीं कर रहा है\'अभी तक कोई लाइब्रेरी कॉन्फ़िगर नहीं हुई है।</string>
 
-    
+
     <string name="action_search">खोज</string>
     <string name="action_show_all">सब दिखाएं</string>
     <string name="action_clear_filter">फ़िल्टर साफ़ करें</string>
@@ -210,7 +210,7 @@
     <string name="sort_option_release_date">रिलीज़ की तारीख</string>
     <string name="cd_sort_fab">क्रम से लगाना</string>
 
-    
+
     <string name="livetv_unknown_program">अज्ञात कार्यक्रम</string>
     <string name="livetv_program_time_fmt">%1$s • %2$s - %3$s</string>
     <string name="livetv_time_pattern">एच:एमएम ए</string>
@@ -244,7 +244,7 @@
     <string name="livetv_error_not_available_title">लाइव टीवी उपलब्ध नहीं है</string>
     <string name="livetv_error_not_available_message">अपने जेलीफिन सर्वर पर लाइव टीवी कॉन्फ़िगर करें</string>
 
-    
+
     <string name="person_biography">जीवनी</string>
     <string name="person_born_fmt">जन्म: %1$s (%2$d वर्ष पुराना)</string>
     <string name="person_born_deceased_fmt">जन्म: %1$s</string>
@@ -258,7 +258,7 @@
     <string name="cd_external_link">बाहरी लिंक</string>
     <string name="action_retry">पुनः प्रयास करें</string>
 
-    
+
     <string name="player_error_title">प्लेबैक त्रुटि</string>
     <string name="player_up_next">अगला</string>
     <string name="player_season_fmt">मौसम %1$d</string>
@@ -335,7 +335,7 @@
     <string name="error_get_stream_url">स्ट्रीम यूआरएल प्राप्त करने में विफल</string>
     <string name="error_load_channel_fmt">चैनल लोड करने में विफल: %1$s</string>
 
-    
+
     <string name="status_unknown">अज्ञात</string>
     <string name="status_pending">लंबित</string>
     <string name="status_processing">प्रसंस्करण</string>
@@ -383,7 +383,7 @@
     <string name="error_search_failed_fmt">खोज विफल: %1$s</string>
     <string name="error_request_create_failed_fmt">अनुरोध बनाने में विफल: %1$s</string>
 
-    
+
     <string name="error_something_went_wrong">कुछ गलत हो गया</string>
     <string name="tab_movies">चलचित्र</string>
     <string name="tab_tv_shows">टीवी शो</string>
@@ -412,7 +412,7 @@
 
     <string name="cd_request_add">अनुरोध</string>
 
-    
+
     <string name="appearance_title">उपस्थिति</string>
     <string name="settings_group_theme">विषय</string>
     <string name="pref_theme_mode_title">थीम मोड</string>
@@ -501,9 +501,7 @@
 
     <string name="pref_group_interface">इंटरफ़ेस</string>
     <string name="pref_skip_intro_title">परिचय बटन छोड़ें</string>
-    <string name="pref_skip_intro_summary">परिचय का पता चलने पर बटन दिखाएँ</string>
     <string name="pref_skip_outro_title">आउट्रो बटन छोड़ें</string>
-    <string name="pref_skip_outro_summary">आउट्रो का पता चलने पर बटन दिखाएँ</string>
     <string name="pref_autohide_logo_title">लोगो स्वतः छिपाएं</string>
     <string name="pref_autohide_logo_summary">प्लेयर नियंत्रण के साथ शीर्षक लोगो छिपाएँ</string>
     <string name="pref_default_zoom_title">डिफ़ॉल्ट ज़ूम</string>
@@ -731,7 +729,7 @@
     <string name="section_tv_channels">लाइव टीवी चैनल</string>
     <string name="section_people">लोग</string>
 
-    
+
     <string name="cd_cast">ढालना</string>
     <string name="cast_connected_to">कास्टिंग करना %1$s</string>
     <string name="cast_stop">कास्टिंग बंद करो</string>

@@ -505,10 +505,11 @@
     <string name="pref_pip_background_summary">Keep playing audio when screen is off</string>
 
     <string name="pref_group_interface">Interface</string>
-    <string name="pref_skip_intro_title">Skip Intro Button</string>
-    <string name="pref_skip_intro_summary">Show button when intro is detected</string>
-    <string name="pref_skip_outro_title">Skip Outro Button</string>
-    <string name="pref_skip_outro_summary">Show button when outro is detected</string>
+    <string name="pref_skip_intro_title">Skip Intro</string>
+    <string name="pref_skip_outro_title">Skip Outro</string>
+    <string name="skip_mode_button">Show button</string>
+    <string name="skip_mode_auto_skip">Auto-skip</string>
+    <string name="skip_mode_disabled">Disabled</string>
     <string name="pref_autohide_logo_title">Auto-hide Logo</string>
     <string name="pref_autohide_logo_summary">Hide title logo with player controls</string>
     <string name="pref_default_zoom_title">Default Zoom</string>
@@ -722,6 +723,8 @@
 
     <string name="pref_licenses">Licenses</string>
     <string name="pref_licenses_summary">Open source libraries</string>
+    <string name="pref_send_logs">Send Logs</string>
+    <string name="pref_send_logs_summary">Share diagnostic logs for bug reports</string>
 
     <string name="action_logout">Log Out</string>
 

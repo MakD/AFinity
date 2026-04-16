@@ -568,9 +568,7 @@
     <string name="pref_pip_background_title">Hintergrund-Audio</string>
     <string name="pref_pip_background_summary">Ton weiter abspielen, wenn der Bildschirm ausgeschaltet ist</string>
     <string name="pref_skip_intro_title">Intro-Überspringen-Button</string>
-    <string name="pref_skip_intro_summary">Button anzeigen, wenn ein Intro erkannt wird</string>
     <string name="pref_skip_outro_title">Abspann-Überspringen-Button</string>
-    <string name="pref_skip_outro_summary">Button anzeigen, wenn ein Abspann erkannt wird</string>
     <string name="pref_sub_outline_color">Farbe der Umrandung</string>
     <string name="pref_sub_outline_size">Größe der Umrandung</string>
     <string name="action_reset_defaults">Standard wiederherstellen</string>

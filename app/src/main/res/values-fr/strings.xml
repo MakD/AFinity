@@ -396,9 +396,7 @@
     <string name="pref_pip_background_summary">Continuer la lecture audio même lorsque l\'écran est éteint</string>
     <string name="pref_group_interface">Interface</string>
     <string name="pref_skip_intro_title">Bouton Passer l\'intro</string>
-    <string name="pref_skip_intro_summary">Afficher le bouton lorsque l\'intro est détecté</string>
     <string name="pref_skip_outro_title">Bouton Passer le générique de fin</string>
-    <string name="pref_skip_outro_summary">Afficher le bouton lorsque le générique de fin est détecté</string>
     <string name="pref_autohide_logo_title">Cacher automatiquement le logo</string>
     <string name="pref_autohide_logo_summary">Cacher le logo de titre avec les commandes de lecteur</string>
     <string name="pref_default_zoom_title">Zoom par défaut</string>

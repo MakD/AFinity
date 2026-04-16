@@ -422,9 +422,7 @@
     <string name="pref_pip_background_summary">Tetap memutar audio saat layar mati</string>
     <string name="pref_group_interface">Antarmuka</string>
     <string name="pref_skip_intro_title">Tombol Lewati Intro</string>
-    <string name="pref_skip_intro_summary">Tampilkan tombol saat intro terdeteksi</string>
     <string name="pref_skip_outro_title">Tombol Lewati Outro</string>
-    <string name="pref_skip_outro_summary">Tampilkan tombol saat outro terdeteksi</string>
     <string name="pref_autohide_logo_title">Sembunyikan Logo Otomatis</string>
     <string name="pref_autohide_logo_summary">Sembunyikan logo judul bersama kontrol pemutar</string>
     <string name="pref_default_zoom_title">Zoom Bawaan</string>

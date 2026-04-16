@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    
+
     <string name="splash_powered_by">জেলিফিন দ্বারা চালিত</string>
     <string name="splash_progress_fmt">%1$d%%</string>
     <string name="splash_status_authenticating">প্রমাণীকরণ হচ্ছে...</string>
@@ -11,7 +11,7 @@
     <string name="loading_phase_finalizing">হোম স্ক্রীন চূড়ান্ত করা হচ্ছে...</string>
     <string name="loading_phase_ready">প্রস্তুত!</string>
 
-    
+
     <string name="app_name" translatable="false">AFinity</string>
     <string name="login_connect_to_jellyfin">জেলিফিনের সাথে সংযোগ করুন</string>
     <string name="login_welcome_back">স্বাগত ফিরে</string>
@@ -35,13 +35,13 @@
     <string name="login_quick_connect_instructions">আপনার ব্রাউজারে এই কোড লিখুন</string>
     <string name="cd_server_icon">সার্ভার আইকন</string>
 
-    
+
     <string name="top_bar_search_hint">অনুসন্ধান করুন</string>
     <string name="cd_search_icon">অনুসন্ধান করুন</string>
     <string name="cd_profile_icon">প্রোফাইল</string>
     <string name="cd_offline_mode">অফলাইন মোড</string>
 
-    
+
     <string name="home_error_title">কিছু ভুল হয়েছে</string>
     <string name="home_error_message">ডেটা স্বয়ংক্রিয়ভাবে রিফ্রেশ হবে</string>
     <string name="home_downloaded_movies">ডাউনলোড করা সিনেমা</string>
@@ -72,12 +72,12 @@
     <string name="hero_season_single">1 সিজন</string>
     <string name="hero_season_plural">%1$d ঋতু</string>
 
-    
+
     <string name="favorites_title">প্রিয়</string>
     <string name="error_unknown">অজানা ত্রুটি</string>
     <string name="favorites_empty_title">এখনও কোন প্রিয়</string>
     <string name="favorites_empty_message">আপনি পছন্দসই হিসাবে চিহ্নিত আইটেম এখানে প্রদর্শিত হবে</string>
-    
+
     <string name="cast_section_title">কাস্ট</string>
     <string name="cast_role_format">হিসাবে %1$s</string>
 
@@ -171,12 +171,12 @@
     <string name="cd_watched_mark">দেখা হয়েছে হিসেবে চিহ্নিত করুন</string>
     <string name="cd_watched_unmark">অদেখা হিসেবে চিহ্নিত করুন</string>
 
-    
+
     <string name="libraries_title">লাইব্রেরি</string>
     <string name="libraries_empty_title">কোনো লাইব্রেরি পাওয়া যায়নি</string>
     <string name="libraries_empty_message">আপনার জেলিফিন সার্ভার করে না\'এখনও কোন লাইব্রেরি কনফিগার করা আছে.</string>
 
-    
+
     <string name="action_search">অনুসন্ধান করুন</string>
     <string name="action_show_all">সব দেখান</string>
     <string name="action_clear_filter">ফিল্টার সাফ করুন</string>
@@ -210,7 +210,7 @@
     <string name="sort_option_release_date">মুক্তির তারিখ</string>
     <string name="cd_sort_fab">সাজান</string>
 
-    
+
     <string name="livetv_unknown_program">অজানা প্রোগ্রাম</string>
     <string name="livetv_program_time_fmt">%1$s • %2$s - %3$s</string>
     <string name="livetv_time_pattern">h:mm a</string>
@@ -244,7 +244,7 @@
     <string name="livetv_error_not_available_title">লাইভ টিভি উপলব্ধ নেই</string>
     <string name="livetv_error_not_available_message">আপনার Jellyfin সার্ভারে লাইভ টিভি কনফিগার করুন</string>
 
-    
+
     <string name="person_biography">জীবনী</string>
     <string name="person_born_fmt">জন্ম: %1$s (%2$d বছর বয়সী)</string>
     <string name="person_born_deceased_fmt">জন্ম: %1$s</string>
@@ -258,7 +258,7 @@
     <string name="cd_external_link">বাহ্যিক লিঙ্ক</string>
     <string name="action_retry">আবার চেষ্টা করুন</string>
 
-    
+
     <string name="player_error_title">প্লেব্যাক ত্রুটি</string>
     <string name="player_up_next">আপ নেক্সট</string>
     <string name="player_season_fmt">ঋতু %1$d</string>
@@ -335,7 +335,7 @@
     <string name="error_get_stream_url">স্ট্রিম URL পেতে ব্যর্থ</string>
     <string name="error_load_channel_fmt">চ্যানেল লোড করতে ব্যর্থ: %1$s</string>
 
-    
+
     <string name="status_unknown">অজানা</string>
     <string name="status_pending">মুলতুবি</string>
     <string name="status_processing">প্রক্রিয়াকরণ</string>
@@ -383,7 +383,7 @@
     <string name="error_search_failed_fmt">অনুসন্ধান ব্যর্থ হয়েছে: %1$s</string>
     <string name="error_request_create_failed_fmt">অনুরোধ তৈরি করতে ব্যর্থ: %1$s</string>
 
-    
+
     <string name="error_something_went_wrong">কিছু ভুল হয়েছে</string>
     <string name="tab_movies">সিনেমা</string>
     <string name="tab_tv_shows">টিভি শো</string>
@@ -412,7 +412,7 @@
 
     <string name="cd_request_add">অনুরোধ</string>
 
-    
+
     <string name="appearance_title">চেহারা</string>
     <string name="settings_group_theme">থিম</string>
     <string name="pref_theme_mode_title">থিম মোড</string>
@@ -501,9 +501,7 @@
 
     <string name="pref_group_interface">ইন্টারফেস</string>
     <string name="pref_skip_intro_title">ইন্ট্রো বোতাম এড়িয়ে যান</string>
-    <string name="pref_skip_intro_summary">ইন্ট্রো সনাক্ত করা হলে বোতাম দেখান</string>
     <string name="pref_skip_outro_title">আউটরো বোতাম এড়িয়ে যান</string>
-    <string name="pref_skip_outro_summary">আউটরো সনাক্ত করা হলে বোতাম দেখান</string>
     <string name="pref_autohide_logo_title">স্বয়ংক্রিয়-লুকান লোগো</string>
     <string name="pref_autohide_logo_summary">প্লেয়ার কন্ট্রোল সহ শিরোনাম লোগো লুকান</string>
     <string name="pref_default_zoom_title">ডিফল্ট জুম</string>
@@ -731,7 +729,7 @@
     <string name="section_tv_channels">লাইভ টিভি চ্যানেল</string>
     <string name="section_people">মানুষ</string>
 
-    
+
     <string name="cd_cast">কাস্ট</string>
     <string name="cast_connected_to">কাস্ট করা হচ্ছে %1$s</string>
     <string name="cast_stop">কাস্ট করা বন্ধ করুন</string>

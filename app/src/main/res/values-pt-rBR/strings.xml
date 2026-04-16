@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    
+
     <string name="splash_powered_by">Desenvolvido por Jellyfin</string>
     <string name="splash_progress_fmt">%1$d%%</string>
     <string name="splash_status_authenticating">Autenticando...</string>
@@ -11,7 +11,7 @@
     <string name="loading_phase_finalizing">Finalizando a tela inicial...</string>
     <string name="loading_phase_ready">Preparar!</string>
 
-    
+
     <string name="app_name" translatable="false">AFinity</string>
     <string name="login_connect_to_jellyfin">Conecte-se ao Jellyfin</string>
     <string name="login_welcome_back">Bem vindo de volta</string>
@@ -35,13 +35,13 @@
     <string name="login_quick_connect_instructions">Digite este código no seu navegador</string>
     <string name="cd_server_icon">Ícone do servidor</string>
 
-    
+
     <string name="top_bar_search_hint">Procurar</string>
     <string name="cd_search_icon">Procurar</string>
     <string name="cd_profile_icon">Perfil</string>
     <string name="cd_offline_mode">Modo off-line</string>
 
-    
+
     <string name="home_error_title">Algo deu errado</string>
     <string name="home_error_message">Os dados serão atualizados automaticamente</string>
     <string name="home_downloaded_movies">Filmes baixados</string>
@@ -72,12 +72,12 @@
     <string name="hero_season_single">1 temporada</string>
     <string name="hero_season_plural">%1$d Temporadas</string>
 
-    
+
     <string name="favorites_title">Favoritos</string>
     <string name="error_unknown">Erro desconhecido</string>
     <string name="favorites_empty_title">Ainda não há favoritos</string>
     <string name="favorites_empty_message">Os itens que você marcar como favoritos aparecerão aqui</string>
-    
+
     <string name="cast_section_title">Elenco</string>
     <string name="cast_role_format">como %1$s</string>
 
@@ -171,12 +171,12 @@
     <string name="cd_watched_mark">Marcar como assistido</string>
     <string name="cd_watched_unmark">Marcar como não assistido</string>
 
-    
+
     <string name="libraries_title">Bibliotecas</string>
     <string name="libraries_empty_title">Nenhuma biblioteca encontrada</string>
     <string name="libraries_empty_message">Seu servidor Jellyfin não\'ainda não tenho nenhuma biblioteca configurada.</string>
 
-    
+
     <string name="action_search">Procurar</string>
     <string name="action_show_all">Mostrar tudo</string>
     <string name="action_clear_filter">Limpar filtro</string>
@@ -210,7 +210,7 @@
     <string name="sort_option_release_date">Data de lançamento</string>
     <string name="cd_sort_fab">Organizar</string>
 
-    
+
     <string name="livetv_unknown_program">Programa desconhecido</string>
     <string name="livetv_program_time_fmt">%1$s • %2$s - %3$s</string>
     <string name="livetv_time_pattern">h:mm a</string>
@@ -244,7 +244,7 @@
     <string name="livetv_error_not_available_title">TV ao vivo não disponível</string>
     <string name="livetv_error_not_available_message">Configure a TV ao vivo em seu servidor Jellyfin</string>
 
-    
+
     <string name="person_biography">Biografia</string>
     <string name="person_born_fmt">Nascido: %1$s (%2$d anos)</string>
     <string name="person_born_deceased_fmt">Nascer: %1$s</string>
@@ -258,7 +258,7 @@
     <string name="cd_external_link">Link Externo</string>
     <string name="action_retry">Tente novamente</string>
 
-    
+
     <string name="player_error_title">Erro de reprodução</string>
     <string name="player_up_next">A seguir</string>
     <string name="player_season_fmt">Temporada %1$d</string>
@@ -335,7 +335,7 @@
     <string name="error_get_stream_url">Falha ao obter o URL da transmissão</string>
     <string name="error_load_channel_fmt">Falha ao carregar o canal: %1$s</string>
 
-    
+
     <string name="status_unknown">Desconhecido</string>
     <string name="status_pending">Pendente</string>
     <string name="status_processing">Processamento</string>
@@ -383,7 +383,7 @@
     <string name="error_search_failed_fmt">Falha na pesquisa: %1$s</string>
     <string name="error_request_create_failed_fmt">Falha ao criar solicitação: %1$s</string>
 
-    
+
     <string name="error_something_went_wrong">Algo deu errado</string>
     <string name="tab_movies">Filmes</string>
     <string name="tab_tv_shows">Programas de TV</string>
@@ -412,7 +412,7 @@
 
     <string name="cd_request_add">Solicitar</string>
 
-    
+
     <string name="appearance_title">Aparência</string>
     <string name="settings_group_theme">Tema</string>
     <string name="pref_theme_mode_title">Modo Tema</string>
@@ -501,9 +501,7 @@
 
     <string name="pref_group_interface">Interface</string>
     <string name="pref_skip_intro_title">Botão Pular introdução</string>
-    <string name="pref_skip_intro_summary">Mostrar botão quando a introdução for detectada</string>
     <string name="pref_skip_outro_title">Botão Pular Outro</string>
-    <string name="pref_skip_outro_summary">Mostrar botão quando outro for detectado</string>
     <string name="pref_autohide_logo_title">Ocultar logotipo automaticamente</string>
     <string name="pref_autohide_logo_summary">Ocultar o logotipo do título com os controles do player</string>
     <string name="pref_default_zoom_title">Zoom padrão</string>
@@ -731,7 +729,7 @@
     <string name="section_tv_channels">Canais de TV ao vivo</string>
     <string name="section_people">Pessoas</string>
 
-    
+
     <string name="cd_cast">Elenco</string>
     <string name="cast_connected_to">Transmitindo para %1$s</string>
     <string name="cast_stop">Pare de transmitir</string>

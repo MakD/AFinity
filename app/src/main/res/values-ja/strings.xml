@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    
+
     <string name="splash_powered_by">ジェリーフィン搭載</string>
     <string name="splash_progress_fmt">%1$d%%</string>
     <string name="splash_status_authenticating">認証中...</string>
@@ -11,7 +11,7 @@
     <string name="loading_phase_finalizing">ホーム画面を完成させています...</string>
     <string name="loading_phase_ready">準備ができて！</string>
 
-    
+
     <string name="app_name" translatable="false">AFinity</string>
     <string name="login_connect_to_jellyfin">ジェリーフィンに接続する</string>
     <string name="login_welcome_back">おかえり</string>
@@ -35,13 +35,13 @@
     <string name="login_quick_connect_instructions">このコードをブラウザに入力してください</string>
     <string name="cd_server_icon">サーバーアイコン</string>
 
-    
+
     <string name="top_bar_search_hint">検索</string>
     <string name="cd_search_icon">検索</string>
     <string name="cd_profile_icon">プロフィール</string>
     <string name="cd_offline_mode">オフラインモード</string>
 
-    
+
     <string name="home_error_title">何か問題が発生しました</string>
     <string name="home_error_message">データは自動的に更新されます</string>
     <string name="home_downloaded_movies">ダウンロードした映画</string>
@@ -72,12 +72,12 @@
     <string name="hero_season_single">1シーズン</string>
     <string name="hero_season_plural">%1$d 季節</string>
 
-    
+
     <string name="favorites_title">お気に入り</string>
     <string name="error_unknown">不明なエラー</string>
     <string name="favorites_empty_title">お気に入りはまだありません</string>
     <string name="favorites_empty_message">お気に入りとしてマークしたアイテムがここに表示されます</string>
-    
+
     <string name="cast_section_title">キャスト</string>
     <string name="cast_role_format">として %1$s</string>
 
@@ -171,12 +171,12 @@
     <string name="cd_watched_mark">監視済みとしてマークする</string>
     <string name="cd_watched_unmark">未視聴としてマーク</string>
 
-    
+
     <string name="libraries_title">図書館</string>
     <string name="libraries_empty_title">ライブラリが見つかりませんでした</string>
     <string name="libraries_empty_message">Jellyfin サーバーでは、\'まだライブラリが設定されていません。</string>
 
-    
+
     <string name="action_search">検索</string>
     <string name="action_show_all">すべて表示</string>
     <string name="action_clear_filter">クリアフィルター</string>
@@ -210,7 +210,7 @@
     <string name="sort_option_release_date">発売日</string>
     <string name="cd_sort_fab">選別</string>
 
-    
+
     <string name="livetv_unknown_program">不明なプログラム</string>
     <string name="livetv_program_time_fmt">%1$s • %2$s - %3$s</string>
     <string name="livetv_time_pattern">時:mm</string>
@@ -244,7 +244,7 @@
     <string name="livetv_error_not_available_title">生放送は利用できません</string>
     <string name="livetv_error_not_available_message">Jellyfin サーバーでライブ TV を構成する</string>
 
-    
+
     <string name="person_biography">バイオグラフィー</string>
     <string name="person_born_fmt">生まれ: %1$s (%2$d 歳)</string>
     <string name="person_born_deceased_fmt">生まれる： %1$s</string>
@@ -258,7 +258,7 @@
     <string name="cd_external_link">外部リンク</string>
     <string name="action_retry">もう一度やり直してください</string>
 
-    
+
     <string name="player_error_title">再生エラー</string>
     <string name="player_up_next">次へ</string>
     <string name="player_season_fmt">季節 %1$d</string>
@@ -335,7 +335,7 @@
     <string name="error_get_stream_url">ストリームURLの取得に失敗しました</string>
     <string name="error_load_channel_fmt">チャンネルの読み込みに失敗しました: %1$s</string>
 
-    
+
     <string name="status_unknown">未知</string>
     <string name="status_pending">保留中</string>
     <string name="status_processing">処理</string>
@@ -383,7 +383,7 @@
     <string name="error_search_failed_fmt">検索に失敗しました: %1$s</string>
     <string name="error_request_create_failed_fmt">リクエストの作成に失敗しました: %1$s</string>
 
-    
+
     <string name="error_something_went_wrong">何か問題が発生しました</string>
     <string name="tab_movies">映画</string>
     <string name="tab_tv_shows">テレビ番組</string>
@@ -412,7 +412,7 @@
 
     <string name="cd_request_add">リクエスト</string>
 
-    
+
     <string name="appearance_title">外観</string>
     <string name="settings_group_theme">テーマ</string>
     <string name="pref_theme_mode_title">テーマモード</string>
@@ -501,9 +501,7 @@
 
     <string name="pref_group_interface">インタフェース</string>
     <string name="pref_skip_intro_title">イントロをスキップ ボタン</string>
-    <string name="pref_skip_intro_summary">イントロ検出時にボタンを表示</string>
     <string name="pref_skip_outro_title">アウトロをスキップボタン</string>
-    <string name="pref_skip_outro_summary">アウトロ検出時にボタンを表示</string>
     <string name="pref_autohide_logo_title">ロゴの自動非表示</string>
     <string name="pref_autohide_logo_summary">プレーヤーコントロールでタイトルロゴを非表示にする</string>
     <string name="pref_default_zoom_title">デフォルトのズーム</string>
@@ -731,7 +729,7 @@
     <string name="section_tv_channels">ライブ TV チャンネル</string>
     <string name="section_people">人々</string>
 
-    
+
     <string name="cd_cast">キャスト</string>
     <string name="cast_connected_to">キャスト先 %1$s</string>
     <string name="cast_stop">キャストを停止する</string>
