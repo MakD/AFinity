@@ -1,6 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="splash_powered_by">ジェリーフィン搭載</string>
     <string name="splash_progress_fmt">%1$d%%</string>
     <string name="splash_status_authenticating">認証中...</string>
@@ -10,8 +9,6 @@
     <string name="loading_phase_processing">ライブラリを処理中...</string>
     <string name="loading_phase_finalizing">ホーム画面を完成させています...</string>
     <string name="loading_phase_ready">準備ができて！</string>
-
-
     <string name="app_name" translatable="false">AFinity</string>
     <string name="login_connect_to_jellyfin">ジェリーフィンに接続する</string>
     <string name="login_welcome_back">おかえり</string>
@@ -34,14 +31,10 @@
     <string name="login_btn_generate_code">コードの生成</string>
     <string name="login_quick_connect_instructions">このコードをブラウザに入力してください</string>
     <string name="cd_server_icon">サーバーアイコン</string>
-
-
     <string name="top_bar_search_hint">検索</string>
     <string name="cd_search_icon">検索</string>
     <string name="cd_profile_icon">プロフィール</string>
     <string name="cd_offline_mode">オフラインモード</string>
-
-
     <string name="home_error_title">何か問題が発生しました</string>
     <string name="home_error_message">データは自動的に更新されます</string>
     <string name="home_downloaded_movies">ダウンロードした映画</string>
@@ -71,36 +64,26 @@
     <string name="hero_btn_watch_now">今すぐ見る</string>
     <string name="hero_season_single">1シーズン</string>
     <string name="hero_season_plural">%1$d 季節</string>
-
-
     <string name="favorites_title">お気に入り</string>
     <string name="error_unknown">不明なエラー</string>
     <string name="favorites_empty_title">お気に入りはまだありません</string>
     <string name="favorites_empty_message">お気に入りとしてマークしたアイテムがここに表示されます</string>
-
     <string name="cast_section_title">キャスト</string>
     <string name="cast_role_format">として %1$s</string>
-
     <string name="external_links_title">外部リンク</string>
     <string name="external_link_default_name">外部リンク</string>
-
     <string name="collections_included_in">含まれるもの</string>
-
     <string name="meta_res_4k">4K</string>
     <string name="meta_res_hd">HD</string>
     <string name="meta_res_sd">SD</string>
-
     <string name="meta_vision">ビジョン</string>
     <string name="meta_digital">デジタル</string>
     <string name="meta_digital_plus">デジタル+</string>
     <string name="meta_truehd">TrueHD</string>
     <string name="meta_cc">CC</string>
-
     <string name="meta_time_remaining_hours_minutes">%1$dh %2$dm 左</string>
     <string name="meta_time_remaining_minutes">%1$d残りm</string>
-
     <string name="meta_boxset_count">%1$d アイテム</string>
-
     <string name="meta_runtime_hours_minutes">%1$dh %2$dメートル</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">で終了 %1$s</string>
@@ -117,12 +100,10 @@
     <string name="extra_type_featurette">特集記事</string>
     <string name="extra_type_short">短い</string>
     <string name="boxset_items_in_collection">コレクション内のアイテム</string>
-
     <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">遊ぶ</string>
     <string name="episode_resume">再開する</string>
-
     <string name="cd_air_date">放送日</string>
     <string name="cd_duration">間隔</string>
     <string name="cd_go_to_series">シリーズへ</string>
@@ -130,75 +111,55 @@
     <string name="cd_favorite">お気に入り</string>
     <string name="cd_toggle_watched">監視ステータスの切り替え</string>
     <string name="chapters_title">章</string>
-
     <string name="quality_dialog_title">ダウンロード品質の選択</string>
     <string name="quality_dialog_subtitle">ダウンロードする品質を選択してください</string>
     <string name="action_download">ダウンロード</string>
-
     <string name="cd_selected">選択済み</string>
     <string name="cd_not_selected">未選択</string>
-
     <string name="file_size_gb">%.2f GB</string>
     <string name="file_size_mb">%d MB</string>
-
     <string name="season_episodes_title">エピソード</string>
-
     <string name="action_see_more">もっと見る</string>
     <string name="action_see_less">もっと見る</string>
     <string name="cd_expand">拡大する</string>
     <string name="cd_collapse">崩壊</string>
-
     <string name="director_prefix">監督： %1$s</string>
     <string name="writers_prefix">ライター: %1$s</string>
-
     <string name="seasons_title">季節</string>
-
     <string name="action_play">遊ぶ</string>
     <string name="action_rewatch">もう一度見る</string>
     <string name="action_resume_playback">再生を再開する</string>
     <string name="status_loading">読み込み中...</string>
-
     <string name="cd_backdrop_fmt">%1$s 背景</string>
     <string name="cd_logo_fmt">%1$s ロゴ</string>
     <string name="cd_shuffle_play">シャッフルプレイ</string>
-
     <string name="cd_watchlist_add">ウォッチリストに追加</string>
     <string name="cd_watchlist_remove">ウォッチリストから削除</string>
-
     <string name="cd_favorite_add">お気に入りに追加</string>
     <string name="cd_favorite_remove">お気に入りから削除</string>
-
     <string name="cd_watched_mark">監視済みとしてマークする</string>
     <string name="cd_watched_unmark">未視聴としてマーク</string>
-
-
     <string name="libraries_title">図書館</string>
     <string name="libraries_empty_title">ライブラリが見つかりませんでした</string>
     <string name="libraries_empty_message">Jellyfin サーバーでは、\'まだライブラリが設定されていません。</string>
-
-
     <string name="action_search">検索</string>
     <string name="action_show_all">すべて表示</string>
     <string name="action_clear_filter">クリアフィルター</string>
     <string name="action_apply">適用する</string>
     <string name="cd_profile">プロフィール</string>
-
     <string name="library_empty_title">項目が見つかりませんでした</string>
     <string name="library_empty_message">このライブラリは空であるか、コンテンツが存在していないようです\'まだスキャンされていません。</string>
     <string name="library_empty_letter_fmt">で始まるコンテンツはありません \"%1$s\"</string>
-
     <string name="filter_all">全て</string>
     <string name="filter_watched">見た</string>
     <string name="filter_unwatched">未視聴</string>
     <string name="filter_watchlist">ウォッチリスト</string>
     <string name="filter_favorites">お気に入り</string>
-
     <string name="filter_empty_watched">監視されているアイテムが見つかりません</string>
     <string name="filter_empty_unwatched">未視聴のアイテムは見つかりませんでした</string>
     <string name="filter_empty_watchlist">ウォッチリストにアイテムがありません</string>
     <string name="filter_empty_favorites">お気に入りのアイテムが見つかりません</string>
     <string name="filter_empty_all">項目が見つかりませんでした</string>
-
     <string name="sort_title">並べ替え</string>
     <string name="sort_ascending">上昇</string>
     <string name="sort_descending">降順</string>
@@ -209,8 +170,6 @@
     <string name="sort_option_date_played">プレイした日</string>
     <string name="sort_option_release_date">発売日</string>
     <string name="cd_sort_fab">選別</string>
-
-
     <string name="livetv_unknown_program">不明なプログラム</string>
     <string name="livetv_program_time_fmt">%1$s • %2$s - %3$s</string>
     <string name="livetv_time_pattern">時:mm</string>
@@ -240,11 +199,8 @@
     <string name="livetv_tab_programs">プログラム</string>
     <string name="livetv_tab_guide">テレビガイド</string>
     <string name="livetv_tab_channels">チャンネル</string>
-
     <string name="livetv_error_not_available_title">生放送は利用できません</string>
     <string name="livetv_error_not_available_message">Jellyfin サーバーでライブ TV を構成する</string>
-
-
     <string name="person_biography">バイオグラフィー</string>
     <string name="person_born_fmt">生まれ: %1$s (%2$d 歳)</string>
     <string name="person_born_deceased_fmt">生まれる： %1$s</string>
@@ -257,8 +213,6 @@
     <string name="cd_person_image_fmt">%1$s 画像</string>
     <string name="cd_external_link">外部リンク</string>
     <string name="action_retry">もう一度やり直してください</string>
-
-
     <string name="player_error_title">再生エラー</string>
     <string name="player_up_next">次へ</string>
     <string name="player_season_fmt">季節 %1$d</string>
@@ -266,12 +220,10 @@
     <string name="time_minutes_short">%1$dm</string>
     <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">近い</string>
-
     <string name="player_speed_title_fmt">現在の速度 %1$.2fx</string>
     <string name="player_speed_value_fmt">%.2f</string>
     <string name="cd_speed_decrease">速度を下げる</string>
     <string name="cd_speed_increase">速度を上げる</string>
-
     <string name="player_audio_title">オーディオトラック</string>
     <string name="player_subtitle_title">字幕</string>
     <string name="player_version_title">バージョン</string>
@@ -279,13 +231,11 @@
     <string name="version_dialog_subtitle">プレイするバージョンを選択してください</string>
     <string name="cd_version_selector">バージョンセレクター</string>
     <string name="player_episode_header_fmt">S%1$s:E%2$s: %3$s</string>
-
     <string name="track_unknown">未知</string>
     <string name="track_none">なし</string>
     <string name="track_number_fmt">追跡 %1$d</string>
     <string name="audio_channel_fmt">(%1$dch）</string>
     <string name="playback_channel_name">AFinity オーディオブックの再生</string>
-
     <string name="cd_logo">ロゴ</string>
     <string name="cd_series_logo">シリーズロゴ</string>
     <string name="cd_back">戻る</string>
@@ -304,7 +254,6 @@
     <string name="cd_subtitle_settings">字幕設定</string>
     <string name="cd_aspect_ratio">アスペクト比</string>
     <string name="cd_screen_rotation">画面の回転</string>
-
     <string name="cd_fast_forward">早送り</string>
     <string name="cd_rewind">巻き戻し</string>
     <string name="seek_forward_text">+10秒</string>
@@ -312,30 +261,23 @@
     <string name="cd_brightness">輝度</string>
     <string name="cd_volume">音量</string>
     <string name="percent_fmt">%1$d%%</string>
-
     <string name="cd_skip_button_icon">スキップ</string>
-
     <string name="player_live_tuning_fmt">チューニング %1$s...</string>
     <string name="player_error_stream_load">ストリームのロードに失敗しました</string>
     <string name="player_error_media_load">メディアのロードに失敗しました</string>
     <string name="channel_default_name">ライブテレビ</string>
-
     <string name="error_no_media_sources">利用可能なメディア ソースがありません。</string>
     <string name="error_load_stream">ストリームのロードに失敗しました。</string>
     <string name="error_unexpected">予期しないエラーが発生しました。</string>
     <string name="error_load_live_channel">ライブチャンネルの読み込みに失敗しました。</string>
-
     <string name="skip_intro">イントロをスキップ</string>
     <string name="skip_outro">アウトロをスキップ</string>
     <string name="skip_recap">要約をスキップ</string>
     <string name="skip_preview">プレビューをスキップ</string>
     <string name="skip_commercial">コマーシャルをスキップ</string>
     <string name="skip_generic">スキップ</string>
-
     <string name="error_get_stream_url">ストリームURLの取得に失敗しました</string>
     <string name="error_load_channel_fmt">チャンネルの読み込みに失敗しました: %1$s</string>
-
-
     <string name="status_unknown">未知</string>
     <string name="status_pending">保留中</string>
     <string name="status_processing">処理</string>
@@ -343,38 +285,30 @@
     <string name="status_available">利用可能</string>
     <string name="status_deleted">削除されました</string>
     <string name="manage_request_title">リクエストの管理</string>
-
     <string name="cd_tmdb_rating">TMDBの評価</string>
-
     <string name="error_title">エラー</string>
     <string name="error_no_content">利用可能なコンテンツがありません</string>
-
     <string name="error_load_content_generic">コンテンツのロードに失敗しました</string>
-
     <string name="status_declined">拒否されました</string>
     <string name="cd_approve">承認する</string>
     <string name="cd_decline">衰退</string>
     <string name="requested_by_fmt">リクエスト者 %1$s</string>
     <string name="user_unknown">未知</string>
-
     <string name="requests_title">リクエスト</string>
     <string name="jellyseerr_connect_title">Seer に接続する</string>
     <string name="jellyseerr_connect_message">映画やテレビ番組をリクエストするには、Seerr にログインしてください</string>
     <string name="empty_content_message">新しいコンテンツについては後でもう一度確認してください</string>
-
     <string name="section_trending">今のトレンド</string>
     <string name="section_popular_movies">人気の映画</string>
     <string name="section_upcoming_movies">今後の映画</string>
     <string name="section_popular_tv">人気のテレビ番組</string>
     <string name="section_upcoming_tv">今後のテレビ番組</string>
-
     <string name="section_recent_requests">最近のリクエスト</string>
     <string name="section_studios">スタジオ</string>
     <string name="section_networks">ネットワーク</string>
     <string name="section_movie_genres">映画のジャンル</string>
     <string name="section_tv_genres">テレビのジャンル</string>
     <string name="cd_view_all">すべて見る</string>
-
     <string name="error_requests_load_failed">リクエストのロードに失敗しました</string>
     <string name="error_request_delete_failed_fmt">リクエストの削除に失敗しました: %1$s</string>
     <string name="error_request_approve_failed_fmt">リクエストの承認に失敗しました: %1$s</string>
@@ -382,8 +316,6 @@
     <string name="error_search_no_results_fmt">結果が見つかりませんでした \'%1$s\'</string>
     <string name="error_search_failed_fmt">検索に失敗しました: %1$s</string>
     <string name="error_request_create_failed_fmt">リクエストの作成に失敗しました: %1$s</string>
-
-
     <string name="error_something_went_wrong">何か問題が発生しました</string>
     <string name="tab_movies">映画</string>
     <string name="tab_tv_shows">テレビ番組</string>
@@ -392,7 +324,6 @@
     <string name="empty_genre_audiobooks">このジャンルのオーディオブックは見つかりませんでした</string>
     <string name="empty_genre_podcasts">このジャンルのポッドキャストは見つかりませんでした</string>
     <string name="error_unknown_occurred">不明なエラーが発生しました</string>
-
     <string name="search_no_results">結果が見つかりませんでした</string>
     <string name="search_placeholder">映画やテレビ番組を検索する</string>
     <string name="cd_clear">クリア</string>
@@ -404,38 +335,29 @@
     <string name="cd_finished">終了した</string>
     <string name="media_type_book">本</string>
     <string name="media_type_podcast">ポッドキャスト</string>
-
     <string name="media_type_movie">映画</string>
     <string name="media_type_tv_show">テレビ番組</string>
     <string name="media_type_media">メディア</string>
     <string name="media_type_unknown">未知</string>
-
     <string name="cd_request_add">リクエスト</string>
-
-
     <string name="appearance_title">外観</string>
     <string name="settings_group_theme">テーマ</string>
     <string name="pref_theme_mode_title">テーマモード</string>
     <string name="pref_dynamic_colors_title">ダイナミックカラー</string>
     <string name="pref_dynamic_colors_summary">壁紙の色を使用する</string>
-
     <string name="settings_group_home_screen">ホーム画面</string>
     <string name="pref_combine_library_title">ライブラリセクションを結合する</string>
     <string name="pref_combine_library_summary">映画とテレビ番組を単一のリストに結合する</string>
     <string name="pref_sort_date_added_title">追加日順に並べ替える</string>
     <string name="pref_sort_date_added_summary">ホーム画面に最新のコンテンツを最初に表示する</string>
-
     <string name="settings_group_content_layout">コンテンツのレイアウト</string>
     <string name="pref_episode_layout_title">エピソードのレイアウト</string>
-
     <string name="theme_system">システムのデフォルト</string>
     <string name="theme_light">ライト</string>
     <string name="theme_dark">暗い</string>
     <string name="theme_amoled">アモールド</string>
-
     <string name="layout_horizontal">水平</string>
     <string name="layout_vertical">垂直</string>
-
     <string name="downloads_title">ダウンロード</string>
     <string name="pref_downloads_and_storage">ダウンロードとストレージ</string>
     <string name="pref_downloads_and_storage_summary">オフラインメディアと画像キャッシュを管理する</string>
@@ -458,12 +380,10 @@
     <string name="storage_free_on_device_fmt">%1$s デバイス上で無料</string>
     <string name="storage_this_server">このサーバー</string>
     <string name="storage_all_servers_fmt">%1$s すべてのサーバーの合計</string>
-
     <string name="download_preferences_title">ダウンロード設定</string>
     <string name="pref_download_wifi_only_title">Wi-Fiのみ</string>
     <string name="pref_download_wifi_only_subtitle">Wi-Fi経由でのみダウンロードする</string>
     <string name="pref_download_mobile_data_warning">モバイルデータ経由でダウンロードすると、通信事業者から追加のデータ料金が発生する場合があります</string>
-
     <string name="cd_storage_stats">ストレージ統計</string>
     <string name="cd_pause_download">ダウンロードを一時停止する</string>
     <string name="cd_resume_download">ダウンロードを再開する</string>
@@ -471,9 +391,7 @@
     <string name="cd_delete_download">ダウンロードの削除</string>
     <string name="cd_status_failed">失敗した</string>
     <string name="cd_status_completed">完了</string>
-
     <string name="player_options_title">プレーヤーのオプション</string>
-
     <string name="pref_group_engine">エンジンと挙動</string>
     <string name="pref_use_exoplayer_title">ExoPlayer を使用する</string>
     <string name="pref_use_exoplayer_summary">無効の場合は LibMPV を使用します</string>
@@ -492,20 +410,17 @@
     <string name="pref_language_search_hint">言語を検索…</string>
     <string name="pref_autoplay_title">自動再生</string>
     <string name="pref_autoplay_summary">次のエピソードを自動的に再生する</string>
-
     <string name="pref_group_pip">ピクチャー・イン・ピクチャー</string>
     <string name="pref_pip_gesture_title">ホームジェスチャー</string>
     <string name="pref_pip_gesture_summary">ホームにスワイプするときに PiP を入力してください</string>
     <string name="pref_pip_background_title">バックグラウンドオーディオ</string>
     <string name="pref_pip_background_summary">画面がオフのときもオーディオを再生し続ける</string>
-
     <string name="pref_group_interface">インタフェース</string>
     <string name="pref_skip_intro_title">イントロをスキップ ボタン</string>
     <string name="pref_skip_outro_title">アウトロをスキップボタン</string>
     <string name="pref_autohide_logo_title">ロゴの自動非表示</string>
     <string name="pref_autohide_logo_summary">プレーヤーコントロールでタイトルロゴを非表示にする</string>
     <string name="pref_default_zoom_title">デフォルトのズーム</string>
-
     <string name="pref_group_subtitles">字幕</string>
     <string name="pref_sub_text_color">文字の色</string>
     <string name="pref_sub_text_size">文字サイズ</string>
@@ -524,7 +439,6 @@
     <string name="pref_sub_horizontal_align">水平方向の配置</string>
     <string name="action_reset_defaults">デフォルトにリセット</string>
     <string name="subtitle_preview_text">字幕プレビュー</string>
-
     <string name="color_picker_title">色の選択</string>
     <string name="color_picker_presets">プリセットカラー</string>
     <string name="color_picker_custom">カスタムカラー (16 進数)</string>
@@ -533,11 +447,9 @@
     <string name="color_picker_invalid">無効な 16 進形式です</string>
     <string name="color_picker_apply">カスタムカラーを適用する</string>
     <string name="action_cancel">キャンセル</string>
-
     <string name="zoom_fit">フィット</string>
     <string name="zoom_zoom">ズーム</string>
     <string name="zoom_stretch">ストレッチ</string>
-
     <string name="outline_none">なし</string>
     <string name="outline_outline">概要</string>
     <string name="outline_drop_shadow">ドロップシャドウ</string>
@@ -549,7 +461,6 @@
     <string name="align_right">右</string>
     <string name="align_top">トップ</string>
     <string name="align_bottom">底</string>
-
     <string name="title_add_server">サーバーの追加</string>
     <string name="title_edit_server">サーバーの編集</string>
     <string name="server_details_subtitle">Jellyfin サーバーの詳細を入力します</string>
@@ -564,14 +475,12 @@
     <string name="connection_success_title">接続成功</string>
     <string name="connection_success_fmt">見つかった %1$s (v%2$s）</string>
     <string name="connection_failed_title">接続に失敗しました</string>
-
     <string name="error_load_server_failed_fmt">サーバーのロードに失敗しました: %1$s</string>
     <string name="error_enter_server_url">サーバーの URL を入力してください</string>
     <string name="error_connection_test_failed_fmt">接続テストが失敗しました: %1$s</string>
     <string name="error_url_required">サーバーURLは必須です</string>
     <string name="error_test_connection_first">まず接続をテストしてください</string>
     <string name="error_save_server_failed_fmt">サーバーを保存できませんでした: %1$s</string>
-
     <string name="server_management_title">サーバーの管理</string>
     <string name="cd_add_server">サーバーの追加</string>
     <string name="cd_edit_server">サーバーの編集</string>
@@ -581,16 +490,13 @@
     <string name="user_count_fmt">%1$d  %2$s</string>
     <string name="user_singular">ユーザー</string>
     <string name="user_plural">ユーザー</string>
-
     <string name="dialog_delete_server_title">サーバーを削除しますか?</string>
     <string name="dialog_delete_server_message_fmt">削除してもよろしいですか \"%1$s\"?</string>
     <string name="dialog_delete_server_warning_fmt">これで削除されます %1$d 保存されたユーザーとすべての関連データ。</string>
     <string name="action_delete">消去</string>
-
     <string name="error_load_servers_failed">サーバーのロードに失敗しました</string>
     <string name="error_delete_active_server">現在アクティブなサーバーを削除できません。まず別のサーバーに切り替えてください。</string>
     <string name="error_delete_server_failed">サーバーの削除に失敗しました</string>
-
     <string name="update_available_title">利用可能なアップデート</string>
     <string name="update_whats_new">新機能\'</string>
     <string name="update_version_fmt">v%1$s</string>
@@ -598,7 +504,6 @@
     <string name="btn_downloading">ダウンロード中...</string>
     <string name="btn_install_restart">インストールと再起動</string>
     <string name="action_not_now">今じゃない</string>
-
     <string name="pref_group_updates">アップデート</string>
     <string name="pref_check_updates_title">アップデートをチェックする</string>
     <string name="update_status_checking">チェック中...</string>
@@ -608,13 +513,11 @@
     <string name="update_status_last_check_fmt">最終チェック: %1$s</string>
     <string name="update_progress_fmt">%1$d%%</string>
     <string name="pref_check_frequency_title">チェック頻度</string>
-
     <string name="freq_on_app_open">アプリを開いたとき</string>
     <string name="freq_6_hours">6時間ごと</string>
     <string name="freq_12_hours">12時間ごと</string>
     <string name="freq_24_hours">24時間ごと</string>
     <string name="update_never_checked">一度もない</string>
-
     <string name="jellyseerr_connect_subtitle">サーバーの詳細を入力してコンテンツリクエストを有効にします</string>
     <string name="jellyseerr_placeholder_url">https://seerr.example.com</string>
     <string name="label_login_method">ログイン方法</string>
@@ -629,98 +532,76 @@
     <string name="cd_show_password">パスワードを表示</string>
     <string name="cd_hide_password">パスワードを隠す</string>
     <string name="btn_login">ログイン</string>
-
     <string name="licenses_title">オープンソースライセンス</string>
     <string name="licenses_header_title">オープンソースの依存関係</string>
     <string name="licenses_header_subtitle">このアプリは次のオープンソース ライブラリを使用しています</string>
     <string name="licenses_footer_built_with">オープンソース ソフトウェアで構築</string>
     <string name="licenses_footer_terms">それぞれの条件に基づいてライセンス供与される</string>
-
     <string name="session_switcher_title">セッションの切り替え</string>
     <string name="action_login_server">このサーバーにログインします</string>
     <string name="action_add_account">別のアカウントを追加する</string>
     <string name="empty_sessions_title">保存されたセッションはありません</string>
     <string name="empty_sessions_message">サーバーにログインしてセッションを作成します</string>
-
     <string name="cd_user_avatar">ユーザーアバター</string>
     <string name="cd_current_session">現在のセッション</string>
-
     <string name="error_session_token_not_found">セッショントークンが見つかりません</string>
     <string name="error_server_not_found">サーバーが見つかりません</string>
     <string name="error_switch_session_failed_fmt">セッションの切り替えに失敗しました: %1$s</string>
     <string name="error_switch_session_error_fmt">セッション切り替えエラー: %1$s</string>
-
     <string name="settings_title">設定</string>
     <string name="unknown_user">不明なユーザー</string>
     <string name="unknown_server">不明なサーバー</string>
     <string name="cd_profile_picture">プロフィール写真</string>
-
     <string name="pref_group_general">一般的な</string>
     <string name="pref_offline_mode">オフラインモード</string>
     <string name="offline_mode_no_connection">オフライン (接続されていません)</string>
     <string name="offline_mode_manual">手動で有効にする</string>
     <string name="offline_mode_force">強制オフラインモード</string>
-
     <string name="pref_discovery_requests">発見とリクエスト</string>
     <string name="discovery_connected">Seerr経由で接続</string>
     <string name="discovery_connect">接続してコンテンツをリクエストする</string>
-
     <string name="pref_audiobookshelf">オーディオブック棚</string>
     <string name="audiobookshelf_connected">オーディオブックシェルフに接続しました</string>
     <string name="audiobookshelf_connect">接続してオーディオブックを閲覧する</string>
     <string name="dialog_disconnect_audiobookshelf_title">オーディオブックシェルフの接続を解除する</string>
     <string name="dialog_disconnect_audiobookshelf_message">切断すると、オーディオブックシェルフ構成が削除されます。いつでも再接続できます。</string>
     <string name="error_audiobookshelf_logout_failed_fmt">オーディオブックシェルフからの切断に失敗しました: %1$s</string>
-
     <string name="notification_permission_title">通知を有効にする</string>
     <string name="notification_permission_message">AFinity では、オーディオブックまたはポッドキャストの再生中に通知パネルとロック画面にメディア プレーヤーを表示するには、通知権限が必要です。\n\n後で気が変わった場合は、[アプリ情報] → [権限] → [通知] から手動で有効にできます。</string>
     <string name="notification_permission_yes">許可する</string>
     <string name="notification_permission_no">結構です</string>
-
     <string name="pref_downloads">ダウンロード</string>
     <string name="pref_downloads_summary">オフラインコンテンツの管理</string>
-
     <string name="pref_switch_session">セッションの切り替え</string>
     <string name="pref_switch_session_summary">ユーザーまたはサーバーを変更する</string>
-
     <string name="pref_group_connections">接続</string>
     <string name="pref_manage_servers">サーバーの管理</string>
     <string name="pref_manage_servers_summary">Jellyfin サーバーの追加または削除</string>
-
     <string name="pref_group_preferences">設定</string>
     <string name="pref_appearance">外観</string>
     <string name="pref_appearance_summary">テーマとレイアウト</string>
-
     <string name="pref_playback">再生</string>
     <string name="pref_playback_summary">プレイヤーの行動と品質</string>
-
     <string name="pref_group_about">について</string>
     <string name="pref_version">バージョン</string>
     <string name="version_fmt">%1$s (%2$s）</string>
     <string name="build_debug">デバッグビルド</string>
     <string name="build_release">リリースビルド</string>
-
     <string name="pref_licenses">ライセンス</string>
     <string name="pref_licenses_summary">オープンソース ライブラリ</string>
-
     <string name="action_logout">ログアウト</string>
-
     <string name="dialog_logout_title">ログアウト</string>
     <string name="dialog_logout_message">ログアウトしてもよろしいですか?コンテンツにアクセスするには、再度サインインする必要があります。</string>
-
     <string name="dialog_disconnect_seerr_title">切断シーラー</string>
     <string name="dialog_disconnect_seerr_message">切断すると、新しいリクエストを行うことができなくなります。いつでも再接続できます。</string>
     <string name="action_disconnect">切断する</string>
     <string name="dialog_error_title">エラー</string>
     <string name="action_ok">わかりました</string>
-
     <string name="error_logout_failed_fmt">ログアウトに失敗しました: %1$s</string>
     <string name="error_jellyseerr_logout_failed_fmt">Seerr からのログアウトに失敗しました: %1$s</string>
-
     <string name="watchlist_title">ウォッチリスト</string>
     <string name="watchlist_empty">ウォッチリストは空です</string>
     <string name="watchlist_section_header_fmt">%1$s (%2$d）</string>
-
     <string name="section_movies">映画</string>
     <string name="section_boxset">ボックスセット</string>
     <string name="section_tv_shows">テレビ番組</string>
@@ -728,8 +609,6 @@
     <string name="section_episodes">エピソード</string>
     <string name="section_tv_channels">ライブ TV チャンネル</string>
     <string name="section_people">人々</string>
-
-
     <string name="cd_cast">キャスト</string>
     <string name="cast_connected_to">キャスト先 %1$s</string>
     <string name="cast_stop">キャストを停止する</string>
