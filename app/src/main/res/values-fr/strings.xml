@@ -395,8 +395,8 @@
     <string name="pref_pip_background_title">Audio de fond</string>
     <string name="pref_pip_background_summary">Continuer la lecture audio même lorsque l\'écran est éteint</string>
     <string name="pref_group_interface">Interface</string>
-    <string name="pref_skip_intro_title">Bouton Passer l\'intro</string>
-    <string name="pref_skip_outro_title">Bouton Passer le générique de fin</string>
+    <string name="pref_skip_intro_title">Passer l’introduction</string>
+    <string name="pref_skip_outro_title">Passer le générique de fin</string>
     <string name="pref_autohide_logo_title">Cacher automatiquement le logo</string>
     <string name="pref_autohide_logo_summary">Cacher le logo de titre avec les commandes de lecteur</string>
     <string name="pref_default_zoom_title">Zoom par défaut</string>
@@ -627,4 +627,24 @@
     <string name="pref_cast_hevc_title">Activer HEVC</string>
     <string name="pref_cast_hevc_description">Activer pour Chromecast Ultra / Google TV</string>
     <string name="pref_cast_max_bitrate_title">Débit maximal</string>
+    <string name="cd_local_connection">Connexion locale</string>
+    <string name="cd_tailscale_connection">Connexion Tailscale</string>
+    <string name="cd_remote_connection">Connexion à distance</string>
+    <string name="playing_intro_text">Lecture de l’introduction…</string>
+    <string name="media_type_episode">Épisode</string>
+    <string name="media_type_collection">Coffret</string>
+    <string name="skip_mode_button">Afficher le bouton</string>
+    <string name="skip_mode_auto_skip">Saut automatique</string>
+    <string name="skip_mode_disabled">Désactivé</string>
+    <string name="error_all_addresses_unreachable">Impossible de joindre le serveur à aucune des adresses enregistrées</string>
+    <string name="address_added_title">Adresse ajoutée</string>
+    <string name="address_added_to_existing_server">Cette adresse a été ajoutée à votre serveur existant %1$s.</string>
+    <string name="btn_ok">OK</string>
+    <string name="address_already_saved">Cette adresse est déjà enregistrée pour ce serveur</string>
+    <string name="label_primary_address">Principal</string>
+    <string name="action_set_primary">Définir comme principal</string>
+    <string name="error_cannot_delete_primary">Impossible de supprimer l’adresse principale</string>
+    <string name="pref_send_logs">Envoyer les journaux</string>
+    <string name="pref_send_logs_summary">Partager les journaux de diagnostic pour les rapports de bug</string>
+    <string name="action_close">Fermer</string>
 </resources>
