@@ -1,6 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="splash_powered_by">জেলিফিন দ্বারা চালিত</string>
     <string name="splash_progress_fmt">%1$d%%</string>
     <string name="splash_status_authenticating">প্রমাণীকরণ হচ্ছে...</string>
@@ -10,8 +9,6 @@
     <string name="loading_phase_processing">লাইব্রেরি প্রসেস করা হচ্ছে...</string>
     <string name="loading_phase_finalizing">হোম স্ক্রীন চূড়ান্ত করা হচ্ছে...</string>
     <string name="loading_phase_ready">প্রস্তুত!</string>
-
-
     <string name="app_name" translatable="false">AFinity</string>
     <string name="login_connect_to_jellyfin">জেলিফিনের সাথে সংযোগ করুন</string>
     <string name="login_welcome_back">স্বাগত ফিরে</string>
@@ -34,14 +31,10 @@
     <string name="login_btn_generate_code">কোড তৈরি করুন</string>
     <string name="login_quick_connect_instructions">আপনার ব্রাউজারে এই কোড লিখুন</string>
     <string name="cd_server_icon">সার্ভার আইকন</string>
-
-
     <string name="top_bar_search_hint">অনুসন্ধান করুন</string>
     <string name="cd_search_icon">অনুসন্ধান করুন</string>
     <string name="cd_profile_icon">প্রোফাইল</string>
     <string name="cd_offline_mode">অফলাইন মোড</string>
-
-
     <string name="home_error_title">কিছু ভুল হয়েছে</string>
     <string name="home_error_message">ডেটা স্বয়ংক্রিয়ভাবে রিফ্রেশ হবে</string>
     <string name="home_downloaded_movies">ডাউনলোড করা সিনেমা</string>
@@ -71,36 +64,26 @@
     <string name="hero_btn_watch_now">এখন দেখুন</string>
     <string name="hero_season_single">1 সিজন</string>
     <string name="hero_season_plural">%1$d ঋতু</string>
-
-
     <string name="favorites_title">প্রিয়</string>
     <string name="error_unknown">অজানা ত্রুটি</string>
     <string name="favorites_empty_title">এখনও কোন প্রিয়</string>
     <string name="favorites_empty_message">আপনি পছন্দসই হিসাবে চিহ্নিত আইটেম এখানে প্রদর্শিত হবে</string>
-
     <string name="cast_section_title">কাস্ট</string>
     <string name="cast_role_format">হিসাবে %1$s</string>
-
     <string name="external_links_title">বহিরাগত লিঙ্ক</string>
     <string name="external_link_default_name">বাহ্যিক লিঙ্ক</string>
-
     <string name="collections_included_in">অন্তর্ভুক্ত</string>
-
     <string name="meta_res_4k">4K</string>
     <string name="meta_res_hd">এইচডি</string>
     <string name="meta_res_sd">এসডি</string>
-
     <string name="meta_vision">দৃষ্টি</string>
     <string name="meta_digital">ডিজিটাল</string>
     <string name="meta_digital_plus">ডিজিটাল+</string>
     <string name="meta_truehd">ট্রুএইচডি</string>
     <string name="meta_cc">সিসি</string>
-
     <string name="meta_time_remaining_hours_minutes">%1$dh %2$dm বাকি</string>
     <string name="meta_time_remaining_minutes">%1$dm বাকি</string>
-
     <string name="meta_boxset_count">%1$d আইটেম</string>
-
     <string name="meta_runtime_hours_minutes">%1$dজ %2$dমি</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">এ শেষ হয় %1$s</string>
@@ -117,12 +100,10 @@
     <string name="extra_type_featurette">বৈশিষ্ট্য</string>
     <string name="extra_type_short">সংক্ষিপ্ত</string>
     <string name="boxset_items_in_collection">সংগ্রহে আইটেম</string>
-
     <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">খেলা</string>
     <string name="episode_resume">পুনরায় শুরু করুন</string>
-
     <string name="cd_air_date">এয়ার ডেট</string>
     <string name="cd_duration">সময়কাল</string>
     <string name="cd_go_to_series">সিরিজে যান</string>
@@ -130,75 +111,55 @@
     <string name="cd_favorite">প্রিয়</string>
     <string name="cd_toggle_watched">দেখা স্ট্যাটাস টগল করুন</string>
     <string name="chapters_title">অধ্যায়</string>
-
     <string name="quality_dialog_title">ডাউনলোড গুণমান নির্বাচন করুন</string>
     <string name="quality_dialog_subtitle">কোন মানের ডাউনলোড করতে হবে তা বেছে নিন</string>
     <string name="action_download">ডাউনলোড করুন</string>
-
     <string name="cd_selected">নির্বাচিত</string>
     <string name="cd_not_selected">নির্বাচিত হয়নি</string>
-
     <string name="file_size_gb">%.2f GB</string>
     <string name="file_size_mb">%d এমবি</string>
-
     <string name="season_episodes_title">পর্বগুলি</string>
-
     <string name="action_see_more">আরও দেখুন</string>
     <string name="action_see_less">কম দেখুন</string>
     <string name="cd_expand">প্রসারিত করুন</string>
     <string name="cd_collapse">সঙ্কুচিত</string>
-
     <string name="director_prefix">পরিচালক: %1$s</string>
     <string name="writers_prefix">লেখক: %1$s</string>
-
     <string name="seasons_title">ঋতু</string>
-
     <string name="action_play">খেলা</string>
     <string name="action_rewatch">রিওয়াচ</string>
     <string name="action_resume_playback">প্লেব্যাক পুনরায় শুরু করুন</string>
     <string name="status_loading">লোড হচ্ছে...</string>
-
     <string name="cd_backdrop_fmt">%1$s পটভূমি</string>
     <string name="cd_logo_fmt">%1$s লোগো</string>
     <string name="cd_shuffle_play">এলোমেলো খেলা</string>
-
     <string name="cd_watchlist_add">ওয়াচলিস্টে যোগ করুন</string>
     <string name="cd_watchlist_remove">ওয়াচলিস্ট থেকে সরান</string>
-
     <string name="cd_favorite_add">ফেভারিটে যোগ করুন</string>
     <string name="cd_favorite_remove">প্রিয় থেকে সরান</string>
-
     <string name="cd_watched_mark">দেখা হয়েছে হিসেবে চিহ্নিত করুন</string>
     <string name="cd_watched_unmark">অদেখা হিসেবে চিহ্নিত করুন</string>
-
-
     <string name="libraries_title">লাইব্রেরি</string>
     <string name="libraries_empty_title">কোনো লাইব্রেরি পাওয়া যায়নি</string>
     <string name="libraries_empty_message">আপনার জেলিফিন সার্ভার করে না\'এখনও কোন লাইব্রেরি কনফিগার করা আছে.</string>
-
-
     <string name="action_search">অনুসন্ধান করুন</string>
     <string name="action_show_all">সব দেখান</string>
     <string name="action_clear_filter">ফিল্টার সাফ করুন</string>
     <string name="action_apply">আবেদন করুন</string>
     <string name="cd_profile">প্রোফাইল</string>
-
     <string name="library_empty_title">কোন আইটেম পাওয়া যায়নি</string>
     <string name="library_empty_message">এই লাইব্রেরিটি খালি বা বিষয়বস্তু নেই বলে মনে হচ্ছে৷\'এখনো স্ক্যান করা হয়নি।</string>
     <string name="library_empty_letter_fmt">কোন বিষয়বস্তু দিয়ে শুরু \"%1$s\"</string>
-
     <string name="filter_all">সব</string>
     <string name="filter_watched">দেখেছে</string>
     <string name="filter_unwatched">অদেখা</string>
     <string name="filter_watchlist">ওয়াচলিস্ট</string>
     <string name="filter_favorites">প্রিয়</string>
-
     <string name="filter_empty_watched">কোনো দেখা আইটেম পাওয়া যায়নি</string>
     <string name="filter_empty_unwatched">কোন অবহেলিত আইটেম পাওয়া যায়নি</string>
     <string name="filter_empty_watchlist">আপনার ওয়াচলিস্টে কোনো আইটেম নেই</string>
     <string name="filter_empty_favorites">কোন প্রিয় আইটেম পাওয়া যায়নি</string>
     <string name="filter_empty_all">কোন আইটেম পাওয়া যায়নি</string>
-
     <string name="sort_title">অনুসারে সাজান</string>
     <string name="sort_ascending">আরোহী</string>
     <string name="sort_descending">অবরোহী</string>
@@ -209,8 +170,6 @@
     <string name="sort_option_date_played">খেলার তারিখ</string>
     <string name="sort_option_release_date">মুক্তির তারিখ</string>
     <string name="cd_sort_fab">সাজান</string>
-
-
     <string name="livetv_unknown_program">অজানা প্রোগ্রাম</string>
     <string name="livetv_program_time_fmt">%1$s • %2$s - %3$s</string>
     <string name="livetv_time_pattern">h:mm a</string>
@@ -240,11 +199,8 @@
     <string name="livetv_tab_programs">প্রোগ্রাম</string>
     <string name="livetv_tab_guide">টিভি গাইড</string>
     <string name="livetv_tab_channels">চ্যানেল</string>
-
     <string name="livetv_error_not_available_title">লাইভ টিভি উপলব্ধ নেই</string>
     <string name="livetv_error_not_available_message">আপনার Jellyfin সার্ভারে লাইভ টিভি কনফিগার করুন</string>
-
-
     <string name="person_biography">জীবনী</string>
     <string name="person_born_fmt">জন্ম: %1$s (%2$d বছর বয়সী)</string>
     <string name="person_born_deceased_fmt">জন্ম: %1$s</string>
@@ -257,8 +213,6 @@
     <string name="cd_person_image_fmt">%1$s ইমেজ</string>
     <string name="cd_external_link">বাহ্যিক লিঙ্ক</string>
     <string name="action_retry">আবার চেষ্টা করুন</string>
-
-
     <string name="player_error_title">প্লেব্যাক ত্রুটি</string>
     <string name="player_up_next">আপ নেক্সট</string>
     <string name="player_season_fmt">ঋতু %1$d</string>
@@ -266,12 +220,10 @@
     <string name="time_minutes_short">%1$dm</string>
     <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">বন্ধ</string>
-
     <string name="player_speed_title_fmt">বর্তমান গতি %1$.2fx</string>
     <string name="player_speed_value_fmt">%.2f</string>
     <string name="cd_speed_decrease">গতি কমান</string>
     <string name="cd_speed_increase">গতি বাড়ান</string>
-
     <string name="player_audio_title">অডিও ট্র্যাক</string>
     <string name="player_subtitle_title">সাবটাইটেল</string>
     <string name="player_version_title">সংস্করণ</string>
@@ -279,13 +231,11 @@
     <string name="version_dialog_subtitle">কোন সংস্করণটি খেলতে হবে তা নির্বাচন করুন</string>
     <string name="cd_version_selector">সংস্করণ নির্বাচক</string>
     <string name="player_episode_header_fmt">S%1$s:E%2$s: %3$s</string>
-
     <string name="track_unknown">অজানা</string>
     <string name="track_none">কোনোটিই নয়</string>
     <string name="track_number_fmt">ট্র্যাক %1$d</string>
     <string name="audio_channel_fmt">(%1$dch)</string>
     <string name="playback_channel_name">এফিনিটি অডিওবুক প্লেব্যাক</string>
-
     <string name="cd_logo">লোগো</string>
     <string name="cd_series_logo">সিরিজের লোগো</string>
     <string name="cd_back">ব্যাক</string>
@@ -304,7 +254,6 @@
     <string name="cd_subtitle_settings">সাবটাইটেল সেটিংস</string>
     <string name="cd_aspect_ratio">আকৃতির অনুপাত</string>
     <string name="cd_screen_rotation">পর্দা ঘূর্ণন</string>
-
     <string name="cd_fast_forward">ফাস্ট ফরোয়ার্ড</string>
     <string name="cd_rewind">রিওয়াইন্ড</string>
     <string name="seek_forward_text">+10</string>
@@ -312,30 +261,23 @@
     <string name="cd_brightness">উজ্জ্বলতা</string>
     <string name="cd_volume">আয়তন</string>
     <string name="percent_fmt">%1$d%%</string>
-
     <string name="cd_skip_button_icon">এড়িয়ে যান</string>
-
     <string name="player_live_tuning_fmt">টিউনিং %1$s...</string>
     <string name="player_error_stream_load">স্ট্রিম লোড করতে ব্যর্থ হয়েছে</string>
     <string name="player_error_media_load">মিডিয়া লোড করতে ব্যর্থ হয়েছে৷</string>
     <string name="channel_default_name">লাইভ টিভি</string>
-
     <string name="error_no_media_sources">কোন মিডিয়া সূত্র উপলব্ধ.</string>
     <string name="error_load_stream">স্ট্রিম লোড করতে ব্যর্থ হয়েছে.</string>
     <string name="error_unexpected">একটি অপ্রত্যাশিত ত্রুটি ঘটেছে৷</string>
     <string name="error_load_live_channel">লাইভ চ্যানেল লোড করতে ব্যর্থ হয়েছে.</string>
-
     <string name="skip_intro">ভূমিকা এড়িয়ে যান</string>
     <string name="skip_outro">আউটরো এড়িয়ে যান</string>
     <string name="skip_recap">রিক্যাপ এড়িয়ে যান</string>
     <string name="skip_preview">প্রিভিউ এড়িয়ে যান</string>
     <string name="skip_commercial">বাণিজ্যিক এড়িয়ে যান</string>
     <string name="skip_generic">এড়িয়ে যান</string>
-
     <string name="error_get_stream_url">স্ট্রিম URL পেতে ব্যর্থ</string>
     <string name="error_load_channel_fmt">চ্যানেল লোড করতে ব্যর্থ: %1$s</string>
-
-
     <string name="status_unknown">অজানা</string>
     <string name="status_pending">মুলতুবি</string>
     <string name="status_processing">প্রক্রিয়াকরণ</string>
@@ -343,38 +285,30 @@
     <string name="status_available">পাওয়া যায়</string>
     <string name="status_deleted">মুছে ফেলা হয়েছে</string>
     <string name="manage_request_title">অনুরোধ পরিচালনা করুন</string>
-
     <string name="cd_tmdb_rating">TMDB রেটিং</string>
-
     <string name="error_title">ত্রুটি</string>
     <string name="error_no_content">কোন কন্টেন্ট উপলব্ধ</string>
-
     <string name="error_load_content_generic">বিষয়বস্তু লোড করতে ব্যর্থ হয়েছে</string>
-
     <string name="status_declined">অস্বীকার করেছে</string>
     <string name="cd_approve">অনুমোদন করুন</string>
     <string name="cd_decline">প্রত্যাখ্যান</string>
     <string name="requested_by_fmt">দ্বারা অনুরোধ করা হয়েছে %1$s</string>
     <string name="user_unknown">অজানা</string>
-
     <string name="requests_title">অনুরোধ</string>
     <string name="jellyseerr_connect_title">Seerr এর সাথে সংযোগ করুন</string>
     <string name="jellyseerr_connect_message">সিনেমা এবং টিভি অনুষ্ঠানের জন্য অনুরোধ করতে Seerr-এ লগইন করুন</string>
     <string name="empty_content_message">নতুন কন্টেন্টের জন্য পরে আবার চেক করুন</string>
-
     <string name="section_trending">এখন প্রবণতা</string>
     <string name="section_popular_movies">জনপ্রিয় সিনেমা</string>
     <string name="section_upcoming_movies">আসন্ন সিনেমা</string>
     <string name="section_popular_tv">জনপ্রিয় টিভি শো</string>
     <string name="section_upcoming_tv">আসন্ন টিভি শো</string>
-
     <string name="section_recent_requests">সাম্প্রতিক অনুরোধ</string>
     <string name="section_studios">স্টুডিও</string>
     <string name="section_networks">নেটওয়ার্ক</string>
     <string name="section_movie_genres">সিনেমার ধরন</string>
     <string name="section_tv_genres">টিভি জেনারস</string>
     <string name="cd_view_all">সব দেখুন</string>
-
     <string name="error_requests_load_failed">অনুরোধ লোড করতে ব্যর্থ হয়েছে</string>
     <string name="error_request_delete_failed_fmt">অনুরোধ মুছে ফেলতে ব্যর্থ হয়েছে: %1$s</string>
     <string name="error_request_approve_failed_fmt">অনুরোধ অনুমোদন করতে ব্যর্থ: %1$s</string>
@@ -382,8 +316,6 @@
     <string name="error_search_no_results_fmt">জন্য কোন ফলাফল পাওয়া যায়নি \'%1$s\'</string>
     <string name="error_search_failed_fmt">অনুসন্ধান ব্যর্থ হয়েছে: %1$s</string>
     <string name="error_request_create_failed_fmt">অনুরোধ তৈরি করতে ব্যর্থ: %1$s</string>
-
-
     <string name="error_something_went_wrong">কিছু ভুল হয়েছে</string>
     <string name="tab_movies">সিনেমা</string>
     <string name="tab_tv_shows">টিভি শো</string>
@@ -392,7 +324,6 @@
     <string name="empty_genre_audiobooks">এই জেনারে কোনো অডিওবুক পাওয়া যায়নি</string>
     <string name="empty_genre_podcasts">এই ধারায় কোনো পডকাস্ট পাওয়া যায়নি</string>
     <string name="error_unknown_occurred">অজানা ত্রুটি ঘটেছে</string>
-
     <string name="search_no_results">কোন ফলাফল পাওয়া যায়নি</string>
     <string name="search_placeholder">সিনেমা এবং টিভি শো অনুসন্ধান করুন</string>
     <string name="cd_clear">পরিষ্কার</string>
@@ -404,38 +335,29 @@
     <string name="cd_finished">সমাপ্ত</string>
     <string name="media_type_book">বই</string>
     <string name="media_type_podcast">পডকাস্ট</string>
-
     <string name="media_type_movie">মুভি</string>
     <string name="media_type_tv_show">টিভি শো</string>
     <string name="media_type_media">মিডিয়া</string>
     <string name="media_type_unknown">অজানা</string>
-
     <string name="cd_request_add">অনুরোধ</string>
-
-
     <string name="appearance_title">চেহারা</string>
     <string name="settings_group_theme">থিম</string>
     <string name="pref_theme_mode_title">থিম মোড</string>
     <string name="pref_dynamic_colors_title">গতিশীল রং</string>
     <string name="pref_dynamic_colors_summary">আপনার ওয়ালপেপার থেকে রং ব্যবহার করুন</string>
-
     <string name="settings_group_home_screen">হোম স্ক্রীন</string>
     <string name="pref_combine_library_title">লাইব্রেরি বিভাগ একত্রিত করুন</string>
     <string name="pref_combine_library_summary">সিনেমা এবং টিভি শো একক তালিকায় মার্জ করুন</string>
     <string name="pref_sort_date_added_title">যোগ করার তারিখ অনুসারে সাজান</string>
     <string name="pref_sort_date_added_summary">হোম স্ক্রিনে প্রথমে নতুন কন্টেন্ট দেখান</string>
-
     <string name="settings_group_content_layout">বিষয়বস্তুর বিন্যাস</string>
     <string name="pref_episode_layout_title">পর্ব বিন্যাস</string>
-
     <string name="theme_system">সিস্টেম ডিফল্ট</string>
     <string name="theme_light">আলো</string>
     <string name="theme_dark">অন্ধকার</string>
     <string name="theme_amoled">আমোলেদ</string>
-
     <string name="layout_horizontal">অনুভূমিক</string>
     <string name="layout_vertical">উল্লম্ব</string>
-
     <string name="downloads_title">ডাউনলোড</string>
     <string name="pref_downloads_and_storage">ডাউনলোড এবং স্টোরেজ</string>
     <string name="pref_downloads_and_storage_summary">অফলাইন মিডিয়া এবং ইমেজ ক্যাশে পরিচালনা করুন</string>
@@ -458,12 +380,10 @@
     <string name="storage_free_on_device_fmt">%1$s ডিভাইসে বিনামূল্যে</string>
     <string name="storage_this_server">এই সার্ভার</string>
     <string name="storage_all_servers_fmt">%1$s সমস্ত সার্ভার জুড়ে মোট</string>
-
     <string name="download_preferences_title">সেটিংস ডাউনলোড করুন</string>
     <string name="pref_download_wifi_only_title">শুধুমাত্র Wi-Fi</string>
     <string name="pref_download_wifi_only_subtitle">শুধুমাত্র Wi-Fi এর মাধ্যমে ডাউনলোড করুন</string>
     <string name="pref_download_mobile_data_warning">মোবাইল ডেটার মাধ্যমে ডাউনলোড করলে আপনার ক্যারিয়ার থেকে অতিরিক্ত ডেটা চার্জ লাগতে পারে</string>
-
     <string name="cd_storage_stats">স্টোরেজ পরিসংখ্যান</string>
     <string name="cd_pause_download">ডাউনলোড থামান</string>
     <string name="cd_resume_download">ডাউনলোড পুনরায় শুরু করুন</string>
@@ -471,9 +391,7 @@
     <string name="cd_delete_download">ডাউনলোড মুছুন</string>
     <string name="cd_status_failed">ব্যর্থ হয়েছে</string>
     <string name="cd_status_completed">সম্পন্ন</string>
-
     <string name="player_options_title">প্লেয়ার বিকল্প</string>
-
     <string name="pref_group_engine">ইঞ্জিন এবং আচরণ</string>
     <string name="pref_use_exoplayer_title">ExoPlayer ব্যবহার করুন</string>
     <string name="pref_use_exoplayer_summary">নিষ্ক্রিয় অবস্থায় LibMPV ব্যবহার করে</string>
@@ -492,20 +410,17 @@
     <string name="pref_language_search_hint">ভাষা খুঁজুন…</string>
     <string name="pref_autoplay_title">অটো-প্লে</string>
     <string name="pref_autoplay_summary">পরের পর্বটি স্বয়ংক্রিয়ভাবে চালান</string>
-
     <string name="pref_group_pip">পিকচার-ইন-পিকচার</string>
     <string name="pref_pip_gesture_title">বাড়ির অঙ্গভঙ্গি</string>
     <string name="pref_pip_gesture_summary">বাড়িতে সোয়াইপ করার সময় PiP লিখুন</string>
     <string name="pref_pip_background_title">পটভূমি অডিও</string>
     <string name="pref_pip_background_summary">স্ক্রিন বন্ধ থাকলে অডিও চালাতে থাকুন</string>
-
     <string name="pref_group_interface">ইন্টারফেস</string>
     <string name="pref_skip_intro_title">ইন্ট্রো বোতাম এড়িয়ে যান</string>
     <string name="pref_skip_outro_title">আউটরো বোতাম এড়িয়ে যান</string>
     <string name="pref_autohide_logo_title">স্বয়ংক্রিয়-লুকান লোগো</string>
     <string name="pref_autohide_logo_summary">প্লেয়ার কন্ট্রোল সহ শিরোনাম লোগো লুকান</string>
     <string name="pref_default_zoom_title">ডিফল্ট জুম</string>
-
     <string name="pref_group_subtitles">সাবটাইটেল</string>
     <string name="pref_sub_text_color">পাঠ্যের রঙ</string>
     <string name="pref_sub_text_size">পাঠ্যের আকার</string>
@@ -524,7 +439,6 @@
     <string name="pref_sub_horizontal_align">অনুভূমিক প্রান্তিককরণ</string>
     <string name="action_reset_defaults">ডিফল্ট রিসেট করুন</string>
     <string name="subtitle_preview_text">সাবটাইটেল প্রিভিউ</string>
-
     <string name="color_picker_title">রঙ নির্বাচন করুন</string>
     <string name="color_picker_presets">প্রিসেট রং</string>
     <string name="color_picker_custom">কাস্টম রঙ (হেক্স)</string>
@@ -533,11 +447,9 @@
     <string name="color_picker_invalid">অবৈধ হেক্স বিন্যাস</string>
     <string name="color_picker_apply">কাস্টম রঙ প্রয়োগ করুন</string>
     <string name="action_cancel">বাতিল করুন</string>
-
     <string name="zoom_fit">ফিট</string>
     <string name="zoom_zoom">জুম</string>
     <string name="zoom_stretch">প্রসারিত</string>
-
     <string name="outline_none">কোনোটিই নয়</string>
     <string name="outline_outline">রূপরেখা</string>
     <string name="outline_drop_shadow">ড্রপ শ্যাডো</string>
@@ -549,7 +461,6 @@
     <string name="align_right">ঠিক</string>
     <string name="align_top">শীর্ষ</string>
     <string name="align_bottom">নীচে</string>
-
     <string name="title_add_server">সার্ভার যোগ করুন</string>
     <string name="title_edit_server">সার্ভার সম্পাদনা করুন</string>
     <string name="server_details_subtitle">আপনার জেলিফিন সার্ভারের বিবরণ লিখুন</string>
@@ -564,14 +475,12 @@
     <string name="connection_success_title">সংযোগ সফল</string>
     <string name="connection_success_fmt">পাওয়া গেছে %1$s (v%2$s)</string>
     <string name="connection_failed_title">সংযোগ ব্যর্থ হয়েছে৷</string>
-
     <string name="error_load_server_failed_fmt">সার্ভার লোড করতে ব্যর্থ: %1$s</string>
     <string name="error_enter_server_url">একটি সার্ভার URL লিখুন দয়া করে</string>
     <string name="error_connection_test_failed_fmt">সংযোগ পরীক্ষা ব্যর্থ হয়েছে: %1$s</string>
     <string name="error_url_required">সার্ভার URL প্রয়োজন</string>
     <string name="error_test_connection_first">প্রথমে সংযোগ পরীক্ষা করুন</string>
     <string name="error_save_server_failed_fmt">সার্ভার সংরক্ষণ করতে ব্যর্থ: %1$s</string>
-
     <string name="server_management_title">সার্ভার পরিচালনা করুন</string>
     <string name="cd_add_server">সার্ভার যোগ করুন</string>
     <string name="cd_edit_server">সার্ভার সম্পাদনা করুন</string>
@@ -581,16 +490,13 @@
     <string name="user_count_fmt">%1$d  %2$s</string>
     <string name="user_singular">ব্যবহারকারী</string>
     <string name="user_plural">ব্যবহারকারীদের</string>
-
     <string name="dialog_delete_server_title">সার্ভার মুছবেন?</string>
     <string name="dialog_delete_server_message_fmt">আপনি কি মুছে ফেলার বিষয়ে নিশ্চিত \"%1$s\"?</string>
     <string name="dialog_delete_server_warning_fmt">এটি  %1$d  সংরক্ষিত ব্যবহারকারী(দের) এবং সমস্ত সম্পর্কিত ডেটা সরিয়ে দেবে।</string>
     <string name="action_delete">মুছে দিন</string>
-
     <string name="error_load_servers_failed">সার্ভার লোড করতে ব্যর্থ হয়েছে৷</string>
     <string name="error_delete_active_server">বর্তমানে সক্রিয় সার্ভার মুছে ফেলা যাবে না. অনুগ্রহ করে প্রথমে অন্য সার্ভারে স্যুইচ করুন।</string>
     <string name="error_delete_server_failed">সার্ভার মুছে ফেলতে ব্যর্থ হয়েছে৷</string>
-
     <string name="update_available_title">আপডেট উপলব্ধ</string>
     <string name="update_whats_new">কি\'s নতুন</string>
     <string name="update_version_fmt">v%1$s</string>
@@ -598,7 +504,6 @@
     <string name="btn_downloading">ডাউনলোড হচ্ছে...</string>
     <string name="btn_install_restart">ইনস্টল করুন এবং পুনরায় চালু করুন</string>
     <string name="action_not_now">এখন না</string>
-
     <string name="pref_group_updates">আপডেট</string>
     <string name="pref_check_updates_title">আপডেটের জন্য চেক করুন</string>
     <string name="update_status_checking">পরীক্ষা করা হচ্ছে...</string>
@@ -608,13 +513,11 @@
     <string name="update_status_last_check_fmt">শেষ চেক: %1$s</string>
     <string name="update_progress_fmt">%1$d%%</string>
     <string name="pref_check_frequency_title">ফ্রিকোয়েন্সি পরীক্ষা করুন</string>
-
     <string name="freq_on_app_open">অ্যাপ খুলুন</string>
     <string name="freq_6_hours">প্রতি 6 ঘন্টা</string>
     <string name="freq_12_hours">প্রতি 12 ঘন্টা</string>
     <string name="freq_24_hours">প্রতি 24 ঘন্টা</string>
     <string name="update_never_checked">কখনই না</string>
-
     <string name="jellyseerr_connect_subtitle">বিষয়বস্তু অনুরোধ সক্ষম করতে আপনার সার্ভারের বিবরণ লিখুন</string>
     <string name="jellyseerr_placeholder_url">https://seerr.example.com</string>
     <string name="label_login_method">লগইন পদ্ধতি</string>
@@ -629,98 +532,76 @@
     <string name="cd_show_password">পাসওয়ার্ড দেখান</string>
     <string name="cd_hide_password">পাসওয়ার্ড লুকান</string>
     <string name="btn_login">লগইন করুন</string>
-
     <string name="licenses_title">ওপেন সোর্স লাইসেন্স</string>
     <string name="licenses_header_title">ওপেন সোর্স নির্ভরতা</string>
     <string name="licenses_header_subtitle">এই অ্যাপটি নিম্নলিখিত ওপেন সোর্স লাইব্রেরি ব্যবহার করে</string>
     <string name="licenses_footer_built_with">ওপেন সোর্স সফটওয়্যার দিয়ে তৈরি</string>
     <string name="licenses_footer_terms">তাদের নিজ নিজ শর্তাবলী অধীনে লাইসেন্স</string>
-
     <string name="session_switcher_title">সেশন পরিবর্তন করুন</string>
     <string name="action_login_server">এই সার্ভারে লগইন করুন</string>
     <string name="action_add_account">অন্য অ্যাকাউন্ট যোগ করুন</string>
     <string name="empty_sessions_title">কোনো সংরক্ষিত সেশন নেই</string>
     <string name="empty_sessions_message">একটি সেশন তৈরি করতে একটি সার্ভারে লগইন করুন৷</string>
-
     <string name="cd_user_avatar">ব্যবহারকারী অবতার</string>
     <string name="cd_current_session">বর্তমান অধিবেশন</string>
-
     <string name="error_session_token_not_found">সেশন টোকেন পাওয়া যায়নি</string>
     <string name="error_server_not_found">সার্ভার পাওয়া যায়নি</string>
     <string name="error_switch_session_failed_fmt">সেশন স্যুইচ করতে ব্যর্থ হয়েছে: %1$s</string>
     <string name="error_switch_session_error_fmt">সেশন স্যুইচ করার সময় ত্রুটি: %1$s</string>
-
     <string name="settings_title">সেটিংস</string>
     <string name="unknown_user">অজানা ব্যবহারকারী</string>
     <string name="unknown_server">অজানা সার্ভার</string>
     <string name="cd_profile_picture">প্রোফাইল ছবি</string>
-
     <string name="pref_group_general">সাধারণ</string>
     <string name="pref_offline_mode">অফলাইন মোড</string>
     <string name="offline_mode_no_connection">অফলাইন (কোন সংযোগ নেই)</string>
     <string name="offline_mode_manual">ম্যানুয়ালি সক্ষম</string>
     <string name="offline_mode_force">অফলাইন মোড জোর করুন</string>
-
     <string name="pref_discovery_requests">আবিষ্কার এবং অনুরোধ</string>
     <string name="discovery_connected">Seerr মাধ্যমে সংযুক্ত</string>
     <string name="discovery_connect">অনুরোধ বিষয়বস্তু সংযুক্ত করুন</string>
-
     <string name="pref_audiobookshelf">অডিওবুক শেল্ফ</string>
     <string name="audiobookshelf_connected">অডিওবুকশেল্ফের সাথে সংযুক্ত</string>
     <string name="audiobookshelf_connect">অডিওবুক ব্রাউজ করতে সংযোগ করুন</string>
     <string name="dialog_disconnect_audiobookshelf_title">অডিওবুকশেল্ফ সংযোগ বিচ্ছিন্ন করুন</string>
     <string name="dialog_disconnect_audiobookshelf_message">সংযোগ বিচ্ছিন্ন করলে আপনার অডিওবুকশেল্ফ কনফিগারেশন মুছে যাবে। আপনি যেকোনো সময় পুনরায় সংযোগ করতে পারেন।</string>
     <string name="error_audiobookshelf_logout_failed_fmt">অডিওবুকশেলফ থেকে সংযোগ বিচ্ছিন্ন করতে ব্যর্থ হয়েছে: %1$s</string>
-
     <string name="notification_permission_title">বিজ্ঞপ্তি সক্রিয় করুন</string>
     <string name="notification_permission_message">অডিওবুক বা পডকাস্ট চালানোর সময় আপনার নোটিফিকেশন প্যানেলে মিডিয়া প্লেয়ার এবং লক স্ক্রিনে দেখানোর জন্য AFinity-এর বিজ্ঞপ্তির অনুমতি প্রয়োজন।\n\nআপনি যদি পরে আপনার মত পরিবর্তন করেন, আপনি অ্যাপ তথ্য → অনুমতি → বিজ্ঞপ্তি থেকে ম্যানুয়ালি এটি সক্ষম করতে পারেন।</string>
     <string name="notification_permission_yes">অনুমতি দিন</string>
     <string name="notification_permission_no">না ধন্যবাদ</string>
-
     <string name="pref_downloads">ডাউনলোড</string>
     <string name="pref_downloads_summary">অফলাইন সামগ্রী পরিচালনা করুন</string>
-
     <string name="pref_switch_session">সেশন পরিবর্তন করুন</string>
     <string name="pref_switch_session_summary">ব্যবহারকারী বা সার্ভার পরিবর্তন করুন</string>
-
     <string name="pref_group_connections">সংযোগ</string>
     <string name="pref_manage_servers">সার্ভার পরিচালনা করুন</string>
     <string name="pref_manage_servers_summary">Jellyfin সার্ভার যোগ করুন বা সরান</string>
-
     <string name="pref_group_preferences">পছন্দসমূহ</string>
     <string name="pref_appearance">চেহারা</string>
     <string name="pref_appearance_summary">থিম এবং বিন্যাস</string>
-
     <string name="pref_playback">প্লেব্যাক</string>
     <string name="pref_playback_summary">খেলোয়াড়ের আচরণ এবং গুণমান</string>
-
     <string name="pref_group_about">সম্পর্কে</string>
     <string name="pref_version">সংস্করণ</string>
     <string name="version_fmt">%1$s (%2$s)</string>
     <string name="build_debug">ডিবাগ বিল্ড</string>
     <string name="build_release">রিলিজ বিল্ড</string>
-
     <string name="pref_licenses">লাইসেন্স</string>
     <string name="pref_licenses_summary">ওপেন সোর্স লাইব্রেরি</string>
-
     <string name="action_logout">লগ আউট করুন</string>
-
     <string name="dialog_logout_title">লগ আউট করুন</string>
     <string name="dialog_logout_message">আপনি কি নিশ্চিত আপনি লগ আউট করতে চান? কন্টেন্ট অ্যাক্সেস করতে আপনাকে আবার সাইন ইন করতে হবে।</string>
-
     <string name="dialog_disconnect_seerr_title">সেয়ার সংযোগ বিচ্ছিন্ন করুন</string>
     <string name="dialog_disconnect_seerr_message">সংযোগ বিচ্ছিন্ন করা আপনাকে নতুন অনুরোধ করা থেকে বাধা দেবে। আপনি যেকোনো সময় পুনরায় সংযোগ করতে পারেন।</string>
     <string name="action_disconnect">সংযোগ বিচ্ছিন্ন করুন</string>
     <string name="dialog_error_title">ত্রুটি</string>
     <string name="action_ok">ঠিক আছে</string>
-
     <string name="error_logout_failed_fmt">লগআউট ব্যর্থ হয়েছে: %1$s</string>
     <string name="error_jellyseerr_logout_failed_fmt">Seerr থেকে লগআউট করতে ব্যর্থ হয়েছে: %1$s</string>
-
     <string name="watchlist_title">ওয়াচলিস্ট</string>
     <string name="watchlist_empty">আপনার ওয়াচলিস্ট খালি</string>
     <string name="watchlist_section_header_fmt">%1$s (%2$d)</string>
-
     <string name="section_movies">সিনেমা</string>
     <string name="section_boxset">বক্স সেট</string>
     <string name="section_tv_shows">টিভি শো</string>
@@ -728,8 +609,6 @@
     <string name="section_episodes">পর্বগুলি</string>
     <string name="section_tv_channels">লাইভ টিভি চ্যানেল</string>
     <string name="section_people">মানুষ</string>
-
-
     <string name="cd_cast">কাস্ট</string>
     <string name="cast_connected_to">কাস্ট করা হচ্ছে %1$s</string>
     <string name="cast_stop">কাস্ট করা বন্ধ করুন</string>
