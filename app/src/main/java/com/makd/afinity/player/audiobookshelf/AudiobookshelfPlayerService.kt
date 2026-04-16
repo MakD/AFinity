@@ -10,8 +10,11 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
+import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -36,20 +39,15 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class AudiobookshelfPlayerService : MediaSessionService() {
 
-    @Inject
-    lateinit var playbackManager: AudiobookshelfPlaybackManager
+    @Inject lateinit var playbackManager: AudiobookshelfPlaybackManager
 
-    @Inject
-    lateinit var progressSyncer: AudiobookshelfProgressSyncer
+    @Inject lateinit var progressSyncer: AudiobookshelfProgressSyncer
 
-    @Inject
-    lateinit var securePreferencesRepository: SecurePreferencesRepository
+    @Inject lateinit var securePreferencesRepository: SecurePreferencesRepository
 
-    @Inject
-    lateinit var equalizerManager: AudiobookshelfEqualizerManager
+    @Inject lateinit var equalizerManager: AudiobookshelfEqualizerManager
 
-    @Inject
-    lateinit var skipSilenceManager: AudiobookshelfSkipSilenceManager
+    @Inject lateinit var skipSilenceManager: AudiobookshelfSkipSilenceManager
 
     private var mediaSession: MediaSession? = null
     private var exoPlayer: ExoPlayer? = null
@@ -65,16 +63,34 @@ class AudiobookshelfPlayerService : MediaSessionService() {
         val httpDataSourceFactory =
             DefaultHttpDataSource.Factory()
                 .setAllowCrossProtocolRedirects(true)
+                .setConnectTimeoutMs(15_000)
+                .setReadTimeoutMs(15_000)
                 .setDefaultRequestProperties(
                     buildMap { if (token != null) put("Authorization", "Bearer $token") }
                 )
         val dataSourceFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
+        val retryPolicy =
+            object : DefaultLoadErrorHandlingPolicy() {
+                override fun getRetryDelayMsFor(
+                    loadErrorInfo: LoadErrorHandlingPolicy.LoadErrorInfo
+                ): Long = minOf(1_000L shl loadErrorInfo.errorCount.coerceAtMost(5), 30_000L)
+
+                override fun getMinimumLoadableRetryCount(dataType: Int) = Int.MAX_VALUE
+            }
+
+        val loadControl =
+            DefaultLoadControl.Builder().setBufferDurationsMs(15_000, 60_000, 2_500, 5_000).build()
+
         exoPlayer =
             ExoPlayer.Builder(this)
                 .setAudioAttributes(AudioAttributes.DEFAULT, true)
                 .setHandleAudioBecomingNoisy(true)
                 .setWakeMode(C.WAKE_MODE_NETWORK)
-                .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
+                .setLoadControl(loadControl)
+                .setMediaSourceFactory(
+                    DefaultMediaSourceFactory(dataSourceFactory)
+                        .setLoadErrorHandlingPolicy(retryPolicy)
+                )
                 .build()
         serviceScope.launch {
             skipSilenceManager.isEnabled.collect { isEnabled ->
@@ -124,9 +140,10 @@ class AudiobookshelfPlayerService : MediaSessionService() {
             }
         )
 
-        val sessionIntent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
+        val sessionIntent =
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
         val pendingIntent =
             PendingIntent.getActivity(
                 this,
@@ -178,24 +195,23 @@ class AudiobookshelfPlayerService : MediaSessionService() {
 
     private fun startPositionUpdates() {
         stopPositionUpdates()
-        positionUpdateJob =
-            serviceScope.launch {
-                while (isActive) {
-                    val player = exoPlayer ?: break
+        positionUpdateJob = serviceScope.launch {
+            while (isActive) {
+                val player = exoPlayer ?: break
 
-                    val currentMediaItemIndex = player.currentMediaItemIndex
-                    val audioTracks = playbackManager.playbackState.value.audioTracks
-                    var totalPosition = 0.0
+                val currentMediaItemIndex = player.currentMediaItemIndex
+                val audioTracks = playbackManager.playbackState.value.audioTracks
+                var totalPosition = 0.0
 
-                    for (i in 0 until currentMediaItemIndex) {
-                        totalPosition += audioTracks.getOrNull(i)?.duration ?: 0.0
-                    }
-                    totalPosition += player.currentPosition / 1000.0
-
-                    playbackManager.updatePosition(totalPosition)
-                    delay(1000)
+                for (i in 0 until currentMediaItemIndex) {
+                    totalPosition += audioTracks.getOrNull(i)?.duration ?: 0.0
                 }
+                totalPosition += player.currentPosition / 1000.0
+
+                playbackManager.updatePosition(totalPosition)
+                delay(1000)
             }
+        }
     }
 
     private fun stopPositionUpdates() {
