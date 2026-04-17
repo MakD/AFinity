@@ -191,10 +191,10 @@ constructor(
             val existingIndex = newList.indexOfFirst { it.id == updatedEpisode.id }
 
             when {
-                updatedEpisode.played -> {
+                updatedEpisode.played || updatedEpisode.playbackPositionTicks > 0 -> {
                     if (existingIndex != -1) {
                         newList.removeAt(existingIndex)
-                        Timber.d("Removed completed episode from next up: ${updatedEpisode.name}")
+                        Timber.d("Removed episode from next up (played=${updatedEpisode.played}, resumable=${updatedEpisode.playbackPositionTicks > 0}): ${updatedEpisode.name}")
                     }
                 }
 
