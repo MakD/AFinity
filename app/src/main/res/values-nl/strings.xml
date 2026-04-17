@@ -1,6 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="splash_powered_by">Mogelijk gemaakt door Jellyfin</string>
     <string name="splash_progress_fmt">%1$d%%</string>
     <string name="splash_status_authenticating">Authenticeren...</string>
@@ -10,8 +9,6 @@
     <string name="loading_phase_processing">Bibliotheken verwerken...</string>
     <string name="loading_phase_finalizing">Startscherm voltooien...</string>
     <string name="loading_phase_ready">Klaar!</string>
-
-
     <string name="app_name" translatable="false">AFinity</string>
     <string name="login_connect_to_jellyfin">Maak verbinding met Jellyfin</string>
     <string name="login_welcome_back">Welkom terug</string>
@@ -34,14 +31,10 @@
     <string name="login_btn_generate_code">Code genereren</string>
     <string name="login_quick_connect_instructions">Voer deze code in uw browser in</string>
     <string name="cd_server_icon">Serverpictogram</string>
-
-
     <string name="top_bar_search_hint">Zoekopdracht</string>
     <string name="cd_search_icon">Zoekopdracht</string>
     <string name="cd_profile_icon">Profiel</string>
     <string name="cd_offline_mode">Offline-modus</string>
-
-
     <string name="home_error_title">Er is iets misgegaan</string>
     <string name="home_error_message">Gegevens worden automatisch vernieuwd</string>
     <string name="home_downloaded_movies">Gedownloade films</string>
@@ -71,36 +64,26 @@
     <string name="hero_btn_watch_now">Kijk nu</string>
     <string name="hero_season_single">1 seizoen</string>
     <string name="hero_season_plural">%1$d Seizoenen</string>
-
-
     <string name="favorites_title">Favorieten</string>
     <string name="error_unknown">Onbekende fout</string>
     <string name="favorites_empty_title">Nog geen favorieten</string>
     <string name="favorites_empty_message">Items die u als favoriet markeert, worden hier weergegeven</string>
-
     <string name="cast_section_title">Vorm</string>
     <string name="cast_role_format">als %1$s</string>
-
     <string name="external_links_title">Externe koppelingen</string>
     <string name="external_link_default_name">Externe koppeling</string>
-
     <string name="collections_included_in">Inbegrepen</string>
-
     <string name="meta_res_4k">4K</string>
     <string name="meta_res_hd">HD</string>
     <string name="meta_res_sd">SD</string>
-
     <string name="meta_vision">Visie</string>
     <string name="meta_digital">Digitaal</string>
     <string name="meta_digital_plus">Digitaal+</string>
     <string name="meta_truehd">TrueHD</string>
     <string name="meta_cc">CC</string>
-
     <string name="meta_time_remaining_hours_minutes">%1$dh %2$dm links</string>
     <string name="meta_time_remaining_minutes">%1$dben links</string>
-
     <string name="meta_boxset_count">%1$d artikelen</string>
-
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_ends_at">Eindigt om %1$s</string>
@@ -117,12 +100,10 @@
     <string name="extra_type_featurette">Featured</string>
     <string name="extra_type_short">Kort</string>
     <string name="boxset_items_in_collection">Items in collectie</string>
-
     <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">Toneelstuk</string>
     <string name="episode_resume">Cv</string>
-
     <string name="cd_air_date">Luchtdatum</string>
     <string name="cd_duration">Duur</string>
     <string name="cd_go_to_series">Ga naar Serie</string>
@@ -130,75 +111,55 @@
     <string name="cd_favorite">Favoriet</string>
     <string name="cd_toggle_watched">Schakel de bekeken status in</string>
     <string name="chapters_title">Hoofdstukken</string>
-
     <string name="quality_dialog_title">Selecteer Downloadkwaliteit</string>
     <string name="quality_dialog_subtitle">Kies welke kwaliteit u wilt downloaden</string>
     <string name="action_download">Downloaden</string>
-
     <string name="cd_selected">Gekozen</string>
     <string name="cd_not_selected">Niet geselecteerd</string>
-
     <string name="file_size_gb">%,2f GB</string>
     <string name="file_size_mb">%d MB</string>
-
     <string name="season_episodes_title">Afleveringen</string>
-
     <string name="action_see_more">Zie meer</string>
     <string name="action_see_less">Zie minder</string>
     <string name="cd_expand">Uitbreiden</string>
     <string name="cd_collapse">Instorten</string>
-
     <string name="director_prefix">Directeur: %1$s</string>
     <string name="writers_prefix">Schrijvers: %1$s</string>
-
     <string name="seasons_title">Seizoenen</string>
-
     <string name="action_play">Toneelstuk</string>
     <string name="action_rewatch">Opnieuw bekijken</string>
     <string name="action_resume_playback">Hervat het afspelen</string>
     <string name="status_loading">Laden...</string>
-
     <string name="cd_backdrop_fmt">%1$s achtergrond</string>
     <string name="cd_logo_fmt">%1$s logo</string>
     <string name="cd_shuffle_play">Shuffle-afspelen</string>
-
     <string name="cd_watchlist_add">Toevoegen aan volglijst</string>
     <string name="cd_watchlist_remove">Verwijderen uit volglijst</string>
-
     <string name="cd_favorite_add">Toevoegen aan Favorieten</string>
     <string name="cd_favorite_remove">Verwijderen uit Favorieten</string>
-
     <string name="cd_watched_mark">Markeer als bekeken</string>
     <string name="cd_watched_unmark">Markeer als niet bekeken</string>
-
-
     <string name="libraries_title">Bibliotheken</string>
     <string name="libraries_empty_title">Geen bibliotheken gevonden</string>
     <string name="libraries_empty_message">Op uw Jellyfin-server\' zijn nog geen bibliotheken geconfigureerd.</string>
-
-
     <string name="action_search">Zoekopdracht</string>
     <string name="action_show_all">Toon alles</string>
     <string name="action_clear_filter">Wis filter</string>
     <string name="action_apply">Toepassen</string>
     <string name="cd_profile">Profiel</string>
-
     <string name="library_empty_title">Geen artikelen gevonden</string>
     <string name="library_empty_message">Deze bibliotheek lijkt leeg te zijn of de inhoud is\'nog niet gescand.</string>
     <string name="library_empty_letter_fmt">Geen inhoud die begint met \"%1$s\"</string>
-
     <string name="filter_all">Alle</string>
     <string name="filter_watched">Bekeken</string>
     <string name="filter_unwatched">Niet bekeken</string>
     <string name="filter_watchlist">Volglijst</string>
     <string name="filter_favorites">Favorieten</string>
-
     <string name="filter_empty_watched">Geen bekeken items gevonden</string>
     <string name="filter_empty_unwatched">Geen onbewaakte items gevonden</string>
     <string name="filter_empty_watchlist">Geen items in uw volglijst</string>
     <string name="filter_empty_favorites">Geen favoriete items gevonden</string>
     <string name="filter_empty_all">Geen artikelen gevonden</string>
-
     <string name="sort_title">Sorteer op</string>
     <string name="sort_ascending">Oplopend</string>
     <string name="sort_descending">Aflopend</string>
@@ -209,8 +170,6 @@
     <string name="sort_option_date_played">Datum gespeeld</string>
     <string name="sort_option_release_date">Releasedatum</string>
     <string name="cd_sort_fab">Soort</string>
-
-
     <string name="livetv_unknown_program">Onbekend programma</string>
     <string name="livetv_program_time_fmt">%1$s • %2$s - %3$s</string>
     <string name="livetv_time_pattern">h:mm een</string>
@@ -240,11 +199,8 @@
     <string name="livetv_tab_programs">Programma\'s</string>
     <string name="livetv_tab_guide">TV-gids</string>
     <string name="livetv_tab_channels">Kanalen</string>
-
     <string name="livetv_error_not_available_title">Live-tv niet beschikbaar</string>
     <string name="livetv_error_not_available_message">Configureer Live TV op uw Jellyfin-server</string>
-
-
     <string name="person_biography">Biografie</string>
     <string name="person_born_fmt">Geboren: %1$s (%2$d jaar oud)</string>
     <string name="person_born_deceased_fmt">Geboren: %1$s</string>
@@ -257,8 +213,6 @@
     <string name="cd_person_image_fmt">%1$s afbeelding</string>
     <string name="cd_external_link">Externe koppeling</string>
     <string name="action_retry">Probeer het opnieuw</string>
-
-
     <string name="player_error_title">Afspeelfout</string>
     <string name="player_up_next">Volgende</string>
     <string name="player_season_fmt">Seizoen %1$d</string>
@@ -266,12 +220,10 @@
     <string name="time_minutes_short">%1$dm</string>
     <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">Dichtbij</string>
-
     <string name="player_speed_title_fmt">Huidige snelheid %1$.2fx</string>
     <string name="player_speed_value_fmt">%.2f</string>
     <string name="cd_speed_decrease">Verlaag de snelheid</string>
     <string name="cd_speed_increase">Verhoog de snelheid</string>
-
     <string name="player_audio_title">Audiotrack</string>
     <string name="player_subtitle_title">Ondertitels</string>
     <string name="player_version_title">Versie</string>
@@ -279,13 +231,11 @@
     <string name="version_dialog_subtitle">Selecteer welke versie je wilt spelen</string>
     <string name="cd_version_selector">Versiekiezer</string>
     <string name="player_episode_header_fmt">S%1$s:E%2$s: %3$s</string>
-
     <string name="track_unknown">Onbekend</string>
     <string name="track_none">Geen</string>
     <string name="track_number_fmt">Spoor %1$d</string>
     <string name="audio_channel_fmt">(%1$dch)</string>
     <string name="playback_channel_name">AFinity audioboek afspelen</string>
-
     <string name="cd_logo">Logo</string>
     <string name="cd_series_logo">Serie-logo</string>
     <string name="cd_back">Rug</string>
@@ -304,7 +254,6 @@
     <string name="cd_subtitle_settings">Instellingen voor ondertitels</string>
     <string name="cd_aspect_ratio">Beeldverhouding</string>
     <string name="cd_screen_rotation">Schermrotatie</string>
-
     <string name="cd_fast_forward">Snel vooruit</string>
     <string name="cd_rewind">Terugspoelen</string>
     <string name="seek_forward_text">+10s</string>
@@ -312,30 +261,23 @@
     <string name="cd_brightness">Helderheid</string>
     <string name="cd_volume">Volume</string>
     <string name="percent_fmt">%1$d%%</string>
-
     <string name="cd_skip_button_icon">Overslaan</string>
-
     <string name="player_live_tuning_fmt">Afstemmen %1$s...</string>
     <string name="player_error_stream_load">Kan de stream niet laden</string>
     <string name="player_error_media_load">Kan media niet laden</string>
     <string name="channel_default_name">Live-tv</string>
-
     <string name="error_no_media_sources">Geen mediabronnen beschikbaar.</string>
     <string name="error_load_stream">Kan de stream niet laden.</string>
     <string name="error_unexpected">Er is een onverwachte fout opgetreden.</string>
     <string name="error_load_live_channel">Kan livekanaal niet laden.</string>
-
     <string name="skip_intro">Intro overslaan</string>
     <string name="skip_outro">Sla Outro over</string>
     <string name="skip_recap">Samenvatting overslaan</string>
     <string name="skip_preview">Voorbeeld overslaan</string>
     <string name="skip_commercial">Commercieel overslaan</string>
     <string name="skip_generic">Overslaan</string>
-
     <string name="error_get_stream_url">Kan de stream-URL niet ophalen</string>
     <string name="error_load_channel_fmt">Kan kanaal niet laden: %1$s</string>
-
-
     <string name="status_unknown">Onbekend</string>
     <string name="status_pending">In behandeling</string>
     <string name="status_processing">Verwerking</string>
@@ -343,38 +285,30 @@
     <string name="status_available">Beschikbaar</string>
     <string name="status_deleted">Verwijderd</string>
     <string name="manage_request_title">Beheer aanvraag</string>
-
     <string name="cd_tmdb_rating">TMDB-beoordeling</string>
-
     <string name="error_title">Fout</string>
     <string name="error_no_content">Geen inhoud beschikbaar</string>
-
     <string name="error_load_content_generic">Kan inhoud niet laden</string>
-
     <string name="status_declined">Afgewezen</string>
     <string name="cd_approve">Goedkeuren</string>
     <string name="cd_decline">Afwijzen</string>
     <string name="requested_by_fmt">Aangevraagd door %1$s</string>
     <string name="user_unknown">Onbekend</string>
-
     <string name="requests_title">Verzoeken</string>
     <string name="jellyseerr_connect_title">Maak verbinding met Seerr</string>
     <string name="jellyseerr_connect_message">Log in op Seerr om films en tv-programma\'s aan te vragen</string>
     <string name="empty_content_message">Kom later terug voor nieuwe inhoud</string>
-
     <string name="section_trending">Nu populair</string>
     <string name="section_popular_movies">Populaire films</string>
     <string name="section_upcoming_movies">Aankomende films</string>
     <string name="section_popular_tv">Populaire tv-programma\'s</string>
     <string name="section_upcoming_tv">Aankomende tv-programma\'s</string>
-
     <string name="section_recent_requests">Recente verzoeken</string>
     <string name="section_studios">Studio\'s</string>
     <string name="section_networks">Netwerken</string>
     <string name="section_movie_genres">Filmgenres</string>
     <string name="section_tv_genres">TV-genres</string>
     <string name="cd_view_all">Bekijk alles</string>
-
     <string name="error_requests_load_failed">Kan verzoeken niet laden</string>
     <string name="error_request_delete_failed_fmt">Kan verzoek niet verwijderen: %1$s</string>
     <string name="error_request_approve_failed_fmt">Kan verzoek niet goedkeuren: %1$s</string>
@@ -382,8 +316,6 @@
     <string name="error_search_no_results_fmt">Er zijn geen resultaten gevonden voor \'%1$s\'</string>
     <string name="error_search_failed_fmt">Zoeken mislukt: %1$s</string>
     <string name="error_request_create_failed_fmt">Kan verzoek niet aanmaken: %1$s</string>
-
-
     <string name="error_something_went_wrong">Er is iets misgegaan</string>
     <string name="tab_movies">Films</string>
     <string name="tab_tv_shows">TV-programma\'s</string>
@@ -392,7 +324,6 @@
     <string name="empty_genre_audiobooks">Er zijn geen audioboeken gevonden in dit genre</string>
     <string name="empty_genre_podcasts">Er zijn geen podcasts gevonden in dit genre</string>
     <string name="error_unknown_occurred">Er is een onbekende fout opgetreden</string>
-
     <string name="search_no_results">Geen resultaten gevonden</string>
     <string name="search_placeholder">Zoek naar films en tv-programma\'s</string>
     <string name="cd_clear">Duidelijk</string>
@@ -404,38 +335,29 @@
     <string name="cd_finished">Afgerond</string>
     <string name="media_type_book">Boek</string>
     <string name="media_type_podcast">Podcast</string>
-
     <string name="media_type_movie">Film</string>
     <string name="media_type_tv_show">TV-programma</string>
     <string name="media_type_media">Media</string>
     <string name="media_type_unknown">ONBEKEND</string>
-
     <string name="cd_request_add">Verzoek</string>
-
-
     <string name="appearance_title">Verschijning</string>
     <string name="settings_group_theme">Thema</string>
     <string name="pref_theme_mode_title">Themamodus</string>
     <string name="pref_dynamic_colors_title">Dynamische kleuren</string>
     <string name="pref_dynamic_colors_summary">Gebruik kleuren uit je achtergrond</string>
-
     <string name="settings_group_home_screen">Startscherm</string>
     <string name="pref_combine_library_title">Combineer bibliotheeksecties</string>
     <string name="pref_combine_library_summary">Voeg films en tv-programma\'s samen in afzonderlijke lijsten</string>
     <string name="pref_sort_date_added_title">Sorteer op datum toegevoegd</string>
     <string name="pref_sort_date_added_summary">Toon de nieuwste inhoud eerst op het startscherm</string>
-
     <string name="settings_group_content_layout">Inhoud lay-out</string>
     <string name="pref_episode_layout_title">Afleveringsindeling</string>
-
     <string name="theme_system">Systeemstandaard</string>
     <string name="theme_light">Licht</string>
     <string name="theme_dark">Donker</string>
     <string name="theme_amoled">Amoled</string>
-
     <string name="layout_horizontal">Horizontaal</string>
     <string name="layout_vertical">Verticaal</string>
-
     <string name="downloads_title">Downloads</string>
     <string name="pref_downloads_and_storage">Downloads en opslag</string>
     <string name="pref_downloads_and_storage_summary">Beheer offline media en beeldcaching</string>
@@ -458,12 +380,10 @@
     <string name="storage_free_on_device_fmt">%1$s gratis op apparaat</string>
     <string name="storage_this_server">Deze server</string>
     <string name="storage_all_servers_fmt">%1$s totaal op alle servers</string>
-
     <string name="download_preferences_title">Instellingen downloaden</string>
     <string name="pref_download_wifi_only_title">Alleen wifi</string>
     <string name="pref_download_wifi_only_subtitle">Alleen downloaden via Wi-Fi</string>
     <string name="pref_download_mobile_data_warning">Als u via mobiele data downloadt, kunnen er bij uw provider extra datakosten in rekening worden gebracht</string>
-
     <string name="cd_storage_stats">Opslagstatistieken</string>
     <string name="cd_pause_download">Pauzeer het downloaden</string>
     <string name="cd_resume_download">Hervatten downloaden</string>
@@ -471,9 +391,7 @@
     <string name="cd_delete_download">Downloaden verwijderen</string>
     <string name="cd_status_failed">Mislukt</string>
     <string name="cd_status_completed">Voltooid</string>
-
     <string name="player_options_title">Speler Opties</string>
-
     <string name="pref_group_engine">Motor &amp; Gedrag</string>
     <string name="pref_use_exoplayer_title">Gebruik ExoPlayer</string>
     <string name="pref_use_exoplayer_summary">Gebruikt LibMPV indien uitgeschakeld</string>
@@ -492,20 +410,17 @@
     <string name="pref_language_search_hint">Talen zoeken…</string>
     <string name="pref_autoplay_title">Automatisch afspelen</string>
     <string name="pref_autoplay_summary">Speel automatisch de volgende aflevering af</string>
-
     <string name="pref_group_pip">Beeld-in-beeld</string>
     <string name="pref_pip_gesture_title">Thuisgebaar</string>
     <string name="pref_pip_gesture_summary">Voer PiP in wanneer u naar huis veegt</string>
     <string name="pref_pip_background_title">Achtergrondaudio</string>
     <string name="pref_pip_background_summary">Blijf audio afspelen als het scherm is uitgeschakeld</string>
-
     <string name="pref_group_interface">Interface</string>
     <string name="pref_skip_intro_title">Introknop overslaan</string>
     <string name="pref_skip_outro_title">Outro-knop overslaan</string>
     <string name="pref_autohide_logo_title">Logo automatisch verbergen</string>
     <string name="pref_autohide_logo_summary">Titellogo verbergen met spelerbediening</string>
     <string name="pref_default_zoom_title">Standaardzoom</string>
-
     <string name="pref_group_subtitles">Ondertitels</string>
     <string name="pref_sub_text_color">Tekstkleur</string>
     <string name="pref_sub_text_size">Tekstgrootte</string>
@@ -524,7 +439,6 @@
     <string name="pref_sub_horizontal_align">Horizontale uitlijning</string>
     <string name="action_reset_defaults">Standaardwaarden opnieuw instellen</string>
     <string name="subtitle_preview_text">Voorbeeld van ondertiteling</string>
-
     <string name="color_picker_title">Selecteer Kleur</string>
     <string name="color_picker_presets">Vooraf ingestelde kleuren</string>
     <string name="color_picker_custom">Aangepaste kleur (hexadecimaal)</string>
@@ -533,11 +447,9 @@
     <string name="color_picker_invalid">Ongeldig hexadecimaal formaat</string>
     <string name="color_picker_apply">Aangepaste kleur toepassen</string>
     <string name="action_cancel">Annuleren</string>
-
     <string name="zoom_fit">Fit</string>
     <string name="zoom_zoom">Zoom</string>
     <string name="zoom_stretch">Strek</string>
-
     <string name="outline_none">Geen</string>
     <string name="outline_outline">Overzicht</string>
     <string name="outline_drop_shadow">Slagschaduw</string>
@@ -549,7 +461,6 @@
     <string name="align_right">Rechts</string>
     <string name="align_top">Bovenkant</string>
     <string name="align_bottom">Onderkant</string>
-
     <string name="title_add_server">Server toevoegen</string>
     <string name="title_edit_server">Bewerk server</string>
     <string name="server_details_subtitle">Voer de gegevens van uw Jellyfin-server in</string>
@@ -564,14 +475,12 @@
     <string name="connection_success_title">Verbinding succesvol</string>
     <string name="connection_success_fmt">Gevonden %1$s (v%2$s)</string>
     <string name="connection_failed_title">Verbinding mislukt</string>
-
     <string name="error_load_server_failed_fmt">Kan server niet laden: %1$s</string>
     <string name="error_enter_server_url">Voer een server-URL in</string>
     <string name="error_connection_test_failed_fmt">Verbindingstest mislukt: %1$s</string>
     <string name="error_url_required">Server-URL is vereist</string>
     <string name="error_test_connection_first">Test eerst de verbinding</string>
     <string name="error_save_server_failed_fmt">Kan de server niet opslaan: %1$s</string>
-
     <string name="server_management_title">Beheer servers</string>
     <string name="cd_add_server">Server toevoegen</string>
     <string name="cd_edit_server">Bewerk server</string>
@@ -581,16 +490,13 @@
     <string name="user_count_fmt">%1$d  %2$s</string>
     <string name="user_singular">gebruiker</string>
     <string name="user_plural">gebruikers</string>
-
     <string name="dialog_delete_server_title">Server verwijderen?</string>
     <string name="dialog_delete_server_message_fmt">Weet u zeker dat u \"%1$s\" wilt verwijderen?</string>
     <string name="dialog_delete_server_warning_fmt">Hierdoor worden %1$d opgeslagen gebruiker(s) en alle bijbehorende gegevens verwijderd.</string>
     <string name="action_delete">Verwijderen</string>
-
     <string name="error_load_servers_failed">Kan servers niet laden</string>
     <string name="error_delete_active_server">Kan de momenteel actieve server niet verwijderen. Schakel eerst over naar een andere server.</string>
     <string name="error_delete_server_failed">Kan de server niet verwijderen</string>
-
     <string name="update_available_title">Update beschikbaar</string>
     <string name="update_whats_new">Wat\'is nieuw</string>
     <string name="update_version_fmt">v%1$s</string>
@@ -598,7 +504,6 @@
     <string name="btn_downloading">Downloaden...</string>
     <string name="btn_install_restart">Installeren en opnieuw opstarten</string>
     <string name="action_not_now">Niet nu</string>
-
     <string name="pref_group_updates">Updates</string>
     <string name="pref_check_updates_title">Controleer op updates</string>
     <string name="update_status_checking">Controleren...</string>
@@ -608,13 +513,11 @@
     <string name="update_status_last_check_fmt">Laatste controle: %1$s</string>
     <string name="update_progress_fmt">%1$d%%</string>
     <string name="pref_check_frequency_title">Controleer frequentie</string>
-
     <string name="freq_on_app_open">Bij app openen</string>
     <string name="freq_6_hours">Elke 6 uur</string>
     <string name="freq_12_hours">Elke 12 uur</string>
     <string name="freq_24_hours">Elke 24 uur</string>
     <string name="update_never_checked">Nooit</string>
-
     <string name="jellyseerr_connect_subtitle">Voer uw servergegevens in om inhoudsverzoeken in te schakelen</string>
     <string name="jellyseerr_placeholder_url">https://seerr.voorbeeld.com</string>
     <string name="label_login_method">Inlogmethode</string>
@@ -629,98 +532,76 @@
     <string name="cd_show_password">Wachtwoord tonen</string>
     <string name="cd_hide_password">Wachtwoord verbergen</string>
     <string name="btn_login">Login</string>
-
     <string name="licenses_title">Open Source-licenties</string>
     <string name="licenses_header_title">Open source-afhankelijkheden</string>
     <string name="licenses_header_subtitle">Deze app maakt gebruik van de volgende open source-bibliotheken</string>
     <string name="licenses_footer_built_with">Gebouwd met open source-software</string>
     <string name="licenses_footer_terms">Gelicentieerd onder hun respectieve voorwaarden</string>
-
     <string name="session_switcher_title">Wissel van sessie</string>
     <string name="action_login_server">Log in op deze server</string>
     <string name="action_add_account">Voeg nog een account toe</string>
     <string name="empty_sessions_title">Geen opgeslagen sessies</string>
     <string name="empty_sessions_message">Log in op een server om een ​​sessie te creëren</string>
-
     <string name="cd_user_avatar">Gebruikersavatar</string>
     <string name="cd_current_session">Huidige sessie</string>
-
     <string name="error_session_token_not_found">Sessietoken niet gevonden</string>
     <string name="error_server_not_found">Server niet gevonden</string>
     <string name="error_switch_session_failed_fmt">Kan niet van sessie wisselen: %1$s</string>
     <string name="error_switch_session_error_fmt">Fout bij schakelen tussen sessie: %1$s</string>
-
     <string name="settings_title">Instellingen</string>
     <string name="unknown_user">Onbekende gebruiker</string>
     <string name="unknown_server">Onbekende server</string>
     <string name="cd_profile_picture">Profielfoto</string>
-
     <string name="pref_group_general">Algemeen</string>
     <string name="pref_offline_mode">Offline-modus</string>
     <string name="offline_mode_no_connection">Offline (geen verbinding)</string>
     <string name="offline_mode_manual">Handmatig ingeschakeld</string>
     <string name="offline_mode_force">Offlinemodus forceren</string>
-
     <string name="pref_discovery_requests">Ontdekking en verzoeken</string>
     <string name="discovery_connected">Verbonden via Seerr</string>
     <string name="discovery_connect">Maak verbinding om inhoud aan te vragen</string>
-
     <string name="pref_audiobookshelf">Audioboekenplank</string>
     <string name="audiobookshelf_connected">Verbonden met audioboekenplank</string>
     <string name="audiobookshelf_connect">Maak verbinding om door audioboeken te bladeren</string>
     <string name="dialog_disconnect_audiobookshelf_title">Ontkoppel de Audioboekenplank</string>
     <string name="dialog_disconnect_audiobookshelf_message">Als u de verbinding verbreekt, wordt uw Audiobookshelf-configuratie verwijderd. U kunt op elk gewenst moment opnieuw verbinding maken.</string>
     <string name="error_audiobookshelf_logout_failed_fmt">Kan de verbinding met Audiobookshelf niet verbreken: %1$s</string>
-
     <string name="notification_permission_title">Meldingen inschakelen</string>
     <string name="notification_permission_message">AFinity heeft toestemming voor meldingen nodig om de mediaspeler in uw meldingenpaneel en vergrendelscherm weer te geven tijdens het afspelen van audioboeken of podcasts.\n\nAls u later van gedachten verandert, kunt u dit handmatig inschakelen via App-info → Toestemmingen → Meldingen.</string>
     <string name="notification_permission_yes">Toestaan</string>
     <string name="notification_permission_no">Nee bedankt</string>
-
     <string name="pref_downloads">Downloads</string>
     <string name="pref_downloads_summary">Beheer offline inhoud</string>
-
     <string name="pref_switch_session">Wissel van sessie</string>
     <string name="pref_switch_session_summary">Wijzig gebruiker of server</string>
-
     <string name="pref_group_connections">Verbindingen</string>
     <string name="pref_manage_servers">Beheer servers</string>
     <string name="pref_manage_servers_summary">Jellyfin-servers toevoegen of verwijderen</string>
-
     <string name="pref_group_preferences">Voorkeuren</string>
     <string name="pref_appearance">Verschijning</string>
     <string name="pref_appearance_summary">Thema\'s en lay-out</string>
-
     <string name="pref_playback">Afspelen</string>
     <string name="pref_playback_summary">Spelersgedrag en kwaliteit</string>
-
     <string name="pref_group_about">Over</string>
     <string name="pref_version">Versie</string>
     <string name="version_fmt">%1$s (%2$s)</string>
     <string name="build_debug">Debug-build</string>
     <string name="build_release">Laat de opbouw los</string>
-
     <string name="pref_licenses">Licenties</string>
     <string name="pref_licenses_summary">Open source-bibliotheken</string>
-
     <string name="action_logout">Uitloggen</string>
-
     <string name="dialog_logout_title">Uitloggen</string>
     <string name="dialog_logout_message">Weet u zeker dat u wilt uitloggen? U moet zich opnieuw aanmelden om toegang te krijgen tot de inhoud.</string>
-
     <string name="dialog_disconnect_seerr_title">Ontkoppel Seerr</string>
     <string name="dialog_disconnect_seerr_message">Als u de verbinding verbreekt, kunt u geen nieuwe verzoeken indienen. U kunt op elk gewenst moment opnieuw verbinding maken.</string>
     <string name="action_disconnect">Verbreek de verbinding</string>
     <string name="dialog_error_title">Fout</string>
     <string name="action_ok">OK</string>
-
     <string name="error_logout_failed_fmt">Uitloggen mislukt: %1$s</string>
     <string name="error_jellyseerr_logout_failed_fmt">Uitloggen bij Seerr is mislukt: %1$s</string>
-
     <string name="watchlist_title">Volglijst</string>
     <string name="watchlist_empty">Je volglijst is leeg</string>
     <string name="watchlist_section_header_fmt">%1$s (%2$d)</string>
-
     <string name="section_movies">Films</string>
     <string name="section_boxset">Boxsets</string>
     <string name="section_tv_shows">TV-programma\'s</string>
@@ -728,8 +609,6 @@
     <string name="section_episodes">Afleveringen</string>
     <string name="section_tv_channels">Live tv-kanalen</string>
     <string name="section_people">Mensen</string>
-
-
     <string name="cd_cast">Vorm</string>
     <string name="cast_connected_to">Casten naar %1$s</string>
     <string name="cast_stop">Stop met casten</string>
