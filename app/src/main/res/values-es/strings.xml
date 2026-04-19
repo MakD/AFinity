@@ -416,8 +416,8 @@
     <string name="pref_pip_background_title">Sonido de fondo</string>
     <string name="pref_pip_background_summary">Sigue reproduciendo audio cuando la pantalla está apagada</string>
     <string name="pref_group_interface">Interfaz</string>
-    <string name="pref_skip_intro_title">Botón omitir introducción</string>
-    <string name="pref_skip_outro_title">Botón Omitir otro</string>
+    <string name="pref_skip_intro_title">Omitir introducción</string>
+    <string name="pref_skip_outro_title">Omitir otro</string>
     <string name="pref_autohide_logo_title">Ocultar logotipo automáticamente</string>
     <string name="pref_autohide_logo_summary">Ocultar el logotipo del título con los controles del reproductor</string>
     <string name="pref_default_zoom_title">Zoom predeterminado</string>
@@ -643,4 +643,9 @@
     <string name="media_type_collection">Colección</string>
     <string name="address_added_title">Dirección Añadida</string>
     <string name="btn_ok">Aceptar</string>
+    <string name="skip_mode_button">Mostrar botón</string>
+    <string name="skip_mode_auto_skip">Auto-descarte</string>
+    <string name="skip_mode_disabled">Inhabilitado</string>
+    <string name="pref_send_logs">Enviar bitácoras</string>
+    <string name="pref_send_logs_summary">Compartir bitácoras diagnosticadas para reportes de fallo</string>
 </resources>
