@@ -416,8 +416,8 @@
     <string name="pref_pip_background_title">Achtergrondaudio</string>
     <string name="pref_pip_background_summary">Blijf audio afspelen als het scherm is uitgeschakeld</string>
     <string name="pref_group_interface">Interface</string>
-    <string name="pref_skip_intro_title">Introknop overslaan</string>
-    <string name="pref_skip_outro_title">Outro-knop overslaan</string>
+    <string name="pref_skip_intro_title">Intro overslaan</string>
+    <string name="pref_skip_outro_title">Outro overslaan</string>
     <string name="pref_autohide_logo_title">Logo automatisch verbergen</string>
     <string name="pref_autohide_logo_summary">Titellogo verbergen met spelerbediening</string>
     <string name="pref_default_zoom_title">Standaardzoom</string>
@@ -625,4 +625,20 @@
     <string name="pref_cast_hevc_title">HEVC inschakelen</string>
     <string name="pref_cast_hevc_description">Inschakelen voor Chromecast Ultra/Google TV</string>
     <string name="pref_cast_max_bitrate_title">Maximale bitsnelheid</string>
+    <string name="cd_local_connection">Lokale verbinding</string>
+    <string name="cd_tailscale_connection">Tailscale verbinding</string>
+    <string name="media_type_episode">Aflevering</string>
+    <string name="skip_mode_button">Serie knop</string>
+    <string name="skip_mode_auto_skip">Automatisch overslaan</string>
+    <string name="skip_mode_disabled">Uitgeschakeld</string>
+    <string name="error_all_addresses_unreachable">Kon de server op geen een opgeslagen adres bereiken</string>
+    <string name="address_added_title">Adres toegevoegd</string>
+    <string name="address_added_to_existing_server">Dit adres is toegevoegd aan je bestaande server %1$s.</string>
+    <string name="address_already_saved">Dit adres is al opgeslagen voor deze server</string>
+    <string name="label_primary_address">Primair</string>
+    <string name="action_set_primary">Stel in als primair</string>
+    <string name="error_cannot_delete_primary">Kon het primaire adres niet verwijderen</string>
+    <string name="dialog_select_language_title">Selecteer een taal</string>
+    <string name="pref_send_logs">Verstuur logboek</string>
+    <string name="action_close">Sluit</string>
 </resources>
