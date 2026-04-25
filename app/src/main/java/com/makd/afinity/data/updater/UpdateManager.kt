@@ -17,6 +17,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +45,7 @@ constructor(
     private val downloadManager =
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     private var progressJob: Job? = null
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private val downloadReceiver =
         object : BroadcastReceiver() {
