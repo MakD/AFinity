@@ -1255,6 +1255,30 @@ constructor(
             }
         }
 
+    override suspend fun getLocalTrailers(itemId: UUID): List<AfinityItem> =
+        withContext(Dispatchers.IO) {
+            try {
+                val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val userLibraryApi = UserLibraryApi(apiClient)
+                val response = userLibraryApi.getLocalTrailers(itemId = itemId, userId = userId)
+                response.content.mapNotNull { baseItem ->
+                    when (baseItem.type) {
+                        BaseItemKind.TRAILER,
+                        BaseItemKind.VIDEO -> baseItem.toAfinityVideo(getBaseUrl())
+                        BaseItemKind.MOVIE -> baseItem.toAfinityMovie(getBaseUrl())
+                        else -> {
+                            Timber.d("Unhandled local trailer type: ${baseItem.type} for item ${baseItem.id}")
+                            null
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get local trailers for item: $itemId")
+                emptyList()
+            }
+        }
+
     override suspend fun searchItems(
         query: String,
         limit: Int,

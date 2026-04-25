@@ -182,6 +182,12 @@ constructor(
         }
 
         viewModelScope.launch {
+            preferencesRepository.getAutoPlayTrailersFlow().collect {
+                _uiState.value = _uiState.value.copy(autoPlayTrailers = it)
+            }
+        }
+
+        viewModelScope.launch {
             preferencesRepository.getSkipIntroModeFlow().collect {
                 _uiState.value = _uiState.value.copy(skipIntroMode = it)
             }
@@ -314,6 +320,16 @@ constructor(
                 Timber.d("Auto-play set to: $enabled")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle auto-play")
+            }
+        }
+    }
+
+    fun toggleAutoPlayTrailers(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setAutoPlayTrailers(enabled)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle auto-play trailers")
             }
         }
     }
@@ -700,6 +716,7 @@ data class SettingsUiState(
     val themeMode: String = "SYSTEM",
     val dynamicColors: Boolean = true,
     val autoPlay: Boolean = true,
+    val autoPlayTrailers: Boolean = true,
     val pipGestureEnabled: Boolean = false,
     val pipBackgroundPlay: Boolean = true,
     val skipIntroMode: SkipMode = SkipMode.BUTTON,

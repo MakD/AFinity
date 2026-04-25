@@ -498,6 +498,8 @@
     <string name="pref_language_search_hint">Search languages…</string>
     <string name="pref_autoplay_title">Auto-play</string>
     <string name="pref_autoplay_summary">Automatically play next episode</string>
+    <string name="pref_autoplay_trailers_title">Auto-play trailers</string>
+    <string name="pref_autoplay_trailers_summary">Play local trailers in the detail screen</string>
 
     <string name="pref_group_pip">Picture-in-Picture</string>
     <string name="pref_pip_gesture_title">Home Gesture</string>

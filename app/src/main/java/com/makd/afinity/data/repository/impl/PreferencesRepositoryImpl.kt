@@ -106,6 +106,8 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
 
         val CAST_HEVC_ENABLED = booleanPreferencesKey("cast_hevc_enabled")
         val CAST_MAX_BITRATE = intPreferencesKey("cast_max_bitrate")
+
+        val AUTO_PLAY_TRAILERS = booleanPreferencesKey("auto_play_trailers")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -277,6 +279,17 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
 
     override fun getAutoPlayFlow(): Flow<Boolean> =
         dataStore.data.map { it[Keys.AUTO_PLAY] ?: true }
+
+    override suspend fun setAutoPlayTrailers(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.AUTO_PLAY_TRAILERS] = enabled }
+    }
+
+    override suspend fun getAutoPlayTrailers(): Boolean {
+        return dataStore.data.first()[Keys.AUTO_PLAY_TRAILERS] ?: true
+    }
+
+    override fun getAutoPlayTrailersFlow(): Flow<Boolean> =
+        dataStore.data.map { it[Keys.AUTO_PLAY_TRAILERS] ?: true }
 
     override fun getSkipIntroModeFlow(): Flow<SkipMode> =
         dataStore.data.map { prefs ->

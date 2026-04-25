@@ -90,6 +90,7 @@ import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.IntentUtils
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 import com.makd.afinity.util.rememberPreferencesRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
@@ -127,6 +128,7 @@ fun ItemDetailScreen(
             pendingPlaySelection = selection
             showVersionPickerForPlay = true
         } else {
+            viewModel.dismissTrailer()
             onPlayClick(item, selection)
         }
     }
@@ -300,6 +302,7 @@ fun ItemDetailScreen(
                                     subtitleStreamIndex = null,
                                     videoStreamIndex = null,
                                 )
+                        viewModel.dismissTrailer()
                         onPlayClick(item, finalSelection)
                         pendingPlayItem = null
                         pendingPlaySelection = null
@@ -602,12 +605,32 @@ private fun PortraitItemDetailContent(
     val preferencesRepository = rememberPreferencesRepository()
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val localTrailerUrl by viewModel.localTrailerUrl.collectAsStateWithLifecycle()
+    val isTrailerPlaying by viewModel.isTrailerPlaying.collectAsStateWithLifecycle()
+    val isTrailerMuted by viewModel.isTrailerMuted.collectAsStateWithLifecycle()
+    val autoPlayTrailers by viewModel.autoPlayTrailers.collectAsStateWithLifecycle()
+
+    LaunchedEffect(localTrailerUrl, autoPlayTrailers) {
+        if (localTrailerUrl != null && autoPlayTrailers) {
+            delay(3000)
+            viewModel.startTrailer()
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = bottomPadding + 16.dp),
     ) {
-        item { HeroSection(item = item, onPlayClick = onPlayClick) }
+        item {
+            HeroSection(
+                item = item,
+                localTrailerUrl = localTrailerUrl,
+                isTrailerPlaying = isTrailerPlaying,
+                isTrailerMuted = isTrailerMuted,
+                onDismissTrailer = viewModel::dismissTrailer,
+                onToggleMute = viewModel::toggleTrailerMute,
+            )
+        }
 
         item {
             Column(
@@ -650,9 +673,12 @@ private fun PortraitItemDetailContent(
                 ActionButtonsRow(
                     item = item,
                     isInWatchlist = isInWatchlist,
-                    hasTrailer = hasTrailer(item),
+                    hasTrailer = hasTrailer(item) || localTrailerUrl != null,
                     downloadInfo = downloadInfo,
-                    onPlayTrailer = { playTrailer(item, context, viewModel) },
+                    onPlayTrailer = {
+                        if (localTrailerUrl != null) viewModel.startTrailer()
+                        else playTrailer(item, context, viewModel)
+                    },
                     onToggleWatchlist = { viewModel.toggleWatchlist() },
                     onShufflePlay = { shufflePlay(item, nextEpisode, context) },
                     onToggleFavorite = { viewModel.toggleFavorite() },

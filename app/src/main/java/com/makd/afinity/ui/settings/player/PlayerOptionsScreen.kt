@@ -163,6 +163,14 @@ fun PlayerOptionsScreen(
                         checked = uiState.autoPlay,
                         onCheckedChange = viewModel::toggleAutoPlay,
                     )
+                    SettingsDivider()
+                    SettingsSwitchItem(
+                        icon = painterResource(id = R.drawable.ic_player_play_filled),
+                        title = stringResource(R.string.pref_autoplay_trailers_title),
+                        subtitle = stringResource(R.string.pref_autoplay_trailers_summary),
+                        checked = uiState.autoPlayTrailers,
+                        onCheckedChange = viewModel::toggleAutoPlayTrailers,
+                    )
                 }
             }
 

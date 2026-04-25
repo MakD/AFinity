@@ -46,6 +46,12 @@ interface PreferencesRepository {
 
     fun getAutoPlayFlow(): Flow<Boolean>
 
+    suspend fun setAutoPlayTrailers(enabled: Boolean)
+
+    suspend fun getAutoPlayTrailers(): Boolean
+
+    fun getAutoPlayTrailersFlow(): Flow<Boolean>
+
     suspend fun setMaxBitrate(bitrate: Int?)
 
     suspend fun getMaxBitrate(): Int?

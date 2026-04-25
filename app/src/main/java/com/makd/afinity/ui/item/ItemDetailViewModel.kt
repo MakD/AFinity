@@ -40,6 +40,7 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
+import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.ui.item.components.shared.MediaSourceOption
@@ -72,6 +73,7 @@ class ItemDetailViewModel
 constructor(
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
+    private val playbackRepository: PlaybackRepository,
     private val sessionManager: SessionManager,
     private val downloadRepository: DownloadRepository,
     private val databaseRepository: DatabaseRepository,
@@ -117,6 +119,32 @@ constructor(
             .getDownloadWifiOnlyFlow()
             .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    private val _localTrailerUrl = MutableStateFlow<String?>(null)
+    val localTrailerUrl: StateFlow<String?> = _localTrailerUrl.asStateFlow()
+
+    private val _isTrailerPlaying = MutableStateFlow(false)
+    val isTrailerPlaying: StateFlow<Boolean> = _isTrailerPlaying.asStateFlow()
+
+    private val _isTrailerMuted = MutableStateFlow(true)
+    val isTrailerMuted: StateFlow<Boolean> = _isTrailerMuted.asStateFlow()
+
+    val autoPlayTrailers: StateFlow<Boolean> =
+        preferencesRepository
+            .getAutoPlayTrailersFlow()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun startTrailer() {
+        if (_localTrailerUrl.value != null) _isTrailerPlaying.value = true
+    }
+
+    fun dismissTrailer() {
+        _isTrailerPlaying.value = false
+    }
+
+    fun toggleTrailerMute() {
+        _isTrailerMuted.value = !_isTrailerMuted.value
+    }
 
     private val _selectedMediaSource = MutableStateFlow<MediaSourceOption?>(null)
     val selectedMediaSource = _selectedMediaSource.asStateFlow()
@@ -593,6 +621,7 @@ constructor(
                 if (!isOffline) {
                     if (item is AfinityMovie || item is AfinityShow) {
                         launch { loadReviewsAndRatings(item) }
+                        launch { loadLocalTrailers(item) }
                     }
                     if (item is AfinityBoxSet) {
                         loadBoxSetItems(item.id)
@@ -800,6 +829,21 @@ constructor(
                 ?: databaseRepository.getEpisode(itemId, userId)
         } catch (_: Exception) {
             null
+        }
+    }
+
+    private suspend fun loadLocalTrailers(item: AfinityItem) {
+        try {
+            val trailers = mediaRepository.getLocalTrailers(item.id)
+            Timber.d("Local trailers for ${item.id}: ${trailers.size} found")
+            val firstTrailer = trailers.firstOrNull() ?: return
+            val mediaSourceId = firstTrailer.sources.firstOrNull()?.id
+                ?: firstTrailer.id.toString()
+            val url = playbackRepository.getStreamUrl(firstTrailer.id, mediaSourceId)
+            _localTrailerUrl.value = url
+            Timber.d("Local trailer URL for ${item.id}: $url")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load local trailers for item ${item.id}")
         }
     }
 
