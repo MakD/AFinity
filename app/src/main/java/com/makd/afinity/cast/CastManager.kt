@@ -19,7 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -181,20 +181,19 @@ constructor(
                                 stream.codec?.lowercase() in textSubtitleCodecs
                         }
                         .orEmpty()
-                val mediaTracks =
-                    textSubtitleStreams.map { stream ->
-                        val subUrl =
-                            "${serverBaseUrl.trimEnd('/')}/Videos/${item.id}/" +
-                                "${mediaSource.id ?: mediaSourceId}/Subtitles/${stream.index}/Stream.vtt" +
-                                "?api_key=$apiToken"
-                        MediaTrack.Builder(stream.index.toLong(), MediaTrack.TYPE_TEXT)
-                            .setName(stream.displayTitle ?: stream.language ?: "Subtitle")
-                            .setSubtype(MediaTrack.SUBTYPE_SUBTITLES)
-                            .setContentId(subUrl)
-                            .setContentType("text/vtt")
-                            .setLanguage(stream.language ?: "und")
-                            .build()
-                    }
+                val mediaTracks = textSubtitleStreams.map { stream ->
+                    val subUrl =
+                        "${serverBaseUrl.trimEnd('/')}/Videos/${item.id}/" +
+                            "${mediaSource.id ?: mediaSourceId}/Subtitles/${stream.index}/Stream.vtt" +
+                            "?api_key=$apiToken"
+                    MediaTrack.Builder(stream.index.toLong(), MediaTrack.TYPE_TEXT)
+                        .setName(stream.displayTitle ?: stream.language ?: "Subtitle")
+                        .setSubtype(MediaTrack.SUBTYPE_SUBTITLES)
+                        .setContentId(subUrl)
+                        .setContentType("text/vtt")
+                        .setLanguage(stream.language ?: "und")
+                        .build()
+                }
                 val activeTrackIds: LongArray? =
                     if (
                         subtitleStreamIndex != null &&
@@ -314,16 +313,15 @@ constructor(
 
     fun setVolume(volume: Double) {
         volumeDebounceJob?.cancel()
-        volumeDebounceJob =
-            scope.launch {
-                delay(300)
-                try {
-                    castSession?.volume = volume.coerceIn(0.0, 1.0)
-                    _castState.update { it.copy(volume = volume.coerceIn(0.0, 1.0)) }
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to set cast volume")
-                }
+        volumeDebounceJob = scope.launch {
+            delay(300)
+            try {
+                castSession?.volume = volume.coerceIn(0.0, 1.0)
+                _castState.update { it.copy(volume = volume.coerceIn(0.0, 1.0)) }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set cast volume")
             }
+        }
     }
 
     fun setPlaybackSpeed(speed: Float) {
@@ -455,19 +453,18 @@ constructor(
             ?.sessionManager
             ?.removeSessionManagerListener(castSessionManagerListener, CastSession::class.java)
         castContext = null
-        scope.coroutineContext.cancelChildren()
+        scope.cancel()
         Timber.d("CastManager released")
     }
 
     private fun startProgressReporting() {
         stopProgressReporting()
-        progressReportingJob =
-            scope.launch {
-                while (true) {
-                    delay(10_000)
-                    reportProgress()
-                }
+        progressReportingJob = scope.launch {
+            while (true) {
+                delay(10_000)
+                reportProgress()
             }
+        }
     }
 
     private fun stopProgressReporting() {
@@ -477,13 +474,12 @@ constructor(
 
     private fun startPositionPolling() {
         stopPositionPolling()
-        positionPollingJob =
-            scope.launch {
-                while (true) {
-                    delay(1_000)
-                    updatePositionFromRemote()
-                }
+        positionPollingJob = scope.launch {
+            while (true) {
+                delay(1_000)
+                updatePositionFromRemote()
             }
+        }
     }
 
     private fun stopPositionPolling() {
