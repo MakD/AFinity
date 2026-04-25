@@ -72,6 +72,8 @@ constructor(
 ) {
     private val recentCacheTTL = 6.hours.inWholeMilliseconds
     private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var liveDataJob: Job? = null
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     val latestMedia: StateFlow<List<AfinityItem>> = _latestMedia.asStateFlow()
 
@@ -111,7 +113,7 @@ constructor(
                 }
             }
             .stateIn(
-                scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+                scope = scope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = null,
             )
@@ -154,8 +156,6 @@ constructor(
     val loadingPhase: StateFlow<String> = _loadingPhase.asStateFlow()
 
     private var currentSessionId: String? = null
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private var liveDataJob: Job? = null
 
     init {
         scope.launch {
