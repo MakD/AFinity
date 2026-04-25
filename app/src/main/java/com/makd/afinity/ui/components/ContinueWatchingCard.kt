@@ -38,6 +38,10 @@ import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.extensions.showBackdropBlurHash
+import com.makd.afinity.data.models.extensions.showBackdropImageUrl
+import com.makd.afinity.data.models.extensions.showThumbBlurHash
+import com.makd.afinity.data.models.extensions.showThumbImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -73,19 +77,27 @@ fun ContinueWatchingCard(
                         item.images.primaryBlurHash
                             ?: item.images.thumbBlurHash
                             ?: item.images.backdropBlurHash
+                            ?: item.images.showThumbBlurHash
+                            ?: item.images.showBackdropBlurHash
                     }
+
+                val imageUrl =
+                    if (item is AfinityMovie) {
+                        item.images.thumbImageUrl
+                            ?: item.images.backdropImageUrl
+                            ?: item.images.primaryImageUrl
+                    } else {
+                        item.images.primaryImageUrl
+                            ?: item.images.thumbImageUrl
+                            ?: item.images.backdropImageUrl
+                            ?: item.images.showThumbImageUrl
+                            ?: item.images.showBackdropImageUrl
+                    }
+
                 val isMissing = item is AfinityEpisode && item.missing
+
                 AsyncImage(
-                    imageUrl =
-                        if (item is AfinityMovie) {
-                            item.images.thumbImageUrl
-                                ?: item.images.backdropImageUrl
-                                ?: item.images.primaryImageUrl
-                        } else {
-                            item.images.primaryImageUrl
-                                ?: item.images.thumbImageUrl
-                                ?: item.images.backdropImageUrl
-                        },
+                    imageUrl = imageUrl,
                     blurHash = blurHash,
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize().alpha(if (isMissing) 0.5f else 1f),
