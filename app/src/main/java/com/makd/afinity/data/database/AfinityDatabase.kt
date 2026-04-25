@@ -1,8 +1,6 @@
 package com.makd.afinity.data.database
 
-import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.makd.afinity.data.database.dao.AbsDownloadDao
@@ -28,6 +26,7 @@ import com.makd.afinity.data.database.dao.StudioCacheDao
 import com.makd.afinity.data.database.dao.TopPeopleDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
+import com.makd.afinity.data.database.entities.AbsDownloadEntity
 import com.makd.afinity.data.database.entities.AfinityEpisodeDto
 import com.makd.afinity.data.database.entities.AfinityMediaStreamDto
 import com.makd.afinity.data.database.entities.AfinityMovieDto
@@ -36,7 +35,6 @@ import com.makd.afinity.data.database.entities.AfinitySegmentDto
 import com.makd.afinity.data.database.entities.AfinityShowDto
 import com.makd.afinity.data.database.entities.AfinitySourceDto
 import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
-import com.makd.afinity.data.database.entities.AbsDownloadEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfAddressEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfConfigEntity
 import com.makd.afinity.data.database.entities.AudiobookshelfItemEntity
@@ -103,7 +101,7 @@ import com.makd.afinity.data.models.user.User
             JellyfinStatsCacheEntity::class,
             AbsDownloadEntity::class,
         ],
-    version = 39,
+    version = 41,
     exportSchema = false,
 )
 @TypeConverters(AfinityTypeConverters::class)
@@ -154,52 +152,4 @@ abstract class AfinityDatabase : RoomDatabase() {
     abstract fun jellyfinStatsDao(): JellyfinStatsDao
 
     abstract fun absDownloadDao(): AbsDownloadDao
-
-    companion object {
-        @Volatile private var INSTANCE: AfinityDatabase? = null
-
-        fun getDatabase(context: Context): AfinityDatabase {
-            return INSTANCE
-                ?: synchronized(this) {
-                    val instance =
-                        Room.databaseBuilder(
-                                context.applicationContext,
-                                AfinityDatabase::class.java,
-                                "afinity_database",
-                            )
-                            .addMigrations(*DatabaseMigrations.ALL_MIGRATIONS)
-                            .build()
-                    INSTANCE = instance
-                    instance
-                }
-        }
-
-        fun getProductionDatabase(context: Context): AfinityDatabase {
-            return INSTANCE
-                ?: synchronized(this) {
-                    val instance =
-                        Room.databaseBuilder(
-                                context.applicationContext,
-                                AfinityDatabase::class.java,
-                                "afinity_database",
-                            )
-                            .addMigrations(*DatabaseMigrations.ALL_MIGRATIONS)
-                            .build()
-                    INSTANCE = instance
-                    instance
-                }
-        }
-
-        fun createInMemoryDatabase(context: Context): AfinityDatabase {
-            return Room.inMemoryDatabaseBuilder(
-                    context.applicationContext,
-                    AfinityDatabase::class.java,
-                )
-                .build()
-        }
-
-        fun clearInstance() {
-            INSTANCE = null
-        }
-    }
 }

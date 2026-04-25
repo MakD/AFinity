@@ -22,7 +22,7 @@ fun VideoQualitySelection(
 ) {
     if (mediaSourceOptions.size > 1) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
-            items(mediaSourceOptions) { source ->
+            items(mediaSourceOptions, key = { it.id }) { source ->
                 QualityChip(
                     source = source,
                     isSelected = source == selectedSource,

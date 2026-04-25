@@ -9,7 +9,6 @@ import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.extensions.toAfinityBoxSet
-import com.makd.afinity.data.models.media.toAfinityCollection
 import com.makd.afinity.data.models.extensions.toAfinityEpisode
 import com.makd.afinity.data.models.extensions.toAfinityItem
 import com.makd.afinity.data.models.extensions.toAfinityMovie
@@ -27,18 +26,19 @@ import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.toAfinityCollection
 import com.makd.afinity.data.network.MdbListApiService
+import com.makd.afinity.data.paging.JellyfinItemsPagingSource
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.SecurePreferencesRepository
+import com.makd.afinity.ui.library.FilterType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import com.makd.afinity.data.paging.JellyfinItemsPagingSource
-import com.makd.afinity.ui.library.FilterType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -161,8 +161,9 @@ constructor(
                 }
             }
             if (updatedItem is AfinityEpisode) {
-                val parentSeriesIndex =
-                    newList.indexOfFirst { it is AfinityShow && it.id == updatedItem.seriesId }
+                val parentSeriesIndex = newList.indexOfFirst {
+                    it is AfinityShow && it.id == updatedItem.seriesId
+                }
 
                 if (parentSeriesIndex != -1) {
                     val parent = newList[parentSeriesIndex] as AfinityShow
@@ -194,7 +195,9 @@ constructor(
                 updatedEpisode.played || updatedEpisode.playbackPositionTicks > 0 -> {
                     if (existingIndex != -1) {
                         newList.removeAt(existingIndex)
-                        Timber.d("Removed episode from next up (played=${updatedEpisode.played}, resumable=${updatedEpisode.playbackPositionTicks > 0}): ${updatedEpisode.name}")
+                        Timber.d(
+                            "Removed episode from next up (played=${updatedEpisode.played}, resumable=${updatedEpisode.playbackPositionTicks > 0}): ${updatedEpisode.name}"
+                        )
                     }
                 }
 
@@ -339,19 +342,23 @@ constructor(
         fields: List<ItemFields>?,
         studioName: String?,
     ): Flow<PagingData<AfinityItem>> =
-        Pager(config = PagingConfig(pageSize = 50, enablePlaceholders = false, initialLoadSize = 50)) {
-            JellyfinItemsPagingSource(
-                mediaRepository = this,
-                parentId = parentId,
-                libraryType = libraryType,
-                sortBy = sortBy,
-                sortDescending = sortDescending,
-                filter = filter,
-                baseUrl = getBaseUrl(),
-                nameStartsWith = nameStartsWith,
-                studioName = studioName,
-            )
-        }.flow
+        Pager(
+                config =
+                    PagingConfig(pageSize = 50, enablePlaceholders = false, initialLoadSize = 50)
+            ) {
+                JellyfinItemsPagingSource(
+                    mediaRepository = this,
+                    parentId = parentId,
+                    libraryType = libraryType,
+                    sortBy = sortBy,
+                    sortDescending = sortDescending,
+                    filter = filter,
+                    baseUrl = getBaseUrl(),
+                    nameStartsWith = nameStartsWith,
+                    studioName = studioName,
+                )
+            }
+            .flow
 
     override suspend fun getLibraries(): List<AfinityCollection> =
         withContext(Dispatchers.IO) {
@@ -949,7 +956,7 @@ constructor(
                         seriesId = actualSeriesId,
                         userId = userId,
                         seasonId = seasonId,
-                        isMissing = false,
+                        isMissing = null,
                         fields = fields ?: FieldSets.EPISODE_LIST,
                         enableImages = true,
                         enableUserData = true,
@@ -957,9 +964,16 @@ constructor(
                         startIndex = startIndex.takeIf { it > 0 },
                         limit = limit,
                     )
-                response.content.items.mapNotNull { baseItem ->
-                    baseItem.toAfinityEpisode(getBaseUrl())
-                }
+                response.content.items
+                    .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
+                    .filter { episode ->
+                        if (episode.missing) {
+                            episode.premiereDate?.isBefore(java.time.LocalDateTime.now()) == true
+                        } else {
+                            true
+                        }
+                    }
+                    .distinctBy { episode -> "${episode.parentIndexNumber}_${episode.indexNumber}" }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get episodes")
                 emptyList()
@@ -1162,6 +1176,42 @@ constructor(
                 nextUpItems
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get next up")
+                emptyList()
+            }
+        }
+
+    override suspend fun getUpcomingEpisodes(
+        limit: Int,
+        fields: List<ItemFields>?,
+    ): List<AfinityEpisode> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+
+                val tvShowsApi = TvShowsApi(apiClient)
+                val response =
+                    tvShowsApi.getUpcomingEpisodes(
+                        userId = userId,
+                        limit = limit,
+                        fields = fields ?: (FieldSets.EPISODE_LIST + ItemFields.MEDIA_SOURCES),
+                        enableImages = true,
+                        enableUserData = true,
+                    )
+
+                val now = java.time.LocalDateTime.now()
+                response.content.items
+                    .mapNotNull { baseItem -> baseItem.toAfinityEpisode(getBaseUrl()) }
+                    .filter { episode ->
+                        episode.premiereDate?.isAfter(now) == true &&
+                            (episode.missing || episode.sources.isEmpty())
+                    }
+                    .distinctBy { episode ->
+                        "${episode.seriesName}_${episode.parentIndexNumber}_${episode.indexNumber}"
+                    }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get upcoming episodes")
                 emptyList()
             }
         }
@@ -1446,7 +1496,8 @@ constructor(
                 response.content.items
                     .mapNotNull { studioDto ->
                         val id: UUID = studioDto.id
-                        val name = studioDto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                        val name =
+                            studioDto.name?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
                         val childCount = studioDto.childCount ?: 0
                         val thumbImageUrl =
                             studioDto.imageTags?.get(ImageType.THUMB)?.let { tag ->
@@ -1718,11 +1769,7 @@ constructor(
             Timber.d("Getting episode to play for series: $seriesId")
             try {
                 val nextUpEpisodes =
-                    getNextUp(
-                        seriesId = seriesId,
-                        limit = 1,
-                        fields = FieldSets.PLAYABLE_EPISODE,
-                    )
+                    getNextUp(seriesId = seriesId, limit = 1, fields = FieldSets.PLAYABLE_EPISODE)
                 if (nextUpEpisodes.isNotEmpty()) {
                     Timber.d("Found NextUp episode: ${nextUpEpisodes.first().name}")
                     return nextUpEpisodes.first()

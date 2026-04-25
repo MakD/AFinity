@@ -79,7 +79,7 @@ fun SeasonSelector(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                items(availableSeasons) { index ->
+                items(availableSeasons, key = { it }) { index ->
                     val seasonNumber = index + 1
                     val isDisabled = seasonNumber in disabledSeasons
 

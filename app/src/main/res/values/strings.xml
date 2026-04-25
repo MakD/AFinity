@@ -60,6 +60,7 @@
     <string name="home_latest_movies">Latest Movies</string>
     <string name="home_latest_tv_series">Latest TV Series</string>
     <string name="home_next_up">Next Up</string>
+    <string name="home_upcoming_episodes">Upcoming Episodes</string>
     <string name="home_genre_movies_title">%1$s Movies</string>
     <string name="home_genre_shows_title">%1$s Shows</string>
     <string name="home_person_starring">Starring %1$s</string>

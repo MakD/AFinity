@@ -1,11 +1,12 @@
 package com.makd.afinity.data.database.entities
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "boxset_cache")
+@Entity(tableName = "boxset_cache", primaryKeys = ["itemId", "serverId", "userId"])
 data class BoxSetCacheEntity(
-    @PrimaryKey val itemId: String,
+    val itemId: String,
+    val serverId: String,
+    val userId: String,
     val boxSetIds: String,
     val lastUpdated: Long,
 )

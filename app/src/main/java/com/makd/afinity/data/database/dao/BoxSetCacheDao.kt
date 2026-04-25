@@ -10,10 +10,11 @@ import com.makd.afinity.data.database.entities.BoxSetCacheMetadata
 @Dao
 interface BoxSetCacheDao {
 
-    @Query("SELECT * FROM boxset_cache WHERE itemId = :itemId")
-    suspend fun getCacheEntry(itemId: String): BoxSetCacheEntity?
+    @Query("SELECT * FROM boxset_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId")
+    suspend fun getCacheEntry(itemId: String, serverId: String, userId: String): BoxSetCacheEntity?
 
-    @Query("SELECT * FROM boxset_cache") suspend fun getAllCacheEntries(): List<BoxSetCacheEntity>
+    @Query("SELECT * FROM boxset_cache WHERE serverId = :serverId AND userId = :userId")
+    suspend fun getAllCacheEntries(serverId: String, userId: String): List<BoxSetCacheEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCacheEntries(entries: List<BoxSetCacheEntity>)
@@ -21,26 +22,29 @@ interface BoxSetCacheDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCacheEntry(entry: BoxSetCacheEntity)
 
-    @Query("DELETE FROM boxset_cache") suspend fun clearAllCacheEntries()
+    @Query("DELETE FROM boxset_cache WHERE serverId = :serverId AND userId = :userId")
+    suspend fun clearAllCacheEntries(serverId: String, userId: String)
 
-    @Query("DELETE FROM boxset_cache WHERE itemId = :itemId")
-    suspend fun deleteCacheEntry(itemId: String)
+    @Query("DELETE FROM boxset_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId")
+    suspend fun deleteCacheEntry(itemId: String, serverId: String, userId: String)
 
-    @Query("SELECT COUNT(*) FROM boxset_cache") suspend fun getCacheSize(): Int
+    @Query("SELECT COUNT(*) FROM boxset_cache WHERE serverId = :serverId AND userId = :userId")
+    suspend fun getCacheSize(serverId: String, userId: String): Int
 
-    @Query("SELECT * FROM boxset_cache_metadata WHERE id = 1")
-    suspend fun getMetadata(): BoxSetCacheMetadata?
+    @Query("SELECT * FROM boxset_cache_metadata WHERE serverId = :serverId AND userId = :userId")
+    suspend fun getMetadata(serverId: String, userId: String): BoxSetCacheMetadata?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMetadata(metadata: BoxSetCacheMetadata)
 
-    @Query("DELETE FROM boxset_cache_metadata") suspend fun clearMetadata()
+    @Query("DELETE FROM boxset_cache_metadata WHERE serverId = :serverId AND userId = :userId")
+    suspend fun clearMetadata(serverId: String, userId: String)
 
-    @Query("DELETE FROM boxset_cache") suspend fun clearCache()
+    @Query("DELETE FROM boxset_cache") suspend fun clearAllCache()
 
     @androidx.room.Transaction
-    suspend fun clearAllCache() {
-        clearAllCacheEntries()
-        clearMetadata()
+    suspend fun clearAllCache(serverId: String, userId: String) {
+        clearAllCacheEntries(serverId, userId)
+        clearMetadata(serverId, userId)
     }
 }

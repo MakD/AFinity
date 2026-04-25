@@ -23,7 +23,6 @@ import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.data.repository.userdata.JellyfinUserDataRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
-import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -31,7 +30,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-import org.jellyfin.sdk.api.client.ApiClient
 
 private val Context.dataStore: DataStore<Preferences> by
     preferencesDataStore(name = "afinity_preferences")
@@ -103,16 +101,6 @@ abstract class RepositoryModule {
         @Singleton
         fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
             return context.dataStore
-        }
-
-        @Provides
-        @Singleton
-        fun provideWebSocketManager(
-            apiClient: ApiClient,
-            mediaRepository: MediaRepository,
-            userDataRepository: UserDataRepository,
-        ): JellyfinWebSocketManager {
-            return JellyfinWebSocketManager(apiClient, mediaRepository, userDataRepository)
         }
     }
 }

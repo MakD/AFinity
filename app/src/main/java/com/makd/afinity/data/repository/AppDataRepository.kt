@@ -101,19 +101,11 @@ constructor(
         sessionManager.currentSession
             .map { session ->
                 if (session?.user != null && !session.user.primaryImageTag.isNullOrBlank()) {
-                    val url =
-                        jellyfinImageUrlBuilder.buildUserPrimaryImageUrl(
-                            baseUrl = session.serverUrl,
-                            userId = session.user.id.toString(),
-                            tag = session.user.primaryImageTag,
-                        )
-
-                    if (session.user.accessToken != null) {
-                        val separator = if (url.contains("?")) "&" else "?"
-                        "$url${separator}api_key=${session.user.accessToken}"
-                    } else {
-                        url
-                    }
+                    jellyfinImageUrlBuilder.buildUserPrimaryImageUrl(
+                        baseUrl = session.serverUrl,
+                        userId = session.user.id.toString(),
+                        tag = session.user.primaryImageTag,
+                    )
                 } else {
                     null
                 }

@@ -360,7 +360,9 @@ constructor(
                     databaseRepository.getDownload(downloadId)
                         ?: return@withContext Result.failure(Exception("Download not found"))
 
-                val itemFolder = File(downloadDir, download.itemId.toString())
+                val targetPath = download.folderPath ?: download.itemId.toString()
+                val itemFolder = File(downloadDir, targetPath)
+
                 if (itemFolder.exists()) {
                     itemFolder.deleteRecursively()
                 }
@@ -534,10 +536,9 @@ constructor(
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val downloads = getAllDownloadsFlow().first()
-                val toCancel =
-                    downloads.filter {
-                        it.seriesId == showId.toString() && it.status != DownloadStatus.COMPLETED
-                    }
+                val toCancel = downloads.filter {
+                    it.seriesId == showId.toString() && it.status != DownloadStatus.COMPLETED
+                }
                 for (download in toCancel) {
                     cancelDownload(download.id)
                 }
@@ -553,12 +554,11 @@ constructor(
         withContext(Dispatchers.IO) {
             return@withContext try {
                 val downloads = getAllDownloadsFlow().first()
-                val toCancel =
-                    downloads.filter {
-                        it.seriesId == seriesId.toString() &&
-                            it.seasonNumber == seasonNumber &&
-                            it.status != DownloadStatus.COMPLETED
-                    }
+                val toCancel = downloads.filter {
+                    it.seriesId == seriesId.toString() &&
+                        it.seasonNumber == seasonNumber &&
+                        it.status != DownloadStatus.COMPLETED
+                }
                 for (download in toCancel) {
                     cancelDownload(download.id)
                 }

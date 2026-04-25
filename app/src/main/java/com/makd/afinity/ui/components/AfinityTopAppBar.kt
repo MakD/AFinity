@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -33,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -96,33 +98,33 @@ fun AfinityTopAppBar(
             if (onSearchClick != null) {
                 Button(
                     onClick = onSearchClick,
-                    modifier = Modifier.height(48.dp).width(120.dp),
+                    modifier = Modifier.height(48.dp).widthIn(min = 120.dp),
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor = Color.Black.copy(alpha = 0.3f)
                         ),
                     shape = RoundedCornerShape(24.dp),
-                    contentPadding = PaddingValues(0.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
                 ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_search),
-                                contentDescription = stringResource(R.string.cd_search_icon),
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp),
-                            )
-                            Text(
-                                text = stringResource(R.string.top_bar_search_hint),
-                                color = Color.White,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_search),
+                            contentDescription = stringResource(R.string.cd_search_icon),
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text(
+                            text = stringResource(R.string.top_bar_search_hint),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.width(8.dp))

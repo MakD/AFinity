@@ -10,13 +10,17 @@ interface AuthRepository {
     val currentUser: StateFlow<User?>
     val isAuthenticated: StateFlow<Boolean>
 
-    suspend fun restoreAuthenticationState(): Boolean
+    suspend fun restoreAuthenticationState(): RestoreResult
 
     suspend fun hasValidSavedAuth(): Boolean
 
     suspend fun clearAllAuthData()
 
-    suspend fun authenticateByName(serverUrl: String, username: String, password: String): AuthResult
+    suspend fun authenticateByName(
+        serverUrl: String,
+        username: String,
+        password: String,
+    ): AuthResult
 
     suspend fun authenticateWithQuickConnect(serverUrl: String, secret: String): AuthResult
 
@@ -34,5 +38,13 @@ interface AuthRepository {
         data class Success(val authResult: AuthenticationResult) : AuthResult()
 
         data class Error(val message: String) : AuthResult()
+    }
+
+    sealed class RestoreResult {
+        object Success : RestoreResult()
+
+        data class Degraded(val reason: Throwable) : RestoreResult()
+
+        object Failed : RestoreResult()
     }
 }

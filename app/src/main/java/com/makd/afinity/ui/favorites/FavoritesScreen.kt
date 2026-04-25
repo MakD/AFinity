@@ -295,7 +295,7 @@ private fun FavoritePeopleSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(people) { person ->
+            items(people, key = { it.id.toString() }) { person ->
                 FavoritePersonCard(
                     person = person,
                     onClick = { onPersonClick(person.id.toString()) },
@@ -360,7 +360,7 @@ private fun FavoriteChannelsSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(channels) { channel ->
+            items(channels, key = { it.id.toString() }) { channel ->
                 FavoriteChannelCard(
                     channel = channel,
                     onClick = { onChannelClick(channel) },

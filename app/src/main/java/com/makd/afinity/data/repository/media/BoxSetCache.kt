@@ -3,6 +3,7 @@ package com.makd.afinity.data.repository.media
 import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.entities.BoxSetCacheEntity
 import com.makd.afinity.data.database.entities.BoxSetCacheMetadata
+import com.makd.afinity.data.manager.SessionManager
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,7 +15,10 @@ import kotlinx.serialization.json.Json
 import timber.log.Timber
 
 @Singleton
-class BoxSetCache @Inject constructor(private val cacheDao: BoxSetCacheDao) {
+class BoxSetCache @Inject constructor(
+    private val cacheDao: BoxSetCacheDao,
+    private val sessionManager: SessionManager,
+) {
 
     private val mutex = Mutex()
     private val json = Json { ignoreUnknownKeys = true }
@@ -29,6 +33,15 @@ class BoxSetCache @Inject constructor(private val cacheDao: BoxSetCacheDao) {
 
     private var isInitialized = false
 
+    private fun currentServerId(): String = sessionManager.currentSession.value?.serverId ?: ""
+    private fun currentUserId(): String = sessionManager.currentSession.value?.userId?.toString() ?: ""
+
+    fun reset() {
+        itemToBoxSetsMap = emptyMap()
+        lastBuiltTimestamp = 0
+        isInitialized = false
+    }
+
     private suspend fun ensureInitialized() =
         mutex.withLock {
             if (isInitialized) return@withLock
@@ -36,8 +49,10 @@ class BoxSetCache @Inject constructor(private val cacheDao: BoxSetCacheDao) {
             try {
                 Timber.d("Loading BoxSet cache from database...")
                 val startTime = System.currentTimeMillis()
+                val serverId = currentServerId()
+                val userId = currentUserId()
 
-                val metadata = cacheDao.getMetadata()
+                val metadata = cacheDao.getMetadata(serverId, userId)
                 if (metadata != null) {
                     lastBuiltTimestamp = metadata.lastFullBuild
                     Timber.d(
@@ -48,13 +63,13 @@ class BoxSetCache @Inject constructor(private val cacheDao: BoxSetCacheDao) {
                         Timber.w(
                             "Cache version mismatch (${metadata.cacheVersion} != $currentCacheVersion), clearing cache"
                         )
-                        clearDatabase()
+                        clearDatabase(serverId, userId)
                         isInitialized = true
                         return@withLock
                     }
                 }
 
-                val entries = cacheDao.getAllCacheEntries()
+                val entries = cacheDao.getAllCacheEntries(serverId, userId)
                 val loadedMap = mutableMapOf<UUID, List<UUID>>()
 
                 entries.forEach { entry ->
@@ -137,22 +152,27 @@ class BoxSetCache @Inject constructor(private val cacheDao: BoxSetCacheDao) {
     private suspend fun saveToDatabase(cacheMap: Map<UUID, List<UUID>>) {
         try {
             Timber.d("Saving BoxSet cache to database...")
+            val serverId = currentServerId()
+            val userId = currentUserId()
 
             val entities =
                 cacheMap.map { (itemId, boxSetIds) ->
                     BoxSetCacheEntity(
                         itemId = itemId.toString(),
+                        serverId = serverId,
+                        userId = userId,
                         boxSetIds = json.encodeToString(boxSetIds.map { it.toString() }),
                         lastUpdated = System.currentTimeMillis(),
                     )
                 }
 
-            cacheDao.clearAllCacheEntries()
+            cacheDao.clearAllCacheEntries(serverId, userId)
             cacheDao.insertCacheEntries(entities)
 
             val metadata =
                 BoxSetCacheMetadata(
-                    id = 1,
+                    serverId = serverId,
+                    userId = userId,
                     lastFullBuild = lastBuiltTimestamp,
                     cacheVersion = currentCacheVersion,
                 )
@@ -168,13 +188,13 @@ class BoxSetCache @Inject constructor(private val cacheDao: BoxSetCacheDao) {
         mutex.withLock {
             itemToBoxSetsMap = emptyMap()
             lastBuiltTimestamp = 0
-            clearDatabase()
+            clearDatabase(currentServerId(), currentUserId())
             Timber.d("BoxSet cache cleared from memory and database")
         }
 
-    private suspend fun clearDatabase() {
+    private suspend fun clearDatabase(serverId: String, userId: String) {
         try {
-            cacheDao.clearAllCache()
+            cacheDao.clearAllCache(serverId, userId)
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear database cache")
         }

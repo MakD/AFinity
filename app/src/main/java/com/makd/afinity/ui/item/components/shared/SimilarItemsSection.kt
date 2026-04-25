@@ -37,7 +37,7 @@ fun SimilarItemsSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(items.take(10)) { item ->
+            items(items.take(10), key = { it.id.toString() }) { item ->
                 SimilarItemCard(item = item, onClick = { onItemClick(item) }, cardWidth = cardWidth)
             }
         }

@@ -1,7 +1,6 @@
 package com.makd.afinity.data.manager
 
 import android.content.Context
-import com.makd.afinity.BuildConfig
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -21,12 +20,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.okhttp.OkHttpFactory
 import org.jellyfin.sdk.api.operations.UserApi
-import org.jellyfin.sdk.createJellyfin
-import org.jellyfin.sdk.model.ClientInfo
 import timber.log.Timber
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -47,12 +45,12 @@ class SessionManager
 constructor(
     private val serverRepository: ServerRepository,
     private val databaseRepository: DatabaseRepository,
-    private val sessionPreferences: SessionPreferences,
     private val securePrefsRepository: SecurePreferencesRepository,
     private val jellyseerrRepository: JellyseerrRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val serverAddressResolver: ServerAddressResolver,
     private val okHttpFactory: OkHttpFactory,
+    private val jellyfin: Jellyfin,
     @param:ApplicationContext private val context: Context,
 ) {
     private val _currentSession = MutableStateFlow<Session?>(null)
@@ -63,13 +61,6 @@ constructor(
 
     private val apiClients = ConcurrentHashMap<String, ApiClient>()
     private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    private val jellyfin = createJellyfin {
-        this.context = this@SessionManager.context
-        this.clientInfo = ClientInfo(name = "AFinity", version = BuildConfig.VERSION_NAME)
-        this.apiClientFactory = okHttpFactory
-        this.socketConnectionFactory = okHttpFactory
-    }
 
     suspend fun startSession(
         serverUrl: String,
@@ -84,12 +75,12 @@ constructor(
 
                 val validator: suspend (String) -> Boolean = { address ->
                     try {
-                        val tempClient = jellyfin.createApi(baseUrl = address).also {
-                            it.update(accessToken = accessToken)
-                        }
-                        val response = withTimeoutOrNull(3000L) {
-                            UserApi(tempClient).getCurrentUser()
-                        }
+                        val tempClient =
+                            jellyfin.createApi(baseUrl = address).also {
+                                it.update(accessToken = accessToken)
+                            }
+                        val response =
+                            withTimeoutOrNull(3000L) { UserApi(tempClient).getCurrentUser() }
                         response?.content != null
                     } catch (e: InvalidStatusException) {
                         if (e.status == 401) throw e
@@ -129,7 +120,8 @@ constructor(
                         serverUrl
                     }
 
-                if (authRejected) return@withContext Result.failure(InvalidStatusException(401, null))
+                if (authRejected)
+                    return@withContext Result.failure(InvalidStatusException(401, null))
 
                 serverRepository.setBaseUrl(resolvedUrl)
 
@@ -163,7 +155,7 @@ constructor(
                         server = server,
                     )
 
-                sessionPreferences.saveActiveSession(serverId, userId, resolvedUrl)
+                securePrefsRepository.saveActiveSession(serverId, userId, resolvedUrl)
                 sessionScope.launch {
                     try {
                         jellyseerrRepository.setActiveJellyfinSession(serverId, userId)
@@ -196,7 +188,7 @@ constructor(
 
         _currentSession.value = current.copy(serverUrl = newUrl)
         apiClients[current.serverId]?.update(baseUrl = newUrl)
-        sessionPreferences.saveActiveSession(current.serverId, current.userId, newUrl)
+        securePrefsRepository.saveActiveSession(current.serverId, current.userId, newUrl)
 
         Timber.d("Session URL updated: $newUrl")
     }
@@ -248,7 +240,7 @@ constructor(
             return
         }
 
-        sessionPreferences.clearSession()
+        securePrefsRepository.clearActiveSession()
         jellyseerrRepository.clearActiveSession()
         audiobookshelfRepository.clearActiveSession()
         _currentSession.value = null

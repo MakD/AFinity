@@ -597,7 +597,7 @@ fun CastQualitySelectionDialog(
         title = { Text(stringResource(R.string.cast_quality)) },
         text = {
             LazyColumn {
-                items(bitrateOptions) { option ->
+                items(bitrateOptions, key = { it.bitrate }) { option ->
                     val isSelected = castState.castBitrate == option.bitrate
                     Row(
                         modifier =
@@ -660,7 +660,7 @@ fun CastAudioSelectionDialog(
         title = { Text(stringResource(R.string.player_audio_title)) },
         text = {
             LazyColumn {
-                items(audioStreams) { stream ->
+                items(audioStreams, key = { it.index }) { stream ->
                     val isSelected =
                         castState.audioStreamIndex?.let { it == stream.index } ?: stream.isDefault
                     val displayName = buildString {
@@ -780,7 +780,7 @@ fun CastSubtitleSelectionDialog(
                     }
                 }
 
-                items(subtitleStreams) { stream ->
+                items(subtitleStreams, key = { it.index }) { stream ->
                     val isSelected = stream.index == castState.subtitleStreamIndex
                     val displayName = buildString {
                         append(stream.displayTitle ?: stream.language?.uppercase() ?: "Unknown")

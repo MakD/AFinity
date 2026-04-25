@@ -83,9 +83,7 @@ configure<ApplicationExtension> {
         compose = true
     }
 
-    androidResources {
-        generateLocaleConfig = true
-    }
+    androidResources { generateLocaleConfig = true }
 
     dependenciesInfo {
         includeInApk = false
@@ -112,7 +110,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
-    implementation(libs.androidx.ui)
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.androidx.palette.ktx)
     implementation(libs.androidx.activity.compose)
@@ -124,7 +121,6 @@ dependencies {
     implementation(libs.androidx.compose.material3.window.size.class1)
     implementation(libs.aboutlibraries.core)
     implementation(libs.aboutlibraries.compose.m3)
-    implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.androidx.media3.exoplayer)

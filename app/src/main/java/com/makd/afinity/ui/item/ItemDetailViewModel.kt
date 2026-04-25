@@ -599,7 +599,14 @@ constructor(
                     }
                 } else {
                     if (item is AfinityMovie || item is AfinityShow) {
-                        val cachedMetadata = databaseRepository.getItemMetadata(item.id)
+                        val offlineSession = sessionManager.currentSession.value
+                        val cachedMetadata = if (offlineSession != null) {
+                            databaseRepository.getItemMetadata(
+                                item.id,
+                                offlineSession.serverId,
+                                offlineSession.userId.toString(),
+                            )
+                        } else null
                         if (cachedMetadata != null) {
                             _uiState.value =
                                 _uiState.value.copy(
@@ -800,7 +807,10 @@ constructor(
         val userId = authRepository.currentUser.value?.id
         try {
             _uiState.update { it.copy(isLoadingReviews = true) }
-            val cachedMetadata = databaseRepository.getItemMetadata(item.id)
+            val session = sessionManager.currentSession.value
+            val cachedMetadata = if (session != null) {
+                databaseRepository.getItemMetadata(item.id, session.serverId, session.userId.toString())
+            } else null
 
             val cacheAgeMs = System.currentTimeMillis() - (cachedMetadata?.lastUpdated ?: 0L)
             val isCacheValid = cacheAgeMs < 48 * 60 * 60 * 1000L
@@ -863,10 +873,12 @@ constructor(
                     )
                 }
 
-                if (fetchedReviews.isNotEmpty() || fetchedRatings.isNotEmpty()) {
+                if ((fetchedReviews.isNotEmpty() || fetchedRatings.isNotEmpty()) && session != null) {
                     databaseRepository.insertItemMetadata(
                         ItemMetadataCacheEntity(
                             itemId = item.id,
+                            serverId = session.serverId,
+                            userId = session.userId.toString(),
                             tmdbReviews = fetchedReviews,
                             mdbRatings = fetchedRatings,
                         )

@@ -45,7 +45,6 @@ interface AudiobookshelfRepository {
 
     suspend fun hasValidConfiguration(): Boolean
 
-    /** Returns every server address stored for this integration — used for log redaction. */
     suspend fun getAllKnownAddresses(): List<String>
 
     fun getLibrariesFlow(): Flow<List<Library>>

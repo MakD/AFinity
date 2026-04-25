@@ -11,6 +11,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
@@ -40,13 +41,9 @@ import javax.inject.Inject
 class AudiobookshelfPlayerService : MediaSessionService() {
 
     @Inject lateinit var playbackManager: AudiobookshelfPlaybackManager
-
     @Inject lateinit var progressSyncer: AudiobookshelfProgressSyncer
-
     @Inject lateinit var securePreferencesRepository: SecurePreferencesRepository
-
     @Inject lateinit var equalizerManager: AudiobookshelfEqualizerManager
-
     @Inject lateinit var skipSilenceManager: AudiobookshelfSkipSilenceManager
 
     private var mediaSession: MediaSession? = null
@@ -80,9 +77,12 @@ class AudiobookshelfPlayerService : MediaSessionService() {
 
         val loadControl =
             DefaultLoadControl.Builder().setBufferDurationsMs(15_000, 60_000, 2_500, 5_000).build()
-
+        val renderersFactory =
+            DefaultRenderersFactory(this)
+                .setEnableDecoderFallback(true)
+                .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
         exoPlayer =
-            ExoPlayer.Builder(this)
+            ExoPlayer.Builder(this, renderersFactory)
                 .setAudioAttributes(AudioAttributes.DEFAULT, true)
                 .setHandleAudioBecomingNoisy(true)
                 .setWakeMode(C.WAKE_MODE_NETWORK)
@@ -92,6 +92,7 @@ class AudiobookshelfPlayerService : MediaSessionService() {
                         .setLoadErrorHandlingPolicy(retryPolicy)
                 )
                 .build()
+
         serviceScope.launch {
             skipSilenceManager.isEnabled.collect { isEnabled ->
                 exoPlayer?.skipSilenceEnabled = isEnabled

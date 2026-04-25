@@ -57,12 +57,12 @@ constructor(
         Timber.d("AuthRepository initialized")
     }
 
-    override suspend fun restoreAuthenticationState(): Boolean {
+    override suspend fun restoreAuthenticationState(): AuthRepository.RestoreResult {
         return withContext(Dispatchers.IO) {
             try {
                 if (!securePreferencesRepository.hasValidAuthData()) {
                     Timber.d("No valid encrypted auth data found, user needs to login")
-                    return@withContext false
+                    return@withContext AuthRepository.RestoreResult.Failed
                 }
 
                 val accessToken = securePreferencesRepository.getAccessToken()
@@ -81,7 +81,7 @@ constructor(
                         "Incomplete encrypted auth data found, clearing and requiring fresh login"
                     )
                     clearAllAuthData()
-                    return@withContext false
+                    return@withContext AuthRepository.RestoreResult.Failed
                 }
 
                 val userUuid =
@@ -90,7 +90,7 @@ constructor(
                     } catch (e: IllegalArgumentException) {
                         Timber.e(e, "Invalid UUID format in saved data")
                         clearAllAuthData()
-                        return@withContext false
+                        return@withContext AuthRepository.RestoreResult.Failed
                     }
 
                 val startResult = sessionManager.startSession(
@@ -107,16 +107,17 @@ constructor(
                     if (is401) {
                         Timber.e("Token rejected by server (401) - Logging out")
                         clearAllAuthData()
-                        return@withContext false
+                        return@withContext AuthRepository.RestoreResult.Failed
                     }
-                    Timber.w(startFailure, "SessionManager start failed during restore (non-fatal)")
+                    Timber.w(startFailure, "SessionManager start failed during restore (server unreachable)")
+                    return@withContext AuthRepository.RestoreResult.Degraded(startFailure)
                 }
 
                 Timber.d("Session restored for user: $username (url: $serverUrl)")
-                return@withContext true
+                return@withContext AuthRepository.RestoreResult.Success
             } catch (e: Exception) {
                 Timber.e(e, "Critical error during auth restoration")
-                return@withContext false
+                return@withContext AuthRepository.RestoreResult.Failed
             }
         }
     }

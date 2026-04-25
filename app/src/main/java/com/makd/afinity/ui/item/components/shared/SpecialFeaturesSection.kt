@@ -55,7 +55,7 @@ fun SpecialFeaturesSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
-                items(specialFeatures) { feature ->
+                items(specialFeatures, key = { it.id.toString() }) { feature ->
                     SpecialFeatureCard(
                         feature = feature,
                         onClick = { onItemClick(feature) },

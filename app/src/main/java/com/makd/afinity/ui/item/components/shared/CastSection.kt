@@ -66,7 +66,7 @@ fun CastSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
-                items(cast.take(10)) { person ->
+                items(cast.take(10), key = { it.id.toString() }) { person ->
                     CastMemberCard(
                         person = person,
                         onPersonClick = onPersonClick,

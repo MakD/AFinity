@@ -141,6 +141,7 @@ constructor(
                         coroutineScope {
                             launch { loadStudios() }
                             launch { loadCombinedGenres() }
+                            launch { loadUpcomingEpisodes() }
                         }
                         loadNewHomescreenSections()
                         loadDownloadedContent()
@@ -1172,6 +1173,16 @@ constructor(
         }
     }
 
+    private suspend fun loadUpcomingEpisodes() {
+        try {
+            if (offlineModeManager.isOffline.first()) return
+            val upcoming = mediaRepository.getUpcomingEpisodes(limit = 24)
+            _uiState.update { it.copy(upcomingEpisodes = upcoming) }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to load upcoming episodes")
+        }
+    }
+
     fun onStudioClick(studio: AfinityStudio, navController: NavController) {
         Timber.d("Studio clicked: ${studio.name}")
         val route = Destination.createStudioContentRoute(studio.name)
@@ -1185,6 +1196,7 @@ constructor(
             coroutineScope {
                 launch { loadStudios() }
                 launch { loadCombinedGenres() }
+                launch { loadUpcomingEpisodes() }
             }
 
             loadNewHomescreenSections()
@@ -1303,6 +1315,7 @@ data class HomeUiState(
     val continueWatching: List<AfinityItem> = emptyList(),
     val offlineContinueWatching: List<AfinityItem> = emptyList(),
     val nextUp: List<AfinityEpisode> = emptyList(),
+    val upcomingEpisodes: List<AfinityEpisode> = emptyList(),
     val latestMovies: List<AfinityMovie> = emptyList(),
     val latestTvSeries: List<AfinityShow> = emptyList(),
     val highestRated: List<AfinityItem> = emptyList(),

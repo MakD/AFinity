@@ -79,7 +79,7 @@ fun ChapterSelector(
                 modifier = Modifier.weight(1f),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp),
             ) {
-                itemsIndexed(chapters) { index, chapter ->
+                itemsIndexed(chapters, key = { _, chapter -> chapter.id }) { index, chapter ->
                     val isCurrent = index == currentChapterIndex
                     ChapterRow(
                         chapter = chapter,

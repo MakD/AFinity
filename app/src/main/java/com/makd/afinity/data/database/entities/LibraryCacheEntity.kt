@@ -2,10 +2,15 @@ package com.makd.afinity.data.database.entities
 
 import androidx.room.Entity
 
-@Entity(tableName = "library_cache", primaryKeys = ["libraryId", "itemId"])
+@Entity(
+    tableName = "library_cache",
+    primaryKeys = ["libraryId", "itemId", "serverId", "userId"],
+)
 data class LibraryCacheEntity(
     val libraryId: String,
     val itemId: String,
+    val serverId: String,
+    val userId: String,
     val itemName: String,
     val originalTitle: String?,
     val overview: String,

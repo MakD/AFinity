@@ -235,7 +235,7 @@ interface DatabaseRepository {
 
     suspend fun getSources(itemId: UUID): List<AfinitySourceDto>
 
-    suspend fun getItemMetadata(itemId: UUID): ItemMetadataCacheEntity?
+    suspend fun getItemMetadata(itemId: UUID, serverId: String, userId: String): ItemMetadataCacheEntity?
 
     suspend fun insertItemMetadata(metadata: ItemMetadataCacheEntity)
 }

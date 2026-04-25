@@ -1,5 +1,6 @@
 package com.makd.afinity.data.websocket
 
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +30,7 @@ import javax.inject.Singleton
 class JellyfinWebSocketManager
 @Inject
 constructor(
-    private val apiClient: ApiClient,
+    private val sessionManager: SessionManager,
     private val mediaRepository: MediaRepository,
     private val userDataRepository: UserDataRepository,
 ) {
@@ -39,18 +40,32 @@ constructor(
     private val _connectionState = MutableStateFlow(WebSocketState.DISCONNECTED)
     val connectionState: StateFlow<WebSocketState> = _connectionState.asStateFlow()
 
+    init {
+        scope.launch {
+            sessionManager.currentSession.collect { session ->
+                if (session != null) {
+                    disconnect()
+                    connect()
+                } else {
+                    disconnect()
+                }
+            }
+        }
+    }
+
     fun connect() {
         if (connectionJob?.isActive == true) return
 
-        connectionJob =
-            scope.launch {
-                launch { monitorSocketState() }
-                launch { subscribeToLibraryChanges() }
-                launch { subscribeToUserDataChanges() }
-                launch { subscribeToSessionChanges() }
-                launch { subscribeToPlayCommands() }
-                launch { subscribeToServerMessages() }
-            }
+        val currentApiClient = sessionManager.getCurrentApiClient() ?: return
+
+        connectionJob = scope.launch {
+            launch { monitorSocketState(currentApiClient) }
+            launch { subscribeToLibraryChanges(currentApiClient) }
+            launch { subscribeToUserDataChanges(currentApiClient) }
+            launch { subscribeToSessionChanges(currentApiClient) }
+            launch { subscribeToPlayCommands(currentApiClient) }
+            launch { subscribeToServerMessages(currentApiClient) }
+        }
     }
 
     fun disconnect() {
@@ -59,7 +74,7 @@ constructor(
         _connectionState.value = WebSocketState.DISCONNECTED
     }
 
-    private suspend fun monitorSocketState() {
+    private suspend fun monitorSocketState(apiClient: ApiClient) {
         try {
             _connectionState.value = WebSocketState.CONNECTING
 
@@ -78,28 +93,28 @@ constructor(
         }
     }
 
-    private suspend fun subscribeToLibraryChanges() {
+    private suspend fun subscribeToLibraryChanges(apiClient: ApiClient) {
         apiClient.webSocket
             .subscribe(LibraryChangedMessage::class)
             .catch { e -> Timber.e(e, "Library changes subscription failed") }
             .collect { message -> handleLibraryChanged(message) }
     }
 
-    private suspend fun subscribeToUserDataChanges() {
+    private suspend fun subscribeToUserDataChanges(apiClient: ApiClient) {
         apiClient.webSocket
             .subscribe(UserDataChangedMessage::class)
             .catch { e -> Timber.e(e, "User data changes subscription failed") }
             .collect { message -> handleUserDataChanged(message) }
     }
 
-    private suspend fun subscribeToSessionChanges() {
+    private suspend fun subscribeToSessionChanges(apiClient: ApiClient) {
         apiClient.webSocket
             .subscribe(SessionsMessage::class)
             .catch { e -> Timber.e(e, "Sessions subscription failed") }
             .collect { message -> handleSessionsUpdate(message) }
     }
 
-    private suspend fun subscribeToPlayCommands() {
+    private suspend fun subscribeToPlayCommands(apiClient: ApiClient) {
         coroutineScope {
             launch {
                 apiClient.webSocket
@@ -117,7 +132,7 @@ constructor(
         }
     }
 
-    private suspend fun subscribeToServerMessages() {
+    private suspend fun subscribeToServerMessages(apiClient: ApiClient) {
         coroutineScope {
             launch {
                 apiClient.webSocket

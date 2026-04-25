@@ -185,7 +185,7 @@ private fun AlphabetScroller(
         verticalArrangement = Arrangement.spacedBy(2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        items(letters) { letter ->
+        items(letters, key = { it }) { letter ->
             val isSelected = selectedLetter == letter
             Text(
                 text = letter,

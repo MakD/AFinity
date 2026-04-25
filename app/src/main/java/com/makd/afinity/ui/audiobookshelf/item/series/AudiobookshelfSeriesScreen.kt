@@ -143,7 +143,7 @@ fun AudiobookshelfSeriesScreen(
                                 )
                             }
 
-                            itemsIndexed(uiState.books) { index, book ->
+                            itemsIndexed(uiState.books, key = { _, book -> book.id }) { index, book ->
                                 SeriesBookItem(
                                     book = book,
                                     bookNumber = index + 1,
@@ -178,7 +178,7 @@ fun AudiobookshelfSeriesScreen(
                             )
                         }
 
-                        itemsIndexed(uiState.books) { index, book ->
+                        itemsIndexed(uiState.books, key = { _, book -> book.id }) { index, book ->
                             SeriesBookItem(
                                 book = book,
                                 bookNumber = index + 1,

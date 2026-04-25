@@ -1,11 +1,12 @@
 package com.makd.afinity.data.database.entities
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "genre_cache")
+@Entity(tableName = "genre_cache", primaryKeys = ["genreName", "serverId", "userId"])
 data class GenreCacheEntity(
-    @PrimaryKey val genreName: String,
+    val genreName: String,
+    val serverId: String,
+    val userId: String,
     val lastFetchedTimestamp: Long,
     val movieCount: Int = 0,
 )

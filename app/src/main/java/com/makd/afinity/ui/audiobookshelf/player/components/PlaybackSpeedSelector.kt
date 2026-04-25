@@ -154,7 +154,7 @@ fun PlaybackSpeedSelector(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                items(presets) { speed ->
+                items(presets, key = { it }) { speed ->
                     PresetSpeedItem(
                         speed = speed,
                         isSelected = speed == currentSpeed,

@@ -60,7 +60,6 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.home.components.ContinueWatchingSkeleton
-import com.makd.afinity.ui.home.components.SpotlightCarousel
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
 import com.makd.afinity.ui.home.components.GenreSection
 import com.makd.afinity.ui.home.components.HighestRatedSection
@@ -75,7 +74,9 @@ import com.makd.afinity.ui.home.components.PersonFromMovieSection
 import com.makd.afinity.ui.home.components.PersonSection
 import com.makd.afinity.ui.home.components.PopularStudiosSection
 import com.makd.afinity.ui.home.components.ShowGenreSection
+import com.makd.afinity.ui.home.components.SpotlightCarousel
 import com.makd.afinity.ui.home.components.TvSeriesSectionSkeleton
+import com.makd.afinity.ui.home.components.UpcomingEpisodesSection
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -171,10 +172,14 @@ fun HomeScreen(
                             !uiState.isOffline &&
                                 uiState.isLoading &&
                                 uiState.latestMedia.isNotEmpty() -> "cw_skeleton"
-                            uiState.isOffline && uiState.downloadedMovies.isNotEmpty() -> "downloaded_movies"
-                            uiState.isOffline && uiState.downloadedShows.isNotEmpty() -> "downloaded_shows"
-                            uiState.isOffline && uiState.downloadedAudiobooks.isNotEmpty() -> "downloaded_audiobooks"
-                            uiState.isOffline && uiState.downloadedPodcastEpisodes.isNotEmpty() -> "downloaded_podcasts"
+                            uiState.isOffline && uiState.downloadedMovies.isNotEmpty() ->
+                                "downloaded_movies"
+                            uiState.isOffline && uiState.downloadedShows.isNotEmpty() ->
+                                "downloaded_shows"
+                            uiState.isOffline && uiState.downloadedAudiobooks.isNotEmpty() ->
+                                "downloaded_audiobooks"
+                            uiState.isOffline && uiState.downloadedPodcastEpisodes.isNotEmpty() ->
+                                "downloaded_podcasts"
                             !uiState.isOffline && uiState.nextUp.isNotEmpty() -> "next_up"
                             else -> null
                         }
@@ -427,6 +432,23 @@ fun HomeScreen(
                             }
                         }
 
+                        if (!uiState.isOffline && uiState.upcomingEpisodes.isNotEmpty()) {
+                            item(key = "upcoming_episodes") {
+                                Box(modifier = getItemModifier("upcoming_episodes")) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        UpcomingEpisodesSection(
+                                            items = uiState.upcomingEpisodes,
+                                            onItemClick = { episode ->
+                                                viewModel.selectEpisode(episode)
+                                            },
+                                            widthSizeClass = widthSizeClass,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         if (!uiState.isOffline && uiState.highestRated.isNotEmpty()) {
                             item(key = "highest_rated") {
                                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -468,8 +490,7 @@ fun HomeScreen(
                                             "person_movie_${section.section.hashCode()}"
                                         is HomeSection.Genre ->
                                             "genre_${section.genreItem.name}_${section.genreItem.type}"
-                                        is HomeSection.Spotlight ->
-                                            "spotlight_${section.title}"
+                                        is HomeSection.Spotlight -> "spotlight_${section.title}"
                                     }
                                 },
                             ) { section ->

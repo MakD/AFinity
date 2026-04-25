@@ -64,7 +64,7 @@ fun QualitySelectionDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.weight(1f, fill = false),
                 ) {
-                    items(sources) { source ->
+                    items(sources, key = { it.id }) { source ->
                         QualityOption(
                             source = source,
                             isSelected = selectedSource == source,

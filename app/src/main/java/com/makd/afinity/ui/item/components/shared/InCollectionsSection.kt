@@ -38,7 +38,7 @@ fun InCollectionsSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(boxSets) { boxSet ->
+            items(boxSets, key = { it.id.toString() }) { boxSet ->
                 MediaItemCard(
                     item = boxSet,
                     onClick = { onBoxSetClick(boxSet) },

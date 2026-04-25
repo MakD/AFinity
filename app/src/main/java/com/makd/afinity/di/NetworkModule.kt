@@ -64,11 +64,17 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private class SeerrCookieJar : CookieJar {
+    private class SeerrCookieJar(private val securePrefs: SecurePreferencesRepository) : CookieJar {
         private val store = ConcurrentHashMap<String, MutableList<Cookie>>()
 
+        private fun getSessionKey(host: String): String {
+            val activeSession = securePrefs.getCachedJellyseerrCookie() ?: "anonymous"
+            return "${host}_${activeSession.hashCode()}"
+        }
+
         override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-            val bucket = store.getOrPut(url.host) { mutableListOf() }
+            val key = getSessionKey(url.host)
+            val bucket = store.getOrPut(key) { mutableListOf() }
             synchronized(bucket) {
                 for (c in cookies) {
                     bucket.removeIf { it.name == c.name }
@@ -78,7 +84,8 @@ object NetworkModule {
         }
 
         override fun loadForRequest(url: HttpUrl): List<Cookie> {
-            val bucket = store[url.host] ?: return emptyList()
+            val key = getSessionKey(url.host)
+            val bucket = store[key] ?: return emptyList()
             synchronized(bucket) {
                 return bucket.filter { !it.secure || url.scheme == "https" }
             }
@@ -90,19 +97,29 @@ object NetworkModule {
         }
 
         fun hasXsrfToken(host: String): Boolean {
-            val bucket = store[host] ?: return false
-            synchronized(bucket) { return bucket.any { it.name == "XSRF-TOKEN" } }
+            val key = getSessionKey(host)
+            val bucket = store[key] ?: return false
+            synchronized(bucket) {
+                return bucket.any { it.name == "XSRF-TOKEN" }
+            }
         }
 
         fun getXsrfToken(host: String): String? {
-            val bucket = store[host] ?: return null
-            synchronized(bucket) { return bucket.find { it.name == "XSRF-TOKEN" }?.value }
+            val key = getSessionKey(host)
+            val bucket = store[key] ?: return null
+            synchronized(bucket) {
+                return bucket.find { it.name == "XSRF-TOKEN" }?.value
+            }
         }
 
-        fun clear() = store.clear()
+        fun clear(host: String? = null) {
+            if (host != null) {
+                store.remove(getSessionKey(host))
+            } else {
+                store.clear()
+            }
+        }
     }
-
-    private val seerrCookieJar = SeerrCookieJar()
 
     @Provides
     @Singleton
@@ -185,13 +202,36 @@ object NetworkModule {
     @Provides
     @Singleton
     @ImageClient
-    fun provideImageOkHttpClient(baseOkHttpClient: OkHttpClient): OkHttpClient {
+    fun provideImageOkHttpClient(
+        baseOkHttpClient: OkHttpClient,
+        securePreferencesRepository: SecurePreferencesRepository,
+    ): OkHttpClient {
         val dispatcher =
             Dispatcher().apply {
                 maxRequests = 64
                 maxRequestsPerHost = 16
             }
-        return baseOkHttpClient.newBuilder().dispatcher(dispatcher).build()
+        return baseOkHttpClient
+            .newBuilder()
+            .dispatcher(dispatcher)
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val token = securePreferencesRepository.getCachedJellyfinToken()
+                val serverUrl = securePreferencesRepository.getCachedJellyfinServerUrl()
+                if (token != null && serverUrl != null) {
+                    val serverHost = serverUrl.toHttpUrlOrNull()?.host
+                    if (serverHost != null && request.url.host == serverHost) {
+                        return@addInterceptor chain.proceed(
+                            request
+                                .newBuilder()
+                                .addHeader("Authorization", "MediaBrowser Token=$token")
+                                .build()
+                        )
+                    }
+                }
+                chain.proceed(request)
+            }
+            .build()
     }
 
     @Provides
@@ -322,6 +362,7 @@ object NetworkModule {
         baseOkHttpClient: OkHttpClient,
         securePreferencesRepository: SecurePreferencesRepository,
     ): OkHttpClient {
+        val seerrCookieJar = SeerrCookieJar(securePreferencesRepository)
         val csrfSeedClient =
             baseOkHttpClient
                 .newBuilder()
@@ -377,11 +418,7 @@ object NetworkModule {
                 val isMutating = originalRequest.method in listOf("POST", "PUT", "DELETE", "PATCH")
 
                 if (isMutating && !seerrCookieJar.hasXsrfToken(baseHttpUrl.host)) {
-                    val candidates = buildList {
-                        add(currentBaseUrl)
-                        if (currentBaseUrl.startsWith("https://"))
-                            add("http://" + currentBaseUrl.removePrefix("https://"))
-                    }
+                    val candidates = listOf(currentBaseUrl)
                     for (url in candidates) {
                         try {
                             csrfSeedClient
@@ -416,7 +453,7 @@ object NetworkModule {
                 val response = chain.proceed(newRequest)
 
                 if (response.code == 403) {
-                    seerrCookieJar.clear()
+                    seerrCookieJar.clear(baseHttpUrl.host)
                 }
 
                 response
@@ -543,7 +580,12 @@ object NetworkModule {
                         val refreshToken =
                             securePreferencesRepository.getCachedAudiobookshelfRefreshToken()
                         if (refreshToken != null) {
-                            val refreshResult = attemptAbsTokenRefresh(currentBaseUrl, refreshToken)
+                            val refreshResult =
+                                attemptAbsTokenRefresh(
+                                    currentBaseUrl,
+                                    refreshToken,
+                                    baseOkHttpClient,
+                                )
                             if (refreshResult != null) {
                                 securePreferencesRepository.updateCachedAudiobookshelfTokens(
                                     refreshResult.first,
@@ -602,13 +644,17 @@ object NetworkModule {
     private fun attemptAbsTokenRefresh(
         baseUrl: String,
         refreshToken: String,
+        baseClient: OkHttpClient,
     ): Pair<String, String?>? {
         return try {
             val refreshUrl = "${baseUrl}auth/refresh"
             val refreshClient =
-                OkHttpClient.Builder()
+                baseClient
+                    .newBuilder()
                     .connectTimeout(10, TimeUnit.SECONDS)
                     .readTimeout(10, TimeUnit.SECONDS)
+                    .followRedirects(false)
+                    .followSslRedirects(false)
                     .build()
 
             val request =

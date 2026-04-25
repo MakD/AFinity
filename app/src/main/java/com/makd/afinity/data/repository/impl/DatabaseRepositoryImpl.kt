@@ -531,9 +531,7 @@ constructor(
     }
 
     override suspend fun clearServerData(serverId: String) {
-        movieDao.deleteMoviesByServerId(serverId)
-        showDao.deleteShowsByServerId(serverId)
-        episodeDao.deleteEpisodesByServerId(serverId)
+        serverDatabaseDao.clearAllDataForServer(serverId)
     }
 
     override suspend fun clearUserData(userId: UUID) {
@@ -777,8 +775,8 @@ constructor(
         return serverDatabaseDao.getSources(itemId)
     }
 
-    override suspend fun getItemMetadata(itemId: UUID): ItemMetadataCacheEntity? {
-        return itemMetadataCacheDao.getMetadata(itemId)
+    override suspend fun getItemMetadata(itemId: UUID, serverId: String, userId: String): ItemMetadataCacheEntity? {
+        return itemMetadataCacheDao.getMetadata(itemId, serverId, userId)
     }
 
     override suspend fun insertItemMetadata(metadata: ItemMetadataCacheEntity) {

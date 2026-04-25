@@ -108,7 +108,7 @@ fun EqualizerBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                items(presetsToShow) { preset ->
+                items(presetsToShow, key = { it.name }) { preset ->
                     PresetChip(
                         preset = preset,
                         isSelected = preset == state.currentPreset,

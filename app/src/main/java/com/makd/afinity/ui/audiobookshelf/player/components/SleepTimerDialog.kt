@@ -133,7 +133,7 @@ fun SleepTimerDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                items(timerOptions) { minutes ->
+                items(timerOptions, key = { it }) { minutes ->
                     TimerTile(minutes = minutes, onClick = { onTimerSelected(minutes) })
                 }
             }

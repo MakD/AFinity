@@ -9,24 +9,26 @@ import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
 @Dao
 interface TopPeopleDao {
 
-    @Query("SELECT * FROM top_people_cache WHERE personType = :type")
-    suspend fun getCachedTopPeople(type: String): TopPeopleCacheEntity?
+    @Query("SELECT * FROM top_people_cache WHERE personType = :type AND serverId = :serverId AND userId = :userId")
+    suspend fun getCachedTopPeople(type: String, serverId: String, userId: String): TopPeopleCacheEntity?
 
     @Query(
         """
         SELECT COUNT(*) > 0
         FROM top_people_cache
         WHERE personType = :type
+        AND serverId = :serverId
+        AND userId = :userId
         AND (cachedTimestamp + :ttlMillis) > :currentTime
     """
     )
-    suspend fun isTopPeopleCacheFresh(type: String, ttlMillis: Long, currentTime: Long): Boolean
+    suspend fun isTopPeopleCacheFresh(type: String, serverId: String, userId: String, ttlMillis: Long, currentTime: Long): Boolean
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTopPeople(entity: TopPeopleCacheEntity)
 
-    @Query("DELETE FROM top_people_cache WHERE personType = :type")
-    suspend fun deleteTopPeople(type: String)
+    @Query("DELETE FROM top_people_cache WHERE personType = :type AND serverId = :serverId AND userId = :userId")
+    suspend fun deleteTopPeople(type: String, serverId: String, userId: String)
 
     @Query("DELETE FROM top_people_cache") suspend fun clearAllCache()
 }

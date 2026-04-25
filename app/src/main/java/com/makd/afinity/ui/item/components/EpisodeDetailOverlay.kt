@@ -38,22 +38,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.extensions.showBackdropBlurHash
+import com.makd.afinity.data.models.extensions.showBackdropImageUrl
+import com.makd.afinity.data.models.extensions.showPrimaryBlurHash
+import com.makd.afinity.data.models.extensions.showPrimaryImageUrl
+import com.makd.afinity.data.models.extensions.showThumbBlurHash
+import com.makd.afinity.data.models.extensions.showThumbImageUrl
 import com.makd.afinity.data.models.extensions.thumbBlurHash
 import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.shared.PlaybackSelection
 import com.makd.afinity.ui.item.components.shared.PlaybackSelectionButton
+import org.jellyfin.sdk.model.api.MediaStreamType
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
 import java.util.Locale
-import org.jellyfin.sdk.model.api.MediaStreamType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,14 +123,35 @@ fun EpisodeDetailOverlay(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
+            val isUnaired =
+                remember(episode.premiereDate) {
+                    episode.premiereDate?.isAfter(java.time.LocalDateTime.now()) == true
+                }
+
             val imageUrl =
-                remember(episode.id) {
-                    episode.images.primaryImageUrl ?: episode.images.thumbImageUrl
+                remember(episode.id, isUnaired) {
+                    if (isUnaired) {
+                        episode.images.thumbImageUrl
+                            ?: episode.images.showThumbImageUrl
+                            ?: episode.images.showBackdropImageUrl
+                            ?: episode.images.showPrimaryImageUrl
+                            ?: episode.images.primaryImageUrl
+                    } else {
+                        episode.images.primaryImageUrl ?: episode.images.thumbImageUrl
+                    }
                 }
 
             val blurHash =
-                remember(episode.id) {
-                    episode.images.primaryBlurHash ?: episode.images.thumbBlurHash
+                remember(episode.id, isUnaired) {
+                    if (isUnaired) {
+                        episode.images.thumbBlurHash
+                            ?: episode.images.showThumbBlurHash
+                            ?: episode.images.showBackdropBlurHash
+                            ?: episode.images.showPrimaryBlurHash
+                            ?: episode.images.primaryBlurHash
+                    } else {
+                        episode.images.primaryBlurHash ?: episode.images.thumbBlurHash
+                    }
                 }
 
             AsyncImage(
@@ -149,15 +177,39 @@ fun EpisodeDetailOverlay(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_calendar),
-                            contentDescription = stringResource(R.string.cd_air_date),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(14.dp),
-                        )
+                        if (isUnaired || episode.missing) {
+                            Box(
+                                modifier =
+                                    Modifier.background(
+                                            Color.Red.copy(alpha = 0.8f),
+                                            RoundedCornerShape(4.dp),
+                                        )
+                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = if (isUnaired) "UNAIRED" else "MISSING",
+                                    color = Color.White,
+                                    style =
+                                        MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp,
+                                        ),
+                                )
+                            }
+                            MetadataDot()
+                        } else {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_calendar),
+                                contentDescription = stringResource(R.string.cd_air_date),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+
+                        val formattedDate =
+                            date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
                         Text(
-                            text =
-                                date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+                            text = if (isUnaired) "Airs on $formattedDate" else formattedDate,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -359,16 +411,18 @@ fun EpisodeDetailOverlay(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                PlaybackSelectionButton(
-                    item = episode,
-                    buttonText =
-                        if (episode.playbackPositionTicks > 0)
-                            stringResource(R.string.episode_resume)
-                        else stringResource(R.string.episode_play),
-                    buttonIcon = painterResource(id = R.drawable.ic_player_play_filled),
-                    onPlayClick = { selection -> onPlayClick(episode, selection) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                if (!episode.missing) {
+                    PlaybackSelectionButton(
+                        item = episode,
+                        buttonText =
+                            if (episode.playbackPositionTicks > 0)
+                                stringResource(R.string.episode_resume)
+                            else stringResource(R.string.episode_play),
+                        buttonIcon = painterResource(id = R.drawable.ic_player_play_filled),
+                        onPlayClick = { selection -> onPlayClick(episode, selection) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -384,6 +438,7 @@ fun EpisodeDetailOverlay(
                             )
                         }
                     }
+
                     IconButton(onClick = onToggleWatchlist) {
                         Icon(
                             painter =
@@ -412,27 +467,32 @@ fun EpisodeDetailOverlay(
                         )
                     }
 
-                    IconButton(onClick = onToggleWatched) {
-                        Icon(
-                            painter =
-                                if (episode.played) painterResource(id = R.drawable.ic_circle_check)
-                                else painterResource(id = R.drawable.ic_circle_check_outline),
-                            contentDescription = stringResource(R.string.cd_toggle_watched),
-                            tint =
-                                if (episode.played) Color.Green
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(28.dp),
-                        )
+                    if (!episode.missing) {
+                        IconButton(onClick = onToggleWatched) {
+                            Icon(
+                                painter =
+                                    if (episode.played)
+                                        painterResource(id = R.drawable.ic_circle_check)
+                                    else painterResource(id = R.drawable.ic_circle_check_outline),
+                                contentDescription = stringResource(R.string.cd_toggle_watched),
+                                tint =
+                                    if (episode.played) Color.Green
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(28.dp),
+                            )
+                        }
                     }
 
-                    DownloadProgressIndicator(
-                        downloadInfo = downloadInfo,
-                        onDownloadClick = onDownloadClick,
-                        onPauseClick = onPauseDownload,
-                        onResumeClick = onResumeDownload,
-                        onCancelClick = onCancelDownload,
-                        canDownload = canDownload,
-                    )
+                    if (!episode.missing) {
+                        DownloadProgressIndicator(
+                            downloadInfo = downloadInfo,
+                            onDownloadClick = onDownloadClick,
+                            onPauseClick = onPauseDownload,
+                            onResumeClick = onResumeDownload,
+                            onCancelClick = onCancelDownload,
+                            canDownload = canDownload,
+                        )
+                    }
                 }
             }
         }

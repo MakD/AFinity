@@ -49,7 +49,7 @@ fun ExternalLinksSection(item: AfinityItem) {
                 verticalAlignment = Alignment.CenterVertically,
                 contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
-                items(externalLinks) { link ->
+                items(externalLinks, key = { it.url }) { link ->
                     Box(
                         modifier =
                             Modifier.clip(CircleShape)

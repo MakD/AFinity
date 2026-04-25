@@ -5,6 +5,7 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.AfinityTypeConverters
 import com.makd.afinity.data.database.entities.PersonSectionCacheEntity
 import com.makd.afinity.data.database.entities.TopPeopleCacheEntity
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.CachedPersonWithCount
 import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.PersonSectionType
@@ -29,7 +30,11 @@ import kotlin.time.Duration.Companion.hours
 @Singleton
 class PeopleRepository
 @Inject
-constructor(private val mediaRepository: MediaRepository, database: AfinityDatabase) {
+constructor(
+    private val mediaRepository: MediaRepository,
+    private val sessionManager: SessionManager,
+    database: AfinityDatabase,
+) {
     private val personCacheTTL = 48.hours.inWholeMilliseconds
     private val peopleCacheTTL = 24.hours.inWholeMilliseconds
 
@@ -38,18 +43,23 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
     private val afinityTypeConverters = AfinityTypeConverters()
     private val json = Json { ignoreUnknownKeys = true }
 
+    private fun currentServerId(): String = sessionManager.currentSession.value?.serverId ?: ""
+    private fun currentUserId(): String = sessionManager.currentSession.value?.userId?.toString() ?: ""
+
     suspend fun getTopPeople(
         type: PersonKind,
         limit: Int = 100,
         minAppearances: Int = 10,
     ): List<PersonWithCount> {
         try {
-            val cached = topPeopleDao.getCachedTopPeople(type.name)
+            val serverId = currentServerId()
+            val userId = currentUserId()
+            val cached = topPeopleDao.getCachedTopPeople(type.name, serverId, userId)
             val currentTime = System.currentTimeMillis()
 
             if (
                 cached != null &&
-                    topPeopleDao.isTopPeopleCacheFresh(type.name, peopleCacheTTL, currentTime)
+                    topPeopleDao.isTopPeopleCacheFresh(type.name, serverId, userId, peopleCacheTTL, currentTime)
             ) {
                 val cachedData =
                     json.decodeFromString<List<CachedPersonWithCount>>(cached.peopleData)
@@ -124,6 +134,8 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
                 val entity =
                     TopPeopleCacheEntity(
                         personType = type.name,
+                        serverId = serverId,
+                        userId = userId,
                         peopleData = json.encodeToString(cachedData),
                         cachedTimestamp = System.currentTimeMillis(),
                     )
@@ -142,15 +154,17 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
         sectionType: PersonSectionType,
     ): PersonSection? {
         try {
+            val serverId = currentServerId()
+            val userId = currentUserId()
             val person = personWithCount.person
             val cacheKey = "${person.name}_${sectionType.name}"
 
-            val cached = personSectionDao.getCachedSection(cacheKey)
+            val cached = personSectionDao.getCachedSection(cacheKey, serverId, userId)
             val currentTime = System.currentTimeMillis()
 
             if (
                 cached != null &&
-                    personSectionDao.isSectionCacheFresh(cacheKey, personCacheTTL, currentTime)
+                    personSectionDao.isSectionCacheFresh(cacheKey, serverId, userId, personCacheTTL, currentTime)
             ) {
                 val baseUrl = mediaRepository.getBaseUrl()
                 val cachedPersonData =
@@ -195,6 +209,8 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
             val entity =
                 PersonSectionCacheEntity(
                     cacheKey = cacheKey,
+                    serverId = serverId,
+                    userId = userId,
                     personData = json.encodeToString(personWithCount.toCached()),
                     itemsData = json.encodeToString(itemJsonStrings),
                     sectionType = sectionType.name,
@@ -212,6 +228,8 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
         withContext(Dispatchers.IO) {
             try {
+                val serverId = currentServerId()
+                val userId = currentUserId()
                 val updatedJson =
                     when (updatedItem) {
                         is AfinityMovie -> afinityTypeConverters.fromAfinityMovie(updatedItem)
@@ -219,7 +237,7 @@ constructor(private val mediaRepository: MediaRepository, database: AfinityDatab
                         else -> null
                     }
                 if (updatedJson != null) {
-                    val allSections = personSectionDao.getAllCachedSections()
+                    val allSections = personSectionDao.getAllCachedSections(serverId, userId)
                     for (section in allSections) {
                         val itemStrings = json.decodeFromString<List<String>>(section.itemsData)
                         var changed = false

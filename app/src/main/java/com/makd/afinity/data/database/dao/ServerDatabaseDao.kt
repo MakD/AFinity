@@ -188,8 +188,101 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM shows WHERE serverId = :serverId")
     abstract suspend fun deleteShowsByServerId(serverId: String)
 
+    @Query("DELETE FROM seasons WHERE serverId = :serverId")
+    abstract suspend fun deleteSeasonsByServerId(serverId: String)
+
     @Query("DELETE FROM episodes WHERE serverId = :serverId")
     abstract suspend fun deleteEpisodesByServerId(serverId: String)
+
+    @Query("DELETE FROM userdata WHERE serverId = :serverId")
+    abstract suspend fun deleteUserDataByServerId(serverId: String)
+
+    @Query("DELETE FROM downloads WHERE serverId = :serverId")
+    abstract suspend fun deleteDownloadsByServerId(serverId: String)
+
+    // Orphan cleanup: sources/mediastreams have no serverId, delete by absence of parent
+    @Query(
+        "DELETE FROM sources WHERE itemId NOT IN (SELECT id FROM movies UNION ALL SELECT id FROM shows UNION ALL SELECT id FROM episodes)"
+    )
+    abstract suspend fun deleteOrphanedSources()
+
+    @Query("DELETE FROM mediastreams WHERE sourceId NOT IN (SELECT id FROM sources)")
+    abstract suspend fun deleteOrphanedMediaStreams()
+
+    // Cache tables
+    @Query("DELETE FROM genre_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteGenreCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM genre_movie_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteGenreMovieCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM show_genre_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteShowGenreCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM genre_show_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteGenreShowCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM studio_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteStudioCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM library_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteLibraryCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM movie_section_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteMovieSectionCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM boxset_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteBoxSetCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM boxset_cache_metadata WHERE serverId = :serverId")
+    abstract suspend fun deleteBoxSetCacheMetadataByServerId(serverId: String)
+
+    @Query("DELETE FROM top_people_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteTopPeopleCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM person_section_cache WHERE serverId = :serverId")
+    abstract suspend fun deletePersonSectionCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM item_metadata_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteItemMetadataCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM jellyfin_stats_cache WHERE serverId = :serverId")
+    abstract suspend fun deleteJellyfinStatsCacheByServerId(serverId: String)
+
+    @Query("DELETE FROM jellyseerr_requests WHERE jellyfinServerId = :serverId")
+    abstract suspend fun deleteJellyseerrRequestsByServerId(serverId: String)
+
+    @Query("DELETE FROM jellyseerr_config WHERE jellyfinServerId = :serverId")
+    abstract suspend fun deleteJellyseerrConfigByServerId(serverId: String)
+
+    @Transaction
+    open suspend fun clearAllDataForServer(serverId: String) {
+        // Content tables — order matters: delete children before cascade parents clean up
+        deleteMoviesByServerId(serverId)
+        deleteShowsByServerId(serverId)
+        deleteSeasonsByServerId(serverId)
+        deleteEpisodesByServerId(serverId) // cascades → segments
+        deleteUserDataByServerId(serverId)
+        deleteDownloadsByServerId(serverId)
+        deleteOrphanedSources() // cascades → trickplayInfos
+        deleteOrphanedMediaStreams()
+        // Cache tables
+        deleteGenreCacheByServerId(serverId)
+        deleteGenreMovieCacheByServerId(serverId)
+        deleteShowGenreCacheByServerId(serverId)
+        deleteGenreShowCacheByServerId(serverId)
+        deleteStudioCacheByServerId(serverId)
+        deleteLibraryCacheByServerId(serverId)
+        deleteMovieSectionCacheByServerId(serverId)
+        deleteBoxSetCacheByServerId(serverId)
+        deleteBoxSetCacheMetadataByServerId(serverId)
+        deleteTopPeopleCacheByServerId(serverId)
+        deletePersonSectionCacheByServerId(serverId)
+        deleteItemMetadataCacheByServerId(serverId)
+        deleteJellyfinStatsCacheByServerId(serverId)
+        deleteJellyseerrRequestsByServerId(serverId)
+        deleteJellyseerrConfigByServerId(serverId)
+    }
 
     @Query(
         """

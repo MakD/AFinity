@@ -148,6 +148,14 @@ interface SecurePreferencesRepository {
     suspend fun getMdbListApiKey(serverId: String, userId: String): String?
 
     var onAbsAuthInvalidated: (() -> Unit)?
+
+    fun getCachedJellyfinToken(): String?
+
+    fun getCachedJellyfinServerUrl(): String?
+
+    suspend fun saveActiveSession(serverId: String, userId: UUID, serverUrl: String)
+
+    suspend fun clearActiveSession()
 }
 
 data class AudiobookshelfAuthData(

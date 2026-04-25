@@ -119,7 +119,7 @@ internal fun SeasonsSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(seasons) { season ->
+            items(seasons, key = { it.id.toString() }) { season ->
                 SeasonCard(
                     season = season,
                     onClick = {

@@ -503,7 +503,7 @@ private fun HorizontalLibraryFilters(
             }
         }
 
-        items(libraries) { library ->
+        items(libraries, key = { it.id }) { library ->
             LibraryFilterChip(
                 text = library.name,
                 isSelected =
@@ -544,7 +544,7 @@ private fun SearchHomeContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 16.dp),
         ) {
-            items(genres) { genre ->
+            items(genres, key = { it }) { genre ->
                 GenreCard(
                     genre = genre,
                     onClick = { onGenreClick(genre) },
@@ -575,7 +575,7 @@ private fun SearchResultsContent(
             )
         }
 
-        items(results) { item ->
+        items(results, key = { it.id }) { item ->
             SearchResultItem(
                 item = item,
                 onClick = {
@@ -868,7 +868,7 @@ private fun JellyseerrSearchResultsContent(
             )
         }
 
-        items(results) { item ->
+        items(results, key = { it.id }) { item ->
             JellyseerrSearchResultItem(item = item, onRequestClick = { onRequestClick(item) })
         }
     }
@@ -1277,31 +1277,31 @@ private fun CombinedSearchResultsContent(
     ) {
         if (collections.isNotEmpty()) {
             item { SearchSectionHeader(stringResource(R.string.media_type_collection) + "s") }
-            items(collections) { item ->
+            items(collections, key = { "collection_${it.id}" }) { item ->
                 SearchResultItem(item = item, onClick = { onItemClick(item) })
             }
         }
 
         if (movies.isNotEmpty()) {
             item { SearchSectionHeader(stringResource(R.string.media_type_movie) + "s") }
-            items(movies) { item -> SearchResultItem(item = item, onClick = { onItemClick(item) }) }
+            items(movies, key = { "movie_${it.id}" }) { item -> SearchResultItem(item = item, onClick = { onItemClick(item) }) }
         }
 
         if (shows.isNotEmpty()) {
             item { SearchSectionHeader(stringResource(R.string.media_type_tv_show) + "s") }
-            items(shows) { item -> SearchResultItem(item = item, onClick = { onItemClick(item) }) }
+            items(shows, key = { "show_${it.id}" }) { item -> SearchResultItem(item = item, onClick = { onItemClick(item) }) }
         }
 
         if (episodes.isNotEmpty()) {
             item { SearchSectionHeader(stringResource(R.string.media_type_episode) + "s") }
-            items(episodes) { item ->
+            items(episodes, key = { "episode_${it.id}" }) { item ->
                 SearchResultItem(item = item, onClick = { onEpisodeClick(item) })
             }
         }
 
         if (jellyseerrResults.isNotEmpty() || isJellyseerrSearching) {
             item { SearchSectionHeader("Discover & Request", isLoading = isJellyseerrSearching) }
-            items(jellyseerrResults) { item ->
+            items(jellyseerrResults, key = { "jellyseerr_${it.id}" }) { item ->
                 JellyseerrSearchResultItem(item = item, onRequestClick = { onRequestClick(item) })
             }
         }

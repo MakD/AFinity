@@ -10,8 +10,8 @@ import java.util.UUID
 @Dao
 interface ItemMetadataCacheDao {
 
-    @Query("SELECT * FROM item_metadata_cache WHERE itemId = :itemId")
-    suspend fun getMetadata(itemId: UUID): ItemMetadataCacheEntity?
+    @Query("SELECT * FROM item_metadata_cache WHERE itemId = :itemId AND serverId = :serverId AND userId = :userId")
+    suspend fun getMetadata(itemId: UUID, serverId: String, userId: String): ItemMetadataCacheEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateMetadata(metadata: ItemMetadataCacheEntity)

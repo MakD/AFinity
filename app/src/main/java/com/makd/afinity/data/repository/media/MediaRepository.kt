@@ -9,12 +9,12 @@ import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.ui.library.FilterType
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.ui.library.FilterType
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
@@ -170,7 +170,12 @@ interface MediaRepository {
         seriesId: UUID? = null,
         limit: Int = 16,
         fields: List<ItemFields>? = null,
-        enableResumable: Boolean = true,
+        enableResumable: Boolean = false,
+    ): List<AfinityEpisode>
+
+    suspend fun getUpcomingEpisodes(
+        limit: Int = 24,
+        fields: List<ItemFields>? = null,
     ): List<AfinityEpisode>
 
     suspend fun getSpecialFeatures(itemId: UUID, userId: UUID): List<AfinityItem>
@@ -236,7 +241,11 @@ interface MediaRepository {
 
     suspend fun getSeriesNextEpisode(seriesId: UUID): AfinityEpisode?
 
-    suspend fun getTopRatedByGenre(genre: String, type: GenreType, limit: Int = 10): List<AfinityItem>
+    suspend fun getTopRatedByGenre(
+        genre: String,
+        type: GenreType,
+        limit: Int = 10,
+    ): List<AfinityItem>
 
     suspend fun getTopRatedByStudio(studioName: String, limit: Int = 10): List<AfinityItem>
 }

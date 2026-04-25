@@ -68,7 +68,7 @@ fun ReviewsSection(reviews: List<TmdbReview>, modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
         ) {
-            items(reviews.take(10)) { review ->
+            items(reviews.take(10), key = { it.id }) { review ->
                 ReviewCard(review = review, onReadMoreClick = { selectedReview = review })
             }
         }

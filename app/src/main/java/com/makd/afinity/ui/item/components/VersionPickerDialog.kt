@@ -57,7 +57,7 @@ fun VersionPickerDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.weight(1f, fill = false),
                 ) {
-                    items(sources) { source ->
+                    items(sources, key = { it.id }) { source ->
                         VersionOption(
                             source = source,
                             isSelected = false,

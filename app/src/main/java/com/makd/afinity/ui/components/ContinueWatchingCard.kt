@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -23,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -30,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
@@ -55,36 +58,37 @@ fun ContinueWatchingCard(
     Column(modifier = modifier.width(cardWidth)) {
         Card(
             onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_LANDSCAPE),
             colors =
                 CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                val blurHash = if (item is AfinityMovie) {
-                    item.images.thumbBlurHash
-                        ?: item.images.backdropBlurHash
-                        ?: item.images.primaryBlurHash
-                } else {
-                    item.images.primaryBlurHash
-                        ?: item.images.thumbBlurHash
-                        ?: item.images.backdropBlurHash
-                }
-                AsyncImage(
-                    imageUrl = if (item is AfinityMovie) {
-                        item.images.thumbImageUrl
-                            ?: item.images.backdropImageUrl
-                            ?: item.images.primaryImageUrl
+                val blurHash =
+                    if (item is AfinityMovie) {
+                        item.images.thumbBlurHash
+                            ?: item.images.backdropBlurHash
+                            ?: item.images.primaryBlurHash
                     } else {
-                        item.images.primaryImageUrl
-                            ?: item.images.thumbImageUrl
-                            ?: item.images.backdropImageUrl
-                    },
+                        item.images.primaryBlurHash
+                            ?: item.images.thumbBlurHash
+                            ?: item.images.backdropBlurHash
+                    }
+                val isMissing = item is AfinityEpisode && item.missing
+                AsyncImage(
+                    imageUrl =
+                        if (item is AfinityMovie) {
+                            item.images.thumbImageUrl
+                                ?: item.images.backdropImageUrl
+                                ?: item.images.primaryImageUrl
+                        } else {
+                            item.images.primaryImageUrl
+                                ?: item.images.thumbImageUrl
+                                ?: item.images.backdropImageUrl
+                        },
                     blurHash = blurHash,
                     contentDescription = item.name,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().alpha(if (isMissing) 0.5f else 1f),
                     contentScale = ContentScale.Crop,
                 )
 
@@ -98,20 +102,34 @@ fun ContinueWatchingCard(
                     LinearProgressIndicator(
                         progress = { progressPercentage },
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .align(Alignment.BottomCenter),
+                            Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = Color.Black.copy(alpha = 0.3f),
                     )
                 }
 
-                if (item.played) {
+                if (isMissing) {
                     Box(
                         modifier =
-                            Modifier
-                                .align(Alignment.TopEnd)
+                            Modifier.align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .background(Color.Red.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "MISSING",
+                            color = Color.White,
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp,
+                                ),
+                        )
+                    }
+                } else if (item.played) {
+                    Box(
+                        modifier =
+                            Modifier.align(Alignment.TopEnd)
                                 .padding(8.dp)
                                 .size(24.dp)
                                 .background(MaterialTheme.colorScheme.primary, CircleShape),

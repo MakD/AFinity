@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,14 +28,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
@@ -45,8 +42,6 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,7 +51,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -65,7 +59,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -80,6 +73,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
@@ -118,12 +112,24 @@ fun LibraryContentScreen(
                 .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            LibraryContentTopBar(
-                title = uiState.libraryName,
+            AfinityTopAppBar(
+                title = {
+                    Text(
+                        text = uiState.libraryName,
+                        style =
+                            MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                },
                 backgroundOpacity = 1f,
                 userProfileImageUrl = uiState.userProfileImageUrl,
                 onProfileClick = onProfileClick,
-                navController = navController,
+                onSearchClick = {
+                    val route = Destination.createSearchRoute()
+                    navController.navigate(route)
+                },
             )
 
             FilterRow(
@@ -262,106 +268,12 @@ fun LibraryContentScreen(
 }
 
 @Composable
-private fun LibraryContentTopBar(
-    title: String,
-    backgroundOpacity: Float = 0f,
-    navController: NavController,
-    userProfileImageUrl: String? = null,
-    onProfileClick: () -> Unit,
-) {
-    TopAppBar(
-        title = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        },
-        actions = {
-            Button(
-                onClick = {
-                    val route = Destination.createSearchRoute()
-                    navController.navigate(route)
-                },
-                modifier = Modifier.height(48.dp).width(120.dp),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                shape = RoundedCornerShape(24.dp),
-                contentPadding = PaddingValues(0.dp),
-            ) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_search),
-                            contentDescription = stringResource(R.string.action_search),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Text(
-                            text = stringResource(R.string.action_search),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            IconButton(onClick = onProfileClick, modifier = Modifier.size(48.dp)) {
-                Box(
-                    modifier =
-                        Modifier.fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                            .clip(CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (userProfileImageUrl != null) {
-                        AsyncImage(
-                            imageUrl = userProfileImageUrl,
-                            contentDescription = stringResource(R.string.cd_profile),
-                            targetWidth = 48.dp,
-                            targetHeight = 48.dp,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_user_circle),
-                            contentDescription = stringResource(R.string.cd_profile),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(32.dp),
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-        },
-        colors =
-            TopAppBarDefaults.topAppBarColors(
-                containerColor =
-                    MaterialTheme.colorScheme.background.copy(alpha = backgroundOpacity)
-            ),
-    )
-}
-
-@Composable
 private fun MediaItemGridCard(
     item: AfinityItem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Card(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f),
@@ -776,7 +688,7 @@ private fun FilterRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp),
     ) {
-        items(filters) { (filterType, label) ->
+        items(filters, key = { it.first.name }) { (filterType, label) ->
             FilterChip(
                 selected = currentFilter == filterType,
                 onClick = { onFilterSelected(filterType) },

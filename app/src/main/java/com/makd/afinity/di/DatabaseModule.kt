@@ -6,17 +6,22 @@ import com.makd.afinity.data.database.AfinityDatabase
 import com.makd.afinity.data.database.DatabaseMigrations
 import com.makd.afinity.data.database.dao.BoxSetCacheDao
 import com.makd.afinity.data.database.dao.EpisodeDao
+import com.makd.afinity.data.database.dao.GenreCacheDao
 import com.makd.afinity.data.database.dao.ItemMetadataCacheDao
 import com.makd.afinity.data.database.dao.JellyfinStatsDao
 import com.makd.afinity.data.database.dao.LibraryCacheDao
 import com.makd.afinity.data.database.dao.MediaStreamDao
 import com.makd.afinity.data.database.dao.MovieDao
+import com.makd.afinity.data.database.dao.MovieSectionDao
+import com.makd.afinity.data.database.dao.PersonSectionDao
 import com.makd.afinity.data.database.dao.SeasonDao
 import com.makd.afinity.data.database.dao.ServerAddressDao
 import com.makd.afinity.data.database.dao.ServerDao
 import com.makd.afinity.data.database.dao.ServerDatabaseDao
 import com.makd.afinity.data.database.dao.ShowDao
 import com.makd.afinity.data.database.dao.SourceDao
+import com.makd.afinity.data.database.dao.StudioCacheDao
+import com.makd.afinity.data.database.dao.TopPeopleDao
 import com.makd.afinity.data.database.dao.UserDao
 import com.makd.afinity.data.database.dao.UserDataDao
 import dagger.Module
@@ -115,5 +120,30 @@ object DatabaseModule {
     @Provides
     fun provideJellyfinStatsDao(database: AfinityDatabase): JellyfinStatsDao {
         return database.jellyfinStatsDao()
+    }
+
+    @Provides
+    fun provideGenreCacheDao(database: AfinityDatabase): GenreCacheDao {
+        return database.genreCacheDao()
+    }
+
+    @Provides
+    fun provideStudioCacheDao(database: AfinityDatabase): StudioCacheDao {
+        return database.studioCacheDao()
+    }
+
+    @Provides
+    fun provideTopPeopleDao(database: AfinityDatabase): TopPeopleDao {
+        return database.topPeopleDao()
+    }
+
+    @Provides
+    fun providePersonSectionDao(database: AfinityDatabase): PersonSectionDao {
+        return database.personSectionDao()
+    }
+
+    @Provides
+    fun provideMovieSectionDao(database: AfinityDatabase): MovieSectionDao {
+        return database.movieSectionDao()
     }
 }
