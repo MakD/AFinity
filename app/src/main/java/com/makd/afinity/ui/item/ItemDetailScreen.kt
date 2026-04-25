@@ -607,7 +607,7 @@ private fun PortraitItemDetailContent(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = bottomPadding + 16.dp),
     ) {
-        item { HeroSection(item = item, onPlayClick = onPlayClick) }
+        item { HeroSection(item = item) }
 
         item {
             Column(

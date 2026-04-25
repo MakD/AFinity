@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.item.components.shared
 
-import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,8 +18,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import com.makd.afinity.data.models.extensions.backdropBlurHash
 import com.makd.afinity.data.models.extensions.backdropImageUrl
 import com.makd.afinity.data.models.extensions.primaryBlurHash
@@ -40,10 +39,13 @@ import com.makd.afinity.ui.components.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HeroSection(item: AfinityItem, onPlayClick: (AfinityItem, PlaybackSelection?) -> Unit) {
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+fun HeroSection(item: AfinityItem) {
+    val windowInfo = LocalWindowInfo.current
+    val density = LocalDensity.current
+    val containerSize = windowInfo.containerSize
+    val screenWidth = with(density) { containerSize.width.toDp() }
+    val screenHeight = with(density) { containerSize.height.toDp() }
+    val isLandscape = containerSize.width > containerSize.height
     val heightMultiplier = if (isLandscape) 0.9f else 0.5f
 
     val fallbackChain =
@@ -84,7 +86,7 @@ fun HeroSection(item: AfinityItem, onPlayClick: (AfinityItem, PlaybackSelection?
             imageUrl = current?.first,
             contentDescription = null,
             blurHash = current?.second,
-            targetWidth = configuration.screenWidthDp.dp,
+            targetWidth = screenWidth,
             targetHeight = screenHeight * heightMultiplier,
             onError = {
                 if (urlIndex < fallbackChain.lastIndex) {
@@ -107,7 +109,7 @@ fun HeroSection(item: AfinityItem, onPlayClick: (AfinityItem, PlaybackSelection?
                         }
                     },
             contentScale = ContentScale.Crop,
-            alignment = Alignment.Center,
+            alignment = Alignment.TopCenter,
         )
     }
 }
