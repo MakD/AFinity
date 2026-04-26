@@ -132,23 +132,27 @@ constructor(
 
     init {
         viewModelScope.launch {
-            appDataRepository.isInitialDataLoaded.collect { isLoaded ->
-                if (!isLoaded) {
-                    Timber.d("Session cleared, stopping playback")
-                    stopPlayback()
-                    player.stop()
-                    player.clearMediaItems()
-                    updateUiState { PlayerUiState() }
+            Timber.d("PlayerViewModel: starting async player init")
+            initializePlayer()
+            Timber.d("PlayerViewModel: player ready, starting observers and loops")
+            launch {
+                appDataRepository.isInitialDataLoaded.collect { isLoaded ->
+                    if (!isLoaded) {
+                        Timber.d("Session cleared, stopping playback")
+                        stopPlayback()
+                        player.stop()
+                        player.clearMediaItems()
+                        updateUiState { PlayerUiState() }
+                    }
                 }
             }
+            startPositionUpdateLoop()
+            startProgressReporting()
+            initializeVideoZoomMode()
+            initializeLogoAutoHide()
+            initializeBackgroundPlay()
+            observeCastState()
         }
-        initializePlayer()
-        startPositionUpdateLoop()
-        startProgressReporting()
-        initializeVideoZoomMode()
-        initializeLogoAutoHide()
-        initializeBackgroundPlay()
-        observeCastState()
     }
 
     private fun initializeVideoZoomMode() {
@@ -329,9 +333,10 @@ constructor(
         }
     }
 
-    private fun initializePlayer() {
-        val useExoPlayer =
-            kotlinx.coroutines.runBlocking { preferencesRepository.useExoPlayer.first() }
+    private suspend fun initializePlayer() {
+        Timber.d("PlayerViewModel: reading useExoPlayer preference")
+        val useExoPlayer = preferencesRepository.useExoPlayer.first()
+        Timber.d("PlayerViewModel: useExoPlayer=$useExoPlayer, creating player")
 
         player =
             if (useExoPlayer) {
@@ -344,20 +349,15 @@ constructor(
         Timber.d("Player initialized: ${player.javaClass.simpleName}")
     }
 
-    private fun createExoPlayer(): ExoPlayer {
+    private suspend fun createExoPlayer(): ExoPlayer {
         val audioAttributes =
             AudioAttributes.Builder()
                 .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
                 .setUsage(C.USAGE_MEDIA)
                 .build()
 
-        val (preferredAudioLang, preferredSubLang) =
-            kotlinx.coroutines.runBlocking {
-                Pair(
-                    preferencesRepository.getPreferredAudioLanguage(),
-                    preferencesRepository.getPreferredSubtitleLanguage(),
-                )
-            }
+        val preferredAudioLang = preferencesRepository.getPreferredAudioLanguage()
+        val preferredSubLang = preferencesRepository.getPreferredSubtitleLanguage()
 
         val trackSelector = DefaultTrackSelector(context)
         trackSelector.setParameters(
@@ -391,29 +391,26 @@ constructor(
     var mpvVideoOutputValue: String = "gpu"
         private set
 
-    private fun createMPVPlayer(): MPVPlayer {
+    private suspend fun createMPVPlayer(): MPVPlayer {
         val audioAttributes =
             AudioAttributes.Builder()
                 .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
                 .setUsage(C.USAGE_MEDIA)
                 .build()
 
+        val hwDec = preferencesRepository.getMpvHwDec()
+        val vo = preferencesRepository.getMpvVideoOutput()
+        val ao = preferencesRepository.getMpvAudioOutput()
+        val subs = preferencesRepository.getSubtitlePreferences()
+        val audioLang = preferencesRepository.getPreferredAudioLanguage()
+        val subLang = preferencesRepository.getPreferredSubtitleLanguage()
         val (
             mpvHwDec,
             mpvVideoOutput,
             mpvAudioOutput,
             subtitlePrefs,
             preferredAudioLang,
-            preferredSubLang) =
-            kotlinx.coroutines.runBlocking {
-                val hwDec = preferencesRepository.getMpvHwDec()
-                val vo = preferencesRepository.getMpvVideoOutput()
-                val ao = preferencesRepository.getMpvAudioOutput()
-                val subs = preferencesRepository.getSubtitlePreferences()
-                val audioLang = preferencesRepository.getPreferredAudioLanguage()
-                val subLang = preferencesRepository.getPreferredSubtitleLanguage()
-                MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang, subLang)
-            }
+            preferredSubLang) = MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang, subLang)
 
         mpvVideoOutputValue = mpvVideoOutput
 

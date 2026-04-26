@@ -24,12 +24,9 @@ import com.makd.afinity.util.logging.CrashFileExporter
 import com.makd.afinity.util.logging.RingBufferTree
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import timber.log.Timber
@@ -52,18 +49,18 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     var ringBufferTree: RingBufferTree? = null
         private set
 
-    private lateinit var imageLoaderPrefs: Deferred<Pair<Boolean, Int>>
+    @Volatile private var imageCacheEnabled: Boolean = true
+    @Volatile private var imageCacheSizeMb: Int = 512
 
     override fun onCreate() {
         super.onCreate()
 
-        imageLoaderPrefs =
-            applicationScope.async(Dispatchers.IO) {
-                Pair(
-                    preferencesRepository.getImageCacheEnabled(),
-                    preferencesRepository.getImageCacheSizeMb(),
-                )
-            }
+        applicationScope.launch(Dispatchers.IO) {
+            Timber.d("ImageLoader prefs: reading from DataStore")
+            imageCacheEnabled = preferencesRepository.getImageCacheEnabled()
+            imageCacheSizeMb = preferencesRepository.getImageCacheSizeMb()
+            Timber.d("ImageLoader prefs: cacheEnabled=$imageCacheEnabled, cacheSizeMb=$imageCacheSizeMb")
+        }
 
         ringBufferTree = RingBufferTree()
         Timber.plant(ringBufferTree!!)
@@ -91,7 +88,9 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
 
     @OptIn(ExperimentalCoilApi::class)
     override fun newImageLoader(context: PlatformContext): ImageLoader {
-        val (isCacheEnabled, cacheSizeMb) = runBlocking { imageLoaderPrefs.await() }
+        val isCacheEnabled = imageCacheEnabled
+        val cacheSizeMb = imageCacheSizeMb
+        Timber.d("ImageLoader: creating singleton (cacheEnabled=$isCacheEnabled, cacheSizeMb=$cacheSizeMb)")
 
         return ImageLoader.Builder(context)
             .components {

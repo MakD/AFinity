@@ -49,6 +49,9 @@ constructor(@ApplicationContext private val context: Context) {
                             Timber.d("Network lost: $network, Remaining networks: ${networks.size}")
                         }
 
+                        private var lastInternetState: Boolean? = null
+                        private var lastValidatedState: Boolean? = null
+
                         override fun onCapabilitiesChanged(
                             network: Network,
                             networkCapabilities: NetworkCapabilities,
@@ -61,9 +64,16 @@ constructor(@ApplicationContext private val context: Context) {
                                 networkCapabilities.hasCapability(
                                     NetworkCapabilities.NET_CAPABILITY_VALIDATED
                                 )
-                            Timber.d(
-                                "Network capabilities changed: hasInternet=$hasInternet, isValidated=$isValidated"
-                            )
+                            if (
+                                hasInternet != lastInternetState ||
+                                    isValidated != lastValidatedState
+                            ) {
+                                Timber.d(
+                                    "Network capabilities changed: hasInternet=$hasInternet, isValidated=$isValidated"
+                                )
+                                lastInternetState = hasInternet
+                                lastValidatedState = isValidated
+                            }
                         }
                     }
 

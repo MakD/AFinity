@@ -7,6 +7,7 @@ import com.makd.afinity.data.network.AudiobookshelfApiService
 import com.makd.afinity.data.network.JellyseerrApiService
 import com.makd.afinity.data.network.MdbListApiService
 import com.makd.afinity.data.network.TmdbApiService
+import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.Module
 import dagger.Provides
@@ -204,7 +205,7 @@ object NetworkModule {
     @ImageClient
     fun provideImageOkHttpClient(
         baseOkHttpClient: OkHttpClient,
-        securePreferencesRepository: SecurePreferencesRepository,
+        sessionManager: SessionManager,
     ): OkHttpClient {
         val dispatcher =
             Dispatcher().apply {
@@ -216,8 +217,9 @@ object NetworkModule {
             .dispatcher(dispatcher)
             .addInterceptor { chain ->
                 val request = chain.request()
-                val token = securePreferencesRepository.getCachedJellyfinToken()
-                val serverUrl = securePreferencesRepository.getCachedJellyfinServerUrl()
+                val session = sessionManager.currentSession.value
+                val token = session?.user?.accessToken
+                val serverUrl = session?.serverUrl
                 if (token != null && serverUrl != null) {
                     val serverHost = serverUrl.toHttpUrlOrNull()?.host
                     if (serverHost != null && request.url.host == serverHost) {

@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.Base64
@@ -119,10 +118,13 @@ constructor(@ApplicationContext private val context: Context) : SecurePreference
     private val _authenticationState = MutableStateFlow(false)
 
     init {
-        runBlocking(Dispatchers.IO) {
-            _authenticationState.value = hasValidAuthData()
-            cachedJellyfinToken = getAccessToken()
-            cachedJellyfinServerUrl = getSavedServerUrl()
+        persistScope.launch {
+            val token = getAccessToken()
+            val url = getSavedServerUrl()
+            _authenticationState.value = !token.isNullOrBlank() && !url.isNullOrBlank()
+            cachedJellyfinToken = token
+            cachedJellyfinServerUrl = url
+            Timber.d("SecurePrefs: cache initialized (hasAuth=${_authenticationState.value})")
         }
     }
 
