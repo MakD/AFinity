@@ -33,10 +33,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.audiobookshelf.BookChapter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerControls(
+    modifier: Modifier = Modifier,
     currentTime: Double,
     duration: Double,
     isPlaying: Boolean,
@@ -48,8 +51,16 @@ fun PlayerControls(
     onPreviousChapter: (() -> Unit)? = null,
     onNextChapter: (() -> Unit)? = null,
     accentColor: Color = MaterialTheme.colorScheme.primary,
-    modifier: Modifier = Modifier,
+    currentChapter: BookChapter? = null,
 ) {
+    val rangeStart = currentChapter?.start?.toFloat() ?: 0f
+    val rangeEnd =
+        (currentChapter?.end?.toFloat() ?: duration.toFloat()).coerceAtLeast(rangeStart + 1f)
+    val displayElapsed =
+        if (currentChapter != null) currentTime - currentChapter.start else currentTime
+    val displayTotal =
+        if (currentChapter != null) currentChapter.end - currentChapter.start else duration
+
     var sliderPosition by remember(currentTime) { mutableFloatStateOf(currentTime.toFloat()) }
     var isDragging by remember { mutableFloatStateOf(0f) }
 
@@ -65,7 +76,7 @@ fun PlayerControls(
                     onSeek(sliderPosition.toDouble())
                     isDragging = 0f
                 },
-                valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+                valueRange = rangeStart..rangeEnd,
                 modifier = Modifier.fillMaxWidth(),
                 colors =
                     SliderDefaults.colors(
@@ -97,12 +108,12 @@ fun PlayerControls(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = formatTime(currentTime),
+                text = formatTime(displayElapsed),
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.7f),
             )
             Text(
-                text = formatTime(duration),
+                text = formatTime(displayTotal),
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.7f),
             )
@@ -190,6 +201,9 @@ private fun formatTime(seconds: Double): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val secs = totalSeconds % 60
-    return if (hours > 0) String.format("%d:%02d:%02d", hours, minutes, secs)
-    else String.format("%d:%02d", minutes, secs)
+    return if (hours > 0) {
+        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, secs)
+    } else {
+        String.format(Locale.US, "%d:%02d", minutes, secs)
+    }
 }
