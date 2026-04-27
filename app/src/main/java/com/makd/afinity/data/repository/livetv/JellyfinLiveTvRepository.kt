@@ -7,21 +7,20 @@ import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.models.livetv.AfinityProgram
 import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.repository.userdata.UserDataRepository
-import java.time.LocalDateTime
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.LiveTvApi
 import org.jellyfin.sdk.api.operations.MediaInfoApi
-import org.jellyfin.sdk.model.api.DeviceProfile
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.PlaybackInfoDto
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
+import java.time.LocalDateTime
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class JellyfinLiveTvRepository
@@ -216,36 +215,17 @@ constructor(
 
                 val mediaInfoApi = MediaInfoApi(apiClient)
 
-                val maxBitrate = 140_000_000
-
-                val deviceProfile =
-                    DeviceProfile(
-                        name = "AFinity Live TV",
-                        maxStreamingBitrate = maxBitrate,
-                        maxStaticBitrate = maxBitrate,
-                        codecProfiles = emptyList(),
-                        containerProfiles = emptyList(),
-                        directPlayProfiles = emptyList(),
-                        transcodingProfiles = emptyList(),
-                        subtitleProfiles = emptyList(),
-                    )
-
                 val playbackInfoDto =
                     PlaybackInfoDto(
                         userId = userId,
-                        maxStreamingBitrate = maxBitrate,
-                        startTimeTicks = 0L,
-                        deviceProfile = deviceProfile,
+                        maxStreamingBitrate = 140_000_000,
                         enableDirectPlay = true,
                         enableDirectStream = true,
                         enableTranscoding = true,
                         allowVideoStreamCopy = true,
                         allowAudioStreamCopy = true,
                         autoOpenLiveStream = true,
-                        liveStreamId = null,
-                        mediaSourceId = null,
-                        audioStreamIndex = null,
-                        subtitleStreamIndex = null,
+                        deviceProfile = null,
                     )
 
                 val playbackResponse =
@@ -257,7 +237,7 @@ constructor(
                 )
 
                 val sources = playbackInfo.mediaSources
-                if (sources.isNullOrEmpty()) {
+                if (sources.isEmpty()) {
                     Timber.e("PlaybackInfo returned no media sources")
                     return@withContext null
                 }
@@ -304,34 +284,15 @@ constructor(
 
                 val playSessionId =
                     playbackInfo.playSessionId ?: UUID.randomUUID().toString().replace("-", "")
-
-                val params = mutableListOf<String>()
-                params.add("api_key=$accessToken")
-                params.add("DeviceId=$deviceId")
-                params.add("MediaSourceId=$mediaSourceId")
-                params.add("LiveStreamId=$liveStreamId")
-                params.add("PlaySessionId=$playSessionId")
-                params.add("VideoCodec=h264")
-                params.add("AudioCodec=aac")
-                params.add("AudioStreamIndex=-1")
-                params.add("VideoBitrate=$maxBitrate")
-                params.add("AudioBitrate=384000")
-                params.add("AudioSampleRate=48000")
-                params.add("TranscodingMaxAudioChannels=2")
-                params.add("audiochannels=2")
-                params.add("SegmentContainer=ts")
-                params.add("MinSegments=1")
-                params.add("BreakOnNonKeyFrames=False")
-                params.add("RequireAvc=false")
-                params.add("EnableAudioVbrEncoding=true")
-                params.add("aac-profile=lc")
-                params.add("h264-profile=high,main,baseline,constrainedbaseline,high10")
-                params.add("h264-level=52")
-                params.add("h264-rangetype=SDR")
-                params.add("h264-deinterlace=true")
-
-                val queryString = params.joinToString("&")
-                val streamUrl = "${baseUrl}/videos/${channelId}/master.m3u8?$queryString"
+                val streamUrl =
+                    "${baseUrl}/videos/${channelId}/stream.ts" +
+                        "?api_key=$accessToken" +
+                        "&DeviceId=$deviceId" +
+                        "&MediaSourceId=$mediaSourceId" +
+                        "&LiveStreamId=$liveStreamId" +
+                        "&PlaySessionId=$playSessionId" +
+                        "&VideoCodec=h264" +
+                        "&AudioCodec=aac"
 
                 Timber.d("Generated stream URL: $streamUrl")
                 streamUrl
