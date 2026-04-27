@@ -385,13 +385,25 @@ fun BaseItemDto.toAfinityImages(baseUrl: String): AfinityImages {
                     .appendQueryParameter("tag", tag)
                     .build()
             },
-        showLogo =
-            seriesPrimaryImageTag?.let { tag ->
-                baseUri
-                    .buildUpon()
-                    .appendEncodedPath("Items/$seriesId/Images/Logo")
-                    .appendQueryParameter("tag", tag)
-                    .build()
+        showLogo = run {
+                val logoTag = parentLogoImageTag
+                val itemId = if (logoTag != null) (parentLogoItemId ?: seriesId) else seriesId
+                val fallbackTag = seriesPrimaryImageTag
+                when {
+                    logoTag != null && itemId != null ->
+                        baseUri
+                            .buildUpon()
+                            .appendEncodedPath("Items/$itemId/Images/Logo")
+                            .appendQueryParameter("tag", logoTag)
+                            .build()
+                    fallbackTag != null && seriesId != null ->
+                        baseUri
+                            .buildUpon()
+                            .appendEncodedPath("Items/$seriesId/Images/Logo")
+                            .appendQueryParameter("tag", fallbackTag)
+                            .build()
+                    else -> null
+                }
             },
         primaryImageBlurHash = imageBlurHashes?.get(ImageType.PRIMARY)?.values?.firstOrNull(),
         backdropImageBlurHash = imageBlurHashes?.get(ImageType.BACKDROP)?.values?.firstOrNull(),

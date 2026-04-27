@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -273,7 +274,7 @@ private fun MediaItemGridCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Card(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f),
@@ -374,6 +375,8 @@ private fun MediaItemGridCard(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = item.name,

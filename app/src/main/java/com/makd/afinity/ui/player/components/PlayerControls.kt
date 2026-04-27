@@ -256,9 +256,11 @@ fun PlayerControls(
                                 horizontalAlignment = Alignment.Start,
                                 modifier = Modifier.wrapContentWidth(),
                             ) {
-                                if (displayItem.seriesLogo != null) {
+                                val seriesLogoUri =
+                                    displayItem.seriesLogo ?: displayItem.images.showLogo
+                                if (seriesLogoUri != null) {
                                     val logoUrl =
-                                        displayItem.seriesLogo.toString().let { url ->
+                                        seriesLogoUri.toString().let { url ->
                                             if (url.contains("?")) "$url&format=png"
                                             else "$url?format=png"
                                         }
