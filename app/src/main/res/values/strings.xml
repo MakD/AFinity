@@ -373,6 +373,7 @@
     <string name="section_upcoming_tv">Upcoming TV Shows</string>
 
     <string name="section_recent_requests">Recent Requests</string>
+    <string name="section_available_requests">Available Requests</string>
     <string name="section_studios">Studios</string>
     <string name="section_networks">Networks</string>
     <string name="section_movie_genres">Movie Genres</string>

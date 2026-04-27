@@ -215,6 +215,76 @@ fun RequestCard(
     }
 }
 
+@Composable
+fun AvailableRequestCard(
+    request: JellyseerrRequest,
+    onClick: () -> Unit,
+    cardWidth: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val statusValue = if (request.is4k) request.media.status4k ?: 1 else request.media.status ?: 1
+    val isPartial = MediaStatus.fromValue(statusValue) == MediaStatus.PARTIALLY_AVAILABLE
+
+    Column(modifier = modifier.width(cardWidth)) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth().aspectRatio(CardDimensions.ASPECT_RATIO_PORTRAIT),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    imageUrl = request.media.getPosterUrl(),
+                    contentDescription = request.media.getDisplayTitle(),
+                    blurHash = null,
+                    targetWidth = cardWidth,
+                    targetHeight = cardWidth * 3f / 2f,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                Card(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary),
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (isPartial) R.string.status_partially_available else R.string.status_available
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondary,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = request.media.getDisplayTitle(),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = stringResource(
+                R.string.requested_by_fmt,
+                request.requestedBy.displayName ?: stringResource(R.string.user_unknown),
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
 private data class StatusAttributes(
     val textRes: Int,
     val containerColor: Color,

@@ -22,12 +22,16 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withPermit
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -48,6 +52,55 @@ constructor(
     private val _currentUser = MutableStateFlow<JellyseerrUser?>(null)
     val currentUser: StateFlow<JellyseerrUser?> = _currentUser.asStateFlow()
     private var requestsJob: Job? = null
+
+    private val _navigateToItem = MutableSharedFlow<Pair<String, String?>>(extraBufferCapacity = 1)
+    val navigateToItem: SharedFlow<Pair<String, String?>> = _navigateToItem.asSharedFlow()
+
+    private val jellyfinIdCache = mutableMapOf<Int, String>()
+    private val fetchingIds = mutableSetOf<Int>()
+    private val prefetchSemaphore = kotlinx.coroutines.sync.Semaphore(4)
+
+    fun resolveAndNavigate(request: JellyseerrRequest) {
+        val tmdbId = request.media.tmdbId ?: return
+        val mediaType = request.getMediaType() ?: MediaType.MOVIE
+        val mappedType = if (mediaType == MediaType.TV) "Series" else "Movie"
+        val cached = jellyfinIdCache[tmdbId]
+        if (cached != null) {
+            viewModelScope.launch { _navigateToItem.emit(cached to mappedType) }
+            return
+        }
+        viewModelScope.launch {
+            val result =
+                if (mediaType == MediaType.TV) jellyseerrRepository.getTvDetails(tmdbId)
+                else jellyseerrRepository.getMovieDetails(tmdbId)
+            result.onSuccess { details ->
+                val jellyfinId = details.mediaInfo?.getJellyfinItemId() ?: return@onSuccess
+                jellyfinIdCache[tmdbId] = jellyfinId
+                _navigateToItem.emit(jellyfinId to mappedType)
+            }
+        }
+    }
+
+    private fun prefetchAvailableJellyfinIds(requests: List<JellyseerrRequest>) {
+        requests.forEach { req ->
+            val statusValue = if (req.is4k) req.media.status4k ?: 1 else req.media.status ?: 1
+            val s = MediaStatus.fromValue(statusValue)
+            if (s != MediaStatus.AVAILABLE && s != MediaStatus.PARTIALLY_AVAILABLE) return@forEach
+            val tmdbId = req.media.tmdbId ?: return@forEach
+            if (!fetchingIds.add(tmdbId)) return@forEach
+            val mediaType = req.getMediaType() ?: MediaType.MOVIE
+            viewModelScope.launch {
+                prefetchSemaphore.withPermit {
+                    val result =
+                        if (mediaType == MediaType.TV) jellyseerrRepository.getTvDetails(tmdbId)
+                        else jellyseerrRepository.getMovieDetails(tmdbId)
+                    result.onSuccess { details ->
+                        details.mediaInfo?.getJellyfinItemId()?.let { jellyfinIdCache[tmdbId] = it }
+                    }
+                }
+            }
+        }
+    }
 
     init {
         viewModelScope.launch {
@@ -104,16 +157,16 @@ constructor(
 
     private fun observeRequests() {
         requestsJob?.cancel()
-        requestsJob =
-            viewModelScope.launch {
-                try {
-                    jellyseerrRepository.observeRequests().collect { requests ->
-                        _uiState.update { it.copy(requests = requests, isLoading = false) }
-                    }
-                } catch (e: Exception) {
-                    Timber.e(e, "Error observing requests")
+        requestsJob = viewModelScope.launch {
+            try {
+                jellyseerrRepository.observeRequests().collect { requests ->
+                    _uiState.update { it.copy(requests = requests, isLoading = false) }
+                    prefetchAvailableJellyfinIds(requests)
                 }
+            } catch (e: Exception) {
+                Timber.e(e, "Error observing requests")
             }
+        }
     }
 
     private fun observeRequestEvents() {

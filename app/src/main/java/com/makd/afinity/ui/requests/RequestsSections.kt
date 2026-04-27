@@ -81,6 +81,42 @@ fun MyRequestsSection(
 }
 
 @Composable
+fun AvailableRequestsSection(
+    requests: List<JellyseerrRequest>,
+    onRequestClick: (JellyseerrRequest) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
+    modifier: Modifier = Modifier,
+) {
+    val cardWidth = widthSizeClass.portraitWidth
+    val cardHeight = CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_PORTRAIT)
+    val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
+
+    Column(modifier = modifier.padding(horizontal = 14.dp)) {
+        Text(
+            text = stringResource(R.string.section_available_requests),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 16.dp),
+        )
+
+        LazyRow(
+            modifier = Modifier.height(fixedRowHeight),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
+            items(items = requests, key = { request -> "available_request_${request.id}" }) {
+                request ->
+                AvailableRequestCard(
+                    request = request,
+                    onClick = { onRequestClick(request) },
+                    cardWidth = cardWidth,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun DiscoverSection(
     title: String,
     items: List<SearchResultItem>,
