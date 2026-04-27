@@ -7,10 +7,12 @@ import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.sync.UserDataSyncScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -52,15 +54,17 @@ constructor(
         val capturedSessionId = currentSessionId
         val capturedMediaSourceId = lastKnownMediaSourceId
         scope.launch {
-            val positionTicks = positionMs * 10000
-            _playbackEvents.emit(PlaybackEvent.Stopped(itemId, positionTicks))
+            withContext(NonCancellable) {
+                val positionTicks = positionMs * 10000
+                _playbackEvents.emit(PlaybackEvent.Stopped(itemId, positionTicks))
 
-            try {
-                updatePlaybackPosition(positionMs)
-                reportPlaybackStop(itemId, capturedSessionId, capturedMediaSourceId, positionTicks)
-                handlePlaybackStopped(itemId)
-            } catch (e: Exception) {
-                Timber.e(e, "Error in notifyPlaybackStopped")
+                try {
+                    updatePlaybackPosition(positionMs)
+                    reportPlaybackStop(itemId, capturedSessionId, capturedMediaSourceId, positionTicks)
+                    handlePlaybackStopped(itemId)
+                } catch (e: Exception) {
+                    Timber.e(e, "Error in notifyPlaybackStopped")
+                }
             }
         }
     }

@@ -792,7 +792,7 @@ constructor(
         if (audiobookshelfPlayer.isPlaying()) {
             Timber.d("Stopping Audiobookshelf playback before starting Jellyfin playback")
             audiobookshelfPlayer.pause()
-            viewModelScope.launch { audiobookshelfPlayer.closeSession() }
+            audiobookshelfPlayer.closeSession()
         }
     }
 

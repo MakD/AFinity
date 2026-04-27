@@ -50,6 +50,7 @@ constructor(
         startPlayback()
     }
 
+    @UnstableApi
     private fun startPlayback() {
         val currentState = playbackManager.playbackState.value
         if (currentState.sessionId != null && currentState.itemId == itemId) {
@@ -183,10 +184,8 @@ constructor(
     }
 
     fun stopPlayback() {
-        viewModelScope.launch {
-            audiobookshelfPlayer.pause()
-            audiobookshelfPlayer.closeSession()
-        }
+        audiobookshelfPlayer.pause()
+        audiobookshelfPlayer.closeSession()
     }
 }
 

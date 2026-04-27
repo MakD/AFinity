@@ -22,10 +22,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -381,60 +383,62 @@ constructor(
         Timber.d("closeSession: sessionId=$sessionId itemId=${state.itemId} episodeId=${state.episodeId} currentTime=${state.currentTime} isLocal=${sessionId?.startsWith("local_")}")
         if (sessionId != null) {
             scope.launch {
-                try {
-                    val currentTime: Double
-                    val duration: Double
+                withContext(NonCancellable) {
+                    try {
+                        val currentTime: Double
+                        val duration: Double
 
-                    if (state.isPodcastPlaylist && state.currentChapter != null) {
-                        currentTime =
-                            (state.currentTime - state.currentChapter.start).coerceAtLeast(0.0)
-                        duration =
-                            (state.currentChapter.end - state.currentChapter.start).coerceAtLeast(
-                                0.0
-                            )
-                    } else {
-                        currentTime = state.currentTime
-                        duration = state.duration
-                    }
-
-                    if (sessionId.startsWith("local_")) {
-                        val itemId = state.itemId
-                        val episodeId = state.episodeId
-                        val activeContext = audiobookshelfRepository.currentActiveContext
-                        Timber.d("closeSession[local]: saving final position itemId=$itemId episodeId=$episodeId currentTime=$currentTime duration=$duration")
-                        if (itemId != null && activeContext != null) {
-                            val (serverId, userId) = activeContext
-                            audiobookshelfRepository.updateProgress(
-                                itemId = itemId,
-                                episodeId = episodeId,
-                                currentTime = currentTime,
-                                duration = duration,
-                                isFinished = duration > 0 && currentTime / duration >= 0.99,
-                            )
-                            absSyncScheduler.scheduleSync(serverId, userId)
-                            Timber.d("closeSession[local]: final position saved and sync scheduled")
+                        if (state.isPodcastPlaylist && state.currentChapter != null) {
+                            currentTime =
+                                (state.currentTime - state.currentChapter.start).coerceAtLeast(0.0)
+                            duration =
+                                (state.currentChapter.end - state.currentChapter.start).coerceAtLeast(
+                                    0.0
+                                )
                         } else {
-                            Timber.w("closeSession[local]: itemId or activeContext is null, skipping final position save")
+                            currentTime = state.currentTime
+                            duration = state.duration
                         }
-                        return@launch
-                    }
 
-                    val result =
-                        audiobookshelfRepository.closePlaybackSession(
-                            sessionId = sessionId,
-                            currentTime = currentTime,
-                            timeListened = currentTime,
-                            duration = duration,
-                        )
-                    if (result.isSuccess) {
-                        Timber.d("Session closed on server: $sessionId")
-                    } else {
-                        Timber.e(
-                            "Failed to close session on server: ${result.exceptionOrNull()?.message}"
-                        )
+                        if (sessionId.startsWith("local_")) {
+                            val itemId = state.itemId
+                            val episodeId = state.episodeId
+                            val activeContext = audiobookshelfRepository.currentActiveContext
+                            Timber.d("closeSession[local]: saving final position itemId=$itemId episodeId=$episodeId currentTime=$currentTime duration=$duration")
+                            if (itemId != null && activeContext != null) {
+                                val (serverId, userId) = activeContext
+                                audiobookshelfRepository.updateProgress(
+                                    itemId = itemId,
+                                    episodeId = episodeId,
+                                    currentTime = currentTime,
+                                    duration = duration,
+                                    isFinished = duration > 0 && currentTime / duration >= 0.99,
+                                )
+                                absSyncScheduler.scheduleSync(serverId, userId)
+                                Timber.d("closeSession[local]: final position saved and sync scheduled")
+                            } else {
+                                Timber.w("closeSession[local]: itemId or activeContext is null, skipping final position save")
+                            }
+                            return@withContext
+                        }
+
+                        val result =
+                            audiobookshelfRepository.closePlaybackSession(
+                                sessionId = sessionId,
+                                currentTime = currentTime,
+                                timeListened = currentTime,
+                                duration = duration,
+                            )
+                        if (result.isSuccess) {
+                            Timber.d("Session closed on server: $sessionId")
+                        } else {
+                            Timber.e(
+                                "Failed to close session on server: ${result.exceptionOrNull()?.message}"
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Error closing session on server")
                     }
-                } catch (e: Exception) {
-                    Timber.e(e, "Error closing session on server")
                 }
             }
         }
