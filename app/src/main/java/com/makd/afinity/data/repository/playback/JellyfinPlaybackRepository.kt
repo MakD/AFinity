@@ -308,22 +308,12 @@ constructor(
 
     private suspend fun savePlaybackProgressLocally(itemId: UUID, positionTicks: Long) {
         try {
-            val userIdString =
-                preferencesRepository.getCurrentUserId()
+            val userId =
+                getCurrentUserId()
                     ?: run {
-                        Timber.w(
-                            "Cannot save playback progress locally: no current user ID in preferences"
-                        )
+                        Timber.w("Cannot save playback progress locally: no active session user ID")
                         return
                     }
-
-            val userId =
-                try {
-                    UUID.fromString(userIdString)
-                } catch (e: IllegalArgumentException) {
-                    Timber.w("Cannot save playback progress locally: invalid user ID format")
-                    return
-                }
 
             val serverId = sessionManager.currentSession.value?.serverId
             if (serverId == null) {
