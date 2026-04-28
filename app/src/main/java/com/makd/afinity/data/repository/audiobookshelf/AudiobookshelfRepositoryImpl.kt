@@ -74,6 +74,22 @@ constructor(
 
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private val _isAuthenticated = MutableStateFlow(false)
+    override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
+    private val _currentSessionId = MutableStateFlow<String?>(null)
+    override val currentSessionId: StateFlow<String?> = _currentSessionId.asStateFlow()
+
+    private val _currentConfig = MutableStateFlow<AudiobookshelfConfig?>(null)
+    override val currentConfig: StateFlow<AudiobookshelfConfig?> = _currentConfig.asStateFlow()
+
+    private val _activeContextFlow = MutableStateFlow<Pair<String, UUID>?>(null)
+    private var activeContext: Pair<String, UUID>?
+        get() = _activeContextFlow.value
+        set(value) {
+            _activeContextFlow.value = value
+        }
+
     init {
         securePreferencesRepository.onAbsAuthInvalidated = {
             _isAuthenticated.value = false
@@ -113,22 +129,6 @@ constructor(
             }
         }
     }
-
-    private val _isAuthenticated = MutableStateFlow(false)
-    override val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
-
-    private val _currentSessionId = MutableStateFlow<String?>(null)
-    override val currentSessionId: StateFlow<String?> = _currentSessionId.asStateFlow()
-
-    private val _currentConfig = MutableStateFlow<AudiobookshelfConfig?>(null)
-    override val currentConfig: StateFlow<AudiobookshelfConfig?> = _currentConfig.asStateFlow()
-
-    private val _activeContextFlow = MutableStateFlow<Pair<String, UUID>?>(null)
-    private var activeContext: Pair<String, UUID>?
-        get() = _activeContextFlow.value
-        set(value) {
-            _activeContextFlow.value = value
-        }
 
     override val currentActiveContext: Pair<String, UUID>?
         get() = activeContext

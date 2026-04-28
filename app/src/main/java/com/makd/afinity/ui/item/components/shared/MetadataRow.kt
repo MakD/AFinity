@@ -326,7 +326,6 @@ fun MetadataRow(
                 item.episodeCount
                     ?.takeIf { it > 0 }
                     ?.let { count ->
-                        if (needsSeparator) MetadataDot()
                         Text(
                             text = stringResource(R.string.meta_episode_count, count),
                             style =
@@ -687,6 +686,7 @@ private fun MetadataDot() {
         text = "•",
         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+        textAlign = TextAlign.Center,
     )
 }
 
@@ -721,7 +721,7 @@ private fun VideoMetadataChipWithIcon(text: String, iconRes: Int) {
             painter = painterResource(id = iconRes),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.size(16.dp).padding(bottom = 1.dp),
+            modifier = Modifier.size(16.dp),
         )
         Text(
             text = text,
