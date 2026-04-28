@@ -72,7 +72,9 @@ class MainActivity : ComponentActivity() {
             val dynamicColors by
                 preferencesRepository.getDynamicColorsFlow().collectAsState(initial = true)
 
-            AFinityTheme(themeMode = themeMode, dynamicColor = dynamicColors) {
+            val appFont by
+                preferencesRepository.getAppFontFlow().collectAsState(initial = "DEFAULT")
+            AFinityTheme(themeMode = themeMode, dynamicColor = dynamicColors, appFont = appFont) {
                 val windowInsetsController =
                     WindowCompat.getInsetsController(window, window.decorView)
                 val mode = ThemeMode.fromString(themeMode)

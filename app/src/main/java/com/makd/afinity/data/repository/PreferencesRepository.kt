@@ -5,8 +5,8 @@ import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.player.MpvAudioOutput
 import com.makd.afinity.data.models.player.MpvHwDec
 import com.makd.afinity.data.models.player.MpvVideoOutput
-import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.SkipMode
+import com.makd.afinity.data.models.player.SubtitlePreferences
 import com.makd.afinity.data.models.player.VideoZoomMode
 import kotlinx.coroutines.flow.Flow
 
@@ -101,6 +101,12 @@ interface PreferencesRepository {
     suspend fun getThemeMode(): String
 
     fun getThemeModeFlow(): Flow<String>
+
+    suspend fun setAppFont(font: String)
+
+    suspend fun getAppFont(): String
+
+    fun getAppFontFlow(): Flow<String>
 
     suspend fun setImageCacheEnabled(enabled: Boolean)
 

@@ -52,6 +52,8 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
         val SKIP_OUTRO_MODE = stringPreferencesKey("skip_outro_mode")
         val USE_EXO_PLAYER = booleanPreferencesKey("use_exo_player")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+
+        val APP_FONT = stringPreferencesKey("app_font")
         val IMAGE_CACHE_ENABLED = booleanPreferencesKey("image_cache_enabled")
         val IMAGE_CACHE_SIZE_MB = intPreferencesKey("image_cache_size_mb")
         val PIP_GESTURE_ENABLED = booleanPreferencesKey("pip_gesture_enabled")
@@ -699,5 +701,17 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
 
     override suspend fun getImageCacheSizeMb(): Int {
         return dataStore.data.first()[Keys.IMAGE_CACHE_SIZE_MB] ?: 512
+    }
+
+    override suspend fun setAppFont(font: String) {
+        dataStore.edit { preferences -> preferences[Keys.APP_FONT] = font }
+    }
+
+    override suspend fun getAppFont(): String {
+        return dataStore.data.first()[Keys.APP_FONT] ?: "DEFAULT"
+    }
+
+    override fun getAppFontFlow(): Flow<String> {
+        return dataStore.data.map { preferences -> preferences[Keys.APP_FONT] ?: "DEFAULT" }
     }
 }

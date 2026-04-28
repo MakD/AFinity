@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -31,6 +30,7 @@ private val AmoledColorScheme =
 fun AFinityTheme(
     themeMode: String = ThemeMode.SYSTEM.name,
     dynamicColor: Boolean = true,
+    appFont: String = "DEFAULT",
     content: @Composable () -> Unit,
 ) {
     val mode = ThemeMode.fromString(themeMode)
@@ -46,7 +46,7 @@ fun AFinityTheme(
 
     val colorScheme =
         when {
-            dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            dynamicColor -> {
                 val context = LocalContext.current
                 val baseDynamicScheme =
                     if (darkTheme) dynamicDarkColorScheme(context)
@@ -67,5 +67,7 @@ fun AFinityTheme(
             else -> LightColorScheme
         }
 
-    MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
+    val currentTypography = getAppTypography(AppFont.fromString(appFont))
+
+    MaterialTheme(colorScheme = colorScheme, typography = currentTypography, content = content)
 }

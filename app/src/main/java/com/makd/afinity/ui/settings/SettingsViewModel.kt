@@ -105,6 +105,15 @@ constructor(
     private val _mdbListApiKey = MutableStateFlow("")
     val mdbListApiKey = _mdbListApiKey.asStateFlow()
 
+    val appFont: StateFlow<String> =
+        preferencesRepository
+            .getAppFontFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = "DEFAULT",
+            )
+
     init {
         loadSettings()
     }
@@ -649,6 +658,10 @@ constructor(
                 Timber.e(e, "Error saving MDBList API key")
             }
         }
+    }
+
+    fun setAppFont(fontName: String) {
+        viewModelScope.launch { preferencesRepository.setAppFont(fontName) }
     }
 
     fun clearError() {

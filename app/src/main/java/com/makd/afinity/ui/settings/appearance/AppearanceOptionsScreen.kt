@@ -56,6 +56,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.EpisodeLayout
 import com.makd.afinity.ui.settings.SettingsViewModel
+import com.makd.afinity.ui.theme.AppFont
 import com.makd.afinity.ui.theme.ThemeMode
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,6 +72,7 @@ fun AppearanceOptionsScreen(
     val episodeLayout by viewModel.episodeLayout.collectAsState()
     val tmdbApiKey by viewModel.tmdbApiKey.collectAsState()
     val mdbListApiKey by viewModel.mdbListApiKey.collectAsState()
+    val appFont by viewModel.appFont.collectAsState()
     var showTmdbDialog by remember { mutableStateOf(false) }
     var showMdbListDialog by remember { mutableStateOf(false) }
 
@@ -114,6 +116,8 @@ fun AppearanceOptionsScreen(
                         currentThemeMode = uiState.themeMode,
                         onThemeModeChange = viewModel::setThemeMode,
                     )
+                    SettingsDivider()
+                    FontSelectorItem(currentFont = appFont, onFontChange = viewModel::setAppFont)
                     SettingsDivider()
                     SettingsSwitchItem(
                         icon = painterResource(id = R.drawable.ic_colorize),
@@ -204,8 +208,8 @@ fun AppearanceOptionsScreen(
 
 @Composable
 private fun SettingsGroup(
-    title: String? = null,
     modifier: Modifier = Modifier,
+    title: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
@@ -528,4 +532,71 @@ private fun ApiKeyDialog(
             }
         },
     )
+}
+
+@Composable
+private fun FontSelectorItem(currentFont: String, onFontChange: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val currentAppFont = AppFont.fromString(currentFont)
+
+    Box {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_font),
+            title = "App Font",
+            subtitle = getFontDisplayName(currentAppFont),
+            onClick = { expanded = true },
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            AppFont.entries.forEach { font ->
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = getFontDisplayName(font),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            if (font.name == currentFont) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        onFontChange(font.name)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun getFontDisplayName(font: AppFont): String {
+    return when (font) {
+        AppFont.DEFAULT -> "System Default"
+        AppFont.GOOGLE_SANS -> "Google Sans Flex"
+        AppFont.QUICKSAND -> "Quicksand"
+    }
 }
