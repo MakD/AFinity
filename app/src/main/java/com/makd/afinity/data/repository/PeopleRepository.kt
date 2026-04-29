@@ -11,11 +11,13 @@ import com.makd.afinity.data.models.PersonSection
 import com.makd.afinity.data.models.PersonSectionType
 import com.makd.afinity.data.models.PersonWithCount
 import com.makd.afinity.data.models.common.SortBy
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPerson
 import com.makd.afinity.data.models.media.AfinityPersonImage
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.media.MediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -44,7 +46,9 @@ constructor(
     private val json = Json { ignoreUnknownKeys = true }
 
     private fun currentServerId(): String = sessionManager.currentSession.value?.serverId ?: ""
-    private fun currentUserId(): String = sessionManager.currentSession.value?.userId?.toString() ?: ""
+
+    private fun currentUserId(): String =
+        sessionManager.currentSession.value?.userId?.toString() ?: ""
 
     suspend fun getTopPeople(
         type: PersonKind,
@@ -59,7 +63,13 @@ constructor(
 
             if (
                 cached != null &&
-                    topPeopleDao.isTopPeopleCacheFresh(type.name, serverId, userId, peopleCacheTTL, currentTime)
+                    topPeopleDao.isTopPeopleCacheFresh(
+                        type.name,
+                        serverId,
+                        userId,
+                        peopleCacheTTL,
+                        currentTime,
+                    )
             ) {
                 val cachedData =
                     json.decodeFromString<List<CachedPersonWithCount>>(cached.peopleData)
@@ -94,15 +104,14 @@ constructor(
                             val id = personDto.id
                             val primaryTag = personDto.primaryImageTag
 
-                            val imageUri =
-                                primaryTag?.let { tag ->
-                                    baseUrl
-                                        .toUri()
-                                        .buildUpon()
-                                        .appendEncodedPath("Items/$id/Images/Primary")
-                                        .appendQueryParameter("tag", tag)
-                                        .build()
-                                }
+                            val imageUri = primaryTag?.let { tag ->
+                                baseUrl
+                                    .toUri()
+                                    .buildUpon()
+                                    .appendEncodedPath("Items/$id/Images/Primary")
+                                    .appendQueryParameter("tag", tag)
+                                    .build()
+                            }
 
                             val afinityPerson =
                                 AfinityPerson(
@@ -164,7 +173,13 @@ constructor(
 
             if (
                 cached != null &&
-                    personSectionDao.isSectionCacheFresh(cacheKey, serverId, userId, personCacheTTL, currentTime)
+                    personSectionDao.isSectionCacheFresh(
+                        cacheKey,
+                        serverId,
+                        userId,
+                        personCacheTTL,
+                        currentTime,
+                    )
             ) {
                 val baseUrl = mediaRepository.getBaseUrl()
                 val cachedPersonData =
@@ -173,9 +188,16 @@ constructor(
                         baseUrl,
                     )
                 val cachedItems =
-                    json.decodeFromString<List<String>>(cached.itemsData).mapNotNull {
-                        afinityTypeConverters.toAfinityItem(it)
+                    json.decodeFromString<List<String>>(cached.itemsData).mapNotNull { itemJson ->
+                        when (val item = afinityTypeConverters.toAfinityItem(itemJson)) {
+                            is AfinityMovie -> item.copy(images = item.images.withBaseUrl(baseUrl))
+                            is AfinityShow -> item.copy(images = item.images.withBaseUrl(baseUrl))
+                            is AfinityEpisode ->
+                                item.copy(images = item.images.withBaseUrl(baseUrl))
+                            else -> item
+                        }
                     }
+
                 return PersonSection(
                     person = cachedPersonData.person,
                     appearanceCount = cachedPersonData.appearanceCount,
@@ -204,8 +226,9 @@ constructor(
                     sectionType = sectionType,
                 )
 
-            val itemJsonStrings =
-                selectedItems.mapNotNull { afinityTypeConverters.fromAfinityItem(it) }
+            val itemJsonStrings = selectedItems.mapNotNull {
+                afinityTypeConverters.fromAfinityItem(it)
+            }
             val entity =
                 PersonSectionCacheEntity(
                     cacheKey = cacheKey,
@@ -241,16 +264,15 @@ constructor(
                     for (section in allSections) {
                         val itemStrings = json.decodeFromString<List<String>>(section.itemsData)
                         var changed = false
-                        val newItemStrings =
-                            itemStrings.map { itemJson ->
-                                val existing = afinityTypeConverters.toAfinityItem(itemJson)
-                                if (existing?.id == updatedItem.id) {
-                                    changed = true
-                                    updatedJson
-                                } else {
-                                    itemJson
-                                }
+                        val newItemStrings = itemStrings.map { itemJson ->
+                            val existing = afinityTypeConverters.toAfinityItem(itemJson)
+                            if (existing?.id == updatedItem.id) {
+                                changed = true
+                                updatedJson
+                            } else {
+                                itemJson
                             }
+                        }
                         if (changed) {
                             personSectionDao.insertSection(
                                 section.copy(itemsData = json.encodeToString(newItemStrings))

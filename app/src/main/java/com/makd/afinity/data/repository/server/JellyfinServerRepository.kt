@@ -64,9 +64,9 @@ constructor(
                         if (server != null) {
                             _currentServer.value = server
                             _currentBaseUrl.value = session.serverUrl
-                            _isConnected.value = true
+                            _isConnected.value = sessionManager.isServerReachable.value
                             Timber.d(
-                                "JellyfinServerRepository: Updated current server to ${server.name} (${server.id})"
+                                "JellyfinServerRepository: Updated current server to ${server.name} (${server.id}). Connected: ${_isConnected.value}"
                             )
                         } else {
                             Timber.w(

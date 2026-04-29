@@ -52,7 +52,9 @@ constructor(
     val genreLoadingStates: StateFlow<Map<String, Boolean>> = _genreLoadingStates.asStateFlow()
 
     private fun currentServerId(): String = sessionManager.currentSession.value?.serverId ?: ""
-    private fun currentUserId(): String = sessionManager.currentSession.value?.userId?.toString() ?: ""
+
+    private fun currentUserId(): String =
+        sessionManager.currentSession.value?.userId?.toString() ?: ""
 
     suspend fun loadCombinedGenres() {
         withContext(Dispatchers.IO) {
@@ -101,16 +103,15 @@ constructor(
                 )
 
             val timestamp = System.currentTimeMillis()
-            val genreEntities =
-                genres.map { genreName ->
-                    GenreCacheEntity(
-                        genreName = genreName,
-                        serverId = serverId,
-                        userId = userId,
-                        lastFetchedTimestamp = timestamp,
-                        movieCount = 0,
-                    )
-                }
+            val genreEntities = genres.map { genreName ->
+                GenreCacheEntity(
+                    genreName = genreName,
+                    serverId = serverId,
+                    userId = userId,
+                    lastFetchedTimestamp = timestamp,
+                    movieCount = 0,
+                )
+            }
             genreCacheDao.insertGenreCaches(genreEntities)
         } catch (e: Exception) {
             Timber.e(e, "Failed to load genres")
@@ -124,7 +125,8 @@ constructor(
             val cachedGenreNames = genreCacheDao.getAllShowGenreNames(serverId, userId)
             if (cachedGenreNames.isNotEmpty()) {
                 val currentTime = System.currentTimeMillis()
-                val oldestTimestamp = genreCacheDao.getOldestShowCacheTimestamp(serverId, userId) ?: 0
+                val oldestTimestamp =
+                    genreCacheDao.getOldestShowCacheTimestamp(serverId, userId) ?: 0
                 val isFresh = (currentTime - oldestTimestamp) < genreCacheTTL
                 if (isFresh) return
             }
@@ -137,16 +139,15 @@ constructor(
                 )
 
             val timestamp = System.currentTimeMillis()
-            val genreEntities =
-                genres.map { genreName ->
-                    ShowGenreCacheEntity(
-                        genreName = genreName,
-                        serverId = serverId,
-                        userId = userId,
-                        lastFetchedTimestamp = timestamp,
-                        showCount = 0,
-                    )
-                }
+            val genreEntities = genres.map { genreName ->
+                ShowGenreCacheEntity(
+                    genreName = genreName,
+                    serverId = serverId,
+                    userId = userId,
+                    lastFetchedTimestamp = timestamp,
+                    showCount = 0,
+                )
+            }
             genreCacheDao.insertShowGenreCaches(genreEntities)
         } catch (e: Exception) {
             Timber.e(e, "Failed to load show genres")
@@ -162,15 +163,15 @@ constructor(
                 val userId = currentUserId()
                 _genreLoadingStates.update { it + (genre to true) }
 
-                val cachedMovieEntities = genreCacheDao.getCachedMoviesForGenre(genre, serverId, userId)
+                val cachedMovieEntities =
+                    genreCacheDao.getCachedMoviesForGenre(genre, serverId, userId)
                 if (cachedMovieEntities.isNotEmpty()) {
                     val currentBaseUrl = mediaRepository.getBaseUrl()
-                    val cachedMovies =
-                        cachedMovieEntities.mapNotNull { entity ->
-                            afinityTypeConverters.toAfinityMovie(entity.movieData)?.let { movie ->
-                                movie.copy(images = movie.images.withBaseUrl(currentBaseUrl))
-                            }
+                    val cachedMovies = cachedMovieEntities.mapNotNull { entity ->
+                        afinityTypeConverters.toAfinityMovie(entity.movieData)?.let { movie ->
+                            movie.copy(images = movie.images.withBaseUrl(currentBaseUrl))
                         }
+                    }
 
                     if (cachedMovies.isNotEmpty()) {
                         _genreMovies.update { it + (genre to cachedMovies) }
@@ -178,34 +179,41 @@ constructor(
 
                         val currentTime = System.currentTimeMillis()
                         val isFresh =
-                            genreCacheDao.isGenreCacheFresh(genre, serverId, userId, genreCacheTTL, currentTime)
+                            genreCacheDao.isGenreCacheFresh(
+                                genre,
+                                serverId,
+                                userId,
+                                genreCacheTTL,
+                                currentTime,
+                            )
 
                         if (isFresh) return@withContext
                     }
                 }
 
                 val movies =
-                    mediaRepository.getMoviesByGenre(
-                        genre = genre,
-                        limit = limit,
-                        shuffle = true,
-                    )
+                    mediaRepository.getMoviesByGenre(genre = genre, limit = limit, shuffle = true)
 
                 if (movies.isNotEmpty()) {
                     val timestamp = System.currentTimeMillis()
-                    val movieEntities =
-                        movies.mapIndexed { index, movie ->
-                            GenreMovieCacheEntity(
-                                genreName = genre,
-                                movieId = movie.id.toString(),
-                                serverId = serverId,
-                                userId = userId,
-                                movieData = afinityTypeConverters.fromAfinityMovie(movie) ?: "",
-                                position = index,
-                                cachedTimestamp = timestamp,
-                            )
-                        }
-                    genreCacheDao.cacheGenreWithMovies(genre, serverId, userId, movieEntities, timestamp)
+                    val movieEntities = movies.mapIndexed { index, movie ->
+                        GenreMovieCacheEntity(
+                            genreName = genre,
+                            movieId = movie.id.toString(),
+                            serverId = serverId,
+                            userId = userId,
+                            movieData = afinityTypeConverters.fromAfinityMovie(movie) ?: "",
+                            position = index,
+                            cachedTimestamp = timestamp,
+                        )
+                    }
+                    genreCacheDao.cacheGenreWithMovies(
+                        genre,
+                        serverId,
+                        userId,
+                        movieEntities,
+                        timestamp,
+                    )
                 }
 
                 _genreMovies.update { it + (genre to movies) }
@@ -215,11 +223,19 @@ constructor(
                 _genreLoadingStates.update { it + (genre to false) }
 
                 try {
-                    val fallbackEntities = genreCacheDao.getCachedMoviesForGenre(genre, currentServerId(), currentUserId())
-                    val fallbackMovies =
-                        fallbackEntities.mapNotNull { entity ->
-                            afinityTypeConverters.toAfinityMovie(entity.movieData)
+                    val fallbackEntities =
+                        genreCacheDao.getCachedMoviesForGenre(
+                            genre,
+                            currentServerId(),
+                            currentUserId(),
+                        )
+                    val currentBaseUrl = mediaRepository.getBaseUrl()
+
+                    val fallbackMovies = fallbackEntities.mapNotNull { entity ->
+                        afinityTypeConverters.toAfinityMovie(entity.movieData)?.let { movie ->
+                            movie.copy(images = movie.images.withBaseUrl(currentBaseUrl))
                         }
+                    }
                     if (fallbackMovies.isNotEmpty()) {
                         _genreMovies.update { it + (genre to fallbackMovies) }
                     }
@@ -241,12 +257,11 @@ constructor(
             val cachedShowEntities = genreCacheDao.getCachedShowsForGenre(genre, serverId, userId)
             if (cachedShowEntities.isNotEmpty()) {
                 val currentBaseUrl = mediaRepository.getBaseUrl()
-                val cachedShows =
-                    cachedShowEntities.mapNotNull { entity ->
-                        afinityTypeConverters.toAfinityShow(entity.showData)?.let { show ->
-                            show.copy(images = show.images.withBaseUrl(currentBaseUrl))
-                        }
+                val cachedShows = cachedShowEntities.mapNotNull { entity ->
+                    afinityTypeConverters.toAfinityShow(entity.showData)?.let { show ->
+                        show.copy(images = show.images.withBaseUrl(currentBaseUrl))
                     }
+                }
 
                 if (cachedShows.isNotEmpty()) {
                     _genreShows.update { it + (genre to cachedShows) }
@@ -254,7 +269,13 @@ constructor(
 
                     val currentTime = System.currentTimeMillis()
                     val isFresh =
-                        genreCacheDao.isShowGenreCacheFresh(genre, serverId, userId, genreCacheTTL, currentTime)
+                        genreCacheDao.isShowGenreCacheFresh(
+                            genre,
+                            serverId,
+                            userId,
+                            genreCacheTTL,
+                            currentTime,
+                        )
                     if (isFresh) return
                 }
             }
@@ -264,18 +285,17 @@ constructor(
 
             if (shows.isNotEmpty()) {
                 val timestamp = System.currentTimeMillis()
-                val showEntities =
-                    shows.mapIndexed { index, show ->
-                        GenreShowCacheEntity(
-                            genreName = genre,
-                            showId = show.id.toString(),
-                            serverId = serverId,
-                            userId = userId,
-                            showData = afinityTypeConverters.fromAfinityShow(show) ?: "",
-                            position = index,
-                            cachedTimestamp = timestamp,
-                        )
-                    }
+                val showEntities = shows.mapIndexed { index, show ->
+                    GenreShowCacheEntity(
+                        genreName = genre,
+                        showId = show.id.toString(),
+                        serverId = serverId,
+                        userId = userId,
+                        showData = afinityTypeConverters.fromAfinityShow(show) ?: "",
+                        position = index,
+                        cachedTimestamp = timestamp,
+                    )
+                }
                 genreCacheDao.cacheGenreWithShows(genre, serverId, userId, showEntities, timestamp)
             }
 
@@ -284,6 +304,23 @@ constructor(
         } catch (e: Exception) {
             Timber.e(e, "Failed to load shows for genre: $genre")
             _genreLoadingStates.update { it + (genre to false) }
+
+            try {
+                val fallbackEntities =
+                    genreCacheDao.getCachedShowsForGenre(genre, currentServerId(), currentUserId())
+                val currentBaseUrl = mediaRepository.getBaseUrl()
+
+                val fallbackShows = fallbackEntities.mapNotNull { entity ->
+                    afinityTypeConverters.toAfinityShow(entity.showData)?.let { show ->
+                        show.copy(images = show.images.withBaseUrl(currentBaseUrl))
+                    }
+                }
+                if (fallbackShows.isNotEmpty()) {
+                    _genreShows.update { it + (genre to fallbackShows) }
+                }
+            } catch (cacheError: Exception) {
+                /* Ignore */
+            }
         }
     }
 
@@ -331,13 +368,23 @@ constructor(
                 if (updatedItem is AfinityMovie) {
                     val newJson = afinityTypeConverters.fromAfinityMovie(updatedItem)
                     if (newJson != null) {
-                        genreCacheDao.updateCachedMovieData(itemId.toString(), serverId, userId, newJson)
+                        genreCacheDao.updateCachedMovieData(
+                            itemId.toString(),
+                            serverId,
+                            userId,
+                            newJson,
+                        )
                         Timber.d("Updated movie DB cache for: ${updatedItem.name}")
                     }
                 } else if (updatedItem is AfinityShow) {
                     val newJson = afinityTypeConverters.fromAfinityShow(updatedItem)
                     if (newJson != null) {
-                        genreCacheDao.updateCachedShowData(itemId.toString(), serverId, userId, newJson)
+                        genreCacheDao.updateCachedShowData(
+                            itemId.toString(),
+                            serverId,
+                            userId,
+                            newJson,
+                        )
                         Timber.d("Updated show DB cache for: ${updatedItem.name}")
                     }
                 }
