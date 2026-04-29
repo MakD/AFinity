@@ -9,6 +9,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
+import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -50,6 +52,7 @@ import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
 fun SharedTransitionScope.MiniPlayer(
     title: String,
     author: String?,
+    currentChapter: BookChapter?,
     coverUrl: String?,
     currentTime: Double,
     duration: Double,
@@ -61,7 +64,15 @@ fun SharedTransitionScope.MiniPlayer(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val progress = if (duration > 0) (currentTime / duration).toFloat().coerceIn(0f, 1f) else 0f
+    val progress =
+        if (currentChapter != null) {
+            val chapterDuration = currentChapter.end - currentChapter.start
+            if (chapterDuration > 0) {
+                ((currentTime - currentChapter.start) / chapterDuration).toFloat().coerceIn(0f, 1f)
+            } else 0f
+        } else {
+            if (duration > 0) (currentTime / duration).toFloat().coerceIn(0f, 1f) else 0f
+        }
     val animatedProgress by animateFloatAsState(targetValue = progress, label = "progress")
 
     val defaultColor = MaterialTheme.colorScheme.primaryContainer
@@ -77,46 +88,52 @@ fun SharedTransitionScope.MiniPlayer(
                 onCloseClick()
             }
 
-            SwipeToDismissBoxValue.Settled -> {
-            }
+            SwipeToDismissBoxValue.Settled -> {}
         }
     }
 
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = { /* Empty for transparent dismiss */ },
-        modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .clickable(onClick = onClick),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .clip(RoundedCornerShape(32.dp))
+                    .clickable(onClick = onClick),
             color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
             tonalElevation = 6.dp,
             shadowElevation = 4.dp,
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .drawBehind {
-                        drawRect(
-                            color = animatedDominantColor.copy(alpha = 0.35f),
-                            size = Size(width = size.width * animatedProgress, height = size.height)
-                        )
-                    }
-                    .padding(8.dp),
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .drawBehind {
+                            drawRect(
+                                color = animatedDominantColor.copy(alpha = 0.35f),
+                                size =
+                                    Size(
+                                        width = size.width * animatedProgress,
+                                        height = size.height,
+                                    ),
+                            )
+                        }
+                        .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
-                    modifier = Modifier
-                        .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "cover-${coverUrl ?: "default"}"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                        )
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                    modifier =
+                        Modifier.sharedElement(
+                                sharedContentState =
+                                    rememberSharedContentState(
+                                        key = "cover-${coverUrl ?: "default"}"
+                                    ),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                            )
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     if (coverUrl != null) {
                         AsyncImage(
@@ -130,25 +147,60 @@ fun SharedTransitionScope.MiniPlayer(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.labelLarge,
-                        maxLines = 1,
-                        modifier = Modifier.basicMarquee(
-                            iterations = if (isPlaying) Int.MAX_VALUE else 0,
-                            velocity = 30.dp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    if (author != null) {
+                Column(
+                    modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    if (currentChapter != null && currentChapter.title.isNotBlank()) {
                         Text(
-                            text = author,
+                            text = currentChapter.title,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            modifier =
+                                Modifier.basicMarquee(
+                                    iterations = if (isPlaying) Int.MAX_VALUE else 0,
+                                    velocity = 30.dp,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = title,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        if (author != null) {
+                            Text(
+                                text = author,
+                                style = MaterialTheme.typography.labelSmall,
+                                color =
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            modifier =
+                                Modifier.basicMarquee(
+                                    iterations = if (isPlaying) Int.MAX_VALUE else 0,
+                                    velocity = 30.dp,
+                                ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        if (author != null) {
+                            Text(
+                                text = author,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
 
@@ -162,8 +214,9 @@ fun SharedTransitionScope.MiniPlayer(
                     } else {
                         AnimatedContent(targetState = isPlaying, label = "play_pause") { playing ->
                             Icon(
-                                painter = if (playing) painterResource(R.drawable.ic_player_pause_filled)
-                                else painterResource(R.drawable.ic_player_play_filled),
+                                painter =
+                                    if (playing) painterResource(R.drawable.ic_player_pause_filled)
+                                    else painterResource(R.drawable.ic_player_play_filled),
                                 contentDescription = if (playing) "Pause" else "Play",
                                 modifier = Modifier.size(32.dp),
                                 tint = MaterialTheme.colorScheme.onSurface,

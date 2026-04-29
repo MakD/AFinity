@@ -938,6 +938,7 @@ fun MainNavigation(
                                 modifier = Modifier.navigationBarsPadding(),
                                 title = audiobookshelfPlaybackState.displayTitle,
                                 author = audiobookshelfPlaybackState.displayAuthor,
+                                currentChapter = audiobookshelfPlaybackState.currentChapter,
                                 coverUrl = audiobookshelfPlaybackState.coverUrl,
                                 currentTime = audiobookshelfPlaybackState.currentTime,
                                 duration = audiobookshelfPlaybackState.duration,
