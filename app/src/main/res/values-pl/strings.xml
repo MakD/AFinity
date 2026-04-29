@@ -47,4 +47,13 @@
     <string name="home_episode_count_plus">99+ Odcinków</string>
     <string name="cd_app_logo">Ikona aplikacji</string>
     <string name="cd_watched_status">Oglądano</string>
+    <string name="cd_imdb">IMDB</string>
+    <string name="cd_rotten_tomatoes">Rotten Tomatoes</string>
+    <string name="home_continue_watching">Kontynuuj oglądanie</string>
+    <string name="home_latest_movies">Najnowsze filmy</string>
+    <string name="home_latest_tv_series">Najnowsze seriale telewizyjne</string>
+    <string name="home_next_up">Następnie</string>
+    <string name="home_upcoming_episodes">Nadchodzące odcinki</string>
+    <string name="home_genre_movies_title">%1$s filmów</string>
+    <string name="home_genre_shows_title">%1$s seriali</string>
 </resources>
