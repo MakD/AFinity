@@ -32,6 +32,20 @@ val Quicksand =
         Font(R.font.quicksand_bold, FontWeight.Bold),
     )
 
+val IBMPlexSans =
+    FontFamily(
+        Font(R.font.ibmplexsans_regular, FontWeight.Normal),
+        Font(R.font.ibmplexsans_medium, FontWeight.Medium),
+        Font(R.font.ibmplexsans_bold, FontWeight.Bold),
+    )
+
+val IBMPlexSansCondensed =
+    FontFamily(
+        Font(R.font.ibmplexsans_condensed_regular, FontWeight.Normal),
+        Font(R.font.ibmplexsans_condensed_medium, FontWeight.Medium),
+        Font(R.font.ibmplexsans_condensed_bold, FontWeight.Bold),
+    )
+
 val CenterLineHeightStyle =
     LineHeightStyle(alignment = LineHeightStyle.Alignment.Center, trim = LineHeightStyle.Trim.None)
 
@@ -41,6 +55,8 @@ fun getAppTypography(appFont: AppFont): Typography {
             AppFont.DEFAULT -> FontFamily.Default
             AppFont.GOOGLE_SANS -> GoogleSansFlex
             AppFont.QUICKSAND -> Quicksand
+            AppFont.IBM_PLEX_SANS -> IBMPlexSans
+            AppFont.IBM_PLEX_SANS_CONDENSED -> IBMPlexSansCondensed
         }
 
     return Typography(

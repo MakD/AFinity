@@ -598,5 +598,7 @@ private fun getFontDisplayName(font: AppFont): String {
         AppFont.DEFAULT -> "System Default"
         AppFont.GOOGLE_SANS -> "Google Sans Flex"
         AppFont.QUICKSAND -> "Quicksand"
+        AppFont.IBM_PLEX_SANS -> "IBM Plex Sans"
+        AppFont.IBM_PLEX_SANS_CONDENSED -> "IBM Plex Sans Condensed"
     }
 }

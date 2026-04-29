@@ -163,12 +163,13 @@ fun ContinueWatchingCard(
         when (item) {
             is AfinityEpisode -> {
                 Text(
-                    text = item.seriesName,
+                    text = item.name,
                     style =
                         MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
 
@@ -180,6 +181,7 @@ fun ContinueWatchingCard(
                     color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
@@ -267,57 +269,36 @@ fun ContinueWatchingCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    val metadataItems = mutableListOf<@Composable () -> Unit>()
-
-                    if (item.name.isNotBlank()) {
-                        metadataItems.add {
-                            val truncatedName =
-                                if (item.name.length > 15) {
-                                    "S${item.parentIndexNumber}:E${item.indexNumber} • ${
-                                        item.name.take(
-                                            15
-                                        )
-                                    }..."
-                                } else {
-                                    "S${item.parentIndexNumber}:E${item.indexNumber} • ${item.name}"
-                                }
-                            Text(
-                                text = truncatedName,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
+                    Text(
+                        text =
+                            "S${item.parentIndexNumber}:E${item.indexNumber} • ${item.seriesName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
 
                     item.communityRating?.let { imdbRating ->
-                        metadataItems.add {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                    contentDescription = "IMDB",
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                Text(
-                                    text = String.format(Locale.US, "%.1f", imdbRating),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-
-                    metadataItems.forEachIndexed { index, metadataItem ->
-                        metadataItem()
-                        if (index < metadataItems.size - 1) {
+                        Text(
+                            text = "•",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_imdb_logo),
+                                contentDescription = "IMDB",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(18.dp),
+                            )
                             Text(
-                                text = "•",
+                                text = String.format(Locale.US, "%.1f", imdbRating),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
