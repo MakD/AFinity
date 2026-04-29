@@ -45,23 +45,24 @@ constructor(
         totalTimeListened = 0.0
         currentPlaylistEpisodeId = playbackManager.playbackState.value.episodeId
 
-        syncJob =
-            scope.launch {
-                while (true) {
-                    val interval = getSyncInterval()
-                    delay(interval)
+        syncJob = scope.launch {
+            while (true) {
+                val interval = getSyncInterval()
+                delay(interval)
 
-                    syncProgress()
-                }
+                syncProgress()
             }
+        }
 
         Timber.d("Progress syncer started")
     }
 
     fun stopSyncing() {
-        syncJob?.cancel()
-        syncJob = null
-        Timber.d("Progress syncer stopped")
+        if (syncJob != null) {
+            syncJob?.cancel()
+            syncJob = null
+            Timber.d("Progress syncer stopped")
+        }
     }
 
     suspend fun syncNow() {
@@ -91,7 +92,9 @@ constructor(
         if (sessionId.startsWith("local_")) {
             val itemId = state.itemId ?: return
             val (serverId, userId) = audiobookshelfRepository.currentActiveContext ?: return
-            Timber.d("ProgressSync[audiobook]: saving offline progress itemId=$itemId episodeId=${state.episodeId} currentTime=$currentTime duration=${state.duration}")
+            Timber.d(
+                "ProgressSync[audiobook]: saving offline progress itemId=$itemId episodeId=${state.episodeId} currentTime=$currentTime duration=${state.duration}"
+            )
             audiobookshelfRepository.updateProgress(
                 itemId = itemId,
                 episodeId = state.episodeId,
@@ -144,7 +147,9 @@ constructor(
         if (sessionId.startsWith("local_")) {
             val itemId = state.itemId ?: return
             val (serverId, userId) = audiobookshelfRepository.currentActiveContext ?: return
-            Timber.d("ProgressSync[podcast]: saving offline progress itemId=$itemId episodeId=$episodeId currentTime=$episodeCurrentTime duration=$episodeDuration")
+            Timber.d(
+                "ProgressSync[podcast]: saving offline progress itemId=$itemId episodeId=$episodeId currentTime=$episodeCurrentTime duration=$episodeDuration"
+            )
             audiobookshelfRepository.updateProgress(
                 itemId = itemId,
                 episodeId = episodeId,
@@ -170,7 +175,7 @@ constructor(
                 onSuccess = {
                     Timber.d(
                         "Playlist progress synced: episode=$episodeId, " +
-                                "${episodeCurrentTime}s / ${episodeDuration}s"
+                            "${episodeCurrentTime}s / ${episodeDuration}s"
                     )
                 },
                 onFailure = { error -> Timber.w(error, "Failed to sync playlist progress") },

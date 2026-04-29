@@ -1,6 +1,5 @@
 package com.makd.afinity.ui.home.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -68,7 +67,6 @@ fun OptimizedContinueWatchingSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
-    modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
     val cardHeight =
@@ -106,7 +104,6 @@ fun OptimizedLatestMoviesSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
-    modifier: Modifier = Modifier,
     title: String = stringResource(R.string.home_latest_movies),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
@@ -251,7 +248,6 @@ fun OptimizedLatestTvSeriesSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
-    modifier: Modifier = Modifier,
     title: String = stringResource(R.string.home_latest_tv_series),
 ) {
     val cardWidth = widthSizeClass.portraitWidth
@@ -375,7 +371,8 @@ fun UpcomingEpisodeCard(
         ) {
             if (episode.name.isNotBlank()) {
                 Text(
-                    text = "S${episode.parentIndexNumber}:E${episode.indexNumber} • ${episode.name}",
+                    text =
+                        "S${episode.parentIndexNumber}:E${episode.indexNumber} • ${episode.name}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

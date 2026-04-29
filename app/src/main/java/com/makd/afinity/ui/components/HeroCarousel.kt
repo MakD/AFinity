@@ -1,8 +1,8 @@
 package com.makd.afinity.ui.components
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,7 +64,6 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import mx.platacard.pagerindicator.PagerIndicatorOrientation
 import mx.platacard.pagerindicator.PagerWormIndicator
 import timber.log.Timber
@@ -118,6 +118,58 @@ fun HeroCarousel(
 }
 
 @Composable
+private fun HeroCarouselAutoScrollAndPrefetch(
+    pagerState: PagerState,
+    items: List<AfinityItem>,
+    isScrolling: Boolean,
+) {
+    val context = LocalContext.current
+    val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
+
+    LaunchedEffect(pagerState.settledPage, isScrolling, isDragged) {
+        if (!isDragged && !isScrolling && items.size > 1) {
+            if (
+                !pagerState.isScrollInProgress &&
+                    kotlin.math.abs(pagerState.currentPageOffsetFraction) > 0.001f
+            ) {
+                try {
+                    pagerState.animateScrollToPage(pagerState.currentPage)
+                } catch (e: Exception) {
+                    Timber.w("Carousel recovery interrupted: ${e.message}")
+                }
+            }
+
+            delay(5000)
+
+            try {
+                pagerState.animateScrollToPage(
+                    page = pagerState.currentPage + 1,
+                    animationSpec = tween(durationMillis = 800),
+                )
+            } catch (e: Exception) {
+                Timber.w("Hero carousel animation interrupted: ${e.message}")
+            }
+        }
+    }
+
+    LaunchedEffect(pagerState.currentPage) {
+        if (items.isEmpty()) return@LaunchedEffect
+        val currentIndex = pagerState.currentPage % items.size
+        val nextIndex = (currentIndex + 1) % items.size
+        val prevIndex = (currentIndex - 1 + items.size) % items.size
+
+        listOf(nextIndex, prevIndex).forEach { index ->
+            val item = items[index]
+            val imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
+            if (imageUrl != null) {
+                val request = ImageRequest.Builder(context).data(imageUrl).build()
+                context.imageLoader.enqueue(request)
+            }
+        }
+    }
+}
+
+@Composable
 fun HeroCarouselPortrait(
     items: List<AfinityItem>,
     height: Dp,
@@ -140,42 +192,13 @@ fun HeroCarouselPortrait(
 
     LaunchedEffect(pagerState.currentPage) { onPageChanged(pagerState.currentPage) }
 
-    LaunchedEffect(items.size, isScrolling) {
-        if (items.size > 1) {
-            while (isActive) {
-                delay(5000)
-                if (pagerState.isScrollInProgress || isScrolling) {
-                    while (pagerState.isScrollInProgress || isScrolling) {
-                        delay(100)
-                    }
-                    continue
-                }
-                try {
-                    pagerState.animateScrollToPage(
-                        page = pagerState.currentPage + 1,
-                        animationSpec = tween(durationMillis = 800),
-                    )
-                } catch (e: Exception) {
-                    Timber.w("Hero carousel animation interrupted: ${e.message}")
-                }
-            }
-        }
-    }
+    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling)
 
     val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
 
-    val context = LocalContext.current
-    LaunchedEffect(pagerState.currentPage) {
-        val currentIndex = pagerState.currentPage % items.size
-        val nextIndex = (currentIndex + 1) % items.size
-        val prevIndex = (currentIndex - 1 + items.size) % items.size
-        listOf(nextIndex, prevIndex).forEach { index ->
-            val item = items[index]
-            val imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
-            if (imageUrl != null) {
-                val request = ImageRequest.Builder(context).data(imageUrl).build()
-                context.imageLoader.enqueue(request)
-            }
+    val contentAlpha by remember {
+        derivedStateOf {
+            1f - (kotlin.math.abs(pagerState.currentPageOffsetFraction) * 2f).coerceIn(0f, 1f)
         }
     }
 
@@ -230,40 +253,35 @@ fun HeroCarouselPortrait(
                         .fillMaxWidth(0.8f)
                         .padding(bottom = 144.dp)
                         .sizeIn(maxHeight = 120.dp)
+                        .graphicsLayer { alpha = contentAlpha }
             ) {
-                Crossfade(
-                    targetState = currentItem,
-                    animationSpec = tween(durationMillis = 700),
-                    label = "logo_crossfade",
-                ) { item ->
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        item.images.logo?.let { _ ->
-                            AsyncImage(
-                                imageUrl = item.images.logoImageUrlWithTransparency,
-                                contentDescription = "${item.name} logo",
-                                blurHash = null,
-                                targetWidth = screenWidthDp * 0.8f,
-                                targetHeight = 120.dp,
-                                modifier = Modifier.fillMaxWidth().wrapContentHeight(),
-                                contentScale = ContentScale.Fit,
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    currentItem.images.logo?.let { _ ->
+                        AsyncImage(
+                            imageUrl = currentItem.images.logoImageUrlWithTransparency,
+                            contentDescription = "${currentItem.name} logo",
+                            blurHash = null,
+                            targetWidth = screenWidthDp * 0.8f,
+                            targetHeight = 120.dp,
+                            modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+                        ?: run {
+                            Text(
+                                text = currentItem.name,
+                                style =
+                                    MaterialTheme.typography.displaySmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 36.sp,
+                                    ),
+                                color = Color.White,
+                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
-                            ?: run {
-                                Text(
-                                    text = item.name,
-                                    style =
-                                        MaterialTheme.typography.displaySmall.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 36.sp,
-                                        ),
-                                    color = Color.White,
-                                    textAlign = TextAlign.Center,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                            }
-                    }
                 }
             }
 
@@ -271,16 +289,21 @@ fun HeroCarouselPortrait(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
-                    Modifier.align(Alignment.BottomCenter).padding(bottom = 112.dp).fillMaxWidth(),
+                    Modifier.align(Alignment.BottomCenter)
+                        .padding(bottom = 112.dp)
+                        .fillMaxWidth()
+                        .graphicsLayer { alpha = contentAlpha },
             ) {
                 Spacer(modifier = Modifier.weight(1f))
                 HeroMetadata(currentItem)
                 Spacer(modifier = Modifier.weight(1f))
             }
-
             Box(
                 modifier =
-                    Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp).fillMaxWidth()
+                    Modifier.align(Alignment.BottomCenter)
+                        .padding(bottom = 80.dp)
+                        .fillMaxWidth()
+                        .graphicsLayer { alpha = contentAlpha }
             ) {
                 val genres =
                     when (currentItem) {
@@ -414,42 +437,13 @@ private fun HeroCarouselLandscape(
 
     val landscapeHeight = screenHeightDp * 0.95f
 
-    LaunchedEffect(items.size, isScrolling) {
-        if (items.size > 1) {
-            while (isActive) {
-                delay(5000)
-                if (pagerState.isScrollInProgress || isScrolling) {
-                    while (pagerState.isScrollInProgress || isScrolling) {
-                        delay(100)
-                    }
-                    continue
-                }
-                try {
-                    pagerState.animateScrollToPage(
-                        page = pagerState.currentPage + 1,
-                        animationSpec = tween(durationMillis = 800),
-                    )
-                } catch (e: Exception) {
-                    Timber.w("Hero carousel animation interrupted: ${e.message}")
-                }
-            }
-        }
-    }
+    HeroCarouselAutoScrollAndPrefetch(pagerState, items, isScrolling)
 
     val currentItem by remember { derivedStateOf { items[pagerState.currentPage % items.size] } }
-    val context = LocalContext.current
 
-    LaunchedEffect(pagerState.currentPage) {
-        val currentIndex = pagerState.currentPage % items.size
-        val nextIndex = (currentIndex + 1) % items.size
-        val prevIndex = (currentIndex - 1 + items.size) % items.size
-        listOf(nextIndex, prevIndex).forEach { index ->
-            val item = items[index]
-            val imageUrl = item.images.backdropImageUrl ?: item.images.primaryImageUrl
-            if (imageUrl != null) {
-                val request = ImageRequest.Builder(context).data(imageUrl).build()
-                context.imageLoader.enqueue(request)
-            }
+    val contentAlpha by remember {
+        derivedStateOf {
+            1f - (kotlin.math.abs(pagerState.currentPageOffsetFraction) * 2f).coerceIn(0f, 1f)
         }
     }
 
@@ -508,47 +502,41 @@ private fun HeroCarouselLandscape(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(0.75f),
+                    modifier = Modifier.fillMaxWidth(0.75f).graphicsLayer { alpha = contentAlpha },
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Box(
                         modifier = Modifier.fillMaxWidth(0.5f).height(100.dp),
                         contentAlignment = Alignment.CenterStart,
                     ) {
-                        Crossfade(
-                            targetState = currentItem,
-                            animationSpec = tween(durationMillis = 700),
-                            label = "logo_crossfade",
-                        ) { item ->
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.CenterStart,
-                            ) {
-                                item.images.logo?.let { _ ->
-                                    AsyncImage(
-                                        imageUrl = item.images.logoImageUrlWithTransparency,
-                                        contentDescription = "${item.name} logo",
-                                        blurHash = null,
-                                        targetWidth = screenWidthDp * 0.4f,
-                                        targetHeight = 100.dp,
-                                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
-                                        contentScale = ContentScale.Fit,
-                                        alignment = Alignment.CenterStart,
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            currentItem.images.logo?.let { _ ->
+                                AsyncImage(
+                                    imageUrl = currentItem.images.logoImageUrlWithTransparency,
+                                    contentDescription = "${currentItem.name} logo",
+                                    blurHash = null,
+                                    targetWidth = screenWidthDp * 0.4f,
+                                    targetHeight = 100.dp,
+                                    modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                                    contentScale = ContentScale.Fit,
+                                    alignment = Alignment.CenterStart,
+                                )
+                            }
+                                ?: run {
+                                    Text(
+                                        text = currentItem.name,
+                                        style =
+                                            MaterialTheme.typography.displayMedium.copy(
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
                                     )
                                 }
-                                    ?: run {
-                                        Text(
-                                            text = item.name,
-                                            style =
-                                                MaterialTheme.typography.displayMedium.copy(
-                                                    fontWeight = FontWeight.Bold
-                                                ),
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
-                            }
                         }
                     }
 
