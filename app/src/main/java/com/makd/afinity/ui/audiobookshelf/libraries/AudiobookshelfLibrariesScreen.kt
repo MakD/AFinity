@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -111,6 +112,7 @@ fun AudiobookshelfLibrariesScreen(
                     onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
                     onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
                     userProfileImageUrl = mainUiState.userProfileImageUrl,
+                    userName = mainUiState.userName,
                 )
             }
         ) { paddingValues ->
@@ -120,11 +122,13 @@ fun AudiobookshelfLibrariesScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "Connect to Audiobookshelf",
+                        text = stringResource(R.string.abs_connect_title),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Spacer(modifier = Modifier.size(12.dp))
-                    Button(onClick = { showLoginSheet = true }) { Text("Connect") }
+                    Button(onClick = { showLoginSheet = true }) {
+                        Text(stringResource(R.string.abs_connect_button))
+                    }
                 }
             }
         }
@@ -160,6 +164,7 @@ fun AudiobookshelfLibrariesScreen(
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
                 onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
                 userProfileImageUrl = mainUiState.userProfileImageUrl,
+                userName = mainUiState.userName,
             )
         }
     ) { paddingValues ->
@@ -170,7 +175,10 @@ fun AudiobookshelfLibrariesScreen(
                 }
             } else if (libraries.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "No libraries found", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = stringResource(R.string.abs_no_libraries_found),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                 }
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {

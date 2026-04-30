@@ -83,6 +83,7 @@ fun RequestsScreen(
                 onSearchClick = onSearchClick,
                 onProfileClick = onProfileClick,
                 userProfileImageUrl = mainUiState.userProfileImageUrl,
+                userName = mainUiState.userName,
             )
         },
         modifier = modifier.fillMaxSize(),

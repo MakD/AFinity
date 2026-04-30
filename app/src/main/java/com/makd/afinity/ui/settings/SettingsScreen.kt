@@ -4,7 +4,6 @@ import android.app.LocaleConfig
 import android.app.LocaleManager
 import android.os.LocaleList
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -552,16 +551,16 @@ fun ProfileHeader(
                 modifier =
                     Modifier.align(Alignment.BottomEnd)
                         .size(28.dp)
-                        .background(color = indicatorColor, shape = CircleShape)
-                        .border(3.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                        .padding(4.dp),
+                        .background(color = MaterialTheme.colorScheme.surface, shape = CircleShape)
+                        .padding(3.dp)
+                        .background(color = indicatorColor, shape = CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painter = painterResource(id = indicatorIcon),
                     contentDescription = indicatorContentDescription,
                     tint = Color.White,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(14.dp),
                 )
             }
         }

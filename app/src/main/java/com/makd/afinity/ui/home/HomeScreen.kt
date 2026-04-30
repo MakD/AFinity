@@ -625,6 +625,7 @@ fun HomeScreen(
                 navController.navigate(route)
             },
             onProfileClick = onProfileClick,
+            userName = mainUiState.userName,
             userProfileImageUrl = mainUiState.userProfileImageUrl,
             backgroundOpacity = topBarOpacity,
         )

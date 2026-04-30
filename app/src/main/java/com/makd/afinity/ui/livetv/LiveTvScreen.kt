@@ -106,6 +106,7 @@ fun LiveTvScreen(
                 },
                 onSearchClick = { navController.navigate(Destination.createSearchRoute()) },
                 onProfileClick = { navController.navigate(Destination.createSettingsRoute()) },
+                userName = mainUiState.userName,
                 userProfileImageUrl = mainUiState.userProfileImageUrl,
                 backgroundOpacity = 1f,
             )

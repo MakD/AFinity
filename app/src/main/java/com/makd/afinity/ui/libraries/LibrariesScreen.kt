@@ -77,11 +77,7 @@ fun LibrariesScreen(
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         when {
             uiState.isLoading && uiState.libraries.isEmpty() -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -139,6 +135,7 @@ fun LibrariesScreen(
             },
             onProfileClick = onProfileClick,
             userProfileImageUrl = mainUiState.userProfileImageUrl,
+            userName = mainUiState.userName,
         )
     }
 }
@@ -160,11 +157,7 @@ private fun LibraryCard(
                 ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f)
-        ) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
             Card(
                 modifier = Modifier.fillMaxSize(),
                 shape = RoundedCornerShape(12.dp),
@@ -186,11 +179,7 @@ private fun LibraryCard(
             }
 
             if (library.type != CollectionType.Unknown) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(6.dp)
-                ) {
+                Box(modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)) {
                     Icon(
                         painter = getLibraryIcon(library.type),
                         contentDescription = null,

@@ -16,11 +16,11 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
-import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityStudio
+import com.makd.afinity.data.models.media.withBaseUrl
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.server.ServerRepository
@@ -112,6 +112,15 @@ constructor(
                     null
                 }
             }
+            .stateIn(
+                scope = scope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = null,
+            )
+
+    val userName: StateFlow<String?> =
+        sessionManager.currentSession
+            .map { session -> session?.user?.name }
             .stateIn(
                 scope = scope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -277,26 +286,26 @@ constructor(
     private fun startLiveDataCollectors() {
         liveDataJob?.cancel()
 
-        liveDataJob =
-            scope.launch {
-                launch {
-                    mediaRepository.getContinueWatchingFlow().collect { liveData ->
-                        _continueWatching.value = liveData
-                    }
-                }
-
-                launch {
-                    mediaRepository.getLatestMediaFlow().collect { liveData ->
-                        val filteredData =
-                            liveData.filter { item -> item is AfinityMovie || item is AfinityShow }
-                        _latestMedia.value = filteredData
-                    }
-                }
-
-                launch {
-                    mediaRepository.getNextUpFlow().collect { liveData -> _nextUp.value = liveData }
+        liveDataJob = scope.launch {
+            launch {
+                mediaRepository.getContinueWatchingFlow().collect { liveData ->
+                    _continueWatching.value = liveData
                 }
             }
+
+            launch {
+                mediaRepository.getLatestMediaFlow().collect { liveData ->
+                    val filteredData = liveData.filter { item ->
+                        item is AfinityMovie || item is AfinityShow
+                    }
+                    _latestMedia.value = filteredData
+                }
+            }
+
+            launch {
+                mediaRepository.getNextUpFlow().collect { liveData -> _nextUp.value = liveData }
+            }
+        }
     }
 
     suspend fun reloadHomeData() {
@@ -314,15 +323,18 @@ constructor(
             if (libraries.isNotEmpty()) {
                 Timber.d("Reloading home data...")
                 val currentBaseUrl = mediaRepository.getBaseUrl()
-                val patchedExisting = _highestRated.value
-                    .map { item ->
-                        when (item) {
-                            is AfinityMovie -> item.copy(images = item.images.withBaseUrl(currentBaseUrl))
-                            is AfinityShow -> item.copy(images = item.images.withBaseUrl(currentBaseUrl))
-                            else -> item
+                val patchedExisting =
+                    _highestRated.value
+                        .map { item ->
+                            when (item) {
+                                is AfinityMovie ->
+                                    item.copy(images = item.images.withBaseUrl(currentBaseUrl))
+                                is AfinityShow ->
+                                    item.copy(images = item.images.withBaseUrl(currentBaseUrl))
+                                else -> item
+                            }
                         }
-                    }
-                    .takeIf { it.isNotEmpty() }
+                        .takeIf { it.isNotEmpty() }
                 val (latestMovies, latestTvSeries, highestRated) =
                     loadHomeSpecificData(
                         libraries = libraries,
@@ -633,10 +645,12 @@ constructor(
             val highestRated =
                 existingHighestRated
                     ?: run {
-                        val highRatedMovies =
-                            allMoviesIncludingWatched.filter { (it.communityRating ?: 0f) > 6.5f }
-                        val highRatedShows =
-                            allSeriesIncludingWatched.filter { (it.communityRating ?: 0f) > 6.5f }
+                        val highRatedMovies = allMoviesIncludingWatched.filter {
+                            (it.communityRating ?: 0f) > 6.5f
+                        }
+                        val highRatedShows = allSeriesIncludingWatched.filter {
+                            (it.communityRating ?: 0f) > 6.5f
+                        }
 
                         (highRatedMovies + highRatedShows).shuffled().take(10).sortedByDescending {
                             when (it) {
