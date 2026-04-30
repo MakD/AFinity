@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -109,8 +111,8 @@ fun LibraryContentScreen(
         modifier =
             modifier
                 .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.displayCutout)
-                .background(MaterialTheme.colorScheme.background)
+                .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
+                .background(MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             AfinityTopAppBar(
@@ -132,126 +134,143 @@ fun LibraryContentScreen(
                     navController.navigate(route)
                 },
             )
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    FilterRow(
+                        currentFilter = uiState.currentFilter,
+                        onFilterSelected = { viewModel.updateFilter(it) },
+                    )
 
-            FilterRow(
-                currentFilter = uiState.currentFilter,
-                onFilterSelected = { viewModel.updateFilter(it) },
-            )
-
-            when {
-                uiState.isLoading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        FullScreenLoading()
-                    }
-                }
-
-                uiState.error != null -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        FullScreenError(message = uiState.error)
-                    }
-                }
-
-                lazyPagingItems.itemCount == 0 &&
-                    lazyPagingItems.loadState.refresh !is LoadState.Loading -> {
-                    val selectedLetter = uiState.selectedLetter
-                    if (selectedLetter != null) {
-                        Row(modifier = Modifier.fillMaxSize()) {
+                    when {
+                        uiState.isLoading -> {
                             Box(
-                                modifier = Modifier.weight(1f).fillMaxSize().padding(top = 16.dp),
+                                modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                EmptyLetterFilterMessage(
-                                    letter = selectedLetter,
-                                    onClearFilter = { viewModel.clearLetterFilter() },
-                                )
+                                FullScreenLoading()
                             }
+                        }
+
+                        uiState.error != null -> {
                             Box(
-                                modifier = Modifier.fillMaxHeight(),
+                                modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                AlphabetScroller(
-                                    onLetterSelected = { viewModel.scrollToLetter(it) },
-                                    selectedLetter = uiState.selectedLetter,
-                                    modifier =
-                                        Modifier.background(
-                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                FullScreenError(message = uiState.error)
+                            }
+                        }
+
+                        lazyPagingItems.itemCount == 0 &&
+                            lazyPagingItems.loadState.refresh !is LoadState.Loading -> {
+                            val selectedLetter = uiState.selectedLetter
+                            if (selectedLetter != null) {
+                                Row(modifier = Modifier.fillMaxSize()) {
+                                    Box(
+                                        modifier =
+                                            Modifier.weight(1f).fillMaxSize().padding(top = 16.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        EmptyLetterFilterMessage(
+                                            letter = selectedLetter,
+                                            onClearFilter = { viewModel.clearLetterFilter() },
+                                        )
+                                    }
+                                    Box(
+                                        modifier = Modifier.fillMaxHeight(),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        AlphabetScroller(
+                                            onLetterSelected = { viewModel.scrollToLetter(it) },
+                                            selectedLetter = uiState.selectedLetter,
+                                            modifier =
+                                                Modifier.background(
+                                                    MaterialTheme.colorScheme.surface.copy(
+                                                        alpha = 0.8f
+                                                    )
+                                                ),
+                                        )
+                                    }
+                                }
+                            } else if (uiState.currentFilter != FilterType.ALL) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    EmptyFilterMessage(
+                                        filterType = uiState.currentFilter,
+                                        onClearFilter = { viewModel.updateFilter(FilterType.ALL) },
+                                    )
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    FullScreenEmpty(
+                                        title = stringResource(R.string.library_empty_title),
+                                        message = stringResource(R.string.library_empty_message),
+                                    )
+                                }
+                            }
+                        }
+
+                        else -> {
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                PaginatedMediaGrid(
+                                    items = lazyPagingItems,
+                                    widthSizeClass = widthSizeClass,
+                                    state = gridState,
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding =
+                                        PaddingValues(
+                                            start = 16.dp,
+                                            end = 16.dp,
+                                            top = 16.dp,
+                                            bottom = 80.dp,
                                         ),
-                                )
+                                ) { item ->
+                                    MediaItemGridCard(
+                                        item = item,
+                                        onClick = {
+                                            viewModel.onItemClick(item)
+                                            onItemClick(item)
+                                        },
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier.fillMaxHeight(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    AlphabetScroller(
+                                        onLetterSelected = { viewModel.scrollToLetter(it) },
+                                        selectedLetter = uiState.selectedLetter,
+                                        modifier =
+                                            Modifier.background(
+                                                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                            ),
+                                    )
+                                }
                             }
-                        }
-                    } else if (uiState.currentFilter != FilterType.ALL) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            EmptyFilterMessage(
-                                filterType = uiState.currentFilter,
-                                onClearFilter = { viewModel.updateFilter(FilterType.ALL) },
-                            )
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            FullScreenEmpty(
-                                title = stringResource(R.string.library_empty_title),
-                                message = stringResource(R.string.library_empty_message),
-                            )
                         }
                     }
                 }
 
-                else -> {
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        PaginatedMediaGrid(
-                            items = lazyPagingItems,
-                            widthSizeClass = widthSizeClass,
-                            state = gridState,
-                            modifier = Modifier.weight(1f),
-                            contentPadding =
-                                PaddingValues(
-                                    start = 16.dp,
-                                    end = 16.dp,
-                                    top = 16.dp,
-                                    bottom = 80.dp,
-                                ),
-                        ) { item ->
-                            MediaItemGridCard(
-                                item = item,
-                                onClick = {
-                                    viewModel.onItemClick(item)
-                                    onItemClick(item)
-                                },
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier.fillMaxHeight(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            AlphabetScroller(
-                                onLetterSelected = { viewModel.scrollToLetter(it) },
-                                selectedLetter = uiState.selectedLetter,
-                                modifier =
-                                    Modifier.background(
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                                    ),
-                            )
-                        }
-                    }
+                FloatingActionButton(
+                    onClick = { showSortDialog = true },
+                    modifier =
+                        Modifier.align(Alignment.BottomEnd).padding(16.dp).padding(end = 24.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_arrows_sort),
+                        contentDescription = stringResource(R.string.cd_sort_fab),
+                    )
                 }
             }
-        }
-
-        FloatingActionButton(
-            onClick = { showSortDialog = true },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).padding(end = 24.dp),
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_arrows_sort),
-                contentDescription = stringResource(R.string.cd_sort_fab),
-            )
         }
     }
 
