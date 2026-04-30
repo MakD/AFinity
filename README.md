@@ -150,7 +150,7 @@ The Requests tab will appear in your bottom navigation once connected.
 - [X] Background sync optimisation
 - [X] Cache management
 - [X] Network quality detection
-- [ ] Performance monitoring
+- [X] Performance monitoring
 
 ## Contributing
 
