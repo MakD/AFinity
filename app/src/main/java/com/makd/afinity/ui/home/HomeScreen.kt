@@ -80,6 +80,7 @@ import com.makd.afinity.ui.home.components.UpcomingEpisodesSection
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.main.MainUiState
+import com.makd.afinity.ui.player.PlayerLauncher
 import com.makd.afinity.ui.utils.verticalLayoutOffset
 import kotlinx.coroutines.delay
 
@@ -102,6 +103,15 @@ fun HomeScreen(
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val lazyListState = rememberLazyListState()
+    val continueWatchingScrollState = rememberLazyListState()
+
+    val continueWatchingItems =
+        if (uiState.isOffline) uiState.offlineContinueWatching else uiState.continueWatching
+    LaunchedEffect(continueWatchingItems.firstOrNull()?.id) {
+        if (continueWatchingItems.isNotEmpty()) {
+            continueWatchingScrollState.scrollToItem(0)
+        }
+    }
 
     val topBarOpacity by remember {
         derivedStateOf {
@@ -256,6 +266,7 @@ fun HomeScreen(
                                                 }
                                             },
                                             widthSizeClass = widthSizeClass,
+                                            scrollState = continueWatchingScrollState,
                                         )
                                     }
                                 }
@@ -638,16 +649,12 @@ fun HomeScreen(
 
         var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
-        var episodeForOverlay by remember { mutableStateOf<AfinityEpisode?>(null) }
-        if (selectedEpisode != null) {
-            episodeForOverlay = selectedEpisode
-        }
-
         AnimatedVisibility(
             visible = selectedEpisode != null,
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            label = "EpisodeOverlay",
         ) {
-            episodeForOverlay?.let { episode ->
+            selectedEpisode?.let { episode ->
                 EpisodeDetailOverlay(
                     episode = episode,
                     isInWatchlist = selectedEpisodeWatchlistStatus,
@@ -659,8 +666,7 @@ fun HomeScreen(
                     },
                     onPlayClick = { episodeToPlay, selection ->
                         viewModel.clearSelectedEpisode()
-
-                        com.makd.afinity.ui.player.PlayerLauncher.launch(
+                        PlayerLauncher.launch(
                             context = context,
                             itemId = episodeToPlay.id,
                             mediaSourceId = selection.mediaSourceId,
@@ -677,8 +683,9 @@ fun HomeScreen(
                     onResumeDownload = { viewModel.resumeDownload() },
                     onCancelDownload = { viewModel.cancelDownload() },
                     onGoToSeries = {
+                        val seriesId = episode.seriesId.toString()
                         viewModel.clearSelectedEpisode()
-                        pendingNavigationSeriesId = episode.seriesId.toString()
+                        pendingNavigationSeriesId = seriesId
                     },
                 )
             }

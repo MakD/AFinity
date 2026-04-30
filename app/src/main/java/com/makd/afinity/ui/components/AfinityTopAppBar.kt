@@ -29,7 +29,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -132,7 +136,12 @@ fun AfinityTopAppBar(
             }
 
             if (onProfileClick != null) {
-                Box {
+                Box(
+                    modifier =
+                        Modifier.graphicsLayer {
+                            compositingStrategy = CompositingStrategy.Offscreen
+                        }
+                ) {
                     IconButton(onClick = onProfileClick, modifier = Modifier.size(42.dp)) {
                         Box(
                             modifier =
@@ -194,16 +203,19 @@ fun AfinityTopAppBar(
                     Box(
                         modifier =
                             Modifier.align(Alignment.BottomEnd)
-                                .size(16.dp)
-                                .background(color = indicatorColor, shape = CircleShape)
-                                .padding(2.dp),
+                                .size(18.dp)
+                                .drawBehind {
+                                    drawCircle(color = Color.Black, blendMode = BlendMode.Clear)
+                                }
+                                .padding(1.5.dp)
+                                .background(color = indicatorColor, shape = CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painter = painterResource(id = indicatorIcon),
                             contentDescription = indicatorContentDescription,
                             tint = Color.White,
-                            modifier = Modifier.size(12.dp),
+                            modifier = Modifier.size(10.dp),
                         )
                     }
                 }

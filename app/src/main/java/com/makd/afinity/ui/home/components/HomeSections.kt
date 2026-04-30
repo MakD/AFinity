@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -67,6 +69,7 @@ fun OptimizedContinueWatchingSection(
     items: List<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
+    scrollState: LazyListState = rememberLazyListState(),
 ) {
     val cardWidth = widthSizeClass.landscapeWidth
     val cardHeight =
@@ -84,6 +87,7 @@ fun OptimizedContinueWatchingSection(
         val uniqueItems = items.distinctBy { it.id }
 
         LazyRow(
+            state = scrollState,
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),
