@@ -4,6 +4,7 @@ import android.app.LocaleConfig
 import android.app.LocaleManager
 import android.os.LocaleList
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -69,7 +71,10 @@ import com.makd.afinity.R
 import com.makd.afinity.core.AppConstants
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.ConnectionType
 import com.makd.afinity.ui.settings.update.UpdateSection
+import com.makd.afinity.util.isLocalAddress
+import com.makd.afinity.util.isTailscaleAddress
 import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,10 +92,19 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val combineLibrarySections by viewModel.combineLibrarySections.collectAsStateWithLifecycle()
-    val homeSortByDateAdded by viewModel.homeSortByDateAdded.collectAsStateWithLifecycle()
-    val manualOfflineMode by viewModel.manualOfflineMode.collectAsStateWithLifecycle()
     val effectiveOfflineMode by viewModel.effectiveOfflineMode.collectAsStateWithLifecycle()
+    val connectionType =
+        remember(effectiveOfflineMode, uiState.serverUrl) {
+            when {
+                effectiveOfflineMode -> ConnectionType.OFFLINE
+                uiState.serverUrl != null && isLocalAddress(uiState.serverUrl!!) ->
+                    ConnectionType.LOCAL
+                uiState.serverUrl != null && isTailscaleAddress(uiState.serverUrl!!) ->
+                    ConnectionType.TAILSCALE
+                else -> ConnectionType.REMOTE
+            }
+        }
+    val manualOfflineMode by viewModel.manualOfflineMode.collectAsStateWithLifecycle()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsStateWithLifecycle()
     val isJellyseerrAuthenticated by
         viewModel.isJellyseerrAuthenticated.collectAsStateWithLifecycle()
@@ -241,6 +255,7 @@ fun SettingsScreen(
                         serverName = uiState.serverName,
                         serverUrl = uiState.serverUrl,
                         userProfileImageUrl = uiState.userProfileImageUrl,
+                        connectionType = connectionType,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
@@ -376,10 +391,17 @@ fun SettingsScreen(
                             icon = painterResource(id = R.drawable.ic_logs),
                             title = stringResource(R.string.pref_send_logs),
                             subtitle = stringResource(R.string.pref_send_logs_summary),
-                            onClick = if (uiState.isExportingLogs) null else ({ viewModel.exportLogs() }),
-                            trailing = if (uiState.isExportingLogs) ({
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            }) else null,
+                            onClick =
+                                if (uiState.isExportingLogs) null else ({ viewModel.exportLogs() }),
+                            trailing =
+                                if (uiState.isExportingLogs)
+                                    ({
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            strokeWidth = 2.dp,
+                                        )
+                                    })
+                                else null,
                         )
                     }
                 }
@@ -471,33 +493,75 @@ fun ProfileHeader(
     serverName: String?,
     serverUrl: String?,
     userProfileImageUrl: String?,
+    connectionType: ConnectionType,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxWidth().padding(top = 24.dp, bottom = 0.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier =
-                Modifier.size(96.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (userProfileImageUrl != null) {
-                AsyncImage(
-                    imageUrl = userProfileImageUrl,
-                    contentDescription = stringResource(R.string.cd_profile_picture),
-                    targetWidth = 96.dp,
-                    targetHeight = 96.dp,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Text(
-                    text = userName.take(1).uppercase(),
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Box(modifier = Modifier.size(96.dp)) {
+            Box(
+                modifier =
+                    Modifier.fillMaxSize()
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (userProfileImageUrl != null) {
+                    AsyncImage(
+                        imageUrl = userProfileImageUrl,
+                        contentDescription = stringResource(R.string.cd_profile_picture),
+                        targetWidth = 96.dp,
+                        targetHeight = 96.dp,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Text(
+                        text = userName.take(1).uppercase(),
+                        style = MaterialTheme.typography.displayMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            val indicatorColor =
+                when (connectionType) {
+                    ConnectionType.LOCAL -> Color(0xFF4CAF50)
+                    ConnectionType.TAILSCALE -> Color(0xFF2196F3)
+                    ConnectionType.REMOTE -> Color(0xFFFF9800)
+                    ConnectionType.OFFLINE -> MaterialTheme.colorScheme.error
+                }
+            val indicatorIcon =
+                when (connectionType) {
+                    ConnectionType.LOCAL -> R.drawable.ic_wifi
+                    ConnectionType.TAILSCALE -> R.drawable.ic_security
+                    ConnectionType.REMOTE -> R.drawable.ic_link
+                    ConnectionType.OFFLINE -> R.drawable.ic_cloud_off
+                }
+            val indicatorContentDescription =
+                when (connectionType) {
+                    ConnectionType.LOCAL -> stringResource(R.string.cd_local_connection)
+                    ConnectionType.TAILSCALE -> stringResource(R.string.cd_tailscale_connection)
+                    ConnectionType.REMOTE -> stringResource(R.string.cd_remote_connection)
+                    ConnectionType.OFFLINE -> stringResource(R.string.cd_offline_mode)
+                }
+
+            Box(
+                modifier =
+                    Modifier.align(Alignment.BottomEnd)
+                        .size(28.dp)
+                        .background(color = indicatorColor, shape = CircleShape)
+                        .border(3.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                        .padding(4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(id = indicatorIcon),
+                    contentDescription = indicatorContentDescription,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }

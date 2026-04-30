@@ -214,9 +214,14 @@ constructor(
                         movieEntities,
                         timestamp,
                     )
+
+                    _genreMovies.update { it + (genre to movies) }
+                } else {
+                    if (_genreMovies.value[genre].isNullOrEmpty()) {
+                        _genreMovies.update { it + (genre to emptyList()) }
+                    }
                 }
 
-                _genreMovies.update { it + (genre to movies) }
                 _genreLoadingStates.update { it + (genre to false) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load movies for genre: $genre")
@@ -297,9 +302,14 @@ constructor(
                     )
                 }
                 genreCacheDao.cacheGenreWithShows(genre, serverId, userId, showEntities, timestamp)
+
+                _genreShows.update { it + (genre to shows) }
+            } else {
+                if (_genreShows.value[genre].isNullOrEmpty()) {
+                    _genreShows.update { it + (genre to emptyList()) }
+                }
             }
 
-            _genreShows.update { it + (genre to shows) }
             _genreLoadingStates.update { it + (genre to false) }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load shows for genre: $genre")

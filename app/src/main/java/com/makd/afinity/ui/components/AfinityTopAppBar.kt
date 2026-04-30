@@ -84,6 +84,7 @@ fun AfinityTopAppBar(
     modifier: Modifier = Modifier,
     onSearchClick: (() -> Unit)? = null,
     onProfileClick: (() -> Unit)? = null,
+    userName: String? = null,
     userProfileImageUrl: String? = null,
     backgroundOpacity: Float = 0f,
     actions: @Composable (RowScope.() -> Unit) = {},
@@ -98,7 +99,7 @@ fun AfinityTopAppBar(
             if (onSearchClick != null) {
                 Button(
                     onClick = onSearchClick,
-                    modifier = Modifier.height(48.dp).widthIn(min = 120.dp),
+                    modifier = Modifier.height(42.dp).widthIn(min = 120.dp),
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor = Color.Black.copy(alpha = 0.3f)
@@ -132,7 +133,7 @@ fun AfinityTopAppBar(
 
             if (onProfileClick != null) {
                 Box {
-                    IconButton(onClick = onProfileClick, modifier = Modifier.size(48.dp)) {
+                    IconButton(onClick = onProfileClick, modifier = Modifier.size(42.dp)) {
                         Box(
                             modifier =
                                 Modifier.fillMaxSize()
@@ -148,6 +149,13 @@ fun AfinityTopAppBar(
                                     targetHeight = 48.dp,
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop,
+                                )
+                            } else if (!userName.isNullOrBlank()) {
+                                Text(
+                                    text = userName.take(1).uppercase(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
                                 )
                             } else {
                                 Icon(
@@ -186,16 +194,16 @@ fun AfinityTopAppBar(
                     Box(
                         modifier =
                             Modifier.align(Alignment.BottomEnd)
-                                .size(20.dp)
+                                .size(16.dp)
                                 .background(color = indicatorColor, shape = CircleShape)
-                                .padding(4.dp),
+                                .padding(2.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painter = painterResource(id = indicatorIcon),
                             contentDescription = indicatorContentDescription,
                             tint = Color.White,
-                            modifier = Modifier.size(14.dp),
+                            modifier = Modifier.size(12.dp),
                         )
                     }
                 }

@@ -117,7 +117,7 @@ constructor(
             apiClient.update(baseUrl = baseUrl)
 
             _currentBaseUrl.value = baseUrl
-            _isConnected.value = false
+            _isConnected.value = sessionManager.isServerReachable.value
 
             Timber.d("Updated base URL to: $baseUrl")
         } catch (e: Exception) {

@@ -41,11 +41,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -419,10 +422,9 @@ private fun LandscapeItemDetailContent(
 ) {
     val preferencesRepository = rememberPreferencesRepository()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
-    val density = androidx.compose.ui.platform.LocalDensity.current
+    val density = LocalDensity.current
     val statusBarHeight = WindowInsets.statusBars.getTop(density)
-    val displayCutoutLeft =
-        WindowInsets.displayCutout.getLeft(density, androidx.compose.ui.unit.LayoutDirection.Ltr)
+    val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
     val baseColorScheme = MaterialTheme.colorScheme
 
     val landscapeColorScheme =
@@ -697,6 +699,9 @@ private fun PortraitItemDetailContent(
 
 @Composable
 private fun ColumnScope.MediaLogoHeader(item: AfinityItem, isLandscape: Boolean) {
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val screenWidthDp = with(density) { windowInfo.containerSize.width.toDp() }
     val logoToDisplay = if (item is AfinitySeason) item.images.showLogo else item.images.logo
     val logoUrlToDisplay =
         if (item is AfinitySeason) {
@@ -710,7 +715,7 @@ private fun ColumnScope.MediaLogoHeader(item: AfinityItem, isLandscape: Boolean)
         AsyncImage(
             imageUrl = logoUrlToDisplay,
             contentDescription = stringResource(R.string.cd_logo_fmt, logoNameToDisplay),
-            targetWidth = if (isLandscape) 300.dp else 240.dp,
+            targetWidth = if (isLandscape) 300.dp else screenWidthDp * 0.8f,
             targetHeight = if (isLandscape) 150.dp else 120.dp,
             modifier =
                 Modifier.fillMaxWidth(0.8f)

@@ -600,13 +600,14 @@ constructor(
                 } else {
                     if (item is AfinityMovie || item is AfinityShow) {
                         val offlineSession = sessionManager.currentSession.value
-                        val cachedMetadata = if (offlineSession != null) {
-                            databaseRepository.getItemMetadata(
-                                item.id,
-                                offlineSession.serverId,
-                                offlineSession.userId.toString(),
-                            )
-                        } else null
+                        val cachedMetadata =
+                            if (offlineSession != null) {
+                                databaseRepository.getItemMetadata(
+                                    item.id,
+                                    offlineSession.serverId,
+                                    offlineSession.userId.toString(),
+                                )
+                            } else null
                         if (cachedMetadata != null) {
                             _uiState.value =
                                 _uiState.value.copy(
@@ -808,9 +809,14 @@ constructor(
         try {
             _uiState.update { it.copy(isLoadingReviews = true) }
             val session = sessionManager.currentSession.value
-            val cachedMetadata = if (session != null) {
-                databaseRepository.getItemMetadata(item.id, session.serverId, session.userId.toString())
-            } else null
+            val cachedMetadata =
+                if (session != null) {
+                    databaseRepository.getItemMetadata(
+                        item.id,
+                        session.serverId,
+                        session.userId.toString(),
+                    )
+                } else null
 
             val cacheAgeMs = System.currentTimeMillis() - (cachedMetadata?.lastUpdated ?: 0L)
             val isCacheValid = cacheAgeMs < 48 * 60 * 60 * 1000L
@@ -835,33 +841,51 @@ constructor(
                 var fetchedRatings = emptyList<MdbListRating>()
 
                 if (tmdbId != null && userId != null) {
-                    val serverId = serverRepository.currentServer.value?.id
+                    val serverId = session?.serverId ?: serverRepository.currentServer.value?.id
                     val tmdbKey = serverId?.let {
                         securePreferencesRepository.getTmdbApiKey(it, userId.toString())
                     }
-
-                    val reviewsDeferred = viewModelScope.async {
-                        if (!tmdbKey.isNullOrBlank()) {
-                            when (item) {
-                                is AfinityMovie ->
-                                    tmdbApiService.getMovieReviews(tmdbId, tmdbKey).results
-                                is AfinityShow ->
-                                    tmdbApiService.getSeriesReviews(tmdbId, tmdbKey).results
-                                else -> emptyList()
+                    kotlinx.coroutines.coroutineScope {
+                        val reviewsDeferred = async {
+                            try {
+                                if (!tmdbKey.isNullOrBlank()) {
+                                    when (item) {
+                                        is AfinityMovie ->
+                                            tmdbApiService.getMovieReviews(tmdbId, tmdbKey).results
+                                        is AfinityShow ->
+                                            tmdbApiService.getSeriesReviews(tmdbId, tmdbKey).results
+                                        else -> emptyList()
+                                    }
+                                } else emptyList()
+                            } catch (e: Exception) {
+                                Timber.w(
+                                    e,
+                                    "Failed to fetch TMDB reviews during network transition",
+                                )
+                                emptyList()
                             }
-                        } else emptyList()
-                    }
-
-                    val ratingsDeferred = viewModelScope.async {
-                        val ratings =
-                            mediaRepository.getMdbListRatings(tmdbId, item is AfinityMovie)
-                        ratings.filter {
-                            it.source.lowercase() !in listOf("imdb", "tomatoes") && it.value != null
                         }
-                    }
 
-                    fetchedReviews = reviewsDeferred.await()
-                    fetchedRatings = ratingsDeferred.await()
+                        val ratingsDeferred = async {
+                            try {
+                                val ratings =
+                                    mediaRepository.getMdbListRatings(tmdbId, item is AfinityMovie)
+                                ratings.filter {
+                                    it.source.lowercase() !in listOf("imdb", "tomatoes") &&
+                                        it.value != null
+                                }
+                            } catch (e: Exception) {
+                                Timber.w(
+                                    e,
+                                    "Failed to fetch MDBList ratings during network transition",
+                                )
+                                emptyList()
+                            }
+                        }
+
+                        fetchedReviews = reviewsDeferred.await()
+                        fetchedRatings = ratingsDeferred.await()
+                    }
                 }
 
                 _uiState.update {
@@ -873,7 +897,9 @@ constructor(
                     )
                 }
 
-                if ((fetchedReviews.isNotEmpty() || fetchedRatings.isNotEmpty()) && session != null) {
+                if (
+                    (fetchedReviews.isNotEmpty() || fetchedRatings.isNotEmpty()) && session != null
+                ) {
                     databaseRepository.insertItemMetadata(
                         ItemMetadataCacheEntity(
                             itemId = item.id,

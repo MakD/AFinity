@@ -601,7 +601,7 @@ fun HomeScreen(
             title = {
                 IconButton(
                     onClick = { /* TODO: Handle app icon click if needed */ },
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(42.dp),
                 ) {
                     Box(
                         modifier =
@@ -629,7 +629,6 @@ fun HomeScreen(
             backgroundOpacity = topBarOpacity,
         )
         val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
-        val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
         val selectedEpisodeWatchlistStatus by
             viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
         val selectedEpisodeDownloadInfo by
