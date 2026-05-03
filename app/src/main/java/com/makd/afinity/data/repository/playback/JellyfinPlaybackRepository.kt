@@ -4,9 +4,6 @@ import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.PreferencesRepository
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.exception.ApiClientException
@@ -23,6 +20,9 @@ import org.jellyfin.sdk.model.api.RepeatMode
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.jellyfin.sdk.model.api.SubtitleProfile
 import timber.log.Timber
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class JellyfinPlaybackRepository
@@ -241,7 +241,6 @@ constructor(
             try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext false
                 val playStateApi = PlayStateApi(apiClient)
-
                 playStateApi.onPlaybackProgress(
                     itemId = itemId,
                     positionTicks = positionTicks,
@@ -257,14 +256,24 @@ constructor(
                 true
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to report playback progress for item: $itemId, saving locally")
-                savePlaybackProgressLocally(itemId, positionTicks)
+                savePlaybackProgressLocally(
+                    itemId,
+                    positionTicks,
+                    audioStreamIndex,
+                    subtitleStreamIndex,
+                )
                 false
             } catch (e: Exception) {
                 Timber.e(
                     e,
                     "Unexpected error reporting playback progress for item: $itemId, saving locally",
                 )
-                savePlaybackProgressLocally(itemId, positionTicks)
+                savePlaybackProgressLocally(
+                    itemId,
+                    positionTicks,
+                    audioStreamIndex,
+                    subtitleStreamIndex,
+                )
                 false
             }
         }
@@ -306,7 +315,12 @@ constructor(
         }
     }
 
-    private suspend fun savePlaybackProgressLocally(itemId: UUID, positionTicks: Long) {
+    private suspend fun savePlaybackProgressLocally(
+        itemId: UUID,
+        positionTicks: Long,
+        audioStreamIndex: Int? = null,
+        subtitleStreamIndex: Int? = null,
+    ) {
         try {
             val userId =
                 getCurrentUserId()
@@ -314,7 +328,6 @@ constructor(
                         Timber.w("Cannot save playback progress locally: no active session user ID")
                         return
                     }
-
             val serverId = sessionManager.currentSession.value?.serverId
             if (serverId == null) {
                 Timber.w("Cannot save playback progress locally: no active server session")
@@ -322,7 +335,6 @@ constructor(
             }
 
             val existingData = databaseRepository.getUserData(userId, itemId)
-
             val updatedData =
                 AfinityUserDataDto(
                     userId = userId,
@@ -332,8 +344,9 @@ constructor(
                     favorite = existingData?.favorite ?: false,
                     playbackPositionTicks = positionTicks,
                     toBeSynced = true,
+                    audioStreamIndex = audioStreamIndex ?: existingData?.audioStreamIndex,
+                    subtitleStreamIndex = subtitleStreamIndex ?: existingData?.subtitleStreamIndex,
                 )
-
             databaseRepository.insertUserData(updatedData)
             Timber.i(
                 "Saved playback progress locally for item $itemId: ${positionTicks / 10000}ms (will sync when online)"

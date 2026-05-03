@@ -67,6 +67,7 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.PersonKind.ACTOR
 import org.jellyfin.sdk.model.api.PersonKind.DIRECTOR
 import org.jellyfin.sdk.model.api.PersonKind.WRITER
+import com.makd.afinity.R
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -718,7 +719,7 @@ constructor(
                                         recommendationMutex.withLock {
                                             loadedSpotlightSections.add(
                                                 HomeSection.Spotlight(
-                                                    title = "Top ${genre.name} Movies",
+                                                    title = context.getString(R.string.home_genre_top_movies_fmt, genre.name),
                                                     type = SpotlightType.GENRE_MOVIE,
                                                     items = items,
                                                 )
@@ -748,7 +749,7 @@ constructor(
                                         recommendationMutex.withLock {
                                             loadedSpotlightSections.add(
                                                 HomeSection.Spotlight(
-                                                    title = "Top ${genre.name} Series",
+                                                    title = context.getString(R.string.home_genre_top_series_fmt, genre.name),
                                                     type = SpotlightType.GENRE_SHOW,
                                                     items = items,
                                                 )
@@ -774,7 +775,7 @@ constructor(
                                         recommendationMutex.withLock {
                                             loadedSpotlightSections.add(
                                                 HomeSection.Spotlight(
-                                                    title = "Best of ${studio.name}",
+                                                    title = context.getString(R.string.home_best_of_studio_fmt, studio.name),
                                                     type = SpotlightType.STUDIO,
                                                     items = items,
                                                 )

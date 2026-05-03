@@ -57,6 +57,7 @@ import com.makd.afinity.data.models.GenreType
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.home.components.ContinueWatchingSkeleton
@@ -99,6 +100,7 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val playerOffset = LocalPlayerOffset.current
 
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -211,7 +213,7 @@ fun HomeScreen(
                                     if (!showCarousel)
                                         with(density) { statusBarHeight.toDp() + 56.dp }
                                     else 0.dp,
-                                bottom = 16.dp,
+                                bottom = 16.dp + playerOffset,
                             ),
                     ) {
                         if (showCarousel) {
@@ -324,7 +326,7 @@ fun HomeScreen(
                                     Column {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         DownloadedAudiobooksSection(
-                                            title = "Downloaded Audiobooks",
+                                            title = stringResource(R.string.home_downloaded_audiobooks),
                                             items = uiState.downloadedAudiobooks,
                                             onItemClick = { onAbsItemClick(it.libraryItemId) },
                                         )
@@ -339,7 +341,7 @@ fun HomeScreen(
                                     Column {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         DownloadedAudiobooksSection(
-                                            title = "Downloaded Episodes",
+                                            title = stringResource(R.string.home_downloaded_episodes),
                                             items = uiState.downloadedPodcastEpisodes,
                                             onItemClick = { onAbsItemClick(it.libraryItemId) },
                                         )

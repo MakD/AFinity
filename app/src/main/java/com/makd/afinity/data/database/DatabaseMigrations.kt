@@ -1038,6 +1038,16 @@ object DatabaseMigrations {
             }
         }
 
+    val MIGRATION_41_42 =
+        object : Migration(41, 42) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE userdata ADD COLUMN audioStreamIndex INTEGER DEFAULT NULL")
+                db.execSQL(
+                    "ALTER TABLE userdata ADD COLUMN subtitleStreamIndex INTEGER DEFAULT NULL"
+                )
+            }
+        }
+
     val ALL_MIGRATIONS =
         arrayOf(
             MIGRATION_1_2,
@@ -1080,5 +1090,6 @@ object DatabaseMigrations {
             MIGRATION_38_39,
             MIGRATION_39_40,
             MIGRATION_40_41,
+            MIGRATION_41_42,
         )
 }

@@ -584,7 +584,10 @@ constructor(
             return@withContext try {
                 val apiClient = sessionManager.getCurrentApiClient() ?: return@withContext null
                 val userId = getCurrentUserId() ?: return@withContext null
-                UserLibraryApi(apiClient).getItem(userId = userId, itemId = itemId).content
+                val itemsApi = ItemsApi(apiClient)
+                val response =
+                    itemsApi.getItems(userId = userId, ids = listOf(itemId), fields = fields)
+                response.content.items.firstOrNull()
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get item with id: $itemId")
                 null
@@ -595,7 +598,7 @@ constructor(
         }
 
     override suspend fun getItemById(itemId: UUID): AfinityItem? =
-        getItem(itemId)?.toAfinityItem(getBaseUrl())
+        getItem(itemId, FieldSets.ITEM_DETAIL)?.toAfinityItem(getBaseUrl())
 
     override suspend fun getIntros(itemId: UUID): List<AfinityItem> =
         withContext(Dispatchers.IO) {
