@@ -11,11 +11,14 @@ import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfSkipSilenceManager
 import com.makd.afinity.player.audiobookshelf.EqualizerPreset
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.makd.afinity.R
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -24,6 +27,7 @@ class AudiobookshelfPlayerViewModel
 @OptIn(UnstableApi::class)
 @Inject
 constructor(
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val audiobookshelfPlayer: AudiobookshelfPlayer,
@@ -82,7 +86,7 @@ constructor(
                         _uiState.value =
                             _uiState.value.copy(
                                 isLoading = false,
-                                error = "Server URL not available",
+                                error = context.getString(R.string.error_server_url_not_available),
                             )
                     }
                 },

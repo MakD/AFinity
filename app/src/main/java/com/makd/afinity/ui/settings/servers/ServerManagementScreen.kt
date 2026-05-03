@@ -417,7 +417,7 @@ fun ServerCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ServiceChip(
-                        label = "Seerr",
+                        label = stringResource(R.string.service_label_seerr),
                         activeColor = JellyseerrColor,
                         addressType =
                             serverWithCount.jellyseerrConnectionType ?: AddressType.REMOTE,
@@ -425,7 +425,7 @@ fun ServerCard(
                     )
 
                     ServiceChip(
-                        label = "ABS",
+                        label = stringResource(R.string.service_label_abs),
                         activeColor = AudiobookshelfColor,
                         addressType =
                             serverWithCount.audiobookshelfConnectionType ?: AddressType.REMOTE,
@@ -436,12 +436,12 @@ fun ServerCard(
 
                     LedIndicator(
                         activeColor = tmdbColor,
-                        label = "TMDB",
+                        label = stringResource(R.string.service_label_tmdb),
                         isActive = status.tmdbConfigured,
                     )
                     LedIndicator(
                         activeColor = mdblistColor,
-                        label = "MDBList",
+                        label = stringResource(R.string.service_label_mdblist),
                         isActive = status.mdbListConfigured,
                     )
                 }
@@ -730,7 +730,7 @@ private fun ServerDetailDialog(
                                     )
                                     if (serverWithCount.server.version != null) {
                                         Text(
-                                            text = "v${serverWithCount.server.version}",
+                                            text = stringResource(R.string.server_version_fmt, serverWithCount.server.version ?: ""),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -812,7 +812,7 @@ private fun ServerDetailDialog(
                     DialogView.MANAGE_ADDRESSES -> {
                         val currentTab = tabs.getOrNull(selectedTabIndex) ?: DetailTab.JELLYFIN
                         ManageAddressesView(
-                            title = "Manage Connections",
+                            title = stringResource(R.string.server_manage_connections),
                             onBack = { dialogView = DialogView.STATS },
                         ) {
                             when (currentTab) {
@@ -928,7 +928,7 @@ private fun ActiveConnectionCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Active Connection",
+                        text = stringResource(R.string.server_active_connection),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
@@ -945,7 +945,7 @@ private fun ActiveConnectionCard(
                 )
                 if (totalAddresses > 1) {
                     Text(
-                        text = "+ ${totalAddresses - 1} backup route(s)",
+                        text = stringResource(R.string.server_backup_routes_fmt, totalAddresses - 1),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 2.dp),
@@ -987,18 +987,18 @@ private fun JellyfinTabContent(
         LoadingState()
     } else if (jellyfinStats != null) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SectionHeader("Library Overview")
+            SectionHeader(stringResource(R.string.section_library_overview))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 StatChip(
-                    label = "Movies",
+                    label = stringResource(R.string.stat_movies),
                     value = jellyfinStats.movieCount.toString(),
                     modifier = Modifier.weight(1f),
                 )
                 StatChip(
-                    label = "Series",
+                    label = stringResource(R.string.stat_series),
                     value = jellyfinStats.seriesCount.toString(),
                     modifier = Modifier.weight(1f),
                 )
@@ -1008,12 +1008,12 @@ private fun JellyfinTabContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 StatChip(
-                    label = "Episodes",
+                    label = stringResource(R.string.stat_episodes),
                     value = jellyfinStats.episodeCount.toString(),
                     modifier = Modifier.weight(1f),
                 )
                 StatChip(
-                    label = "Collections",
+                    label = stringResource(R.string.stat_collections),
                     value = jellyfinStats.boxsetCount.toString(),
                     modifier = Modifier.weight(1f),
                 )
@@ -1023,7 +1023,7 @@ private fun JellyfinTabContent(
 
     if (serverWithCount.userServices.isNotEmpty()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SectionHeader("Active Services")
+            SectionHeader(stringResource(R.string.section_active_services))
             val currentUser =
                 serverWithCount.userServices.find {
                     it.serviceStatus == serverWithCount.currentUserServiceStatus
@@ -1048,7 +1048,7 @@ private fun JellyfinTabContent(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader("Network")
+        SectionHeader(stringResource(R.string.section_network))
         ActiveConnectionCard(
             activeAddress = primaryAddress,
             totalAddresses = allAddressesCount,
@@ -1091,7 +1091,7 @@ private fun JellyseerrTabContent(
     } else if (jellyseerrStats != null) {
         jellyseerrStats.user?.let { user ->
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionHeader("User Profile")
+                SectionHeader(stringResource(R.string.section_user_profile_header))
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -1102,12 +1102,12 @@ private fun JellyseerrTabContent(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         DetailRow(
-                            label = "Name",
+                            label = stringResource(R.string.label_name),
                             value = user.displayName ?: user.username ?: "Unknown",
                         )
                         DetailRow(
-                            label = "Role",
-                            value = if (user.isAdmin()) "Admin" else "User",
+                            label = stringResource(R.string.label_role),
+                            value = if (user.isAdmin()) stringResource(R.string.role_admin) else stringResource(R.string.role_user),
                             valueColor =
                                 if (user.isAdmin()) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurface,
@@ -1119,17 +1119,17 @@ private fun JellyseerrTabContent(
                             if (user.hasPermission(Permissions.MANAGE_REQUESTS)) add("Manage")
                         }
                         if (permissions.isNotEmpty()) {
-                            DetailRow(label = "Permissions", value = permissions.joinToString(", "))
+                            DetailRow(label = stringResource(R.string.label_permissions), value = permissions.joinToString(", "))
                         }
                         DetailRow(
-                            label = "Movie quota",
+                            label = stringResource(R.string.label_movie_quota),
                             value =
                                 if (user.movieQuotaLimit != null && user.movieQuotaLimit > 0)
                                     "${user.movieQuotaLimit} / ${user.movieQuotaDays ?: 7} days"
                                 else "Unlimited",
                         )
                         DetailRow(
-                            label = "TV quota",
+                            label = stringResource(R.string.label_tv_quota),
                             value =
                                 if (user.tvQuotaLimit != null && user.tvQuotaLimit > 0)
                                     "${user.tvQuotaLimit} / ${user.tvQuotaDays ?: 7} days"
@@ -1141,18 +1141,18 @@ private fun JellyseerrTabContent(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SectionHeader("Request Stats")
+            SectionHeader(stringResource(R.string.section_request_stats))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 StatChip(
-                    label = "Total",
+                    label = stringResource(R.string.stat_total),
                     value = jellyseerrStats.totalRequests.toString(),
                     modifier = Modifier.weight(1f),
                 )
                 StatChip(
-                    label = "Pending",
+                    label = stringResource(R.string.stat_pending),
                     value = jellyseerrStats.pendingRequests.toString(),
                     modifier = Modifier.weight(1f),
                     valueColor = Color(0xFFF59E0B),
@@ -1163,13 +1163,13 @@ private fun JellyseerrTabContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 StatChip(
-                    label = "Approved",
+                    label = stringResource(R.string.stat_approved),
                     value = jellyseerrStats.approvedRequests.toString(),
                     modifier = Modifier.weight(1f),
                     valueColor = Color(0xFF10B981),
                 )
                 StatChip(
-                    label = "Available",
+                    label = stringResource(R.string.stat_available),
                     value = jellyseerrStats.availableRequests.toString(),
                     modifier = Modifier.weight(1f),
                 )
@@ -1178,7 +1178,7 @@ private fun JellyseerrTabContent(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader("Network")
+        SectionHeader(stringResource(R.string.section_network))
         val activeAddress =
             serverWithCount.jellyseerrAddresses.firstOrNull()?.address ?: "Default (Proxy)"
         val total = serverWithCount.jellyseerrAddresses.size
@@ -1205,7 +1205,7 @@ private fun JellyseerrManageAddresses(
         }
     } else {
         Text(
-            text = "No alternate addresses configured.",
+            text = stringResource(R.string.server_no_alternate_addresses),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
@@ -1237,7 +1237,7 @@ private fun AudiobookshelfTabContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "TOTAL LISTENING TIME",
+                    text = stringResource(R.string.abs_total_listening_time),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                     letterSpacing = 1.2.sp,
@@ -1254,7 +1254,7 @@ private fun AudiobookshelfTabContent(
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
-                        text = "h",
+                        text = stringResource(R.string.abs_hours_unit),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                         modifier = Modifier.padding(bottom = 6.dp, start = 2.dp, end = 8.dp),
@@ -1268,7 +1268,7 @@ private fun AudiobookshelfTabContent(
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
-                        text = "m",
+                        text = stringResource(R.string.abs_minutes_unit),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                         modifier = Modifier.padding(bottom = 6.dp, start = 2.dp),
@@ -1282,38 +1282,38 @@ private fun AudiobookshelfTabContent(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             StatChip(
-                label = "Today",
+                label = stringResource(R.string.time_today),
                 value = formatListeningDuration(absStats.todaySeconds),
                 modifier = Modifier.weight(1f),
             )
             StatChip(
-                label = "This Week",
+                label = stringResource(R.string.time_this_week),
                 value = formatListeningDuration(absStats.weekSeconds),
                 modifier = Modifier.weight(1f),
             )
             StatChip(
-                label = "This Month",
+                label = stringResource(R.string.time_this_month),
                 value = formatListeningDuration(absStats.monthSeconds),
                 modifier = Modifier.weight(1f),
             )
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SectionHeader("Activity")
+            SectionHeader(stringResource(R.string.section_activity))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 StatChip(
-                    label = "Current Streak",
-                    value = "${absStats.currentStreak}d",
+                    label = stringResource(R.string.stat_current_streak),
+                    value = "${absStats.currentStreak}${stringResource(R.string.abs_days_unit)}",
                     iconRes = R.drawable.ic_bolt,
                     iconTint = Color(0xFFFF9800),
                     modifier = Modifier.weight(1f),
                 )
                 StatChip(
-                    label = "Best Streak",
-                    value = "${absStats.longestStreak}d",
+                    label = stringResource(R.string.stat_best_streak),
+                    value = "${absStats.longestStreak}${stringResource(R.string.abs_days_unit)}",
                     iconRes = R.drawable.ic_star,
                     iconTint = Color(0xFFFFC107),
                     modifier = Modifier.weight(1f),
@@ -1324,14 +1324,14 @@ private fun AudiobookshelfTabContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 StatChip(
-                    label = "Finished",
+                    label = stringResource(R.string.abs_finished),
                     value = absStats.finishedCount.toString(),
                     iconRes = R.drawable.ic_circle_check,
                     iconTint = Color(0xFF4CAF50),
                     modifier = Modifier.weight(1f),
                 )
                 StatChip(
-                    label = "Days Active",
+                    label = stringResource(R.string.stat_days_active),
                     value = absStats.activeDays.toString(),
                     iconRes = R.drawable.ic_calendar,
                     iconTint = MaterialTheme.colorScheme.primary,
@@ -1341,18 +1341,18 @@ private fun AudiobookshelfTabContent(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SectionHeader("Library")
+            SectionHeader(stringResource(R.string.section_library_header))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 StatChip(
-                    label = "Items",
+                    label = stringResource(R.string.stat_items),
                     value = absStats.totalItems.toString(),
                     modifier = Modifier.weight(1f),
                 )
                 StatChip(
-                    label = "Content",
+                    label = stringResource(R.string.stat_content),
                     value = "%.0f hrs".format(absStats.totalDurationHours),
                     modifier = Modifier.weight(1f),
                 )
@@ -1372,12 +1372,12 @@ private fun AudiobookshelfTabContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 StatChip(
-                    label = "Audiobooks",
+                    label = stringResource(R.string.stat_audiobooks),
                     value = audiobookCount.toString(),
                     modifier = Modifier.weight(1f),
                 )
                 StatChip(
-                    label = "Podcasts",
+                    label = stringResource(R.string.stat_podcasts),
                     value = podcastCount.toString(),
                     modifier = Modifier.weight(1f),
                 )
@@ -1387,12 +1387,12 @@ private fun AudiobookshelfTabContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 StatChip(
-                    label = "In Progress",
+                    label = stringResource(R.string.stat_in_progress),
                     value = absStats.inProgressCount.toString(),
                     modifier = Modifier.weight(1f),
                 )
                 StatChip(
-                    label = "Libraries",
+                    label = stringResource(R.string.stat_libraries),
                     value = absStats.libraries.size.toString(),
                     modifier = Modifier.weight(1f),
                 )
@@ -1401,7 +1401,7 @@ private fun AudiobookshelfTabContent(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader("Network")
+        SectionHeader(stringResource(R.string.section_network))
         val activeAddress =
             serverWithCount.audiobookshelfAddresses.firstOrNull()?.address ?: "Default (Proxy)"
         val total = serverWithCount.audiobookshelfAddresses.size
@@ -1428,7 +1428,7 @@ private fun AudiobookshelfManageAddresses(
         }
     } else {
         Text(
-            text = "No alternate addresses configured.",
+            text = stringResource(R.string.server_no_alternate_addresses),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
@@ -1654,7 +1654,7 @@ private fun SelectableAddressRow(
                 )
                 if (isPrimary) {
                     Text(
-                        text = "Primary Connection",
+                        text = stringResource(R.string.server_primary_connection),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                     )

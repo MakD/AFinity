@@ -23,6 +23,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.person.components.PersonDetailContent
 
 @Composable
@@ -33,6 +34,7 @@ fun PersonScreen(
     widthSizeClass: WindowWidthSizeClass,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val playerOffset = LocalPlayerOffset.current
 
     Box(modifier = modifier.fillMaxSize()) {
         when {

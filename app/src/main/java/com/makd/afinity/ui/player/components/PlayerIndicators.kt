@@ -253,7 +253,7 @@ private fun SpeedIndicator(show: Boolean, modifier: Modifier = Modifier) {
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_fast_forward),
-                    contentDescription = "Speeding up",
+                    contentDescription = stringResource(R.string.cd_speeding_up),
                     tint = Color.White,
                     modifier = Modifier.size(20.dp),
                 )

@@ -73,6 +73,7 @@ import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.models.media.AfinityVideo
 import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.item.components.BoxSetDetailContent
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
@@ -426,6 +427,7 @@ private fun LandscapeItemDetailContent(
     val statusBarHeight = WindowInsets.statusBars.getTop(density)
     val displayCutoutLeft = WindowInsets.displayCutout.getLeft(density, LayoutDirection.Ltr)
     val baseColorScheme = MaterialTheme.colorScheme
+    val playerOffset = LocalPlayerOffset.current
 
     val landscapeColorScheme =
         remember(baseColorScheme) {
@@ -477,7 +479,7 @@ private fun LandscapeItemDetailContent(
                         top = with(density) { statusBarHeight.toDp() + 16.dp },
                         start = with(density) { displayCutoutLeft.toDp() + 16.dp },
                         end = 16.dp,
-                        bottom = 16.dp,
+                        bottom = 16.dp + playerOffset,
                     ),
             ) {
                 item {
@@ -604,10 +606,11 @@ private fun PortraitItemDetailContent(
     val preferencesRepository = rememberPreferencesRepository()
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
+    val playerOffset = LocalPlayerOffset.current
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = bottomPadding + 16.dp),
+        contentPadding = PaddingValues(bottom = bottomPadding + 16.dp + playerOffset),
     ) {
         item { HeroSection(item = item) }
 

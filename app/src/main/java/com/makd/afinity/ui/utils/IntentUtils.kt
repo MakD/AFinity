@@ -5,13 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import com.makd.afinity.R
 import timber.log.Timber
 
 object IntentUtils {
 
     fun openYouTubeUrl(context: Context, youtubeUrl: String?) {
         if (youtubeUrl.isNullOrBlank()) {
-            Toast.makeText(context, "No trailer available", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.error_no_trailer), Toast.LENGTH_SHORT).show()
             Timber.w("Attempted to open null or blank YouTube URL")
             return
         }
@@ -37,7 +38,7 @@ object IntentUtils {
                 Timber.d("Opened trailer URL in browser: $youtubeUrl")
             }
         } catch (e: Exception) {
-            Toast.makeText(context, "Unable to open trailer", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.error_unable_open_trailer), Toast.LENGTH_SHORT).show()
             Timber.e(e, "Failed to open YouTube URL: $youtubeUrl")
         }
     }

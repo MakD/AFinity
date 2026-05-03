@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -48,7 +49,7 @@ fun PodcastCard(
             if (coverUrl != null) {
                 AsyncImage(
                     model = coverUrl,
-                    contentDescription = "Cover for ${item.media.metadata.title}",
+                    contentDescription = stringResource(R.string.cd_abs_cover_fmt, item.media.metadata.title ?: ""),
                     modifier = Modifier.size(64.dp).clip(MaterialTheme.shapes.small),
                     contentScale = ContentScale.Crop,
                 )
@@ -66,7 +67,7 @@ fun PodcastCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = item.media.metadata.title ?: "Unknown Podcast",
+                    text = item.media.metadata.title ?: stringResource(R.string.unknown_podcast),
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -93,7 +94,7 @@ fun PodcastCard(
 
             Icon(
                 painterResource(id = R.drawable.ic_chevron_right),
-                contentDescription = "Open podcast",
+                contentDescription = stringResource(R.string.cd_abs_open_podcast),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.makd.afinity.R
 import com.makd.afinity.ui.audiobookshelf.item.SeriesDisplayData
 
@@ -33,7 +34,7 @@ fun IncludedInSeriesSection(
 
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Text(
-            text = "Included in Series",
+            text = stringResource(R.string.abs_included_in_series),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -74,7 +75,7 @@ fun IncludedInSeriesSection(
 
                 Icon(
                     painter = painterResource(id = R.drawable.ic_chevron_right),
-                    contentDescription = "View series",
+                    contentDescription = stringResource(R.string.cd_abs_view_series),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp),
                 )

@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.download.DownloadInfo
@@ -53,7 +54,7 @@ fun DownloadProgressIndicator(
             DownloadStatus.CANCELLED -> {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_download),
-                    contentDescription = "Download",
+                    contentDescription = stringResource(R.string.action_download),
                     tint = if (enabled) MaterialTheme.colorScheme.onBackground
                            else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.38f),
                     modifier = Modifier.size(28.dp),
@@ -69,7 +70,7 @@ fun DownloadProgressIndicator(
                     )
                     Icon(
                         painter = painterResource(id = R.drawable.ic_cancel),
-                        contentDescription = "Cancel Download",
+                        contentDescription = stringResource(R.string.cd_cancel_download),
                         modifier = Modifier.size(16.dp),
                         tint = Color.Red,
                     )
@@ -79,7 +80,7 @@ fun DownloadProgressIndicator(
             DownloadStatus.QUEUED -> {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_hourglass_empty),
-                    contentDescription = "Queued - Tap to Cancel",
+                    contentDescription = stringResource(R.string.cd_queued_tap_cancel),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(28.dp),
                 )
@@ -94,7 +95,7 @@ fun DownloadProgressIndicator(
                     )
                     Icon(
                         painter = painterResource(id = R.drawable.ic_cloud_pause),
-                        contentDescription = "Resume Download",
+                        contentDescription = stringResource(R.string.cd_resume_download),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
@@ -104,7 +105,7 @@ fun DownloadProgressIndicator(
             DownloadStatus.COMPLETED -> {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_delete),
-                    contentDescription = "Delete Download",
+                    contentDescription = stringResource(R.string.cd_delete_download),
                     tint = Color.Red,
                     modifier = Modifier.size(28.dp),
                 )

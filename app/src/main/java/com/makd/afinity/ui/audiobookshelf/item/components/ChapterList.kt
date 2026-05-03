@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -103,7 +104,7 @@ private fun ChapterItem(
                 isCurrentChapter -> {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_audio),
-                        contentDescription = "Playing",
+                        contentDescription = stringResource(R.string.cd_abs_playing),
                         tint = iconTint,
                         modifier = Modifier.size(20.dp),
                     )
@@ -111,7 +112,7 @@ private fun ChapterItem(
                 isCompleted -> {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_check),
-                        contentDescription = "Completed",
+                        contentDescription = stringResource(R.string.cd_abs_completed),
                         tint = iconTint.copy(alpha = 0.6f),
                         modifier = Modifier.size(18.dp),
                     )
@@ -197,7 +198,7 @@ fun ChapterListDialog(
                     IconButton(onClick = onDismiss) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_close),
-                            contentDescription = "Close",
+                            contentDescription = stringResource(R.string.cd_close),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }

@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.person
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,11 +11,13 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.makd.afinity.R
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -23,6 +26,7 @@ import javax.inject.Inject
 class PersonViewModel
 @Inject
 constructor(
+    @ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
     private val userDataRepository: UserDataRepository,
@@ -55,7 +59,7 @@ constructor(
 
     private fun loadPersonDetails() {
         if (personId == null) {
-            _uiState.update { it.copy(isLoading = false, error = "Invalid or missing Person ID") }
+            _uiState.update { it.copy(isLoading = false, error = context.getString(R.string.error_invalid_person_id)) }
             return
         }
 
@@ -65,7 +69,7 @@ constructor(
 
                 val person = mediaRepository.getPerson(personId)
                 if (person == null) {
-                    _uiState.update { it.copy(isLoading = false, error = "Person not found") }
+                    _uiState.update { it.copy(isLoading = false, error = context.getString(R.string.error_person_not_found)) }
                     return@launch
                 }
 
@@ -91,7 +95,7 @@ constructor(
                 _uiState.update { currentState ->
                     currentState.copy(
                         isLoading = false,
-                        error = "Failed to load person details: ${e.message}",
+                        error = context.getString(R.string.error_failed_load_person_fmt, e.message ?: ""),
                     )
                 }
             }

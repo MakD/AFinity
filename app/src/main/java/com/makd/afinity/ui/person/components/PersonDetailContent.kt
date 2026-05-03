@@ -74,6 +74,7 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.MediaItemCard
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
@@ -124,6 +125,7 @@ private fun LandscapePersonDetailContent(
     modifier: Modifier = Modifier,
 ) {
     val paddingValues = WindowInsets.safeDrawing.asPaddingValues()
+    val playerOffset = LocalPlayerOffset.current
 
     Box(modifier = modifier.fillMaxSize()) {
         AsyncImage(
@@ -162,7 +164,7 @@ private fun LandscapePersonDetailContent(
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 16.dp),
+                contentPadding = PaddingValues(bottom = 16.dp + playerOffset),
             ) {
                 item {
                     Text(
@@ -211,8 +213,12 @@ private fun PortraitPersonDetailContent(
     modifier: Modifier = Modifier,
 ) {
     val cardWidth = widthSizeClass.portraitWidth
+    val playerOffset = LocalPlayerOffset.current
 
-    LazyColumn(modifier = modifier.fillMaxSize()) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = playerOffset),
+    ) {
         item { PersonHeroSection(person = person, modifier = Modifier.fillParentMaxHeight(0.6f)) }
 
         item {

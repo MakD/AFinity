@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.library
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -18,6 +19,7 @@ import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.makd.afinity.R
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -42,6 +45,7 @@ enum class FilterType {
 class LibraryContentViewModel
 @Inject
 constructor(
+    @ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
     private val playbackStateManager: PlaybackStateManager,
@@ -202,7 +206,7 @@ constructor(
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = false,
-                        error = "Content not available on this server",
+                        error = context.getString(R.string.error_content_unavailable_server),
                     )
             }
         }

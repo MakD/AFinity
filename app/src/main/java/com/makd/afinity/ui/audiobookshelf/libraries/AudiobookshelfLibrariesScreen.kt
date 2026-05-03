@@ -190,7 +190,7 @@ fun AudiobookshelfLibrariesScreen(
                         item {
                             NavigationChip(
                                 selected = pagerState.currentPage == 0,
-                                label = "Home",
+                                label = stringResource(R.string.abs_tab_home),
                                 iconResId = R.drawable.ic_book_series,
                                 onClick = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(0) }
@@ -200,7 +200,7 @@ fun AudiobookshelfLibrariesScreen(
                         item {
                             NavigationChip(
                                 selected = pagerState.currentPage == 1,
-                                label = "Series",
+                                label = stringResource(R.string.abs_tab_series),
                                 iconResId = R.drawable.ic_collection,
                                 onClick = {
                                     coroutineScope.launch { pagerState.animateScrollToPage(1) }
@@ -277,7 +277,7 @@ fun AudiobookshelfLibrariesScreen(
                                                     contentAlignment = Alignment.Center,
                                                 ) {
                                                     Text(
-                                                        text = "No items in library",
+                                                        text = stringResource(R.string.abs_no_items_in_library),
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         color =
                                                             MaterialTheme.colorScheme

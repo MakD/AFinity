@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -133,7 +134,7 @@ fun EpisodeListCard(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_check),
-                            contentDescription = "Watched",
+                            contentDescription = stringResource(R.string.cd_watched),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp),
                         )
@@ -188,7 +189,7 @@ fun EpisodeListCard(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = "IMDB",
+                                contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
                                 modifier = Modifier.size(16.dp),
                             )
@@ -205,7 +206,7 @@ fun EpisodeListCard(
                 }
 
                 Text(
-                    text = item.name ?: "Unknown Episode",
+                    text = item.name ?: stringResource(R.string.unknown_episode),
                     style =
                         MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface,

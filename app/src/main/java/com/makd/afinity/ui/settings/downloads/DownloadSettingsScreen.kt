@@ -154,7 +154,7 @@ fun DownloadSettingsScreen(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 SectionHeader(
-                    title = "STORAGE & CACHE",
+                    title = stringResource(R.string.section_storage_cache),
                     modifier = Modifier.padding(horizontal = 24.dp),
                 )
             }
@@ -221,7 +221,7 @@ fun DownloadSettingsScreen(
                     if (absUniqueItemCount > 0) {
                         item {
                             SectionHeader(
-                                title = "VIDEOS",
+                                title = stringResource(R.string.section_videos),
                                 modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
                             )
                         }
@@ -238,7 +238,7 @@ fun DownloadSettingsScreen(
                 if (absBooks.isNotEmpty()) {
                     item {
                         SectionHeader(
-                            title = "AUDIOBOOKS",
+                            title = stringResource(R.string.section_download_audiobooks),
                             modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
                         )
                     }
@@ -255,7 +255,7 @@ fun DownloadSettingsScreen(
                 if (absPodcastGroups.isNotEmpty()) {
                     item {
                         SectionHeader(
-                            title = "PODCASTS",
+                            title = stringResource(R.string.section_download_podcasts),
                             modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
                         )
                     }

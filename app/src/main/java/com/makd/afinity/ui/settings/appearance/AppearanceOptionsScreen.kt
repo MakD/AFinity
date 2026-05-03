@@ -159,11 +159,11 @@ fun AppearanceOptionsScreen(
             }
 
             item {
-                SettingsGroup(title = "Integrations") {
+                SettingsGroup(title = stringResource(R.string.pref_group_integrations)) {
                     SettingsItem(
                         icon = painterResource(id = R.drawable.ic_tmdb_short),
-                        title = "TMDB API Key",
-                        subtitle = if (tmdbApiKey.isNotBlank()) "Configured" else "Not configured",
+                        title = stringResource(R.string.pref_tmdb_api_key_title),
+                        subtitle = if (tmdbApiKey.isNotBlank()) stringResource(R.string.pref_api_key_configured) else stringResource(R.string.pref_api_key_not_configured),
                         onClick = { showTmdbDialog = true },
                     )
 
@@ -171,9 +171,9 @@ fun AppearanceOptionsScreen(
 
                     SettingsItem(
                         icon = painterResource(id = R.drawable.ic_mdblist),
-                        title = "MDBList API Key",
+                        title = stringResource(R.string.pref_mdblist_api_key_title),
                         subtitle =
-                            if (mdbListApiKey.isNotBlank()) "Configured" else "Not configured",
+                            if (mdbListApiKey.isNotBlank()) stringResource(R.string.pref_api_key_configured) else stringResource(R.string.pref_api_key_not_configured),
                         onClick = { showMdbListDialog = true },
                     )
                 }
@@ -183,7 +183,7 @@ fun AppearanceOptionsScreen(
 
     if (showTmdbDialog) {
         ApiKeyDialog(
-            title = "TMDB Configuration",
+            title = stringResource(R.string.pref_tmdb_config_title),
             initialKey = tmdbApiKey,
             onDismiss = { showTmdbDialog = false },
             onSave = { newKey ->
@@ -195,7 +195,7 @@ fun AppearanceOptionsScreen(
 
     if (showMdbListDialog) {
         ApiKeyDialog(
-            title = "MDBList Configuration",
+            title = stringResource(R.string.pref_mdblist_config_title),
             initialKey = mdbListApiKey,
             onDismiss = { showMdbListDialog = false },
             onSave = { newKey ->
@@ -510,7 +510,7 @@ private fun ApiKeyDialog(
         },
         confirmButton = {
             TextButton(onClick = { onSave(input.trim()) }) {
-                Text("Save", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.action_save), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -523,11 +523,11 @@ private fun ApiKeyDialog(
                                 contentColor = MaterialTheme.colorScheme.error
                             ),
                     ) {
-                        Text("Clear Key")
+                        Text(stringResource(R.string.action_clear_key))
                     }
                 }
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },

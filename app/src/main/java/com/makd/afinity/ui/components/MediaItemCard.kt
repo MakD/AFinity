@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -86,7 +87,7 @@ fun MediaItemCard(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_check),
-                                contentDescription = "Watched",
+                                contentDescription = stringResource(R.string.cd_watched),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(16.dp),
                             )
@@ -198,7 +199,7 @@ fun MediaItemCard(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_imdb_logo),
-                            contentDescription = "IMDB",
+                            contentDescription = stringResource(R.string.cd_imdb),
                             tint = Color.Unspecified,
                             modifier =
                                 Modifier.size(
@@ -238,7 +239,7 @@ fun MediaItemCard(
                                                 R.drawable.ic_rotten_tomato_rotten
                                             }
                                     ),
-                                contentDescription = "Rotten Tomatoes",
+                                contentDescription = stringResource(R.string.cd_rotten_tomatoes),
                                 tint = Color.Unspecified,
                                 modifier =
                                     Modifier.size(

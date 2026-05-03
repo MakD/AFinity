@@ -45,6 +45,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.livetv.tabs.LiveTvChannelsTab
 import com.makd.afinity.ui.livetv.tabs.LiveTvGuideTab
@@ -64,6 +65,7 @@ fun LiveTvScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedLetter by viewModel.selectedLetter.collectAsStateWithLifecycle()
+    val playerOffset = LocalPlayerOffset.current
 
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
@@ -116,7 +118,10 @@ fun LiveTvScreen(
         when {
             uiState.isLoading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    modifier =
+                        Modifier.fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(bottom = playerOffset),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()

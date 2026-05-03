@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -160,7 +161,7 @@ fun ItemHeaderContent(
         if (coverUrl != null) {
             AsyncImage(
                 model = coverUrl,
-                contentDescription = "Cover",
+                contentDescription = stringResource(R.string.cd_abs_cover),
                 modifier =
                     Modifier.width(200.dp)
                         .aspectRatio(1f)
@@ -182,7 +183,7 @@ fun ItemHeaderContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = item.media.metadata.title ?: "Unknown Title",
+            text = item.media.metadata.title ?: stringResource(R.string.unknown_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             maxLines = 3,
@@ -193,7 +194,7 @@ fun ItemHeaderContent(
         item.media.metadata.authorName?.let { author ->
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "by $author",
+                text = stringResource(R.string.abs_by_author_fmt, author),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Medium,
@@ -224,7 +225,7 @@ fun ItemHeaderContent(
 
                     Icon(
                         painter = painterResource(id = R.drawable.ic_check),
-                        contentDescription = "Finished",
+                        contentDescription = stringResource(R.string.cd_finished),
                         tint = Color(0xFF4CAF50),
                         modifier = Modifier.size(14.dp),
                     )
@@ -232,7 +233,7 @@ fun ItemHeaderContent(
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Text(
-                        text = "Finished",
+                        text = stringResource(R.string.abs_finished),
                         style = MaterialTheme.typography.labelMedium,
                         color = Color(0xFF4CAF50),
                         fontWeight = FontWeight.SemiBold,
@@ -315,7 +316,7 @@ fun ItemHeaderContent(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_language),
-                            contentDescription = "Language",
+                            contentDescription = stringResource(R.string.cd_abs_language),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(16.dp),
                         )
@@ -346,7 +347,7 @@ fun ItemHeaderContent(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_explicit),
-                            contentDescription = "Explicit",
+                            contentDescription = stringResource(R.string.cd_abs_explicit),
                             tint = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.padding(2.dp).size(14.dp),
                         )
@@ -364,7 +365,7 @@ fun ItemHeaderContent(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_abridged),
-                            contentDescription = "Abridged",
+                            contentDescription = stringResource(R.string.cd_abs_abridged),
                             tint = MaterialTheme.colorScheme.onTertiaryContainer,
                             modifier = Modifier.padding(2.dp).size(14.dp),
                         )
@@ -407,9 +408,9 @@ fun ItemHeaderContent(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = when {
-                            progress != null && progress.isFinished -> "Listen Again"
-                            progress != null && progress.progress > 0 -> "Continue Listening"
-                            else -> "Play"
+                            progress != null && progress.isFinished -> stringResource(R.string.abs_listen_again)
+                            progress != null && progress.progress > 0 -> stringResource(R.string.abs_continue_listening)
+                            else -> stringResource(R.string.action_play)
                         },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
@@ -452,7 +453,7 @@ fun ItemHeaderContent(
                                 )
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_cancel),
-                                    contentDescription = "Cancel download",
+                                    contentDescription = stringResource(R.string.cd_cancel_download),
                                     modifier = Modifier.size(14.dp),
                                 )
                             }
@@ -468,7 +469,7 @@ fun ItemHeaderContent(
                         AbsDownloadStatus.COMPLETED -> {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_delete),
-                                contentDescription = "Delete download",
+                                contentDescription = stringResource(R.string.cd_delete_download),
                                 modifier = Modifier.size(22.dp),
                                 tint = MaterialTheme.colorScheme.errorContainer,
                             )
@@ -476,7 +477,7 @@ fun ItemHeaderContent(
                         else -> {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_download),
-                                contentDescription = "Download",
+                                contentDescription = stringResource(R.string.cd_abs_download),
                                 modifier = Modifier.size(22.dp),
                             )
                         }
@@ -510,7 +511,7 @@ internal fun ExpandableSynopsis(description: String, modifier: Modifier = Modifi
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "Overview",
+            text = stringResource(R.string.abs_overview),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -554,7 +555,7 @@ internal fun ExpandableSynopsis(description: String, modifier: Modifier = Modifi
         if (isEllipsized || isExpanded) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (isExpanded) "Show Less" else "Read more",
+                text = if (isExpanded) stringResource(R.string.abs_show_less) else stringResource(R.string.abs_read_more),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
@@ -586,7 +587,7 @@ internal fun ItemDetailsSection(item: LibraryItem, modifier: Modifier = Modifier
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "Details",
+            text = stringResource(R.string.abs_details),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -595,9 +596,9 @@ internal fun ItemDetailsSection(item: LibraryItem, modifier: Modifier = Modifier
         if (hasPublisherOrYear) {
             val label =
                 when {
-                    !publisher.isNullOrBlank() && !year.isNullOrBlank() -> "Publisher"
-                    !publisher.isNullOrBlank() -> "Publisher"
-                    else -> "Year"
+                    !publisher.isNullOrBlank() && !year.isNullOrBlank() -> stringResource(R.string.abs_publisher)
+                    !publisher.isNullOrBlank() -> stringResource(R.string.abs_publisher)
+                    else -> stringResource(R.string.abs_year)
                 }
             val value =
                 when {
@@ -612,7 +613,7 @@ internal fun ItemDetailsSection(item: LibraryItem, modifier: Modifier = Modifier
         if (hasTags) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Tags",
+                text = stringResource(R.string.abs_tags),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

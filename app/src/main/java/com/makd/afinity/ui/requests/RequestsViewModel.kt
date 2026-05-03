@@ -238,7 +238,7 @@ constructor(
                             _uiState.update {
                                 it.copy(
                                     isDeletingRequest = false,
-                                    error = "Failed to delete: ${error.message}",
+                                    error = context.getString(R.string.error_request_fail_delete_fmt, error.message ?: ""),
                                 )
                             }
                         },
@@ -308,7 +308,7 @@ constructor(
                             _uiState.update {
                                 it.copy(
                                     isProcessingRequest = false,
-                                    error = "Approve failed: ${error.message}",
+                                    error = context.getString(R.string.error_request_fail_approve_fmt, error.message ?: ""),
                                 )
                             }
                         },
@@ -365,7 +365,7 @@ constructor(
                             _uiState.update {
                                 it.copy(
                                     isProcessingRequest = false,
-                                    error = "Update failed: ${error.message}",
+                                    error = context.getString(R.string.error_request_update_failed_fmt, error.message ?: ""),
                                 )
                             }
                         },
@@ -403,7 +403,7 @@ constructor(
                             _uiState.update {
                                 it.copy(
                                     isProcessingRequest = false,
-                                    error = "Decline failed: ${error.message}",
+                                    error = context.getString(R.string.error_request_fail_decline_fmt, error.message ?: ""),
                                 )
                             }
                         },

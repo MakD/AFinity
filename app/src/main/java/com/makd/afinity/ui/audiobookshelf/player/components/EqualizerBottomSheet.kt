@@ -28,6 +28,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.makd.afinity.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -150,7 +152,7 @@ fun EqualizerBottomSheet(
             ) {
                 Column {
                     Text(
-                        text = "SKIP SILENCE",
+                        text = stringResource(R.string.abs_skip_silence),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 2.sp,
@@ -181,7 +183,7 @@ fun EqualizerBottomSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "VOLUME BOOST",
+                    text = stringResource(R.string.abs_volume_boost),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 2.sp,

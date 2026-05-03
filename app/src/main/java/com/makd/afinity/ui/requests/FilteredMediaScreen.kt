@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.hasPermission
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -64,6 +65,7 @@ fun FilteredMediaScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val requestsUiState by requestsViewModel.uiState.collectAsStateWithLifecycle()
     val currentUser by requestsViewModel.currentUser.collectAsStateWithLifecycle()
+    val playerOffset = LocalPlayerOffset.current
 
     LaunchedEffect(filterParams) { viewModel.loadContent(filterParams) }
 
@@ -111,7 +113,13 @@ fun FilteredMediaScreen(
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
                     modifier = Modifier.fillMaxSize().padding(innerPadding),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 16.dp),
+                    contentPadding =
+                        PaddingValues(
+                            start = 14.dp,
+                            top = 16.dp,
+                            end = 14.dp,
+                            bottom = 16.dp + playerOffset,
+                        ),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {

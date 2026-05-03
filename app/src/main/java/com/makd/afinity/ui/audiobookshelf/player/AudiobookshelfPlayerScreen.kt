@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -200,14 +201,14 @@ fun SharedTransitionScope.PortraitPlayerContent(
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                    contentDescription = "Minimize",
+                    contentDescription = stringResource(R.string.cd_abs_minimize),
                     tint = Color.White,
                     modifier = Modifier.size(32.dp),
                 )
             }
 
             Text(
-                "NOW PLAYING",
+                stringResource(R.string.abs_now_playing),
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.7f),
                 letterSpacing = 2.sp,
@@ -216,7 +217,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
             IconButton(onClick = viewModel::showEqualizer) {
                 Icon(
                     painterResource(id = R.drawable.ic_options),
-                    contentDescription = "Options",
+                    contentDescription = stringResource(R.string.cd_abs_options),
                     tint = Color.White,
                 )
             }
@@ -261,7 +262,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
 
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = playbackState.displayTitle.ifEmpty { "Unknown Title" },
+                text = playbackState.displayTitle.ifEmpty { stringResource(R.string.unknown_title) },
                 style =
                     MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
                 color = Color.White,
@@ -272,7 +273,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = playbackState.displayAuthor ?: "Unknown Author",
+                text = playbackState.displayAuthor ?: stringResource(R.string.unknown_author),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White.copy(alpha = 0.7f),
                 maxLines = 1,
@@ -448,32 +449,32 @@ fun SharedTransitionScope.LandscapePlayerContent(
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         painterResource(id = R.drawable.ic_keyboard_arrow_down),
-                        "Minimize",
+                        stringResource(R.string.cd_abs_minimize),
                         tint = Color.White,
                     )
                 }
                 Text(
-                    "NOW PLAYING",
+                    stringResource(R.string.abs_now_playing),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.7f),
                     letterSpacing = 2.sp,
                 )
                 IconButton(onClick = viewModel::showEqualizer) {
-                    Icon(painterResource(id = R.drawable.ic_options), "Options", tint = Color.White)
+                    Icon(painterResource(id = R.drawable.ic_options), stringResource(R.string.cd_abs_options), tint = Color.White)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = playbackState.displayTitle.ifEmpty { "Unknown Title" },
+                text = playbackState.displayTitle.ifEmpty { stringResource(R.string.unknown_title) },
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = playbackState.displayAuthor ?: "Unknown Author",
+                text = playbackState.displayAuthor ?: stringResource(R.string.unknown_author),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.7f),
                 maxLines = 1,

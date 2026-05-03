@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
@@ -32,7 +33,7 @@ fun SeasonSelector(
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Select Seasons",
+            text = stringResource(R.string.season_selector_title),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -66,8 +67,8 @@ fun SeasonSelector(
                     },
                     label = {
                         Text(
-                            if (disabledSeasons.isEmpty()) "All Seasons"
-                            else "All Remaining Seasons"
+                            if (disabledSeasons.isEmpty()) stringResource(R.string.season_all_seasons)
+                            else stringResource(R.string.season_all_remaining_seasons)
                         )
                     },
                 )
@@ -102,7 +103,7 @@ fun SeasonSelector(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                Text("Season $seasonNumber")
+                                Text(stringResource(R.string.season_n_fmt, seasonNumber))
 
                                 if (isDisabled) {
                                     Icon(

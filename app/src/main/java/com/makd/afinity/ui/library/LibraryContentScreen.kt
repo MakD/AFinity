@@ -2,6 +2,7 @@
 
 package com.makd.afinity.ui.library
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -92,6 +93,7 @@ fun LibraryContentScreen(
     navController: NavController,
     viewModel: LibraryContentViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
+    isMiniPlayerVisible: Boolean = false,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val pagingDataFlow by viewModel.pagingData.collectAsStateWithLifecycle()
@@ -99,6 +101,11 @@ fun LibraryContentScreen(
     val gridState = rememberLazyGridState()
     val scrollToIndex by viewModel.scrollToIndex.collectAsStateWithLifecycle()
     var showSortDialog by remember { mutableStateOf(false) }
+    val playerOffset by
+        animateDpAsState(
+            targetValue = if (isMiniPlayerVisible) 112.dp else 0.dp,
+            label = "playerOffset",
+        )
 
     LaunchedEffect(scrollToIndex) {
         if (scrollToIndex >= 0) {
@@ -231,7 +238,7 @@ fun LibraryContentScreen(
                                             start = 16.dp,
                                             end = 16.dp,
                                             top = 16.dp,
-                                            bottom = 80.dp,
+                                            bottom = 80.dp + playerOffset,
                                         ),
                                 ) { item ->
                                     MediaItemGridCard(
@@ -263,7 +270,9 @@ fun LibraryContentScreen(
                 FloatingActionButton(
                     onClick = { showSortDialog = true },
                     modifier =
-                        Modifier.align(Alignment.BottomEnd).padding(16.dp).padding(end = 24.dp),
+                        Modifier.align(Alignment.BottomEnd)
+                            .padding(end = 24.dp)
+                            .padding(bottom = 16.dp + playerOffset),
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_arrows_sort),

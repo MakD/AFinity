@@ -52,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -59,6 +60,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.annotation.StringRes
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.ui.audiobookshelf.item.components.ChapterListDialog
@@ -90,12 +92,12 @@ private val naturalOrderComparator =
         aParts.size - bParts.size
     }
 
-private enum class EpisodeSortOption(val label: String) {
-    PUB_DATE("Pub Date"),
-    TITLE("Title"),
-    SEASON("Season"),
-    EPISODE("Episode"),
-    FILENAME("Filename"),
+private enum class EpisodeSortOption(@StringRes val labelRes: Int) {
+    PUB_DATE(R.string.abs_sort_pub_date),
+    TITLE(R.string.abs_sort_title),
+    SEASON(R.string.abs_sort_season),
+    EPISODE(R.string.abs_sort_episode),
+    FILENAME(R.string.abs_sort_filename),
 }
 
 @Composable
@@ -308,7 +310,7 @@ fun AudiobookshelfItemScreen(
                             if (showEpisodes || showChapters) {
                                 item {
                                     CollapsibleSectionHeader(
-                                        title = if (showEpisodes) "EPISODES" else "CHAPTERS",
+                                        title = if (showEpisodes) stringResource(R.string.abs_label_episodes) else stringResource(R.string.abs_label_chapters),
                                         expanded = chaptersExpanded,
                                         onToggle = { chaptersExpanded = !chaptersExpanded },
                                         showSortButton = showEpisodes,
@@ -461,7 +463,7 @@ fun AudiobookshelfItemScreen(
                         if (showEpisodes || showChapters) {
                             item {
                                 SectionDialogRow(
-                                    title = if (showEpisodes) "EPISODES" else "CHAPTERS",
+                                    title = if (showEpisodes) stringResource(R.string.abs_label_episodes) else stringResource(R.string.abs_label_chapters),
                                     count =
                                         if (showEpisodes) uiState.episodes.size
                                         else uiState.chapters.size,
@@ -477,7 +479,7 @@ fun AudiobookshelfItemScreen(
 
             uiState.error != null -> {
                 Text(
-                    text = "Failed to load item",
+                    text = stringResource(R.string.abs_error_load_item),
                     modifier = Modifier.align(Alignment.Center),
                     style = MaterialTheme.typography.bodyLarge,
                 )
@@ -593,7 +595,7 @@ private fun CollapsibleSectionHeader(
             IconButton(onClick = onSortClick, modifier = Modifier.size(32.dp)) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_arrows_sort),
-                    contentDescription = "Sort",
+                    contentDescription = stringResource(R.string.cd_abs_sort),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp),
                 )
@@ -606,7 +608,7 @@ private fun CollapsibleSectionHeader(
                         if (expanded) R.drawable.ic_keyboard_arrow_up
                         else R.drawable.ic_keyboard_arrow_down
                 ),
-            contentDescription = if (expanded) "Collapse" else "Expand",
+            contentDescription = if (expanded) stringResource(R.string.cd_collapse) else stringResource(R.string.cd_expand),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp),
         )
@@ -643,7 +645,7 @@ private fun SectionDialogRow(
         )
         Icon(
             painter = painterResource(id = R.drawable.ic_chevron_right),
-            contentDescription = "Open $title",
+            contentDescription = stringResource(R.string.cd_abs_open_item_fmt, title),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp),
         )
@@ -662,7 +664,7 @@ private fun NarratedByRow(narrator: String, modifier: Modifier = Modifier) {
                             fontWeight = FontWeight.Normal,
                         )
                 ) {
-                    append("Narrated by: ")
+                    append(stringResource(R.string.abs_narrated_by))
                 }
 
                 withStyle(
@@ -693,7 +695,7 @@ private fun EpisodeSortDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Sort Episodes") },
+        title = { Text(stringResource(R.string.abs_sort_episodes_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -703,7 +705,7 @@ private fun EpisodeSortDialog(
                         shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
                     ) {
                         Spacer(Modifier.width(4.dp))
-                        Text("Ascending")
+                        Text(stringResource(R.string.sort_ascending))
                     }
 
                     SegmentedButton(
@@ -712,14 +714,14 @@ private fun EpisodeSortDialog(
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                     ) {
                         Spacer(Modifier.width(4.dp))
-                        Text("Descending")
+                        Text(stringResource(R.string.sort_descending))
                     }
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     EpisodeSortOption.entries.forEach { option ->
                         EpisodeSortOptionRow(
-                            label = option.label,
+                            label = stringResource(option.labelRes),
                             selected = selectedSort == option,
                             onClick = { selectedSort = option },
                         )
@@ -728,9 +730,9 @@ private fun EpisodeSortDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSortSelected(selectedSort, isAscending) }) { Text("Apply") }
+            TextButton(onClick = { onSortSelected(selectedSort, isAscending) }) { Text(stringResource(R.string.action_apply)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 

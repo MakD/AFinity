@@ -17,9 +17,11 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
+import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 
@@ -62,7 +64,7 @@ fun PaginatedMediaGrid(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Button(onClick = { retry() }) { Text("Retry") }
+                            Button(onClick = { retry() }) { Text(stringResource(R.string.action_retry)) }
                         }
                     }
                 }

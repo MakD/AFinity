@@ -41,6 +41,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -192,7 +193,7 @@ fun AudiobookshelfSeriesScreen(
 
             uiState.error != null -> {
                 Text(
-                    text = "Failed to load series",
+                    text = stringResource(R.string.abs_error_load_series),
                     modifier = Modifier.align(Alignment.Center),
                     style = MaterialTheme.typography.bodyLarge,
                 )
@@ -322,7 +323,7 @@ private fun SeriesBookItem(
         IconButton(onClick = onPlay, modifier = Modifier.size(48.dp)) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_player_play_filled),
-                contentDescription = "Play",
+                contentDescription = stringResource(R.string.cd_play),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp),
             )

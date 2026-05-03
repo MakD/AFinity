@@ -1,22 +1,28 @@
 package com.makd.afinity.ui.jellyseerr
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.models.jellyseerr.JellyseerrUser
 import com.makd.afinity.data.repository.JellyseerrRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.makd.afinity.R
 import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
 class JellyseerrLoginViewModel
 @Inject
-constructor(private val jellyseerrRepository: JellyseerrRepository) : ViewModel() {
+constructor(
+    @ApplicationContext private val context: Context,
+    private val jellyseerrRepository: JellyseerrRepository,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(JellyseerrLoginUiState())
     val uiState: StateFlow<JellyseerrLoginUiState> = _uiState.asStateFlow()
@@ -151,7 +157,7 @@ constructor(private val jellyseerrRepository: JellyseerrRepository) : ViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = "An unexpected error occurred: ${e.message}")
+                    it.copy(isLoading = false, error = context.getString(R.string.error_unexpected_fmt, e.message ?: ""))
                 }
                 Timber.e(e, "Error during login")
             }
@@ -244,7 +250,7 @@ constructor(private val jellyseerrRepository: JellyseerrRepository) : ViewModel(
                             _uiState.update {
                                 it.copy(
                                     isLoading = false,
-                                    error = "Logout failed: ${error.message}",
+                                    error = context.getString(R.string.error_logout_failed_fmt, error.message ?: ""),
                                 )
                             }
                             Timber.e(error, "Logout failed")
@@ -252,7 +258,7 @@ constructor(private val jellyseerrRepository: JellyseerrRepository) : ViewModel(
                     )
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = "An unexpected error occurred: ${e.message}")
+                    it.copy(isLoading = false, error = context.getString(R.string.error_unexpected_fmt, e.message ?: ""))
                 }
                 Timber.e(e, "Error during logout")
             }

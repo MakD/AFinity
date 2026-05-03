@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -204,7 +205,7 @@ private fun ExpandableEpisodeItem(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_check),
-                        contentDescription = "Finished",
+                        contentDescription = stringResource(R.string.cd_finished),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(24.dp),
                     )
@@ -221,7 +222,7 @@ private fun ExpandableEpisodeItem(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_player_play_filled),
-                        contentDescription = "Play episode",
+                        contentDescription = stringResource(R.string.cd_abs_play_episode),
                         modifier = Modifier.size(24.dp),
                     )
                 }
@@ -236,7 +237,7 @@ private fun ExpandableEpisodeItem(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_check),
-                                contentDescription = "Downloaded — tap to delete",
+                                contentDescription = stringResource(R.string.cd_abs_downloaded_delete),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp),
                             )
@@ -256,7 +257,7 @@ private fun ExpandableEpisodeItem(
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_cancel),
-                                    contentDescription = "Cancel download",
+                                    contentDescription = stringResource(R.string.cd_cancel_download),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(14.dp),
                                 )
@@ -271,7 +272,7 @@ private fun ExpandableEpisodeItem(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_download),
-                                contentDescription = "Download episode",
+                                contentDescription = stringResource(R.string.cd_abs_download_episode),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp),
                             )
@@ -377,14 +378,14 @@ fun EpisodeListDialog(
                         IconButton(onClick = onSortClick) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_arrows_sort),
-                                contentDescription = "Sort",
+                                contentDescription = stringResource(R.string.cd_abs_sort),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         IconButton(onClick = onDismiss) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_close),
-                                contentDescription = "Close",
+                                contentDescription = stringResource(R.string.cd_close),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }

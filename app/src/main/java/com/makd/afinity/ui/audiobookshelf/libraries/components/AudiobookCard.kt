@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,7 +55,7 @@ fun AudiobookCard(
                 if (coverUrl != null) {
                     AsyncImage(
                         model = coverUrl,
-                        contentDescription = "Cover for ${item.media.metadata.title}",
+                        contentDescription = stringResource(R.string.cd_abs_cover_fmt, item.media.metadata.title ?: ""),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                     )
@@ -72,7 +73,7 @@ fun AudiobookCard(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_check),
-                                contentDescription = "Finished",
+                                contentDescription = stringResource(R.string.cd_finished),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(16.dp),
                             )
@@ -93,7 +94,7 @@ fun AudiobookCard(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = item.media.metadata.title ?: "Unknown Title",
+            text = item.media.metadata.title ?: stringResource(R.string.unknown_title),
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 1,

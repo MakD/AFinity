@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -69,13 +70,13 @@ fun PlaybackSpeedSelector(
         dragHandle = null,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 48.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "PLAYBACK SPEED",
+                text = stringResource(R.string.abs_playback_speed_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.fillMaxWidth(),
@@ -112,7 +113,7 @@ fun PlaybackSpeedSelector(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_minus),
-                        contentDescription = "Previous preset",
+                        contentDescription = stringResource(R.string.cd_abs_previous_preset),
                     )
                 }
 
@@ -141,7 +142,7 @@ fun PlaybackSpeedSelector(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_plus),
-                        contentDescription = "Next preset",
+                        contentDescription = stringResource(R.string.cd_abs_next_preset),
                     )
                 }
             }
@@ -170,29 +171,30 @@ fun PlaybackSpeedSelector(
 private fun PresetSpeedItem(speed: Float, isSelected: Boolean, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(
-                    if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                    else Color.Transparent
-                )
-                .border(
-                    BorderStroke(
-                        1.dp,
-                        if (isSelected) Color.Transparent
-                        else MaterialTheme.colorScheme.outlineVariant,
-                    ),
-                    RoundedCornerShape(50),
-                )
-                .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier =
+                Modifier.clip(RoundedCornerShape(50))
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                        else Color.Transparent
+                    )
+                    .border(
+                        BorderStroke(
+                            1.dp,
+                            if (isSelected) Color.Transparent
+                            else MaterialTheme.colorScheme.outlineVariant,
+                        ),
+                        RoundedCornerShape(50),
+                    )
+                    .clickable(onClick = onClick)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = formatSpeed(speed),
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
-                else MaterialTheme.colorScheme.onSurface,
+                color =
+                    if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurface,
             )
         }
 

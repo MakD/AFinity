@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -149,7 +150,7 @@ fun ContinueWatchingCard(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_check),
-                            contentDescription = "Watched",
+                            contentDescription = stringResource(R.string.cd_watched),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp),
                         )
@@ -212,7 +213,7 @@ fun ContinueWatchingCard(
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                    contentDescription = "IMDB",
+                                    contentDescription = stringResource(R.string.cd_imdb),
                                     tint = Color.Unspecified,
                                     modifier = Modifier.size(18.dp),
                                 )
@@ -238,7 +239,7 @@ fun ContinueWatchingCard(
                                                     R.drawable.ic_rotten_tomato_rotten
                                                 }
                                         ),
-                                    contentDescription = "Rotten Tomatoes Rating",
+                                    contentDescription = stringResource(R.string.cd_rotten_tomatoes_rating),
                                     modifier = Modifier.size(12.dp),
                                     tint = Color.Unspecified,
                                 )
@@ -293,7 +294,7 @@ fun ContinueWatchingCard(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_imdb_logo),
-                                contentDescription = "IMDB",
+                                contentDescription = stringResource(R.string.cd_imdb),
                                 tint = Color.Unspecified,
                                 modifier = Modifier.size(18.dp),
                             )
@@ -315,7 +316,7 @@ fun ContinueWatchingCard(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_imdb_logo),
-                            contentDescription = "IMDB",
+                            contentDescription = stringResource(R.string.cd_imdb),
                             tint = Color.Unspecified,
                             modifier = Modifier.size(18.dp),
                         )

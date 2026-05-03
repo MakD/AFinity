@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -133,7 +134,7 @@ fun RequestConfirmationDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
         title = {
             Text(
-                text = if (isManagementMode) "Manage Request" else "Request on Seerr",
+                text = if (isManagementMode) stringResource(R.string.request_manage_title) else stringResource(R.string.request_on_seerr_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -221,6 +222,8 @@ fun RequestConfirmationDialog(
                         val tint: Color = Color.Unspecified,
                         val flagUrl: String? = null,
                     )
+                    val rtCriticLabel = stringResource(R.string.request_rt_critic)
+                    val rtAudienceLabel = stringResource(R.string.request_rt_audience)
                     val metadataItems =
                         remember(ratingsCombined, voteAverage, originalLanguage, certification) {
                             buildList {
@@ -239,7 +242,7 @@ fun RequestConfirmationDialog(
                                             if (it >= 60) R.drawable.ic_rotten_tomato_fresh
                                             else R.drawable.ic_rotten_tomato_rotten,
                                             "$it%",
-                                            "RT Critic",
+                                            rtCriticLabel,
                                         )
                                     )
                                 }
@@ -249,7 +252,7 @@ fun RequestConfirmationDialog(
                                             if (it >= 60) R.drawable.ic_rt_fresh_popcorn
                                             else R.drawable.ic_rt_stale_popcorn,
                                             "$it%",
-                                            "RT Audience",
+                                            rtAudienceLabel,
                                         )
                                     )
                                 }
@@ -419,7 +422,7 @@ fun RequestConfirmationDialog(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            text = "Fulfillment Details",
+                            text = stringResource(R.string.request_fulfillment_details),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -449,7 +452,7 @@ fun RequestConfirmationDialog(
 
                         if (requestStatus == RequestStatus.PENDING && can4k) {
                             MinimalSwitchTile(
-                                title = "Request in 4K",
+                                title = stringResource(R.string.request_4k_title),
                                 checked = is4k,
                                 onCheckedChange = onIs4kChange,
                                 icon = R.drawable.ic_4k,
@@ -486,14 +489,14 @@ fun RequestConfirmationDialog(
                                 )
                             } else {
                                 Text(
-                                    "Override Options",
+                                    stringResource(R.string.request_override_options),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(top = 8.dp),
                                 )
 
                                 MinimalSelectionTile(
-                                    label = "Destination Server",
+                                    label = stringResource(R.string.request_destination_server),
                                     selectedText =
                                         selectedServer?.name ?: manageServerName ?: "Default",
                                     items = availableServers,
@@ -504,7 +507,7 @@ fun RequestConfirmationDialog(
 
                                 if (selectedServer != null) {
                                     MinimalSelectionTile(
-                                        label = "Quality Profile",
+                                        label = stringResource(R.string.request_quality_profile),
                                         selectedText =
                                             selectedProfile?.name ?: manageProfileName ?: "Default",
                                         items = availableProfiles,
@@ -526,7 +529,7 @@ fun RequestConfirmationDialog(
                                         ) {
                                             Column {
                                                 Text(
-                                                    "Root Folder",
+                                                    stringResource(R.string.request_root_folder),
                                                     style = MaterialTheme.typography.labelMedium,
                                                     color =
                                                         MaterialTheme.colorScheme.onSurfaceVariant,
@@ -592,7 +595,7 @@ fun RequestConfirmationDialog(
 
                         if (can4k) {
                             MinimalSwitchTile(
-                                "Request in 4K",
+                                stringResource(R.string.request_4k_title),
                                 is4k,
                                 onIs4kChange,
                                 R.drawable.ic_4k,
@@ -606,14 +609,14 @@ fun RequestConfirmationDialog(
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Text(
-                                    "Advanced Options",
+                                    stringResource(R.string.request_advanced_options),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(start = 4.dp),
                                 )
                                 val serverLabel =
-                                    if (mediaType == MediaType.MOVIE) "Radarr Server"
-                                    else "Sonarr Server"
+                                    if (mediaType == MediaType.MOVIE) stringResource(R.string.request_radarr_server)
+                                    else stringResource(R.string.request_sonarr_server)
                                 MinimalSelectionTile(
                                     serverLabel,
                                     selectedServer?.name ?: "Default",
@@ -644,7 +647,7 @@ fun RequestConfirmationDialog(
                                         ) {
                                             Column {
                                                 Text(
-                                                    "Root Folder",
+                                                    stringResource(R.string.request_root_folder),
                                                     style = MaterialTheme.typography.labelMedium,
                                                     color =
                                                         MaterialTheme.colorScheme.onSurfaceVariant,
@@ -684,7 +687,7 @@ fun RequestConfirmationDialog(
                                     strokeWidth = 2.dp,
                                     color = MaterialTheme.colorScheme.onTertiary,
                                 )
-                            else Text("Save")
+                            else Text(stringResource(R.string.action_save))
                         }
 
                         Button(
@@ -701,7 +704,7 @@ fun RequestConfirmationDialog(
                                     strokeWidth = 2.dp,
                                     color = MaterialTheme.colorScheme.onPrimary,
                                 )
-                            else Text("Approve")
+                            else Text(stringResource(R.string.request_approve))
                         }
                     }
                 }
@@ -721,7 +724,7 @@ fun RequestConfirmationDialog(
                             color = MaterialTheme.colorScheme.onPrimary,
                             strokeWidth = 2.dp,
                         )
-                    else Text(if (alreadyRequested) "Already Requested" else "Request")
+                    else Text(if (alreadyRequested) stringResource(R.string.request_already_requested) else stringResource(R.string.request_on_seerr_title))
                 }
             }
         },
@@ -737,7 +740,7 @@ fun RequestConfirmationDialog(
                                     contentColor = MaterialTheme.colorScheme.error
                                 ),
                         ) {
-                            Text("Decline")
+                            Text(stringResource(R.string.request_decline))
                         }
                     } else {
                         TextButton(
@@ -748,11 +751,11 @@ fun RequestConfirmationDialog(
                                     contentColor = MaterialTheme.colorScheme.error
                                 ),
                         ) {
-                            Text("Delete Request")
+                            Text(stringResource(R.string.request_delete_action))
                         }
                     }
                 }
-                TextButton(onClick = onDismiss, enabled = !isLoading) { Text("Cancel") }
+                TextButton(onClick = onDismiss, enabled = !isLoading) { Text(stringResource(R.string.action_cancel)) }
             }
         },
         modifier = modifier,

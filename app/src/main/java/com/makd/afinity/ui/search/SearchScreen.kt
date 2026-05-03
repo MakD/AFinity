@@ -82,6 +82,7 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
@@ -527,6 +528,7 @@ private fun SearchHomeContent(
     widthSizeClass: WindowWidthSizeClass,
     isAudiobookshelf: Boolean = false,
 ) {
+    val playerOffset = LocalPlayerOffset.current
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -542,7 +544,7 @@ private fun SearchHomeContent(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 16.dp),
+            contentPadding = PaddingValues(bottom = 16.dp + playerOffset),
         ) {
             items(genres, key = { it }) { genre ->
                 GenreCard(
@@ -562,9 +564,11 @@ private fun SearchResultsContent(
     onEpisodeClick: (AfinityEpisode) -> Unit,
 ) {
     LocalSoftwareKeyboardController.current
+    val playerOffset = LocalPlayerOffset.current
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding =
+            PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
@@ -855,9 +859,11 @@ private fun JellyseerrSearchResultsContent(
     results: List<SearchResultItem>,
     onRequestClick: (SearchResultItem) -> Unit,
 ) {
+    val playerOffset = LocalPlayerOffset.current
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding =
+            PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
@@ -1269,10 +1275,12 @@ private fun CombinedSearchResultsContent(
     val movies = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityMovie>() }
     val shows = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityShow>() }
     val episodes = remember(jellyfinResults) { jellyfinResults.filterIsInstance<AfinityEpisode>() }
+    val playerOffset = LocalPlayerOffset.current
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding =
+            PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + playerOffset),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (collections.isNotEmpty()) {
@@ -1284,12 +1292,16 @@ private fun CombinedSearchResultsContent(
 
         if (movies.isNotEmpty()) {
             item { SearchSectionHeader(stringResource(R.string.media_type_movie) + "s") }
-            items(movies, key = { "movie_${it.id}" }) { item -> SearchResultItem(item = item, onClick = { onItemClick(item) }) }
+            items(movies, key = { "movie_${it.id}" }) { item ->
+                SearchResultItem(item = item, onClick = { onItemClick(item) })
+            }
         }
 
         if (shows.isNotEmpty()) {
             item { SearchSectionHeader(stringResource(R.string.media_type_tv_show) + "s") }
-            items(shows, key = { "show_${it.id}" }) { item -> SearchResultItem(item = item, onClick = { onItemClick(item) }) }
+            items(shows, key = { "show_${it.id}" }) { item ->
+                SearchResultItem(item = item, onClick = { onItemClick(item) })
+            }
         }
 
         if (episodes.isNotEmpty()) {
@@ -1300,7 +1312,12 @@ private fun CombinedSearchResultsContent(
         }
 
         if (jellyseerrResults.isNotEmpty() || isJellyseerrSearching) {
-            item { SearchSectionHeader("Discover & Request", isLoading = isJellyseerrSearching) }
+            item {
+                SearchSectionHeader(
+                    stringResource(R.string.section_discover_request),
+                    isLoading = isJellyseerrSearching,
+                )
+            }
             items(jellyseerrResults, key = { "jellyseerr_${it.id}" }) { item ->
                 JellyseerrSearchResultItem(item = item, onRequestClick = { onRequestClick(item) })
             }
@@ -1308,7 +1325,10 @@ private fun CombinedSearchResultsContent(
 
         if (audiobookshelfResults.isNotEmpty() || isAudiobookshelfSearching) {
             item {
-                SearchSectionHeader("Audiobooks & Podcasts", isLoading = isAudiobookshelfSearching)
+                SearchSectionHeader(
+                    stringResource(R.string.section_audiobooks_podcasts),
+                    isLoading = isAudiobookshelfSearching,
+                )
             }
             items(audiobookshelfResults, key = { it.id }) { item ->
                 AudiobookshelfSearchResultItem(

@@ -16,8 +16,8 @@ import com.makd.afinity.data.database.entities.AfinityTrickplayInfoDto
 import com.makd.afinity.data.database.entities.DownloadDto
 import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.data.models.user.AfinityUserDataDto
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 @Dao
 abstract class ServerDatabaseDao {
@@ -200,7 +200,6 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM downloads WHERE serverId = :serverId")
     abstract suspend fun deleteDownloadsByServerId(serverId: String)
 
-    // Orphan cleanup: sources/mediastreams have no serverId, delete by absence of parent
     @Query(
         "DELETE FROM sources WHERE itemId NOT IN (SELECT id FROM movies UNION ALL SELECT id FROM shows UNION ALL SELECT id FROM episodes)"
     )
@@ -209,7 +208,6 @@ abstract class ServerDatabaseDao {
     @Query("DELETE FROM mediastreams WHERE sourceId NOT IN (SELECT id FROM sources)")
     abstract suspend fun deleteOrphanedMediaStreams()
 
-    // Cache tables
     @Query("DELETE FROM genre_cache WHERE serverId = :serverId")
     abstract suspend fun deleteGenreCacheByServerId(serverId: String)
 
@@ -257,16 +255,14 @@ abstract class ServerDatabaseDao {
 
     @Transaction
     open suspend fun clearAllDataForServer(serverId: String) {
-        // Content tables — order matters: delete children before cascade parents clean up
         deleteMoviesByServerId(serverId)
         deleteShowsByServerId(serverId)
         deleteSeasonsByServerId(serverId)
-        deleteEpisodesByServerId(serverId) // cascades → segments
+        deleteEpisodesByServerId(serverId)
         deleteUserDataByServerId(serverId)
         deleteDownloadsByServerId(serverId)
-        deleteOrphanedSources() // cascades → trickplayInfos
+        deleteOrphanedSources()
         deleteOrphanedMediaStreams()
-        // Cache tables
         deleteGenreCacheByServerId(serverId)
         deleteGenreMovieCacheByServerId(serverId)
         deleteShowGenreCacheByServerId(serverId)

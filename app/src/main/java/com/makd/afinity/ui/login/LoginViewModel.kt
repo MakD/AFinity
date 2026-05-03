@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.login
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,6 +15,7 @@ import com.makd.afinity.data.repository.server.AddressResolutionResult
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerAddressResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.makd.afinity.R
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -29,6 +32,7 @@ import javax.inject.Inject
 class LoginViewModel
 @Inject
 constructor(
+    @ApplicationContext private val context: Context,
     private val savedStateHandle: SavedStateHandle,
     private val jellyfinRepository: JellyfinRepository,
     private val authRepository: AuthRepository,
@@ -161,7 +165,7 @@ constructor(
                             _uiState.value.copy(
                                 isConnecting = false,
                                 isConnectedToServer = false,
-                                error = "Not a valid Jellyfin server: ${validationResult.message}",
+                                error = context.getString(R.string.error_not_valid_jellyfin_fmt, validationResult.message ?: ""),
                             )
                     }
                 }
@@ -170,7 +174,7 @@ constructor(
                     _uiState.value.copy(
                         isConnecting = false,
                         isConnectedToServer = false,
-                        error = "Failed to connect to server: ${e.message ?: "Unknown error"}",
+                        error = context.getString(R.string.error_server_connect_failed_fmt, e.message ?: context.getString(R.string.error_unknown)),
                     )
                 Timber.e(e, "Failed to connect to server: $url")
             }
@@ -245,7 +249,7 @@ constructor(
                     _uiState.value.copy(
                         isConnecting = false,
                         isConnectedToServer = false,
-                        error = "Failed to connect to ${server.name}: ${e.message}",
+                        error = context.getString(R.string.error_connect_to_server_fmt, server.name, e.message ?: ""),
                     )
             }
         }
@@ -288,7 +292,7 @@ constructor(
                         _uiState.value =
                             _uiState.value.copy(
                                 isLoggingIn = false,
-                                error = "Server not found. Please login again.",
+                                error = context.getString(R.string.error_server_not_found_login),
                             )
                         Timber.w(
                             "Server ${user.serverId} not found in database for user ${user.name}"
@@ -339,7 +343,7 @@ constructor(
                     _uiState.value =
                         _uiState.value.copy(
                             isLoggingIn = false,
-                            error = "Saved session expired. Please login again.",
+                            error = context.getString(R.string.error_session_expired_login),
                         )
                     Timber.w("No saved token found for user: ${user.name}")
                 }
@@ -347,7 +351,7 @@ constructor(
                 _uiState.value =
                     _uiState.value.copy(
                         isLoggingIn = false,
-                        error = "Login failed: ${e.message ?: "Unknown error"}",
+                        error = context.getString(R.string.error_login_failed_fmt, e.message ?: context.getString(R.string.error_unknown)),
                     )
                 Timber.e(e, "1-tap login failed for user: ${user.name}")
             }
@@ -363,7 +367,7 @@ constructor(
         val currentState = _uiState.value
 
         if (currentState.username.isBlank()) {
-            _uiState.value = currentState.copy(error = "Username is required")
+            _uiState.value = currentState.copy(error = context.getString(R.string.error_username_required))
             return
         }
 
@@ -415,7 +419,7 @@ constructor(
                             _uiState.value =
                                 _uiState.value.copy(
                                     isLoggingIn = false,
-                                    error = "Login succeeded but user ID or token was missing.",
+                                    error = context.getString(R.string.error_login_no_token),
                                 )
                         }
                     }
@@ -430,7 +434,7 @@ constructor(
                 _uiState.value =
                     _uiState.value.copy(
                         isLoggingIn = false,
-                        error = "Login failed: ${e.message ?: "Unknown error"}",
+                        error = context.getString(R.string.error_login_failed_fmt, e.message ?: context.getString(R.string.error_unknown)),
                     )
                 Timber.e(e, "Login failed for user: ${currentState.username}")
             }
@@ -460,7 +464,7 @@ constructor(
                         _uiState.value =
                             _uiState.value.copy(
                                 isLoggingIn = false,
-                                error = "Failed to start Quick Connect. Please try again.",
+                                error = context.getString(R.string.error_quick_connect_start),
                             )
                     }
                 } catch (e: Exception) {

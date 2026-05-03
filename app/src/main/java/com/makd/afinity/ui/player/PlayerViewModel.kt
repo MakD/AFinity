@@ -114,6 +114,8 @@ constructor(
 
     private var progressReportingJob: Job? = null
     private var pendingMainItemOptions: MainItemPlaybackOptions? = null
+    private var pendingAudioTrackPosition: Int? = null
+    private var pendingSubtitleTrackPosition: Int? = null
     private var currentItem: AfinityItem? = null
     private var currentTrickplay: Trickplay? = null
 
@@ -302,7 +304,6 @@ constructor(
             while (true) {
                 delay(5000L)
                 if (_uiState.value.isLiveChannel) continue
-
                 currentItem?.let { item ->
                     if (_uiState.value.isPlayingIntro) {
                         return@let
@@ -311,18 +312,40 @@ constructor(
                         try {
                             val positionTicks = player.currentPosition * 10000
                             val isPaused = !player.isPlaying
-
                             playbackStateManager.updatePlaybackPosition(player.currentPosition)
+                            val sourceId =
+                                _uiState.value.currentMediaSourceId
+                                    ?: item.sources.firstOrNull()?.id
+                                    ?: ""
+                            val source =
+                                item.sources.firstOrNull { it.id == sourceId }
+                                    ?: item.sources.firstOrNull()
+                            val audioStreams =
+                                source?.mediaStreams?.filter { it.type == MediaStreamType.AUDIO }
+                            val subStreams =
+                                source?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }
+
+                            val jfAudioIndex =
+                                _uiState.value.audioStreamIndex?.let {
+                                    audioStreams?.getOrNull(it)?.index
+                                }
+                            val jfSubIndex =
+                                _uiState.value.subtitleStreamIndex?.let {
+                                    subStreams?.getOrNull(it)?.index
+                                } ?: -1
 
                             playbackRepository.reportPlaybackProgress(
                                 itemId = item.id,
                                 sessionId = sessionId,
                                 positionTicks = positionTicks,
                                 isPaused = isPaused,
+                                audioStreamIndex = jfAudioIndex,
+                                subtitleStreamIndex = jfSubIndex,
                                 playMethod = "DirectPlay",
+                                repeatMode = "RepeatNone",
                             )
                             Timber.d(
-                                "Reported progress: ${player.currentPosition}ms, paused: $isPaused"
+                                "Reported progress: ${player.currentPosition}ms, paused: $isPaused, audio: $jfAudioIndex, sub: $jfSubIndex"
                             )
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to report periodic progress")
@@ -410,7 +433,8 @@ constructor(
             mpvAudioOutput,
             subtitlePrefs,
             preferredAudioLang,
-            preferredSubLang) = MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang, subLang)
+            preferredSubLang) =
+            MpvPrefsSnapshot(hwDec.value, vo.value, ao.value, subs, audioLang, subLang)
 
         mpvVideoOutputValue = mpvVideoOutput
 
@@ -872,35 +896,59 @@ constructor(
                 }
             }
 
+            val playbackInfo =
+                playbackRepository.getPlaybackInfo(
+                    itemId = fullItem.id,
+                    mediaSourceId = actualMediaSourceId,
+                )
+            val negotiatedSource =
+                playbackInfo?.mediaSources?.firstOrNull { it.id == actualMediaSourceId }
+                    ?: playbackInfo?.mediaSources?.firstOrNull()
+
+            val serverSavedAudioIndex = negotiatedSource?.defaultAudioStreamIndex
+            val serverSavedSubtitleIndex = negotiatedSource?.defaultSubtitleStreamIndex
             val audioStreams = mediaSource.mediaStreams.filter { it.type == MediaStreamType.AUDIO }
-            val audioPosition =
-                if (audioStreamIndex != null) {
-                    audioStreams.indexOfFirst { it.index == audioStreamIndex }.takeIf { it >= 0 }
-                } else {
-                    null
-                }
+            val targetAudioStreamIndex =
+                audioStreamIndex
+                    ?: serverSavedAudioIndex
+                    ?: audioStreams.find { it.isDefault }?.index
+            val audioPosition = targetAudioStreamIndex?.let { idx ->
+                audioStreams.indexOfFirst { it.index == idx }.takeIf { it >= 0 }
+            }
+
+            val subtitleStreams =
+                mediaSource.mediaStreams.filter { it.type == MediaStreamType.SUBTITLE }
+            val targetSubtitleStreamIndex =
+                subtitleStreamIndex
+                    ?: serverSavedSubtitleIndex
+                    ?: subtitleStreams.find { it.isDefault }?.index
+                    ?: -1
+
+            val subtitlePosition =
+                if (targetSubtitleStreamIndex < 0) -1
+                else subtitleStreams.indexOfFirst { it.index == targetSubtitleStreamIndex }
+
+            pendingAudioTrackPosition = audioPosition
+            pendingSubtitleTrackPosition = subtitlePosition
 
             updateUiState {
                 it.copy(
                     currentItem = fullItem,
                     audioStreamIndex = audioPosition,
-                    subtitleStreamIndex = subtitleStreamIndex,
+                    subtitleStreamIndex = subtitlePosition,
                     availableSources = fullItem.sources,
                     currentMediaSourceId = actualMediaSourceId,
                 )
             }
             currentSessionId = UUID.randomUUID().toString()
-
             playbackStateManager.trackPlaybackSession(
                 sessionId = currentSessionId!!,
                 itemId = fullItem.id,
                 mediaSourceId = actualMediaSourceId,
             )
             playbackStateManager.trackCurrentItem(fullItem.id)
-
             coroutineScope {
                 val useLocalSource = mediaSource.type == AfinitySourceType.LOCAL
-
                 val streamUrlDeferred =
                     async(Dispatchers.IO) {
                         if (useLocalSource) {
@@ -909,8 +957,8 @@ constructor(
                             playbackRepository.getStreamUrl(
                                 itemId = fullItem.id,
                                 mediaSourceId = actualMediaSourceId,
-                                audioStreamIndex = audioStreamIndex,
-                                subtitleStreamIndex = null,
+                                audioStreamIndex = targetAudioStreamIndex,
+                                subtitleStreamIndex = targetSubtitleStreamIndex,
                                 videoStreamIndex = null,
                                 maxStreamingBitrate = null,
                                 startTimeTicks = null,
@@ -1270,7 +1318,28 @@ constructor(
 
     override fun onTracksChanged(tracks: Tracks) {
         super.onTracksChanged(tracks)
-        updateCurrentTrackSelections()
+        var consumedPending = false
+        Timber.d(
+            "TRACK_DEBUG: onTracksChanged fired. Pending Audio=$pendingAudioTrackPosition, Pending Sub=$pendingSubtitleTrackPosition"
+        )
+
+        pendingAudioTrackPosition?.let { pos ->
+            pendingAudioTrackPosition = null
+            Timber.d("TRACK_DEBUG: Attempting to switch audio track to position $pos")
+            switchToTrack(C.TRACK_TYPE_AUDIO, pos)
+            consumedPending = true
+        }
+
+        pendingSubtitleTrackPosition?.let { pos ->
+            pendingSubtitleTrackPosition = null
+            Timber.d("TRACK_DEBUG: Attempting to switch subtitle track to position $pos")
+            switchToTrack(C.TRACK_TYPE_TEXT, pos)
+            consumedPending = true
+        }
+
+        if (!consumedPending) {
+            updateCurrentTrackSelections()
+        }
     }
 
     fun switchToTrack(trackType: @C.TrackType Int, index: Int) {
@@ -1327,12 +1396,26 @@ constructor(
         }
         try {
             currentSessionId?.let { sessionId ->
+                val sourceId =
+                    _uiState.value.currentMediaSourceId ?: item.sources.firstOrNull()?.id ?: ""
+                val source =
+                    item.sources.firstOrNull { it.id == sourceId } ?: item.sources.firstOrNull()
+                val audioStreams = source?.mediaStreams?.filter { it.type == MediaStreamType.AUDIO }
+                val subStreams =
+                    source?.mediaStreams?.filter { it.type == MediaStreamType.SUBTITLE }
+
+                val jfAudioIndex =
+                    _uiState.value.audioStreamIndex?.let { audioStreams?.getOrNull(it)?.index }
+                val jfSubIndex =
+                    _uiState.value.subtitleStreamIndex?.let { subStreams?.getOrNull(it)?.index }
+                        ?: -1
+
                 playbackRepository.reportPlaybackStart(
                     itemId = item.id,
                     sessionId = sessionId,
-                    mediaSourceId = item.sources.firstOrNull()?.id ?: "",
-                    audioStreamIndex = 0,
-                    subtitleStreamIndex = null,
+                    mediaSourceId = sourceId,
+                    audioStreamIndex = jfAudioIndex,
+                    subtitleStreamIndex = jfSubIndex,
                     playMethod = "DirectPlay",
                     canSeek = true,
                 )

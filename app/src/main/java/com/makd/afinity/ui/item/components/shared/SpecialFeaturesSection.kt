@@ -20,6 +20,7 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.annotation.StringRes
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -92,8 +93,9 @@ private fun SpecialFeatureCard(feature: AfinityItem, onClick: () -> Unit, cardWi
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        val extraTypeRes = (feature as? AfinityVideo)?.extraType?.toStringRes()
         Text(
-            text = (feature as? AfinityVideo)?.extraType?.toDisplayString() ?: "",
+            text = extraTypeRes?.let { stringResource(it) } ?: "",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary,
             maxLines = 1,
@@ -112,17 +114,18 @@ private fun SpecialFeatureCard(feature: AfinityItem, onClick: () -> Unit, cardWi
     }
 }
 
-private fun ExtraType.toDisplayString(): String? = when (this) {
-    ExtraType.CLIP -> "Clip"
-    ExtraType.TRAILER -> "Trailer"
-    ExtraType.BEHIND_THE_SCENES -> "Behind the Scenes"
-    ExtraType.DELETED_SCENE -> "Deleted Scene"
-    ExtraType.INTERVIEW -> "Interview"
-    ExtraType.SCENE -> "Scene"
-    ExtraType.SAMPLE -> "Sample"
-    ExtraType.THEME_SONG -> "Theme Song"
-    ExtraType.THEME_VIDEO -> "Theme Video"
-    ExtraType.FEATURETTE -> "Featurette"
-    ExtraType.SHORT -> "Short"
+@StringRes
+private fun ExtraType.toStringRes(): Int? = when (this) {
+    ExtraType.CLIP -> R.string.extra_type_clip
+    ExtraType.TRAILER -> R.string.extra_type_trailer
+    ExtraType.BEHIND_THE_SCENES -> R.string.extra_type_behind_the_scenes
+    ExtraType.DELETED_SCENE -> R.string.extra_type_deleted_scene
+    ExtraType.INTERVIEW -> R.string.extra_type_interview
+    ExtraType.SCENE -> R.string.extra_type_scene
+    ExtraType.SAMPLE -> R.string.extra_type_sample
+    ExtraType.THEME_SONG -> R.string.extra_type_theme_song
+    ExtraType.THEME_VIDEO -> R.string.extra_type_theme_video
+    ExtraType.FEATURETTE -> R.string.extra_type_featurette
+    ExtraType.SHORT -> R.string.extra_type_short
     ExtraType.UNKNOWN -> null
 }

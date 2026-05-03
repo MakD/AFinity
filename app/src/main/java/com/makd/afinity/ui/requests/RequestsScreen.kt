@@ -38,6 +38,7 @@ import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.RequestStatus
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
@@ -60,6 +61,7 @@ fun RequestsScreen(
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val playerOffset = LocalPlayerOffset.current
 
     LaunchedEffect(Unit) {
         viewModel.navigateToItem.collect { (jellyfinId, mediaType) ->
@@ -118,20 +120,26 @@ fun RequestsScreen(
                 }
 
                 else -> {
-                    val activeRequests = uiState.requests.filter { req ->
-                        val statusValue = if (req.is4k) req.media.status4k ?: 1 else req.media.status ?: 1
-                        val mediaStatus = MediaStatus.fromValue(statusValue)
-                        mediaStatus != MediaStatus.AVAILABLE && mediaStatus != MediaStatus.PARTIALLY_AVAILABLE
-                    }
-                    val availableRequests = uiState.requests.filter { req ->
-                        val statusValue = if (req.is4k) req.media.status4k ?: 1 else req.media.status ?: 1
-                        val mediaStatus = MediaStatus.fromValue(statusValue)
-                        mediaStatus == MediaStatus.AVAILABLE || mediaStatus == MediaStatus.PARTIALLY_AVAILABLE
-                    }
+                    val activeRequests =
+                        uiState.requests.filter { req ->
+                            val statusValue =
+                                if (req.is4k) req.media.status4k ?: 1 else req.media.status ?: 1
+                            val mediaStatus = MediaStatus.fromValue(statusValue)
+                            mediaStatus != MediaStatus.AVAILABLE &&
+                                mediaStatus != MediaStatus.PARTIALLY_AVAILABLE
+                        }
+                    val availableRequests =
+                        uiState.requests.filter { req ->
+                            val statusValue =
+                                if (req.is4k) req.media.status4k ?: 1 else req.media.status ?: 1
+                            val mediaStatus = MediaStatus.fromValue(statusValue)
+                            mediaStatus == MediaStatus.AVAILABLE ||
+                                mediaStatus == MediaStatus.PARTIALLY_AVAILABLE
+                        }
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize().padding(innerPadding),
-                        contentPadding = PaddingValues(vertical = 16.dp),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp + playerOffset),
                         verticalArrangement = Arrangement.spacedBy(24.dp),
                     ) {
                         if (activeRequests.isNotEmpty()) {
