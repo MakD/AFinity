@@ -648,4 +648,5 @@
     <string name="pref_send_logs_summary">Partager les journaux de diagnostic pour les rapports de bug</string>
     <string name="action_close">Fermer</string>
     <string name="home_upcoming_episodes">Épisodes à venir</string>
+    <string name="section_available_requests">Demandes disponibles</string>
 </resources>
