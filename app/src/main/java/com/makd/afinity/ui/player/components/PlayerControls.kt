@@ -249,6 +249,7 @@ fun PlayerControls(
                         if (displayItem is AfinityEpisode) {
                             val seasonNumber = displayItem.parentIndexNumber
                             val episodeNumber = displayItem.indexNumber
+                            val episodeEnd = displayItem.indexNumberEnd
                             val episodeTitle = displayItem.name
                             val seriesName = displayItem.seriesName
 
@@ -285,7 +286,7 @@ fun PlayerControls(
                                         stringResource(
                                             R.string.player_episode_header_fmt,
                                             seasonNumber.toString().padStart(2, '0'),
-                                            episodeNumber.toString().padStart(2, '0'),
+                                            if (episodeEnd != null && episodeEnd != episodeNumber) "${episodeNumber.toString().padStart(2, '0')}-${episodeEnd.toString().padStart(2, '0')}" else episodeNumber.toString().padStart(2, '0'),
                                             episodeTitle,
                                         ),
                                     color = Color.White.copy(alpha = 0.8f),

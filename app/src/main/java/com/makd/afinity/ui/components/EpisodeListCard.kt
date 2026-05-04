@@ -152,7 +152,7 @@ fun EpisodeListCard(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
-                        text = "S${item.parentIndexNumber}:E${item.indexNumber}",
+                        text = "S${item.parentIndexNumber}:E" + if (item.indexNumberEnd != null && item.indexNumberEnd != item.indexNumber) "${item.indexNumber}-E${item.indexNumberEnd}" else "${item.indexNumber}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.align(Alignment.CenterVertically),

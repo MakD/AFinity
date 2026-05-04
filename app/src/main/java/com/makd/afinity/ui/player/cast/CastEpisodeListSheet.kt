@@ -274,7 +274,7 @@ private fun CastEpisodeCard(
                             stringResource(
                                 R.string.player_season_episode_fmt,
                                 episode.parentIndexNumber ?: 1,
-                                episode.indexNumber ?: 0,
+                                if (episode.indexNumberEnd != null && episode.indexNumberEnd != episode.indexNumber) "${episode.indexNumber ?: 0}-${episode.indexNumberEnd}" else "${episode.indexNumber ?: 0}",
                             ),
                         style = MaterialTheme.typography.labelSmall,
                         color =

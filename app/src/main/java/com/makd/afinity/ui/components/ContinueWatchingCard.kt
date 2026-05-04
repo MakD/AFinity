@@ -274,7 +274,7 @@ fun ContinueWatchingCard(
                 ) {
                     Text(
                         text =
-                            "S${item.parentIndexNumber}:E${item.indexNumber} • ${item.seriesName}",
+                            "S${item.parentIndexNumber}:E" + (if (item.indexNumberEnd != null && item.indexNumberEnd != item.indexNumber) "${item.indexNumber}-E${item.indexNumberEnd}" else "${item.indexNumber}") + " • ${item.seriesName}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
