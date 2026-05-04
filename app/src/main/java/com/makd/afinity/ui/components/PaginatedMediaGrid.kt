@@ -31,7 +31,7 @@ fun PaginatedMediaGrid(
     widthSizeClass: WindowWidthSizeClass,
     modifier: Modifier = Modifier,
     state: LazyGridState = rememberLazyGridState(),
-    contentPadding: PaddingValues = PaddingValues(16.dp),
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     itemContent: @Composable (AfinityItem) -> Unit,
 ) {
     LazyVerticalGrid(
@@ -64,7 +64,9 @@ fun PaginatedMediaGrid(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Button(onClick = { retry() }) { Text(stringResource(R.string.action_retry)) }
+                            Button(onClick = { retry() }) {
+                                Text(stringResource(R.string.action_retry))
+                            }
                         }
                     }
                 }

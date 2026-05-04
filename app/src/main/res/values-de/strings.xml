@@ -88,7 +88,7 @@
     <string name="similar_items_title">Ähnliche Titel</string>
     <string name="special_features_title">Extras</string>
     <string name="boxset_items_in_collection">Titel in dieser Sammlung</string>
-    <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
+    <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">Abspielen</string>
     <string name="episode_resume">Fortsetzen</string>
@@ -195,7 +195,7 @@
     <string name="action_retry">Erneut versuchen</string>
     <string name="player_error_title">Wiedergabefehler</string>
     <string name="player_season_fmt">Staffel %1$d</string>
-    <string name="player_season_episode_fmt">Staffel %1$d : Folge %2$d</string>
+    <string name="player_season_episode_fmt">Staffel %1$d : Folge %2$s</string>
     <string name="time_minutes_short">%1$d m</string>
     <string name="time_seconds_short">%1$d s</string>
     <string name="cd_close">Schließen</string>

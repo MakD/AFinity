@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,12 +27,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import com.makd.afinity.R
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.mikepenz.aboutlibraries.ui.compose.LibraryDefaults
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
@@ -40,6 +45,7 @@ import com.mikepenz.aboutlibraries.ui.compose.m3.libraryColors
 @Composable
 fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
     val libraries by produceLibraries(R.raw.aboutlibraries)
+    val playerOffset = LocalPlayerOffset.current
 
     Scaffold(
         topBar = {
@@ -69,9 +75,17 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
         },
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
+        val layoutDirection = LocalLayoutDirection.current
+        val customPadding =
+            PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                start = innerPadding.calculateStartPadding(layoutDirection),
+                end = innerPadding.calculateEndPadding(layoutDirection),
+                bottom = max(innerPadding.calculateBottomPadding(), playerOffset),
+            )
         LibrariesContainer(
             libraries = libraries,
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            modifier = Modifier.fillMaxSize(),
             libraryModifier =
                 Modifier.clip(RoundedCornerShape(16.dp))
                     .border(
@@ -79,7 +93,13 @@ fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
                         color = MaterialTheme.colorScheme.outlineVariant,
                         shape = RoundedCornerShape(16.dp),
                     ),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding =
+                PaddingValues(
+                    top = customPadding.calculateTopPadding() + 16.dp,
+                    start = customPadding.calculateStartPadding(layoutDirection) + 16.dp,
+                    end = customPadding.calculateEndPadding(layoutDirection) + 16.dp,
+                    bottom = customPadding.calculateBottomPadding() + 16.dp,
+                ),
             colors =
                 LibraryDefaults.libraryColors(
                     libraryBackgroundColor = MaterialTheme.colorScheme.surface,

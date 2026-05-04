@@ -100,7 +100,7 @@
     <string name="extra_type_featurette">Featured</string>
     <string name="extra_type_short">Kort</string>
     <string name="boxset_items_in_collection">Items in collectie</string>
-    <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
+    <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">Toneelstuk</string>
     <string name="episode_resume">Cv</string>
@@ -216,7 +216,7 @@
     <string name="player_error_title">Afspeelfout</string>
     <string name="player_up_next">Volgende</string>
     <string name="player_season_fmt">Seizoen %1$d</string>
-    <string name="player_season_episode_fmt">Seizoen %1$d : aflevering %2$d</string>
+    <string name="player_season_episode_fmt">Seizoen %1$d : aflevering %2$s</string>
     <string name="time_minutes_short">%1$dm</string>
     <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">Dichtbij</string>

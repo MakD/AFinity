@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -45,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -52,9 +55,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.makd.afinity.R
 import com.makd.afinity.data.models.common.EpisodeLayout
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.settings.SettingsViewModel
 import com.makd.afinity.ui.theme.AppFont
 import com.makd.afinity.ui.theme.ThemeMode
@@ -75,6 +80,7 @@ fun AppearanceOptionsScreen(
     val appFont by viewModel.appFont.collectAsState()
     var showTmdbDialog by remember { mutableStateOf(false) }
     var showMdbListDialog by remember { mutableStateOf(false) }
+    val playerOffset = LocalPlayerOffset.current
 
     Scaffold(
         topBar = {
@@ -105,9 +111,23 @@ fun AppearanceOptionsScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
+        val layoutDirection = LocalLayoutDirection.current
+        val customPadding =
+            PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                start = innerPadding.calculateStartPadding(layoutDirection),
+                end = innerPadding.calculateEndPadding(layoutDirection),
+                bottom = max(innerPadding.calculateBottomPadding(), playerOffset),
+            )
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            contentPadding = PaddingValues(vertical = 16.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding =
+                PaddingValues(
+                    top = customPadding.calculateTopPadding() + 16.dp,
+                    start = customPadding.calculateStartPadding(layoutDirection),
+                    end = customPadding.calculateEndPadding(layoutDirection),
+                    bottom = customPadding.calculateBottomPadding() + 16.dp,
+                ),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             item {
@@ -163,7 +183,10 @@ fun AppearanceOptionsScreen(
                     SettingsItem(
                         icon = painterResource(id = R.drawable.ic_tmdb_short),
                         title = stringResource(R.string.pref_tmdb_api_key_title),
-                        subtitle = if (tmdbApiKey.isNotBlank()) stringResource(R.string.pref_api_key_configured) else stringResource(R.string.pref_api_key_not_configured),
+                        subtitle =
+                            if (tmdbApiKey.isNotBlank())
+                                stringResource(R.string.pref_api_key_configured)
+                            else stringResource(R.string.pref_api_key_not_configured),
                         onClick = { showTmdbDialog = true },
                     )
 
@@ -173,7 +196,9 @@ fun AppearanceOptionsScreen(
                         icon = painterResource(id = R.drawable.ic_mdblist),
                         title = stringResource(R.string.pref_mdblist_api_key_title),
                         subtitle =
-                            if (mdbListApiKey.isNotBlank()) stringResource(R.string.pref_api_key_configured) else stringResource(R.string.pref_api_key_not_configured),
+                            if (mdbListApiKey.isNotBlank())
+                                stringResource(R.string.pref_api_key_configured)
+                            else stringResource(R.string.pref_api_key_not_configured),
                         onClick = { showMdbListDialog = true },
                     )
                 }
@@ -527,7 +552,10 @@ private fun ApiKeyDialog(
                     }
                 }
                 TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.action_cancel),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         },

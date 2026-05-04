@@ -176,7 +176,7 @@
     <string name="player_error_title">Erreur de lecture</string>
     <string name="player_up_next">À suivre</string>
     <string name="player_season_fmt">Saison %1$d</string>
-    <string name="player_season_episode_fmt">Saison %1$d : Épisode %2$d</string>
+    <string name="player_season_episode_fmt">Saison %1$d : Épisode %2$s</string>
     <string name="cd_close">Fermer</string>
     <string name="player_speed_title_fmt">Vitesse actuelle %1$.2fx</string>
     <string name="cd_speed_decrease">Diminution de la vitesse</string>
@@ -289,7 +289,7 @@
     <string name="meta_boxset_count">%1$d contenus</string>
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
-    <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
+    <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="cd_toggle_watched">Changer le statut de visionnage</string>
     <string name="file_size_mb">%d MB</string>

@@ -38,8 +38,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.ChannelCard
 
@@ -61,6 +63,7 @@ fun LiveTvChannelsTab(
     }
 
     val layoutDirection = LocalLayoutDirection.current
+    val playerOffset = LocalPlayerOffset.current
     val safeDrawing = WindowInsets.safeDrawing.asPaddingValues()
     val safeStart = safeDrawing.calculateStartPadding(layoutDirection)
     val safeEnd = safeDrawing.calculateEndPadding(layoutDirection)
@@ -106,7 +109,7 @@ fun LiveTvChannelsTab(
                                 start = 16.dp + safeStart,
                                 end = 16.dp,
                                 top = 16.dp,
-                                bottom = 16.dp + safeBottom,
+                                bottom = max(safeBottom, playerOffset) + 16.dp,
                             ),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),

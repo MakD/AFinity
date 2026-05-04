@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,6 +54,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -59,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,6 +72,7 @@ import com.makd.afinity.data.models.audiobookshelf.AbsDownloadInfo
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.download.DownloadStatus
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.downloads.DownloadsViewModel
 import java.util.Locale
@@ -85,6 +90,7 @@ fun DownloadSettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isOffline by offlineModeManager.isOffline.collectAsStateWithLifecycle(initialValue = false)
     val snackbarHostState = remember { SnackbarHostState() }
+    val playerOffset = LocalPlayerOffset.current
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
@@ -123,18 +129,34 @@ fun DownloadSettingsScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
-        val absBooks = remember(uiState.absCompletedDownloads) {
-            uiState.absCompletedDownloads.filter { it.episodeId == null }
-        }
-        val absPodcastGroups = remember(uiState.absCompletedDownloads) {
-            uiState.absCompletedDownloads
-                .filter { it.episodeId != null }
-                .groupBy { it.libraryItemId }
-        }
+        val layoutDirection = LocalLayoutDirection.current
+        val customPadding =
+            PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                start = innerPadding.calculateStartPadding(layoutDirection),
+                end = innerPadding.calculateEndPadding(layoutDirection),
+                bottom = max(innerPadding.calculateBottomPadding(), playerOffset),
+            )
+        val absBooks =
+            remember(uiState.absCompletedDownloads) {
+                uiState.absCompletedDownloads.filter { it.episodeId == null }
+            }
+        val absPodcastGroups =
+            remember(uiState.absCompletedDownloads) {
+                uiState.absCompletedDownloads
+                    .filter { it.episodeId != null }
+                    .groupBy { it.libraryItemId }
+            }
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            contentPadding = PaddingValues(bottom = 32.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding =
+                PaddingValues(
+                    top = customPadding.calculateTopPadding(),
+                    start = customPadding.calculateStartPadding(layoutDirection),
+                    end = customPadding.calculateEndPadding(layoutDirection),
+                    bottom = customPadding.calculateBottomPadding() + 32.dp,
+                ),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             item {
@@ -174,10 +196,7 @@ fun DownloadSettingsScreen(
                 item {
                     SectionHeader(
                         title =
-                            stringResource(
-                                R.string.active_downloads_header_fmt,
-                                allActiveCount,
-                            ),
+                            stringResource(R.string.active_downloads_header_fmt, allActiveCount),
                         modifier = Modifier.padding(horizontal = 24.dp),
                     )
                 }
@@ -658,7 +677,9 @@ fun CompletedDownloadRow(
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         leadingContent = {
             AsyncImage(
-                imageUrl = if (isEpisode) download.seriesImageUrl ?: download.imageUrl else download.imageUrl,
+                imageUrl =
+                    if (isEpisode) download.seriesImageUrl ?: download.imageUrl
+                    else download.imageUrl,
                 contentDescription = null,
                 modifier =
                     Modifier.width(56.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(6.dp)),
@@ -805,16 +826,20 @@ fun AbsActiveDownloadCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column {
-                        val statusText = when (download.status) {
-                            AbsDownloadStatus.QUEUED -> "QUEUED"
-                            AbsDownloadStatus.DOWNLOADING ->
-                                "TRACK ${download.tracksDownloaded}/${download.tracksTotal}"
-                            AbsDownloadStatus.FAILED -> "FAILED"
-                            else -> ""
-                        }
+                        val statusText =
+                            when (download.status) {
+                                AbsDownloadStatus.QUEUED -> "QUEUED"
+                                AbsDownloadStatus.DOWNLOADING ->
+                                    "TRACK ${download.tracksDownloaded}/${download.tracksTotal}"
+                                AbsDownloadStatus.FAILED -> "FAILED"
+                                else -> ""
+                            }
                         Text(
                             text = statusText,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
                             color =
                                 if (download.status == AbsDownloadStatus.FAILED)
                                     MaterialTheme.colorScheme.error
@@ -822,10 +847,11 @@ fun AbsActiveDownloadCard(
                         )
                         Text(
                             text = formatSize(download.bytesDownloaded),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Medium,
-                            ),
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Medium,
+                                ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -854,11 +880,12 @@ fun AbsCompletedDownloadRow(
     formatSize: (Long) -> String,
 ) {
     val durationMinutes = (download.duration / 60).toInt()
-    val durationStr = when {
-        durationMinutes >= 60 -> "${durationMinutes / 60}h ${durationMinutes % 60}m"
-        durationMinutes > 0 -> "${durationMinutes}m"
-        else -> ""
-    }
+    val durationStr =
+        when {
+            durationMinutes >= 60 -> "${durationMinutes / 60}h ${durationMinutes % 60}m"
+            durationMinutes > 0 -> "${durationMinutes}m"
+            else -> ""
+        }
     val subtitleText = buildString {
         if (!download.authorName.isNullOrBlank()) append("${download.authorName} • ")
         if (durationStr.isNotEmpty()) append("$durationStr • ")
@@ -917,7 +944,8 @@ fun AbsPodcastGroupRow(
     val podcastName = first.authorName?.takeIf { it.isNotBlank() } ?: first.title
     val totalBytes = episodes.sumOf { it.bytesDownloaded }
     val count = episodes.size
-    val subtitleText = "$count episode${if (count > 1) "s" else ""} \u00B7 ${formatSize(totalBytes)}"
+    val subtitleText =
+        "$count episode${if (count > 1) "s" else ""} \u00B7 ${formatSize(totalBytes)}"
 
     ListItem(
         modifier = Modifier.clickable { onClick() },

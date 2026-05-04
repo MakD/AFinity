@@ -54,9 +54,11 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
 import com.makd.afinity.data.models.livetv.AfinityChannel
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.FullScreenEmpty
@@ -91,6 +93,7 @@ fun FavoritesScreen(
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
+    val playerOffset = LocalPlayerOffset.current
 
     LaunchedEffect(Unit) { viewModel.loadFavorites() }
 
@@ -142,7 +145,13 @@ fun FavoritesScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
+                            contentPadding =
+                                PaddingValues(
+                                    start = 16.dp,
+                                    top = 16.dp,
+                                    end = 16.dp,
+                                    bottom = 16.dp + playerOffset,
+                                ),
                             verticalArrangement = Arrangement.spacedBy(24.dp),
                         ) {
                             if (uiState.boxSets.isNotEmpty()) {
@@ -191,10 +200,7 @@ fun FavoritesScreen(
                                         title = stringResource(R.string.section_episodes),
                                         items = uiState.episodes,
                                         onItemClick = { episode ->
-                                            viewModel.selectEpisode(
-                                                episode
-                                                    as com.makd.afinity.data.models.media.AfinityEpisode
-                                            )
+                                            viewModel.selectEpisode(episode as AfinityEpisode)
                                         },
                                         cardWidth = landscapeWidth,
                                     )
@@ -243,7 +249,7 @@ fun FavoritesScreen(
             onDismiss = { viewModel.clearSelectedEpisode() },
             onPlayClick = { episodeToPlay, selection ->
                 viewModel.clearSelectedEpisode()
-                com.makd.afinity.ui.player.PlayerLauncher.launch(
+                PlayerLauncher.launch(
                     context = context,
                     itemId = episodeToPlay.id,
                     mediaSourceId = selection.mediaSourceId,

@@ -100,7 +100,7 @@
     <string name="extra_type_featurette">फीचर</string>
     <string name="extra_type_short">छोटा</string>
     <string name="boxset_items_in_collection">संग्रह में आइटम</string>
-    <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
+    <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">खेल</string>
     <string name="episode_resume">फिर शुरू करना</string>
@@ -216,7 +216,7 @@
     <string name="player_error_title">प्लेबैक त्रुटि</string>
     <string name="player_up_next">अगला</string>
     <string name="player_season_fmt">मौसम %1$d</string>
-    <string name="player_season_episode_fmt">मौसम %1$d : एपिसोड %2$d</string>
+    <string name="player_season_episode_fmt">मौसम %1$d : एपिसोड %2$s</string>
     <string name="time_minutes_short">%1$dm</string>
     <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">बंद करना</string>

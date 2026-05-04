@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.EpgChannelCell
 import com.makd.afinity.ui.livetv.components.EpgProgramRow
@@ -50,6 +52,7 @@ fun LiveTvGuideTab(
     modifier: Modifier = Modifier,
     widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
 ) {
+    val playerOffset = LocalPlayerOffset.current
     val channelCellWidth: Dp =
         when (widthSizeClass) {
             WindowWidthSizeClass.Compact -> 100.dp
@@ -127,7 +130,10 @@ fun LiveTvGuideTab(
             }
         }
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = playerOffset),
+        ) {
             stickyHeader {
                 Row(
                     modifier =

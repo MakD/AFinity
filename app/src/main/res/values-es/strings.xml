@@ -100,7 +100,7 @@
     <string name="extra_type_featurette">Reportaje</string>
     <string name="extra_type_short">Corto</string>
     <string name="boxset_items_in_collection">Artículos en la colección</string>
-    <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
+    <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">Reproducir</string>
     <string name="episode_resume">Reanudar</string>
@@ -216,7 +216,7 @@
     <string name="player_error_title">Error de reproducción</string>
     <string name="player_up_next">A continuación</string>
     <string name="player_season_fmt">Temporada %1$d</string>
-    <string name="player_season_episode_fmt">Temporada %1$d : Episodio %2$d</string>
+    <string name="player_season_episode_fmt">Temporada %1$d : Episodio %2$s</string>
     <string name="time_minutes_short">%1$dm</string>
     <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">Cerrar</string>

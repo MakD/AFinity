@@ -118,10 +118,7 @@ fun LiveTvScreen(
         when {
             uiState.isLoading -> {
                 Box(
-                    modifier =
-                        Modifier.fillMaxSize()
-                            .padding(paddingValues)
-                            .padding(bottom = playerOffset),
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()

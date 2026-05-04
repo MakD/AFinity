@@ -102,7 +102,7 @@
     <string name="extra_type_featurette">Featurette</string>
     <string name="extra_type_short">Film Pendek</string>
     <string name="boxset_items_in_collection">Item dalam Koleksi</string>
-    <string name="episode_season_episode_fmt">"S%1$d:E%2$d -  %3$s"</string>
+    <string name="episode_season_episode_fmt">"S%1$d:E%2$s -  %3$s"</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">Putar</string>
     <string name="episode_resume">Lanjutkan</string>
@@ -218,7 +218,7 @@
     <string name="player_error_title">Kesalahan Pemutaran</string>
     <string name="player_up_next">Selanjutnya</string>
     <string name="player_season_fmt">Musim %1$d</string>
-    <string name="player_season_episode_fmt">Musim %1$d : Episode %2$d</string>
+    <string name="player_season_episode_fmt">Musim %1$d : Episode %2$s</string>
     <string name="time_minutes_short">%1$dm</string>
     <string name="time_seconds_short">%1$dd</string>
     <string name="cd_close">Tutup</string>

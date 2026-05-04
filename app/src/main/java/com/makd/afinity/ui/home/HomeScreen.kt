@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
@@ -47,6 +49,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -167,6 +170,8 @@ fun HomeScreen(
                 Box(modifier = Modifier.fillMaxSize()) {
                     val density = LocalDensity.current
                     val statusBarHeight = WindowInsets.statusBars.getTop(density)
+                    val bottomPadding =
+                        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                     val showCarousel = !uiState.isOffline && uiState.heroCarouselItems.isNotEmpty()
 
                     val continueWatchingItems =
@@ -213,7 +218,7 @@ fun HomeScreen(
                                     if (!showCarousel)
                                         with(density) { statusBarHeight.toDp() + 56.dp }
                                     else 0.dp,
-                                bottom = 16.dp + playerOffset,
+                                bottom = max(bottomPadding, playerOffset) + 16.dp,
                             ),
                     ) {
                         if (showCarousel) {
@@ -326,7 +331,8 @@ fun HomeScreen(
                                     Column {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         DownloadedAudiobooksSection(
-                                            title = stringResource(R.string.home_downloaded_audiobooks),
+                                            title =
+                                                stringResource(R.string.home_downloaded_audiobooks),
                                             items = uiState.downloadedAudiobooks,
                                             onItemClick = { onAbsItemClick(it.libraryItemId) },
                                         )
@@ -341,7 +347,8 @@ fun HomeScreen(
                                     Column {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         DownloadedAudiobooksSection(
-                                            title = stringResource(R.string.home_downloaded_episodes),
+                                            title =
+                                                stringResource(R.string.home_downloaded_episodes),
                                             items = uiState.downloadedPodcastEpisodes,
                                             onItemClick = { onAbsItemClick(it.libraryItemId) },
                                         )
@@ -605,7 +612,8 @@ fun HomeScreen(
                             }
                         }
 
-                        item(key = "bottom_padding") { Spacer(modifier = Modifier.height(32.dp)) }
+                        // item(key = "bottom_padding") { Spacer(modifier = Modifier.height(32.dp))
+                        // }
                     }
                 }
             }

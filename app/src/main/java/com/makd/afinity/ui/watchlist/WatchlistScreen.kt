@@ -4,6 +4,8 @@ package com.makd.afinity.ui.watchlist
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,9 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -29,6 +33,7 @@ import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
@@ -42,10 +47,10 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun WatchlistScreen(
+    modifier: Modifier = Modifier,
     mainUiState: MainUiState,
     onItemClick: (AfinityItem) -> Unit = {},
     navController: NavController,
-    modifier: Modifier = Modifier,
     viewModel: WatchlistViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
 ) {
@@ -59,6 +64,7 @@ fun WatchlistScreen(
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
     var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
+    val playerOffset = LocalPlayerOffset.current
 
     LaunchedEffect(Unit) { viewModel.loadWatchlist() }
 
@@ -86,11 +92,19 @@ fun WatchlistScreen(
         },
         modifier = modifier,
     ) { innerPadding ->
+        val layoutDirection = LocalLayoutDirection.current
+        val customPadding =
+            PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                start = innerPadding.calculateStartPadding(layoutDirection),
+                end = innerPadding.calculateEndPadding(layoutDirection),
+                bottom = max(innerPadding.calculateBottomPadding(), playerOffset),
+            )
         when {
-            uiState.isLoading -> FullScreenLoading(modifier = Modifier.padding(innerPadding))
+            uiState.isLoading -> FullScreenLoading(modifier = Modifier.padding(customPadding))
 
             uiState.error != null ->
-                FullScreenError(message = uiState.error, modifier = Modifier.padding(innerPadding))
+                FullScreenError(message = uiState.error, modifier = Modifier.padding(customPadding))
 
             uiState.boxSets.isEmpty() &&
                 uiState.movies.isEmpty() &&
@@ -99,14 +113,20 @@ fun WatchlistScreen(
                 uiState.episodes.isEmpty() -> {
                 FullScreenEmpty(
                     message = stringResource(R.string.watchlist_empty),
-                    modifier = Modifier.padding(innerPadding),
+                    modifier = Modifier.padding(customPadding),
                 )
             }
 
             else -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
-                    contentPadding = PaddingValues(16.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding =
+                        PaddingValues(
+                            top = customPadding.calculateTopPadding() + 16.dp,
+                            start = customPadding.calculateStartPadding(layoutDirection) + 16.dp,
+                            end = customPadding.calculateEndPadding(layoutDirection) + 16.dp,
+                            bottom = customPadding.calculateBottomPadding() + 16.dp,
+                        ),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     if (uiState.boxSets.isNotEmpty()) {

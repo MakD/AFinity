@@ -33,6 +33,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
@@ -40,6 +41,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.makd.afinity.R
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
@@ -61,8 +63,12 @@ fun GenreResultsScreen(
         viewModel.moviesPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
     val shows =
         viewModel.showsPagingData.collectAsStateWithLifecycle().value.collectAsLazyPagingItems()
+    val playerOffset = LocalPlayerOffset.current
 
     LaunchedEffect(genre) { viewModel.loadGenreResults(genre) }
+
+    val customPadding =
+        PaddingValues(top = 0.dp, start = 0.dp, end = 0.dp, bottom = max(0.dp, playerOffset))
 
     Column(modifier = modifier.fillMaxSize().safeDrawingPadding()) {
         TopAppBar(
@@ -96,6 +102,7 @@ fun GenreResultsScreen(
                     shows = shows,
                     onItemClick = onItemClick,
                     widthSizeClass = widthSizeClass,
+                    customPadding = customPadding,
                 )
             }
         }
@@ -108,6 +115,7 @@ private fun GenreResultsContent(
     shows: LazyPagingItems<AfinityItem>,
     onItemClick: (AfinityItem) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
+    customPadding: PaddingValues,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val tabs = listOf(stringResource(R.string.tab_movies), stringResource(R.string.tab_tv_shows))
@@ -173,7 +181,13 @@ private fun GenreResultsContent(
                 items = activeList,
                 widthSizeClass = widthSizeClass,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding =
+                    PaddingValues(
+                        top = 16.dp,
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = customPadding.calculateBottomPadding() + 16.dp,
+                    ),
             ) { item ->
                 MediaItemCard(
                     item = item,

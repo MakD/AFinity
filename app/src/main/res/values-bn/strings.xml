@@ -100,7 +100,7 @@
     <string name="extra_type_featurette">বৈশিষ্ট্য</string>
     <string name="extra_type_short">সংক্ষিপ্ত</string>
     <string name="boxset_items_in_collection">সংগ্রহে আইটেম</string>
-    <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
+    <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">খেলা</string>
     <string name="episode_resume">পুনরায় শুরু করুন</string>
@@ -216,7 +216,7 @@
     <string name="player_error_title">প্লেব্যাক ত্রুটি</string>
     <string name="player_up_next">আপ নেক্সট</string>
     <string name="player_season_fmt">ঋতু %1$d</string>
-    <string name="player_season_episode_fmt">সিজন %1$d : পর্ব %2$d</string>
+    <string name="player_season_episode_fmt">সিজন %1$d : পর্ব %2$s</string>
     <string name="time_minutes_short">%1$dm</string>
     <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">বন্ধ</string>

@@ -93,7 +93,7 @@
     <string name="extra_type_featurette">Caratteristica</string>
     <string name="extra_type_short">Corto</string>
     <string name="boxset_items_in_collection">Elementi in collezione</string>
-    <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
+    <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">Play</string>
     <string name="episode_resume">Riprendere</string>
@@ -183,7 +183,7 @@
     <string name="cd_external_link">Link esterno</string>
     <string name="action_retry">Riprova</string>
     <string name="player_season_fmt">Stagione %1$d</string>
-    <string name="player_season_episode_fmt">Stagione %1$d : Episodio %2$d</string>
+    <string name="player_season_episode_fmt">Stagione %1$d : Episodio %2$s</string>
     <string name="player_subtitle_title">Sottotitoli</string>
     <string name="player_version_default_label">Default</string>
     <string name="player_episode_header_fmt">S%1$s:E%2$s: %3$s</string>

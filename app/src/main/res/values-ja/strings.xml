@@ -100,7 +100,7 @@
     <string name="extra_type_featurette">特集記事</string>
     <string name="extra_type_short">短い</string>
     <string name="boxset_items_in_collection">コレクション内のアイテム</string>
-    <string name="episode_season_episode_fmt">S%1$d:E%2$d • %3$s</string>
+    <string name="episode_season_episode_fmt">S%1$d:E%2$s • %3$s</string>
     <string name="episode_duration_format">%1$dm</string>
     <string name="episode_play">遊ぶ</string>
     <string name="episode_resume">再開する</string>
@@ -216,7 +216,7 @@
     <string name="player_error_title">再生エラー</string>
     <string name="player_up_next">次へ</string>
     <string name="player_season_fmt">季節 %1$d</string>
-    <string name="player_season_episode_fmt">季節 %1$d ：エピソード %2$d</string>
+    <string name="player_season_episode_fmt">季節 %1$d ：エピソード %2$s</string>
     <string name="time_minutes_short">%1$dm</string>
     <string name="time_seconds_short">%1$ds</string>
     <string name="cd_close">近い</string>

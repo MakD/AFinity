@@ -27,12 +27,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.livetv.LiveTvUiState
 import com.makd.afinity.ui.livetv.components.ProgramCategoryRow
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
-import java.time.LocalDateTime
 import kotlinx.coroutines.delay
+import java.time.LocalDateTime
 
 @Composable
 fun LiveTvHomeTab(
@@ -41,6 +42,7 @@ fun LiveTvHomeTab(
     modifier: Modifier = Modifier,
     widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
 ) {
+    val playerOffset = LocalPlayerOffset.current
     var currentTime by remember { mutableStateOf(LocalDateTime.now()) }
 
     LaunchedEffect(Unit) {
@@ -66,12 +68,11 @@ fun LiveTvHomeTab(
             LiveTvCategory.NEWS,
         )
 
-    val categoriesWithPrograms =
-        orderedCategories.mapNotNull { category ->
-            uiState.categorizedPrograms[category]
-                ?.takeIf { it.isNotEmpty() }
-                ?.let { programs -> category to programs }
-        }
+    val categoriesWithPrograms = orderedCategories.mapNotNull { category ->
+        uiState.categorizedPrograms[category]
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { programs -> category to programs }
+    }
 
     if (categoriesWithPrograms.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -102,7 +103,7 @@ fun LiveTvHomeTab(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp + playerOffset),
     ) {
         items(items = categoriesWithPrograms, key = { it.first.name }) { (category, programs) ->
             ProgramCategoryRow(

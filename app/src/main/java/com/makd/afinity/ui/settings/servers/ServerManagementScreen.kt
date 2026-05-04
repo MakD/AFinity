@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -71,6 +73,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +82,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -88,6 +92,7 @@ import com.makd.afinity.R
 import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
+import com.makd.afinity.navigation.LocalPlayerOffset
 import java.util.UUID
 
 private val JellyseerrColor = Color(0xFFA88AFA)
@@ -115,6 +120,7 @@ fun ServerManagementScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val playerOffset = LocalPlayerOffset.current
 
     LaunchedEffect(Unit) { viewModel.loadServers() }
 
@@ -151,6 +157,7 @@ fun ServerManagementScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { if (!isOffline) onAddServerClick() },
+                modifier = Modifier.padding(bottom = playerOffset),
                 containerColor =
                     if (isOffline) MaterialTheme.colorScheme.surfaceContainerHighest
                     else MaterialTheme.colorScheme.primary,
@@ -169,21 +176,34 @@ fun ServerManagementScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
     ) { paddingValues ->
+        val layoutDirection = LocalLayoutDirection.current
+        val customPadding =
+            PaddingValues(
+                top = paddingValues.calculateTopPadding(),
+                start = paddingValues.calculateStartPadding(layoutDirection),
+                end = paddingValues.calculateEndPadding(layoutDirection),
+                bottom = max(paddingValues.calculateBottomPadding(), playerOffset),
+            )
         if (state.isLoading && state.servers.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                modifier = Modifier.fillMaxSize().padding(customPadding),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else if (state.servers.isEmpty()) {
-            EmptyServersState(modifier = Modifier.fillMaxSize().padding(paddingValues))
+            EmptyServersState(modifier = Modifier.fillMaxSize().padding(customPadding))
         } else {
             LazyColumn(
+                modifier = Modifier.fillMaxSize(),
                 contentPadding =
-                    PaddingValues(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 100.dp),
+                    PaddingValues(
+                        top = customPadding.calculateTopPadding() + 16.dp,
+                        start = customPadding.calculateStartPadding(layoutDirection) + 16.dp,
+                        end = customPadding.calculateEndPadding(layoutDirection) + 16.dp,
+                        bottom = customPadding.calculateBottomPadding() + 100.dp,
+                    ),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
             ) {
                 items(items = state.servers, key = { it.server.id }) { serverWithCount ->
                     ServerCard(
@@ -340,7 +360,8 @@ fun ServerCard(
                             text = connText,
                             style = MaterialTheme.typography.labelSmall,
                             color =
-                                if (serverWithCount.isActiveServer) MaterialTheme.colorScheme.onSurfaceVariant
+                                if (serverWithCount.isActiveServer)
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                                 else mutedColor,
                         )
                     }
@@ -730,7 +751,11 @@ private fun ServerDetailDialog(
                                     )
                                     if (serverWithCount.server.version != null) {
                                         Text(
-                                            text = stringResource(R.string.server_version_fmt, serverWithCount.server.version ?: ""),
+                                            text =
+                                                stringResource(
+                                                    R.string.server_version_fmt,
+                                                    serverWithCount.server.version ?: "",
+                                                ),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -945,7 +970,8 @@ private fun ActiveConnectionCard(
                 )
                 if (totalAddresses > 1) {
                     Text(
-                        text = stringResource(R.string.server_backup_routes_fmt, totalAddresses - 1),
+                        text =
+                            stringResource(R.string.server_backup_routes_fmt, totalAddresses - 1),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 2.dp),
@@ -1107,7 +1133,9 @@ private fun JellyseerrTabContent(
                         )
                         DetailRow(
                             label = stringResource(R.string.label_role),
-                            value = if (user.isAdmin()) stringResource(R.string.role_admin) else stringResource(R.string.role_user),
+                            value =
+                                if (user.isAdmin()) stringResource(R.string.role_admin)
+                                else stringResource(R.string.role_user),
                             valueColor =
                                 if (user.isAdmin()) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurface,
@@ -1119,7 +1147,10 @@ private fun JellyseerrTabContent(
                             if (user.hasPermission(Permissions.MANAGE_REQUESTS)) add("Manage")
                         }
                         if (permissions.isNotEmpty()) {
-                            DetailRow(label = stringResource(R.string.label_permissions), value = permissions.joinToString(", "))
+                            DetailRow(
+                                label = stringResource(R.string.label_permissions),
+                                value = permissions.joinToString(", "),
+                            )
                         }
                         DetailRow(
                             label = stringResource(R.string.label_movie_quota),

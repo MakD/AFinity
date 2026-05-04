@@ -103,7 +103,7 @@
     <string name="extra_type_featurette">Кратък филм</string>
     <string name="extra_type_short">Късометражен</string>
     <string name="boxset_items_in_collection">Елементи в колекцията</string>
-    <string name="episode_season_episode_fmt">С%1$d:Е%2$d • %3$s</string>
+    <string name="episode_season_episode_fmt">С%1$d:Е%2$s • %3$s</string>
     <string name="episode_duration_format">%1$d м</string>
     <string name="episode_play">Възпроизвеждане</string>
     <string name="episode_resume">Продължаване</string>
@@ -219,7 +219,7 @@
     <string name="player_error_title">Грешка при възпроизвеждане</string>
     <string name="player_up_next">Следващ епизод</string>
     <string name="player_season_fmt">Сезон %1$d</string>
-    <string name="player_season_episode_fmt">Сезон %1$d : Епизод %2$d</string>
+    <string name="player_season_episode_fmt">Сезон %1$d : Епизод %2$s</string>
     <string name="time_minutes_short">%1$d м</string>
     <string name="time_seconds_short">%1$d с</string>
     <string name="cd_close">Затваряне</string>
