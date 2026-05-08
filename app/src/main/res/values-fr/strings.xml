@@ -649,4 +649,6 @@
     <string name="action_close">Fermer</string>
     <string name="home_upcoming_episodes">Épisodes à venir</string>
     <string name="section_available_requests">Demandes disponibles</string>
+    <string name="abs_server_url_placeholder">https://abs.example.com</string>
+    <string name="cd_queued_tap_cancel">En file d\'attente — toucher pour annuler</string>
 </resources>
