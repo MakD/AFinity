@@ -267,6 +267,14 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         return targetItem
     }
 
+    fun insertAfterCurrent(items: List<AfinityItem>) {
+        if (items.isEmpty()) return
+        val insertIndex = currentIndex + 1
+        currentQueue.addAll(insertIndex, items)
+        updatePlaylistState()
+        Timber.d("Inserted ${items.size} additional parts at index $insertIndex")
+    }
+
     fun markCurrentItemAsPlayed() {
         val item = currentQueue.getOrNull(currentIndex) ?: return
         if (item is AfinityEpisode) {

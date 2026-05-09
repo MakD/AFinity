@@ -44,6 +44,7 @@ data class AfinityMovie(
     override val externalUrls: List<AfinityExternalUrl>?,
     val tmdbReviews: List<TmdbReview> = emptyList(),
     val mdbRatings: List<MdbListRating> = emptyList(),
+    val partCount: Int? = null,
 ) : AfinityItem, AfinitySources
 
 suspend fun BaseItemDto.toAfinityMovie(
@@ -88,5 +89,6 @@ suspend fun BaseItemDto.toAfinityMovie(
         externalUrls = externalUrls?.map { it.toAfinityExternalUrl() },
         tmdbReviews = emptyList(),
         mdbRatings = emptyList(),
+        partCount = partCount,
     )
 }

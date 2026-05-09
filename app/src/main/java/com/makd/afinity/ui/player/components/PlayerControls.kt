@@ -323,6 +323,7 @@ fun PlayerControls(
                         isPlaying = uiState.isPlaying,
                         showPlayButton = uiState.showPlayButton || uiState.isBuffering,
                         isBuffering = uiState.isBuffering,
+                        hasQueueNeighbors = playlistQueue.size > 1,
                         onPlayPauseClick = {
                             if (uiState.isPlaying) onPlayerEvent(PlayerEvent.Pause)
                             else onPlayerEvent(PlayerEvent.Play)
@@ -341,7 +342,7 @@ fun PlayerControls(
                         onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
                         onEpisodeSwitcherToggle = { showEpisodeSwitcher = !showEpisodeSwitcher },
                         showEpisodeSwitcherButton =
-                            currentItem is AfinityEpisode && playlistQueue.size > 1,
+                            playlistQueue.size > 1 && !uiState.isPlayingIntro,
                         onVersionToggle = onVersionToggleRequest,
                         showVersionButton = uiState.availableSources.size > 1,
                         modifier = Modifier.align(Alignment.BottomCenter),
@@ -725,6 +726,7 @@ private fun CenterPlayButton(
     isPlaying: Boolean,
     showPlayButton: Boolean,
     isBuffering: Boolean,
+    hasQueueNeighbors: Boolean = false,
     onPlayPauseClick: () -> Unit,
     onSeekBackward: () -> Unit,
     onSeekForward: () -> Unit,
@@ -733,7 +735,7 @@ private fun CenterPlayButton(
 ) {
     val hasChapters = uiState.chapters.isNotEmpty()
     val isEpisode = uiState.currentItem is AfinityEpisode
-    val showSkipButtons = (isEpisode || hasChapters) && !uiState.isPlayingIntro
+    val showSkipButtons = (isEpisode || hasChapters || hasQueueNeighbors) && !uiState.isPlayingIntro
 
     AnimatedVisibility(
         visible = showPlayButton,

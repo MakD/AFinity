@@ -61,8 +61,11 @@ import com.airbnb.lottie.compose.rememberLottieDynamicProperty
 import com.makd.afinity.R
 import com.makd.afinity.data.models.extensions.primaryBlurHash
 import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.extensions.thumbBlurHash
+import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.ui.components.AsyncImage
 import java.util.Locale
 import java.util.UUID
@@ -76,17 +79,34 @@ fun EpisodeSwitcher(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val displayEpisodes = remember(episodes) { episodes.filterIsInstance<AfinityEpisode>() }
+    val displayEpisodes = episodes
 
-    val activeEpisodeIndex =
-        remember(episodes, currentIndex, displayEpisodes) {
-            val currentItem = episodes.getOrNull(currentIndex)
-            if (currentItem is AfinityEpisode) {
-                displayEpisodes.indexOfFirst { it.id == currentItem.id }.coerceAtLeast(0)
-            } else {
-                val upcomingEpisode =
-                    episodes.drop(currentIndex).firstOrNull { it is AfinityEpisode }
-                displayEpisodes.indexOfFirst { it.id == upcomingEpisode?.id }.coerceAtLeast(0)
+    val activeEpisodeIndex = currentIndex.coerceAtLeast(0)
+
+    val partInfoMap =
+        remember(displayEpisodes) {
+            buildMap<Int, Pair<AfinityItem, Int>> {
+                var i = 0
+                while (i < displayEpisodes.size) {
+                    val current = displayEpisodes[i]
+                    val isNamed = current is AfinityEpisode || current is AfinityMovie
+                    if (isNamed) {
+                        var j = i + 1
+                        while (
+                            j < displayEpisodes.size &&
+                                displayEpisodes[j] !is AfinityEpisode &&
+                                displayEpisodes[j] !is AfinityMovie
+                        ) j++
+                        if (j > i + 1) {
+                            for (k in i + 1 until j) {
+                                put(k, Pair(current, k - i + 1))
+                            }
+                        }
+                        i = j
+                    } else {
+                        i++
+                    }
+                }
             }
         }
 
@@ -124,7 +144,8 @@ fun EpisodeSwitcher(
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                        ) { /* Consume clicks */
+                        ) {
+                            /* Consume clicks */
                         },
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
@@ -148,7 +169,8 @@ fun EpisodeSwitcher(
                             )
 
                             val currentSeason =
-                                displayEpisodes.getOrNull(activeEpisodeIndex)?.parentIndexNumber
+                                (displayEpisodes.getOrNull(activeEpisodeIndex) as? AfinityEpisode)
+                                    ?.parentIndexNumber
                             if (currentSeason != null) {
                                 Text(
                                     text =
@@ -191,12 +213,13 @@ fun EpisodeSwitcher(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        itemsIndexed(
-                            items = displayEpisodes,
-                            key = { _, item -> item.id },
-                        ) { index, item ->
+                        itemsIndexed(items = displayEpisodes, key = { _, item -> item.id }) {
+                            index,
+                            item ->
                             EpisodeSwitcherCard(
                                 episode = item,
+                                parentItem = partInfoMap[index]?.first,
+                                partNumber = partInfoMap[index]?.second,
                                 isCurrentlyPlaying = index == activeEpisodeIndex,
                                 isPlaying = isPlaying,
                                 onClick = { onEpisodeClick(item.id) },
@@ -216,7 +239,10 @@ private fun EpisodeSwitcherCard(
     isPlaying: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    parentItem: AfinityItem? = null,
+    partNumber: Int? = null,
 ) {
+    val displayItem: AfinityItem = parentItem ?: episode
     val backgroundColor =
         if (isCurrentlyPlaying) {
             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
@@ -249,12 +275,24 @@ private fun EpisodeSwitcherCard(
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
+            val cardImageUrl =
+                if (episode is AfinityMovie) {
+                    episode.images?.thumbImageUrl ?: episode.images?.primaryImageUrl
+                } else {
+                    episode.images?.primaryImageUrl
+                }
+            val cardBlurHash =
+                if (episode is AfinityMovie) {
+                    episode.images?.thumbBlurHash ?: episode.images?.primaryBlurHash
+                } else {
+                    episode.images?.primaryBlurHash
+                }
             AsyncImage(
-                imageUrl = episode.images?.primaryImageUrl.toString(),
-                contentDescription = episode.name,
+                imageUrl = cardImageUrl.toString(),
+                contentDescription = displayItem.name,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                blurHash = episode.images?.primaryBlurHash,
+                blurHash = cardBlurHash,
             )
 
             Box(
@@ -364,34 +402,53 @@ private fun EpisodeSwitcherCard(
         Spacer(modifier = Modifier.width(16.dp))
 
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-            if (episode is AfinityEpisode) {
+            val episodeMeta = (parentItem as? AfinityEpisode) ?: (episode as? AfinityEpisode)
+            val rating =
+                episodeMeta?.communityRating
+                    ?: (parentItem as? AfinityMovie)?.communityRating
+                    ?: (episode as? AfinityMovie)?.communityRating
+            val totalParts =
+                episodeMeta?.partCount
+                    ?: (parentItem as? AfinityMovie)?.partCount
+                    ?: (episode as? AfinityMovie)?.partCount
+
+            val hasTopRow = episodeMeta != null || rating != null || partNumber != null
+            if (hasTopRow) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.player_season_episode_fmt,
-                                episode.parentIndexNumber ?: 1,
-                                if (episode.indexNumberEnd != null && episode.indexNumberEnd != episode.indexNumber) "${episode.indexNumber ?: 0}-${episode.indexNumberEnd}" else "${episode.indexNumber ?: 0}",
-                            ),
-                        style = MaterialTheme.typography.labelSmall,
-                        color =
-                            if (isCurrentlyPlaying) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp,
-                    )
-                    val rating = (episode as? AfinityEpisode)?.communityRating
+                    if (episodeMeta != null) {
+                        Text(
+                            text =
+                                stringResource(
+                                    R.string.player_season_episode_fmt,
+                                    episodeMeta.parentIndexNumber ?: 1,
+                                    if (
+                                        episodeMeta.indexNumberEnd != null &&
+                                            episodeMeta.indexNumberEnd != episodeMeta.indexNumber
+                                    )
+                                        "${episodeMeta.indexNumber ?: 0}-${episodeMeta.indexNumberEnd}"
+                                    else "${episodeMeta.indexNumber ?: 0}",
+                                ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color =
+                                if (isCurrentlyPlaying) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp,
+                        )
+                    }
 
                     if (rating != null && rating > 0) {
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        )
-
+                        if (episodeMeta != null) {
+                            Text(
+                                text = "•",
+                                style = MaterialTheme.typography.labelSmall,
+                                color =
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            )
+                        }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -410,13 +467,38 @@ private fun EpisodeSwitcherCard(
                             )
                         }
                     }
+
+                    if (partNumber != null) {
+                        if (episodeMeta != null || (rating != null && rating > 0)) {
+                            Text(
+                                text = "•",
+                                style = MaterialTheme.typography.labelSmall,
+                                color =
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            )
+                        }
+                        Text(
+                            text =
+                                stringResource(
+                                    R.string.meta_part_of_fmt,
+                                    partNumber,
+                                    totalParts ?: partNumber,
+                                ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color =
+                                if (isCurrentlyPlaying) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.tertiary,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp,
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
-                text = episode.name,
+                text = displayItem.name,
                 style = MaterialTheme.typography.titleMedium,
                 color =
                     if (isCurrentlyPlaying) MaterialTheme.colorScheme.primary
@@ -428,10 +510,11 @@ private fun EpisodeSwitcherCard(
                 lineHeight = 20.sp,
             )
 
-            if (episode is AfinityEpisode && !episode.overview.isNullOrBlank()) {
+            val overviewText = displayItem.overview
+            if (overviewText.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = episode.overview,
+                    text = overviewText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,

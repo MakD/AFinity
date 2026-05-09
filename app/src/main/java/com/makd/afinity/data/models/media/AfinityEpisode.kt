@@ -39,6 +39,7 @@ data class AfinityEpisode(
     val people: List<AfinityPerson>,
     override val unplayedItemCount: Int? = null,
     val missing: Boolean = false,
+    val partCount: Int? = null,
     override val images: AfinityImages,
     override val chapters: List<AfinityChapter>,
     override val trickplayInfo: Map<String, AfinityTrickplayInfo>?,
@@ -85,6 +86,7 @@ suspend fun BaseItemDto.toAfinityEpisode(
             communityRating = communityRating,
             people = people?.map { it.toAfinityPerson(baseUrl) } ?: emptyList(),
             missing = locationType == LocationType.VIRTUAL,
+            partCount = partCount,
             images = toAfinityImages(baseUrl),
             chapters = toAfinityChapters(),
             trickplayInfo =

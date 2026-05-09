@@ -30,6 +30,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makd.afinity.R
+import com.makd.afinity.data.models.extensions.primaryBlurHash
+import com.makd.afinity.data.models.extensions.primaryImageUrl
+import com.makd.afinity.data.models.extensions.thumbBlurHash
+import com.makd.afinity.data.models.extensions.thumbImageUrl
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityItem
@@ -51,8 +55,10 @@ fun MovieDetailContent(
     specialFeatures: List<AfinityItem>,
     containingBoxSets: List<AfinityBoxSet>,
     tmdbReviews: List<TmdbReview> = emptyList(),
+    parts: List<AfinityItem> = emptyList(),
     onSpecialFeatureClick: (AfinityItem) -> Unit,
     onPlayClick: (AfinityMovie, PlaybackSelection) -> Unit,
+    onPartClick: (AfinityItem) -> Unit = {},
     navController: androidx.navigation.NavController,
     widthSizeClass: WindowWidthSizeClass,
 ) {
@@ -72,6 +78,14 @@ fun MovieDetailContent(
         },
         widthSizeClass = widthSizeClass,
     ) {
+        if (parts.isNotEmpty()) {
+            PartsSection(
+                parts = parts,
+                onPartClick = onPartClick,
+                widthSizeClass = widthSizeClass,
+            )
+        }
+
         if (item.chapters.isNotEmpty()) {
             ChaptersSection(
                 chapters = item.chapters,
@@ -99,6 +113,107 @@ fun MovieDetailContent(
                 widthSizeClass = widthSizeClass,
             )
         }
+    }
+}
+
+@Composable
+private fun PartsSection(
+    parts: List<AfinityItem>,
+    onPartClick: (AfinityItem) -> Unit,
+    widthSizeClass: WindowWidthSizeClass,
+) {
+    val cardWidth = widthSizeClass.landscapeWidth
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = stringResource(R.string.parts_title),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+        ) {
+            itemsIndexed(parts, key = { _, part -> part.id }) { index, part ->
+                PartCard(
+                    part = part,
+                    partNumber = index + 1,
+                    totalParts = parts.size,
+                    onClick = { onPartClick(part) },
+                    cardWidth = cardWidth,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PartCard(
+    part: AfinityItem,
+    partNumber: Int,
+    totalParts: Int,
+    onClick: () -> Unit,
+    cardWidth: Dp,
+) {
+    Column(modifier = Modifier.width(cardWidth), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+            shape = RoundedCornerShape(8.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                val imageUrl = part.images?.thumbImageUrl ?: part.images?.primaryImageUrl
+                AsyncImage(
+                    imageUrl = imageUrl,
+                    contentDescription = part.name,
+                    targetWidth = cardWidth,
+                    targetHeight = cardWidth * 9f / 16f,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    blurHash = part.images?.thumbBlurHash ?: part.images?.primaryBlurHash,
+                )
+
+                Surface(
+                    modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
+                    color = Color.Black.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(4.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.meta_part_of_fmt, partNumber, totalParts),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                    )
+                }
+
+                if (part.runtimeTicks > 0) {
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                        color = Color.Black.copy(alpha = 0.75f),
+                        shape = RoundedCornerShape(4.dp),
+                    ) {
+                        Text(
+                            text = formatTime(part.runtimeTicks / 10000),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        Text(
+            text = part.name,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

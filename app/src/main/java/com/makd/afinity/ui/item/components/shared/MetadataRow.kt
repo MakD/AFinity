@@ -499,6 +499,22 @@ fun MetadataRow(
                 needsSeparator = true
             }
 
+            val partCount = when (item) {
+                is AfinityMovie -> item.partCount
+                is AfinityEpisode -> item.partCount
+                else -> null
+            }
+            if ((partCount ?: 0) > 1) {
+                if (needsSeparator) MetadataDot()
+                Text(
+                    text = stringResource(R.string.meta_parts_fmt, partCount!!),
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+                )
+                needsSeparator = true
+            }
+
             val genres =
                 when (item) {
                     is AfinityMovie -> item.genres

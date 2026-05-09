@@ -443,7 +443,7 @@ constructor(
 
             val allShows = showResults.flatMap { it.second }.filter { !it.played }
             _latestTvSeries.value =
-                if (useJellyfinDefault) allShows.sortedByDescending { it.dateCreated }.take(15)
+                if (useJellyfinDefault) allShows.take(15)
                 else allShows.sortedByDescending { it.premiereDate }.take(15)
         } catch (e: Exception) {
             Timber.e(e, "Failed to reload latest shows data")
@@ -568,31 +568,19 @@ constructor(
                     }
 
                     val showsDeferred = async {
-                        if (useJellyfinDefault) {
-                            tvLibraries
-                                .map { library ->
-                                    async {
-                                        try {
-                                            val items =
+                        tvLibraries
+                            .map { library ->
+                                async {
+                                    try {
+                                        val items =
+                                            if (useJellyfinDefault) {
                                                 mediaRepository
                                                     .getLatestMedia(
                                                         parentId = library.id,
                                                         limit = 30,
                                                     )
                                                     .filterIsInstance<AfinityShow>()
-                                            library to items
-                                        } catch (e: Exception) {
-                                            library to emptyList()
-                                        }
-                                    }
-                                }
-                                .awaitAll()
-                        } else {
-                            tvLibraries
-                                .map { library ->
-                                    async {
-                                        try {
-                                            library to
+                                            } else {
                                                 mediaRepository.getShows(
                                                     parentId = library.id,
                                                     sortBy = SortBy.RELEASE_DATE,
@@ -600,13 +588,14 @@ constructor(
                                                     limit = 30,
                                                     isPlayed = false,
                                                 )
-                                        } catch (e: Exception) {
-                                            library to emptyList()
-                                        }
+                                            }
+                                        library to items
+                                    } catch (e: Exception) {
+                                        library to emptyList()
                                     }
                                 }
-                                .awaitAll()
-                        }
+                            }
+                            .awaitAll()
                     }
 
                     Pair(moviesDeferred.await(), showsDeferred.await())
@@ -637,7 +626,7 @@ constructor(
 
             val latestTvSeries =
                 if (useJellyfinDefault) {
-                    allLatestSeries.sortedByDescending { it.dateCreated }.take(15)
+                    allLatestSeries.take(15)
                 } else {
                     allLatestSeries.sortedByDescending { it.premiereDate }.take(15)
                 }

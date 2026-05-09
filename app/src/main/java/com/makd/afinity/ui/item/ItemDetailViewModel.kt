@@ -601,6 +601,18 @@ constructor(
                     if (item is AfinityBoxSet) {
                         loadBoxSetItems(item.id)
                     }
+                    if (item is AfinityMovie && (item.partCount ?: 0) > 1) {
+                        launch {
+                            try {
+                                val parts = mediaRepository.getAdditionalParts(item.id)
+                                if (parts.isNotEmpty()) {
+                                    _uiState.update { it.copy(movieParts = parts) }
+                                }
+                            } catch (e: Exception) {
+                                Timber.e(e, "Failed to fetch movie parts")
+                            }
+                        }
+                    }
                 } else {
                     if (item is AfinityMovie || item is AfinityShow) {
                         val offlineSession = sessionManager.currentSession.value
@@ -1376,4 +1388,5 @@ data class ItemDetailUiState(
     val isLoadingReviews: Boolean = false,
     val mdbRatings: List<MdbListRating> = emptyList(),
     val isRatingsFromCache: Boolean = false,
+    val movieParts: List<AfinityItem> = emptyList(),
 )

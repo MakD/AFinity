@@ -56,6 +56,7 @@ import org.jellyfin.sdk.api.operations.StudiosApi
 import org.jellyfin.sdk.api.operations.TrickplayApi
 import org.jellyfin.sdk.api.operations.TvShowsApi
 import org.jellyfin.sdk.api.operations.UserLibraryApi
+import org.jellyfin.sdk.api.operations.VideosApi
 import org.jellyfin.sdk.api.operations.UserViewsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
@@ -411,14 +412,10 @@ constructor(
                     userLibraryApi.getLatestMedia(
                         userId = userId,
                         parentId = parentId,
-                        includeItemTypes =
-                            listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES, BaseItemKind.EPISODE),
                         limit = limit,
-                        isPlayed = false,
                         fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                         enableImages = true,
                         enableUserData = true,
-                        groupItems = true,
                     )
 
                 val latestItems =
@@ -615,6 +612,28 @@ constructor(
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get intros for item: $itemId")
+                emptyList()
+            }
+        }
+
+    override suspend fun getAdditionalParts(itemId: UUID): List<AfinityItem> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+
+                val videosApi = VideosApi(apiClient)
+                val response = videosApi.getAdditionalPart(itemId = itemId, userId = userId)
+                val rawItems = response.content.items
+                Timber.d("[MultiPart] getAdditionalPart itemId=$itemId → ${rawItems?.size ?: 0} raw item(s)")
+
+                val mapped = rawItems?.mapNotNull { baseItem ->
+                    baseItem.toAfinityItem(getBaseUrl())
+                } ?: emptyList()
+                mapped
+            } catch (e: Exception) {
+                Timber.e(e, "[MultiPart] Exception in getAdditionalParts for item: $itemId")
                 emptyList()
             }
         }

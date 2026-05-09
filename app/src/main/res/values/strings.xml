@@ -108,6 +108,7 @@
     <string name="meta_runtime_hours_minutes">%1$dh %2$dm</string>
     <string name="meta_runtime_minutes">%1$dm</string>
     <string name="meta_parts_fmt">%1$d Parts</string>
+    <string name="meta_part_of_fmt">Part %1$d/%2$d</string>
     <string name="meta_ends_at">Ends at %1$s</string>
     <string name="meta_episode_count">%1$d episodes</string>
     <string name="similar_items_title">More Like This</string>
@@ -135,6 +136,7 @@
     <string name="cd_favorite">Favorite</string>
     <string name="cd_toggle_watched">Toggle Watched Status</string>
     <string name="chapters_title">Chapters</string>
+    <string name="parts_title">Parts</string>
 
     <string name="quality_dialog_title">Select Download Quality</string>
     <string name="quality_dialog_subtitle">Choose which quality to download</string>

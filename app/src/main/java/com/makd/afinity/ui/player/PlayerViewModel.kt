@@ -33,6 +33,7 @@ import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
+import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
@@ -1089,6 +1090,22 @@ constructor(
                     }
                     if (shouldShowControls) {
                         showControls()
+                    }
+                }
+
+                if (fullItem is AfinityMovie || fullItem is AfinityEpisode) {
+                    viewModelScope.launch(Dispatchers.IO) {
+                        try {
+                            Timber.d("[MultiPart] Checking additional parts for '${fullItem.name}' id=${fullItem.id}")
+                            val parts = mediaRepository.getAdditionalParts(fullItem.id)
+                            Timber.d("[MultiPart] getAdditionalParts returned ${parts.size} item(s): ${parts.map { "'${it.name}' (${it.id})" }}")
+                            if (parts.isNotEmpty()) {
+                                playlistManager.insertAfterCurrent(parts)
+                                Timber.d("[MultiPart] Inserted ${parts.size} parts into queue after '${fullItem.name}'")
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "[MultiPart] Exception fetching additional parts for: ${fullItem.id}")
+                        }
                     }
                 }
 

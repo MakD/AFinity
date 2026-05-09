@@ -240,6 +240,16 @@ fun EpisodeDetailOverlay(
                     needsSeparator = true
                 }
 
+                if ((episode.partCount ?: 0) > 1) {
+                    if (needsSeparator) MetadataDot()
+                    Text(
+                        text = stringResource(R.string.meta_parts_fmt, episode.partCount!!),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    needsSeparator = true
+                }
+
                 episode.communityRating?.let { rating ->
                     if (needsSeparator) MetadataDot()
 
