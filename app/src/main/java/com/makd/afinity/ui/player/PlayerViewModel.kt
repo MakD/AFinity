@@ -33,8 +33,8 @@ import com.makd.afinity.data.models.livetv.ChannelType
 import com.makd.afinity.data.models.media.AfinityChapter
 import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityImages
-import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityItem
+import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinitySource
@@ -454,7 +454,8 @@ constructor(
                 .setHwDec(mpvHwDec)
                 .build()
 
-        mpvPlayer.setOption("sub-ass-override", "strip")
+        mpvPlayer.setOption("sub-ass-override", "no")
+        mpvPlayer.setOption("sub-ass-force-margins", "yes")
         mpvPlayer.setOption("sub-use-margins", "yes")
         mpvPlayer.setOption("sub-color", SubtitlePreferences.colorToMpvHex(subtitlePrefs.textColor))
         mpvPlayer.setOption("sub-font-size", subtitlePrefs.toMpvFontSize().toString())
@@ -1096,15 +1097,24 @@ constructor(
                 if (fullItem is AfinityMovie || fullItem is AfinityEpisode) {
                     viewModelScope.launch(Dispatchers.IO) {
                         try {
-                            Timber.d("[MultiPart] Checking additional parts for '${fullItem.name}' id=${fullItem.id}")
+                            Timber.d(
+                                "[MultiPart] Checking additional parts for '${fullItem.name}' id=${fullItem.id}"
+                            )
                             val parts = mediaRepository.getAdditionalParts(fullItem.id)
-                            Timber.d("[MultiPart] getAdditionalParts returned ${parts.size} item(s): ${parts.map { "'${it.name}' (${it.id})" }}")
+                            Timber.d(
+                                "[MultiPart] getAdditionalParts returned ${parts.size} item(s): ${parts.map { "'${it.name}' (${it.id})" }}"
+                            )
                             if (parts.isNotEmpty()) {
                                 playlistManager.insertAfterCurrent(parts)
-                                Timber.d("[MultiPart] Inserted ${parts.size} parts into queue after '${fullItem.name}'")
+                                Timber.d(
+                                    "[MultiPart] Inserted ${parts.size} parts into queue after '${fullItem.name}'"
+                                )
                             }
                         } catch (e: Exception) {
-                            Timber.e(e, "[MultiPart] Exception fetching additional parts for: ${fullItem.id}")
+                            Timber.e(
+                                e,
+                                "[MultiPart] Exception fetching additional parts for: ${fullItem.id}",
+                            )
                         }
                     }
                 }
