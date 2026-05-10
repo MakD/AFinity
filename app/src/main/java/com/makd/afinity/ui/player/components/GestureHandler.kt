@@ -76,6 +76,7 @@ fun GestureHandler(
 
     var isDragging by remember { mutableStateOf(false) }
     var isLongPressActive by remember { mutableStateOf(false) }
+    var wasLongPress by remember { mutableStateOf(false) }
     var gestureType by remember { mutableStateOf<GestureType?>(null) }
 
     var dragStartOffset by remember { mutableStateOf(Offset.Zero) }
@@ -103,12 +104,14 @@ fun GestureHandler(
                                 currentOnDoubleTap(isForward)
                             }
                         },
-                        onTap = { currentOnSingleTap() },
+                        onTap = { if (!wasLongPress) currentOnSingleTap() },
                         onPress = { _ ->
+                            wasLongPress = false
                             val job = coroutineScope.launch {
                                 delay(500)
                                 if (!isDragging && gestureType == null) {
                                     isLongPressActive = true
+                                    wasLongPress = true
                                     currentOnLongPressStart()
                                 }
                             }
