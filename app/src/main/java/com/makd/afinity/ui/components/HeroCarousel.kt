@@ -207,7 +207,7 @@ fun HeroCarouselPortrait(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             beyondViewportPageCount = 1,
-            key = { page -> "hero_page_${page % items.size}" },
+            key = { page -> "hero_page_$page" },
         ) { page ->
             val actualIndex = page % items.size
             val item = items[actualIndex]
@@ -452,7 +452,7 @@ private fun HeroCarouselLandscape(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             beyondViewportPageCount = 1,
-            key = { page -> "hero_page_${page % items.size}" },
+            key = { page -> "hero_page_$page" },
         ) { page ->
             val actualIndex = page % items.size
             val item = items[actualIndex]
