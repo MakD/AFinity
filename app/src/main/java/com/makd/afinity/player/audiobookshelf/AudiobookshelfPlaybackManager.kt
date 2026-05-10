@@ -3,12 +3,12 @@ package com.makd.afinity.player.audiobookshelf
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AudiobookshelfPlaybackManager @Inject constructor() {
@@ -75,6 +75,10 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
             _playbackState.value.copy(isPodcastPlaylist = true, playlistEpisodeIds = episodeIds)
     }
 
+    fun setChapterBasedPlayback(isChapterBased: Boolean) {
+        _playbackState.update { it.copy(isChapterBasedPlayback = isChapterBased) }
+    }
+
     fun updateSessionInfo(sessionId: String, episodeId: String?) {
         _playbackState.value =
             _playbackState.value.copy(sessionId = sessionId, episodeId = episodeId)
@@ -124,6 +128,7 @@ data class AudiobookshelfPlaybackState(
     val sleepTimerEndTime: Long? = null,
     val isPodcastPlaylist: Boolean = false,
     val playlistEpisodeIds: List<String> = emptyList(),
+    val isChapterBasedPlayback: Boolean = false,
 ) {
     val currentChapterIndex: Int
         get() = currentChapter?.let { chapter -> chapters.indexOf(chapter) } ?: -1

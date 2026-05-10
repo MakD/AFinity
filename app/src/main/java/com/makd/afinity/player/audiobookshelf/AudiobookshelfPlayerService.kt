@@ -1,10 +1,14 @@
 package com.makd.afinity.player.audiobookshelf
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import android.os.Bundle
+import android.os.Handler
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -13,12 +17,21 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.audio.AudioRendererEventListener
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
+import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy
+import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
+import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.makd.afinity.MainActivity
@@ -78,9 +91,46 @@ class AudiobookshelfPlayerService : MediaSessionService() {
         val loadControl =
             DefaultLoadControl.Builder().setBufferDurationsMs(15_000, 60_000, 2_500, 5_000).build()
         val renderersFactory =
-            DefaultRenderersFactory(this)
+            object : DefaultRenderersFactory(this) {
+                    override fun buildAudioRenderers(
+                        context: Context,
+                        extensionRendererMode: Int,
+                        mediaCodecSelector: MediaCodecSelector,
+                        enableDecoderFallback: Boolean,
+                        audioSink: AudioSink,
+                        eventHandler: Handler,
+                        eventListener: AudioRendererEventListener,
+                        out: ArrayList<Renderer>,
+                    ) {
+                        val eac3JocSafeSelector =
+                            MediaCodecSelector { mimeType, requiresSecure, requiresTunneling ->
+                                val infos =
+                                    MediaCodecUtil.getDecoderInfos(
+                                        mimeType,
+                                        requiresSecure,
+                                        requiresTunneling,
+                                    )
+                                if (
+                                    mimeType == MimeTypes.AUDIO_E_AC3_JOC ||
+                                        mimeType == MimeTypes.AUDIO_E_AC3
+                                )
+                                    infos.filter { it.softwareOnly }
+                                else infos
+                            }
+                        super.buildAudioRenderers(
+                            context,
+                            extensionRendererMode,
+                            eac3JocSafeSelector,
+                            enableDecoderFallback,
+                            audioSink,
+                            eventHandler,
+                            eventListener,
+                            out,
+                        )
+                    }
+                }
                 .setEnableDecoderFallback(true)
-                .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+                .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
         exoPlayer =
             ExoPlayer.Builder(this, renderersFactory)
                 .setAudioAttributes(AudioAttributes.DEFAULT, true)
@@ -174,12 +224,67 @@ class AudiobookshelfPlayerService : MediaSessionService() {
 
     @UnstableApi
     private class CustomMediaSessionCallback : MediaSession.Callback {
+        private val REWIND_COMMAND = SessionCommand("action_rewind", Bundle.EMPTY)
+        private val FORWARD_COMMAND = SessionCommand("action_forward", Bundle.EMPTY)
+
         @UnstableApi
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
         ): MediaSession.ConnectionResult {
-            return MediaSession.ConnectionResult.AcceptedResultBuilder(session).build()
+
+            val sessionCommands =
+                MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                    .add(REWIND_COMMAND)
+                    .add(FORWARD_COMMAND)
+                    .build()
+
+            val rewindButton =
+                CommandButton.Builder(CommandButton.ICON_REWIND)
+                    .setSessionCommand(REWIND_COMMAND)
+                    .setDisplayName("Rewind")
+                    .setEnabled(true)
+                    .build()
+
+            val forwardButton =
+                CommandButton.Builder(CommandButton.ICON_FAST_FORWARD)
+                    .setSessionCommand(FORWARD_COMMAND)
+                    .setDisplayName("Forward")
+                    .setEnabled(true)
+                    .build()
+
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(sessionCommands)
+                .setCustomLayout(ImmutableList.of(rewindButton, forwardButton))
+                .build()
+        }
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle,
+        ): ListenableFuture<SessionResult> {
+            val player = session.player
+
+            when (customCommand.customAction) {
+                "action_rewind" -> {
+                    player.seekTo(maxOf(0, player.currentPosition - 15000))
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+                "action_forward" -> {
+                    val duration = player.duration
+                    val nextPos =
+                        if (duration != C.TIME_UNSET) {
+                            minOf(duration, player.currentPosition + 30000)
+                        } else {
+                            player.currentPosition + 30000
+                        }
+                    player.seekTo(nextPos)
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+            }
+            return super.onCustomCommand(session, controller, customCommand, args)
         }
 
         @Suppress("OVERRIDE_DEPRECATION")
@@ -199,15 +304,18 @@ class AudiobookshelfPlayerService : MediaSessionService() {
         positionUpdateJob = serviceScope.launch {
             while (isActive) {
                 val player = exoPlayer ?: break
+                val state = playbackManager.playbackState.value
+                val idx = player.currentMediaItemIndex
+                val positionInItemSeconds = player.currentPosition / 1000.0
 
-                val currentMediaItemIndex = player.currentMediaItemIndex
-                val audioTracks = playbackManager.playbackState.value.audioTracks
-                var totalPosition = 0.0
-
-                for (i in 0 until currentMediaItemIndex) {
-                    totalPosition += audioTracks.getOrNull(i)?.duration ?: 0.0
+                val totalPosition = if (state.isChapterBasedPlayback) {
+                    val chapter = state.chapters.getOrNull(idx)
+                    if (chapter != null) chapter.start + positionInItemSeconds else positionInItemSeconds
+                } else {
+                    var accumulated = 0.0
+                    for (i in 0 until idx) accumulated += state.audioTracks.getOrNull(i)?.duration ?: 0.0
+                    accumulated + positionInItemSeconds
                 }
-                totalPosition += player.currentPosition / 1000.0
 
                 playbackManager.updatePosition(totalPosition)
                 delay(1000)

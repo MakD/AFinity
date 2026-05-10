@@ -125,10 +125,9 @@ constructor(
 
             val audioTracks =
                 if (isPodcastPlaylist) {
-                    val allTracks =
-                        episodes.mapNotNull { episode ->
-                            episode.audioTrack?.let { track -> track.copy(title = episode.title) }
-                        }
+                    val allTracks = episodes.mapNotNull { episode ->
+                        episode.audioTrack?.let { track -> track.copy(title = episode.title) }
+                    }
                     if (allTracks.isNotEmpty()) {
                         Timber.d("Loading ${allTracks.size} episodes for podcast playlist")
                         allTracks
@@ -146,20 +145,19 @@ constructor(
             val enhancedSession =
                 if (isPodcastPlaylist && episodes.isNotEmpty()) {
                     var accumulatedTime = 0.0
-                    val episodeChapters =
-                        episodes.mapNotNull { episode ->
-                            episode.audioTrack?.let {
-                                val chapter =
-                                    com.makd.afinity.data.models.audiobookshelf.BookChapter(
-                                        id = episodes.indexOf(episode),
-                                        start = accumulatedTime,
-                                        end = accumulatedTime + (episode.duration ?: 0.0),
-                                        title = episode.title,
-                                    )
-                                accumulatedTime += episode.duration ?: 0.0
-                                chapter
-                            }
+                    val episodeChapters = episodes.mapNotNull { episode ->
+                        episode.audioTrack?.let {
+                            val chapter =
+                                com.makd.afinity.data.models.audiobookshelf.BookChapter(
+                                    id = episodes.indexOf(episode),
+                                    start = accumulatedTime,
+                                    end = accumulatedTime + (episode.duration ?: 0.0),
+                                    title = episode.title,
+                                )
+                            accumulatedTime += episode.duration ?: 0.0
+                            chapter
                         }
+                    }
                     val totalDuration = episodes.sumOf { it.duration ?: 0.0 }
 
                     session.copy(
@@ -181,49 +179,72 @@ constructor(
                 playbackManager.setPlaylistInfo(episodeIds)
             }
 
-            val mediaItems =
-                audioTracks.mapIndexed { index, track ->
-                    val url =
-                        if (track.contentUrl?.startsWith("http") == true ||
-                            track.contentUrl?.startsWith("file") == true
-                        ) track.contentUrl
-                        else "$baseUrl${track.contentUrl}"
+            val artUrl =
+                if (enhancedSession.id?.startsWith("local_") == true) {
+                    enhancedSession.coverPath
+                } else if (baseUrl.isNotEmpty()) {
+                    "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?token=$token"
+                } else {
+                    enhancedSession.coverPath
+                }
 
-                    val artUrl =
-                        if (enhancedSession.id?.startsWith("local_") == true) {
-                            enhancedSession.coverPath
-                        } else if (baseUrl.isNotEmpty()) {
-                            "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?token=$token"
-                        } else {
-                            enhancedSession.coverPath
-                        }
-
-                    val itemTitle =
-                        if (isPodcastPlaylist && track.title != null) {
-                            track.title
-                        } else {
+            val chapterMediaItems =
+                if (!isPodcastPlaylist) {
+                    buildChapterMediaItems(
+                        chapters = enhancedSession.chapters ?: emptyList(),
+                        audioTracks = audioTracks,
+                        baseUrl = baseUrl,
+                        token = token,
+                        artUrl = artUrl,
+                        bookTitle =
                             enhancedSession.displayTitle
                                 ?: enhancedSession.mediaMetadata?.title
-                                ?: "Unknown"
-                        }
+                                ?: "",
+                        author =
+                            enhancedSession.displayAuthor
+                                ?: enhancedSession.mediaMetadata?.authorName
+                                ?: "",
+                    )
+                } else null
 
-                    val metadata =
-                        MediaMetadata.Builder()
-                            .setTitle(itemTitle)
-                            .setArtist(
-                                enhancedSession.displayAuthor
-                                    ?: enhancedSession.mediaMetadata?.authorName
-                                    ?: ""
+            playbackManager.setChapterBasedPlayback(!isPodcastPlaylist && chapterMediaItems != null)
+
+            val mediaItems =
+                chapterMediaItems
+                    ?: audioTracks.mapIndexed { index, track ->
+                        val url =
+                            if (
+                                track.contentUrl?.startsWith("http") == true ||
+                                    track.contentUrl?.startsWith("file") == true
                             )
-                            .setArtworkUri(artUrl?.toUri())
-                            .build()
+                                track.contentUrl
+                            else "$baseUrl${track.contentUrl}"
 
-                    MediaItem.Builder()
-                        .setUri(url)
-                        .setMediaId(index.toString())
-                        .setMediaMetadata(metadata)
-                        .build()
-                }
+                        val itemTitle =
+                            if (isPodcastPlaylist && track.title != null) {
+                                track.title
+                            } else {
+                                enhancedSession.displayTitle
+                                    ?: enhancedSession.mediaMetadata?.title
+                                    ?: "Unknown"
+                            }
+
+                        MediaItem.Builder()
+                            .setUri(url)
+                            .setMediaId(index.toString())
+                            .setMediaMetadata(
+                                MediaMetadata.Builder()
+                                    .setTitle(itemTitle)
+                                    .setArtist(
+                                        enhancedSession.displayAuthor
+                                            ?: enhancedSession.mediaMetadata?.authorName
+                                            ?: ""
+                                    )
+                                    .setArtworkUri(artUrl?.toUri())
+                                    .build()
+                            )
+                            .build()
+                    }
 
             Timber.d("Sending ${mediaItems.size} items to player")
 
@@ -249,6 +270,66 @@ constructor(
             }
             controller.play()
         }
+    }
+
+    private fun buildChapterMediaItems(
+        chapters: List<com.makd.afinity.data.models.audiobookshelf.BookChapter>,
+        audioTracks: List<com.makd.afinity.data.models.audiobookshelf.AudioTrack>,
+        baseUrl: String,
+        token: String?,
+        artUrl: String?,
+        bookTitle: String,
+        author: String,
+    ): List<MediaItem>? {
+        if (chapters.isEmpty() || audioTracks.isEmpty()) return null
+
+        val trackOffsets = mutableListOf<Double>()
+        var acc = 0.0
+        for (track in audioTracks) {
+            trackOffsets.add(acc)
+            acc += track.duration
+        }
+
+        val result = mutableListOf<MediaItem>()
+        for (chapter in chapters) {
+            val trackIndex = trackOffsets.indexOfLast { offset -> chapter.start >= offset - 0.1 }
+            if (trackIndex < 0) return null
+
+            val track = audioTracks[trackIndex]
+            val trackStart = trackOffsets[trackIndex]
+            val trackEnd = trackStart + track.duration
+
+            if (chapter.end > trackEnd + 0.5) return null
+
+            val trackUrl =
+                track.contentUrl?.let { url ->
+                    if (url.startsWith("http") || url.startsWith("file")) url else "$baseUrl$url"
+                } ?: return null
+
+            result.add(
+                MediaItem.Builder()
+                    .setUri(trackUrl)
+                    .setMediaId("chapter_${chapter.id}")
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle(chapter.title)
+                            .setArtist(bookTitle)
+                            .setAlbumArtist(author)
+                            .setArtworkUri(artUrl?.toUri())
+                            .build()
+                    )
+                    .setClippingConfiguration(
+                        MediaItem.ClippingConfiguration.Builder()
+                            .setStartPositionMs(
+                                ((chapter.start - trackStart) * 1000).toLong().coerceAtLeast(0L)
+                            )
+                            .setEndPositionMs(((chapter.end - trackStart) * 1000).toLong())
+                            .build()
+                    )
+                    .build()
+            )
+        }
+        return result
     }
 
     private fun sortEpisodes(
@@ -322,13 +403,29 @@ constructor(
 
     fun seekToPosition(positionSeconds: Double) {
         val controller = mediaController ?: return
+        val state = playbackManager.playbackState.value
+
+        if (state.isChapterBasedPlayback) {
+            val chapters = state.chapters
+            val idx =
+                chapters
+                    .indexOfFirst { ch -> positionSeconds >= ch.start && positionSeconds < ch.end }
+                    .let { if (it < 0) chapters.lastIndex else it }
+            if (idx >= 0) {
+                val ch = chapters[idx]
+                controller.seekTo(
+                    idx,
+                    ((positionSeconds - ch.start) * 1000).toLong().coerceAtLeast(0L),
+                )
+            }
+            return
+        }
+
         val audioTracks = playbackManager.currentSession.value?.audioTracks ?: return
         var accumulatedDuration = 0.0
-
         for ((index, track) in audioTracks.withIndex()) {
             if (positionSeconds < accumulatedDuration + track.duration) {
-                val positionInTrack = positionSeconds - accumulatedDuration
-                controller.seekTo(index, (positionInTrack * 1000).toLong())
+                controller.seekTo(index, ((positionSeconds - accumulatedDuration) * 1000).toLong())
                 break
             }
             accumulatedDuration += track.duration
@@ -336,9 +433,13 @@ constructor(
     }
 
     fun seekToChapter(chapterIndex: Int) {
-        val chapters = playbackManager.playbackState.value.chapters
-        if (chapterIndex in chapters.indices) {
-            seekToPosition(chapters[chapterIndex].start)
+        val controller = mediaController ?: return
+        val state = playbackManager.playbackState.value
+        if (chapterIndex !in state.chapters.indices) return
+        if (state.isChapterBasedPlayback) {
+            controller.seekTo(chapterIndex, 0)
+        } else {
+            seekToPosition(state.chapters[chapterIndex].start)
         }
     }
 
@@ -361,13 +462,12 @@ constructor(
         val endTime = System.currentTimeMillis() + (durationMinutes * 60 * 1000L)
         playbackManager.setSleepTimer(endTime)
 
-        sleepTimerJob =
-            scope.launch {
-                delay(durationMinutes * 60 * 1000L)
-                pause()
-                playbackManager.setSleepTimer(null)
-                Timber.d("Sleep timer triggered")
-            }
+        sleepTimerJob = scope.launch {
+            delay(durationMinutes * 60 * 1000L)
+            pause()
+            playbackManager.setSleepTimer(null)
+            Timber.d("Sleep timer triggered")
+        }
     }
 
     fun cancelSleepTimer() {
@@ -380,7 +480,9 @@ constructor(
         cancelSleepTimer()
         val state = playbackManager.playbackState.value
         val sessionId = state.sessionId
-        Timber.d("closeSession: sessionId=$sessionId itemId=${state.itemId} episodeId=${state.episodeId} currentTime=${state.currentTime} isLocal=${sessionId?.startsWith("local_")}")
+        Timber.d(
+            "closeSession: sessionId=$sessionId itemId=${state.itemId} episodeId=${state.episodeId} currentTime=${state.currentTime} isLocal=${sessionId?.startsWith("local_")}"
+        )
         if (sessionId != null) {
             scope.launch {
                 withContext(NonCancellable) {
@@ -392,9 +494,8 @@ constructor(
                             currentTime =
                                 (state.currentTime - state.currentChapter.start).coerceAtLeast(0.0)
                             duration =
-                                (state.currentChapter.end - state.currentChapter.start).coerceAtLeast(
-                                    0.0
-                                )
+                                (state.currentChapter.end - state.currentChapter.start)
+                                    .coerceAtLeast(0.0)
                         } else {
                             currentTime = state.currentTime
                             duration = state.duration
@@ -404,7 +505,9 @@ constructor(
                             val itemId = state.itemId
                             val episodeId = state.episodeId
                             val activeContext = audiobookshelfRepository.currentActiveContext
-                            Timber.d("closeSession[local]: saving final position itemId=$itemId episodeId=$episodeId currentTime=$currentTime duration=$duration")
+                            Timber.d(
+                                "closeSession[local]: saving final position itemId=$itemId episodeId=$episodeId currentTime=$currentTime duration=$duration"
+                            )
                             if (itemId != null && activeContext != null) {
                                 val (serverId, userId) = activeContext
                                 audiobookshelfRepository.updateProgress(
@@ -415,9 +518,13 @@ constructor(
                                     isFinished = duration > 0 && currentTime / duration >= 0.99,
                                 )
                                 absSyncScheduler.scheduleSync(serverId, userId)
-                                Timber.d("closeSession[local]: final position saved and sync scheduled")
+                                Timber.d(
+                                    "closeSession[local]: final position saved and sync scheduled"
+                                )
                             } else {
-                                Timber.w("closeSession[local]: itemId or activeContext is null, skipping final position save")
+                                Timber.w(
+                                    "closeSession[local]: itemId or activeContext is null, skipping final position save"
+                                )
                             }
                             return@withContext
                         }
