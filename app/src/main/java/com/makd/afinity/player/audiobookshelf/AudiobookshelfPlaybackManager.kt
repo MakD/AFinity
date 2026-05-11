@@ -3,12 +3,12 @@ package com.makd.afinity.player.audiobookshelf
 import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class AudiobookshelfPlaybackManager @Inject constructor() {
@@ -27,7 +27,7 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
                 session.coverPath
             } else if (serverUrl != null) {
                 val base = "$serverUrl/api/items/${session.libraryItemId}/cover"
-                if (token != null) "$base?token=$token" else base
+                if (token != null) "$base?raw=1&token=$token" else "$base?raw=1"
             } else {
                 session.coverPath
             }
