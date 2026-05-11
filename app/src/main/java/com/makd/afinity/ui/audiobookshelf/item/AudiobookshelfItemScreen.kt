@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -58,10 +59,12 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.annotation.StringRes
 import com.makd.afinity.R
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
 import com.makd.afinity.ui.audiobookshelf.item.components.ChapterListDialog
 import com.makd.afinity.ui.audiobookshelf.item.components.EpisodeListDialog
@@ -121,6 +124,8 @@ fun AudiobookshelfItemScreen(
     val isPodcast = item?.mediaType?.lowercase() == "podcast"
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val playerOffset = LocalPlayerOffset.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     var chaptersExpanded by remember { mutableStateOf(false) }
     var sortOption by remember { mutableStateOf(EpisodeSortOption.PUB_DATE) }
@@ -258,7 +263,7 @@ fun AudiobookshelfItemScreen(
                                     .background(
                                         MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                                     ),
-                            contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+                            contentPadding = PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             item { Spacer(modifier = Modifier.statusBarsPadding()) }
@@ -374,7 +379,7 @@ fun AudiobookshelfItemScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+                        contentPadding = PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         item {

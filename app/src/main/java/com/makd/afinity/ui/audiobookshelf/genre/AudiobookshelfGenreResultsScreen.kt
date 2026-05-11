@@ -39,6 +39,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
 
@@ -247,10 +248,11 @@ private fun AudiobookshelfItemGrid(
     onItemClick: (String) -> Unit,
     widthSizeClass: WindowWidthSizeClass,
 ) {
+    val playerOffset = LocalPlayerOffset.current
     LazyVerticalGrid(
         columns = GridCells.Adaptive(widthSizeClass.gridMinSize),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {

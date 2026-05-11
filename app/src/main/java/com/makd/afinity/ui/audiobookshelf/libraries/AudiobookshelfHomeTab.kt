@@ -23,6 +23,7 @@ import com.makd.afinity.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.theme.CardDimensions
@@ -57,8 +58,12 @@ fun AudiobookshelfHomeTab(
             val cardWidth = widthSizeClass.portraitWidth
             val cardHeight = CardDimensions.calculateHeight(cardWidth, 1f)
             val fixedRowHeight = cardHeight + 8.dp + 20.dp + 18.dp
+            val playerOffset = LocalPlayerOffset.current
 
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = playerOffset),
+            ) {
                 items(items = sections, key = { it.id }) { section ->
                     Column {
                         Spacer(modifier = Modifier.height(24.dp))

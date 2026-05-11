@@ -60,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.makd.afinity.R
 import com.makd.afinity.navigation.Destination
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.main.MainUiState
@@ -270,6 +271,7 @@ fun AudiobookshelfLibrariesScreen(
                                             CircularProgressIndicator()
                                         }
                                     } else {
+                                        val playerOffset = LocalPlayerOffset.current
                                         Row(modifier = Modifier.fillMaxSize()) {
                                             if (displayItems.isEmpty()) {
                                                 Box(
@@ -288,7 +290,7 @@ fun AudiobookshelfLibrariesScreen(
                                                 LazyVerticalGrid(
                                                     columns = GridCells.Adaptive(minSize = 140.dp),
                                                     modifier = Modifier.weight(1f).fillMaxHeight(),
-                                                    contentPadding = PaddingValues(16.dp),
+                                                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp + playerOffset),
                                                     horizontalArrangement =
                                                         Arrangement.spacedBy(12.dp),
                                                     verticalArrangement =

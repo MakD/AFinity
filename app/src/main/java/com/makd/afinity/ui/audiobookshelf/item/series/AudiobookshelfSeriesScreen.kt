@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -43,10 +44,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.makd.afinity.R
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.ui.audiobookshelf.item.components.ItemHeroBackground
 import com.makd.afinity.ui.audiobookshelf.item.components.SeriesCoverGrid
@@ -62,6 +65,8 @@ fun AudiobookshelfSeriesScreen(
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val playerOffset = LocalPlayerOffset.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -130,7 +135,7 @@ fun AudiobookshelfSeriesScreen(
                                     .background(
                                         MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                                     ),
-                            contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+                            contentPadding = PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             item {
@@ -157,7 +162,7 @@ fun AudiobookshelfSeriesScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+                        contentPadding = PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         item {
