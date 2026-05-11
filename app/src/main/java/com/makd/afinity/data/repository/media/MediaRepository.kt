@@ -50,6 +50,7 @@ interface MediaRepository {
         parentId: UUID? = null,
         limit: Int = 16,
         fields: List<ItemFields>? = null,
+        groupItems: Boolean = true,
     ): List<AfinityItem>
 
     suspend fun getContinueWatching(

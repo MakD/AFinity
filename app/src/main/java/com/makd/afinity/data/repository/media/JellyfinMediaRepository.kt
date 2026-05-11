@@ -400,6 +400,7 @@ constructor(
         parentId: UUID?,
         limit: Int,
         fields: List<ItemFields>?,
+        groupItems: Boolean,
     ): List<AfinityItem> =
         withContext(Dispatchers.IO) {
             return@withContext try {
@@ -416,6 +417,7 @@ constructor(
                         fields = fields ?: FieldSets.MEDIA_ITEM_CARDS,
                         enableImages = true,
                         enableUserData = true,
+                        groupItems = groupItems,
                     )
 
                 val latestItems =

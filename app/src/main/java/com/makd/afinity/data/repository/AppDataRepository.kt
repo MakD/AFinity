@@ -400,6 +400,21 @@ constructor(
         }
     }
 
+    private suspend fun getLatestShowsForLibrary(libraryId: UUID, limit: Int): List<AfinityShow> {
+        val raw =
+            mediaRepository.getLatestMedia(parentId = libraryId, limit = limit, groupItems = false)
+        val shows = raw.filterIsInstance<AfinityShow>().toMutableList()
+        val seenSeriesIds = shows.map { it.id }.toMutableSet()
+        raw.filterIsInstance<AfinityEpisode>()
+            .map { it.seriesId }
+            .distinct()
+            .filter { seenSeriesIds.add(it) }
+            .forEach { seriesId ->
+                (mediaRepository.getItemById(seriesId) as? AfinityShow)?.let { shows.add(it) }
+            }
+        return shows
+    }
+
     private suspend fun reloadLatestShowsData() {
         try {
             val libraries = _libraries.value
@@ -415,9 +430,7 @@ constructor(
                             try {
                                 val items =
                                     if (useJellyfinDefault) {
-                                        mediaRepository
-                                            .getLatestMedia(parentId = library.id, limit = 30)
-                                            .filterIsInstance<AfinityShow>()
+                                        getLatestShowsForLibrary(library.id, limit = 30)
                                     } else {
                                         mediaRepository.getShows(
                                             parentId = library.id,
@@ -574,12 +587,7 @@ constructor(
                                     try {
                                         val items =
                                             if (useJellyfinDefault) {
-                                                mediaRepository
-                                                    .getLatestMedia(
-                                                        parentId = library.id,
-                                                        limit = 30,
-                                                    )
-                                                    .filterIsInstance<AfinityShow>()
+                                                getLatestShowsForLibrary(library.id, limit = 30)
                                             } else {
                                                 mediaRepository.getShows(
                                                     parentId = library.id,
