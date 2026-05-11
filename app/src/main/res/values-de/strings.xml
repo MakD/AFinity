@@ -264,7 +264,7 @@
     <string name="tab_tv_shows">Fernsehsendungen</string>
     <string name="error_unknown_occurred">Unbekannter Fehler aufgetreten</string>
     <string name="search_no_results">Keine Ergebnisse gefunden</string>
-    <string name="search_placeholder">Filme und Fernsehsendungen suchen</string>
+    <string name="search_placeholder">Filme und TV-Serien suchen</string>
     <string name="cd_clear">Leeren</string>
     <string name="filter_request">Anfrage</string>
     <string name="explore_genres">Genres entdecken</string>
@@ -478,7 +478,7 @@
     <string name="pref_dynamic_colors_summary">Farben des Hintergrundbildes verwenden</string>
     <string name="settings_group_home_screen">Startseite</string>
     <string name="pref_combine_library_title">Bibliotheksabschnitte zusammenfügen</string>
-    <string name="pref_combine_library_summary">Filme und Serien zu einer einzigen Liste zusammenfügen</string>
+    <string name="pref_combine_library_summary">Filme und TV-Serien zu einer einzigen Liste zusammenfügen</string>
     <string name="pref_sort_date_added_title">Nach Hinzufügedatum sortieren</string>
     <string name="pref_sort_date_added_summary">Neue Inhalte auf der Startseite als erstes anzeigen</string>
     <string name="settings_group_content_layout">Inhalts-Layout</string>
@@ -622,7 +622,7 @@
     <string name="pref_pip_gesture_summary">Bild-in-Bild beim Wischen zur Startseite aktivieren</string>
     <string name="pref_group_interface">Benutzeroberfläche</string>
     <string name="skip_mode_button">Schaltfläche anzeigen</string>
-    <string name="skip_mode_auto_skip">Automatisches Überspringen</string>
+    <string name="skip_mode_auto_skip">Automatisch Überspringen</string>
     <string name="skip_mode_disabled">Deaktiviert</string>
     <string name="pref_autohide_logo_summary">Titellogo mit Playersteuerung ausblenden</string>
     <string name="pref_sub_italic_summary">Kursiver Textstil</string>
@@ -774,7 +774,7 @@
     <string name="role_admin">Admin</string>
     <string name="role_user">Benutzer</string>
     <string name="label_permissions">Berechtigungen</string>
-    <string name="permission_auto_approve">Automatisches Genehmigen</string>
+    <string name="permission_auto_approve">Automatisch Genehmigen</string>
     <string name="permission_manage">Verwalten</string>
     <string name="label_movie_quota">Film-Limit</string>
     <string name="label_tv_quota">TV-Limit</string>
