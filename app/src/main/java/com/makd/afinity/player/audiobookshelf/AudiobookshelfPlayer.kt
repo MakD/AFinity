@@ -13,6 +13,8 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.models.audiobookshelf.AudioTrack
+import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -148,7 +150,7 @@ constructor(
                     val episodeChapters = episodes.mapNotNull { episode ->
                         episode.audioTrack?.let {
                             val chapter =
-                                com.makd.afinity.data.models.audiobookshelf.BookChapter(
+                                BookChapter(
                                     id = episodes.indexOf(episode),
                                     start = accumulatedTime,
                                     end = accumulatedTime + (episode.duration ?: 0.0),
@@ -183,7 +185,7 @@ constructor(
                 if (enhancedSession.id?.startsWith("local_") == true) {
                     enhancedSession.coverPath
                 } else if (baseUrl.isNotEmpty()) {
-                    "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?token=$token"
+                    "$baseUrl/api/items/${enhancedSession.libraryItemId}/cover?token=$token&raw=1"
                 } else {
                     enhancedSession.coverPath
                 }
@@ -273,8 +275,8 @@ constructor(
     }
 
     private fun buildChapterMediaItems(
-        chapters: List<com.makd.afinity.data.models.audiobookshelf.BookChapter>,
-        audioTracks: List<com.makd.afinity.data.models.audiobookshelf.AudioTrack>,
+        chapters: List<BookChapter>,
+        audioTracks: List<AudioTrack>,
         baseUrl: String,
         token: String?,
         artUrl: String?,
