@@ -264,7 +264,7 @@
     <string name="tab_tv_shows">Fernsehsendungen</string>
     <string name="error_unknown_occurred">Unbekannter Fehler aufgetreten</string>
     <string name="search_no_results">Keine Ergebnisse gefunden</string>
-    <string name="search_placeholder">Filme und TV-Serien suchen</string>
+    <string name="search_placeholder">Filme und Serien suchen</string>
     <string name="cd_clear">Leeren</string>
     <string name="filter_request">Anfrage</string>
     <string name="explore_genres">Genres entdecken</string>
