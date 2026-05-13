@@ -56,8 +56,8 @@ import org.jellyfin.sdk.api.operations.StudiosApi
 import org.jellyfin.sdk.api.operations.TrickplayApi
 import org.jellyfin.sdk.api.operations.TvShowsApi
 import org.jellyfin.sdk.api.operations.UserLibraryApi
-import org.jellyfin.sdk.api.operations.VideosApi
 import org.jellyfin.sdk.api.operations.UserViewsApi
+import org.jellyfin.sdk.api.operations.VideosApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -425,7 +425,9 @@ constructor(
                         baseItemDto.toAfinityItem(getBaseUrl())
                     }
 
-                _latestMedia.value = latestItems
+                if (parentId == null) {
+                    _latestMedia.value = latestItems
+                }
                 latestItems
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get latest media")
@@ -599,6 +601,29 @@ constructor(
     override suspend fun getItemById(itemId: UUID): AfinityItem? =
         getItem(itemId, FieldSets.ITEM_DETAIL)?.toAfinityItem(getBaseUrl())
 
+    override suspend fun getItemsByIds(ids: List<UUID>): List<AfinityItem> =
+        withContext(Dispatchers.IO) {
+            if (ids.isEmpty()) return@withContext emptyList()
+            try {
+                val apiClient =
+                    sessionManager.getCurrentApiClient() ?: return@withContext emptyList()
+                val userId = getCurrentUserId() ?: return@withContext emptyList()
+                val itemsApi = ItemsApi(apiClient)
+                val response =
+                    itemsApi.getItems(
+                        userId = userId,
+                        ids = ids,
+                        fields = FieldSets.MEDIA_ITEM_CARDS,
+                        enableImages = true,
+                        enableUserData = true,
+                    )
+                response.content.items.mapNotNull { it.toAfinityItem(getBaseUrl()) }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to batch-fetch items by ids")
+                emptyList()
+            }
+        }
+
     override suspend fun getIntros(itemId: UUID): List<AfinityItem> =
         withContext(Dispatchers.IO) {
             return@withContext try {
@@ -628,11 +653,13 @@ constructor(
                 val videosApi = VideosApi(apiClient)
                 val response = videosApi.getAdditionalPart(itemId = itemId, userId = userId)
                 val rawItems = response.content.items
-                Timber.d("[MultiPart] getAdditionalPart itemId=$itemId → ${rawItems?.size ?: 0} raw item(s)")
+                Timber.d(
+                    "[MultiPart] getAdditionalPart itemId=$itemId → ${rawItems?.size ?: 0} raw item(s)"
+                )
 
-                val mapped = rawItems?.mapNotNull { baseItem ->
-                    baseItem.toAfinityItem(getBaseUrl())
-                } ?: emptyList()
+                val mapped =
+                    rawItems?.mapNotNull { baseItem -> baseItem.toAfinityItem(getBaseUrl()) }
+                        ?: emptyList()
                 mapped
             } catch (e: Exception) {
                 Timber.e(e, "[MultiPart] Exception in getAdditionalParts for item: $itemId")

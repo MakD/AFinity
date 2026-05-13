@@ -53,6 +53,8 @@ interface MediaRepository {
         groupItems: Boolean = true,
     ): List<AfinityItem>
 
+    suspend fun getItemsByIds(ids: List<UUID>): List<AfinityItem>
+
     suspend fun getContinueWatching(
         limit: Int = 16,
         fields: List<ItemFields>? = null,

@@ -295,10 +295,9 @@ constructor(
 
             launch {
                 mediaRepository.getLatestMediaFlow().collect { liveData ->
-                    val filteredData = liveData.filter { item ->
+                    _latestMedia.value = liveData.filter { item ->
                         item is AfinityMovie || item is AfinityShow
                     }
-                    _latestMedia.value = filteredData
                 }
             }
 
@@ -402,17 +401,23 @@ constructor(
 
     private suspend fun getLatestShowsForLibrary(libraryId: UUID, limit: Int): List<AfinityShow> {
         val raw =
-            mediaRepository.getLatestMedia(parentId = libraryId, limit = limit, groupItems = false)
-        val shows = raw.filterIsInstance<AfinityShow>().toMutableList()
-        val seenSeriesIds = shows.map { it.id }.toMutableSet()
-        raw.filterIsInstance<AfinityEpisode>()
-            .map { it.seriesId }
-            .distinct()
-            .filter { seenSeriesIds.add(it) }
-            .forEach { seriesId ->
-                (mediaRepository.getItemById(seriesId) as? AfinityShow)?.let { shows.add(it) }
-            }
-        return shows
+            mediaRepository.getLatestMedia(
+                parentId = libraryId,
+                limit = limit * 5,
+                groupItems = false,
+            )
+        val directShows = raw.filterIsInstance<AfinityShow>()
+        val seenIds = directShows.map { it.id }.toMutableSet()
+        val missingSeriesIds =
+            raw.filterIsInstance<AfinityEpisode>()
+                .map { it.seriesId }
+                .distinct()
+                .filter { seenIds.add(it) }
+        val fetchedShows =
+            if (missingSeriesIds.isNotEmpty()) {
+                mediaRepository.getItemsByIds(missingSeriesIds).filterIsInstance<AfinityShow>()
+            } else emptyList()
+        return directShows + fetchedShows
     }
 
     private suspend fun reloadLatestShowsData() {
@@ -465,8 +470,9 @@ constructor(
 
     private suspend fun loadLatestMedia(): List<AfinityItem> {
         return try {
-            val allLatestMedia = mediaRepository.getLatestMedia(limit = 15)
-            allLatestMedia.filter { item -> item is AfinityMovie || item is AfinityShow }
+            mediaRepository.getLatestMedia(limit = 15).filter { item ->
+                item is AfinityMovie || item is AfinityShow
+            }
         } catch (e: Exception) {
             Timber.e(e, "Failed to load latest media")
             emptyList()
