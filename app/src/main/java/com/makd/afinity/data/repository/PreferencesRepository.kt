@@ -240,6 +240,12 @@ interface PreferencesRepository {
 
     fun getCastMaxBitrateFlow(): Flow<Int>
 
+    suspend fun setBufferSizeMb(sizeMb: Int)
+
+    suspend fun getBufferSizeMb(): Int
+
+    fun getBufferSizeMbFlow(): Flow<Int>
+
     suspend fun clearAllPreferences()
 
     suspend fun clearServerPreferences()

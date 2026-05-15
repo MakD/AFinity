@@ -284,6 +284,12 @@ constructor(
                 _uiState.value = _uiState.value.copy(castMaxBitrate = it)
             }
         }
+
+        viewModelScope.launch {
+            preferencesRepository.getBufferSizeMbFlow().collect {
+                _uiState.value = _uiState.value.copy(bufferSizeMb = it)
+            }
+        }
     }
 
     fun setThemeMode(mode: String) {
@@ -528,6 +534,17 @@ constructor(
         }
     }
 
+    fun setBufferSizeMb(sizeMb: Int) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setBufferSizeMb(sizeMb)
+                Timber.d("Buffer size set to: ${sizeMb}MB")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to set buffer size")
+            }
+        }
+    }
+
     fun setEpisodeLayout(layout: EpisodeLayout) {
         viewModelScope.launch {
             try {
@@ -727,6 +744,7 @@ data class SettingsUiState(
     val preferredSubtitleLanguage: String = "",
     val castHevcEnabled: Boolean = false,
     val castMaxBitrate: Int = 16_000_000,
+    val bufferSizeMb: Int = 64,
     val isLoading: Boolean = true,
     val isLoggingOut: Boolean = false,
     val isExportingLogs: Boolean = false,

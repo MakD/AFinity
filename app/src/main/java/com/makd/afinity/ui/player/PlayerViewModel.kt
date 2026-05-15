@@ -20,6 +20,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
@@ -395,9 +396,9 @@ constructor(
             }
         )
 
-        Timber.d(
-            "ExoPlayer preferences: preferredAudioLang=$preferredAudioLang, preferredSubLang=$preferredSubLang"
-        )
+        val bufferSizeMb = preferencesRepository.getBufferSizeMb()
+        val loadControl =
+            DefaultLoadControl.Builder().setTargetBufferBytes(bufferSizeMb * 1024 * 1024).build()
 
         val renderersFactory =
             DefaultRenderersFactory(context)
@@ -406,6 +407,7 @@ constructor(
         return ExoPlayer.Builder(context, renderersFactory)
             .setAudioAttributes(audioAttributes, true)
             .setTrackSelector(trackSelector)
+            .setLoadControl(loadControl)
             .setSeekBackIncrementMs(10000)
             .setSeekForwardIncrementMs(10000)
             .setPauseAtEndOfMediaItems(true)
@@ -443,6 +445,8 @@ constructor(
             "MPV preferences: hwdec=$mpvHwDec, vo=$mpvVideoOutput, ao=$mpvAudioOutput, alang=$preferredAudioLang, slang=$preferredSubLang"
         )
 
+        val bufferSizeMb = preferencesRepository.getBufferSizeMb()
+
         val mpvPlayer =
             MPVPlayer.Builder(application)
                 .setAudioAttributes(audioAttributes, true)
@@ -452,6 +456,7 @@ constructor(
                 .setVideoOutput(mpvVideoOutput)
                 .setAudioOutput(mpvAudioOutput)
                 .setHwDec(mpvHwDec)
+                .setBufferSizeMb(bufferSizeMb)
                 .build()
 
         mpvPlayer.setOption("sub-ass-override", "no")

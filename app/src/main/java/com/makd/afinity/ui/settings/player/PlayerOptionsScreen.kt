@@ -183,6 +183,11 @@ fun PlayerOptionsScreen(
                         checked = uiState.autoPlay,
                         onCheckedChange = viewModel::toggleAutoPlay,
                     )
+                    SettingsDivider()
+                    BufferSizeSelectorItem(
+                        selectedSizeMb = uiState.bufferSizeMb,
+                        onSizeSelected = viewModel::setBufferSizeMb,
+                    )
                 }
             }
 
@@ -584,6 +589,65 @@ private fun getSkipModeDisplayName(mode: SkipMode): String =
         SkipMode.AUTO_SKIP -> stringResource(R.string.skip_mode_auto_skip)
         SkipMode.DISABLED -> stringResource(R.string.skip_mode_disabled)
     }
+
+@Composable
+private fun BufferSizeSelectorItem(
+    selectedSizeMb: Int,
+    onSizeSelected: (Int) -> Unit,
+) {
+    val options =
+        listOf(
+            32 to "32 MB",
+            64 to "64 MB",
+            128 to "128 MB",
+            256 to "256 MB",
+            300 to "300 MB",
+        )
+    var expanded by remember { mutableStateOf(false) }
+    val currentLabel = options.find { it.first == selectedSizeMb }?.second ?: "64 MB"
+
+    Box {
+        SettingsItem(
+            icon = painterResource(id = R.drawable.ic_speed),
+            title = stringResource(R.string.pref_buffer_size_title),
+            subtitle = currentLabel,
+            onClick = { expanded = true },
+            trailing = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ) {
+            options.forEach { (sizeMb, label) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        onSizeSelected(sizeMb)
+                        expanded = false
+                    },
+                    leadingIcon =
+                        if (selectedSizeMb == sizeMb) {
+                            {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else null,
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun VideoZoomModeSelectorItem(

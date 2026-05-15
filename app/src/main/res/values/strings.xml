@@ -777,6 +777,7 @@
     <string name="pref_cast_hevc_title">Enable HEVC</string>
     <string name="pref_cast_hevc_description">Enable for Chromecast Ultra/Google TV</string>
     <string name="pref_cast_max_bitrate_title">Max Bitrate</string>
+    <string name="pref_buffer_size_title">Video Buffer Size</string>
 
     <!--Audiobookshelf Libraries / Item Screens-->
     <string name="abs_connect_title">Connect to Audiobookshelf</string>

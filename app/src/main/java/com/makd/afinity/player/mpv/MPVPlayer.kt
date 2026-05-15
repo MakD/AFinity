@@ -56,6 +56,7 @@ class MPVPlayer(
     private val videoOutput: String = "gpu-next",
     private val audioOutput: String = "aaudio",
     private val hwDec: String = "mediacodec",
+    private val bufferSizeMb: Int = 64,
 ) : BasePlayer(), MPVLib.EventObserver, AudioManager.OnAudioFocusChangeListener {
 
     val mpv: MPVLib
@@ -77,6 +78,7 @@ class MPVPlayer(
         videoOutput = builder.videoOutput,
         audioOutput = builder.audioOutput,
         hwDec = builder.hwDec,
+        bufferSizeMb = builder.bufferSizeMb,
     )
 
     class Builder(val context: Context) {
@@ -107,6 +109,9 @@ class MPVPlayer(
         var hwDec: String = "mediacodec"
             private set
 
+        var bufferSizeMb: Int = 64
+            private set
+
         fun setAudioAttributes(audioAttributes: AudioAttributes, handleAudioFocus: Boolean) =
             apply {
                 this.audioAttributes = audioAttributes
@@ -135,6 +140,8 @@ class MPVPlayer(
         fun setAudioOutput(audioOutput: String) = apply { this.audioOutput = audioOutput }
 
         fun setHwDec(hwDec: String) = apply { this.hwDec = hwDec }
+
+        fun setBufferSizeMb(sizeMb: Int) = apply { this.bufferSizeMb = sizeMb }
 
         fun build() = MPVPlayer(this)
     }
@@ -169,8 +176,8 @@ class MPVPlayer(
 
         mpv.setOptionString("cache", "yes")
         mpv.setOptionString("cache-pause-initial", "yes")
-        mpv.setOptionString("demuxer-max-bytes", "64MiB")
-        mpv.setOptionString("demuxer-max-back-bytes", "32MiB")
+        mpv.setOptionString("demuxer-max-bytes", "${bufferSizeMb}MiB")
+        mpv.setOptionString("demuxer-max-back-bytes", "${bufferSizeMb / 2}MiB")
 
         mpv.setOptionString("sub-scale-with-window", "yes")
         mpv.setOptionString("sub-use-margins", "no")

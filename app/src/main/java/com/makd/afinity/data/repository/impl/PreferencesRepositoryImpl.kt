@@ -108,6 +108,7 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
 
         val CAST_HEVC_ENABLED = booleanPreferencesKey("cast_hevc_enabled")
         val CAST_MAX_BITRATE = intPreferencesKey("cast_max_bitrate")
+        val BUFFER_SIZE_MB = intPreferencesKey("buffer_size_mb")
     }
 
     override suspend fun setCurrentServerId(serverId: String?) {
@@ -421,6 +422,18 @@ constructor(@AppPreferences private val dataStore: DataStore<Preferences>) : Pre
 
     override fun getCastMaxBitrateFlow(): Flow<Int> {
         return dataStore.data.map { it[Keys.CAST_MAX_BITRATE] ?: 16_000_000 }
+    }
+
+    override suspend fun setBufferSizeMb(sizeMb: Int) {
+        dataStore.edit { preferences -> preferences[Keys.BUFFER_SIZE_MB] = sizeMb }
+    }
+
+    override suspend fun getBufferSizeMb(): Int {
+        return dataStore.data.first()[Keys.BUFFER_SIZE_MB] ?: 64
+    }
+
+    override fun getBufferSizeMbFlow(): Flow<Int> {
+        return dataStore.data.map { it[Keys.BUFFER_SIZE_MB] ?: 64 }
     }
 
     override suspend fun clearAllPreferences() {
