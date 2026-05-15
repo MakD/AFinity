@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -47,6 +46,7 @@ import com.makd.afinity.R
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.livetv.tabs.LiveTvChannelsTab
 import com.makd.afinity.ui.livetv.tabs.LiveTvGuideTab
 import com.makd.afinity.ui.livetv.tabs.LiveTvHomeTab
@@ -117,12 +117,7 @@ fun LiveTvScreen(
     ) { paddingValues ->
         when {
             uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                FullScreenLoading(modifier = Modifier.padding(paddingValues))
             }
 
             !uiState.hasLiveTvAccess -> {

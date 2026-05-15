@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -40,6 +39,7 @@ import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.data.models.jellyseerr.isAdmin
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.JellyseerrBottomSheet
@@ -98,12 +98,7 @@ fun RequestsScreen(
         } else {
             when {
                 uiState.isLoadingDiscover && uiState.trendingItems.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize().padding(innerPadding),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    FullScreenLoading(modifier = Modifier.padding(innerPadding))
                 }
 
                 uiState.error != null &&

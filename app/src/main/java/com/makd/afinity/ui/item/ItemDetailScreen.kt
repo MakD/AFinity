@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -76,6 +75,8 @@ import com.makd.afinity.data.models.tmdb.TmdbReview
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.item.components.BoxSetDetailContent
 import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.MovieDetailContent
@@ -139,32 +140,10 @@ fun ItemDetailScreen(
     Box(modifier = modifier.fillMaxSize()) {
         when {
             uiState.isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                FullScreenLoading()
             }
             uiState.error != null -> {
-                Column(
-                    modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_error_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = uiState.error!!,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = stringResource(R.string.home_error_message),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                FullScreenError(message = uiState.error!!)
             }
             uiState.item != null -> {
                 ItemDetailContent(

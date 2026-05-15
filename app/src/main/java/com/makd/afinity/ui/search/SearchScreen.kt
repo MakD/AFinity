@@ -44,9 +44,7 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,7 +53,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -84,9 +81,10 @@ import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.EpisodeOverlayHandler
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
-import kotlinx.coroutines.delay
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -110,18 +108,15 @@ fun SearchScreen(
     val isAudiobookshelfAuthenticated by
         viewModel.isAudiobookshelfAuthenticated.collectAsStateWithLifecycle()
     val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
-    val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
     val selectedEpisodeWatchlistStatus by
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     LocalFocusManager.current
-    var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier =
@@ -210,9 +205,7 @@ fun SearchScreen(
                 }
 
                 allLoading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                    FullScreenLoading()
                 }
 
                 uiState.isJellyseerrSearchMode && uiState.jellyseerrSearchResults.isNotEmpty() -> {
@@ -344,44 +337,21 @@ fun SearchScreen(
             )
         }
 
-        selectedEpisode?.let { episode ->
-            com.makd.afinity.ui.item.components.EpisodeDetailOverlay(
-                episode = episode,
-                isInWatchlist = selectedEpisodeWatchlistStatus,
-                downloadInfo = selectedEpisodeDownloadInfo,
-                canDownload = canDownload,
-                onDismiss = { viewModel.clearSelectedEpisode() },
-                onPlayClick = { episodeToPlay, selection ->
-                    viewModel.clearSelectedEpisode()
-                    com.makd.afinity.ui.player.PlayerLauncher.launch(
-                        context = context,
-                        itemId = episodeToPlay.id,
-                        mediaSourceId = selection.mediaSourceId,
-                        audioStreamIndex = selection.audioStreamIndex,
-                        subtitleStreamIndex = selection.subtitleStreamIndex,
-                        startPositionMs = selection.startPositionMs,
-                    )
-                },
-                onToggleFavorite = { viewModel.toggleEpisodeFavorite(episode) },
-                onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(episode) },
-                onToggleWatched = { viewModel.toggleEpisodeWatched(episode) },
-                onDownloadClick = { viewModel.onDownloadClick() },
-                onPauseDownload = { viewModel.pauseDownload() },
-                onResumeDownload = { viewModel.resumeDownload() },
-                onCancelDownload = { viewModel.cancelDownload() },
-                onGoToSeries = {
-                    viewModel.clearSelectedEpisode()
-                    pendingNavigationSeriesId = episode.seriesId?.toString()
-                },
-            )
-        }
-        LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
-            if (selectedEpisode == null && pendingNavigationSeriesId != null) {
-                delay(300)
-                onSeriesClick(pendingNavigationSeriesId!!)
-                pendingNavigationSeriesId = null
-            }
-        }
+        EpisodeOverlayHandler(
+            selectedEpisode = selectedEpisode,
+            watchlistStatus = selectedEpisodeWatchlistStatus,
+            downloadInfo = selectedEpisodeDownloadInfo,
+            canDownload = canDownload,
+            onClearSelection = { viewModel.clearSelectedEpisode() },
+            onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
+            onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
+            onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
+            onDownloadClick = { viewModel.onDownloadClick() },
+            onPauseDownload = { viewModel.pauseDownload() },
+            onResumeDownload = { viewModel.resumeDownload() },
+            onCancelDownload = { viewModel.cancelDownload() },
+            onNavigateToSeries = { seriesId -> onSeriesClick(seriesId) },
+        )
     }
 }
 

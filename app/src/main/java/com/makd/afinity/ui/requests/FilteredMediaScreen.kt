@@ -31,6 +31,8 @@ import com.makd.afinity.data.models.jellyseerr.Permissions
 import com.makd.afinity.data.models.jellyseerr.hasPermission
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.FullScreenEmpty
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.components.RequestConfirmationDialog
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
@@ -94,7 +96,7 @@ fun FilteredMediaScreen(
     ) { innerPadding ->
         when {
             uiState.isLoading && uiState.items.isEmpty() -> {
-                LoadingView(modifier = Modifier.fillMaxSize().padding(innerPadding))
+                FullScreenLoading(modifier = Modifier.padding(innerPadding))
             }
 
             uiState.error != null && uiState.items.isEmpty() -> {
@@ -106,7 +108,10 @@ fun FilteredMediaScreen(
             }
 
             uiState.items.isEmpty() -> {
-                EmptyView(modifier = Modifier.fillMaxSize().padding(innerPadding))
+                FullScreenEmpty(
+                    message = stringResource(R.string.error_no_content),
+                    modifier = Modifier.padding(innerPadding),
+                )
             }
 
             else -> {
@@ -224,11 +229,6 @@ fun FilteredMediaScreen(
 }
 
 @Composable
-private fun LoadingView(modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-}
-
-@Composable
 private fun ErrorView(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Column(
@@ -252,18 +252,3 @@ private fun ErrorView(message: String, onRetry: () -> Unit, modifier: Modifier =
     }
 }
 
-@Composable
-private fun EmptyView(modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.error_no_content),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}

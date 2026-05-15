@@ -16,11 +16,7 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,12 +34,11 @@ import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.FullScreenEmpty
 import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.FullScreenLoading
+import com.makd.afinity.ui.components.EpisodeOverlayHandler
 import com.makd.afinity.ui.components.MediaRowSection
-import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions.landscapeWidth
 import com.makd.afinity.ui.theme.CardDimensions.portraitWidth
-import kotlinx.coroutines.delay
 
 @Composable
 fun WatchlistScreen(
@@ -54,16 +49,13 @@ fun WatchlistScreen(
     viewModel: WatchlistViewModel = hiltViewModel(),
     widthSizeClass: WindowWidthSizeClass,
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedEpisode by viewModel.selectedEpisode.collectAsStateWithLifecycle()
-    val isLoadingEpisode by viewModel.isLoadingEpisode.collectAsStateWithLifecycle()
     val selectedEpisodeWatchlistStatus by
         viewModel.selectedEpisodeWatchlistStatus.collectAsStateWithLifecycle()
     val selectedEpisodeDownloadInfo by
         viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
     val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
-    var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
     val playerOffset = LocalPlayerOffset.current
 
     LaunchedEffect(Unit) { viewModel.loadWatchlist() }
@@ -119,14 +111,8 @@ fun WatchlistScreen(
 
             else -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding =
-                        PaddingValues(
-                            top = customPadding.calculateTopPadding() + 16.dp,
-                            start = customPadding.calculateStartPadding(layoutDirection) + 16.dp,
-                            end = customPadding.calculateEndPadding(layoutDirection) + 16.dp,
-                            bottom = customPadding.calculateBottomPadding() + 16.dp,
-                        ),
+                    modifier = Modifier.fillMaxSize().padding(customPadding),
+                    contentPadding = PaddingValues(all = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     if (uiState.boxSets.isNotEmpty()) {
@@ -192,47 +178,23 @@ fun WatchlistScreen(
         }
     }
 
-    selectedEpisode?.let { episode ->
-        EpisodeDetailOverlay(
-            episode = episode,
-            isInWatchlist = selectedEpisodeWatchlistStatus,
-            downloadInfo = selectedEpisodeDownloadInfo,
-            canDownload = canDownload,
-            onDismiss = { viewModel.clearSelectedEpisode() },
-            onPlayClick = { episodeToPlay, selection ->
-                viewModel.clearSelectedEpisode()
-                com.makd.afinity.ui.player.PlayerLauncher.launch(
-                    context = context,
-                    itemId = episodeToPlay.id,
-                    mediaSourceId = selection.mediaSourceId,
-                    audioStreamIndex = selection.audioStreamIndex,
-                    subtitleStreamIndex = selection.subtitleStreamIndex,
-                    startPositionMs = selection.startPositionMs,
-                )
-            },
-            onToggleFavorite = { viewModel.toggleEpisodeFavorite(episode) },
-            onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(episode) },
-            onToggleWatched = { viewModel.toggleEpisodeWatched(episode) },
-            onDownloadClick = { viewModel.onDownloadClick() },
-            onPauseDownload = { viewModel.pauseDownload() },
-            onResumeDownload = { viewModel.resumeDownload() },
-            onCancelDownload = { viewModel.cancelDownload() },
-            onGoToSeries = {
-                viewModel.clearSelectedEpisode()
-                pendingNavigationSeriesId = episode.seriesId?.toString()
-            },
-        )
-    }
-    LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
-        if (selectedEpisode == null && pendingNavigationSeriesId != null) {
-            delay(300)
-            val route =
-                Destination.createItemDetailRoute(
-                    itemId = pendingNavigationSeriesId!!,
-                    itemType = "Series",
-                )
-            navController.navigate(route)
-            pendingNavigationSeriesId = null
-        }
-    }
+    EpisodeOverlayHandler(
+        selectedEpisode = selectedEpisode,
+        watchlistStatus = selectedEpisodeWatchlistStatus,
+        downloadInfo = selectedEpisodeDownloadInfo,
+        canDownload = canDownload,
+        onClearSelection = { viewModel.clearSelectedEpisode() },
+        onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
+        onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
+        onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
+        onDownloadClick = { viewModel.onDownloadClick() },
+        onPauseDownload = { viewModel.pauseDownload() },
+        onResumeDownload = { viewModel.resumeDownload() },
+        onCancelDownload = { viewModel.cancelDownload() },
+        onNavigateToSeries = { seriesId ->
+            navController.navigate(
+                Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
+            )
+        },
+    )
 }

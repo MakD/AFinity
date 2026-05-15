@@ -30,7 +30,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -63,6 +62,7 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.libraries.components.AudiobookCard
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.settings.AudiobookshelfBottomSheet
 import kotlinx.coroutines.launch
@@ -171,9 +171,7 @@ fun AudiobookshelfLibrariesScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (libraries.isEmpty() && uiState.isRefreshing) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                FullScreenLoading()
             } else if (libraries.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
@@ -264,12 +262,7 @@ fun AudiobookshelfLibrariesScreen(
                                         else allItems
 
                                     if (displayItems == null) {
-                                        Box(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            CircularProgressIndicator()
-                                        }
+                                        FullScreenLoading()
                                     } else {
                                         val playerOffset = LocalPlayerOffset.current
                                         Row(modifier = Modifier.fillMaxSize()) {

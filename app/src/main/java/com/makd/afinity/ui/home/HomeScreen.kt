@@ -2,9 +2,6 @@
 
 package com.makd.afinity.ui.home
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +31,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -62,6 +58,8 @@ import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AfinityTopAppBar
+import com.makd.afinity.ui.components.EpisodeOverlayHandler
+import com.makd.afinity.ui.components.FullScreenError
 import com.makd.afinity.ui.components.HeroCarousel
 import com.makd.afinity.ui.home.components.ContinueWatchingSkeleton
 import com.makd.afinity.ui.home.components.DownloadedAudiobooksSection
@@ -81,12 +79,10 @@ import com.makd.afinity.ui.home.components.ShowGenreSection
 import com.makd.afinity.ui.home.components.SpotlightCarousel
 import com.makd.afinity.ui.home.components.TvSeriesSectionSkeleton
 import com.makd.afinity.ui.home.components.UpcomingEpisodesSection
-import com.makd.afinity.ui.item.components.EpisodeDetailOverlay
 import com.makd.afinity.ui.item.components.QualitySelectionDialog
 import com.makd.afinity.ui.main.MainUiState
-import com.makd.afinity.ui.player.PlayerLauncher
+import com.makd.afinity.ui.utils.rememberTopBarOpacity
 import com.makd.afinity.ui.utils.verticalLayoutOffset
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,17 +114,7 @@ fun HomeScreen(
         }
     }
 
-    val topBarOpacity by remember {
-        derivedStateOf {
-            val firstVisibleItemIndex = lazyListState.firstVisibleItemIndex
-            val scrollOffset = lazyListState.firstVisibleItemScrollOffset
-            if (firstVisibleItemIndex > 0 || scrollOffset > 1500) {
-                1f
-            } else {
-                0f
-            }
-        }
-    }
+    val topBarOpacity by rememberTopBarOpacity(lazyListState)
 
     DisposableEffect(Unit) { onDispose { viewModel.clearSelectedEpisode() } }
 
@@ -136,31 +122,10 @@ fun HomeScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         uiState.error?.let { error ->
-            Box(
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_error_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = stringResource(R.string.home_error_message),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            FullScreenError(
+                message = error,
+                modifier = Modifier.background(MaterialTheme.colorScheme.background),
+            )
         }
             ?: run {
                 val isLandscape =
@@ -657,62 +622,25 @@ fun HomeScreen(
             viewModel.selectedEpisodeDownloadInfo.collectAsStateWithLifecycle()
         val canDownload by viewModel.canDownload.collectAsStateWithLifecycle()
 
-        var pendingNavigationSeriesId by remember { mutableStateOf<String?>(null) }
-
-        AnimatedVisibility(
-            visible = selectedEpisode != null,
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-            label = "EpisodeOverlay",
-        ) {
-            selectedEpisode?.let { episode ->
-                EpisodeDetailOverlay(
-                    episode = episode,
-                    isInWatchlist = selectedEpisodeWatchlistStatus,
-                    downloadInfo = selectedEpisodeDownloadInfo,
-                    canDownload = canDownload,
-                    onDismiss = {
-                        viewModel.clearSelectedEpisode()
-                        pendingNavigationSeriesId = null
-                    },
-                    onPlayClick = { episodeToPlay, selection ->
-                        viewModel.clearSelectedEpisode()
-                        PlayerLauncher.launch(
-                            context = context,
-                            itemId = episodeToPlay.id,
-                            mediaSourceId = selection.mediaSourceId,
-                            audioStreamIndex = selection.audioStreamIndex,
-                            subtitleStreamIndex = selection.subtitleStreamIndex,
-                            startPositionMs = selection.startPositionMs,
-                        )
-                    },
-                    onToggleFavorite = { viewModel.toggleEpisodeFavorite(episode) },
-                    onToggleWatchlist = { viewModel.toggleEpisodeWatchlist(episode) },
-                    onToggleWatched = { viewModel.toggleEpisodeWatched(episode) },
-                    onDownloadClick = { viewModel.onDownloadClick() },
-                    onPauseDownload = { viewModel.pauseDownload() },
-                    onResumeDownload = { viewModel.resumeDownload() },
-                    onCancelDownload = { viewModel.cancelDownload() },
-                    onGoToSeries = {
-                        val seriesId = episode.seriesId.toString()
-                        viewModel.clearSelectedEpisode()
-                        pendingNavigationSeriesId = seriesId
-                    },
+        EpisodeOverlayHandler(
+            selectedEpisode = selectedEpisode,
+            watchlistStatus = selectedEpisodeWatchlistStatus,
+            downloadInfo = selectedEpisodeDownloadInfo,
+            canDownload = canDownload,
+            onClearSelection = { viewModel.clearSelectedEpisode() },
+            onToggleFavorite = { episode -> viewModel.toggleEpisodeFavorite(episode) },
+            onToggleWatchlist = { episode -> viewModel.toggleEpisodeWatchlist(episode) },
+            onToggleWatched = { episode -> viewModel.toggleEpisodeWatched(episode) },
+            onDownloadClick = { viewModel.onDownloadClick() },
+            onPauseDownload = { viewModel.pauseDownload() },
+            onResumeDownload = { viewModel.resumeDownload() },
+            onCancelDownload = { viewModel.cancelDownload() },
+            onNavigateToSeries = { seriesId ->
+                navController.navigate(
+                    Destination.createItemDetailRoute(itemId = seriesId, itemType = "Series")
                 )
-            }
-        }
-
-        LaunchedEffect(selectedEpisode, pendingNavigationSeriesId) {
-            if (selectedEpisode == null && pendingNavigationSeriesId != null) {
-                delay(300)
-                val route =
-                    Destination.createItemDetailRoute(
-                        itemId = pendingNavigationSeriesId!!,
-                        itemType = "Series",
-                    )
-                navController.navigate(route)
-                pendingNavigationSeriesId = null
-            }
-        }
+            },
+        )
 
         if (uiState.showQualityDialog) {
             val currentEpisode = selectedEpisode

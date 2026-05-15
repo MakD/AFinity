@@ -19,13 +19,11 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,7 +34,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -52,9 +49,12 @@ import com.makd.afinity.data.models.media.AfinityCollection
 import com.makd.afinity.navigation.Destination
 import com.makd.afinity.ui.components.AfinityTopAppBar
 import com.makd.afinity.ui.components.AsyncImage
+import com.makd.afinity.ui.components.FullScreenEmpty
+import com.makd.afinity.ui.components.FullScreenError
+import com.makd.afinity.ui.components.FullScreenLoading
 import com.makd.afinity.ui.main.MainUiState
 import com.makd.afinity.ui.theme.CardDimensions.gridMinSize
-import kotlin.math.min
+import com.makd.afinity.ui.utils.rememberTopBarOpacity
 
 @Composable
 fun LibrariesScreen(
@@ -69,28 +69,23 @@ fun LibrariesScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lazyGridState = rememberLazyGridState()
 
-    val topBarOpacity by remember {
-        derivedStateOf {
-            val scrollOffset = lazyGridState.firstVisibleItemScrollOffset
-            val maxScroll = 200f
-            min(scrollOffset / maxScroll, 1f)
-        }
-    }
+    val topBarOpacity by rememberTopBarOpacity(lazyGridState)
 
     Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         when {
             uiState.isLoading && uiState.libraries.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                FullScreenLoading()
             }
 
             uiState.error != null -> {
-                ErrorMessage(message = uiState.error!!, modifier = Modifier.fillMaxSize())
+                FullScreenError(message = uiState.error!!)
             }
 
             uiState.libraries.isEmpty() -> {
-                EmptyLibrariesMessage(modifier = Modifier.fillMaxSize())
+                FullScreenEmpty(
+                    title = stringResource(R.string.libraries_empty_title),
+                    message = stringResource(R.string.libraries_empty_message),
+                )
             }
 
             else -> {
@@ -202,59 +197,6 @@ private fun LibraryCard(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-    }
-}
-
-@Composable
-private fun ErrorMessage(message: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.home_error_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-
-        Text(
-            text = stringResource(R.string.home_error_message),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-    }
-}
-
-@Composable
-private fun EmptyLibrariesMessage(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.libraries_empty_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-
-        Text(
-            text = stringResource(R.string.libraries_empty_message),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
     }
 }
 
