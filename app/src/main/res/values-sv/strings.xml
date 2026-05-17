@@ -672,7 +672,7 @@
     <string name="abs_sort_season">Säsong</string>
     <string name="abs_sort_episode">Avsnitt</string>
     <string name="abs_sort_filename">Filnamn</string>
-    <string name="abs_narrated_by">Uppläst av</string>
+    <string name="abs_narrated_by">Uppläst av:</string>
     <string name="abs_label_episodes">Avsnitt</string>
     <string name="abs_label_chapters">Kapitel</string>
     <string name="abs_now_playing">Nu spelas</string>
