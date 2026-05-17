@@ -302,6 +302,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
         PlayerControls(
             currentTime = playbackState.currentTime,
             duration = playbackState.duration,
+            bufferedPosition = playbackState.bufferedPosition,
             isPlaying = playbackState.isPlaying,
             isBuffering = playbackState.isBuffering,
             onPlayPauseClick = viewModel::togglePlayPause,
@@ -502,6 +503,7 @@ fun SharedTransitionScope.LandscapePlayerContent(
             PlayerControls(
                 currentTime = playbackState.currentTime,
                 duration = playbackState.duration,
+                bufferedPosition = playbackState.bufferedPosition,
                 isPlaying = playbackState.isPlaying,
                 isBuffering = playbackState.isBuffering,
                 onPlayPauseClick = viewModel::togglePlayPause,

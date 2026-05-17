@@ -398,7 +398,15 @@ constructor(
 
         val bufferSizeMb = preferencesRepository.getBufferSizeMb()
         val loadControl =
-            DefaultLoadControl.Builder().setTargetBufferBytes(bufferSizeMb * 1024 * 1024).build()
+            DefaultLoadControl.Builder()
+                .setBufferDurationsMs(
+                    DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                    Int.MAX_VALUE,
+                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                    DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS,
+                )
+                .setTargetBufferBytes(bufferSizeMb * 1024 * 1024)
+                .build()
 
         val renderersFactory =
             DefaultRenderersFactory(context)
@@ -604,12 +612,15 @@ constructor(
         lastKnownPosition = position
         lastKnownDuration = duration
 
+        val bufferedPosition = player.bufferedPosition.coerceAtLeast(0)
+
         _uiState.value =
             _uiState.value.copy(
                 isPlaying = isActuallyPlaying,
                 isPaused = isPausedState,
                 isBuffering = isBuffering,
                 currentPosition = position,
+                bufferedPosition = bufferedPosition,
                 duration = duration,
                 showPlayButton = if (isBuffering) false else _uiState.value.showPlayButton,
             )
@@ -1985,6 +1996,7 @@ constructor(
         val isBuffering: Boolean = false,
         val isLoading: Boolean = false,
         val currentPosition: Long = 0L,
+        val bufferedPosition: Long = 0L,
         val duration: Long = 0L,
         val showControls: Boolean = false,
         val isFullscreen: Boolean = false,

@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.audiobookshelf.player.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -42,6 +46,7 @@ fun PlayerControls(
     modifier: Modifier = Modifier,
     currentTime: Double,
     duration: Double,
+    bufferedPosition: Double = 0.0,
     isPlaying: Boolean,
     isBuffering: Boolean,
     onPlayPauseClick: () -> Unit,
@@ -88,17 +93,52 @@ fun PlayerControls(
                     Box(modifier = Modifier.size(16.dp).background(Color.White, CircleShape))
                 },
                 track = { sliderState ->
-                    SliderDefaults.Track(
-                        sliderState = sliderState,
-                        modifier = Modifier.height(2.dp),
-                        thumbTrackGapSize = 0.dp,
-                        colors =
-                            SliderDefaults.colors(
-                                activeTrackColor = Color.White,
-                                inactiveTrackColor = Color.White.copy(alpha = 0.2f),
-                            ),
-                        drawStopIndicator = null,
-                    )
+                    Canvas(modifier = Modifier.fillMaxWidth().height(2.dp)) {
+                        val thumbRadiusPx = 8.dp.toPx()
+                        val trackStart = thumbRadiusPx
+                        val trackEnd = size.width - thumbRadiusPx
+                        val trackRange = trackEnd - trackStart
+                        val h = size.height
+                        val cornerR = CornerRadius(h / 2f, h / 2f)
+
+                        val rangeSpan =
+                            (sliderState.valueRange.endInclusive - sliderState.valueRange.start)
+                                .coerceAtLeast(1f)
+                        val progress =
+                            (sliderState.value - sliderState.valueRange.start) / rangeSpan
+                        val thumbCenterX = trackStart + progress * trackRange
+
+                        drawRoundRect(
+                            color = Color.White.copy(alpha = 0.2f),
+                            topLeft = Offset(trackStart, 0f),
+                            size = Size(trackRange, h),
+                            cornerRadius = cornerR,
+                        )
+
+                        if (duration > 0) {
+                            val bufferedFraction =
+                                ((bufferedPosition.toFloat() - sliderState.valueRange.start) /
+                                        rangeSpan)
+                                    .coerceIn(0f, 1f)
+                            val bufferedEndX =
+                                (trackStart + bufferedFraction * trackRange).coerceAtMost(trackEnd)
+                            if (bufferedEndX > thumbCenterX) {
+                                drawRoundRect(
+                                    color = Color.White.copy(alpha = 0.4f),
+                                    topLeft = Offset(thumbCenterX, 0f),
+                                    size = Size(bufferedEndX - thumbCenterX, h),
+                                    cornerRadius = cornerR,
+                                )
+                            }
+                        }
+
+                        drawRoundRect(
+                            color = Color.White,
+                            topLeft = Offset(trackStart, 0f),
+                            size = Size((thumbCenterX - trackStart).coerceAtLeast(0f), h),
+                            cornerRadius = cornerR,
+                        )
+                    }
                 },
             )
         }

@@ -46,10 +46,11 @@ class AudiobookshelfPlaybackManager @Inject constructor() {
             )
     }
 
-    fun updatePosition(currentTime: Double) {
+    fun updatePosition(currentTime: Double, bufferedPosition: Double? = null) {
         _playbackState.value =
             _playbackState.value.copy(
                 currentTime = currentTime,
+                bufferedPosition = bufferedPosition ?: _playbackState.value.bufferedPosition,
                 currentChapter = findCurrentChapter(currentTime),
             )
     }
@@ -118,6 +119,7 @@ data class AudiobookshelfPlaybackState(
     val displayAuthor: String? = null,
     val coverUrl: String? = null,
     val currentTime: Double = 0.0,
+    val bufferedPosition: Double = 0.0,
     val duration: Double = 0.0,
     val isPlaying: Boolean = false,
     val isBuffering: Boolean = false,

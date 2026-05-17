@@ -175,9 +175,10 @@ class MPVPlayer(
         mpv.setOptionString("tls-verify", "no")
 
         mpv.setOptionString("cache", "yes")
-        mpv.setOptionString("cache-pause-initial", "yes")
         mpv.setOptionString("demuxer-max-bytes", "${bufferSizeMb}MiB")
-        mpv.setOptionString("demuxer-max-back-bytes", "${bufferSizeMb / 2}MiB")
+        mpv.setOptionString("demuxer-max-back-bytes", "10MiB")
+        mpv.setOptionString("cache-secs", "36000")
+        mpv.setOptionString("demuxer-readahead-secs", "36000")
 
         mpv.setOptionString("sub-scale-with-window", "yes")
         mpv.setOptionString("sub-use-margins", "no")
@@ -190,6 +191,8 @@ class MPVPlayer(
 
         mpv.init()
 
+        mpv.setPropertyString("demuxer-max-bytes", "${bufferSizeMb}MiB")
+        mpv.setPropertyString("cache-secs", "36000")
         mpv.setOptionString("sub-auto", "exact")
         mpv.setOptionString("sub-visibility", "yes")
 
@@ -209,7 +212,7 @@ class MPVPlayer(
                 Property("seekable", MPVLib.MpvFormat.MPV_FORMAT_FLAG),
                 Property("time-pos", MPVLib.MpvFormat.MPV_FORMAT_INT64),
                 Property("duration", MPVLib.MpvFormat.MPV_FORMAT_INT64),
-                Property("demuxer-cache-time", MPVLib.MpvFormat.MPV_FORMAT_INT64),
+                Property("demuxer-cache-time", MPVLib.MpvFormat.MPV_FORMAT_DOUBLE),
                 Property("speed", MPVLib.MpvFormat.MPV_FORMAT_DOUBLE),
                 Property("playlist-count", MPVLib.MpvFormat.MPV_FORMAT_INT64),
                 Property("playlist-current-pos", MPVLib.MpvFormat.MPV_FORMAT_INT64),
@@ -407,10 +410,6 @@ class MPVPlayer(
                     currentDurationMs = value * 1000
                 }
 
-                "demuxer-cache-time" -> {
-                    currentCacheDurationMs = value * 1000
-                }
-
                 "playlist-count" -> {
                     if (!isPlayerReady && value > 0) {
                         listeners.sendEvent(EVENT_TIMELINE_CHANGED) { listener ->
@@ -462,6 +461,10 @@ class MPVPlayer(
     override fun eventProperty(property: String, value: Double) {
         handler.post {
             when (property) {
+                "demuxer-cache-time" -> {
+                    currentCacheDurationMs = (value * 1000).toLong()
+                }
+
                 "speed" -> {
                     playbackParameters = playbackParameters.withSpeed(value.toFloat())
                     listeners.sendEvent(EVENT_PLAYBACK_PARAMETERS_CHANGED) { listener ->

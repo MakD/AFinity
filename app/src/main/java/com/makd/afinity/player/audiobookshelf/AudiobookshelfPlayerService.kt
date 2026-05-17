@@ -36,6 +36,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.makd.afinity.MainActivity
 import com.makd.afinity.R
+import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -50,12 +51,14 @@ import timber.log.Timber
 import javax.inject.Inject
 
 @UnstableApi
+@OptIn(UnstableApi::class)
 @AndroidEntryPoint
 class AudiobookshelfPlayerService : MediaSessionService() {
 
     @Inject lateinit var playbackManager: AudiobookshelfPlaybackManager
     @Inject lateinit var progressSyncer: AudiobookshelfProgressSyncer
     @Inject lateinit var securePreferencesRepository: SecurePreferencesRepository
+    @Inject lateinit var preferencesRepository: PreferencesRepository
     @Inject lateinit var equalizerManager: AudiobookshelfEqualizerManager
     @Inject lateinit var skipSilenceManager: AudiobookshelfSkipSilenceManager
 
@@ -65,10 +68,15 @@ class AudiobookshelfPlayerService : MediaSessionService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var positionUpdateJob: Job? = null
 
-    @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
+        serviceScope.launch {
+            val bufferSizeMb = preferencesRepository.getBufferSizeMb()
+            initializePlayer(bufferSizeMb)
+        }
+    }
 
+    private fun initializePlayer(bufferSizeMb: Int) {
         val token = securePreferencesRepository.getCachedAudiobookshelfToken()
         val httpDataSourceFactory =
             DefaultHttpDataSource.Factory()
@@ -89,7 +97,10 @@ class AudiobookshelfPlayerService : MediaSessionService() {
             }
 
         val loadControl =
-            DefaultLoadControl.Builder().setBufferDurationsMs(15_000, 60_000, 2_500, 5_000).build()
+            DefaultLoadControl.Builder()
+                .setBufferDurationsMs(15_000, Int.MAX_VALUE, 2_500, 5_000)
+                .setTargetBufferBytes(bufferSizeMb * 1024 * 1024)
+                .build()
         val renderersFactory =
             object : DefaultRenderersFactory(this) {
                     override fun buildAudioRenderers(
@@ -222,12 +233,10 @@ class AudiobookshelfPlayerService : MediaSessionService() {
         return mediaSession
     }
 
-    @UnstableApi
     private class CustomMediaSessionCallback : MediaSession.Callback {
-        private val REWIND_COMMAND = SessionCommand("action_rewind", Bundle.EMPTY)
-        private val FORWARD_COMMAND = SessionCommand("action_forward", Bundle.EMPTY)
+        private val rewindCommand = SessionCommand("action_rewind", Bundle.EMPTY)
+        private val forwardCommand = SessionCommand("action_forward", Bundle.EMPTY)
 
-        @UnstableApi
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -235,20 +244,20 @@ class AudiobookshelfPlayerService : MediaSessionService() {
 
             val sessionCommands =
                 MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
-                    .add(REWIND_COMMAND)
-                    .add(FORWARD_COMMAND)
+                    .add(rewindCommand)
+                    .add(forwardCommand)
                     .build()
 
             val rewindButton =
                 CommandButton.Builder(CommandButton.ICON_REWIND)
-                    .setSessionCommand(REWIND_COMMAND)
+                    .setSessionCommand(rewindCommand)
                     .setDisplayName("Rewind")
                     .setEnabled(true)
                     .build()
 
             val forwardButton =
                 CommandButton.Builder(CommandButton.ICON_FAST_FORWARD)
-                    .setSessionCommand(FORWARD_COMMAND)
+                    .setSessionCommand(forwardCommand)
                     .setDisplayName("Forward")
                     .setEnabled(true)
                     .build()
@@ -317,7 +326,19 @@ class AudiobookshelfPlayerService : MediaSessionService() {
                     accumulated + positionInItemSeconds
                 }
 
-                playbackManager.updatePosition(totalPosition)
+                val bufferedPositionSeconds = player.bufferedPosition / 1000.0
+                val totalBuffered = if (state.isChapterBasedPlayback) {
+                    val chapter = state.chapters.getOrNull(idx)
+                    if (chapter != null) chapter.start + bufferedPositionSeconds else bufferedPositionSeconds
+                } else {
+                    var accumulated = 0.0
+                    for (i in 0 until idx) accumulated += state.audioTracks.getOrNull(i)?.duration ?: 0.0
+                    accumulated + bufferedPositionSeconds
+                }
+
+                Timber.d("ABS buffer: pos=%.1fs buffered=%.1fs (raw exo buffered=%.1fs) chapterBased=%s idx=%d",
+                    totalPosition, totalBuffered, bufferedPositionSeconds, state.isChapterBasedPlayback, idx)
+                playbackManager.updatePosition(totalPosition, totalBuffered)
                 delay(1000)
             }
         }
