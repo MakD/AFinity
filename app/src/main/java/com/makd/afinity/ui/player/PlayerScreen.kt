@@ -288,6 +288,7 @@ fun PlayerScreen(
                 onPipToggle = { viewModel.handlePlayerEvent(PlayerEvent.EnterPictureInPicture) },
                 playlistQueue = playlistState.queue,
                 currentPlaylistIndex = playlistState.currentIndex,
+                playlistContentStartIndex = playlistState.contentStartIndex,
                 onJumpToEpisode = viewModel::jumpToEpisode,
                 onVersionToggleRequest = { showVersionPicker = !showVersionPicker },
             )

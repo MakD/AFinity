@@ -106,6 +106,7 @@ fun PlayerControls(
     onPipToggle: () -> Unit = {},
     playlistQueue: List<com.makd.afinity.data.models.media.AfinityItem> = emptyList(),
     currentPlaylistIndex: Int = -1,
+    playlistContentStartIndex: Int = 0,
     onJumpToEpisode: (java.util.UUID) -> Unit = {},
     onVersionToggleRequest: () -> Unit = {},
 ) {
@@ -345,9 +346,10 @@ fun PlayerControls(
                         onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
                         onEpisodeSwitcherToggle = { showEpisodeSwitcher = !showEpisodeSwitcher },
                         showEpisodeSwitcherButton =
-                            playlistQueue.size > 1 && !uiState.isPlayingIntro,
+                            (playlistQueue.size - playlistContentStartIndex) > 1 && !uiState.isPlayingIntro,
                         onVersionToggle = onVersionToggleRequest,
                         showVersionButton = uiState.availableSources.size > 1,
+                        hasSubtitleTracks = subtitleStreamOptions.size > 1,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }
@@ -603,9 +605,11 @@ fun PlayerControls(
         }
 
         if (showEpisodeSwitcher && playlistQueue.isNotEmpty()) {
+            val switcherQueue = playlistQueue.drop(playlistContentStartIndex)
+            val switcherIndex = (currentPlaylistIndex - playlistContentStartIndex).coerceAtLeast(0)
             EpisodeSwitcher(
-                episodes = playlistQueue,
-                currentIndex = currentPlaylistIndex,
+                episodes = switcherQueue,
+                currentIndex = switcherIndex,
                 isPlaying = uiState.isPlaying,
                 onEpisodeClick = { episodeId ->
                     onJumpToEpisode(episodeId)
@@ -833,6 +837,7 @@ private fun BottomControls(
     showEpisodeSwitcherButton: Boolean = false,
     onVersionToggle: () -> Unit = {},
     showVersionButton: Boolean = false,
+    hasSubtitleTracks: Boolean = true,
 ) {
     Box(
         modifier =
@@ -916,14 +921,22 @@ private fun BottomControls(
                         )
                     }
 
-                    IconButton(onClick = onSubtitleToggle, modifier = Modifier.size(40.dp)) {
+                    IconButton(
+                        onClick = onSubtitleToggle,
+                        enabled = hasSubtitleTracks,
+                        modifier = Modifier.size(40.dp),
+                    ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_subtitles),
+                            painter = painterResource(
+                                id = if (hasSubtitleTracks) R.drawable.ic_subtitles
+                                     else R.drawable.ic_subtitles_off
+                            ),
                             contentDescription = stringResource(R.string.cd_subtitle_settings),
-                            tint =
-                                if (uiState.subtitleStreamIndex != null)
-                                    MaterialTheme.colorScheme.primary
-                                else Color.White,
+                            tint = when {
+                                !hasSubtitleTracks -> Color.White.copy(alpha = 0.3f)
+                                uiState.subtitleStreamIndex != null -> MaterialTheme.colorScheme.primary
+                                else -> Color.White
+                            },
                             modifier = Modifier.size(24.dp),
                         )
                     }

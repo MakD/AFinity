@@ -17,6 +17,7 @@ data class PlaylistState(
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false,
     val currentItem: AfinityItem? = null,
+    val contentStartIndex: Int = 0,
 )
 
 @Singleton
@@ -27,6 +28,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
     private var currentQueue: MutableList<AfinityItem> = mutableListOf()
     private var currentIndex: Int = -1
     private var currentSeriesId: UUID? = null
+    private var contentStartIndex: Int = 0
 
     suspend fun initializePlaylist(
         startingItem: AfinityItem,
@@ -91,7 +93,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
 
                 if (episodes.isEmpty()) {
                     val fallbackQueue = intros.toMutableList().apply { add(startingEpisode) }
-                    setQueue(fallbackQueue, 0)
+                    setQueue(fallbackQueue, 0, contentStart = intros.size)
                     return true
                 }
 
@@ -110,7 +112,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
                     finalQueue.addAll(startIndex, intros)
                 }
 
-                setQueue(finalQueue, startIndex)
+                setQueue(finalQueue, startIndex, contentStart = startIndex + intros.size)
                 return true
             }
 
@@ -141,7 +143,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
 
                         if (currentTargetIndex != -1 && intros.isNotEmpty()) {
                             tempQueue.addAll(currentTargetIndex, intros)
-                            setQueue(tempQueue, currentTargetIndex)
+                            setQueue(tempQueue, currentTargetIndex, contentStart = currentTargetIndex + intros.size)
                         } else {
                             setQueue(tempQueue, currentTargetIndex.coerceAtLeast(0))
                         }
@@ -153,7 +155,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
 
             if (allEpisodes.isEmpty()) {
                 val fallbackQueue = intros.toMutableList().apply { add(startingEpisode) }
-                setQueue(fallbackQueue, 0)
+                setQueue(fallbackQueue, 0, contentStart = intros.size)
                 return true
             }
 
@@ -167,18 +169,20 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
             }
 
             val finalQueue = allEpisodes.map { it as AfinityItem }.toMutableList()
+            var actualContentStart = startIndex
             if (intros.isNotEmpty()) {
                 if (!finalQueue.any { intro -> intros.any { it.id == intro.id } }) {
                     finalQueue.addAll(startIndex, intros)
+                    actualContentStart = startIndex + intros.size
                 }
             }
 
-            setQueue(finalQueue, startIndex)
+            setQueue(finalQueue, startIndex, contentStart = actualContentStart)
             true
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize episode queue")
             val fallbackQueue = intros.toMutableList().apply { add(startingEpisode) }
-            setQueue(fallbackQueue, 0)
+            setQueue(fallbackQueue, 0, contentStart = intros.size)
             true
         }
     }
@@ -190,18 +194,19 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         queue.addAll(intros)
         queue.add(item)
 
-        setQueue(queue, 0)
+        setQueue(queue, 0, contentStart = intros.size)
         return true
     }
 
-    fun setQueue(queue: List<AfinityItem>, startIndex: Int = 0) {
+    fun setQueue(queue: List<AfinityItem>, startIndex: Int = 0, contentStart: Int = 0) {
         currentQueue.clear()
         currentQueue.addAll(queue)
         currentIndex = startIndex.coerceIn(0, queue.size - 1)
+        contentStartIndex = contentStart.coerceIn(0, queue.size)
 
         updatePlaylistState()
 
-        Timber.d("Queue set with ${queue.size} items, starting at index $currentIndex")
+        Timber.d("Queue set with ${queue.size} items, starting at index $currentIndex, content starts at $contentStartIndex")
     }
 
     fun next(): AfinityItem? {
@@ -286,6 +291,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         currentQueue.clear()
         currentIndex = -1
         currentSeriesId = null
+        contentStartIndex = 0
         updatePlaylistState()
         Timber.d("Queue cleared")
     }
@@ -328,6 +334,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
             currentQueue.add(priorityEpisode)
             currentQueue.addAll(remainingEpisodes)
             currentIndex = 0
+            contentStartIndex = 0
 
             Timber.d(
                 "Queue shuffled with priority episode: ${priorityEpisode.name} (${currentQueue.size} total items)"
@@ -335,6 +342,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
         } else {
             currentQueue.shuffle()
             currentIndex = 0
+            contentStartIndex = 0
 
             Timber.d("Queue pure shuffled (${currentQueue.size} items)")
         }
@@ -350,6 +358,7 @@ class PlaylistManager @Inject constructor(private val mediaRepository: MediaRepo
                 hasNext = hasNext(),
                 hasPrevious = hasPrevious(),
                 currentItem = getCurrentItem(),
+                contentStartIndex = contentStartIndex,
             )
 
         Timber.d(
