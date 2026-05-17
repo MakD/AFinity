@@ -360,7 +360,7 @@ fun PlayerOptionsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_speed),
+                                painter = painterResource(id = R.drawable.ic_broadcast),
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp),
                                 tint = MaterialTheme.colorScheme.onSurface,
@@ -591,18 +591,8 @@ private fun getSkipModeDisplayName(mode: SkipMode): String =
     }
 
 @Composable
-private fun BufferSizeSelectorItem(
-    selectedSizeMb: Int,
-    onSizeSelected: (Int) -> Unit,
-) {
-    val options =
-        listOf(
-            32 to "32 MB",
-            64 to "64 MB",
-            128 to "128 MB",
-            256 to "256 MB",
-            300 to "300 MB",
-        )
+private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) -> Unit) {
+    val options = listOf(32 to "32 MB", 64 to "64 MB", 128 to "128 MB")
     var expanded by remember { mutableStateOf(false) }
     val currentLabel = options.find { it.first == selectedSizeMb }?.second ?: "64 MB"
 
