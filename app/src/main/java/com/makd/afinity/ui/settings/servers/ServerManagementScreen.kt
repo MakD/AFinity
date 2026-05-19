@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.makd.afinity.R
@@ -129,6 +130,9 @@ fun ServerManagementScreen(
         } else if (state.servers.isEmpty()) {
             EmptyServersState(modifier = Modifier.fillMaxSize().padding(customPadding))
         } else {
+            val activeServer = state.servers.firstOrNull { it.isActiveServer }
+            val savedServers = state.servers.filter { !it.isActiveServer }
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding =
@@ -140,14 +144,36 @@ fun ServerManagementScreen(
                     ),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                items(items = state.servers, key = { it.server.id }) { serverWithCount ->
-                    ServerCard(
-                        serverWithCount = serverWithCount,
-                        onClick = { viewModel.showServerDetail(serverWithCount) },
-                        onEditClick = { onEditServerClick(serverWithCount.server.id) },
-                        onDeleteClick = { viewModel.showDeleteConfirmation(serverWithCount) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                if (activeServer != null) {
+                    item(key = "header_active") { ServerSectionHeader(text = "Active Server") }
+                    item(key = activeServer.server.id) {
+                        ServerCard(
+                            serverWithCount = activeServer,
+                            onClick = { viewModel.showServerDetail(activeServer) },
+                            onEditClick = { onEditServerClick(activeServer.server.id) },
+                            onDeleteClick = { viewModel.showDeleteConfirmation(activeServer) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+
+                if (savedServers.isNotEmpty()) {
+                    item(key = "header_saved") {
+                        ServerSectionHeader(
+                            text = "Saved Servers",
+                            modifier =
+                                if (activeServer != null) Modifier.padding(top = 8.dp) else Modifier,
+                        )
+                    }
+                    items(items = savedServers, key = { it.server.id }) { serverWithCount ->
+                        ServerCard(
+                            serverWithCount = serverWithCount,
+                            onClick = { viewModel.showServerDetail(serverWithCount) },
+                            onEditClick = { onEditServerClick(serverWithCount.server.id) },
+                            onDeleteClick = { viewModel.showDeleteConfirmation(serverWithCount) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
         }
@@ -179,4 +205,16 @@ fun ServerManagementScreen(
             )
         }
     }
+}
+
+@Composable
+private fun ServerSectionHeader(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.5.sp,
+        modifier = modifier.padding(start = 4.dp, bottom = 4.dp),
+    )
 }

@@ -584,6 +584,7 @@ constructor(
         val serversWithCounts = servers.map { server ->
             val users = databaseRepository.getUsersForServer(server.id)
             val addresses = databaseRepository.getServerAddresses(server.id)
+                .filter { it.address != server.address }
             val isActive = currentSession?.serverId == server.id
 
             val currentUserId = currentSession?.userId?.toString()
@@ -625,7 +626,12 @@ constructor(
                     userServicesList.find { it.userId == currentUserId }?.serviceStatus
                         ?: ServiceStatus()
                 } else {
-                    ServiceStatus()
+                    ServiceStatus(
+                        jellyseerrConfigured = userServicesList.any { it.serviceStatus.jellyseerrConfigured },
+                        audiobookshelfConfigured = userServicesList.any { it.serviceStatus.audiobookshelfConfigured },
+                        tmdbConfigured = userServicesList.any { it.serviceStatus.tmdbConfigured },
+                        mdbListConfigured = userServicesList.any { it.serviceStatus.mdbListConfigured },
+                    )
                 }
             val connectionUrl =
                 if (isActive && currentBaseUrl.isNotBlank()) {

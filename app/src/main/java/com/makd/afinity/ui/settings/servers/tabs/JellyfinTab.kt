@@ -110,15 +110,17 @@ internal fun JellyfinTabContent(
     }
 
     if (isAdmin == true) {
+        val isActive = serverWithCount.isActiveServer
+        val contentAlpha = if (isActive) 1f else 0.38f
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SectionHeader("Administration")
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier =
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable {
-                        onControlPanelClick()
-                    },
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).then(
+                        if (isActive) Modifier.clickable { onControlPanelClick() } else Modifier
+                    ),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -129,23 +131,32 @@ internal fun JellyfinTabContent(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_admin_panel_settings),
                             contentDescription = "Control Panel",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = contentAlpha),
                             modifier = Modifier.size(24.dp),
                         )
                         Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "Open Control Panel",
-                            style =
-                                MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
+                        Column {
+                            Text(
+                                text = "Open Control Panel",
+                                style =
+                                    MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
+                            )
+                            if (!isActive) {
+                                Text(
+                                    text = "Available for the active server only",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                )
+                            }
+                        }
                     }
                     Icon(
                         painter = painterResource(id = R.drawable.ic_chevron_right),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
                         modifier = Modifier.size(20.dp),
                     )
                 }

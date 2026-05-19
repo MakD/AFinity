@@ -67,6 +67,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -76,6 +78,8 @@ import com.makd.afinity.navigation.Destination
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.components.ConnectionType
+import com.makd.afinity.ui.settings.servers.ControlPanelView
+import com.makd.afinity.ui.settings.servers.ControlPanelViewModel
 import com.makd.afinity.ui.settings.update.UpdateSection
 import com.makd.afinity.util.isLocalAddress
 import com.makd.afinity.util.isTailscaleAddress
@@ -133,10 +137,17 @@ fun SettingsScreen(
     var showJellyseerrBottomSheet by remember { mutableStateOf(false) }
     var showAudiobookshelfBottomSheet by remember { mutableStateOf(false) }
     var showSessionSwitcherSheet by remember { mutableStateOf(false) }
+    var showControlPanel by remember { mutableStateOf(false) }
     val jellyseerrSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val audiobookshelfSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val sessionSwitcherSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val playerOffset = LocalPlayerOffset.current
+    val controlPanelViewModel: ControlPanelViewModel = hiltViewModel(key = "settings_control_panel")
+    val isAdmin by controlPanelViewModel.isAdmin.collectAsStateWithLifecycle()
+
+    LaunchedEffect(uiState.serverId) {
+        uiState.serverId?.let { controlPanelViewModel.initialize(it) }
+    }
 
     if (showLogoutDialog) {
         LogoutConfirmationDialog(
@@ -195,6 +206,35 @@ fun SettingsScreen(
             },
             sheetState = sessionSwitcherSheetState,
         )
+    }
+
+    if (showControlPanel) {
+        Dialog(
+            onDismissRequest = { showControlPanel = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(750.dp).padding(16.dp),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+            ) {
+                uiState.activeServer?.let { activeServer ->
+                    ControlPanelView(
+                        serverWithCount = activeServer,
+                        onBack = { showControlPanel = false },
+                        viewModel = controlPanelViewModel,
+                    )
+                }
+                    ?: run {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+            }
+        }
     }
 
     uiState.error?.let { error ->
@@ -276,6 +316,8 @@ fun SettingsScreen(
                         userProfileImageUrl = uiState.userProfileImageUrl,
                         connectionType = connectionType,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        isAdmin = isAdmin == true,
+                        onControlPanelClick = { showControlPanel = true },
                     )
                 }
 
@@ -514,6 +556,8 @@ fun ProfileHeader(
     userProfileImageUrl: String?,
     connectionType: ConnectionType,
     modifier: Modifier = Modifier,
+    isAdmin: Boolean = false,
+    onControlPanelClick: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth().padding(top = 24.dp, bottom = 0.dp),
@@ -593,34 +637,58 @@ fun ProfileHeader(
         )
 
         Spacer(modifier = Modifier.height(8.dp))
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            shape = RoundedCornerShape(50),
-            modifier = Modifier.height(32.dp),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.height(32.dp),
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_server),
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    text = serverName ?: stringResource(R.string.unknown_server),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                if (serverUrl != null) {
-                    VerticalDivider(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_server),
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
                     Text(
-                        text = serverUrl,
+                        text = serverName ?: stringResource(R.string.unknown_server),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
+                    if (serverUrl != null) {
+                        VerticalDivider(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = serverUrl,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+            if (isAdmin && onControlPanelClick != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(50),
+                    modifier =
+                        Modifier.size(32.dp).clip(RoundedCornerShape(50)).clickable {
+                            onControlPanelClick()
+                        },
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_admin_panel_settings),
+                            contentDescription = "Control Panel",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
                 }
             }
         }

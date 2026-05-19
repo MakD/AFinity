@@ -21,6 +21,7 @@ import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.auth.AuthRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
+import com.makd.afinity.ui.settings.servers.ServerWithUserCount
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.util.logging.LogExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -147,8 +148,18 @@ constructor(
                             currentUser = user,
                             userProfileImageUrl = profileImageUrl,
                             serverName = server?.name,
+                            serverId = server?.id,
                             serverVersion = server?.version,
                             serverUrl = serverRepository.getBaseUrl().ifEmpty { null },
+                            activeServer =
+                                server?.let { s ->
+                                    ServerWithUserCount(
+                                        server = s,
+                                        userCount = 0, // Not needed for the control panel view
+                                        isActiveServer = true,
+                                    )
+                                },
+                            isAdmin = user?.isAdmin == true,
                             isLoading = false,
                         )
                     _tmdbApiKey.value = tmdbKey
@@ -724,9 +735,12 @@ constructor(
 data class SettingsUiState(
     val currentUser: User? = null,
     val serverName: String? = null,
+    val serverId: String? = null,
     val serverVersion: String? = null,
     val serverUrl: String? = null,
     val userProfileImageUrl: String? = null,
+    val activeServer: ServerWithUserCount? = null,
+    val isAdmin: Boolean = false,
     val themeMode: String = "SYSTEM",
     val dynamicColors: Boolean = true,
     val autoPlay: Boolean = true,
