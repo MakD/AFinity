@@ -5,6 +5,8 @@ import com.makd.afinity.data.models.user.User
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.ui.settings.servers.JellyfinStats
 import kotlinx.coroutines.flow.Flow
+import org.jellyfin.sdk.model.api.SessionInfoDto
+import org.jellyfin.sdk.model.api.TaskInfo
 import java.util.UUID
 
 interface JellyfinRepository {
@@ -62,4 +64,18 @@ interface JellyfinRepository {
         maxHeight: Int? = null,
         quality: Int? = null,
     ): String
+
+    suspend fun getActiveSessions(): Result<List<SessionInfoDto>>
+
+    suspend fun restartServer(): Result<Unit>
+
+    suspend fun shutdownServer(): Result<Unit>
+
+    suspend fun refreshAllLibraries(): Result<Unit>
+
+    suspend fun getScheduledTasks(): Result<List<TaskInfo>>
+
+    suspend fun startScheduledTask(taskId: String): Result<Unit>
+
+    suspend fun stopScheduledTask(taskId: String): Result<Unit>
 }

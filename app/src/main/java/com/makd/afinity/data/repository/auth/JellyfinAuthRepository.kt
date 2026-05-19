@@ -114,6 +114,9 @@ constructor(
                 }
 
                 Timber.d("Session restored for user: $username (url: $serverUrl)")
+                sessionManager.getCurrentApiClient()?.let { client ->
+                    scope.launch { registerClientCapabilities(client) }
+                }
                 return@withContext AuthRepository.RestoreResult.Success
             } catch (e: Exception) {
                 Timber.e(e, "Critical error during auth restoration")
@@ -267,6 +270,7 @@ constructor(
                     serverId = "",
                     accessToken = client.accessToken,
                     primaryImageTag = userDto.primaryImageTag,
+                    isAdmin = userDto.policy?.isAdministrator == true,
                 )
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to get current user")
@@ -290,6 +294,7 @@ constructor(
                         serverId = "",
                         accessToken = null,
                         primaryImageTag = userDto.primaryImageTag,
+                        isAdmin = userDto.policy?.isAdministrator == true,
                     )
                 }
             } catch (e: ApiClientException) {
@@ -318,6 +323,7 @@ constructor(
                         serverId = authResult.serverId ?: "",
                         accessToken = token,
                         primaryImageTag = userDto.primaryImageTag,
+                        isAdmin = userDto.policy?.isAdministrator == true,
                     )
 
                 try {

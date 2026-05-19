@@ -11,11 +11,18 @@ import com.makd.afinity.data.repository.playback.PlaybackRepository
 import com.makd.afinity.data.repository.server.JellyfinServerRepository
 import com.makd.afinity.data.repository.server.ServerRepository
 import com.makd.afinity.ui.settings.servers.JellyfinStats
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.operations.LibraryApi
+import org.jellyfin.sdk.api.operations.ScheduledTasksApi
+import org.jellyfin.sdk.api.operations.SessionApi
+import org.jellyfin.sdk.api.operations.SystemApi
+import org.jellyfin.sdk.model.api.SessionInfoDto
+import org.jellyfin.sdk.model.api.TaskInfo
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -125,7 +132,7 @@ constructor(
             val apiClient = sessionManager.getCurrentApiClient()
             if (apiClient != null) {
                 val libraryApi = LibraryApi(apiClient)
-                val counts = libraryApi.getItemCounts().content
+                val counts = withContext(Dispatchers.IO) { libraryApi.getItemCounts().content }
 
                 val freshStats =
                     JellyfinStatsCacheEntity(
@@ -254,4 +261,103 @@ constructor(
             ""
         }
     }
+
+    override suspend fun getActiveSessions(): Result<List<SessionInfoDto>> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            return@withContext try {
+                val sessions = SessionApi(apiClient).getSessions().content ?: emptyList()
+                Result.success(sessions)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get active sessions")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun restartServer(): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            return@withContext try {
+                SystemApi(apiClient).restartApplication()
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to restart server")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun shutdownServer(): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            return@withContext try {
+                SystemApi(apiClient).shutdownApplication()
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to shutdown server")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun refreshAllLibraries(): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            return@withContext try {
+                LibraryApi(apiClient).refreshLibrary()
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh libraries")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun getScheduledTasks(): Result<List<TaskInfo>> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            return@withContext try {
+                val tasks =
+                    ScheduledTasksApi(apiClient).getTasks(isHidden = false).content ?: emptyList()
+                Result.success(tasks)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get scheduled tasks")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun startScheduledTask(taskId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            return@withContext try {
+                ScheduledTasksApi(apiClient).startTask(taskId)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to start task $taskId")
+                Result.failure(e)
+            }
+        }
+
+    override suspend fun stopScheduledTask(taskId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val apiClient =
+                sessionManager.getCurrentApiClient()
+                    ?: return@withContext Result.failure(Exception("No active session"))
+            return@withContext try {
+                ScheduledTasksApi(apiClient).stopTask(taskId)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to stop task $taskId")
+                Result.failure(e)
+            }
+        }
 }

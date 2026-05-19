@@ -25,16 +25,23 @@ import com.makd.afinity.util.isLocalAddress
 import com.makd.afinity.util.isTailscaleAddress
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
+import org.jellyfin.sdk.model.api.TaskInfo
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -103,12 +110,14 @@ data class ServerDetailStats(
     val jellyfinStats: JellyfinStats? = null,
     val jellyseerrStats: JellyseerrStats? = null,
     val audiobookshelfStats: AudiobookshelfStats? = null,
+    val scheduledTasks: List<TaskInfo>? = null,
 )
 
 data class ServerWithUserCount(
     val server: Server,
     val addresses: List<ServerAddress> = emptyList(),
     val userCount: Int,
+    val currentUserId: String? = null,
     val currentUserServiceStatus: ServiceStatus = ServiceStatus(),
     val userServices: List<UserServiceInfo> = emptyList(),
     val addressType: AddressType = AddressType.REMOTE,
@@ -143,11 +152,16 @@ constructor(
     private val _state = MutableStateFlow(ServerManagementState())
     val state: StateFlow<ServerManagementState> = _state.asStateFlow()
 
-    val isOffline: StateFlow<Boolean> = offlineModeManager.isOffline
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    private var taskPollingJob: Job? = null
+
+    val isOffline: StateFlow<Boolean> =
+        offlineModeManager.isOffline.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     init {
         loadServers()
+        viewModelScope.launch {
+            sessionManager.currentSession.drop(1).collect { _ -> reloadAndRefreshDetail() }
+        }
     }
 
     fun loadServers() {
@@ -267,6 +281,8 @@ constructor(
     }
 
     fun hideServerDetail() {
+        taskPollingJob?.cancel()
+        taskPollingJob = null
         _state.value = _state.value.copy(detailServer = null, detailStats = null)
     }
 
@@ -319,6 +335,38 @@ constructor(
                 }
             }
         }
+
+        startTaskPolling()
+    }
+
+    private fun startTaskPolling() {
+        taskPollingJob?.cancel()
+        taskPollingJob =
+            viewModelScope.launch(Dispatchers.IO) {
+                val jellyfinRepository = jellyfinRepositoryProvider.get()
+                while (isActive) {
+                    try {
+                        val tasksResult = jellyfinRepository.getScheduledTasks()
+
+                        if (tasksResult.isSuccess) {
+                            val tasks = tasksResult.getOrNull() ?: emptyList()
+                            if (tasks.isNotEmpty()) {
+                                withContext(Dispatchers.Main) {
+                                    val currentStats =
+                                        _state.value.detailStats ?: ServerDetailStats()
+                                    _state.value =
+                                        _state.value.copy(
+                                            detailStats = currentStats.copy(scheduledTasks = tasks)
+                                        )
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Error polling scheduled tasks")
+                    }
+                    delay(5_000L)
+                }
+            }
     }
 
     private suspend fun loadJellyseerrStats(): JellyseerrStats {
@@ -346,11 +394,10 @@ constructor(
         val absRepository = audiobookshelfRepositoryProvider.get()
         return try {
             val libraryList = absRepository.refreshLibraries().getOrDefault(emptyList())
-            val libraries =
-                libraryList.map { lib ->
-                    val stats = absRepository.getLibraryStats(lib.id).getOrNull()
-                    if (stats != null) lib.copy(stats = stats) else lib
-                }
+            val libraries = libraryList.map { lib ->
+                val stats = absRepository.getLibraryStats(lib.id).getOrNull()
+                if (stats != null) lib.copy(stats = stats) else lib
+            }
             val inProgress = absRepository.getInProgressItemsFlow().first()
             val totalItems = libraries.sumOf { it.stats?.totalItems ?: 0 }
             val totalDurationSec = libraries.sumOf { it.stats?.totalDuration ?: 0.0 }
@@ -534,92 +581,87 @@ constructor(
         val currentSession = sessionManager.currentSession.value
         val currentBaseUrl = serverRepository.currentBaseUrl.value
         val servers = databaseRepository.getAllServers()
-        val serversWithCounts =
-            servers.map { server ->
-                val users = databaseRepository.getUsersForServer(server.id)
-                val addresses = databaseRepository.getServerAddresses(server.id)
-                val isActive = currentSession?.serverId == server.id
+        val serversWithCounts = servers.map { server ->
+            val users = databaseRepository.getUsersForServer(server.id)
+            val addresses = databaseRepository.getServerAddresses(server.id)
+            val isActive = currentSession?.serverId == server.id
 
-                val currentUserId = currentSession?.userId?.toString()
+            val currentUserId = currentSession?.userId?.toString()
 
-                val userServicesList =
-                    users.map { user ->
-                        val userId = user.id.toString()
-                        val hasJellyseerr = jellyseerrDao.getConfig(server.id, userId) != null
-                        val hasAudiobookshelf =
-                            audiobookshelfDao.getConfig(server.id, userId) != null
-                        val hasTmdb =
-                            securePreferencesRepository.getTmdbApiKey(server.id, userId) != null
-                        val hasMdbList =
-                            securePreferencesRepository.getMdbListApiKey(server.id, userId) != null
+            val userServicesList = users.map { user ->
+                val userId = user.id.toString()
+                val hasJellyseerr = jellyseerrDao.getConfig(server.id, userId) != null
+                val hasAudiobookshelf = audiobookshelfDao.getConfig(server.id, userId) != null
+                val hasTmdb = securePreferencesRepository.getTmdbApiKey(server.id, userId) != null
+                val hasMdbList =
+                    securePreferencesRepository.getMdbListApiKey(server.id, userId) != null
 
-                        UserServiceInfo(
-                            userId = userId,
-                            userName = user.name,
-                            serviceStatus =
-                                ServiceStatus(
-                                    jellyseerrConfigured = hasJellyseerr,
-                                    audiobookshelfConfigured = hasAudiobookshelf,
-                                    tmdbConfigured = hasTmdb,
-                                    mdbListConfigured = hasMdbList,
-                                ),
-                        )
-                    }
-                val activeUserId = if (isActive) currentUserId else null
-                val allJellyseerrAddresses =
-                    if (activeUserId != null) {
-                        jellyseerrDao.getAddresses(server.id, activeUserId).distinctBy {
-                            it.address
-                        }
-                    } else emptyList()
-                val allAudiobookshelfAddresses =
-                    if (activeUserId != null) {
-                        audiobookshelfDao.getAddresses(server.id, activeUserId).distinctBy {
-                            it.address
-                        }
-                    } else emptyList()
-
-                val currentUserStatus =
-                    if (isActive && currentUserId != null) {
-                        userServicesList.find { it.userId == currentUserId }?.serviceStatus
-                            ?: ServiceStatus()
-                    } else {
-                        ServiceStatus()
-                    }
-                val connectionUrl =
-                    if (isActive && currentBaseUrl.isNotBlank()) {
-                        currentBaseUrl
-                    } else {
-                        server.address
-                    }
-
-                val jellyseerrUrl =
-                    if (isActive && currentUserStatus.jellyseerrConfigured) {
-                        securePreferencesRepository.getCachedJellyseerrServerUrl()
-                    } else null
-                val audiobookshelfUrl =
-                    if (isActive && currentUserStatus.audiobookshelfConfigured) {
-                        securePreferencesRepository.getCachedAudiobookshelfServerUrl()
-                    } else null
-
-                ServerWithUserCount(
-                    server = server,
-                    addresses = addresses,
-                    userCount = users.size,
-                    currentUserServiceStatus = currentUserStatus,
-                    userServices = userServicesList,
-                    addressType = classifyAddress(server.address),
-                    currentConnectionUrl = connectionUrl,
-                    currentConnectionType = classifyAddress(connectionUrl),
-                    isActiveServer = isActive,
-                    jellyseerrAddresses = allJellyseerrAddresses,
-                    audiobookshelfAddresses = allAudiobookshelfAddresses,
-                    jellyseerrConnectionUrl = jellyseerrUrl,
-                    jellyseerrConnectionType = jellyseerrUrl?.let { classifyAddress(it) },
-                    audiobookshelfConnectionUrl = audiobookshelfUrl,
-                    audiobookshelfConnectionType = audiobookshelfUrl?.let { classifyAddress(it) },
+                UserServiceInfo(
+                    userId = userId,
+                    userName = user.name,
+                    serviceStatus =
+                        ServiceStatus(
+                            jellyseerrConfigured = hasJellyseerr,
+                            audiobookshelfConfigured = hasAudiobookshelf,
+                            tmdbConfigured = hasTmdb,
+                            mdbListConfigured = hasMdbList,
+                        ),
                 )
             }
+            val activeUserId = if (isActive) currentUserId else null
+            val allJellyseerrAddresses =
+                if (activeUserId != null) {
+                    jellyseerrDao.getAddresses(server.id, activeUserId).distinctBy { it.address }
+                } else emptyList()
+            val allAudiobookshelfAddresses =
+                if (activeUserId != null) {
+                    audiobookshelfDao.getAddresses(server.id, activeUserId).distinctBy {
+                        it.address
+                    }
+                } else emptyList()
+
+            val currentUserStatus =
+                if (isActive && currentUserId != null) {
+                    userServicesList.find { it.userId == currentUserId }?.serviceStatus
+                        ?: ServiceStatus()
+                } else {
+                    ServiceStatus()
+                }
+            val connectionUrl =
+                if (isActive && currentBaseUrl.isNotBlank()) {
+                    currentBaseUrl
+                } else {
+                    server.address
+                }
+
+            val jellyseerrUrl =
+                if (isActive && currentUserStatus.jellyseerrConfigured) {
+                    securePreferencesRepository.getCachedJellyseerrServerUrl()
+                } else null
+            val audiobookshelfUrl =
+                if (isActive && currentUserStatus.audiobookshelfConfigured) {
+                    securePreferencesRepository.getCachedAudiobookshelfServerUrl()
+                } else null
+
+            ServerWithUserCount(
+                server = server,
+                addresses = addresses,
+                userCount = users.size,
+                currentUserId = currentUserId,
+                currentUserServiceStatus = currentUserStatus,
+                userServices = userServicesList,
+                addressType = classifyAddress(server.address),
+                currentConnectionUrl = connectionUrl,
+                currentConnectionType = classifyAddress(connectionUrl),
+                isActiveServer = isActive,
+                jellyseerrAddresses = allJellyseerrAddresses,
+                audiobookshelfAddresses = allAudiobookshelfAddresses,
+                jellyseerrConnectionUrl = jellyseerrUrl,
+                jellyseerrConnectionType = jellyseerrUrl?.let { classifyAddress(it) },
+                audiobookshelfConnectionUrl = audiobookshelfUrl,
+                audiobookshelfConnectionType = audiobookshelfUrl?.let { classifyAddress(it) },
+            )
+        }
 
         _state.value = _state.value.copy(servers = serversWithCounts, isLoading = false)
     }

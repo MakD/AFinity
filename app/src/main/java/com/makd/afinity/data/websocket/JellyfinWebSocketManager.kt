@@ -1,6 +1,7 @@
 package com.makd.afinity.data.websocket
 
 import com.makd.afinity.data.manager.SessionManager
+import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import kotlinx.coroutines.CoroutineScope
@@ -8,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +35,7 @@ constructor(
     private val sessionManager: SessionManager,
     private val mediaRepository: MediaRepository,
     private val userDataRepository: UserDataRepository,
+    private val appDataRepository: AppDataRepository,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var connectionJob: Job? = null
@@ -150,9 +153,9 @@ constructor(
         }
     }
 
-    private suspend fun handleLibraryChanged(message: LibraryChangedMessage) {
-        Timber.d("Library changed - refreshing caches")
-        mediaRepository.invalidateAllCaches()
+    private fun handleLibraryChanged(message: LibraryChangedMessage) {
+        Timber.d("Library changed - refreshing caches and home data")
+        appDataRepository.scheduleHomeRefreshAfterTaskCompletion()
     }
 
     private suspend fun handleUserDataChanged(message: UserDataChangedMessage) {
@@ -184,10 +187,16 @@ constructor(
     private suspend fun handleServerRestarting() {
         Timber.w("Server is restarting")
         _connectionState.value = WebSocketState.SERVER_RESTARTING
+        scope.launch {
+            delay(20_000L)
+            disconnect()
+            connect()
+        }
     }
 
     private suspend fun handleServerShutdown() {
         Timber.w("Server is shutting down")
         _connectionState.value = WebSocketState.SERVER_SHUTDOWN
+        scope.launch { disconnect() }
     }
 }

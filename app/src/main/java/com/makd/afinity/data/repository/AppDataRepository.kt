@@ -307,6 +307,17 @@ constructor(
         }
     }
 
+    fun scheduleHomeRefreshAfterTaskCompletion() {
+        scope.launch {
+            try {
+                mediaRepository.invalidateAllCaches()
+                reloadHomeData()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh home data after task completion")
+            }
+        }
+    }
+
     suspend fun reloadHomeData() {
         if (_isInitialDataLoaded.value && _libraries.value.isEmpty()) {
             Timber.d("Libraries empty (offline start detected), forcing full initial load...")

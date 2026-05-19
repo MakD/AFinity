@@ -943,6 +943,8 @@
     <string name="server_more_users_plural_fmt">+%1$d more users</string>
     <string name="server_primary_connection">Primary Connection</string>
     <string name="server_backup_routes_fmt">+ %1$d backup route(s)</string>
+    <string name="ws_server_restarting">Server is restarting, reconnecting automatically…</string>
+    <string name="ws_server_shutdown">Server has shut down</string>
     <string name="service_label_seerr">Seerr</string>
     <string name="service_label_abs">ABS</string>
     <string name="service_label_tmdb">TMDB</string>

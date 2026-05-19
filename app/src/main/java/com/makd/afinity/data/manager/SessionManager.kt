@@ -37,6 +37,7 @@ data class Session(
     val serverUrl: String,
     val user: User? = null,
     val server: Server? = null,
+    val isAdmin: Boolean? = null,
 )
 
 @Singleton
@@ -153,9 +154,35 @@ constructor(
                         serverUrl = resolvedUrl,
                         user = user,
                         server = server,
+                        isAdmin = user?.isAdmin == true,
                     )
 
                 securePrefsRepository.saveActiveSession(serverId, userId, resolvedUrl)
+                sessionScope.launch {
+                    try {
+                        val userDto = UserApi(apiClient).getCurrentUser().content
+                        val isAdmin = userDto.policy?.isAdministrator == true
+                        val refreshedUser =
+                            user?.copy(isAdmin = isAdmin)
+                                ?: User(
+                                    id = userDto.id,
+                                    name = userDto.name ?: "",
+                                    serverId = serverId,
+                                    accessToken = accessToken,
+                                    primaryImageTag = userDto.primaryImageTag,
+                                    isAdmin = isAdmin,
+                                )
+                        databaseRepository.insertUser(refreshedUser)
+                        val current = _currentSession.value
+                        if (current?.serverId == serverId && current.userId == userId) {
+                            _currentSession.value =
+                                current.copy(isAdmin = isAdmin, user = refreshedUser)
+                        }
+                        Timber.d("Admin status refreshed from policy: isAdmin=$isAdmin")
+                    } catch (e: Exception) {
+                        Timber.w(e, "Failed to refresh user policy; using cached isAdmin")
+                    }
+                }
                 sessionScope.launch {
                     try {
                         jellyseerrRepository.setActiveJellyfinSession(serverId, userId)

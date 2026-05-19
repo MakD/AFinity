@@ -15,9 +15,14 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
@@ -27,6 +32,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +50,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.makd.afinity.data.manager.OfflineModeManager
+import com.makd.afinity.data.websocket.WebSocketState
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.models.media.AfinityShow
 import com.makd.afinity.data.repository.AudiobookshelfRepository
@@ -117,6 +124,24 @@ fun MainNavigation(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val webSocketState by mainViewModel.webSocketState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(webSocketState) {
+        when (webSocketState) {
+            WebSocketState.SERVER_RESTARTING ->
+                snackbarHostState.showSnackbar(
+                    message = "Server is restarting, reconnecting automatically…",
+                    duration = SnackbarDuration.Long,
+                )
+            WebSocketState.SERVER_SHUTDOWN ->
+                snackbarHostState.showSnackbar(
+                    message = "Server has shut down",
+                    duration = SnackbarDuration.Indefinite,
+                )
+            else -> snackbarHostState.currentSnackbarData?.dismiss()
+        }
+    }
 
     val shouldShowNavigation =
         currentDestination?.route?.let { route ->
@@ -966,6 +991,15 @@ fun MainNavigation(
                                     )
                                 }
                             }
+
+                            SnackbarHost(
+                                hostState = snackbarHostState,
+                                snackbar = { data -> Snackbar(snackbarData = data) },
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = globalPlayerOffset + 8.dp)
+                                    .navigationBarsPadding(),
+                            )
 
                             AnimatedVisibility(
                                 visible = showMiniPlayer,
