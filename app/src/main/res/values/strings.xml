@@ -990,8 +990,6 @@
     <string name="stat_best_streak">Best Streak</string>
     <string name="stat_days_active">Days Active</string>
     <string name="cd_server_options">Server Options</string>
-    <string name="cd_manage_addresses">Manage Addresses</string>
-    <string name="cd_add_address">Add address</string>
     <string name="cd_security_warning">Security Warning</string>
 
     <!--Server Management - more users plural handled inline-->
