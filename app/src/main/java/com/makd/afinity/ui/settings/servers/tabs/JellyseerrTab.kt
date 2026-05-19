@@ -53,7 +53,10 @@ internal fun JellyseerrTabContent(
                     ) {
                         DetailRow(
                             label = stringResource(R.string.label_name),
-                            value = user.displayName ?: user.username ?: "Unknown",
+                            value =
+                                user.displayName
+                                    ?: user.username
+                                    ?: stringResource(R.string.user_unknown),
                         )
                         DetailRow(
                             label = stringResource(R.string.label_role),
@@ -64,11 +67,17 @@ internal fun JellyseerrTabContent(
                                 if (user.isAdmin()) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurface,
                         )
+
+                        val reqPerm = stringResource(R.string.permission_request)
+                        val autoPerm = stringResource(R.string.permission_auto_approve)
+                        val fourKPerm = stringResource(R.string.meta_res_4k)
+                        val managePerm = stringResource(R.string.permission_manage)
+
                         val permissions = buildList {
-                            if (user.hasPermission(Permissions.REQUEST)) add("Request")
-                            if (user.hasPermission(Permissions.AUTO_APPROVE)) add("Auto-Approve")
-                            if (user.hasPermission(Permissions.REQUEST_4K)) add("4K")
-                            if (user.hasPermission(Permissions.MANAGE_REQUESTS)) add("Manage")
+                            if (user.hasPermission(Permissions.REQUEST)) add(reqPerm)
+                            if (user.hasPermission(Permissions.AUTO_APPROVE)) add(autoPerm)
+                            if (user.hasPermission(Permissions.REQUEST_4K)) add(fourKPerm)
+                            if (user.hasPermission(Permissions.MANAGE_REQUESTS)) add(managePerm)
                         }
                         if (permissions.isNotEmpty()) {
                             DetailRow(
@@ -80,15 +89,23 @@ internal fun JellyseerrTabContent(
                             label = stringResource(R.string.label_movie_quota),
                             value =
                                 if (user.movieQuotaLimit != null && user.movieQuotaLimit > 0)
-                                    "${user.movieQuotaLimit} / ${user.movieQuotaDays ?: 7} days"
-                                else "Unlimited",
+                                    stringResource(
+                                        R.string.quota_days_fmt,
+                                        user.movieQuotaLimit,
+                                        user.movieQuotaDays ?: 7,
+                                    )
+                                else stringResource(R.string.label_unlimited),
                         )
                         DetailRow(
                             label = stringResource(R.string.label_tv_quota),
                             value =
                                 if (user.tvQuotaLimit != null && user.tvQuotaLimit > 0)
-                                    "${user.tvQuotaLimit} / ${user.tvQuotaDays ?: 7} days"
-                                else "Unlimited",
+                                    stringResource(
+                                        R.string.quota_days_fmt,
+                                        user.tvQuotaLimit,
+                                        user.tvQuotaDays ?: 7,
+                                    )
+                                else stringResource(R.string.label_unlimited),
                         )
                     }
                 }
@@ -134,9 +151,10 @@ internal fun JellyseerrTabContent(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader(stringResource(R.string.section_network))
-        val activeAddress = serverWithCount.jellyseerrConnectionUrl
-            ?: serverWithCount.jellyseerrAddresses.firstOrNull()?.address
-            ?: "Default (Proxy)"
+        val activeAddress =
+            serverWithCount.jellyseerrConnectionUrl
+                ?: serverWithCount.jellyseerrAddresses.firstOrNull()?.address
+                ?: stringResource(R.string.server_default_proxy)
         val total = serverWithCount.jellyseerrAddresses.size
         ActiveConnectionCard(
             activeAddress = activeAddress,
@@ -167,5 +185,8 @@ internal fun JellyseerrManageAddresses(
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
         )
     }
-    AddAddressField(placeholder = "https://seerr.example.com", onAdd = onAddAddress)
+    AddAddressField(
+        placeholder = stringResource(R.string.jellyseerr_placeholder_url),
+        onAdd = onAddAddress,
+    )
 }

@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -85,14 +86,18 @@ internal fun ControlPanelView(
             },
             title = {
                 Text(
-                    "Restart Server",
+                    text = stringResource(R.string.dialog_restart_server_title),
                     style =
                         MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 )
             },
             text = {
                 Text(
-                    "Restart ${serverWithCount.server.name}? Active streams will be interrupted.",
+                    text =
+                        stringResource(
+                            R.string.dialog_restart_server_message,
+                            serverWithCount.server.name,
+                        ),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             },
@@ -108,11 +113,13 @@ internal fun ControlPanelView(
                             contentColor = MaterialTheme.colorScheme.onError,
                         ),
                 ) {
-                    Text("Restart")
+                    Text(stringResource(R.string.action_restart))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showRestartConfirm = false }) { Text("Cancel") }
+                TextButton(onClick = { showRestartConfirm = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             },
             shape = RoundedCornerShape(28.dp),
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -131,14 +138,18 @@ internal fun ControlPanelView(
             },
             title = {
                 Text(
-                    "Shutdown Server",
+                    text = stringResource(R.string.dialog_shutdown_server_title),
                     style =
                         MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 )
             },
             text = {
                 Text(
-                    "Shut down ${serverWithCount.server.name}? The server will go offline completely.",
+                    text =
+                        stringResource(
+                            R.string.dialog_shutdown_server_message,
+                            serverWithCount.server.name,
+                        ),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             },
@@ -154,11 +165,13 @@ internal fun ControlPanelView(
                             contentColor = MaterialTheme.colorScheme.onError,
                         ),
                 ) {
-                    Text("Shutdown")
+                    Text(stringResource(R.string.action_shutdown))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showShutdownConfirm = false }) { Text("Cancel") }
+                TextButton(onClick = { showShutdownConfirm = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             },
             shape = RoundedCornerShape(28.dp),
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -177,14 +190,14 @@ internal fun ControlPanelView(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_chevron_left),
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.cd_back),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp),
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Control Panel",
+                text = stringResource(R.string.title_control_panel),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -208,20 +221,20 @@ internal fun ControlPanelView(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 QuickActionButton(
-                    label = "Refresh Libraries",
+                    label = stringResource(R.string.action_refresh_libraries),
                     icon = painterResource(R.drawable.ic_refresh),
                     onClick = { viewModel.refreshAllLibraries() },
                     modifier = Modifier.weight(1f),
                 )
                 QuickActionButton(
-                    label = "Restart",
+                    label = stringResource(R.string.action_restart),
                     icon = painterResource(R.drawable.ic_restart),
                     onClick = { showRestartConfirm = true },
                     isDangerous = true,
                     modifier = Modifier.weight(1f),
                 )
                 QuickActionButton(
-                    label = "Shutdown",
+                    label = stringResource(R.string.action_shutdown),
                     icon = painterResource(R.drawable.ic_power),
                     onClick = { showShutdownConfirm = true },
                     isDangerous = true,
@@ -306,7 +319,10 @@ private fun ActiveSessionsSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            SectionHeader(if (loading) "Active Sessions" else "Active Sessions (${sessions.size})")
+            SectionHeader(
+                if (loading) stringResource(R.string.active_sessions_title)
+                else stringResource(R.string.active_sessions_count_fmt, sessions.size)
+            )
             if (idleCount > 0) {
                 Surface(
                     shape = RoundedCornerShape(50),
@@ -324,7 +340,7 @@ private fun ActiveSessionsSection(
                             modifier = Modifier.size(12.dp),
                         )
                         Text(
-                            text = "+$idleCount idle",
+                            text = stringResource(R.string.active_sessions_idle_fmt, idleCount),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
@@ -338,7 +354,7 @@ private fun ActiveSessionsSection(
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
             sessions.isEmpty() ->
                 Text(
-                    text = "No active sessions.",
+                    text = stringResource(R.string.active_sessions_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp, top = 8.dp),
@@ -414,16 +430,16 @@ private fun PlayingSessionCard(session: SessionInfoDto, baseUrl: String) {
         } else null
 
     val deviceInfo = buildString {
-        append(session.deviceName ?: "Unknown Device")
+        append(session.deviceName ?: stringResource(R.string.unknown_device))
         session.client?.let { append(" · $it") }
     }
-    val title = item.name ?: "Unknown"
+    val title = item.name ?: stringResource(R.string.unknown_title)
     val year = item.productionYear?.toString()
     val timeText =
         if (positionTicks != null && runtimeTicks != null) {
             "${formatTicks(positionTicks)} / ${formatTicks(runtimeTicks)}"
         } else null
-    val userName = session.userName ?: "Unknown"
+    val userName = session.userName ?: stringResource(R.string.unknown_user)
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -573,12 +589,12 @@ private fun ScheduledTasksSection(
     val grouped =
         tasks
             .filter { it.state != TaskState.RUNNING && it.state != TaskState.CANCELLING }
-            .groupBy { it.category ?: "Other" }
+            .groupBy { it.category ?: stringResource(R.string.category_other) }
             .toSortedMap()
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (running.isNotEmpty()) {
-            SectionHeader("Running")
+            SectionHeader(stringResource(R.string.category_running))
             running.forEach { task ->
                 val taskId = task.id ?: return@forEach
                 androidx.compose.runtime.key(taskId) {
@@ -669,7 +685,7 @@ private fun ScheduledTaskRow(task: TaskInfo, onRun: () -> Unit, onStop: () -> Un
                         IconButton(onClick = onStop, modifier = Modifier.size(40.dp)) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_close),
-                                contentDescription = "Stop task",
+                                contentDescription = stringResource(R.string.cd_stop_task),
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(18.dp),
                             )
@@ -678,7 +694,7 @@ private fun ScheduledTaskRow(task: TaskInfo, onRun: () -> Unit, onStop: () -> Un
                         IconButton(onClick = onRun, modifier = Modifier.size(40.dp)) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_player_play_filled),
-                                contentDescription = "Run task",
+                                contentDescription = stringResource(R.string.cd_run_task),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp),
                             )

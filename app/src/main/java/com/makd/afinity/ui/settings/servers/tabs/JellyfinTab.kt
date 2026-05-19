@@ -99,7 +99,10 @@ internal fun JellyfinTabContent(
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ) {
                     Text(
-                        text = "+$otherCount more user${if (otherCount > 1) "s" else ""}",
+                        text =
+                            if (otherCount > 1)
+                                stringResource(R.string.server_more_users_plural_fmt, otherCount)
+                            else stringResource(R.string.server_more_users_fmt, otherCount),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -113,14 +116,16 @@ internal fun JellyfinTabContent(
         val isActive = serverWithCount.isActiveServer
         val contentAlpha = if (isActive) 1f else 0.38f
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SectionHeader("Administration")
+            SectionHeader(stringResource(R.string.section_administration))
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier =
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).then(
-                        if (isActive) Modifier.clickable { onControlPanelClick() } else Modifier
-                    ),
+                    Modifier.fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .then(
+                            if (isActive) Modifier.clickable { onControlPanelClick() } else Modifier
+                        ),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -130,25 +135,29 @@ internal fun JellyfinTabContent(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_admin_panel_settings),
-                            contentDescription = "Control Panel",
+                            contentDescription = stringResource(R.string.cd_control_panel),
                             tint = MaterialTheme.colorScheme.primary.copy(alpha = contentAlpha),
                             modifier = Modifier.size(24.dp),
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
-                                text = "Open Control Panel",
+                                text = stringResource(R.string.action_open_control_panel),
                                 style =
                                     MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.SemiBold
                                     ),
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
+                                color =
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
                             )
                             if (!isActive) {
                                 Text(
-                                    text = "Available for the active server only",
+                                    text = stringResource(R.string.control_panel_active_only),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    color =
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                            alpha = 0.6f
+                                        ),
                                 )
                             }
                         }
@@ -156,7 +165,8 @@ internal fun JellyfinTabContent(
                     Icon(
                         painter = painterResource(id = R.drawable.ic_chevron_right),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
+                        tint =
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
                         modifier = Modifier.size(20.dp),
                     )
                 }

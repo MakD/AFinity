@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.settings.servers
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -69,15 +70,20 @@ internal enum class DialogView {
 }
 
 private enum class DetailTab(
-    val label: String,
+    @StringRes val labelRes: Int,
     @DrawableRes val activeIconRes: Int,
     @DrawableRes val inactiveIconRes: Int,
     val isBrandColored: Boolean,
 ) {
-    JELLYFIN("Jellyfin", R.drawable.ic_jellyfin, R.drawable.ic_jellyfin_light, true),
-    JELLYSEERR("Seerr", R.drawable.ic_seerr_logo_colored, R.drawable.ic_seerr_logo, true),
+    JELLYFIN(R.string.tab_jellyfin, R.drawable.ic_jellyfin, R.drawable.ic_jellyfin_light, true),
+    JELLYSEERR(
+        R.string.tab_seerr,
+        R.drawable.ic_seerr_logo_colored,
+        R.drawable.ic_seerr_logo,
+        true,
+    ),
     AUDIOBOOKSHELF(
-        "ABS",
+        R.string.tab_abs,
         R.drawable.ic_audiobookshelf_colored,
         R.drawable.ic_audiobookshelf_light,
         true,
@@ -373,7 +379,7 @@ private fun SegmentedTabBar(
                                 else animatedContentColor,
                         )
                         Text(
-                            text = tab.label,
+                            text = stringResource(tab.labelRes),
                             style =
                                 MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.Bold

@@ -419,14 +419,13 @@ private fun InsecureConnectionBanner(serverUrl: String) {
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_info),
-                    contentDescription = "Security Warning",
+                    contentDescription = stringResource(R.string.cd_security_warning),
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(20.dp),
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text =
-                        "Warning: Connecting over HTTP sends your password in plain text. HTTPS is highly recommended.",
+                    text = stringResource(R.string.warning_http_insecure),
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     style = MaterialTheme.typography.bodyMedium,
                 )

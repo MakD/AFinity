@@ -101,11 +101,24 @@ fun ServerCard(
                     ) {
                         val (connIcon, connColor, connText) =
                             when (serverWithCount.currentConnectionType) {
-                                AddressType.LOCAL -> Triple(R.drawable.ic_wifi, LocalColor, "Local")
+                                AddressType.LOCAL ->
+                                    Triple(
+                                        R.drawable.ic_wifi,
+                                        LocalColor,
+                                        stringResource(R.string.address_type_local),
+                                    )
                                 AddressType.TAILSCALE ->
-                                    Triple(R.drawable.ic_security, TailscaleColor, "Tailscale")
+                                    Triple(
+                                        R.drawable.ic_security,
+                                        TailscaleColor,
+                                        stringResource(R.string.address_type_tailscale),
+                                    )
                                 AddressType.REMOTE ->
-                                    Triple(R.drawable.ic_link, RemoteColor, "Remote")
+                                    Triple(
+                                        R.drawable.ic_link,
+                                        RemoteColor,
+                                        stringResource(R.string.address_type_remote),
+                                    )
                             }
                         val mutedColor =
                             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -131,7 +144,7 @@ fun ServerCard(
                     IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(28.dp)) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_dots_vertical),
-                            contentDescription = "Server Options",
+                            contentDescription = stringResource(R.string.cd_server_options),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp),
                         )
@@ -143,7 +156,10 @@ fun ServerCard(
                     ) {
                         DropdownMenuItem(
                             text = {
-                                Text("Edit Server", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    stringResource(R.string.title_edit_server),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
                             },
                             onClick = {
                                 menuExpanded = false
@@ -160,7 +176,7 @@ fun ServerCard(
                         DropdownMenuItem(
                             text = {
                                 Text(
-                                    "Delete Server",
+                                    stringResource(R.string.cd_delete_server),
                                     style =
                                         MaterialTheme.typography.bodyMedium.copy(
                                             color = MaterialTheme.colorScheme.error

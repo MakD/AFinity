@@ -107,7 +107,7 @@ internal fun LoadingState() {
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            "Loading data...",
+            stringResource(R.string.state_loading_data),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -235,7 +235,7 @@ internal fun ActiveConnectionCard(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_edit),
-                    contentDescription = "Manage Addresses",
+                    contentDescription = stringResource(R.string.cd_manage_addresses),
                     modifier = Modifier.size(20.dp),
                 )
             }
@@ -264,7 +264,7 @@ internal fun ManageAddressesView(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_chevron_left),
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.cd_back),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp),
                 )
@@ -342,7 +342,7 @@ internal fun SelectableAddressRow(
                 IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_close),
-                        contentDescription = "Remove",
+                        contentDescription = stringResource(R.string.action_remove),
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.error,
                     )
@@ -387,7 +387,7 @@ internal fun ServiceAddressItem(
             IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_close),
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(R.string.action_delete),
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.error,
                 )
@@ -447,7 +447,7 @@ internal fun AddAddressField(placeholder: String, onAdd: (String) -> Unit) {
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_add),
-                contentDescription = "Add address",
+                contentDescription = stringResource(R.string.cd_add_address),
                 modifier = Modifier.size(24.dp),
             )
         }
@@ -512,25 +512,25 @@ internal fun UserServiceRow(userInfo: UserServiceInfo) {
                 ServiceStatusIcon(
                     activeIconRes = R.drawable.ic_seerr_logo_colored,
                     inactiveIconRes = R.drawable.ic_seerr_logo,
-                    contentDescription = "Jellyseerr",
+                    contentDescription = stringResource(R.string.cd_jellyseerr),
                     isActive = userInfo.serviceStatus.jellyseerrConfigured,
                     haloColor = JellyseerrColor,
                 )
                 ServiceStatusIcon(
                     activeIconRes = R.drawable.ic_audiobookshelf_colored,
                     inactiveIconRes = R.drawable.ic_audiobookshelf_light,
-                    contentDescription = "Audiobookshelf",
+                    contentDescription = stringResource(R.string.cd_audiobookshelf),
                     isActive = userInfo.serviceStatus.audiobookshelfConfigured,
                     haloColor = AudiobookshelfColor,
                 )
                 ServiceStatusIcon(
                     activeIconRes = R.drawable.ic_tmdb,
-                    contentDescription = "TMDB",
+                    contentDescription = stringResource(R.string.cd_tmdb),
                     isActive = userInfo.serviceStatus.tmdbConfigured,
                 )
                 ServiceStatusIcon(
                     activeIconRes = R.drawable.ic_mdblist,
-                    contentDescription = "MDBList",
+                    contentDescription = stringResource(R.string.cd_mdblist),
                     isActive = userInfo.serviceStatus.mdbListConfigured,
                 )
             }

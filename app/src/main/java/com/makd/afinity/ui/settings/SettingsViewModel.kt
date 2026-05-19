@@ -155,7 +155,7 @@ constructor(
                                 server?.let { s ->
                                     ServerWithUserCount(
                                         server = s,
-                                        userCount = 0, // Not needed for the control panel view
+                                        userCount = 0,
                                         isActiveServer = true,
                                     )
                                 },

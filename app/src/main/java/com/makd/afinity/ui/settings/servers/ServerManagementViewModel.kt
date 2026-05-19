@@ -519,7 +519,10 @@ constructor(
                 val userId = currentSession.userId.toString()
                 val existing = jellyseerrDao.getAddressByUrl(serverId, userId, address)
                 if (existing != null) {
-                    _state.value = _state.value.copy(error = "Address already exists")
+                    _state.value =
+                        _state.value.copy(
+                            error = context.getString(R.string.error_address_already_exists)
+                        )
                     return@launch
                 }
                 jellyseerrDao.insertAddress(
@@ -548,7 +551,10 @@ constructor(
                 val userId = currentSession.userId.toString()
                 val existing = audiobookshelfDao.getAddressByUrl(serverId, userId, address)
                 if (existing != null) {
-                    _state.value = _state.value.copy(error = "Address already exists")
+                    _state.value =
+                        _state.value.copy(
+                            error = context.getString(R.string.error_address_already_exists)
+                        )
                     return@launch
                 }
                 audiobookshelfDao.insertAddress(
@@ -583,8 +589,10 @@ constructor(
         val servers = databaseRepository.getAllServers()
         val serversWithCounts = servers.map { server ->
             val users = databaseRepository.getUsersForServer(server.id)
-            val addresses = databaseRepository.getServerAddresses(server.id)
-                .filter { it.address != server.address }
+            val addresses =
+                databaseRepository.getServerAddresses(server.id).filter {
+                    it.address != server.address
+                }
             val isActive = currentSession?.serverId == server.id
 
             val currentUserId = currentSession?.userId?.toString()
@@ -627,10 +635,13 @@ constructor(
                         ?: ServiceStatus()
                 } else {
                     ServiceStatus(
-                        jellyseerrConfigured = userServicesList.any { it.serviceStatus.jellyseerrConfigured },
-                        audiobookshelfConfigured = userServicesList.any { it.serviceStatus.audiobookshelfConfigured },
+                        jellyseerrConfigured =
+                            userServicesList.any { it.serviceStatus.jellyseerrConfigured },
+                        audiobookshelfConfigured =
+                            userServicesList.any { it.serviceStatus.audiobookshelfConfigured },
                         tmdbConfigured = userServicesList.any { it.serviceStatus.tmdbConfigured },
-                        mdbListConfigured = userServicesList.any { it.serviceStatus.mdbListConfigured },
+                        mdbListConfigured =
+                            userServicesList.any { it.serviceStatus.mdbListConfigured },
                     )
                 }
             val connectionUrl =

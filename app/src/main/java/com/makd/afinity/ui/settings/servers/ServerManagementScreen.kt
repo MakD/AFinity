@@ -145,7 +145,9 @@ fun ServerManagementScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 if (activeServer != null) {
-                    item(key = "header_active") { ServerSectionHeader(text = "Active Server") }
+                    item(key = "header_active") {
+                        ServerSectionHeader(text = stringResource(R.string.server_section_active))
+                    }
                     item(key = activeServer.server.id) {
                         ServerCard(
                             serverWithCount = activeServer,
@@ -160,7 +162,7 @@ fun ServerManagementScreen(
                 if (savedServers.isNotEmpty()) {
                     item(key = "header_saved") {
                         ServerSectionHeader(
-                            text = "Saved Servers",
+                            text = stringResource(R.string.server_section_saved),
                             modifier =
                                 if (activeServer != null) Modifier.padding(top = 8.dp) else Modifier,
                         )

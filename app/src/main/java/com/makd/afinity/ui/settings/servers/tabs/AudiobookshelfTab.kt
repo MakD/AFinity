@@ -170,7 +170,8 @@ internal fun AudiobookshelfTabContent(
                 )
                 StatChip(
                     label = stringResource(R.string.stat_content),
-                    value = "%.0f hrs".format(absStats.totalDurationHours),
+                    value =
+                        stringResource(R.string.duration_hours_fmt, absStats.totalDurationHours),
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -219,9 +220,10 @@ internal fun AudiobookshelfTabContent(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader(stringResource(R.string.section_network))
-        val activeAddress = serverWithCount.audiobookshelfConnectionUrl
-            ?: serverWithCount.audiobookshelfAddresses.firstOrNull()?.address
-            ?: "Default (Proxy)"
+        val activeAddress =
+            serverWithCount.audiobookshelfConnectionUrl
+                ?: serverWithCount.audiobookshelfAddresses.firstOrNull()?.address
+                ?: stringResource(R.string.server_default_proxy)
         val total = serverWithCount.audiobookshelfAddresses.size
         ActiveConnectionCard(
             activeAddress = activeAddress,
@@ -252,5 +254,8 @@ internal fun AudiobookshelfManageAddresses(
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
         )
     }
-    AddAddressField(placeholder = "https://abs.example.com", onAdd = onAddAddress)
+    AddAddressField(
+        placeholder = stringResource(R.string.abs_placeholder_server_url),
+        onAdd = onAddAddress,
+    )
 }
