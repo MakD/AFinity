@@ -832,4 +832,23 @@
     <string name="notif_channel_updates_desc">Benachrichtigungen für App-Updates</string>
     <string name="notif_downloading_fmt">%1$s wird heruntergeladen</string>
     <string name="notif_channel_downloads_desc">Downloads im Hintergrund</string>
+    <string name="pref_buffer_size_title">Videopuffergröße</string>
+    <string name="meta_part_of_fmt">Teil %1$d/%2$d</string>
+    <string name="parts_title">Teile</string>
+    <string name="error_invalid_url_format">Ungültiges URL-Format</string>
+    <string name="error_email_username_required">E-Mail-Adresse oder Benutzername ist erforderlich</string>
+    <string name="error_password_required">Passwort ist erforderlich</string>
+    <string name="error_invalid_credentials">Ungültige E-Mail-Adresse oder ungültiges Passwort</string>
+    <string name="error_login_failed_fmt">Anmeldung fehlgeschlagen: %1$s</string>
+    <string name="error_username_required">Benutzername ist erforderlich</string>
+    <string name="error_item_not_found">Element nicht gefunden</string>
+    <string name="error_invalid_person_id">Ungültige oder fehlende Personenkennung</string>
+    <string name="error_person_not_found">Person nicht gefunden</string>
+    <string name="error_server_url_not_available">Server-URL nicht verfügbar</string>
+    <string name="error_server_url_required">Server-URL ist erforderlich</string>
+    <string name="error_unexpected_fmt">Ein unerwarteter Fehler ist aufgetreten: %1$s</string>
+    <string name="error_not_valid_jellyfin_fmt">Kein gültiger Jellyfin-Server: %1$s</string>
+    <string name="error_server_not_found_login">Server nicht gefunden. Bitte erneut anmelden.</string>
+    <string name="error_session_expired_login">Gespeicherte Sitzung abgelaufen. Bitte erneut anmelden.</string>
+    <string name="error_request_update_failed_fmt">Aktualisierung fehlgeschlagen: %1$s</string>
 </resources>

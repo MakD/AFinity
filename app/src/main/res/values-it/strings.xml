@@ -315,4 +315,11 @@
     <string name="meta_boxset_count">%1$d elementi</string>
     <string name="meta_parts_fmt">%1$d Parti</string>
     <string name="meta_part_of_fmt">Parte %1$d/%2$d</string>
+    <string name="abs_server_url_placeholder">https://abs.example.com</string>
+    <string name="livetv_header_letter_fmt">Canali (%1$s)</string>
+    <string name="cd_guide_previous_time">Blocco Temporale Precedente</string>
+    <string name="cd_guide_next_time">Prossimo Blocco Temporale</string>
+    <string name="livetv_home_empty_message">Controlla dopo per la lista completa dei programmi</string>
+    <string name="person_born_fmt">Nato: %1$s (%2$d anni)</string>
+    <string name="cd_person_image_fmt">%1$s immagine</string>
 </resources>
