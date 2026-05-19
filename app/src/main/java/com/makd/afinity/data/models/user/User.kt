@@ -25,4 +25,5 @@ data class User(
     @ColumnInfo(index = true) val serverId: String,
     val accessToken: String? = null,
     val primaryImageTag: String? = null,
+    val isAdmin: Boolean = false,
 )

@@ -760,6 +760,62 @@
     <string name="section_tv_channels">Live TV Channels</string>
     <string name="section_people">People</string>
 
+    <string name="warning_http_insecure">Warning: Connecting over HTTP sends your password in plain text. HTTPS is highly recommended.</string>
+
+    <string name="dialog_restart_server_title">Restart Server</string>
+    <string name="dialog_restart_server_message">Restart %1$s? Active streams will be interrupted.</string>
+    <string name="action_restart">Restart</string>
+    <string name="dialog_shutdown_server_title">Shutdown Server</string>
+    <string name="dialog_shutdown_server_message">Shut down %1$s? The server will go offline completely.</string>
+    <string name="action_shutdown">Shutdown</string>
+    <string name="title_control_panel">Control Panel</string>
+    <string name="action_refresh_libraries">Refresh Libraries</string>
+    <string name="active_sessions_title">Active Sessions</string>
+    <string name="active_sessions_count_fmt">Active Sessions (%1$d)</string>
+    <string name="active_sessions_idle_fmt">+%1$d idle</string>
+    <string name="active_sessions_empty">No active sessions.</string>
+    <string name="category_running">Running</string>
+    <string name="category_other">Other</string>
+    <string name="cd_stop_task">Stop task</string>
+    <string name="cd_run_task">Run task</string>
+
+    <string name="tab_jellyfin">Jellyfin</string>
+    <string name="tab_seerr">Seerr</string>
+    <string name="tab_abs">ABS</string>
+    <string name="server_section_active">Active Server</string>
+    <string name="server_section_saved">Saved Servers</string>
+
+    <string name="error_address_already_exists">Address already exists</string>
+
+    <string name="task_never_run">Never run</string>
+    <string name="task_just_now">just now</string>
+    <string name="task_minutes_ago">about %1$dm ago</string>
+    <string name="task_hours_ago">about %1$dh ago</string>
+    <string name="task_days_ago">%1$dd ago</string>
+    <string name="task_duration_less_than_minute">, taking less than a minute</string>
+    <string name="task_duration_minutes">, taking %1$dm</string>
+    <string name="task_duration_hours_minutes">, taking %1$dh %2$dm</string>
+    <string name="task_last_ran_fmt">Last ran %1$s%2$s</string>
+
+    <string name="section_administration">Administration</string>
+    <string name="cd_control_panel">Control Panel</string>
+    <string name="action_open_control_panel">Open Control Panel</string>
+    <string name="control_panel_active_only">Available for the active server only</string>
+
+    <string name="state_loading_data">Loading data...</string>
+    <string name="action_remove">Remove</string>
+    <string name="cd_jellyseerr">Jellyseerr</string>
+    <string name="cd_audiobookshelf">Audiobookshelf</string>
+    <string name="cd_tmdb">TMDB</string>
+    <string name="cd_mdblist">MDBList</string>
+
+    <string name="permission_request">Request</string>
+    <string name="quota_days_fmt">%1$d / %2$d days</string>
+    <string name="duration_hours_fmt">%.0f hrs</string>
+
+    <string name="cd_manage_addresses">Manage Addresses</string>
+    <string name="cd_add_address">Add address</string>
+
     <!--Chromecast-->
     <string name="cd_cast">Cast</string>
     <string name="cast_connected_to">Casting to %1$s</string>
@@ -943,6 +999,8 @@
     <string name="server_more_users_plural_fmt">+%1$d more users</string>
     <string name="server_primary_connection">Primary Connection</string>
     <string name="server_backup_routes_fmt">+ %1$d backup route(s)</string>
+    <string name="ws_server_restarting">Server is restarting, reconnecting automatically…</string>
+    <string name="ws_server_shutdown">Server has shut down</string>
     <string name="service_label_seerr">Seerr</string>
     <string name="service_label_abs">ABS</string>
     <string name="service_label_tmdb">TMDB</string>
