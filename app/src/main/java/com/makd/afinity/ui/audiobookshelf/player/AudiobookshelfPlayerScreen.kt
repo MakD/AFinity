@@ -62,6 +62,7 @@ import com.makd.afinity.ui.audiobookshelf.player.components.PlaybackSpeedSelecto
 import com.makd.afinity.ui.audiobookshelf.player.components.PlayerControls
 import com.makd.afinity.ui.audiobookshelf.player.components.SleepTimerDialog
 import com.makd.afinity.ui.audiobookshelf.player.util.rememberDominantColor
+import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,11 +80,11 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
     val defaultColor = MaterialTheme.colorScheme.surface
     val dominantColor = rememberDominantColor(playbackState.coverUrl, defaultColor)
     val animatedColor by
-    animateColorAsState(
-        targetValue = dominantColor,
-        animationSpec = tween(durationMillis = 800),
-        label = "color",
-    )
+        animateColorAsState(
+            targetValue = dominantColor,
+            animationSpec = tween(durationMillis = 800),
+            label = "color",
+        )
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -101,8 +102,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
     ) { paddingValues ->
         Box(
             modifier =
-                Modifier
-                    .fillMaxSize()
+                Modifier.fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             colors =
@@ -121,7 +121,7 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     animatedColor = animatedColor,
                     onNavigateBack = onNavigateBack,
                     paddingValues = paddingValues,
-                    animatedVisibilityScope = animatedVisibilityScope
+                    animatedVisibilityScope = animatedVisibilityScope,
                 )
             } else {
                 PortraitPlayerContent(
@@ -130,10 +130,17 @@ fun SharedTransitionScope.AudiobookshelfPlayerScreen(
                     animatedColor = animatedColor,
                     onNavigateBack = onNavigateBack,
                     paddingValues = paddingValues,
-                    animatedVisibilityScope = animatedVisibilityScope
+                    animatedVisibilityScope = animatedVisibilityScope,
                 )
             }
         }
+        if (uiState.showPlaybackStats) {
+            PlaybackStatsOverlay(
+                stats = uiState.playbackStats,
+                onClose = viewModel::togglePlaybackStats,
+            )
+        }
+
         if (uiState.showChapterSelector) {
             ChapterSelector(
                 chapters = playbackState.chapters,
@@ -182,19 +189,14 @@ fun SharedTransitionScope.PortraitPlayerContent(
     animatedColor: Color,
     onNavigateBack: () -> Unit,
     paddingValues: PaddingValues,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .padding(horizontal = 24.dp),
+        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -214,29 +216,36 @@ fun SharedTransitionScope.PortraitPlayerContent(
                 letterSpacing = 2.sp,
             )
 
-            IconButton(onClick = viewModel::showEqualizer) {
-                Icon(
-                    painterResource(id = R.drawable.ic_options),
-                    contentDescription = stringResource(R.string.cd_abs_options),
-                    tint = Color.White,
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = viewModel::togglePlaybackStats) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_info),
+                        contentDescription = stringResource(R.string.cd_playback_info),
+                        tint = Color.White,
+                    )
+                }
+                IconButton(onClick = viewModel::showEqualizer) {
+                    Icon(
+                        painterResource(id = R.drawable.ic_options),
+                        contentDescription = stringResource(R.string.cd_abs_options),
+                        tint = Color.White,
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(), contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Surface(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
+                    Modifier.fillMaxWidth()
                         .aspectRatio(1f)
                         .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "cover-${playbackState.coverUrl ?: "default"}"),
+                            sharedContentState =
+                                rememberSharedContentState(
+                                    key = "cover-${playbackState.coverUrl ?: "default"}"
+                                ),
                             animatedVisibilityScope = animatedVisibilityScope,
                         )
                         .shadow(
@@ -262,7 +271,8 @@ fun SharedTransitionScope.PortraitPlayerContent(
 
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = playbackState.displayTitle.ifEmpty { stringResource(R.string.unknown_title) },
+                text =
+                    playbackState.displayTitle.ifEmpty { stringResource(R.string.unknown_title) },
                 style =
                     MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
                 color = Color.White,
@@ -291,8 +301,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
                 color = animatedColor,
                 maxLines = 1,
                 modifier =
-                    Modifier
-                        .alpha(if (isChapterVisible) 1f else 0f)
+                    Modifier.alpha(if (isChapterVisible) 1f else 0f)
                         .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
             )
         }
@@ -316,20 +325,20 @@ fun SharedTransitionScope.PortraitPlayerContent(
             onNextChapter =
                 if (
                     playbackState.chapters.isNotEmpty() &&
-                    playbackState.currentChapterIndex < playbackState.chapters.lastIndex
+                        playbackState.currentChapterIndex < playbackState.chapters.lastIndex
                 ) {
                     { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
                 } else null,
             accentColor = animatedColor,
-            currentChapter = if (!playbackState.isPodcastPlaylist) playbackState.currentChapter else null,
+            currentChapter =
+                if (!playbackState.isPodcastPlaylist) playbackState.currentChapter else null,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth(0.5f)
+                Modifier.fillMaxWidth(0.5f)
                     .padding(bottom = 50.dp)
                     .clip(RoundedCornerShape(50))
                     .background(Color.White.copy(alpha = 0.1f))
@@ -347,8 +356,7 @@ fun SharedTransitionScope.PortraitPlayerContent(
                     if (playbackState.playbackSpeed != 1.0f) {
                         Box(
                             modifier =
-                                Modifier
-                                    .size(4.dp)
+                                Modifier.size(4.dp)
                                     .background(
                                         Color.White,
                                         androidx.compose.foundation.shape.CircleShape,
@@ -390,29 +398,28 @@ fun SharedTransitionScope.LandscapePlayerContent(
     animatedColor: Color,
     onNavigateBack: () -> Unit,
     paddingValues: PaddingValues,
-    animatedVisibilityScope: AnimatedVisibilityScope
+    animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     Row(
         modifier =
-            Modifier
-                .fillMaxSize()
+            Modifier.fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 32.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(32.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .weight(0.45f)
-                .fillMaxHeight(),
+            modifier = Modifier.weight(0.45f).fillMaxHeight(),
             contentAlignment = Alignment.Center,
         ) {
             Surface(
                 modifier =
-                    Modifier
-                        .aspectRatio(1f)
+                    Modifier.aspectRatio(1f)
                         .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "cover-${playbackState.coverUrl ?: "default"}"),
+                            sharedContentState =
+                                rememberSharedContentState(
+                                    key = "cover-${playbackState.coverUrl ?: "default"}"
+                                ),
                             animatedVisibilityScope = animatedVisibilityScope,
                         )
                         .shadow(
@@ -435,10 +442,7 @@ fun SharedTransitionScope.LandscapePlayerContent(
         }
 
         Column(
-            modifier = Modifier
-                .weight(0.55f)
-                .fillMaxHeight()
-                .verticalScroll(rememberScrollState()),
+            modifier = Modifier.weight(0.55f).fillMaxHeight().verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -460,15 +464,30 @@ fun SharedTransitionScope.LandscapePlayerContent(
                     color = Color.White.copy(alpha = 0.7f),
                     letterSpacing = 2.sp,
                 )
-                IconButton(onClick = viewModel::showEqualizer) {
-                    Icon(painterResource(id = R.drawable.ic_options), stringResource(R.string.cd_abs_options), tint = Color.White)
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = viewModel::togglePlaybackStats) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_info),
+                            contentDescription = stringResource(R.string.cd_playback_info),
+                            tint = Color.White,
+                        )
+                    }
+                    IconButton(onClick = viewModel::showEqualizer) {
+                        Icon(
+                            painterResource(id = R.drawable.ic_options),
+                            stringResource(R.string.cd_abs_options),
+                            tint = Color.White,
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = playbackState.displayTitle.ifEmpty { stringResource(R.string.unknown_title) },
+                text =
+                    playbackState.displayTitle.ifEmpty { stringResource(R.string.unknown_title) },
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = Color.White,
                 maxLines = 1,
@@ -493,8 +512,7 @@ fun SharedTransitionScope.LandscapePlayerContent(
                 color = animatedColor,
                 maxLines = 1,
                 modifier =
-                    Modifier
-                        .alpha(if (isChapterVisible) 1f else 0f)
+                    Modifier.alpha(if (isChapterVisible) 1f else 0f)
                         .basicMarquee(iterations = Int.MAX_VALUE, velocity = 30.dp),
             )
 
@@ -519,20 +537,20 @@ fun SharedTransitionScope.LandscapePlayerContent(
                 onNextChapter =
                     if (
                         playbackState.chapters.isNotEmpty() &&
-                        playbackState.currentChapterIndex < playbackState.chapters.lastIndex
+                            playbackState.currentChapterIndex < playbackState.chapters.lastIndex
                     ) {
                         { viewModel.seekToChapter(playbackState.currentChapterIndex + 1) }
                     } else null,
                 accentColor = animatedColor,
-                currentChapter = if (!playbackState.isPodcastPlaylist) playbackState.currentChapter else null,
+                currentChapter =
+                    if (!playbackState.isPodcastPlaylist) playbackState.currentChapter else null,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth(0.5f)
+                    Modifier.fillMaxWidth(0.5f)
                         .clip(RoundedCornerShape(50))
                         .background(Color.White.copy(alpha = 0.1f))
                         .padding(vertical = 4.dp),

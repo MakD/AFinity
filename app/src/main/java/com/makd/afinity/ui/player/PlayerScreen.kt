@@ -44,6 +44,7 @@ import com.makd.afinity.ui.player.cast.CastRemoteControllerScreen
 import com.makd.afinity.ui.player.components.ErrorIndicator
 import com.makd.afinity.ui.player.components.GestureHandler
 import com.makd.afinity.ui.player.components.MpvSurface
+import com.makd.afinity.ui.player.components.PlaybackStatsOverlay
 import com.makd.afinity.ui.player.components.PlayerControls
 import com.makd.afinity.ui.player.components.PlayerIndicators
 import com.makd.afinity.ui.player.components.TrickplayPreview
@@ -57,6 +58,7 @@ import java.util.UUID
 @UnstableApi
 @Composable
 fun PlayerScreen(
+    modifier: Modifier = Modifier,
     item: AfinityItem,
     mediaSourceId: String,
     audioStreamIndex: Int? = null,
@@ -68,7 +70,6 @@ fun PlayerScreen(
     liveStreamUrl: String? = null,
     onBackPressed: () -> Unit,
     navController: NavController? = null,
-    modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -320,6 +321,13 @@ fun PlayerScreen(
                 },
                 modifier = Modifier.align(Alignment.Center),
             )
+
+            if (uiState.showPlaybackStats) {
+                PlaybackStatsOverlay(
+                    stats = uiState.playbackStats,
+                    onClose = { viewModel.handlePlayerEvent(PlayerEvent.TogglePlaybackStats) },
+                )
+            }
 
             // Version picker — rendered here so align(BottomEnd) maps to the actual screen Box
             if (showVersionPicker && uiState.availableSources.size > 1) {

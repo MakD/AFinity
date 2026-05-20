@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.media.MediaCodecList
 import android.provider.Settings
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -23,8 +24,10 @@ import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
+import com.makd.afinity.BuildConfig
 import com.makd.afinity.R
 import com.makd.afinity.cast.CastEvent
 import com.makd.afinity.cast.CastManager
@@ -40,7 +43,9 @@ import com.makd.afinity.data.models.media.AfinitySegment
 import com.makd.afinity.data.models.media.AfinitySegmentType
 import com.makd.afinity.data.models.media.AfinitySource
 import com.makd.afinity.data.models.media.AfinitySourceType
+import com.makd.afinity.data.models.media.AfinitySources
 import com.makd.afinity.data.models.player.GestureConfig
+import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.models.player.PlayerEvent
 import com.makd.afinity.data.models.player.SkipMode
 import com.makd.afinity.data.models.player.SubtitleOutlineStyle
@@ -72,6 +77,7 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -109,7 +115,10 @@ constructor(
 
     val gestureConfig = GestureConfig()
 
+    private var exoVideoDecoder: String = "Unknown"
+
     private var controlsHideJob: Job? = null
+    private var statsPollingJob: Job? = null
     private var speedBeforeLongPress: Float? = null
     private var currentMediaSegments: List<AfinitySegment> = emptyList()
     private var segmentCheckingJob: Job? = null
@@ -420,6 +429,25 @@ constructor(
             .setSeekForwardIncrementMs(10000)
             .setPauseAtEndOfMediaItems(true)
             .build()
+            .apply {
+                addAnalyticsListener(
+                    object : AnalyticsListener {
+                        override fun onVideoDecoderInitialized(
+                            eventTime: AnalyticsListener.EventTime,
+                            decoderName: String,
+                            initializedTimestampMs: Long,
+                            initializationDurationMs: Long,
+                        ) {
+                            val codecList = MediaCodecList(MediaCodecList.ALL_CODECS)
+                            val codecInfo = codecList.codecInfos.find { it.name == decoderName }
+
+                            exoVideoDecoder =
+                                if (codecInfo?.isHardwareAccelerated == true) "H/W Dec"
+                                else "S/W Dec"
+                        }
+                    }
+                )
+            }
     }
 
     var mpvVideoOutputValue: String = "gpu"
@@ -756,7 +784,6 @@ constructor(
                 is PlayerEvent.SwitchVersion -> {
                     val item = currentItem ?: return@launch
                     if (event.mediaSourceId == _uiState.value.currentMediaSourceId) {
-                        // same version, just close picker
                         updateUiState { it.copy(showVersionPicker = false) }
                         return@launch
                     }
@@ -770,7 +797,98 @@ constructor(
                         startPositionMs = resumePosition,
                     )
                 }
+
+                is PlayerEvent.TogglePlaybackStats -> {
+                    val willShow = !_uiState.value.showPlaybackStats
+                    updateUiState { it.copy(showPlaybackStats = willShow) }
+                    if (willShow) {
+                        startStatsPolling()
+                    } else {
+                        statsPollingJob?.cancel()
+                    }
+                }
             }
+        }
+    }
+
+    private fun startStatsPolling() {
+        statsPollingJob?.cancel()
+        statsPollingJob = viewModelScope.launch {
+            while (true) {
+                if (_uiState.value.showPlaybackStats) {
+                    updateUiState { it.copy(playbackStats = gatherPlaybackStats()) }
+                }
+                delay(1000L)
+            }
+        }
+    }
+
+    private fun gatherPlaybackStats(): PlaybackStats {
+        return when (val currentPlayer = player) {
+            is ExoPlayer -> {
+                val videoFormat = currentPlayer.videoFormat
+                val audioFormat = currentPlayer.audioFormat
+
+                val bufferSeconds =
+                    ((currentPlayer.bufferedPosition - currentPlayer.currentPosition) / 1000L)
+                        .coerceAtLeast(0)
+                val bitrateMbps = (videoFormat?.bitrate ?: 0) / 1_000_000f
+                val fpsString =
+                    if ((videoFormat?.frameRate ?: 0f) > 0f)
+                        String.format(Locale.US, "%.3f", videoFormat?.frameRate)
+                    else "Unknown"
+
+                PlaybackStats(
+                    playerType = "ExoPlayer",
+                    videoResolution =
+                        "${videoFormat?.width ?: 0}x${videoFormat?.height ?: 0} @ $fpsString fps",
+                    videoCodec =
+                        videoFormat?.sampleMimeType?.substringAfterLast("/")?.uppercase()
+                            ?: "UNKNOWN",
+                    audioCodec =
+                        audioFormat?.sampleMimeType?.substringAfterLast("/")?.uppercase()
+                            ?: "UNKNOWN",
+                    audioChannels = audioFormat?.channelCount ?: 0,
+                    audioSampleRate = audioFormat?.sampleRate ?: 0,
+                    droppedFrames = 0,
+                    hwDec = exoVideoDecoder,
+                    bufferHealth = "$bufferSeconds seconds",
+                    videoBitrate =
+                        if (bitrateMbps > 0) String.format(Locale.US, "%.1f Mbps", bitrateMbps)
+                        else "Unknown",
+                )
+            }
+            is MPVPlayer -> {
+                val mpv = currentPlayer.mpv
+
+                val bufferSeconds = mpv.getPropertyInt("demuxer-cache-duration") ?: 0
+                val bitrateBps = mpv.getPropertyInt("video-bitrate") ?: 0
+                val bitrateMbps = bitrateBps / 1_000_000f
+                val fps = mpv.getPropertyDouble("container-fps")
+                val fpsString =
+                    if (fps != null && fps > 0.0) String.format(Locale.US, "%.3f", fps)
+                    else "Unknown"
+
+                PlaybackStats(
+                    playerType = "MPV (hwdec=${mpvVideoOutputValue})",
+                    videoResolution =
+                        "${mpv.getPropertyInt("width") ?: 0}x${mpv.getPropertyInt("height") ?: 0} @ $fpsString fps",
+                    videoCodec = mpv.getPropertyString("video-codec")?.uppercase() ?: "UNKNOWN",
+                    audioCodec = mpv.getPropertyString("audio-codec")?.uppercase() ?: "UNKNOWN",
+                    audioChannels = mpv.getPropertyInt("audio-params/channel-count") ?: 0,
+                    audioSampleRate = mpv.getPropertyInt("audio-params/samplerate") ?: 0,
+                    droppedFrames = mpv.getPropertyInt("frame-drop-count") ?: 0,
+                    hwDec =
+                        if ((mpv.getPropertyString("hwdec-current") ?: "no").contains("mediacodec"))
+                            "H/W Dec"
+                        else "S/W Dec",
+                    bufferHealth = "$bufferSeconds seconds",
+                    videoBitrate =
+                        if (bitrateMbps > 0) String.format(Locale.US, "%.1f Mbps", bitrateMbps)
+                        else "Unknown",
+                )
+            }
+            else -> PlaybackStats()
         }
     }
 
@@ -1159,8 +1277,7 @@ constructor(
         try {
             Timber.d("Loading live channel: $channelName ($channelId)")
             Timber.d("Stream URL: $streamUrl")
-            val userAgent =
-                "AFinity/${com.makd.afinity.BuildConfig.VERSION_NAME} (Android; ExoPlayer)"
+            val userAgent = "AFinity/${BuildConfig.VERSION_NAME} (Android; ExoPlayer)"
 
             if (player is MPVPlayer) {
                 val mpv = player as MPVPlayer
@@ -1246,12 +1363,12 @@ constructor(
                     currentItem.trickplayInfo?.values?.firstOrNull()
                 }
 
-                is com.makd.afinity.data.models.media.AfinityMovie -> {
+                is AfinityMovie -> {
                     currentItem.trickplayInfo?.values?.firstOrNull()
                 }
 
                 else -> {
-                    if (currentItem is com.makd.afinity.data.models.media.AfinitySources) {
+                    if (currentItem is AfinitySources) {
                         currentItem.trickplayInfo?.values?.firstOrNull()
                     } else {
                         null
@@ -1972,6 +2089,7 @@ constructor(
         progressReportingJob?.cancel()
         segmentCheckingJob?.cancel()
         controlsHideJob?.cancel()
+        statsPollingJob?.cancel()
         player.removeListener(this)
         player.release()
     }
@@ -2043,6 +2161,8 @@ constructor(
         val currentMediaSourceId: String? = null,
         val showVersionPicker: Boolean = false,
         val isPlayingIntro: Boolean = false,
+        val showPlaybackStats: Boolean = false,
+        val playbackStats: PlaybackStats = PlaybackStats(),
     )
 
     data class MainItemPlaybackOptions(

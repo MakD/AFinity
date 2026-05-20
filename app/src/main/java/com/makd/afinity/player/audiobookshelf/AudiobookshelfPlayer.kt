@@ -2,7 +2,10 @@ package com.makd.afinity.player.audiobookshelf
 
 import android.content.ComponentName
 import android.content.Context
+import androidx.annotation.OptIn
 import androidx.core.net.toUri
+import androidx.media3.common.C.TRACK_TYPE_AUDIO
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -17,6 +20,7 @@ import com.makd.afinity.data.models.audiobookshelf.AudioTrack
 import com.makd.afinity.data.models.audiobookshelf.BookChapter
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
 import com.makd.afinity.data.models.audiobookshelf.PodcastEpisode
+import com.makd.afinity.data.models.player.PlaybackStats
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.SecurePreferencesRepository
 import com.makd.afinity.data.repository.audiobookshelf.AbsProgressSyncScheduler
@@ -31,6 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -397,6 +402,38 @@ constructor(
     fun pause() = mediaController?.pause()
 
     fun isPlaying(): Boolean = mediaController?.isPlaying == true
+
+    @OptIn(UnstableApi::class)
+    fun getPlaybackStats(): PlaybackStats {
+        val controller =
+            mediaController ?: return PlaybackStats(playerType = "ABS Service (Initializing)")
+
+        var audioFormat: Format? = null
+        for (group in controller.currentTracks.groups) {
+            if (group.type == TRACK_TYPE_AUDIO && group.isSelected) {
+                audioFormat = group.mediaTrackGroup.getFormat(0)
+                break
+            }
+        }
+
+        val bufferSeconds =
+            ((controller.bufferedPosition - controller.currentPosition) / 1000L).coerceAtLeast(0)
+        val bitrateKbps = (audioFormat?.bitrate ?: 0) / 1000f
+
+        return PlaybackStats(
+            playerType = "ExoPlayer (ABS Service)",
+            videoResolution = "0x0",
+            audioCodec =
+                audioFormat?.sampleMimeType?.substringAfterLast("/")?.uppercase() ?: "UNKNOWN",
+            audioChannels = audioFormat?.channelCount ?: 0,
+            audioSampleRate = audioFormat?.sampleRate ?: 0,
+            bufferHealth = "$bufferSeconds seconds",
+            videoBitrate =
+                if (bitrateKbps > 0) String.format(Locale.US, "%.1f kbps", bitrateKbps)
+                else "Unknown",
+            hwDec = AudiobookshelfPlayerService.currentAudioDecoder,
+        )
+    }
 
     fun setPlaybackSpeed(speed: Float) {
         mediaController?.setPlaybackSpeed(speed)

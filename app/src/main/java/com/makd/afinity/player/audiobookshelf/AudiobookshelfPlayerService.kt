@@ -3,6 +3,7 @@ package com.makd.afinity.player.audiobookshelf
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.MediaCodecList
 import android.os.Bundle
 import android.os.Handler
 import androidx.annotation.OptIn
@@ -18,6 +19,7 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
@@ -54,6 +56,10 @@ import javax.inject.Inject
 @OptIn(UnstableApi::class)
 @AndroidEntryPoint
 class AudiobookshelfPlayerService : MediaSessionService() {
+
+    companion object {
+        var currentAudioDecoder: String = "Unknown"
+    }
 
     @Inject lateinit var playbackManager: AudiobookshelfPlaybackManager
     @Inject lateinit var progressSyncer: AudiobookshelfProgressSyncer
@@ -153,6 +159,25 @@ class AudiobookshelfPlayerService : MediaSessionService() {
                         .setLoadErrorHandlingPolicy(retryPolicy)
                 )
                 .build()
+                .apply {
+                    addAnalyticsListener(
+                        object : AnalyticsListener {
+                            override fun onAudioDecoderInitialized(
+                                eventTime: AnalyticsListener.EventTime,
+                                decoderName: String,
+                                initializedTimestampMs: Long,
+                                initializationDurationMs: Long,
+                            ) {
+                                val codecList = MediaCodecList(MediaCodecList.ALL_CODECS)
+                                val codecInfo = codecList.codecInfos.find { it.name == decoderName }
+
+                                currentAudioDecoder =
+                                    if (codecInfo?.isHardwareAccelerated == true) "H/W Dec"
+                                    else "S/W Dec"
+                            }
+                        }
+                    )
+                }
 
         serviceScope.launch {
             skipSilenceManager.isEnabled.collect { isEnabled ->
@@ -317,27 +342,39 @@ class AudiobookshelfPlayerService : MediaSessionService() {
                 val idx = player.currentMediaItemIndex
                 val positionInItemSeconds = player.currentPosition / 1000.0
 
-                val totalPosition = if (state.isChapterBasedPlayback) {
-                    val chapter = state.chapters.getOrNull(idx)
-                    if (chapter != null) chapter.start + positionInItemSeconds else positionInItemSeconds
-                } else {
-                    var accumulated = 0.0
-                    for (i in 0 until idx) accumulated += state.audioTracks.getOrNull(i)?.duration ?: 0.0
-                    accumulated + positionInItemSeconds
-                }
+                val totalPosition =
+                    if (state.isChapterBasedPlayback) {
+                        val chapter = state.chapters.getOrNull(idx)
+                        if (chapter != null) chapter.start + positionInItemSeconds
+                        else positionInItemSeconds
+                    } else {
+                        var accumulated = 0.0
+                        for (i in 0 until idx) accumulated +=
+                            state.audioTracks.getOrNull(i)?.duration ?: 0.0
+                        accumulated + positionInItemSeconds
+                    }
 
                 val bufferedPositionSeconds = player.bufferedPosition / 1000.0
-                val totalBuffered = if (state.isChapterBasedPlayback) {
-                    val chapter = state.chapters.getOrNull(idx)
-                    if (chapter != null) chapter.start + bufferedPositionSeconds else bufferedPositionSeconds
-                } else {
-                    var accumulated = 0.0
-                    for (i in 0 until idx) accumulated += state.audioTracks.getOrNull(i)?.duration ?: 0.0
-                    accumulated + bufferedPositionSeconds
-                }
+                val totalBuffered =
+                    if (state.isChapterBasedPlayback) {
+                        val chapter = state.chapters.getOrNull(idx)
+                        if (chapter != null) chapter.start + bufferedPositionSeconds
+                        else bufferedPositionSeconds
+                    } else {
+                        var accumulated = 0.0
+                        for (i in 0 until idx) accumulated +=
+                            state.audioTracks.getOrNull(i)?.duration ?: 0.0
+                        accumulated + bufferedPositionSeconds
+                    }
 
-                Timber.d("ABS buffer: pos=%.1fs buffered=%.1fs (raw exo buffered=%.1fs) chapterBased=%s idx=%d",
-                    totalPosition, totalBuffered, bufferedPositionSeconds, state.isChapterBasedPlayback, idx)
+                Timber.d(
+                    "ABS buffer: pos=%.1fs buffered=%.1fs (raw exo buffered=%.1fs) chapterBased=%s idx=%d",
+                    totalPosition,
+                    totalBuffered,
+                    bufferedPositionSeconds,
+                    state.isChapterBasedPlayback,
+                    idx,
+                )
                 playbackManager.updatePosition(totalPosition, totalBuffered)
                 delay(1000)
             }

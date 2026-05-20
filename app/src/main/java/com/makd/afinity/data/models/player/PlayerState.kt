@@ -89,7 +89,25 @@ sealed class PlayerEvent {
 
     data class SwitchVersion(val mediaSourceId: String) : PlayerEvent()
 
+    data object TogglePlaybackStats : PlayerEvent()
+
     data object ToggleVersionPicker : PlayerEvent()
+}
+
+data class PlaybackStats(
+    val playerType: String = "Unknown",
+    val videoResolution: String = "Unknown",
+    val videoCodec: String = "Unknown",
+    val audioCodec: String = "Unknown",
+    val audioChannels: Int = 0,
+    val audioSampleRate: Int = 0,
+    val droppedFrames: Int = 0,
+    val hwDec: String = "Unknown",
+    val bufferHealth: String = "Unknown",
+    val videoBitrate: String = "Unknown",
+) {
+    val hasVideo: Boolean
+        get() = videoResolution != "0x0" && videoResolution != "Unknown"
 }
 
 data class GestureConfig(

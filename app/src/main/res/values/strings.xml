@@ -308,6 +308,7 @@
     <string name="cd_pause">Pause</string>
     <string name="cd_episodes">Episodes</string>
     <string name="cd_speed">Playback Speed</string>
+    <string name="cd_playback_info">Playback Stats</string>
     <string name="cd_audio_settings">Audio Settings</string>
     <string name="cd_subtitle_settings">Subtitle Settings</string>
     <string name="cd_aspect_ratio">Aspect Ratio</string>

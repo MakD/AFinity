@@ -346,7 +346,8 @@ fun PlayerControls(
                         onSubtitleToggle = { showSubtitleSelector = !showSubtitleSelector },
                         onEpisodeSwitcherToggle = { showEpisodeSwitcher = !showEpisodeSwitcher },
                         showEpisodeSwitcherButton =
-                            (playlistQueue.size - playlistContentStartIndex) > 1 && !uiState.isPlayingIntro,
+                            (playlistQueue.size - playlistContentStartIndex) > 1 &&
+                                !uiState.isPlayingIntro,
                         onVersionToggle = onVersionToggleRequest,
                         showVersionButton = uiState.availableSources.size > 1,
                         hasSubtitleTracks = subtitleStreamOptions.size > 1,
@@ -900,6 +901,18 @@ private fun BottomControls(
                         }
                     }
 
+                    IconButton(
+                        onClick = { onPlayerEvent(PlayerEvent.TogglePlaybackStats) },
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_info),
+                            contentDescription = stringResource(R.string.cd_playback_info),
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+
                     IconButton(onClick = onSpeedToggle, modifier = Modifier.size(40.dp)) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_speed),
@@ -927,16 +940,20 @@ private fun BottomControls(
                         modifier = Modifier.size(40.dp),
                     ) {
                         Icon(
-                            painter = painterResource(
-                                id = if (hasSubtitleTracks) R.drawable.ic_subtitles
-                                     else R.drawable.ic_subtitles_off
-                            ),
+                            painter =
+                                painterResource(
+                                    id =
+                                        if (hasSubtitleTracks) R.drawable.ic_subtitles
+                                        else R.drawable.ic_subtitles_off
+                                ),
                             contentDescription = stringResource(R.string.cd_subtitle_settings),
-                            tint = when {
-                                !hasSubtitleTracks -> Color.White.copy(alpha = 0.3f)
-                                uiState.subtitleStreamIndex != null -> MaterialTheme.colorScheme.primary
-                                else -> Color.White
-                            },
+                            tint =
+                                when {
+                                    !hasSubtitleTracks -> Color.White.copy(alpha = 0.3f)
+                                    uiState.subtitleStreamIndex != null ->
+                                        MaterialTheme.colorScheme.primary
+                                    else -> Color.White
+                                },
                             modifier = Modifier.size(24.dp),
                         )
                     }
@@ -1013,21 +1030,30 @@ private fun SeekBar(
                             sliderState = sliderState,
                             modifier = Modifier.height(6.dp),
                             thumbTrackGapSize = 6.dp,
-                            colors = SliderDefaults.colors(
-                                activeTrackColor = primaryColor,
-                                inactiveTrackColor = Color.White.copy(alpha = 0.3f),
-                            ),
+                            colors =
+                                SliderDefaults.colors(
+                                    activeTrackColor = primaryColor,
+                                    inactiveTrackColor = Color.White.copy(alpha = 0.3f),
+                                ),
                             drawStopIndicator = null,
                         )
                         Canvas(modifier = Modifier.fillMaxWidth().height(6.dp)) {
                             if (duration > 0) {
-                                val rangeSpan = (sliderState.valueRange.endInclusive - sliderState.valueRange.start).coerceAtLeast(1f)
-                                val progress = (sliderState.value - sliderState.valueRange.start) / rangeSpan
+                                val rangeSpan =
+                                    (sliderState.valueRange.endInclusive -
+                                            sliderState.valueRange.start)
+                                        .coerceAtLeast(1f)
+                                val progress =
+                                    (sliderState.value - sliderState.valueRange.start) / rangeSpan
                                 val thumbTrackGapPx = 6.dp.toPx()
                                 val thumbCenterX = progress * size.width
-                                val bufferStartX = (thumbCenterX + thumbTrackGapPx).coerceAtMost(size.width)
-                                val bufferedFraction = (uiState.bufferedPosition.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
-                                val bufferedEndX = (bufferedFraction * size.width).coerceAtMost(size.width)
+                                val bufferStartX =
+                                    (thumbCenterX + thumbTrackGapPx).coerceAtMost(size.width)
+                                val bufferedFraction =
+                                    (uiState.bufferedPosition.toFloat() / duration.toFloat())
+                                        .coerceIn(0f, 1f)
+                                val bufferedEndX =
+                                    (bufferedFraction * size.width).coerceAtMost(size.width)
                                 val h = size.height
                                 val cornerR = CornerRadius(h / 2f, h / 2f)
                                 if (bufferedEndX > bufferStartX) {
@@ -1039,7 +1065,9 @@ private fun SeekBar(
                                     )
                                 }
                                 uiState.chapters.forEach { chapter ->
-                                    val x = (chapter.startPosition.toFloat() / duration.toFloat()) * size.width
+                                    val x =
+                                        (chapter.startPosition.toFloat() / duration.toFloat()) *
+                                            size.width
                                     if (x > bufferStartX) {
                                         drawCircle(
                                             color = Color.White.copy(alpha = 0.8f),
