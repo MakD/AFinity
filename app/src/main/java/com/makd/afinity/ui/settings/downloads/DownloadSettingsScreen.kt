@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -75,7 +76,6 @@ import com.makd.afinity.data.models.download.DownloadStatus
 import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.components.AsyncImage
 import com.makd.afinity.ui.downloads.DownloadsViewModel
-import java.util.Locale
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -201,7 +201,8 @@ fun DownloadSettingsScreen(
                     )
                 }
 
-                items(uiState.activeDownloads.reversed(), key = { "jf_${it.id}" }) { download ->
+                items(uiState.activeDownloads.reversed(), key = { "jf_active_${it.id}" }) { download
+                    ->
                     ActiveDownloadCard(
                         download = download,
                         onPause = viewModel::pauseDownload,
@@ -212,7 +213,8 @@ fun DownloadSettingsScreen(
                     )
                 }
 
-                items(uiState.absActiveDownloads.reversed(), key = { "abs_${it.id}" }) { download ->
+                items(uiState.absActiveDownloads.reversed(), key = { "abs_active_${it.id}" }) {
+                    download ->
                     AbsActiveDownloadCard(
                         download = download,
                         onCancel = viewModel::cancelAbsDownload,
@@ -245,7 +247,8 @@ fun DownloadSettingsScreen(
                             )
                         }
                     }
-                    items(uiState.completedDownloads, key = { "jf_${it.id}" }) { download ->
+                    items(uiState.completedDownloads, key = { "jf_completed_${it.id}" }) { download
+                        ->
                         CompletedDownloadRow(
                             download = download,
                             onDelete = viewModel::deleteDownload,
@@ -261,7 +264,7 @@ fun DownloadSettingsScreen(
                             modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
                         )
                     }
-                    items(absBooks, key = { "abs_book_${it.id}" }) { download ->
+                    items(absBooks, key = { "abs_completed_book_${it.id}" }) { download ->
                         AbsCompletedDownloadRow(
                             download = download,
                             onClick = { onNavigateToAbsItem(download.libraryItemId) },
@@ -1075,7 +1078,7 @@ fun ImageCacheSettingsCard(
                             val formattedSize =
                                 if (cacheSizeMb >= 1024f) {
                                     String.format(
-                                            Locale.getDefault(),
+                                            LocalLocale.current.platformLocale,
                                             "%.1f GB",
                                             cacheSizeMb / 1024f,
                                         )
