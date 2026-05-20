@@ -3,16 +3,13 @@ package com.makd.afinity.ui.livetv
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.models.livetv.AfinityChannel
 import com.makd.afinity.data.repository.livetv.LiveTvRepository
 import com.makd.afinity.ui.livetv.models.LiveTvCategory
 import com.makd.afinity.ui.livetv.models.ProgramWithChannel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -24,12 +21,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import com.makd.afinity.R
 import timber.log.Timber
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import java.util.UUID
+import javax.inject.Inject
 
 @HiltViewModel
-class LiveTvViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+class LiveTvViewModel
+@Inject
+constructor(
+    @param:ApplicationContext private val context: Context,
     private val liveTvRepository: LiveTvRepository,
 ) : ViewModel() {
 
@@ -95,7 +97,10 @@ class LiveTvViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check Live TV access")
                 _uiState.update {
-                    it.copy(isLoading = false, error = context.getString(R.string.error_failed_check_livetv))
+                    it.copy(
+                        isLoading = false,
+                        error = context.getString(R.string.error_failed_check_livetv),
+                    )
                 }
             }
         }
@@ -111,7 +116,12 @@ class LiveTvViewModel @Inject constructor(
                 _uiState.update { it.copy(epgChannels = channels, isLoading = false) }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load channels")
-                _uiState.update { it.copy(isLoading = false, error = context.getString(R.string.error_failed_load_channels)) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = context.getString(R.string.error_failed_load_channels),
+                    )
+                }
             }
         }
     }
@@ -196,10 +206,9 @@ class LiveTvViewModel @Inject constructor(
 
                     categorized[category] = programsWithChannel
                 }
-                val filteredCategories =
-                    categorized.filter { (category, programs) ->
-                        category == LiveTvCategory.ON_NOW || programs.isNotEmpty()
-                    }
+                val filteredCategories = categorized.filter { (category, programs) ->
+                    category == LiveTvCategory.ON_NOW || programs.isNotEmpty()
+                }
 
                 _uiState.update {
                     it.copy(categorizedPrograms = filteredCategories, isCategoriesLoading = false)
@@ -294,13 +303,12 @@ class LiveTvViewModel @Inject constructor(
 
     private fun startPeriodicRefresh() {
         refreshJob?.cancel()
-        refreshJob =
-            viewModelScope.launch {
-                while (isActive) {
-                    delay(60000L)
-                    refreshCurrentTabData()
-                }
+        refreshJob = viewModelScope.launch {
+            while (isActive) {
+                delay(60000L)
+                refreshCurrentTabData()
             }
+        }
     }
 
     private suspend fun refreshCurrentTabData() {
@@ -324,11 +332,10 @@ class LiveTvViewModel @Inject constructor(
             try {
                 val success = liveTvRepository.toggleChannelFavorite(channelId)
                 if (success) {
-                    allChannelsCache =
-                        allChannelsCache.map { channel ->
-                            if (channel.id == channelId) channel.copy(favorite = !channel.favorite)
-                            else channel
-                        }
+                    allChannelsCache = allChannelsCache.map { channel ->
+                        if (channel.id == channelId) channel.copy(favorite = !channel.favorite)
+                        else channel
+                    }
                     applyFilterToCache(_selectedLetter.value)
                 }
             } catch (e: Exception) {

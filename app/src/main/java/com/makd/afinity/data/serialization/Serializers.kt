@@ -1,14 +1,15 @@
 package com.makd.afinity.data.serialization
 
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.UUID
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 object UUIDSerializer : KSerializer<UUID> {
     override val descriptor: SerialDescriptor =
@@ -44,6 +45,7 @@ object NullableLocalDateTimeSerializer : KSerializer<LocalDateTime?> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("NullableLocalDateTime", PrimitiveKind.STRING)
 
+    @OptIn(ExperimentalSerializationApi::class)
     override fun serialize(encoder: Encoder, value: LocalDateTime?) {
         if (value == null) {
             encoder.encodeNull()

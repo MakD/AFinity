@@ -36,7 +36,7 @@ private val Context.dataStore: DataStore<Preferences> by
 @Singleton
 class SecurePreferencesRepositoryImpl
 @Inject
-constructor(@ApplicationContext private val context: Context) : SecurePreferencesRepository {
+constructor(@param:ApplicationContext private val context: Context) : SecurePreferencesRepository {
 
     private companion object {
         private const val MASTER_KEY_URI = "android-keystore://_androidx_security_master_key_"

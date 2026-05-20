@@ -1,6 +1,7 @@
 package com.makd.afinity.ui.audiobookshelf.item
 
 import android.content.res.Configuration
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -62,10 +63,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.annotation.StringRes
 import com.makd.afinity.R
-import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.data.models.audiobookshelf.AbsDownloadStatus
+import com.makd.afinity.navigation.LocalPlayerOffset
 import com.makd.afinity.ui.audiobookshelf.item.components.ChapterListDialog
 import com.makd.afinity.ui.audiobookshelf.item.components.EpisodeListDialog
 import com.makd.afinity.ui.audiobookshelf.item.components.ExpandableSynopsis
@@ -95,7 +95,7 @@ private val naturalOrderComparator =
         aParts.size - bParts.size
     }
 
-private enum class EpisodeSortOption(@StringRes val labelRes: Int) {
+private enum class EpisodeSortOption(@param:StringRes val labelRes: Int) {
     PUB_DATE(R.string.abs_sort_pub_date),
     TITLE(R.string.abs_sort_title),
     SEASON(R.string.abs_sort_season),
@@ -263,7 +263,8 @@ fun AudiobookshelfItemScreen(
                                     .background(
                                         MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                                     ),
-                            contentPadding = PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
+                            contentPadding =
+                                PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             item { Spacer(modifier = Modifier.statusBarsPadding()) }
@@ -315,7 +316,10 @@ fun AudiobookshelfItemScreen(
                             if (showEpisodes || showChapters) {
                                 item {
                                     CollapsibleSectionHeader(
-                                        title = if (showEpisodes) stringResource(R.string.abs_label_episodes) else stringResource(R.string.abs_label_chapters),
+                                        title =
+                                            if (showEpisodes)
+                                                stringResource(R.string.abs_label_episodes)
+                                            else stringResource(R.string.abs_label_chapters),
                                         expanded = chaptersExpanded,
                                         onToggle = { chaptersExpanded = !chaptersExpanded },
                                         showSortButton = showEpisodes,
@@ -379,7 +383,8 @@ fun AudiobookshelfItemScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
+                        contentPadding =
+                            PaddingValues(bottom = max(navBarBottom, playerOffset) + 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         item {
@@ -468,7 +473,10 @@ fun AudiobookshelfItemScreen(
                         if (showEpisodes || showChapters) {
                             item {
                                 SectionDialogRow(
-                                    title = if (showEpisodes) stringResource(R.string.abs_label_episodes) else stringResource(R.string.abs_label_chapters),
+                                    title =
+                                        if (showEpisodes)
+                                            stringResource(R.string.abs_label_episodes)
+                                        else stringResource(R.string.abs_label_chapters),
                                     count =
                                         if (showEpisodes) uiState.episodes.size
                                         else uiState.chapters.size,
@@ -613,7 +621,9 @@ private fun CollapsibleSectionHeader(
                         if (expanded) R.drawable.ic_keyboard_arrow_up
                         else R.drawable.ic_keyboard_arrow_down
                 ),
-            contentDescription = if (expanded) stringResource(R.string.cd_collapse) else stringResource(R.string.cd_expand),
+            contentDescription =
+                if (expanded) stringResource(R.string.cd_collapse)
+                else stringResource(R.string.cd_expand),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp),
         )
@@ -735,9 +745,13 @@ private fun EpisodeSortDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSortSelected(selectedSort, isAscending) }) { Text(stringResource(R.string.action_apply)) }
+            TextButton(onClick = { onSortSelected(selectedSort, isAscending) }) {
+                Text(stringResource(R.string.action_apply))
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
     )
 }
 

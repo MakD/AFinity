@@ -70,9 +70,9 @@ internal enum class DialogView {
 }
 
 private enum class DetailTab(
-    @StringRes val labelRes: Int,
-    @DrawableRes val activeIconRes: Int,
-    @DrawableRes val inactiveIconRes: Int,
+    @param:StringRes val labelRes: Int,
+    @param:DrawableRes val activeIconRes: Int,
+    @param:DrawableRes val inactiveIconRes: Int,
     val isBrandColored: Boolean,
 ) {
     JELLYFIN(R.string.tab_jellyfin, R.drawable.ic_jellyfin, R.drawable.ic_jellyfin_light, true),

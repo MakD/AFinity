@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.server.Server
 import com.makd.afinity.data.models.user.User
@@ -24,7 +25,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.makd.afinity.R
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -32,7 +32,7 @@ import javax.inject.Inject
 class LoginViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val savedStateHandle: SavedStateHandle,
     private val jellyfinRepository: JellyfinRepository,
     private val authRepository: AuthRepository,
@@ -165,7 +165,11 @@ constructor(
                             _uiState.value.copy(
                                 isConnecting = false,
                                 isConnectedToServer = false,
-                                error = context.getString(R.string.error_not_valid_jellyfin_fmt, validationResult.message ?: ""),
+                                error =
+                                    context.getString(
+                                        R.string.error_not_valid_jellyfin_fmt,
+                                        validationResult.message ?: "",
+                                    ),
                             )
                     }
                 }
@@ -174,7 +178,11 @@ constructor(
                     _uiState.value.copy(
                         isConnecting = false,
                         isConnectedToServer = false,
-                        error = context.getString(R.string.error_server_connect_failed_fmt, e.message ?: context.getString(R.string.error_unknown)),
+                        error =
+                            context.getString(
+                                R.string.error_server_connect_failed_fmt,
+                                e.message ?: context.getString(R.string.error_unknown),
+                            ),
                     )
                 Timber.e(e, "Failed to connect to server: $url")
             }
@@ -224,10 +232,11 @@ constructor(
 
                 Timber.d("Selecting server: ${server.name} (${server.address})")
 
-                val resolvedUrl = when (val result = serverAddressResolver.resolveAddress(server.id)) {
-                    is AddressResolutionResult.Success -> result.address
-                    is AddressResolutionResult.AllFailed -> server.address
-                }
+                val resolvedUrl =
+                    when (val result = serverAddressResolver.resolveAddress(server.id)) {
+                        is AddressResolutionResult.Success -> result.address
+                        is AddressResolutionResult.AllFailed -> server.address
+                    }
                 Timber.d("Resolved server URL: $resolvedUrl")
 
                 jellyfinRepository.setBaseUrl(resolvedUrl)
@@ -249,7 +258,12 @@ constructor(
                     _uiState.value.copy(
                         isConnecting = false,
                         isConnectedToServer = false,
-                        error = context.getString(R.string.error_connect_to_server_fmt, server.name, e.message ?: ""),
+                        error =
+                            context.getString(
+                                R.string.error_connect_to_server_fmt,
+                                server.name,
+                                e.message ?: "",
+                            ),
                     )
             }
         }
@@ -258,15 +272,14 @@ constructor(
     private suspend fun loadSavedUsers(serverId: String) {
         try {
             val allUsers = databaseRepository.getUsersForServer(serverId)
-            val usersWithTokens =
-                allUsers.filter { user ->
-                    val hasToken =
-                        securePreferencesRepository.getServerUserToken(serverId, user.id) != null
-                    if (!hasToken) {
-                        Timber.d("Excluding user ${user.name} from saved users (no token)")
-                    }
-                    hasToken
+            val usersWithTokens = allUsers.filter { user ->
+                val hasToken =
+                    securePreferencesRepository.getServerUserToken(serverId, user.id) != null
+                if (!hasToken) {
+                    Timber.d("Excluding user ${user.name} from saved users (no token)")
                 }
+                hasToken
+            }
             _savedUsers.value = usersWithTokens
             Timber.d(
                 "Loaded ${usersWithTokens.size} saved users with tokens for server $serverId (${allUsers.size} total users)"
@@ -300,10 +313,11 @@ constructor(
                         return@launch
                     }
 
-                    val serverUrl = when (val result = serverAddressResolver.resolveAddress(user.serverId)) {
-                        is AddressResolutionResult.Success -> result.address
-                        is AddressResolutionResult.AllFailed -> server.address
-                    }
+                    val serverUrl =
+                        when (val result = serverAddressResolver.resolveAddress(user.serverId)) {
+                            is AddressResolutionResult.Success -> result.address
+                            is AddressResolutionResult.AllFailed -> server.address
+                        }
                     Timber.d("Resolved server URL: $serverUrl")
 
                     val result =
@@ -351,7 +365,11 @@ constructor(
                 _uiState.value =
                     _uiState.value.copy(
                         isLoggingIn = false,
-                        error = context.getString(R.string.error_login_failed_fmt, e.message ?: context.getString(R.string.error_unknown)),
+                        error =
+                            context.getString(
+                                R.string.error_login_failed_fmt,
+                                e.message ?: context.getString(R.string.error_unknown),
+                            ),
                     )
                 Timber.e(e, "1-tap login failed for user: ${user.name}")
             }
@@ -367,7 +385,8 @@ constructor(
         val currentState = _uiState.value
 
         if (currentState.username.isBlank()) {
-            _uiState.value = currentState.copy(error = context.getString(R.string.error_username_required))
+            _uiState.value =
+                currentState.copy(error = context.getString(R.string.error_username_required))
             return
         }
 
@@ -434,7 +453,11 @@ constructor(
                 _uiState.value =
                     _uiState.value.copy(
                         isLoggingIn = false,
-                        error = context.getString(R.string.error_login_failed_fmt, e.message ?: context.getString(R.string.error_unknown)),
+                        error =
+                            context.getString(
+                                R.string.error_login_failed_fmt,
+                                e.message ?: context.getString(R.string.error_unknown),
+                            ),
                     )
                 Timber.e(e, "Login failed for user: ${currentState.username}")
             }
@@ -443,39 +466,39 @@ constructor(
 
     fun startQuickConnect() {
         quickConnectJob?.cancel()
-        quickConnectJob =
-            viewModelScope.launch {
-                _uiState.value =
-                    _uiState.value.copy(isLoggingIn = true, quickConnectCode = null, error = null)
+        quickConnectJob = viewModelScope.launch {
+            _uiState.value =
+                _uiState.value.copy(isLoggingIn = true, quickConnectCode = null, error = null)
 
-                try {
-                    val quickConnectState = authRepository.initiateQuickConnect(_connectedServerUrl.value)
+            try {
+                val quickConnectState =
+                    authRepository.initiateQuickConnect(_connectedServerUrl.value)
 
-                    if (quickConnectState != null) {
-                        _uiState.value =
-                            _uiState.value.copy(
-                                isLoggingIn = false,
-                                quickConnectCode = quickConnectState.code,
-                                quickConnectSecret = quickConnectState.secret,
-                            )
-
-                        pollQuickConnectStatus(quickConnectState.secret)
-                    } else {
-                        _uiState.value =
-                            _uiState.value.copy(
-                                isLoggingIn = false,
-                                error = context.getString(R.string.error_quick_connect_start),
-                            )
-                    }
-                } catch (e: Exception) {
+                if (quickConnectState != null) {
                     _uiState.value =
                         _uiState.value.copy(
                             isLoggingIn = false,
-                            error = "Quick Connect error: ${e.message ?: "Unknown error"}",
+                            quickConnectCode = quickConnectState.code,
+                            quickConnectSecret = quickConnectState.secret,
                         )
-                    Timber.e(e, "Failed to start QuickConnect")
+
+                    pollQuickConnectStatus(quickConnectState.secret)
+                } else {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoggingIn = false,
+                            error = context.getString(R.string.error_quick_connect_start),
+                        )
                 }
+            } catch (e: Exception) {
+                _uiState.value =
+                    _uiState.value.copy(
+                        isLoggingIn = false,
+                        error = "Quick Connect error: ${e.message ?: "Unknown error"}",
+                    )
+                Timber.e(e, "Failed to start QuickConnect")
             }
+        }
     }
 
     private suspend fun pollQuickConnectStatus(secret: String) {
@@ -485,7 +508,13 @@ constructor(
 
                 val state = authRepository.getQuickConnectState(_connectedServerUrl.value, secret)
                 if (state?.authenticated == true) {
-                    when (val result = authRepository.authenticateWithQuickConnect(_connectedServerUrl.value, secret)) {
+                    when (
+                        val result =
+                            authRepository.authenticateWithQuickConnect(
+                                _connectedServerUrl.value,
+                                secret,
+                            )
+                    ) {
                         is AuthRepository.AuthResult.Success -> {
                             val sdkAuthResult = result.authResult
 

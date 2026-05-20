@@ -8,6 +8,7 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
+import com.makd.afinity.R
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.common.CollectionType
@@ -28,7 +29,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.makd.afinity.R
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -45,7 +45,7 @@ enum class FilterType {
 class LibraryContentViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
     private val playbackStateManager: PlaybackStateManager,
@@ -154,8 +154,8 @@ constructor(
             val name = libraryName ?: ""
             when {
                 name.contains("TV", ignoreCase = true) ||
-                        name.contains("Shows", ignoreCase = true) ||
-                        name.contains("Series", ignoreCase = true) -> CollectionType.TvShows
+                    name.contains("Shows", ignoreCase = true) ||
+                    name.contains("Series", ignoreCase = true) -> CollectionType.TvShows
 
                 name.contains("Movie", ignoreCase = true) -> CollectionType.Movies
                 else -> CollectionType.Mixed

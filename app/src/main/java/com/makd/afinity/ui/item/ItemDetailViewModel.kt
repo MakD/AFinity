@@ -1,5 +1,6 @@
 package com.makd.afinity.ui.item
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,6 +9,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
@@ -46,7 +48,6 @@ import com.makd.afinity.ui.item.components.shared.MediaSourceOption
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
-import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -63,7 +64,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemKind
-import com.makd.afinity.R
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -73,7 +73,7 @@ import kotlin.coroutines.cancellation.CancellationException
 class ItemDetailViewModel
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val userDataRepository: UserDataRepository,
     private val mediaRepository: MediaRepository,
     private val sessionManager: SessionManager,
@@ -671,7 +671,8 @@ constructor(
                 _uiState.value =
                     _uiState.value.copy(
                         isLoading = false,
-                        error = context.getString(R.string.error_failed_load_item_fmt, e.message ?: ""),
+                        error =
+                            context.getString(R.string.error_failed_load_item_fmt, e.message ?: ""),
                     )
             }
         }

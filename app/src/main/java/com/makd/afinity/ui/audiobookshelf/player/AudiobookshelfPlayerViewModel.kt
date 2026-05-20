@@ -1,24 +1,24 @@
 package com.makd.afinity.ui.audiobookshelf.player
 
+import android.content.Context
 import androidx.annotation.OptIn
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
+import com.makd.afinity.R
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfEqualizerManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlaybackManager
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfPlayer
 import com.makd.afinity.player.audiobookshelf.AudiobookshelfSkipSilenceManager
 import com.makd.afinity.player.audiobookshelf.EqualizerPreset
-import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.makd.afinity.R
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -27,7 +27,7 @@ class AudiobookshelfPlayerViewModel
 @OptIn(UnstableApi::class)
 @Inject
 constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val audiobookshelfRepository: AudiobookshelfRepository,
     private val audiobookshelfPlayer: AudiobookshelfPlayer,
