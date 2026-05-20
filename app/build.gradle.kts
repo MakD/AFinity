@@ -1,4 +1,5 @@
 import com.android.build.api.dsl.ApplicationExtension
+import java.util.regex.Pattern
 
 plugins {
     alias(libs.plugins.android.application)
@@ -20,6 +21,11 @@ aboutLibraries {
     library {
         duplicationMode = com.mikepenz.aboutlibraries.plugin.DuplicateMode.MERGE
         duplicationRule = com.mikepenz.aboutlibraries.plugin.DuplicateRule.GROUP
+
+        exclusionPatterns.addAll(
+            Pattern.compile("org\\.jetbrains\\.compose.*"),
+            Pattern.compile("org\\.jetbrains\\.androidx.*"),
+        )
     }
 }
 
