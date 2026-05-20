@@ -63,11 +63,22 @@ constructor(
     private var pollingJob: Job? = null
 
     fun initialize(serverId: String) {
-        if (currentServerId == serverId) return
         currentServerId = serverId
         taskCache[serverId]?.let { _scheduledTasks.value = it }
         sessionCache[serverId]?.let { _activeSessions.value = it }
-        startTaskPolling()
+    }
+
+    fun startPolling() {
+        if (pollingJob?.isActive != true) {
+            Timber.d("Control Panel polling started")
+            startTaskPolling()
+        }
+    }
+
+    fun stopPolling() {
+        pollingJob?.cancel()
+        pollingJob = null
+        Timber.d("Control Panel polling stopped")
     }
 
     private fun startTaskPolling() {
