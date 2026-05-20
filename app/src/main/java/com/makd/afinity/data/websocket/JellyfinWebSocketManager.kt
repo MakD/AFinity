@@ -29,6 +29,7 @@ import org.jellyfin.sdk.model.api.ServerShuttingDownMessage
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.SessionsMessage
 import org.jellyfin.sdk.model.api.TaskInfo
+import org.jellyfin.sdk.model.api.TaskState
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import timber.log.Timber
 import javax.inject.Inject
@@ -166,15 +167,45 @@ constructor(
     }
 
     private fun handleLibraryChanged(message: LibraryChangedMessage) {
-        Timber.d("Library changed - refreshing caches and home data")
-        appDataRepository.scheduleHomeRefreshAfterTaskCompletion()
+        val update = message.data
+        Timber.d(
+            "Library changed - added=${update?.itemsAdded?.size ?: 0}, updated=${update?.itemsUpdated?.size ?: 0}, removed=${update?.itemsRemoved?.size ?: 0}"
+        )
+        appDataRepository.scheduleLiveHomeRefresh("library changed websocket event")
     }
 
     private suspend fun subscribeToTaskChanges(apiClient: ApiClient) {
         apiClient.webSocket
             .subscribe(ScheduledTasksInfoMessage::class)
             .catch { e -> Timber.e(e, "Tasks subscription failed") }
-            .collect { message -> message.data?.let { tasks -> _liveTasks.emit(tasks) } }
+            .collect { message ->
+                message.data?.let { tasks ->
+                    _liveTasks.emit(tasks)
+                    handleScheduledTasksChanged(tasks)
+                }
+            }
+    }
+
+    private fun handleScheduledTasksChanged(tasks: List<TaskInfo>) {
+        val runningLibraryTask = tasks.firstOrNull { task ->
+            task.state == TaskState.RUNNING && task.libraryScanTask()
+        }
+
+        if (runningLibraryTask != null) {
+            appDataRepository.scheduleLiveHomeRefresh(
+                reason =
+                    "running library task ${runningLibraryTask.key ?: runningLibraryTask.name.orEmpty()}"
+            )
+        }
+    }
+
+    private fun TaskInfo.libraryScanTask(): Boolean {
+        val text =
+            listOfNotNull(key, name, category, description)
+                .joinToString(separator = " ")
+                .lowercase()
+
+        return "library" in text || "scan" in text || "refresh" in text
     }
 
     private suspend fun handleUserDataChanged(message: UserDataChangedMessage) {

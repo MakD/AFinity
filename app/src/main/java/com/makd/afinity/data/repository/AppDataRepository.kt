@@ -34,6 +34,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -74,6 +75,9 @@ constructor(
     private var recentWatchedCache: Pair<Long, List<AfinityMovie>>? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var liveDataJob: Job? = null
+    private var liveHomeRefreshJob: Job? = null
+    private var pendingLiveHomeRefresh = false
+    private var lastLiveHomeRefreshAt = 0L
     private val _latestMedia = MutableStateFlow<List<AfinityItem>>(emptyList())
     val latestMedia: StateFlow<List<AfinityItem>> = _latestMedia.asStateFlow()
 
@@ -316,6 +320,36 @@ constructor(
                 Timber.e(e, "Failed to refresh home data after task completion")
             }
         }
+    }
+
+    fun scheduleLiveHomeRefresh(reason: String, minIntervalMillis: Long = 10_000L) {
+        if (!_isInitialDataLoaded.value) return
+
+        if (liveHomeRefreshJob?.isActive == true) {
+            pendingLiveHomeRefresh = true
+            return
+        }
+
+        liveHomeRefreshJob =
+            scope.launch {
+                do {
+                    pendingLiveHomeRefresh = false
+
+                    val elapsed = System.currentTimeMillis() - lastLiveHomeRefreshAt
+                    if (elapsed < minIntervalMillis) {
+                        delay(minIntervalMillis - elapsed)
+                    }
+
+                    try {
+                        lastLiveHomeRefreshAt = System.currentTimeMillis()
+                        Timber.d("Live home refresh requested: $reason")
+                        mediaRepository.invalidateLatestMediaCache()
+                        reloadHomeData()
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed live home refresh: $reason")
+                    }
+                } while (pendingLiveHomeRefresh)
+            }
     }
 
     suspend fun reloadHomeData() {
