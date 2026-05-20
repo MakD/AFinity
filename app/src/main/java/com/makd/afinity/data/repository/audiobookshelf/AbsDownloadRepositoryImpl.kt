@@ -44,16 +44,20 @@ constructor(
     }
 
     private val downloadBaseDir: File
-        get() =
-            File(context.getExternalFilesDir(null), "AFinity/Audiobookshelf").also {
-                if (!it.exists()) it.mkdirs()
+        get() {
+            val dir = File(context.getExternalFilesDir(null), "AFinity/Audiobookshelf")
+            if (!dir.exists() && !dir.mkdirs()) {
+                Timber.e("Failed to create ABS base download directory at ${dir.absolutePath}")
             }
+            return dir
+        }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun getActiveDownloadsFlow(): Flow<List<AbsDownloadInfo>> =
         sessionManager.currentSession.flatMapLatest { session ->
             if (session == null) return@flatMapLatest flowOf(emptyList())
-            absDownloadDao.getActiveDownloadsFlow(session.serverId, session.userId.toString())
+            absDownloadDao
+                .getActiveDownloadsFlow(session.serverId, session.userId.toString())
                 .map { entities -> entities.map { it.toAbsDownloadInfo() } }
         }
 
@@ -61,7 +65,8 @@ constructor(
     override fun getCompletedDownloadsFlow(): Flow<List<AbsDownloadInfo>> =
         sessionManager.currentSession.flatMapLatest { session ->
             if (session == null) return@flatMapLatest flowOf(emptyList())
-            absDownloadDao.getCompletedDownloadsFlow(session.serverId, session.userId.toString())
+            absDownloadDao
+                .getCompletedDownloadsFlow(session.serverId, session.userId.toString())
                 .map { entities -> entities.map { it.toAbsDownloadInfo() } }
         }
 
@@ -80,11 +85,12 @@ constructor(
         val session = sessionManager.currentSession.value ?: return null
         val serverId = session.serverId
         val userId = session.userId.toString()
-        val entity = if (episodeId != null) {
-            absDownloadDao.getDownloadForEpisode(libraryItemId, episodeId, serverId, userId)
-        } else {
-            absDownloadDao.getDownloadForBook(libraryItemId, serverId, userId)
-        }
+        val entity =
+            if (episodeId != null) {
+                absDownloadDao.getDownloadForEpisode(libraryItemId, episodeId, serverId, userId)
+            } else {
+                absDownloadDao.getDownloadForBook(libraryItemId, serverId, userId)
+            }
         return entity?.toAbsDownloadInfo()
     }
 
@@ -96,15 +102,15 @@ constructor(
         val serverId = session.serverId
         val userId = session.userId.toString()
 
-        val existing = if (episodeId != null) {
-            absDownloadDao.getDownloadForEpisode(libraryItemId, episodeId, serverId, userId)
-        } else {
-            absDownloadDao.getDownloadForBook(libraryItemId, serverId, userId)
-        }
-        if (existing != null && existing.status in listOf(
-                AbsDownloadStatus.QUEUED,
-                AbsDownloadStatus.DOWNLOADING
-            )
+        val existing =
+            if (episodeId != null) {
+                absDownloadDao.getDownloadForEpisode(libraryItemId, episodeId, serverId, userId)
+            } else {
+                absDownloadDao.getDownloadForBook(libraryItemId, serverId, userId)
+            }
+        if (
+            existing != null &&
+                existing.status in listOf(AbsDownloadStatus.QUEUED, AbsDownloadStatus.DOWNLOADING)
         ) {
             Timber.d("AbsDownload already active for $libraryItemId / $episodeId")
             return Result.success(existing.id)
@@ -113,29 +119,30 @@ constructor(
         val downloadId = UUID.randomUUID()
         val localDirPath = buildLocalDirPath(serverId, libraryItemId, episodeId)
 
-        val entity = AbsDownloadEntity(
-            id = downloadId,
-            libraryItemId = libraryItemId,
-            episodeId = episodeId,
-            jellyfinServerId = serverId,
-            jellyfinUserId = userId,
-            title = "",
-            authorName = null,
-            mediaType = if (episodeId != null) "podcast" else "book",
-            coverUrl = null,
-            duration = 0.0,
-            status = AbsDownloadStatus.QUEUED,
-            progress = 0f,
-            bytesDownloaded = 0L,
-            totalBytes = 0L,
-            tracksTotal = 0,
-            tracksDownloaded = 0,
-            error = null,
-            createdAt = System.currentTimeMillis(),
-            updatedAt = System.currentTimeMillis(),
-            localDirPath = localDirPath,
-            serializedSession = null,
-        )
+        val entity =
+            AbsDownloadEntity(
+                id = downloadId,
+                libraryItemId = libraryItemId,
+                episodeId = episodeId,
+                jellyfinServerId = serverId,
+                jellyfinUserId = userId,
+                title = "",
+                authorName = null,
+                mediaType = if (episodeId != null) "podcast" else "book",
+                coverUrl = null,
+                duration = 0.0,
+                status = AbsDownloadStatus.QUEUED,
+                progress = 0f,
+                bytesDownloaded = 0L,
+                totalBytes = 0L,
+                tracksTotal = 0,
+                tracksDownloaded = 0,
+                error = null,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
+                localDirPath = localDirPath,
+                serializedSession = null,
+            )
         absDownloadDao.upsert(entity)
 
         enqueueWorker(downloadId, libraryItemId, episodeId)
@@ -177,7 +184,7 @@ constructor(
     private fun buildLocalDirPath(
         serverId: String,
         libraryItemId: String,
-        episodeId: String?
+        episodeId: String?,
     ): String {
         val base = File(downloadBaseDir, serverId)
         return if (episodeId != null) {
@@ -190,29 +197,28 @@ constructor(
     private suspend fun enqueueWorker(downloadId: UUID, libraryItemId: String, episodeId: String?) {
         val wifiOnly = preferencesRepository.getDownloadOverWifiOnly()
         val networkType = if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(networkType)
-            .setRequiresStorageNotLow(true)
-            .build()
+        val constraints =
+            Constraints.Builder()
+                .setRequiredNetworkType(networkType)
+                .setRequiresStorageNotLow(true)
+                .build()
 
-        val inputData = Data.Builder()
-            .putString(KEY_DOWNLOAD_ID, downloadId.toString())
-            .putString(KEY_LIBRARY_ITEM_ID, libraryItemId)
-            .apply { if (episodeId != null) putString(KEY_EPISODE_ID, episodeId) }
-            .build()
+        val inputData =
+            Data.Builder()
+                .putString(KEY_DOWNLOAD_ID, downloadId.toString())
+                .putString(KEY_LIBRARY_ITEM_ID, libraryItemId)
+                .apply { if (episodeId != null) putString(KEY_EPISODE_ID, episodeId) }
+                .build()
 
-        val request = OneTimeWorkRequestBuilder<AbsMediaDownloadWorker>()
-            .setConstraints(constraints)
-            .setInputData(inputData)
-            .addTag("abs_download_active")
-            .addTag("abs_download_$downloadId")
-            .build()
+        val request =
+            OneTimeWorkRequestBuilder<AbsMediaDownloadWorker>()
+                .setConstraints(constraints)
+                .setInputData(inputData)
+                .addTag("abs_download_active")
+                .addTag("abs_download_$downloadId")
+                .build()
 
-        workManager.enqueueUniqueWork(
-            "abs_download_$downloadId",
-            ExistingWorkPolicy.KEEP,
-            request,
-        )
+        workManager.enqueueUniqueWork("abs_download_$downloadId", ExistingWorkPolicy.KEEP, request)
     }
 }
 

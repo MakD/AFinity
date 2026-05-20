@@ -15,9 +15,6 @@ import com.makd.afinity.data.repository.download.JellyfinDownloadRepository
 import com.makd.afinity.di.DownloadClient
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.io.File
-import java.io.FileOutputStream
-import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -28,6 +25,9 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.MediaStreamType
 import timber.log.Timber
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
 
 @HiltWorker
 class SubtitleDownloadWorker
@@ -143,8 +143,16 @@ constructor(
                     return@withContext Result.success()
                 }
 
+                applicationContext.getExternalFilesDir(null)
                 val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
-                val subtitlesDir = File(itemDir, "subtitles").also { it.mkdirs() }
+                val subtitlesDir = File(itemDir, "subtitles")
+
+                if (!subtitlesDir.exists() && !subtitlesDir.mkdirs()) {
+                    Timber.e("Failed to create subtitles directory at ${subtitlesDir.absolutePath}")
+                    return@withContext Result.failure(
+                        workDataOf("error" to "Failed to create subtitles directory")
+                    )
+                }
 
                 subtitleStreams.forEach { stream ->
                     try {
@@ -208,7 +216,10 @@ constructor(
             val request =
                 Request.Builder()
                     .url(subtitleUrl)
-                    .header("Authorization", "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"")
+                    .header(
+                        "Authorization",
+                        "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"",
+                    )
                     .build()
 
             try {

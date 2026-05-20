@@ -207,8 +207,20 @@ constructor(
                                 workDataOf("error" to "Source not found")
                             )
 
+                    applicationContext.getExternalFilesDir(null)
+
                     val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
-                    val mediaDir = File(itemDir, "media").also { it.mkdirs() }
+                    val mediaDir = File(itemDir, "media")
+
+                    if (!mediaDir.exists() && !mediaDir.mkdirs()) {
+                        Timber.e("Failed to create download directory at ${mediaDir.absolutePath}")
+                        return@withContext Result.failure(
+                            workDataOf(
+                                "error" to
+                                    "Failed to create download directory. Check storage permissions."
+                            )
+                        )
+                    }
 
                     val extension = source.container?.lowercase() ?: "mkv"
 
@@ -226,7 +238,10 @@ constructor(
                     val requestBuilder =
                         Request.Builder()
                             .url(downloadUrl)
-                            .header("Authorization", "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"")
+                            .header(
+                                "Authorization",
+                                "MediaBrowser Token=\"${apiClient.accessToken ?: ""}\"",
+                            )
 
                     if (existingFileSize > 0) {
                         requestBuilder.header("Range", "bytes=$existingFileSize-")
@@ -502,7 +517,11 @@ constructor(
                 } ?: return
 
             val itemDir = downloadRepository.getItemDownloadDirectory(itemId)
-            val imagesDir = File(itemDir, "images").also { it.mkdirs() }
+            val imagesDir = File(itemDir, "images")
+            if (!imagesDir.exists() && !imagesDir.mkdirs()) {
+                Timber.w("Failed to create images directory for item $itemId")
+                return
+            }
             val images = item.images
             val downloadedImages = mutableMapOf<String, Uri?>()
 
@@ -567,7 +586,11 @@ constructor(
         try {
             val show = databaseRepository.getShow(showId, userId) ?: return
             val showDir = downloadRepository.getShowDirectory(serverId, showId)
-            val imagesDir = File(showDir, "images").also { it.mkdirs() }
+            val imagesDir = File(showDir, "images")
+            if (!imagesDir.exists() && !imagesDir.mkdirs()) {
+                Timber.w("Failed to create show images directory for show $showId")
+                return
+            }
             val images = show.images
             val downloadedImages = mutableMapOf<String, Uri?>()
 
@@ -608,7 +631,11 @@ constructor(
             val season = databaseRepository.getSeason(seasonId, userId) ?: return
             val seasonDir =
                 downloadRepository.getSeasonDirectory(serverId, season.seriesId, season.indexNumber)
-            val imagesDir = File(seasonDir, "images").also { it.mkdirs() }
+            val imagesDir = File(seasonDir, "images")
+            if (!imagesDir.exists() && !imagesDir.mkdirs()) {
+                Timber.w("Failed to create season images directory for season $seasonId")
+                return
+            }
             val images = season.images
             val downloadedImages = mutableMapOf<String, Uri?>()
 
@@ -649,7 +676,11 @@ constructor(
             if (movie.people.isEmpty()) return
 
             val movieDir = downloadRepository.getItemDownloadDirectory(itemId)
-            val peopleImagesDir = File(movieDir, "people").also { it.mkdirs() }
+            val peopleImagesDir = File(movieDir, "people")
+            if (!peopleImagesDir.exists() && !peopleImagesDir.mkdirs()) {
+                Timber.w("Failed to create people images directory for item $itemId")
+                return
+            }
 
             val updatedPeople =
                 movie.people.map { person ->

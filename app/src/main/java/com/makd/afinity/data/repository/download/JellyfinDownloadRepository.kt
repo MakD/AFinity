@@ -63,10 +63,13 @@ constructor(
     }
 
     private val downloadDir: File
-        get() =
-            File(context.getExternalFilesDir(null), "AFinity/Downloads").also {
-                if (!it.exists()) it.mkdirs()
+        get() {
+            val dir = File(context.getExternalFilesDir(null), "AFinity/Downloads")
+            if (!dir.exists() && !dir.mkdirs()) {
+                Timber.e("Failed to create base download directory at ${dir.absolutePath}")
             }
+            return dir
+        }
 
     override suspend fun startDownload(itemId: UUID, sourceId: String): Result<UUID> =
         withContext(Dispatchers.IO) {
@@ -483,14 +486,22 @@ constructor(
 
     suspend fun getItemDownloadDirectory(itemId: UUID): File {
         val folderPath = databaseRepository.getDownloadByItemId(itemId)?.folderPath
-        return File(downloadDir, folderPath ?: itemId.toString()).also { it.mkdirs() }
+        val dir = File(downloadDir, folderPath ?: itemId.toString())
+        if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create item directory")
+        return dir
     }
 
-    fun getShowDirectory(serverId: String, showId: UUID): File =
-        File(downloadDir, "$serverId/shows/$showId").also { it.mkdirs() }
+    fun getShowDirectory(serverId: String, showId: UUID): File {
+        val dir = File(downloadDir, "$serverId/shows/$showId")
+        if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create show directory")
+        return dir
+    }
 
-    fun getSeasonDirectory(serverId: String, showId: UUID, seasonNumber: Int): File =
-        File(downloadDir, "$serverId/shows/$showId/seasons/$seasonNumber").also { it.mkdirs() }
+    fun getSeasonDirectory(serverId: String, showId: UUID, seasonNumber: Int): File {
+        val dir = File(downloadDir, "$serverId/shows/$showId/seasons/$seasonNumber")
+        if (!dir.exists() && !dir.mkdirs()) Timber.w("Failed to create season directory")
+        return dir
+    }
 
     override suspend fun startSeasonDownload(seasonId: UUID, seriesId: UUID?): Result<Int> =
         withContext(Dispatchers.IO) {
