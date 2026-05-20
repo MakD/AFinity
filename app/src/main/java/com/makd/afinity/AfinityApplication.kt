@@ -59,11 +59,14 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
             Timber.d("ImageLoader prefs: reading from DataStore")
             imageCacheEnabled = preferencesRepository.getImageCacheEnabled()
             imageCacheSizeMb = preferencesRepository.getImageCacheSizeMb()
-            Timber.d("ImageLoader prefs: cacheEnabled=$imageCacheEnabled, cacheSizeMb=$imageCacheSizeMb")
+            Timber.d(
+                "ImageLoader prefs: cacheEnabled=$imageCacheEnabled, cacheSizeMb=$imageCacheSizeMb"
+            )
         }
 
-        ringBufferTree = RingBufferTree()
-        Timber.plant(ringBufferTree!!)
+        val tree = RingBufferTree()
+        ringBufferTree = tree
+        Timber.plant(tree)
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
             Timber.d("Afinity Application started")
@@ -90,7 +93,9 @@ class AfinityApplication : Application(), Configuration.Provider, SingletonImage
     override fun newImageLoader(context: PlatformContext): ImageLoader {
         val isCacheEnabled = imageCacheEnabled
         val cacheSizeMb = imageCacheSizeMb
-        Timber.d("ImageLoader: creating singleton (cacheEnabled=$isCacheEnabled, cacheSizeMb=$cacheSizeMb)")
+        Timber.d(
+            "ImageLoader: creating singleton (cacheEnabled=$isCacheEnabled, cacheSizeMb=$cacheSizeMb)"
+        )
 
         return ImageLoader.Builder(context)
             .components {
