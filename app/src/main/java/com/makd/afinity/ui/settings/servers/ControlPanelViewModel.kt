@@ -5,10 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.JellyfinRepository
+import com.makd.afinity.data.websocket.JellyfinWebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,7 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskInfo
@@ -32,6 +30,7 @@ constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val sessionManager: SessionManager,
     private val appDataRepository: AppDataRepository,
+    private val jellyfinWebSocketManager: JellyfinWebSocketManager, // 1. ADDED WEBSOCKET MANAGER
 ) : ViewModel() {
 
     companion object {
@@ -62,57 +61,40 @@ constructor(
 
     private var pollingJob: Job? = null
 
+    init {
+        viewModelScope.launch {
+            jellyfinWebSocketManager.liveSessions.collect { instantSessions ->
+                _activeSessions.value = instantSessions
+                sessionCache[currentServerId] = instantSessions
+            }
+        }
+
+        viewModelScope.launch {
+            jellyfinWebSocketManager.liveTasks.collect { instantTasks ->
+                checkForCompletedTasks(instantTasks)
+                _scheduledTasks.value = instantTasks
+                taskCache[currentServerId] = instantTasks
+            }
+        }
+    }
+
     fun initialize(serverId: String) {
         currentServerId = serverId
         taskCache[serverId]?.let { _scheduledTasks.value = it }
         sessionCache[serverId]?.let { _activeSessions.value = it }
-    }
-
-    fun startPolling() {
-        if (pollingJob?.isActive != true) {
-            Timber.d("Control Panel polling started")
-            startTaskPolling()
-        }
-    }
-
-    fun stopPolling() {
-        pollingJob?.cancel()
-        pollingJob = null
-        Timber.d("Control Panel polling stopped")
-    }
-
-    private fun startTaskPolling() {
-        pollingJob?.cancel()
-        pollingJob =
-            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                while (isActive) {
-                    try {
-                        coroutineScope {
-                            val tasksDeferred = async { jellyfinRepository.getScheduledTasks() }
-                            val sessionsDeferred = async { jellyfinRepository.getActiveSessions() }
-
-                            val tasksResult = tasksDeferred.await()
-                            val sessionsResult = sessionsDeferred.await()
-
-                            if (tasksResult.isSuccess) {
-                                val newTasks = tasksResult.getOrNull() ?: emptyList()
-                                checkForCompletedTasks(newTasks)
-                                _scheduledTasks.value = newTasks
-                                taskCache[currentServerId] = newTasks
-                            }
-
-                            if (sessionsResult.isSuccess) {
-                                val newSessions = sessionsResult.getOrNull() ?: emptyList()
-                                _activeSessions.value = newSessions
-                                sessionCache[currentServerId] = newSessions
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Timber.e(e, "Unexpected error in polling loop")
-                    }
-                    delay(5000)
+        viewModelScope.launch {
+            pollTasksNow()
+            try {
+                val initialSessions = jellyfinRepository.getActiveSessions()
+                if (initialSessions.isSuccess) {
+                    val sessions = initialSessions.getOrNull() ?: emptyList()
+                    _activeSessions.value = sessions
+                    sessionCache[serverId] = sessions
                 }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed initial session fetch")
             }
+        }
     }
 
     private fun checkForCompletedTasks(newTasks: List<TaskInfo>) {

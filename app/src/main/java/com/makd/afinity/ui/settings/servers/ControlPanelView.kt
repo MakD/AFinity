@@ -77,9 +77,9 @@ internal fun ControlPanelView(
     val serverId = serverWithCount.server.id
 
     DisposableEffect(serverId) {
-        viewModel.startPolling()
+        viewModel.initialize(serverId)
 
-        onDispose { viewModel.stopPolling() }
+        onDispose {}
     }
 
     if (showRestartConfirm) {
