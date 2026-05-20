@@ -18,6 +18,8 @@ data class RequestEvent(val request: JellyseerrRequest)
 
 interface JellyseerrRepository {
 
+    suspend fun verifyServer(url: String): Boolean
+
     suspend fun setActiveJellyfinSession(serverId: String, userId: UUID)
 
     fun clearActiveSession()

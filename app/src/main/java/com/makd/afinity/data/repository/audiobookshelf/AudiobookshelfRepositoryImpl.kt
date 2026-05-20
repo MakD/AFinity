@@ -139,6 +139,34 @@ constructor(
         private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L
     }
 
+    override suspend fun verifyServer(url: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                var cleanUrl = url.trim().removeSuffix("/")
+                if (cleanUrl.endsWith("/api", ignoreCase = true)) {
+                    cleanUrl = cleanUrl.dropLast(4).removeSuffix("/")
+                }
+                if (!cleanUrl.endsWith("/ping", ignoreCase = true)) {
+                    cleanUrl = "$cleanUrl/ping"
+                }
+
+                val client =
+                    okhttp3.OkHttpClient.Builder()
+                        .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                        .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                        .build()
+
+                val request = okhttp3.Request.Builder().url(cleanUrl).get().build()
+
+                val response = client.newCall(request).execute()
+                response.isSuccessful
+            } catch (e: Exception) {
+                Timber.d("Audiobookshelf server verification failed for $url: ${e.message}")
+                false
+            }
+        }
+    }
+
     override suspend fun setActiveJellyfinSession(serverId: String, userId: UUID) {
         val currentContext = activeContext
         if (

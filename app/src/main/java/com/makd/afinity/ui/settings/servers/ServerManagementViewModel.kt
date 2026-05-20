@@ -515,29 +515,60 @@ constructor(
             try {
                 val currentSession = sessionManager.currentSession.value ?: return@launch
                 if (currentSession.serverId != serverId) return@launch
-                val cleanAddress = sanitizeUrl(address)
-                val userId = currentSession.userId.toString()
-                val existing = jellyseerrDao.getAddressByUrl(serverId, userId, address)
-                if (existing != null) {
+
+                _state.value = _state.value.copy(isLoading = true, error = null)
+
+                val rawAddress = address.trim().removeSuffix("/")
+                val candidateUrls =
+                    if (rawAddress.startsWith("http://") || rawAddress.startsWith("https://")) {
+                        listOf(rawAddress)
+                    } else {
+                        listOf("https://$rawAddress", "http://$rawAddress")
+                    }
+
+                var validUrl: String? = null
+                val repository = jellyseerrRepositoryProvider.get()
+
+                for (url in candidateUrls) {
+                    if (repository.verifyServer(url)) {
+                        validUrl = url
+                        break
+                    }
+                }
+
+                if (validUrl == null) {
                     _state.value =
                         _state.value.copy(
-                            error = context.getString(R.string.error_address_already_exists)
+                            error = "Could not verify Jellyseerr server at this address.",
+                            isLoading = false,
                         )
                     return@launch
                 }
+
+                val userId = currentSession.userId.toString()
+                val existing = jellyseerrDao.getAddressByUrl(serverId, userId, validUrl)
+                if (existing != null) {
+                    _state.value =
+                        _state.value.copy(
+                            error = context.getString(R.string.error_address_already_exists),
+                            isLoading = false,
+                        )
+                    return@launch
+                }
+
                 jellyseerrDao.insertAddress(
                     JellyseerrAddressEntity(
                         id = UUID.randomUUID(),
                         jellyfinServerId = serverId,
                         jellyfinUserId = userId,
-                        address = cleanAddress,
+                        address = validUrl,
                     )
                 )
                 reloadAndRefreshDetail()
-                Timber.d("Jellyseerr address added: $address")
+                Timber.d("Jellyseerr address added: $validUrl")
             } catch (e: Exception) {
                 Timber.e(e, "Error adding Jellyseerr address")
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = e.message, isLoading = false)
             }
         }
     }
@@ -547,29 +578,60 @@ constructor(
             try {
                 val currentSession = sessionManager.currentSession.value ?: return@launch
                 if (currentSession.serverId != serverId) return@launch
-                val cleanAddress = sanitizeUrl(address)
-                val userId = currentSession.userId.toString()
-                val existing = audiobookshelfDao.getAddressByUrl(serverId, userId, address)
-                if (existing != null) {
+
+                _state.value = _state.value.copy(isLoading = true, error = null)
+
+                val rawAddress = address.trim().removeSuffix("/")
+                val candidateUrls =
+                    if (rawAddress.startsWith("http://") || rawAddress.startsWith("https://")) {
+                        listOf(rawAddress)
+                    } else {
+                        listOf("https://$rawAddress", "http://$rawAddress")
+                    }
+
+                var validUrl: String? = null
+                val repository = audiobookshelfRepositoryProvider.get()
+
+                for (url in candidateUrls) {
+                    if (repository.verifyServer(url)) {
+                        validUrl = url
+                        break
+                    }
+                }
+
+                if (validUrl == null) {
                     _state.value =
                         _state.value.copy(
-                            error = context.getString(R.string.error_address_already_exists)
+                            error = "Could not verify Audiobookshelf server at this address.",
+                            isLoading = false,
                         )
                     return@launch
                 }
+
+                val userId = currentSession.userId.toString()
+                val existing = audiobookshelfDao.getAddressByUrl(serverId, userId, validUrl)
+                if (existing != null) {
+                    _state.value =
+                        _state.value.copy(
+                            error = context.getString(R.string.error_address_already_exists),
+                            isLoading = false,
+                        )
+                    return@launch
+                }
+
                 audiobookshelfDao.insertAddress(
                     AudiobookshelfAddressEntity(
                         id = UUID.randomUUID(),
                         jellyfinServerId = serverId,
                         jellyfinUserId = userId,
-                        address = cleanAddress,
+                        address = validUrl,
                     )
                 )
                 reloadAndRefreshDetail()
-                Timber.d("Audiobookshelf address added: $address")
+                Timber.d("Audiobookshelf address added: $validUrl")
             } catch (e: Exception) {
                 Timber.e(e, "Error adding Audiobookshelf address")
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = e.message, isLoading = false)
             }
         }
     }
@@ -681,15 +743,6 @@ constructor(
         }
 
         _state.value = _state.value.copy(servers = serversWithCounts, isLoading = false)
-    }
-
-    private fun sanitizeUrl(url: String): String {
-        val trimmed = url.trim().removeSuffix("/")
-        return if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-            "http://$trimmed"
-        } else {
-            trimmed
-        }
     }
 
     fun clearError() {

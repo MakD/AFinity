@@ -19,6 +19,8 @@ data class ItemWithProgress(val item: LibraryItem, val progress: MediaProgress?)
 
 interface AudiobookshelfRepository {
 
+    suspend fun verifyServer(url: String): Boolean
+
     suspend fun setActiveJellyfinSession(serverId: String, userId: UUID)
 
     fun clearActiveSession()

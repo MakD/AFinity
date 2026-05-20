@@ -316,7 +316,10 @@ fun AudiobookshelfBottomSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(
-                onClick = viewModel::login,
+                onClick = {
+                    focusManager.clearFocus()
+                    viewModel.login()
+                },
                 enabled =
                     !uiState.isLoggingIn &&
                         uiState.serverUrl.isNotBlank() &&

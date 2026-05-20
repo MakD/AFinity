@@ -1,6 +1,5 @@
 package com.makd.afinity.data.network
 
-import okhttp3.ResponseBody
 import com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser
 import com.makd.afinity.data.models.audiobookshelf.AuthorizeResponse
 import com.makd.afinity.data.models.audiobookshelf.BatchLocalSessionRequest
@@ -9,14 +8,13 @@ import com.makd.afinity.data.models.audiobookshelf.FilterDataResponse
 import com.makd.afinity.data.models.audiobookshelf.ItemResponse
 import com.makd.afinity.data.models.audiobookshelf.ItemsInProgressResponse
 import com.makd.afinity.data.models.audiobookshelf.LibrariesResponse
+import com.makd.afinity.data.models.audiobookshelf.LibraryItemsResponse
+import com.makd.afinity.data.models.audiobookshelf.LibraryResponse
 import com.makd.afinity.data.models.audiobookshelf.LibraryStats
 import com.makd.afinity.data.models.audiobookshelf.ListeningSessionsResponse
 import com.makd.afinity.data.models.audiobookshelf.ListeningStats
-import com.makd.afinity.data.models.audiobookshelf.LibraryItemsResponse
-import com.makd.afinity.data.models.audiobookshelf.LibraryResponse
 import com.makd.afinity.data.models.audiobookshelf.LoginRequest
 import com.makd.afinity.data.models.audiobookshelf.LoginResponse
-import com.makd.afinity.data.models.audiobookshelf.MediaProgress
 import com.makd.afinity.data.models.audiobookshelf.MediaProgressSyncData
 import com.makd.afinity.data.models.audiobookshelf.PersonalizedView
 import com.makd.afinity.data.models.audiobookshelf.PlaybackSession
@@ -24,6 +22,7 @@ import com.makd.afinity.data.models.audiobookshelf.PlaybackSessionRequest
 import com.makd.afinity.data.models.audiobookshelf.ProgressUpdateRequest
 import com.makd.afinity.data.models.audiobookshelf.SearchResponse
 import com.makd.afinity.data.models.audiobookshelf.SeriesListResponse
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -101,8 +100,7 @@ interface AudiobookshelfApiService {
 
     @GET("api/me") suspend fun getMe(): Response<AudiobookshelfUser>
 
-    @GET("api/me/listening-stats")
-    suspend fun getListeningStats(): Response<ListeningStats>
+    @GET("api/me/listening-stats") suspend fun getListeningStats(): Response<ListeningStats>
 
     @GET("api/me/listening-sessions")
     suspend fun getListeningSessions(

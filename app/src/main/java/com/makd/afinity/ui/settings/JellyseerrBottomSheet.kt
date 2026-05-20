@@ -312,7 +312,10 @@ fun JellyseerrBottomSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(
-                onClick = viewModel::login,
+                onClick = {
+                    focusManager.clearFocus()
+                    viewModel.login()
+                },
                 enabled =
                     !uiState.isLoading &&
                         uiState.serverUrl.isNotBlank() &&

@@ -3,6 +3,7 @@ package com.makd.afinity.ui.audiobookshelf.login
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.makd.afinity.R
 import com.makd.afinity.data.repository.AudiobookshelfRepository
 import com.makd.afinity.data.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,7 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.makd.afinity.R
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -46,7 +46,8 @@ constructor(
     fun testConnection() {
         val serverUrl = _uiState.value.serverUrl
         if (serverUrl.isBlank()) {
-            _uiState.value = _uiState.value.copy(error = context.getString(R.string.error_server_url_required))
+            _uiState.value =
+                _uiState.value.copy(error = context.getString(R.string.error_server_url_required))
             return
         }
 
@@ -68,7 +69,8 @@ constructor(
                     _uiState.value.copy(
                         isTestingConnection = false,
                         connectionTestSuccess = false,
-                        error = context.getString(R.string.error_set_server_url_fmt, e.message ?: ""),
+                        error =
+                            context.getString(R.string.error_set_server_url_fmt, e.message ?: ""),
                     )
                 Timber.e(e, "Failed to test connection")
             }
@@ -79,11 +81,13 @@ constructor(
         val currentState = _uiState.value
 
         if (currentState.serverUrl.isBlank()) {
-            _uiState.value = currentState.copy(error = context.getString(R.string.error_server_url_required))
+            _uiState.value =
+                currentState.copy(error = context.getString(R.string.error_server_url_required))
             return
         }
         if (currentState.username.isBlank()) {
-            _uiState.value = currentState.copy(error = context.getString(R.string.error_username_required))
+            _uiState.value =
+                currentState.copy(error = context.getString(R.string.error_username_required))
             return
         }
 
@@ -97,41 +101,53 @@ constructor(
                 } else {
                     listOf("https://$rawUrl", "http://$rawUrl")
                 }
-            var successUser: com.makd.afinity.data.models.audiobookshelf.AudiobookshelfUser? = null
-            var lastError: Throwable? = null
 
+            var validUrl: String? = null
             for (url in candidateUrls) {
-                val result =
-                    audiobookshelfRepository.login(
-                        serverUrl = url,
-                        username = currentState.username,
-                        password = currentState.password,
-                    )
-
-                if (result.isSuccess) {
-                    successUser = result.getOrNull()
-                    _uiState.update { it.copy(serverUrl = url) }
+                val isServerValid = audiobookshelfRepository.verifyServer(url)
+                if (isServerValid) {
+                    validUrl = url
                     break
                 } else {
-                    lastError = result.exceptionOrNull()
-                    val errMsg = lastError?.message ?: ""
-                    if (errMsg.contains("401") || errMsg.contains("403")) {
-                        break
-                    }
-                    Timber.d("Connection to $url failed, trying next protocol. Error: $errMsg")
+                    Timber.d("Ping failed for candidate URL: $url")
                 }
             }
 
-            if (successUser != null) {
-                _uiState.value = _uiState.value.copy(isLoggingIn = false, isLoggedIn = true)
-                Timber.d("Audiobookshelf login successful for user: ${successUser.username}")
-            } else {
+            if (validUrl == null) {
                 _uiState.value =
                     _uiState.value.copy(
                         isLoggingIn = false,
-                        error = context.getString(R.string.error_login_failed_fmt, lastError?.message ?: context.getString(R.string.error_unknown)),
+                        error =
+                            "Could not connect. Please verify this is a valid Audiobookshelf server.",
                     )
-                Timber.e(lastError, "Audiobookshelf login failed across all protocols")
+                return@launch
+            }
+
+            val result =
+                audiobookshelfRepository.login(
+                    serverUrl = validUrl,
+                    username = currentState.username,
+                    password = currentState.password,
+                )
+
+            if (result.isSuccess) {
+                val successUser = result.getOrNull()
+                _uiState.update {
+                    it.copy(serverUrl = validUrl, isLoggingIn = false, isLoggedIn = true)
+                }
+                Timber.d("Audiobookshelf login successful for user: ${successUser?.username}")
+            } else {
+                val lastError = result.exceptionOrNull()
+                val errMsg = lastError?.message ?: ""
+                val finalErrorMessage =
+                    if (errMsg.contains("401") || errMsg.contains("403")) {
+                        "Invalid username or password."
+                    } else {
+                        context.getString(R.string.error_login_failed_fmt, errMsg)
+                    }
+
+                _uiState.value = _uiState.value.copy(isLoggingIn = false, error = finalErrorMessage)
+                Timber.e(lastError, "Audiobookshelf login failed on validated server")
             }
         }
     }
@@ -151,7 +167,11 @@ constructor(
                     _uiState.value =
                         _uiState.value.copy(
                             isLoggingIn = false,
-                            error = context.getString(R.string.error_logout_failed_fmt, error.message ?: ""),
+                            error =
+                                context.getString(
+                                    R.string.error_logout_failed_fmt,
+                                    error.message ?: "",
+                                ),
                         )
                     Timber.e(error, "Audiobookshelf logout failed")
                 },

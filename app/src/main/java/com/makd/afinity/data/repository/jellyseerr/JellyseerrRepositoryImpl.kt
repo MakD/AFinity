@@ -112,6 +112,31 @@ constructor(
         }
     }
 
+    override suspend fun verifyServer(url: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                var cleanUrl = url.trim().removeSuffix("/")
+                if (!cleanUrl.endsWith("/api/v1/status", ignoreCase = true)) {
+                    cleanUrl = "$cleanUrl/api/v1/status"
+                }
+
+                val client =
+                    okhttp3.OkHttpClient.Builder()
+                        .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                        .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                        .build()
+
+                val request = okhttp3.Request.Builder().url(cleanUrl).get().build()
+
+                val response = client.newCall(request).execute()
+                response.isSuccessful
+            } catch (e: Exception) {
+                Timber.d("Jellyseerr server verification failed for $url: ${e.message}")
+                false
+            }
+        }
+    }
+
     override suspend fun setActiveJellyfinSession(serverId: String, userId: UUID) {
         Timber.d("Switching Jellyseerr context to Server: $serverId, User: $userId")
         _isAuthenticated.value = false
