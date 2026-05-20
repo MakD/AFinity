@@ -23,16 +23,17 @@ object LogExporter {
         withContext(Dispatchers.IO) {
             try {
                 var logContent = buildString {
-                    val crashDir = File(context.cacheDir, "crashes")
-                    val crashFiles = crashDir.listFiles()?.sortedBy { it.lastModified() }
-                    if (!crashFiles.isNullOrEmpty()) {
-                        appendLine("========== PREVIOUS FATAL CRASHES ==========")
-                        crashFiles.forEach { file ->
-                            appendLine(file.readText())
-                            appendLine("============================================")
-                            file.delete()
+                    val crashDir = File(context.filesDir, "crashes")
+                    if (crashDir.exists()) {
+                        val crashFiles = crashDir.listFiles()?.sortedBy { it.lastModified() }
+                        if (!crashFiles.isNullOrEmpty()) {
+                            appendLine("========== PREVIOUS FATAL CRASHES ==========")
+                            crashFiles.forEach { file ->
+                                appendLine(file.readText())
+                                appendLine("============================================")
+                            }
+                            appendLine()
                         }
-                        appendLine()
                     }
 
                     appendLine(buildHeader(context))
@@ -50,7 +51,10 @@ object LogExporter {
                     .forEach { secret -> logContent = logContent.replace(secret, "[REDACTED]") }
 
                 val logDir = File(context.cacheDir, "logs")
-                logDir.mkdirs()
+                if (!logDir.exists() && !logDir.mkdirs()) {
+                    Timber.e("Failed to create log directory. Device might be full.")
+                    return@withContext
+                }
                 logDir.listFiles()?.forEach { it.delete() }
 
                 val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())

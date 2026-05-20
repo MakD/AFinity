@@ -15,7 +15,10 @@ class CrashFileExporter(
 
     override fun uncaughtException(thread: Thread, throwable: Throwable) {
         try {
-            val crashDir = File(context.cacheDir, "crashes")
+            val crashDir = File(context.filesDir, "crashes")
+            if (!crashDir.exists() && !crashDir.mkdirs()) {
+                return
+            }
             crashDir.mkdirs()
 
             crashDir
