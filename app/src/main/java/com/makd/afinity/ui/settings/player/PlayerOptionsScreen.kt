@@ -592,7 +592,7 @@ private fun getSkipModeDisplayName(mode: SkipMode): String =
 
 @Composable
 private fun BufferSizeSelectorItem(selectedSizeMb: Int, onSizeSelected: (Int) -> Unit) {
-    val options = listOf(32 to "32 MB", 64 to "64 MB", 128 to "128 MB , 512 to "512 MB , 1024 to "1024 MB")
+    val options = listOf(32 to "32 MB", 64 to "64 MB", 128 to "128 MB" , 256 to "256 MB" , 512 to "512 MB")
     var expanded by remember { mutableStateOf(false) }
     val currentLabel = options.find { it.first == selectedSizeMb }?.second ?: "64 MB"
 
