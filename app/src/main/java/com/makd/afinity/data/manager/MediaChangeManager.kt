@@ -77,6 +77,41 @@ constructor(
         }
     }
 
+    suspend fun applyUserDataChangesBatch(userDataList: List<UserItemDataDto>) {
+        val itemIds = userDataList.mapNotNull { it.itemId }
+        if (itemIds.isEmpty()) return
+
+        try {
+            val updatedItems = mediaRepository.getItemsByIds(itemIds)
+
+            var requiresLiveSectionRefresh = false
+            updatedItems.forEach { updatedItem ->
+                val correspondingUserData = userDataList.find { it.itemId == updatedItem.id }
+                appDataRepository.updateItemInCaches(updatedItem)
+                if (
+                    correspondingUserData?.played == true ||
+                        (correspondingUserData?.playbackPositionTicks ?: 0L) > 0L
+                ) {
+                    requiresLiveSectionRefresh = true
+                }
+                _mediaChanges.emit(
+                    MediaChangeEvent(
+                        itemId = updatedItem.id,
+                        updatedItem = updatedItem,
+                        source = MediaChangeSource.WEBSOCKET,
+                        userData = correspondingUserData,
+                    )
+                )
+            }
+            if (requiresLiveSectionRefresh) {
+                Timber.d("Batch processed. Refreshing live sections once.")
+                appDataRepository.refreshLiveSections()
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to process batch user data changes")
+        }
+    }
+
     suspend fun refreshAndPublish(
         itemId: UUID,
         knownSeriesId: UUID? = null,
@@ -85,7 +120,8 @@ constructor(
         userData: UserItemDataDto? = null,
     ): AfinityItem? {
         return try {
-            val updatedItem = mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
+            val updatedItem =
+                mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
             val parentItem = resolveParentItem(updatedItem, knownSeriesId)
 
             updatedItem?.let { appDataRepository.updateItemInCaches(it) }
@@ -189,7 +225,10 @@ constructor(
         }
     }
 
-    private suspend fun resolveParentItem(updatedItem: AfinityItem?, knownSeriesId: UUID?): AfinityItem? {
+    private suspend fun resolveParentItem(
+        updatedItem: AfinityItem?,
+        knownSeriesId: UUID?,
+    ): AfinityItem? {
         val parentId =
             when (updatedItem) {
                 is AfinityEpisode -> updatedItem.seriesId

@@ -226,15 +226,10 @@ constructor(
     }
 
     private suspend fun handleUserDataChanged(message: UserDataChangedMessage) {
-        val userDataChangeInfo = message.data
-
-        userDataChangeInfo?.userDataList?.forEach { userData ->
-            val itemId = userData.itemId
-
-            if (itemId != null) {
-                Timber.d("User data changed for item: $itemId")
-                mediaChangeManager.applyUserDataChange(userData)
-            }
+        val userDataList = message.data?.userDataList ?: return
+        if (userDataList.isNotEmpty()) {
+            Timber.d("Batch processing ${userDataList.size} user data changes")
+            mediaChangeManager.applyUserDataChangesBatch(userDataList)
         }
     }
 
