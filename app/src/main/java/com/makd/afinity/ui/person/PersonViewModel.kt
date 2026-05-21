@@ -5,6 +5,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.R
+import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.MediaChangeSource
+import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityPersonDetail
 import com.makd.afinity.data.models.media.AfinityShow
@@ -13,15 +16,19 @@ import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class PersonViewModel
 @Inject
@@ -30,6 +37,7 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
     private val userDataRepository: UserDataRepository,
+    private val mediaChangeManager: MediaChangeManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -45,6 +53,9 @@ constructor(
     private val _uiState = MutableStateFlow(PersonUiState())
     val uiState: StateFlow<PersonUiState> = _uiState.asStateFlow()
 
+    private val pendingItemUpdates = mutableMapOf<UUID, AfinityItem>()
+    private val personListUpdateTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
     init {
         viewModelScope.launch {
             appDataRepository.isInitialDataLoaded.collect { isLoaded ->
@@ -52,6 +63,66 @@ constructor(
                     loadPersonDetails()
                 } else {
                     _uiState.update { PersonUiState() }
+                }
+            }
+        }
+        viewModelScope.launch {
+            personListUpdateTrigger.debounce(300L).collect {
+                if (pendingItemUpdates.isEmpty()) return@collect
+
+                val currentMovies = _uiState.value.movies
+                val currentShows = _uiState.value.shows
+                var hasChanges = false
+
+                val newMovies = currentMovies.map { movie ->
+                    pendingItemUpdates[movie.id]?.also { hasChanges = true } as? AfinityMovie
+                        ?: movie
+                }
+
+                val newShows = currentShows.map { show ->
+                    pendingItemUpdates[show.id]?.also { hasChanges = true } as? AfinityShow ?: show
+                }
+
+                if (hasChanges) {
+                    _uiState.update { it.copy(movies = newMovies, shows = newShows) }
+                    Timber.d("Applied batched updates to Person screen lists")
+                }
+                pendingItemUpdates.clear()
+            }
+        }
+        viewModelScope.launch {
+            mediaChangeManager.mediaChanges.collect { event ->
+                val targetItem =
+                    event.updatedItem
+                        ?: event.parentItem
+                        ?: mediaRepository.getItemById(event.itemId)
+                        ?: return@collect
+
+                if (event.source == MediaChangeSource.WEBSOCKET) {
+                    pendingItemUpdates[targetItem.id] = targetItem
+                    personListUpdateTrigger.tryEmit(Unit)
+                } else {
+                    val currentMovies = _uiState.value.movies
+                    val currentShows = _uiState.value.shows
+                    var hasChanges = false
+
+                    val newMovies = currentMovies.map { movie ->
+                        if (movie.id == targetItem.id) {
+                            hasChanges = true
+                            targetItem as? AfinityMovie ?: movie
+                        } else movie
+                    }
+
+                    val newShows = currentShows.map { show ->
+                        if (show.id == targetItem.id) {
+                            hasChanges = true
+                            targetItem as? AfinityShow ?: show
+                        } else show
+                    }
+
+                    if (hasChanges) {
+                        _uiState.update { it.copy(movies = newMovies, shows = newShows) }
+                    }
                 }
             }
         }

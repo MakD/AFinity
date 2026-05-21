@@ -103,7 +103,8 @@ constructor(
             Timber.d("MediaController connected to Service")
             mediaController
         } catch (e: Exception) {
-            Timber.e(e, "Failed to connect MediaController")
+            Timber.e(e, "Failed to connect MediaController (Fix with AI)")
+            controllerFuture = null
             null
         }
     }
@@ -589,10 +590,13 @@ constructor(
             }
         }
 
-        mediaController?.stop()
-        mediaController?.clearMediaItems()
-
-        controllerFuture?.let { MediaController.releaseFuture(it) }
+        controllerFuture?.let { future ->
+            if (mediaController != null) {
+                MediaController.releaseFuture(future)
+            } else {
+                future.cancel(false)
+            }
+        }
         mediaController = null
         controllerFuture = null
 

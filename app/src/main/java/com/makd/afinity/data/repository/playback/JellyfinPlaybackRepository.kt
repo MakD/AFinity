@@ -342,6 +342,7 @@ constructor(
                     serverId = serverId,
                     played = existingData?.played ?: false,
                     favorite = existingData?.favorite ?: false,
+                    likes = existingData?.likes ?: false,
                     playbackPositionTicks = positionTicks,
                     toBeSynced = true,
                     audioStreamIndex = audioStreamIndex ?: existingData?.audioStreamIndex,

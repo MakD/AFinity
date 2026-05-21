@@ -10,6 +10,7 @@ data class AfinityUserDataDto(
     val serverId: String,
     val played: Boolean,
     val favorite: Boolean,
+    val likes: Boolean,
     val playbackPositionTicks: Long,
     val toBeSynced: Boolean = false,
     val audioStreamIndex: Int? = null,

@@ -21,6 +21,7 @@ import com.makd.afinity.data.models.server.ServerWithAddressesAndUsers
 import com.makd.afinity.data.models.user.AfinityUserDataDto
 import com.makd.afinity.data.models.user.User
 import kotlinx.coroutines.flow.Flow
+import org.jellyfin.sdk.model.api.UserItemDataDto
 import java.util.UUID
 
 interface DatabaseRepository {
@@ -159,6 +160,13 @@ interface DatabaseRepository {
 
     suspend fun updateUserData(userData: AfinityUserDataDto)
 
+    suspend fun patchUserDataLocally(
+        itemId: UUID,
+        userId: UUID,
+        serverId: String,
+        userData: UserItemDataDto,
+    )
+
     suspend fun deleteUserData(userId: UUID, itemId: UUID)
 
     suspend fun getUserData(userId: UUID, itemId: UUID): AfinityUserDataDto?
@@ -235,7 +243,11 @@ interface DatabaseRepository {
 
     suspend fun getSources(itemId: UUID): List<AfinitySourceDto>
 
-    suspend fun getItemMetadata(itemId: UUID, serverId: String, userId: String): ItemMetadataCacheEntity?
+    suspend fun getItemMetadata(
+        itemId: UUID,
+        serverId: String,
+        userId: String,
+    ): ItemMetadataCacheEntity?
 
     suspend fun insertItemMetadata(metadata: ItemMetadataCacheEntity)
 }

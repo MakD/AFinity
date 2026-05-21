@@ -50,15 +50,19 @@ import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -70,9 +74,11 @@ import org.jellyfin.sdk.model.api.PersonKind.ACTOR
 import org.jellyfin.sdk.model.api.PersonKind.DIRECTOR
 import org.jellyfin.sdk.model.api.PersonKind.WRITER
 import timber.log.Timber
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class HomeViewModel
 @Inject
@@ -111,14 +117,15 @@ constructor(
     private var cachedSpotlightPositions: List<Int> = emptyList()
 
     private val recommendationMutex = Mutex()
+    private val layoutRefreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
-    private var recommendationLoadingJob: kotlinx.coroutines.Job? = null
-    private var libraryContentReloadJob: kotlinx.coroutines.Job? = null
+    private var recommendationLoadingJob: Job? = null
+    private var libraryContentReloadJob: Job? = null
 
     private val renderedPeopleNames = mutableSetOf<String>()
-    private val renderedItemIds = mutableSetOf<java.util.UUID>()
-    private val renderedWatchedMovies = mutableSetOf<java.util.UUID>()
-    private val renderedStarringWatchedMovies = mutableSetOf<java.util.UUID>()
+    private val renderedItemIds = mutableSetOf<UUID>()
+    private val renderedWatchedMovies = mutableSetOf<UUID>()
+    private val renderedStarringWatchedMovies = mutableSetOf<UUID>()
     private val renderedActorNames = mutableSetOf<String>()
 
     init {
@@ -293,8 +300,11 @@ constructor(
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                val targetItem = event.parentItem ?: event.updatedItem ?: return@collect
-                Timber.d("HomeViewModel received media change for ${event.itemId}")
+                val targetItem =
+                    event.updatedItem
+                        ?: event.parentItem
+                        ?: mediaRepository.getItemById(event.itemId)
+                        ?: return@collect
                 updateItemInDynamicSections(targetItem)
             }
         }
@@ -311,6 +321,15 @@ constructor(
                         launch { loadUpcomingEpisodes() }
                     }
                     loadNewHomescreenSections()
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            layoutRefreshTrigger.debounce(300L).collect {
+                Timber.d("UI Batch complete. Redrawing Homescreen sections.")
+                withContext(Dispatchers.Main) {
+                    updateCombinedSections(appDataRepository.combinedGenres.value)
                 }
             }
         }
@@ -850,7 +869,7 @@ constructor(
                 }
                 tasks.awaitAll()
             }
-            val seenIds = mutableSetOf<java.util.UUID>()
+            val seenIds = mutableSetOf<UUID>()
             val deduplicated =
                 loadedSpotlightSections.shuffled().mapNotNull { section ->
                     val uniqueItems = section.items.filter { seenIds.add(it.id) }.take(10)
@@ -1321,9 +1340,7 @@ constructor(
             loadedRecommendationSections.addAll(updatedSections)
             loadedSpotlightSections.clear()
             loadedSpotlightSections.addAll(updatedSpotlights)
-            withContext(Dispatchers.Main) {
-                updateCombinedSections(appDataRepository.combinedGenres.value)
-            }
+            layoutRefreshTrigger.tryEmit(Unit)
         }
     }
 
