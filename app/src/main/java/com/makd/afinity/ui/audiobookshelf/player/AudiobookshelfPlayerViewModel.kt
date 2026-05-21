@@ -187,7 +187,6 @@ constructor(
 
     override fun onCleared() {
         statsPollingJob?.cancel()
-        stopPlayback()
         super.onCleared()
     }
 
