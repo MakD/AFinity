@@ -330,26 +330,25 @@ constructor(
             return
         }
 
-        liveHomeRefreshJob =
-            scope.launch {
-                do {
-                    pendingLiveHomeRefresh = false
+        liveHomeRefreshJob = scope.launch {
+            do {
+                pendingLiveHomeRefresh = false
 
-                    val elapsed = System.currentTimeMillis() - lastLiveHomeRefreshAt
-                    if (elapsed < minIntervalMillis) {
-                        delay(minIntervalMillis - elapsed)
-                    }
+                val elapsed = System.currentTimeMillis() - lastLiveHomeRefreshAt
+                if (elapsed < minIntervalMillis) {
+                    delay(minIntervalMillis - elapsed)
+                }
 
-                    try {
-                        lastLiveHomeRefreshAt = System.currentTimeMillis()
-                        Timber.d("Live home refresh requested: $reason")
-                        mediaRepository.invalidateLatestMediaCache()
-                        reloadHomeData()
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed live home refresh: $reason")
-                    }
-                } while (pendingLiveHomeRefresh)
-            }
+                try {
+                    lastLiveHomeRefreshAt = System.currentTimeMillis()
+                    Timber.d("Live home refresh requested: $reason")
+                    mediaRepository.invalidateLatestMediaCache()
+                    reloadHomeData()
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed live home refresh: $reason")
+                }
+            } while (pendingLiveHomeRefresh)
+        }
     }
 
     suspend fun reloadHomeData() {
@@ -968,15 +967,40 @@ constructor(
             if (isFavorite) {
                 when (item) {
                     is AfinityMovie ->
-                        current.copy(movies = (current.movies + item).sortedBy { it.name })
+                        current.copy(
+                            movies =
+                                (current.movies.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityShow ->
-                        current.copy(shows = (current.shows + item).sortedBy { it.name })
+                        current.copy(
+                            shows =
+                                (current.shows.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinitySeason ->
-                        current.copy(seasons = (current.seasons + item).sortedBy { it.name })
+                        current.copy(
+                            seasons =
+                                (current.seasons.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityEpisode ->
-                        current.copy(episodes = (current.episodes + item).sortedBy { it.name })
+                        current.copy(
+                            episodes =
+                                (current.episodes.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityBoxSet ->
-                        current.copy(boxSets = (current.boxSets + item).sortedBy { it.name })
+                        current.copy(
+                            boxSets =
+                                (current.boxSets.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     else -> current
                 }
             } else {
@@ -1002,15 +1026,40 @@ constructor(
             if (isOnWatchlist) {
                 when (item) {
                     is AfinityBoxSet ->
-                        current.copy(boxSets = (current.boxSets + item).sortedBy { it.name })
+                        current.copy(
+                            boxSets =
+                                (current.boxSets.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityMovie ->
-                        current.copy(movies = (current.movies + item).sortedBy { it.name })
+                        current.copy(
+                            movies =
+                                (current.movies.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityShow ->
-                        current.copy(shows = (current.shows + item).sortedBy { it.name })
+                        current.copy(
+                            shows =
+                                (current.shows.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinitySeason ->
-                        current.copy(seasons = (current.seasons + item).sortedBy { it.name })
+                        current.copy(
+                            seasons =
+                                (current.seasons.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     is AfinityEpisode ->
-                        current.copy(episodes = (current.episodes + item).sortedBy { it.name })
+                        current.copy(
+                            episodes =
+                                (current.episodes.filterNot { it.id == item.id } + item).sortedBy {
+                                    it.name
+                                }
+                        )
                     else -> current
                 }
             } else {

@@ -1,9 +1,11 @@
 package com.makd.afinity.data.websocket
 
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.repository.AppDataRepository
-import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.data.repository.userdata.UserDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,10 +42,9 @@ class JellyfinWebSocketManager
 @Inject
 constructor(
     private val sessionManager: SessionManager,
-    private val mediaRepository: MediaRepository,
-    private val userDataRepository: UserDataRepository,
     private val appDataRepository: AppDataRepository,
-) {
+    private val mediaChangeManager: MediaChangeManager,
+) : DefaultLifecycleObserver {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var connectionJob: Job? = null
 
@@ -57,6 +58,9 @@ constructor(
     val liveTasks = _liveTasks.asSharedFlow()
 
     init {
+
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+
         scope.launch {
             sessionManager.currentSession.collect { session ->
                 if (session != null) {
@@ -67,6 +71,18 @@ constructor(
                 }
             }
         }
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        super.onStart(owner)
+        if (sessionManager.currentSession.value != null) {
+            connect()
+        }
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        super.onStop(owner)
+        disconnect()
     }
 
     fun connect() {
@@ -172,6 +188,7 @@ constructor(
             "Library changed - added=${update?.itemsAdded?.size ?: 0}, updated=${update?.itemsUpdated?.size ?: 0}, removed=${update?.itemsRemoved?.size ?: 0}"
         )
         appDataRepository.scheduleLiveHomeRefresh("library changed websocket event")
+        mediaChangeManager.notifyLibraryContentChanged("library changed websocket event")
     }
 
     private suspend fun subscribeToTaskChanges(apiClient: ApiClient) {
@@ -216,8 +233,7 @@ constructor(
 
             if (itemId != null) {
                 Timber.d("User data changed for item: $itemId")
-                mediaRepository.invalidateItemCache(itemId)
-                mediaRepository.invalidateNextUpCache()
+                mediaChangeManager.applyUserDataChange(userData)
             }
         }
     }

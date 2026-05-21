@@ -2,8 +2,7 @@ package com.makd.afinity.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.makd.afinity.data.manager.PlaybackEvent
-import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.models.audiobookshelf.LibraryItem
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
@@ -73,7 +72,7 @@ constructor(
     private val jellyseerrRepository: JellyseerrRepository,
     private val appDataRepository: AppDataRepository,
     private val audiobookshelfRepository: AudiobookshelfRepository,
-    private val playbackStateManager: PlaybackStateManager,
+    private val mediaChangeManager: MediaChangeManager,
     private val downloadRepository: DownloadRepository,
     private val userDataRepository: UserDataRepository,
     private val authRepository: AuthRepository,
@@ -156,22 +155,9 @@ constructor(
         }
 
         viewModelScope.launch {
-            playbackStateManager.playbackEvents.collect { event ->
-                if (event is PlaybackEvent.Synced) {
-                    val syncedItem = mediaRepository.getItemById(event.itemId) ?: return@collect
-                    updateItemInSearchResults(syncedItem)
-                    val parentItem =
-                        when (syncedItem) {
-                            is AfinityEpisode ->
-                                syncedItem.seriesId?.let { mediaRepository.getItemById(it) }
-                            is AfinitySeason -> mediaRepository.getItemById(syncedItem.seriesId)
-                            else -> null
-                        }
-
-                    if (parentItem != null) {
-                        updateItemInSearchResults(parentItem)
-                    }
-                }
+            mediaChangeManager.mediaChanges.collect { event ->
+                event.updatedItem?.let { updateItemInSearchResults(it) }
+                event.parentItem?.let { updateItemInSearchResults(it) }
             }
         }
     }
@@ -279,13 +265,11 @@ constructor(
                     else userDataRepository.markWatched(episode.id)
 
                 if (success) {
-                    mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
-                    playbackStateManager.notifyItemChanged(
+                    mediaChangeManager.notifyItemChanged(
                         episode.id,
                         episode.seriesId,
                         episode.seasonId,
                     )
-                    mediaRepository.invalidateNextUpCache()
                 } else {
                     _selectedEpisode.value = episode
                     updateItemInSearchResults(episode)

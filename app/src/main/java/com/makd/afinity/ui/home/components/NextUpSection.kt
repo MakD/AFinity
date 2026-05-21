@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +35,14 @@ fun NextUpSection(
         CardDimensions.calculateHeight(cardWidth, CardDimensions.ASPECT_RATIO_LANDSCAPE)
     val fixedRowHeight = cardHeight + 8.dp + 20.dp + 22.dp
 
+    val scrollState = rememberLazyListState()
+
+    LaunchedEffect(episodes.firstOrNull()?.id) {
+        if (episodes.isNotEmpty()) {
+            scrollState.scrollToItem(0)
+        }
+    }
+
     Column(modifier = Modifier.padding(horizontal = 14.dp)) {
         Text(
             text = stringResource(R.string.home_next_up),
@@ -42,6 +52,7 @@ fun NextUpSection(
         )
 
         LazyRow(
+            state = scrollState,
             modifier = Modifier.height(fixedRowHeight),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 0.dp),

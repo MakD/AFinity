@@ -2,8 +2,7 @@ package com.makd.afinity.ui.watchlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.makd.afinity.data.manager.PlaybackEvent
-import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -42,7 +41,7 @@ constructor(
     private val downloadRepository: DownloadRepository,
     private val appDataRepository: AppDataRepository,
     private val mediaRepository: MediaRepository,
-    private val playbackStateManager: PlaybackStateManager,
+    private val mediaChangeManager: MediaChangeManager,
     private val itemUserDataDelegate: ItemUserDataDelegate,
     private val itemDownloadDelegate: ItemDownloadDelegate,
     private val preferencesRepository: PreferencesRepository,
@@ -86,15 +85,10 @@ constructor(
             }
         }
         viewModelScope.launch {
-            playbackStateManager.playbackEvents.collect { event ->
-                if (event is PlaybackEvent.Synced) {
-                    _selectedEpisode.value?.let { ep ->
-                        if (ep.id == event.itemId) {
-                            val refreshedEp =
-                                mediaRepository.getItem(event.itemId)
-                                    ?.toAfinityEpisode(mediaRepository.getBaseUrl(), null)
-                            refreshedEp?.let { _selectedEpisode.value = it }
-                        }
+            mediaChangeManager.mediaChanges.collect { event ->
+                _selectedEpisode.value?.let { ep ->
+                    if (ep.id == event.itemId && event.updatedItem is AfinityEpisode) {
+                        _selectedEpisode.value = event.updatedItem
                     }
                 }
             }
@@ -178,12 +172,10 @@ constructor(
                         userDataRepository.markUnwatched(episode.id)
                     } else {
                         userDataRepository.markWatched(episode.id)
-                    }
+                }
 
                 if (success) {
-                    mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
-                    playbackStateManager.notifyItemChanged(episode.id)
-                    mediaRepository.invalidateNextUpCache()
+                    mediaChangeManager.notifyItemChanged(episode.id, episode.seriesId, episode.seasonId)
                 } else {
                     _selectedEpisode.value = episode
                 }

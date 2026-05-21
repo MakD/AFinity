@@ -1,5 +1,7 @@
 package com.makd.afinity.di
 
+import androidx.media3.common.util.UnstableApi
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.playback.PlaybackRepository
@@ -10,7 +12,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-@androidx.media3.common.util.UnstableApi
+@UnstableApi
 @Module
 @InstallIn(SingletonComponent::class)
 object PlayerModule {
@@ -20,7 +22,13 @@ object PlayerModule {
         mediaRepository: MediaRepository,
         playbackRepository: PlaybackRepository,
         syncScheduler: UserDataSyncScheduler,
+        mediaChangeManager: MediaChangeManager,
     ): PlaybackStateManager {
-        return PlaybackStateManager(mediaRepository, playbackRepository, syncScheduler)
+        return PlaybackStateManager(
+            mediaRepository,
+            playbackRepository,
+            syncScheduler,
+            mediaChangeManager,
+        )
     }
 }

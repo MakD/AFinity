@@ -25,6 +25,7 @@ constructor(
     private val mediaRepository: MediaRepository,
     private val playbackRepository: PlaybackRepository,
     private val syncScheduler: UserDataSyncScheduler,
+    private val mediaChangeManager: MediaChangeManager,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -114,21 +115,15 @@ constructor(
             if (refreshedItem != null) {
                 val seriesId = (refreshedItem as? AfinityEpisode)?.seriesId
                 val seasonId = (refreshedItem as? AfinityEpisode)?.seasonId
-                if (refreshedItem is AfinityEpisode && refreshedItem.played) {
-                    Timber.d("Episode finished. Refreshing Next Up queue...")
-                    mediaRepository.invalidateNextUpCache()
-                }
-                _playbackEvents.emit(PlaybackEvent.Synced(itemId, seriesId, seasonId))
+                mediaChangeManager.publishKnownChange(
+                    updatedItem = refreshedItem,
+                    knownSeriesId = seriesId,
+                    knownSeasonId = seasonId,
+                    source = MediaChangeSource.PLAYBACK,
+                )
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to handle playback stopped")
-        }
-    }
-
-    fun notifyItemChanged(itemId: UUID, seriesId: UUID? = null, seasonId: UUID? = null) {
-        scope.launch {
-            Timber.d("Broadcasting manual item change for: $itemId")
-            _playbackEvents.emit(PlaybackEvent.Synced(itemId, seriesId, seasonId))
         }
     }
 
@@ -142,7 +137,4 @@ constructor(
 
 sealed class PlaybackEvent {
     data class Stopped(val itemId: UUID, val positionTicks: Long) : PlaybackEvent()
-
-    data class Synced(val itemId: UUID, val seriesId: UUID? = null, val seasonId: UUID? = null) :
-        PlaybackEvent()
 }

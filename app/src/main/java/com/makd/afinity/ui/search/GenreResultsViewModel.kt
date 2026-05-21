@@ -10,12 +10,9 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.makd.afinity.data.manager.PlaybackEvent
-import com.makd.afinity.data.manager.PlaybackStateManager
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.models.extensions.toAfinityItem
-import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
-import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.repository.AppDataRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,7 +35,7 @@ constructor(
     @param:ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
-    private val playbackStateManager: PlaybackStateManager,
+    private val mediaChangeManager: MediaChangeManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GenreResultsUiState())
@@ -67,19 +64,9 @@ constructor(
 
     init {
         viewModelScope.launch {
-            playbackStateManager.playbackEvents.collect { event ->
-                if (event is PlaybackEvent.Synced) {
-                    val syncedItem = mediaRepository.getItemById(event.itemId) ?: return@collect
-
-                    val targetItem =
-                        when (syncedItem) {
-                            is AfinityEpisode -> mediaRepository.getItemById(syncedItem.seriesId)
-                            is AfinitySeason -> mediaRepository.getItemById(syncedItem.seriesId)
-                            else -> syncedItem
-                        } ?: return@collect
-
-                    _itemUpdates.value += (targetItem.id to targetItem)
-                }
+            mediaChangeManager.mediaChanges.collect { event ->
+                val targetItem = event.parentItem ?: event.updatedItem ?: return@collect
+                _itemUpdates.value += (targetItem.id to targetItem)
             }
         }
     }

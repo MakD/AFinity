@@ -11,6 +11,7 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
+import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
@@ -82,6 +83,7 @@ constructor(
     private val offlineModeManager: OfflineModeManager,
     private val authRepository: AuthRepository,
     private val playbackStateManager: PlaybackStateManager,
+    private val mediaChangeManager: MediaChangeManager,
     private val serverRepository: ServerRepository,
     private val securePreferencesRepository: SecurePreferencesRepository,
     private val tmdbApiService: TmdbApiService,
@@ -154,69 +156,48 @@ constructor(
                             applyOptimisticUpdate(event.positionTicks)
                         }
                     }
-                    is PlaybackEvent.Synced -> {
-                        val isNextEpisode = _uiState.value.nextEpisode?.id == event.itemId
-                        val isBoxSetItem = _uiState.value.boxSetItems.any { it.id == event.itemId }
-                        val isChildUpdate =
-                            _uiState.value.seasons.any { season ->
-                                season.episodes.any { it.id == event.itemId } ||
-                                    season.id == event.itemId
-                            }
-                        val isDirectParentMatch =
-                            event.seriesId == itemId || event.seasonId == itemId
-                        val belongsToLoadedSeason =
-                            event.seasonId != null &&
-                                _uiState.value.seasons.any { it.id == event.seasonId }
-
-                        var isRelated =
-                            event.itemId == itemId ||
-                                isChildUpdate ||
-                                isNextEpisode ||
-                                isBoxSetItem ||
-                                isDirectParentMatch ||
-                                belongsToLoadedSeason
-                        var syncedEpisode: AfinityEpisode? = null
-
-                        if (!isRelated) {
-                            try {
-                                val syncedItem = mediaRepository.getItemById(event.itemId)
-                                if (syncedItem is AfinityEpisode) {
-                                    val belongsToSeriesBySeriesId = syncedItem.seriesId == itemId
-                                    val belongsToSeriesBySeasonId =
-                                        _uiState.value.seasons.any { it.id == syncedItem.seasonId }
-                                    isRelated =
-                                        (belongsToSeriesBySeriesId ||
-                                            syncedItem.seasonId == itemId ||
-                                            belongsToSeriesBySeasonId)
-                                    syncedEpisode = syncedItem
-                                } else if (syncedItem is AfinitySeason) {
-                                    isRelated = (syncedItem.seriesId == itemId)
-                                }
-                            } catch (e: Exception) {
-                                Timber.e(e, "Error checking synced item")
-                            }
-                        } else {
-                            try {
-                                val syncedItem = mediaRepository.getItemById(event.itemId)
-                                if (syncedItem is AfinityEpisode) {
-                                    syncedEpisode = syncedItem
-                                }
-                            } catch (e: Exception) {
-                                Timber.e(e, "Error fetching synced episode")
-                            }
-                        }
-
-                        if (isRelated) {
-                            syncedEpisode?.let { ep ->
-                                if (_episodeStatusUpdates.value[ep.id] != ep.played) {
-                                    _episodeStatusUpdates.value += (ep.id to ep.played)
-                                }
-                            }
-                            refreshFromCacheImmediate()
-                        }
-                        updateSimilarItemsOnSync(event.itemId)
-                    }
                 }
+            }
+        }
+
+        viewModelScope.launch {
+            mediaChangeManager.mediaChanges.collect { event ->
+                val changedItem = event.updatedItem
+                val isNextEpisode = _uiState.value.nextEpisode?.id == event.itemId
+                val isBoxSetItem = _uiState.value.boxSetItems.any { it.id == event.itemId }
+                val isChildUpdate =
+                    _uiState.value.seasons.any { season ->
+                        season.episodes.any { it.id == event.itemId } || season.id == event.itemId
+                    }
+                val isDirectParentMatch = event.seriesId == itemId || event.seasonId == itemId
+                val belongsToLoadedSeason =
+                    event.seasonId != null && _uiState.value.seasons.any { it.id == event.seasonId }
+                val belongsToCurrentItem =
+                    when (changedItem) {
+                        is AfinityEpisode ->
+                            changedItem.seriesId == itemId || changedItem.seasonId == itemId
+                        is AfinitySeason -> changedItem.seriesId == itemId
+                        else -> false
+                    }
+
+                val isRelated =
+                    event.itemId == itemId ||
+                        isChildUpdate ||
+                        isNextEpisode ||
+                        isBoxSetItem ||
+                        isDirectParentMatch ||
+                        belongsToLoadedSeason ||
+                        belongsToCurrentItem
+
+                if (isRelated) {
+                    (changedItem as? AfinityEpisode)?.let { ep ->
+                        if (_episodeStatusUpdates.value[ep.id] != ep.played) {
+                            _episodeStatusUpdates.value += (ep.id to ep.played)
+                        }
+                    }
+                    refreshFromCacheImmediate()
+                }
+                updateSimilarItemsOnSync(event.itemId)
             }
         }
     }
@@ -1248,19 +1229,11 @@ constructor(
                         if (currentItem.played) userDataRepository.markUnwatched(currentItem.id)
                         else userDataRepository.markWatched(currentItem.id)
                     if (success) {
-                        val refreshed =
-                            mediaRepository.refreshItemUserData(
-                                currentItem.id,
-                                FieldSets.REFRESH_USER_DATA,
-                            )
-                        playbackStateManager.notifyItemChanged(
+                        mediaChangeManager.notifyItemChanged(
                             currentItem.id,
                             (currentItem as? AfinityEpisode)?.seriesId,
                             (currentItem as? AfinityEpisode)?.seasonId,
                         )
-                        if (refreshed is AfinityEpisode) {
-                            mediaRepository.invalidateNextUpCache()
-                        }
                     } else {
                         _uiState.value =
                             _uiState.value.copy(
@@ -1288,7 +1261,6 @@ constructor(
                     else userDataRepository.markWatched(episode.id)
 
                 if (success) {
-                    mediaRepository.refreshItemUserData(episode.id, FieldSets.REFRESH_USER_DATA)
                     val currentItem = _uiState.value.item
                     val routingSeriesId =
                         when (currentItem) {
@@ -1305,12 +1277,11 @@ constructor(
                                     ?.id ?: episode.seasonId
                             else -> episode.seasonId
                         }
-                    playbackStateManager.notifyItemChanged(
+                    mediaChangeManager.notifyItemChanged(
                         episode.id,
                         routingSeriesId,
                         routingSeasonId,
                     )
-                    mediaRepository.invalidateNextUpCache()
                 } else {
                     val revertedStatus = !isNowPlayed
                     _episodeStatusUpdates.value += (episode.id to revertedStatus)
