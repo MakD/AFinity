@@ -7,8 +7,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.makd.afinity.data.models.user.AfinityUserDataDto
-import java.util.UUID
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 @Dao
 interface UserDataDao {
@@ -79,6 +79,31 @@ interface UserDataDao {
 
     @Query("SELECT COUNT(*) FROM userdata WHERE userId = :userId AND serverId = :serverId")
     suspend fun getUserDataCount(userId: UUID, serverId: String): Int
+
+    @Query(
+        """
+        UPDATE userdata 
+        SET played = :isPlayed, 
+            playbackPositionTicks = :positionTicks, 
+            favorite = :isFavorite,
+            likes = :isLiked
+        WHERE itemId = :itemId 
+          AND userId = :userId 
+          AND serverId = :serverId
+    """
+    )
+    suspend fun patchUserDataLocally(
+        itemId: UUID,
+        userId: UUID,
+        serverId: String,
+        isPlayed: Boolean,
+        positionTicks: Long,
+        isFavorite: Boolean,
+        isLiked: Boolean,
+    )
+
+    @Query("SELECT * FROM userdata WHERE userId = :userId AND serverId = :serverId AND likes = 1")
+    fun getWatchlistItemsFlow(userId: UUID, serverId: String): Flow<List<AfinityUserDataDto>>
 
     @Query("DELETE FROM userdata") suspend fun deleteAllUserData()
 }

@@ -4,14 +4,17 @@ import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinitySeason
 import com.makd.afinity.data.repository.AppDataRepository
+import com.makd.afinity.data.repository.DatabaseRepository
 import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.media.MediaRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.UserItemDataDto
 import timber.log.Timber
@@ -19,12 +22,15 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@OptIn(FlowPreview::class)
 @Singleton
 class MediaChangeManager
 @Inject
 constructor(
     private val mediaRepository: MediaRepository,
     private val appDataRepository: AppDataRepository,
+    private val databaseRepository: DatabaseRepository,
+    private val sessionManager: SessionManager,
     private val watchlistRepository: WatchlistRepository,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -35,6 +41,17 @@ constructor(
     private val _libraryContentChanges =
         MutableSharedFlow<LibraryContentChangeEvent>(extraBufferCapacity = 16)
     val libraryContentChanges = _libraryContentChanges.asSharedFlow()
+
+    private val liveSectionRefreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    init {
+        scope.launch {
+            liveSectionRefreshTrigger.debounce(1000L).collect {
+                Timber.d("WebSocket transfer finished. Syncing Next Up & Continue Watching...")
+                appDataRepository.refreshLiveSections()
+            }
+        }
+    }
 
     fun notifyLibraryContentChanged(reason: String) {
         scope.launch { _libraryContentChanges.emit(LibraryContentChangeEvent(reason)) }
@@ -57,58 +74,40 @@ constructor(
     }
 
     suspend fun applyUserDataChange(userData: UserItemDataDto) {
-        val updatedItem =
-            refreshAndPublish(
-                itemId = userData.itemId,
-                source = MediaChangeSource.WEBSOCKET,
-                userData = userData,
-            )
-
-        if (updatedItem != null) {
-            appDataRepository.updateFavoriteStatus(updatedItem, userData.isFavorite)
-            userData.likes?.let { isLiked ->
-                appDataRepository.updateWatchlistStatus(updatedItem, isLiked)
-                watchlistRepository.refreshWatchlistCount()
-            }
-        }
-
-        if (userData.played || userData.playbackPositionTicks > 0L) {
-            appDataRepository.refreshLiveSections()
-        }
+        applyUserDataChangesBatch(listOf(userData))
     }
 
     suspend fun applyUserDataChangesBatch(userDataList: List<UserItemDataDto>) {
-        val itemIds = userDataList.mapNotNull { it.itemId }
-        if (itemIds.isEmpty()) return
+        if (userDataList.isEmpty()) return
 
-        try {
-            val updatedItems = mediaRepository.getItemsByIds(itemIds)
+        val currentSession = sessionManager.currentSession.value ?: return
+        val userId = currentSession.userId
+        val serverId = currentSession.serverId
+        var requiresLiveSectionRefresh = false
 
-            var requiresLiveSectionRefresh = false
-            updatedItems.forEach { updatedItem ->
-                val correspondingUserData = userDataList.find { it.itemId == updatedItem.id }
-                appDataRepository.updateItemInCaches(updatedItem)
-                if (
-                    correspondingUserData?.played == true ||
-                        (correspondingUserData?.playbackPositionTicks ?: 0L) > 0L
-                ) {
-                    requiresLiveSectionRefresh = true
-                }
-                _mediaChanges.emit(
-                    MediaChangeEvent(
-                        itemId = updatedItem.id,
-                        updatedItem = updatedItem,
-                        source = MediaChangeSource.WEBSOCKET,
-                        userData = correspondingUserData,
-                    )
+        userDataList.forEach { userData ->
+            val itemId = userData.itemId ?: return@forEach
+            try {
+                databaseRepository.patchUserDataLocally(itemId, userId, serverId, userData)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to patch local DB for $itemId")
+            }
+
+            _mediaChanges.emit(
+                MediaChangeEvent(
+                    itemId = itemId,
+                    source = MediaChangeSource.WEBSOCKET,
+                    userData = userData,
                 )
+            )
+
+            if (userData.played || (userData.playbackPositionTicks ?: 0L) > 0L) {
+                requiresLiveSectionRefresh = true
             }
-            if (requiresLiveSectionRefresh) {
-                Timber.d("Batch processed. Refreshing live sections once.")
-                appDataRepository.refreshLiveSections()
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to process batch user data changes")
+        }
+
+        if (requiresLiveSectionRefresh) {
+            liveSectionRefreshTrigger.tryEmit(Unit)
         }
     }
 
@@ -221,7 +220,7 @@ constructor(
 
     private suspend fun refreshDerivedState(updatedItem: AfinityItem) {
         if (updatedItem is AfinityEpisode) {
-            appDataRepository.refreshLiveSections()
+            liveSectionRefreshTrigger.tryEmit(Unit)
         }
     }
 

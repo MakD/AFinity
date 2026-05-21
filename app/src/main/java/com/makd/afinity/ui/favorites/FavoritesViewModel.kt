@@ -3,6 +3,7 @@ package com.makd.afinity.ui.favorites
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -16,22 +17,26 @@ import com.makd.afinity.data.repository.FieldSets
 import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.download.DownloadRepository
 import com.makd.afinity.data.repository.media.MediaRepository
-import com.makd.afinity.util.NetworkConnectivityMonitor
 import com.makd.afinity.data.repository.userdata.UserDataRepository
 import com.makd.afinity.data.repository.watchlist.WatchlistRepository
 import com.makd.afinity.ui.item.delegates.ItemDownloadDelegate
 import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
+import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class FavoritesViewModel
 @Inject
@@ -51,7 +56,8 @@ constructor(
     private val _uiState = MutableStateFlow(FavoritesUiState())
 
     val canDownload: StateFlow<Boolean> =
-        preferencesRepository.getDownloadWifiOnlyFlow()
+        preferencesRepository
+            .getDownloadWifiOnlyFlow()
             .combine(networkMonitor.isOnWifiFlow) { wifiOnly, onWifi -> !wifiOnly || onWifi }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
@@ -70,28 +76,49 @@ constructor(
     val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> =
         _selectedEpisodeDownloadInfo.asStateFlow()
 
+    private val favoritesRefreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
     init {
         viewModelScope.launch {
             appDataRepository.favoritesData.collect { data ->
-                _uiState.value = FavoritesUiState(
-                    movies = data.movies,
-                    shows = data.shows,
-                    seasons = data.seasons,
-                    episodes = data.episodes,
-                    boxSets = data.boxSets,
-                    channels = data.channels,
-                    people = data.people,
-                    isLoading = false,
-                    error = null,
-                )
+                _uiState.value =
+                    FavoritesUiState(
+                        movies = data.movies,
+                        shows = data.shows,
+                        seasons = data.seasons,
+                        episodes = data.episodes,
+                        boxSets = data.boxSets,
+                        channels = data.channels,
+                        people = data.people,
+                        isLoading = false,
+                        error = null,
+                    )
+            }
+        }
+        viewModelScope.launch {
+            favoritesRefreshTrigger.debounce(300L).collect {
+                Timber.d("WebSocket favorite changes settled. Syncing in-memory list...")
+                appDataRepository.reloadFavorites()
             }
         }
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
                 _selectedEpisode.value?.let { ep ->
-                    if (ep.id == event.itemId && event.updatedItem is AfinityEpisode) {
-                        _selectedEpisode.value = event.updatedItem
+                    if (ep.id == event.itemId) {
+                        val updatedEp =
+                            event.updatedItem as? AfinityEpisode
+                                ?: (mediaRepository.getItemById(event.itemId) as? AfinityEpisode)
+
+                        if (updatedEp != null) {
+                            _selectedEpisode.value = updatedEp
+                        }
                     }
+                }
+                if (
+                    event.source == MediaChangeSource.WEBSOCKET &&
+                        event.userData?.isFavorite != null
+                ) {
+                    favoritesRefreshTrigger.tryEmit(Unit)
                 }
             }
         }
@@ -99,7 +126,14 @@ constructor(
 
     fun loadFavorites() {
         viewModelScope.launch {
-            appDataRepository.reloadFavorites()
+            val currentData = _uiState.value
+            val hasData =
+                currentData.movies.isNotEmpty() ||
+                    currentData.shows.isNotEmpty() ||
+                    currentData.episodes.isNotEmpty()
+            if (!hasData) {
+                appDataRepository.reloadFavorites()
+            }
         }
     }
 
@@ -174,10 +208,14 @@ constructor(
                         userDataRepository.markUnwatched(episode.id)
                     } else {
                         userDataRepository.markWatched(episode.id)
-                }
+                    }
 
                 if (success) {
-                    mediaChangeManager.notifyItemChanged(episode.id, episode.seriesId, episode.seasonId)
+                    mediaChangeManager.notifyItemChanged(
+                        episode.id,
+                        episode.seriesId,
+                        episode.seasonId,
+                    )
                 } else {
                     _selectedEpisode.value = episode
                 }

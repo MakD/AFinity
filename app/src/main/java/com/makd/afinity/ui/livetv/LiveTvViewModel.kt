@@ -11,13 +11,16 @@ import com.makd.afinity.ui.livetv.models.ProgramWithChannel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -27,6 +30,7 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class LiveTvViewModel
 @Inject
@@ -45,8 +49,13 @@ constructor(
 
     private var refreshJob: Job? = null
 
+    private val tabSwitchTrigger = MutableSharedFlow<LiveTvTab>(extraBufferCapacity = 1)
+
     init {
         checkLiveTvAccess()
+        viewModelScope.launch {
+            tabSwitchTrigger.debounce(200L).collect { tab -> refreshCurrentTabData(tab) }
+        }
     }
 
     fun onLetterSelected(letter: String) {
@@ -275,17 +284,7 @@ constructor(
 
     fun selectTab(tab: LiveTvTab) {
         _uiState.update { it.copy(selectedTab = tab) }
-        when (tab) {
-            LiveTvTab.HOME -> loadCategorizedPrograms()
-            LiveTvTab.GUIDE -> loadEpgData()
-            LiveTvTab.CHANNELS -> {
-                if (allChannelsCache.isEmpty()) {
-                    loadChannels()
-                } else {
-                    applyFilterToCache(_selectedLetter.value)
-                }
-            }
-        }
+        tabSwitchTrigger.tryEmit(tab)
     }
 
     fun jumpToNow() {
@@ -305,15 +304,15 @@ constructor(
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
             while (isActive) {
-                delay(60000L)
-                refreshCurrentTabData()
+                delay(60_000L)
+                refreshCurrentTabData(_uiState.value.selectedTab)
             }
         }
     }
 
-    private suspend fun refreshCurrentTabData() {
+    private suspend fun refreshCurrentTabData(tab: LiveTvTab) {
         try {
-            when (_uiState.value.selectedTab) {
+            when (tab) {
                 LiveTvTab.HOME -> loadCategorizedPrograms()
                 LiveTvTab.GUIDE -> loadEpgData()
                 LiveTvTab.CHANNELS -> {
@@ -323,7 +322,7 @@ constructor(
                 }
             }
         } catch (e: Exception) {
-            Timber.w(e, "Failed to refresh tab data")
+            Timber.w(e, "Failed to refresh tab data for $tab")
         }
     }
 

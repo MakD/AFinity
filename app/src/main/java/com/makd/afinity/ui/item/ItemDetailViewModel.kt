@@ -12,6 +12,7 @@ import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.database.entities.ItemMetadataCacheEntity
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.manager.OfflineModeManager
 import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
@@ -51,14 +52,17 @@ import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -70,6 +74,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class ItemDetailViewModel
 @Inject
@@ -126,6 +131,7 @@ constructor(
 
     private val _selectedMediaSource = MutableStateFlow<MediaSourceOption?>(null)
     val selectedMediaSource = _selectedMediaSource.asStateFlow()
+    private val backgroundSyncTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     fun selectMediaSource(source: MediaSourceOption) {
         _selectedMediaSource.value = source
@@ -142,6 +148,13 @@ constructor(
                 _uiState.value = _uiState.value.copy(containingBoxSets = boxSets)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load containing BoxSets in init")
+            }
+        }
+
+        viewModelScope.launch {
+            backgroundSyncTrigger.debounce(500L).collect {
+                Timber.d("Debounced background sync triggered for item: $itemId")
+                syncWithServerInBackground()
             }
         }
 
@@ -162,16 +175,23 @@ constructor(
 
         viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                val changedItem = event.updatedItem
+                val changedItem = event.updatedItem ?: mediaRepository.getItemById(event.itemId)
+                val resolvedSeriesId =
+                    event.seriesId
+                        ?: (changedItem as? AfinityEpisode)?.seriesId
+                        ?: (changedItem as? AfinitySeason)?.seriesId
+                val resolvedSeasonId = event.seasonId ?: (changedItem as? AfinityEpisode)?.seasonId
+
                 val isNextEpisode = _uiState.value.nextEpisode?.id == event.itemId
                 val isBoxSetItem = _uiState.value.boxSetItems.any { it.id == event.itemId }
                 val isChildUpdate =
                     _uiState.value.seasons.any { season ->
                         season.episodes.any { it.id == event.itemId } || season.id == event.itemId
                     }
-                val isDirectParentMatch = event.seriesId == itemId || event.seasonId == itemId
+                val isDirectParentMatch = resolvedSeriesId == itemId || resolvedSeasonId == itemId
                 val belongsToLoadedSeason =
-                    event.seasonId != null && _uiState.value.seasons.any { it.id == event.seasonId }
+                    resolvedSeasonId != null &&
+                        _uiState.value.seasons.any { it.id == resolvedSeasonId }
                 val belongsToCurrentItem =
                     when (changedItem) {
                         is AfinityEpisode ->
@@ -191,11 +211,98 @@ constructor(
 
                 if (isRelated) {
                     (changedItem as? AfinityEpisode)?.let { ep ->
-                        if (_episodeStatusUpdates.value[ep.id] != ep.played) {
+                        val currentStatus = _episodeStatusUpdates.value[ep.id]
+                        if (currentStatus != ep.played) {
                             _episodeStatusUpdates.value += (ep.id to ep.played)
+
+                            val currentSeasons = _uiState.value.seasons.toMutableList()
+                            val seasonIndex = currentSeasons.indexOfFirst { it.id == ep.seasonId }
+                            if (seasonIndex != -1) {
+                                val season = currentSeasons[seasonIndex]
+                                val offset = if (ep.played) -1 else 1
+                                val newCount =
+                                    ((season.unplayedItemCount ?: 0) + offset).coerceAtLeast(0)
+                                currentSeasons[seasonIndex] =
+                                    season.copy(unplayedItemCount = newCount)
+                                _uiState.value = _uiState.value.copy(seasons = currentSeasons)
+                            }
+
+                            val currentItem = _uiState.value.item
+                            if (currentItem is AfinityShow) {
+                                val offset = if (ep.played) -1 else 1
+                                val newCount =
+                                    ((currentItem.unplayedItemCount ?: 0) + offset).coerceAtLeast(0)
+                                _uiState.value =
+                                    _uiState.value.copy(
+                                        item = currentItem.copy(unplayedItemCount = newCount)
+                                    )
+                            }
                         }
                     }
-                    refreshFromCacheImmediate()
+
+                    (changedItem as? AfinitySeason)?.let { season ->
+                        val currentSeasons = _uiState.value.seasons.toMutableList()
+                        val index = currentSeasons.indexOfFirst { it.id == season.id }
+                        if (index != -1) {
+                            currentSeasons[index] = season
+                            _uiState.value = _uiState.value.copy(seasons = currentSeasons)
+                        }
+                    }
+
+                    (changedItem as? AfinityMovie)?.let { movie ->
+                        val currentBoxSets = _uiState.value.containingBoxSets.toMutableList()
+                        var boxSetChanged = false
+
+                        currentBoxSets.forEachIndexed { index, boxSet ->
+                            val isMovieInThisBoxSet =
+                                _uiState.value.boxSetItems.any { it.id == movie.id }
+
+                            if (isMovieInThisBoxSet) {
+                                val newCount =
+                                    (boxSet.unplayedItemCount ?: 1) - (if (movie.played) 1 else -1)
+                                currentBoxSets[index] =
+                                    boxSet.copy(unplayedItemCount = newCount.coerceAtLeast(0))
+                                boxSetChanged = true
+                            }
+                        }
+
+                        if (boxSetChanged) {
+                            _uiState.value = _uiState.value.copy(containingBoxSets = currentBoxSets)
+                        }
+                    }
+
+                    //                    (changedItem as? AfinityMovie)?.let { movie ->
+                    //                        val currentBoxSets =
+                    // _uiState.value.containingBoxSets.toMutableList()
+                    //                        var boxSetChanged = false
+                    //
+                    //                        currentBoxSets.forEachIndexed { index, boxSet ->
+                    //                            if (boxSet.id == movie.collectionId) {
+                    //                                val newCount =
+                    //                                    (boxSet.unplayedItemCount ?: 1) - (if
+                    // (movie.played) 1 else -1)
+                    //                                currentBoxSets[index] =
+                    //                                    boxSet.copy(unplayedItemCount =
+                    // newCount.coerceAtLeast(0))
+                    //                                boxSetChanged = true
+                    //                            }
+                    //                        }
+                    //
+                    //                        if (boxSetChanged) {
+                    //                            _uiState.value =
+                    // _uiState.value.copy(containingBoxSets = currentBoxSets)
+                    //                        }
+                    //                    }
+
+                    val skipNetwork =
+                        event.source == MediaChangeSource.WEBSOCKET ||
+                            event.source == MediaChangeSource.MANUAL
+
+                    refreshFromCacheImmediate(skipNetworkSync = skipNetwork)
+
+                    if (skipNetwork) {
+                        backgroundSyncTrigger.tryEmit(Unit)
+                    }
                 }
                 updateSimilarItemsOnSync(event.itemId)
             }
@@ -296,7 +403,7 @@ constructor(
         )
     }
 
-    private fun refreshFromCacheImmediate() {
+    private fun refreshFromCacheImmediate(skipNetworkSync: Boolean = false) {
         viewModelScope.launch {
             try {
                 val cachedItem = mediaRepository.getItemById(itemId)
@@ -331,7 +438,10 @@ constructor(
                         is AfinityBoxSet -> loadBoxSetItems(cachedItem.id)
                     }
                 }
-                launch { syncWithServerInBackground() }
+
+                if (!skipNetworkSync) {
+                    launch { syncWithServerInBackground() }
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to refresh from cache")
             }

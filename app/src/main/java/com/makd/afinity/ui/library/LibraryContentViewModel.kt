@@ -10,6 +10,7 @@ import androidx.paging.filter
 import androidx.paging.map
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.MediaChangeManager
+import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.models.common.CollectionType
 import com.makd.afinity.data.models.common.SortBy
 import com.makd.afinity.data.models.media.AfinityItem
@@ -18,11 +19,14 @@ import com.makd.afinity.data.repository.PreferencesRepository
 import com.makd.afinity.data.repository.media.MediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -38,6 +42,7 @@ enum class FilterType {
     FAVORITES,
 }
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class LibraryContentViewModel
 @Inject
@@ -65,6 +70,8 @@ constructor(
     val uiState: StateFlow<LibraryContentUiState> = _uiState.asStateFlow()
 
     private val _itemUpdates = MutableStateFlow<Map<UUID, AfinityItem>>(emptyMap())
+    private val pendingUpdates = mutableMapOf<UUID, AfinityItem>()
+    private val libraryUpdateTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     private fun applyUpdatesToPagingFlow(
         baseFlow: Flow<PagingData<AfinityItem>>
@@ -120,9 +127,29 @@ constructor(
             }
         }
         viewModelScope.launch {
+            libraryUpdateTrigger.debounce(300L).collect {
+                if (pendingUpdates.isNotEmpty()) {
+                    _itemUpdates.value += pendingUpdates
+                    pendingUpdates.clear()
+                    Timber.d("Applied batched PagingData updates to Library")
+                }
+            }
+        }
+
+        viewModelScope.launch {
             mediaChangeManager.mediaChanges.collect { event ->
-                val targetItem = event.parentItem ?: event.updatedItem ?: return@collect
-                _itemUpdates.value += (targetItem.id to targetItem)
+                val targetItem =
+                    event.parentItem
+                        ?: event.updatedItem
+                        ?: mediaRepository.getItemById(event.itemId)
+                        ?: return@collect
+
+                if (event.source == MediaChangeSource.WEBSOCKET) {
+                    pendingUpdates[targetItem.id] = targetItem
+                    libraryUpdateTrigger.tryEmit(Unit)
+                } else {
+                    _itemUpdates.value += (targetItem.id to targetItem)
+                }
             }
         }
     }
