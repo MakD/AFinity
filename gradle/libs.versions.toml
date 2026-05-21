@@ -38,6 +38,7 @@ room = "2.8.4"
 timber = "5.0.1"
 tinkAndroid = "1.21.0"
 work = "2.11.2"
+lifecycleProcess = "2.10.0"
 
 [libraries]
 aboutlibraries-compose-m3 = { group = "com.mikepenz", name = "aboutlibraries-compose-m3", version.ref = "aboutlibrariesCore" }
@@ -101,6 +102,7 @@ richtext-ui = { group = "com.halilibo.compose-richtext", name = "richtext-ui", v
 richtext-ui-material3 = { group = "com.halilibo.compose-richtext", name = "richtext-ui-material3", version.ref = "richtext" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tinkAndroid" }
+androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 
 [plugins]
 aboutlibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutlibrariesCore" }
