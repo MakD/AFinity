@@ -9,6 +9,7 @@ import com.makd.afinity.data.database.entities.ShowGenreCacheEntity
 import com.makd.afinity.data.manager.SessionManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
+import com.makd.afinity.data.models.media.AfinityEpisode
 import com.makd.afinity.data.models.media.AfinityItem
 import com.makd.afinity.data.models.media.AfinityMovie
 import com.makd.afinity.data.models.media.AfinityShow
@@ -363,6 +364,31 @@ constructor(
                     if (index != -1) {
                         val mut = shows.toMutableList()
                         mut[index] = updatedItem
+                        newMap[genre] = mut
+                        changed = true
+                    }
+                }
+                if (changed) newMap else currentMap
+            }
+        }
+
+        if (updatedItem is AfinityEpisode) {
+            _genreShows.update { currentMap ->
+                val newMap = currentMap.toMutableMap()
+                var changed = false
+                newMap.forEach { (genre, shows) ->
+                    val index = shows.indexOfFirst { it.id == updatedItem.seriesId }
+                    if (index != -1) {
+                        val show = shows[index]
+                        val currentCount = show.unplayedItemCount ?: 0
+                        val newCount =
+                            if (updatedItem.played) {
+                                (currentCount - 1).coerceAtLeast(0)
+                            } else {
+                                currentCount + 1
+                            }
+                        val mut = shows.toMutableList()
+                        mut[index] = show.copy(unplayedItemCount = newCount)
                         newMap[genre] = mut
                         changed = true
                     }

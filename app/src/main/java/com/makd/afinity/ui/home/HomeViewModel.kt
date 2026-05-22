@@ -13,7 +13,6 @@ import androidx.work.WorkManager
 import com.makd.afinity.R
 import com.makd.afinity.data.manager.MediaChangeManager
 import com.makd.afinity.data.manager.OfflineModeManager
-import com.makd.afinity.data.manager.PlaybackEvent
 import com.makd.afinity.data.manager.PlaybackStateManager
 import com.makd.afinity.data.models.GenreItem
 import com.makd.afinity.data.models.GenreType
@@ -278,22 +277,6 @@ constructor(
                     loadDownloadedContent()
                 } else {
                     scheduleHomeDataReload()
-                }
-            }
-        }
-        viewModelScope.launch {
-            playbackStateManager.playbackEvents.collect { event ->
-                when (event) {
-                    is PlaybackEvent.Stopped -> {
-                        Timber.d("HomeViewModel received fast Stopped event for ${event.itemId}")
-                        _uiState.update { state ->
-                            state.copy(
-                                continueWatching =
-                                    state.continueWatching.filterNot { it.id == event.itemId },
-                                nextUp = state.nextUp.filterNot { it.id == event.itemId },
-                            )
-                        }
-                    }
                 }
             }
         }

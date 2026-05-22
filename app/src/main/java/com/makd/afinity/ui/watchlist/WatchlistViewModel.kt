@@ -3,7 +3,6 @@ package com.makd.afinity.ui.watchlist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.makd.afinity.data.manager.MediaChangeManager
-import com.makd.afinity.data.manager.MediaChangeSource
 import com.makd.afinity.data.models.download.DownloadInfo
 import com.makd.afinity.data.models.media.AfinityBoxSet
 import com.makd.afinity.data.models.media.AfinityEpisode
@@ -24,13 +23,11 @@ import com.makd.afinity.ui.item.delegates.ItemUserDataDelegate
 import com.makd.afinity.util.NetworkConnectivityMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -76,8 +73,6 @@ constructor(
     val selectedEpisodeDownloadInfo: StateFlow<DownloadInfo?> =
         _selectedEpisodeDownloadInfo.asStateFlow()
 
-    private val watchlistRefreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
     init {
         viewModelScope.launch {
             appDataRepository.watchlistData.collect { data ->
@@ -91,30 +86,6 @@ constructor(
                         isLoading = false,
                         error = null,
                     )
-            }
-        }
-        viewModelScope.launch {
-            watchlistRefreshTrigger.debounce(300L).collect {
-                Timber.d("WebSocket watchlist changes settled. Syncing in-memory list...")
-                appDataRepository.reloadWatchlist()
-            }
-        }
-        viewModelScope.launch {
-            mediaChangeManager.mediaChanges.collect { event ->
-                _selectedEpisode.value?.let { ep ->
-                    if (ep.id == event.itemId) {
-                        val updatedEp =
-                            event.updatedItem as? AfinityEpisode
-                                ?: (mediaRepository.getItemById(event.itemId) as? AfinityEpisode)
-
-                        if (updatedEp != null) {
-                            _selectedEpisode.value = updatedEp
-                        }
-                    }
-                }
-                if (event.source == MediaChangeSource.WEBSOCKET && event.userData?.likes != null) {
-                    watchlistRefreshTrigger.tryEmit(Unit)
-                }
             }
         }
     }
@@ -194,29 +165,16 @@ constructor(
 
     fun toggleEpisodeWatched(episode: AfinityEpisode) {
         viewModelScope.launch {
-            try {
-                val isNowPlayed = !episode.played
-                _selectedEpisode.value =
-                    episode.copy(played = isNowPlayed, playbackPositionTicks = 0)
-
-                val success =
-                    if (episode.played) {
-                        userDataRepository.markUnwatched(episode.id)
-                    } else {
-                        userDataRepository.markWatched(episode.id)
-                    }
-
-                if (success) {
-                    mediaChangeManager.notifyItemChanged(
-                        episode.id,
-                        episode.seriesId,
-                        episode.seasonId,
-                    )
+            val isNowPlayed = !episode.played
+            _selectedEpisode.value = episode.copy(played = isNowPlayed, playbackPositionTicks = 0)
+            val success =
+                if (episode.played) {
+                    userDataRepository.markUnwatched(episode.id)
                 } else {
-                    _selectedEpisode.value = episode
+                    userDataRepository.markWatched(episode.id)
                 }
-            } catch (e: Exception) {
-                Timber.e(e, "Error toggling episode watched status")
+            if (!success) {
+                _selectedEpisode.value = episode
             }
         }
     }
