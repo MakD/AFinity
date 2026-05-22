@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.SessionInfoDto
 import org.jellyfin.sdk.model.api.TaskInfo
@@ -30,7 +31,7 @@ constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val sessionManager: SessionManager,
     private val appDataRepository: AppDataRepository,
-    private val jellyfinWebSocketManager: JellyfinWebSocketManager, // 1. ADDED WEBSOCKET MANAGER
+    private val jellyfinWebSocketManager: JellyfinWebSocketManager,
 ) : ViewModel() {
 
     companion object {
@@ -82,17 +83,22 @@ constructor(
         currentServerId = serverId
         taskCache[serverId]?.let { _scheduledTasks.value = it }
         sessionCache[serverId]?.let { _activeSessions.value = it }
-        viewModelScope.launch {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
             pollTasksNow()
-            try {
-                val initialSessions = jellyfinRepository.getActiveSessions()
-                if (initialSessions.isSuccess) {
-                    val sessions = initialSessions.getOrNull() ?: emptyList()
-                    _activeSessions.value = sessions
-                    sessionCache[serverId] = sessions
+
+            while (isActive) {
+                try {
+                    val result = jellyfinRepository.getActiveSessions()
+                    if (result.isSuccess) {
+                        val sessions = result.getOrNull() ?: emptyList()
+                        _activeSessions.value = sessions
+                        sessionCache[serverId] = sessions
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed session fetch")
                 }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed initial session fetch")
+                delay(5000)
             }
         }
     }
