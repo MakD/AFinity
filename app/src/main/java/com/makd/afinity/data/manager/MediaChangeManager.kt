@@ -83,7 +83,7 @@ constructor(
         val currentSession = sessionManager.currentSession.value ?: return
         val userId = currentSession.userId
         val serverId = currentSession.serverId
-        var requiresLiveSectionRefresh = false
+        val isBatch = userDataList.size > 1
 
         userDataList.forEach { userData ->
             val itemId = userData.itemId ?: return@forEach
@@ -93,22 +93,31 @@ constructor(
                 Timber.e(e, "Failed to patch local DB for $itemId")
             }
 
+            val cachedItem =
+                try {
+                    mediaRepository.getItemById(itemId)
+                } catch (e: Exception) {
+                    null
+                }
+            cachedItem?.let { appDataRepository.updateItemInCaches(it) }
+            val resolvedSeriesId =
+                (cachedItem as? AfinityEpisode)?.seriesId
+                    ?: (cachedItem as? AfinitySeason)?.seriesId
+            val resolvedSeasonId = (cachedItem as? AfinityEpisode)?.seasonId
             _mediaChanges.emit(
                 MediaChangeEvent(
                     itemId = itemId,
+                    updatedItem = cachedItem,
+                    seriesId = resolvedSeriesId,
+                    seasonId = resolvedSeasonId,
                     source = MediaChangeSource.WEBSOCKET,
                     userData = userData,
+                    isBatchEvent = isBatch,
                 )
             )
-
-            if (userData.played || (userData.playbackPositionTicks ?: 0L) > 0L) {
-                requiresLiveSectionRefresh = true
-            }
         }
 
-        if (requiresLiveSectionRefresh) {
-            liveSectionRefreshTrigger.tryEmit(Unit)
-        }
+        liveSectionRefreshTrigger.tryEmit(Unit)
     }
 
     suspend fun refreshAndPublish(
@@ -123,8 +132,7 @@ constructor(
                 mediaRepository.refreshItemUserData(itemId, FieldSets.REFRESH_USER_DATA)
             val parentItem = resolveParentItem(updatedItem, knownSeriesId)
 
-            updatedItem?.let { appDataRepository.updateItemInCaches(it) }
-            parentItem?.let { appDataRepository.updateItemInCaches(it) }
+            appDataRepository.scheduleLiveHomeRefresh("manual update")
             updatedItem?.let { refreshDerivedState(it) }
 
             val resolvedSeriesId =
@@ -248,6 +256,7 @@ data class MediaChangeEvent(
     val seasonId: UUID? = null,
     val source: MediaChangeSource,
     val userData: UserItemDataDto? = null,
+    val isBatchEvent: Boolean = false,
 )
 
 enum class MediaChangeSource {

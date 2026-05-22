@@ -793,116 +793,50 @@ constructor(
     }
 
     suspend fun updateItemInCaches(updatedItem: AfinityItem) {
-        val itemId = updatedItem.id
         genreRepository.updateItemInCaches(updatedItem)
         peopleRepository.updateItemInCaches(updatedItem)
         recentWatchedCache = null
+        mediaRepository.invalidateLatestMediaCache()
         if (updatedItem is AfinityMovie) {
-            val movieIsInLatest = _latestMovies.value.any { it.id == itemId }
-            if (updatedItem.played) {
-                _latestMovies.update { movies -> movies.filterNot { it.id == itemId } }
-                _separateMovieLibrarySections.update { sections ->
-                    sections.map { (library, movies) ->
-                        library to movies.filterNot { it.id == itemId }
-                    }
-                }
-            } else if (movieIsInLatest) {
-                _latestMovies.update { movies ->
-                    val index = movies.indexOfFirst { it.id == itemId }
-                    if (index != -1) movies.toMutableList().apply { this[index] = updatedItem }
-                    else movies
-                }
-                _separateMovieLibrarySections.update { sections ->
-                    sections.map { (library, movies) ->
-                        val index = movies.indexOfFirst { it.id == itemId }
-                        library to
-                            if (index != -1)
-                                movies.toMutableList().apply { this[index] = updatedItem }
-                            else movies
-                    }
-                }
-            } else {
-                reloadLatestMoviesData()
+            _latestMovies.update { it.patchItem(updatedItem) }
+            _separateMovieLibrarySections.update { sections ->
+                sections.map { it.first to it.second.patchItem(updatedItem) }
+            }
+        } else if (updatedItem is AfinityShow) {
+            _latestTvSeries.update { it.patchItem(updatedItem) }
+            _separateTvLibrarySections.update { sections ->
+                sections.map { it.first to it.second.patchItem(updatedItem) }
             }
         }
-        if (updatedItem is AfinityShow) {
-            val showIsInLatest = _latestTvSeries.value.any { it.id == itemId }
-            if (updatedItem.played) {
-                _latestTvSeries.update { shows -> shows.filterNot { it.id == itemId } }
-                _separateTvLibrarySections.update { sections ->
-                    sections.map { (library, shows) ->
-                        library to shows.filterNot { it.id == itemId }
-                    }
-                }
-            } else if (showIsInLatest) {
-                _latestTvSeries.update { shows ->
-                    val index = shows.indexOfFirst { it.id == itemId }
-                    if (index != -1) shows.toMutableList().apply { this[index] = updatedItem }
-                    else shows
-                }
-                _separateTvLibrarySections.update { sections ->
-                    sections.map { (library, shows) ->
-                        val index = shows.indexOfFirst { it.id == itemId }
-                        library to
-                            if (index != -1)
-                                shows.toMutableList().apply { this[index] = updatedItem }
-                            else shows
-                    }
-                }
-            } else {
-                reloadLatestShowsData()
+
+        _highestRated.update { it.patchItem(updatedItem) }
+
+        _favoritesData.update { data ->
+            when (updatedItem) {
+                is AfinityMovie -> data.copy(movies = data.movies.patchItem(updatedItem))
+                is AfinityShow -> data.copy(shows = data.shows.patchItem(updatedItem))
+                is AfinitySeason -> data.copy(seasons = data.seasons.patchItem(updatedItem))
+                is AfinityEpisode -> data.copy(episodes = data.episodes.patchItem(updatedItem))
+                is AfinityBoxSet -> data.copy(boxSets = data.boxSets.patchItem(updatedItem))
+                else -> data
             }
         }
-        _heroCarouselItems.update { items ->
-            val index = items.indexOfFirst { it.id == itemId }
-            if (index != -1) items.toMutableList().apply { this[index] = updatedItem } else items
-        }
 
-        _latestMedia.update { items ->
-            val index = items.indexOfFirst { it.id == itemId }
-            if (index != -1) items.toMutableList().apply { this[index] = updatedItem } else items
+        _watchlistData.update { data ->
+            when (updatedItem) {
+                is AfinityMovie -> data.copy(movies = data.movies.patchItem(updatedItem))
+                is AfinityShow -> data.copy(shows = data.shows.patchItem(updatedItem))
+                is AfinitySeason -> data.copy(seasons = data.seasons.patchItem(updatedItem))
+                is AfinityEpisode -> data.copy(episodes = data.episodes.patchItem(updatedItem))
+                is AfinityBoxSet -> data.copy(boxSets = data.boxSets.patchItem(updatedItem))
+                else -> data
+            }
         }
+    }
 
-        _favoritesData.update { current ->
-            current.copy(
-                movies =
-                    current.movies.map {
-                        if (it.id == itemId && updatedItem is AfinityMovie) updatedItem else it
-                    },
-                shows =
-                    current.shows.map {
-                        if (it.id == itemId && updatedItem is AfinityShow) updatedItem else it
-                    },
-                seasons =
-                    current.seasons.map {
-                        if (it.id == itemId && updatedItem is AfinitySeason) updatedItem else it
-                    },
-                episodes =
-                    current.episodes.map {
-                        if (it.id == itemId && updatedItem is AfinityEpisode) updatedItem else it
-                    },
-            )
-        }
-
-        _watchlistData.update { current ->
-            current.copy(
-                movies =
-                    current.movies.map {
-                        if (it.id == itemId && updatedItem is AfinityMovie) updatedItem else it
-                    },
-                shows =
-                    current.shows.map {
-                        if (it.id == itemId && updatedItem is AfinityShow) updatedItem else it
-                    },
-                seasons =
-                    current.seasons.map {
-                        if (it.id == itemId && updatedItem is AfinitySeason) updatedItem else it
-                    },
-                episodes =
-                    current.episodes.map {
-                        if (it.id == itemId && updatedItem is AfinityEpisode) updatedItem else it
-                    },
-            )
+    private fun <T : AfinityItem> List<T>.patchItem(updatedItem: AfinityItem): List<T> {
+        return this.map {
+            @Suppress("UNCHECKED_CAST") if (it.id == updatedItem.id) updatedItem as T else it
         }
     }
 

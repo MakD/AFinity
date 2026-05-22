@@ -299,14 +299,7 @@ constructor(
         }
 
         viewModelScope.launch {
-            mediaChangeManager.mediaChanges.collect { event ->
-                val targetItem =
-                    event.updatedItem
-                        ?: event.parentItem
-                        ?: mediaRepository.getItemById(event.itemId)
-                        ?: return@collect
-                updateItemInDynamicSections(targetItem)
-            }
+            mediaChangeManager.mediaChanges.collect { event -> layoutRefreshTrigger.tryEmit(Unit) }
         }
 
         viewModelScope.launch {
@@ -1265,83 +1258,6 @@ constructor(
             .enqueueUniqueWork(WORK_HOME_RELOAD, ExistingWorkPolicy.REPLACE, request)
 
         Timber.d("HomeDataReloadWorker scheduled")
-    }
-
-    private suspend fun updateItemInDynamicSections(updatedItem: AfinityItem) {
-        val targetId = updatedItem.id
-
-        var highestRatedChanged = false
-        val currentHighestRated = _uiState.value.highestRated.toMutableList()
-        val hrIndex = currentHighestRated.indexOfFirst { it.id == targetId }
-        if (hrIndex != -1) {
-            currentHighestRated[hrIndex] = updatedItem
-            highestRatedChanged = true
-        }
-        if (highestRatedChanged) {
-            _uiState.update { it.copy(highestRated = currentHighestRated) }
-        }
-
-        var sectionsChanged = false
-        val updatedSections = loadedRecommendationSections.map { section ->
-            when (section) {
-                is HomeSection.Movie -> {
-                    val items = section.section.recommendedItems
-                    val index = items.indexOfFirst { it.id == targetId }
-                    if (index != -1 && updatedItem is AfinityMovie) {
-                        sectionsChanged = true
-                        val newItems = items.toMutableList().apply { this[index] = updatedItem }
-                        HomeSection.Movie(section.section.copy(recommendedItems = newItems))
-                    } else section
-                }
-
-                is HomeSection.Person -> {
-                    val items = section.section.items
-                    val index = items.indexOfFirst { it.id == targetId }
-                    if (
-                        index != -1 && (updatedItem is AfinityMovie || updatedItem is AfinityShow)
-                    ) {
-                        sectionsChanged = true
-                        val newItems = items.toMutableList().apply { this[index] = updatedItem }
-                        HomeSection.Person(section.section.copy(items = newItems))
-                    } else section
-                }
-
-                is HomeSection.PersonFromMovie -> {
-                    val items = section.section.items
-                    val index = items.indexOfFirst { it.id == targetId }
-                    if (
-                        index != -1 && (updatedItem is AfinityMovie || updatedItem is AfinityShow)
-                    ) {
-                        sectionsChanged = true
-                        val newItems = items.toMutableList().apply { this[index] = updatedItem }
-                        HomeSection.PersonFromMovie(section.section.copy(items = newItems))
-                    } else section
-                }
-
-                is HomeSection.Genre -> section
-
-                is HomeSection.Spotlight -> section
-            }
-        }
-
-        val updatedSpotlights = loadedSpotlightSections.map { section ->
-            val index = section.items.indexOfFirst { it.id == targetId }
-            if (index != -1) {
-                sectionsChanged = true
-                val newItems = section.items.toMutableList().apply { this[index] = updatedItem }
-                section.copy(items = newItems)
-            } else {
-                section
-            }
-        }
-
-        if (sectionsChanged) {
-            loadedRecommendationSections.clear()
-            loadedRecommendationSections.addAll(updatedSections)
-            loadedSpotlightSections.clear()
-            loadedSpotlightSections.addAll(updatedSpotlights)
-            layoutRefreshTrigger.tryEmit(Unit)
-        }
     }
 
     companion object {
